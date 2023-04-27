@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func FrontDoor(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func FrontDoor(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	insightsClient := insights.NewDiagnosticSettingsClient(subscription)
 	insightsClient.Authorizer = authorizer
 
@@ -32,7 +32,7 @@ func FrontDoor(ctx context.Context, authorizer autorest.Authorizer, subscription
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *door.ID,
 				Name:     *door.Name,
 				Location: *door.Location,
@@ -41,7 +41,14 @@ func FrontDoor(ctx context.Context, authorizer autorest.Authorizer, subscription
 					DiagnosticSettingsResources: frontDoorListOp.Value,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break

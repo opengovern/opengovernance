@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func RoleAssignment(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func RoleAssignment(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := authorization.NewRoleAssignmentsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -22,14 +22,21 @@ func RoleAssignment(ctx context.Context, authorizer autorest.Authorizer, subscri
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: "global",
 				Description: model.RoleAssignmentDescription{
 					RoleAssignment: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -45,7 +52,7 @@ func RoleAssignment(ctx context.Context, authorizer autorest.Authorizer, subscri
 	return values, nil
 }
 
-func RoleDefinition(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func RoleDefinition(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := authorization.NewRoleDefinitionsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -57,14 +64,21 @@ func RoleDefinition(ctx context.Context, authorizer autorest.Authorizer, subscri
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: "global",
 				Description: model.RoleDefinitionDescription{
 					RoleDefinition: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -80,7 +94,7 @@ func RoleDefinition(ctx context.Context, authorizer autorest.Authorizer, subscri
 	return values, nil
 }
 
-func PolicyDefinition(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func PolicyDefinition(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := policy.NewDefinitionsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -98,7 +112,7 @@ func PolicyDefinition(ctx context.Context, authorizer autorest.Authorizer, subsc
 				"Akas":           akas,
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *definition.ID,
 				Name:     *definition.Name,
 				Location: "global",
@@ -106,7 +120,14 @@ func PolicyDefinition(ctx context.Context, authorizer autorest.Authorizer, subsc
 					Definition: definition,
 					TurboData:  turbotData,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {

@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func CognitiveAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func CognitiveAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := insights.NewDiagnosticSettingsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -32,8 +32,7 @@ func CognitiveAccount(ctx context.Context, authorizer autorest.Authorizer, subsc
 			if err != nil {
 				return nil, err
 			}
-
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *account.ID,
 				Name:     *account.Name,
 				Location: *account.Location,
@@ -42,7 +41,14 @@ func CognitiveAccount(ctx context.Context, authorizer autorest.Authorizer, subsc
 					DiagnosticSettingsResources: cognitiveservicesListOp.Value,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break

@@ -75,7 +75,7 @@ func cost(ctx context.Context, authorizer autorest.Authorizer, subscription stri
 	return result, nil
 }
 
-func DailyCostByResourceType(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func DailyCostByResourceType(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := costmanagement.NewQueryClient(subscription)
 	client.Authorizer = authorizer
 
@@ -91,18 +91,25 @@ func DailyCostByResourceType(ctx context.Context, authorizer autorest.Authorizer
 	}
 	var values []Resource
 	for _, row := range costResult {
-		values = append(values, Resource{
+		resource := Resource{
 			ID: fmt.Sprintf("resource-cost-%s/%s-%d", subscription, *row.ResourceType, row.UsageDate),
 			Description: model.CostManagementCostByResourceTypeDescription{
 				CostManagementCostByResourceType: row,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func DailyCostBySubscription(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func DailyCostBySubscription(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := costmanagement.NewQueryClient(subscription)
 	client.Authorizer = authorizer
 
@@ -118,12 +125,19 @@ func DailyCostBySubscription(ctx context.Context, authorizer autorest.Authorizer
 	}
 	var values []Resource
 	for _, row := range costResult {
-		values = append(values, Resource{
+		resource := Resource{
 			ID: fmt.Sprintf("resource-cost-%s/%d", subscription, row.UsageDate),
 			Description: model.CostManagementCostBySubscriptionDescription{
 				CostManagementCostBySubscription: row,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil

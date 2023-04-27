@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func DataFactory(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func DataFactory(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	connClient := datafactory.NewPrivateEndPointConnectionsClient(subscription)
 	connClient.Authorizer = authorizer
 	factoryClient := datafactory.NewFactoriesClient(subscription)
@@ -38,7 +38,7 @@ func DataFactory(ctx context.Context, authorizer autorest.Authorizer, subscripti
 				v = append(v, datafactoryListByFactoryOp.Values()...)
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *factory.ID,
 				Name:     *factory.Name,
 				Location: *factory.Location,
@@ -47,7 +47,14 @@ func DataFactory(ctx context.Context, authorizer autorest.Authorizer, subscripti
 					PrivateEndPointConnections: v,
 					ResourceGroup:              resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -60,7 +67,7 @@ func DataFactory(ctx context.Context, authorizer autorest.Authorizer, subscripti
 	return values, nil
 }
 
-func DataFactoryDataset(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func DataFactoryDataset(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	factoryClient := datafactory.NewFactoriesClient(subscription)
 	factoryClient.Authorizer = authorizer
 
@@ -88,7 +95,7 @@ func DataFactoryDataset(ctx context.Context, authorizer autorest.Authorizer, sub
 					return nil, err
 				}
 				for _, dataset := range datasetListResponsePage.Values() {
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *dataset.ID,
 						Name:     *dataset.Name,
 						Location: *factory.Location,
@@ -97,7 +104,14 @@ func DataFactoryDataset(ctx context.Context, authorizer autorest.Authorizer, sub
 							Dataset:       dataset,
 							ResourceGroup: factoryResourceGroup,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 				err = datasetListResponsePage.NextWithContext(ctx)
 				if err != nil {
@@ -117,7 +131,7 @@ func DataFactoryDataset(ctx context.Context, authorizer autorest.Authorizer, sub
 	return values, nil
 }
 
-func DataFactoryPipeline(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func DataFactoryPipeline(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	factoryClient := datafactory.NewFactoriesClient(subscription)
 	factoryClient.Authorizer = authorizer
 
@@ -145,7 +159,7 @@ func DataFactoryPipeline(ctx context.Context, authorizer autorest.Authorizer, su
 					return nil, err
 				}
 				for _, pipelineResource := range pipelineListResponsePage.Values() {
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *pipelineResource.ID,
 						Name:     *pipelineResource.Name,
 						Location: *factory.Location,
@@ -154,7 +168,14 @@ func DataFactoryPipeline(ctx context.Context, authorizer autorest.Authorizer, su
 							Pipeline:      pipelineResource,
 							ResourceGroup: factoryResourceGroup,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 				err = pipelineListResponsePage.NextWithContext(ctx)
 				if err != nil {

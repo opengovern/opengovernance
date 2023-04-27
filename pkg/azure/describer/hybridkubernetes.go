@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func HybridKubernetesConnectedCluster(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func HybridKubernetesConnectedCluster(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := hybridkubernetes.NewConnectedClusterClient(subscription)
 	client.Authorizer = authorizer
 
@@ -23,7 +23,7 @@ func HybridKubernetesConnectedCluster(ctx context.Context, authorizer autorest.A
 		for _, connectedCluster := range result.Values() {
 			resourceGroup := strings.Split(*connectedCluster.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *connectedCluster.ID,
 				Name:     *connectedCluster.Name,
 				Location: *connectedCluster.Location,
@@ -31,7 +31,14 @@ func HybridKubernetesConnectedCluster(ctx context.Context, authorizer autorest.A
 					ConnectedCluster: connectedCluster,
 					ResourceGroup:    resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {

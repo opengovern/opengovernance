@@ -14,7 +14,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func ComputeDisk(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeDisk(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewDisksClient(subscription)
 	client.Authorizer = authorizer
 
@@ -28,7 +28,7 @@ func ComputeDisk(ctx context.Context, authorizer autorest.Authorizer, subscripti
 		for _, v := range result.Values() {
 			resourceGroup := strings.Split(*v.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: *v.Location,
@@ -36,7 +36,14 @@ func ComputeDisk(ctx context.Context, authorizer autorest.Authorizer, subscripti
 					Disk:          v,
 					ResourceGroup: resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -52,7 +59,7 @@ func ComputeDisk(ctx context.Context, authorizer autorest.Authorizer, subscripti
 	return values, nil
 }
 
-func ComputeDiskAccess(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeDiskAccess(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewDiskAccessesClient(subscription)
 	client.Authorizer = authorizer
 
@@ -66,7 +73,7 @@ func ComputeDiskAccess(ctx context.Context, authorizer autorest.Authorizer, subs
 		for _, v := range result.Values() {
 			resourceGroup := strings.Split(*v.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: *v.Location,
@@ -74,7 +81,14 @@ func ComputeDiskAccess(ctx context.Context, authorizer autorest.Authorizer, subs
 					DiskAccess:    v,
 					ResourceGroup: resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -90,7 +104,7 @@ func ComputeDiskAccess(ctx context.Context, authorizer autorest.Authorizer, subs
 	return values, nil
 }
 
-func ComputeVirtualMachineScaleSet(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeVirtualMachineScaleSet(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewVirtualMachineScaleSetsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -112,7 +126,7 @@ func ComputeVirtualMachineScaleSet(ctx context.Context, authorizer autorest.Auth
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: *v.Location,
@@ -121,7 +135,14 @@ func ComputeVirtualMachineScaleSet(ctx context.Context, authorizer autorest.Auth
 					VirtualMachineScaleSetExtensions: op.Values(),
 					ResourceGroup:                    resourceGroupName,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -137,7 +158,7 @@ func ComputeVirtualMachineScaleSet(ctx context.Context, authorizer autorest.Auth
 	return values, nil
 }
 
-func ComputeVirtualMachineScaleSetNetworkInterface(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeVirtualMachineScaleSetNetworkInterface(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewVirtualMachineScaleSetsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -161,7 +182,7 @@ func ComputeVirtualMachineScaleSetNetworkInterface(ctx context.Context, authoriz
 			for {
 				for _, v := range result.Values() {
 					resourceGroupName := strings.Split(*v.ID, "/")[4]
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *v.ID,
 						Name:     *v.Name,
 						Location: *v.Location,
@@ -170,7 +191,14 @@ func ComputeVirtualMachineScaleSetNetworkInterface(ctx context.Context, authoriz
 							NetworkInterface:       v,
 							ResourceGroup:          resourceGroupName,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 				if !result.NotDone() {
 					break
@@ -195,7 +223,7 @@ func ComputeVirtualMachineScaleSetNetworkInterface(ctx context.Context, authoriz
 	return values, nil
 }
 
-func ComputeVirtualMachineScaleSetVm(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeVirtualMachineScaleSetVm(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewVirtualMachineScaleSetsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -219,7 +247,7 @@ func ComputeVirtualMachineScaleSetVm(ctx context.Context, authorizer autorest.Au
 			for {
 				for _, v := range result.Values() {
 					resourceGroupName := strings.Split(*v.ID, "/")[4]
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *v.ID,
 						Name:     *v.Name,
 						Location: *v.Location,
@@ -228,7 +256,14 @@ func ComputeVirtualMachineScaleSetVm(ctx context.Context, authorizer autorest.Au
 							ScaleSetVM:             v,
 							ResourceGroup:          resourceGroupName,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 				if !result.NotDone() {
 					break
@@ -253,7 +288,7 @@ func ComputeVirtualMachineScaleSetVm(ctx context.Context, authorizer autorest.Au
 	return values, nil
 }
 
-func ComputeVirtualMachine(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeVirtualMachine(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	guestConfigurationClient := guestconfiguration.NewAssignmentsClient(subscription)
 	guestConfigurationClient.Authorizer = authorizer
 
@@ -326,7 +361,7 @@ func ComputeVirtualMachine(ctx context.Context, authorizer autorest.Authorizer, 
 					return nil, err
 				}
 			}
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *virtualMachine.ID,
 				Name:     *virtualMachine.Name,
 				Location: *virtualMachine.Location,
@@ -339,7 +374,14 @@ func ComputeVirtualMachine(ctx context.Context, authorizer autorest.Authorizer, 
 					Assignments:                configurationListOp.Value,
 					ResourceGroup:              resourceGroupName,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -352,7 +394,7 @@ func ComputeVirtualMachine(ctx context.Context, authorizer autorest.Authorizer, 
 	return values, nil
 }
 
-func ComputeSnapshots(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeSnapshots(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewSnapshotsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -366,7 +408,7 @@ func ComputeSnapshots(ctx context.Context, authorizer autorest.Authorizer, subsc
 		for _, snapshot := range result.Values() {
 			resourceGroupName := strings.Split(*snapshot.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *snapshot.ID,
 				Name:     *snapshot.Name,
 				Location: *snapshot.Location,
@@ -374,7 +416,14 @@ func ComputeSnapshots(ctx context.Context, authorizer autorest.Authorizer, subsc
 					ResourceGroup: resourceGroupName,
 					Snapshot:      snapshot,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -390,7 +439,7 @@ func ComputeSnapshots(ctx context.Context, authorizer autorest.Authorizer, subsc
 	return values, nil
 }
 
-func ComputeAvailabilitySet(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeAvailabilitySet(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewAvailabilitySetsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -404,7 +453,7 @@ func ComputeAvailabilitySet(ctx context.Context, authorizer autorest.Authorizer,
 		for _, availabilitySet := range result.Values() {
 			resourceGroupName := strings.Split(*availabilitySet.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *availabilitySet.ID,
 				Name:     *availabilitySet.Name,
 				Location: *availabilitySet.Location,
@@ -412,7 +461,14 @@ func ComputeAvailabilitySet(ctx context.Context, authorizer autorest.Authorizer,
 					ResourceGroup:   resourceGroupName,
 					AvailabilitySet: availabilitySet,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -428,7 +484,7 @@ func ComputeAvailabilitySet(ctx context.Context, authorizer autorest.Authorizer,
 	return values, nil
 }
 
-func ComputeDiskEncryptionSet(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeDiskEncryptionSet(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewDiskEncryptionSetsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -442,7 +498,7 @@ func ComputeDiskEncryptionSet(ctx context.Context, authorizer autorest.Authorize
 		for _, diskEncryptionSet := range result.Values() {
 			resourceGroupName := strings.Split(*diskEncryptionSet.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *diskEncryptionSet.ID,
 				Name:     *diskEncryptionSet.Name,
 				Location: *diskEncryptionSet.Location,
@@ -450,7 +506,14 @@ func ComputeDiskEncryptionSet(ctx context.Context, authorizer autorest.Authorize
 					ResourceGroup:     resourceGroupName,
 					DiskEncryptionSet: diskEncryptionSet,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -466,7 +529,7 @@ func ComputeDiskEncryptionSet(ctx context.Context, authorizer autorest.Authorize
 	return values, nil
 }
 
-func ComputeGallery(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeGallery(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewGalleriesClient(subscription)
 	client.Authorizer = authorizer
 
@@ -480,7 +543,7 @@ func ComputeGallery(ctx context.Context, authorizer autorest.Authorizer, subscri
 		for _, gallery := range result.Values() {
 			resourceGroupName := strings.Split(*gallery.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *gallery.ID,
 				Name:     *gallery.Name,
 				Location: *gallery.Location,
@@ -488,7 +551,14 @@ func ComputeGallery(ctx context.Context, authorizer autorest.Authorizer, subscri
 					ResourceGroup: resourceGroupName,
 					Gallery:       gallery,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -504,7 +574,7 @@ func ComputeGallery(ctx context.Context, authorizer autorest.Authorizer, subscri
 	return values, nil
 }
 
-func ComputeImage(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeImage(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewImagesClient(subscription)
 	client.Authorizer = authorizer
 
@@ -517,7 +587,7 @@ func ComputeImage(ctx context.Context, authorizer autorest.Authorizer, subscript
 	for {
 		for _, v := range result.Values() {
 			resourceGroup := strings.ToLower(strings.Split(*v.ID, "/")[4])
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: *v.Location,
@@ -525,7 +595,14 @@ func ComputeImage(ctx context.Context, authorizer autorest.Authorizer, subscript
 					Image:         v,
 					ResourceGroup: resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -541,7 +618,7 @@ func ComputeImage(ctx context.Context, authorizer autorest.Authorizer, subscript
 	return values, nil
 }
 
-func ComputeDiskReadOps(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeDiskReadOps(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewDisksClient(subscription)
 	client.Authorizer = authorizer
 
@@ -564,14 +641,21 @@ func ComputeDiskReadOps(ctx context.Context, authorizer autorest.Authorizer, sub
 				return nil, err
 			}
 			for _, metric := range metrics {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       fmt.Sprintf("%s_readops", *disk.ID),
 					Name:     fmt.Sprintf("%s readops", *disk.Name),
 					Location: *disk.Location,
 					Description: model.ComputeDiskReadOpsDescription{
 						MonitoringMetric: metric,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 		if !result.NotDone() {
@@ -586,7 +670,7 @@ func ComputeDiskReadOps(ctx context.Context, authorizer autorest.Authorizer, sub
 	return values, nil
 }
 
-func ComputeDiskReadOpsDaily(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeDiskReadOpsDaily(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewDisksClient(subscription)
 	client.Authorizer = authorizer
 
@@ -609,14 +693,21 @@ func ComputeDiskReadOpsDaily(ctx context.Context, authorizer autorest.Authorizer
 				return nil, err
 			}
 			for _, metric := range metrics {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       fmt.Sprintf("%s_readops_daily", *disk.ID),
 					Name:     fmt.Sprintf("%s readops-daily", *disk.Name),
 					Location: *disk.Location,
 					Description: model.ComputeDiskReadOpsDailyDescription{
 						MonitoringMetric: metric,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 		if !result.NotDone() {
@@ -631,7 +722,7 @@ func ComputeDiskReadOpsDaily(ctx context.Context, authorizer autorest.Authorizer
 	return values, nil
 }
 
-func ComputeDiskReadOpsHourly(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeDiskReadOpsHourly(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewDisksClient(subscription)
 	client.Authorizer = authorizer
 
@@ -651,14 +742,21 @@ func ComputeDiskReadOpsHourly(ctx context.Context, authorizer autorest.Authorize
 				return nil, err
 			}
 			for _, metric := range metrics {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       fmt.Sprintf("%s_readops_hourly", *disk.ID),
 					Name:     fmt.Sprintf("%s readops-hourly", *disk.Name),
 					Location: *disk.Location,
 					Description: model.ComputeDiskReadOpsHourlyDescription{
 						MonitoringMetric: metric,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 		if !result.NotDone() {
@@ -673,7 +771,7 @@ func ComputeDiskReadOpsHourly(ctx context.Context, authorizer autorest.Authorize
 	return values, nil
 }
 
-func ComputeDiskWriteOps(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeDiskWriteOps(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewDisksClient(subscription)
 	client.Authorizer = authorizer
 
@@ -696,14 +794,21 @@ func ComputeDiskWriteOps(ctx context.Context, authorizer autorest.Authorizer, su
 				return nil, err
 			}
 			for _, metric := range metrics {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       fmt.Sprintf("%s_writeops", *disk.ID),
 					Name:     fmt.Sprintf("%s writeops", *disk.Name),
 					Location: *disk.Location,
 					Description: model.ComputeDiskWriteOpsDescription{
 						MonitoringMetric: metric,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 		if !result.NotDone() {
@@ -718,7 +823,7 @@ func ComputeDiskWriteOps(ctx context.Context, authorizer autorest.Authorizer, su
 	return values, nil
 }
 
-func ComputeDiskWriteOpsDaily(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeDiskWriteOpsDaily(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewDisksClient(subscription)
 	client.Authorizer = authorizer
 
@@ -741,14 +846,21 @@ func ComputeDiskWriteOpsDaily(ctx context.Context, authorizer autorest.Authorize
 				return nil, err
 			}
 			for _, metric := range metrics {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       fmt.Sprintf("%s_writeops_daily", *disk.ID),
 					Name:     fmt.Sprintf("%s writeops-daily", *disk.Name),
 					Location: *disk.Location,
 					Description: model.ComputeDiskWriteOpsDailyDescription{
 						MonitoringMetric: metric,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 		if !result.NotDone() {
@@ -763,7 +875,7 @@ func ComputeDiskWriteOpsDaily(ctx context.Context, authorizer autorest.Authorize
 	return values, nil
 }
 
-func ComputeDiskWriteOpsHourly(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeDiskWriteOpsHourly(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewDisksClient(subscription)
 	client.Authorizer = authorizer
 
@@ -783,14 +895,21 @@ func ComputeDiskWriteOpsHourly(ctx context.Context, authorizer autorest.Authoriz
 				return nil, err
 			}
 			for _, metric := range metrics {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       fmt.Sprintf("%s_writeops_hourly", *disk.ID),
 					Name:     fmt.Sprintf("%s writeops-hourly", *disk.Name),
 					Location: *disk.Location,
 					Description: model.ComputeDiskWriteOpsHourlyDescription{
 						MonitoringMetric: metric,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 		if !result.NotDone() {
@@ -805,7 +924,7 @@ func ComputeDiskWriteOpsHourly(ctx context.Context, authorizer autorest.Authoriz
 	return values, nil
 }
 
-func ComputeResourceSKU(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeResourceSKU(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := skus.NewResourceSkusClient(subscription)
 	client.Authorizer = authorizer
 
@@ -817,14 +936,21 @@ func ComputeResourceSKU(ctx context.Context, authorizer autorest.Authorizer, sub
 	var values []Resource
 	for {
 		for _, resourceSku := range result.Values() {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       "azure:///subscriptions/" + subscription + "/locations/" + (*resourceSku.Locations)[0] + "/resourcetypes" + *resourceSku.ResourceType + "name/" + *resourceSku.Name,
 				Name:     *resourceSku.Name,
 				Location: (*resourceSku.Locations)[0],
 				Description: model.ComputeResourceSKUDescription{
 					ResourceSKU: resourceSku,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -837,7 +963,7 @@ func ComputeResourceSKU(ctx context.Context, authorizer autorest.Authorizer, sub
 	return values, nil
 }
 
-func ComputeVirtualMachineCpuUtilization(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeVirtualMachineCpuUtilization(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewVirtualMachinesClient(subscription)
 	client.Authorizer = authorizer
 
@@ -859,14 +985,21 @@ func ComputeVirtualMachineCpuUtilization(ctx context.Context, authorizer autores
 			}
 
 			for _, metric := range metrics {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       fmt.Sprintf("%s_cpu_utilization", *virtualMachine.ID),
 					Name:     fmt.Sprintf("%s cpu-utilization", *virtualMachine.Name),
 					Location: *virtualMachine.Location,
 					Description: model.ComputeVirtualMachineCpuUtilizationDescription{
 						MonitoringMetric: metric,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 		if !result.NotDone() {
@@ -880,7 +1013,7 @@ func ComputeVirtualMachineCpuUtilization(ctx context.Context, authorizer autores
 	return values, nil
 }
 
-func ComputeVirtualMachineCpuUtilizationDaily(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeVirtualMachineCpuUtilizationDaily(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewVirtualMachinesClient(subscription)
 	client.Authorizer = authorizer
 
@@ -902,14 +1035,21 @@ func ComputeVirtualMachineCpuUtilizationDaily(ctx context.Context, authorizer au
 			}
 
 			for _, metric := range metrics {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       fmt.Sprintf("%s_cpu_utilization_daily", *virtualMachine.ID),
 					Name:     fmt.Sprintf("%s cpu-utilization-daily", *virtualMachine.Name),
 					Location: *virtualMachine.Location,
 					Description: model.ComputeVirtualMachineCpuUtilizationDailyDescription{
 						MonitoringMetric: metric,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 		if !result.NotDone() {
@@ -923,7 +1063,7 @@ func ComputeVirtualMachineCpuUtilizationDaily(ctx context.Context, authorizer au
 	return values, nil
 }
 
-func ComputeVirtualMachineCpuUtilizationHourly(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ComputeVirtualMachineCpuUtilizationHourly(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := compute.NewVirtualMachinesClient(subscription)
 	client.Authorizer = authorizer
 
@@ -945,14 +1085,21 @@ func ComputeVirtualMachineCpuUtilizationHourly(ctx context.Context, authorizer a
 			}
 
 			for _, metric := range metrics {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       fmt.Sprintf("%s_cpu_utilization_hourly", *virtualMachine.ID),
 					Name:     fmt.Sprintf("%s cpu-utilization-hourly", *virtualMachine.Name),
 					Location: *virtualMachine.Location,
 					Description: model.ComputeVirtualMachineCpuUtilizationHourlyDescription{
 						MonitoringMetric: metric,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 		if !result.NotDone() {

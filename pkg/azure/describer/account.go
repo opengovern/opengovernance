@@ -11,7 +11,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func DataLakeAnalyticsAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func DataLakeAnalyticsAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := insights.NewDiagnosticSettingsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -44,20 +44,24 @@ func DataLakeAnalyticsAccount(ctx context.Context, authorizer autorest.Authorize
 			if err != nil {
 				return nil, err
 			}
-
-			values = append(
-				values,
-				Resource{
-					ID:       *account.ID,
-					Name:     *account.Name,
-					Location: *account.Location,
-					Description: model.DataLakeAnalyticsAccountDescription{
-						DataLakeAnalyticsAccount:   accountGetOp,
-						DiagnosticSettingsResource: accountListOp.Value,
-						ResourceGroup:              resourceGroup,
-					},
+			resource := Resource{
+				ID:       *account.ID,
+				Name:     *account.Name,
+				Location: *account.Location,
+				Description: model.DataLakeAnalyticsAccountDescription{
+					DataLakeAnalyticsAccount:   accountGetOp,
+					DiagnosticSettingsResource: accountListOp.Value,
+					ResourceGroup:              resourceGroup,
 				},
-			)
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		if !result.NotDone() {
 			break
@@ -70,7 +74,7 @@ func DataLakeAnalyticsAccount(ctx context.Context, authorizer autorest.Authorize
 	return values, nil
 }
 
-func DataLakeStore(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func DataLakeStore(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := insights.NewDiagnosticSettingsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -101,7 +105,7 @@ func DataLakeStore(ctx context.Context, authorizer autorest.Authorizer, subscrip
 			if err != nil {
 				return nil, err
 			}
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *account.ID,
 				Name:     *account.Name,
 				Location: *account.Location,
@@ -110,7 +114,14 @@ func DataLakeStore(ctx context.Context, authorizer autorest.Authorizer, subscrip
 					DiagnosticSettingsResource: accountListOp.Value,
 					ResourceGroup:              resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break

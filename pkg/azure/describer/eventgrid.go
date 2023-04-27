@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func EventGridDomainTopic(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func EventGridDomainTopic(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -33,12 +33,19 @@ func EventGridDomainTopic(ctx context.Context, authorizer autorest.Authorizer, s
 			}
 
 			for v := it.Value(); it.NotDone(); v = it.Value() {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:          *v.ID,
 					Name:        *v.Name,
 					Location:    "global",
 					Description: JSONAllFieldsMarshaller{Value: v},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 
 				err := it.NextWithContext(ctx)
 				if err != nil {
@@ -73,7 +80,7 @@ func eventGridDomain(ctx context.Context, authorizer autorest.Authorizer, subscr
 	return values, nil
 }
 
-func EventGridDomain(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func EventGridDomain(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	insightsClient := insights.NewDiagnosticSettingsClient(subscription)
 	insightsClient.Authorizer = authorizer
 
@@ -96,7 +103,7 @@ func EventGridDomain(ctx context.Context, authorizer autorest.Authorizer, subscr
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *domain.ID,
 				Name:     *domain.Name,
 				Location: *domain.Location,
@@ -105,7 +112,14 @@ func EventGridDomain(ctx context.Context, authorizer autorest.Authorizer, subscr
 					DiagnosticSettingsResources: eventgridListOp.Value,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -118,7 +132,7 @@ func EventGridDomain(ctx context.Context, authorizer autorest.Authorizer, subscr
 	return values, nil
 }
 
-func EventGridTopic(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func EventGridTopic(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	insightsClient := insights.NewDiagnosticSettingsClient(subscription)
 	insightsClient.Authorizer = authorizer
 
@@ -140,7 +154,7 @@ func EventGridTopic(ctx context.Context, authorizer autorest.Authorizer, subscri
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *topic.ID,
 				Name:     *topic.Name,
 				Location: *topic.Location,
@@ -149,7 +163,14 @@ func EventGridTopic(ctx context.Context, authorizer autorest.Authorizer, subscri
 					DiagnosticSettingsResources: eventgridListOp.Value,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break

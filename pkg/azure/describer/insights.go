@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func DiagnosticSetting(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func DiagnosticSetting(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	diagnosticSettingClient := insights.NewDiagnosticSettingsClient(subscription)
 	diagnosticSettingClient.Authorizer = authorizer
 	resourceURI := "/subscriptions/" + subscription
@@ -23,7 +23,7 @@ func DiagnosticSetting(ctx context.Context, authorizer autorest.Authorizer, subs
 	for _, diagnosticSetting := range *result.Value {
 		resourceGroup := strings.Split(*diagnosticSetting.ID, "/")[4]
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:       *diagnosticSetting.ID,
 			Name:     *diagnosticSetting.Name,
 			Location: "global",
@@ -31,11 +31,18 @@ func DiagnosticSetting(ctx context.Context, authorizer autorest.Authorizer, subs
 				DiagnosticSettingsResource: diagnosticSetting,
 				ResourceGroup:              resourceGroup,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 	return values, nil
 }
-func LogAlert(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func LogAlert(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	logAlertClient := insights.NewActivityLogAlertsClient(subscription)
 	logAlertClient.Authorizer = authorizer
 	result, err := logAlertClient.ListBySubscriptionID(ctx)
@@ -46,7 +53,7 @@ func LogAlert(ctx context.Context, authorizer autorest.Authorizer, subscription 
 	for _, logAlert := range *result.Value {
 		resourceGroup := strings.Split(*logAlert.ID, "/")[4]
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:       *logAlert.ID,
 			Name:     *logAlert.Name,
 			Location: *logAlert.Location,
@@ -54,12 +61,19 @@ func LogAlert(ctx context.Context, authorizer autorest.Authorizer, subscription 
 				ActivityLogAlertResource: logAlert,
 				ResourceGroup:            resourceGroup,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
-func LogProfile(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func LogProfile(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	logProfileClient := insights.NewLogProfilesClient(subscription)
 	logProfileClient.Authorizer = authorizer
 	result, err := logProfileClient.List(ctx)
@@ -73,7 +87,7 @@ func LogProfile(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 		if logProfile.Location != nil {
 			location = *logProfile.Location
 		}
-		values = append(values, Resource{
+		resource := Resource{
 			ID:       *logProfile.ID,
 			Name:     *logProfile.Name,
 			Location: location,
@@ -81,7 +95,14 @@ func LogProfile(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 				LogProfileResource: logProfile,
 				ResourceGroup:      resourceGroup,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil

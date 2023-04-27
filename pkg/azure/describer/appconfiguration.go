@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func AppConfiguration(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func AppConfiguration(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	configurationStoresClient := appconfiguration.NewConfigurationStoresClient(subscription)
 	configurationStoresClient.Authorizer = authorizer
 
@@ -31,8 +31,7 @@ func AppConfiguration(ctx context.Context, authorizer autorest.Authorizer, subsc
 			if err != nil {
 				return nil, err
 			}
-
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *config.ID,
 				Name:     *config.Name,
 				Location: *config.Location,
@@ -41,7 +40,14 @@ func AppConfiguration(ctx context.Context, authorizer autorest.Authorizer, subsc
 					DiagnosticSettingsResources: *op.Value,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
