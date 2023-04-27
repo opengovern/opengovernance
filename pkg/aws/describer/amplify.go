@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func AmplifyApp(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AmplifyApp(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	//describeCtx := GetDescribeContext(ctx)
 	client := amplify.NewFromConfig(cfg)
 
@@ -23,14 +23,23 @@ func AmplifyApp(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, item := range output.Apps {
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *item.Name,
 				ARN:  *item.AppArn,
 				ID:   *item.AppId,
 				Description: model.AmplifyAppDescription{
 					App: item,
 				},
-			})
+			}
+			if stream != nil {
+				m := *stream
+				err := m(resource)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		return output.NextToken, nil
 	})

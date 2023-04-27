@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func EMRCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EMRCluster(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := emr.NewFromConfig(cfg)
 	paginator := emr.NewListClustersPaginator(client, &emr.ListClustersInput{})
 
@@ -28,19 +28,26 @@ func EMRCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *out.Cluster.ClusterArn,
 				Name: *out.Cluster.Name,
 				Description: model.EMRClusterDescription{
 					Cluster: out.Cluster,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 	return values, nil
 }
 
-func EMRInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EMRInstance(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := emr.NewFromConfig(cfg)
 	clusterPaginator := emr.NewListClustersPaginator(client, &emr.ListClustersInput{})
@@ -65,14 +72,21 @@ func EMRInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 				for _, instance := range instancePage.Instances {
 					arn := fmt.Sprintf("arn:%s:emr:%s:%s:instance/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *instance.Id)
-					values = append(values, Resource{
+					resource := Resource{
 						ID:  *instance.Id,
 						ARN: arn,
 						Description: model.EMRInstanceDescription{
 							Instance:  instance,
 							ClusterID: *cluster.Id,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -80,7 +94,7 @@ func EMRInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func EMRInstanceFleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EMRInstanceFleet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := emr.NewFromConfig(cfg)
 	clusterPaginator := emr.NewListClustersPaginator(client, &emr.ListClustersInput{})
@@ -105,7 +119,7 @@ func EMRInstanceFleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 				for _, instanceFleet := range instancePage.InstanceFleets {
 					arn := fmt.Sprintf("arn:%s:emr:%s:%s:instance-fleet/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *instanceFleet.Id)
-					values = append(values, Resource{
+					resource := Resource{
 						ID:   *instanceFleet.Id,
 						Name: *instanceFleet.Name,
 						ARN:  arn,
@@ -113,7 +127,14 @@ func EMRInstanceFleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 							InstanceFleet: instanceFleet,
 							ClusterID:     *cluster.Id,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -121,7 +142,7 @@ func EMRInstanceFleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func EMRInstanceGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EMRInstanceGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := emr.NewFromConfig(cfg)
 	clusterPaginator := emr.NewListClustersPaginator(client, &emr.ListClustersInput{})
@@ -146,7 +167,7 @@ func EMRInstanceGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 				for _, instanceGroup := range instancePage.InstanceGroups {
 					arn := fmt.Sprintf("arn:%s:emr:%s:%s:instance-group/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *instanceGroup.Id)
-					values = append(values, Resource{
+					resource := Resource{
 						ID:   *instanceGroup.Id,
 						Name: *instanceGroup.Name,
 						ARN:  arn,
@@ -154,7 +175,14 @@ func EMRInstanceGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 							InstanceGroup: instanceGroup,
 							ClusterID:     *cluster.Id,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}

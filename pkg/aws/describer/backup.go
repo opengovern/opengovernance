@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func BackupPlan(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func BackupPlan(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
 	paginator := backup.NewListBackupPlansPaginator(client, &backup.ListBackupPlansInput{})
 
@@ -20,20 +20,27 @@ func BackupPlan(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.BackupPlansList {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.BackupPlanArn,
 				Name: *v.BackupPlanName,
 				Description: model.BackupPlanDescription{
 					BackupPlan: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func BackupRecoveryPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func BackupRecoveryPoint(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
 	paginator := backup.NewListBackupVaultsPaginator(client, &backup.ListBackupVaultsInput{})
 
@@ -65,13 +72,20 @@ func BackupRecoveryPoint(ctx context.Context, cfg aws.Config) ([]Resource, error
 						return nil, err
 					}
 
-					values = append(values, Resource{
+					resource := Resource{
 						ARN:  *recoveryPoint.RecoveryPointArn,
 						Name: nameFromArn(*out.RecoveryPointArn),
 						Description: model.BackupRecoveryPointDescription{
 							RecoveryPoint: out,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -80,7 +94,7 @@ func BackupRecoveryPoint(ctx context.Context, cfg aws.Config) ([]Resource, error
 	return values, nil
 }
 
-func BackupProtectedResource(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func BackupProtectedResource(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
 	paginator := backup.NewListProtectedResourcesPaginator(client, &backup.ListProtectedResourcesInput{})
 
@@ -92,23 +106,30 @@ func BackupProtectedResource(ctx context.Context, cfg aws.Config) ([]Resource, e
 		}
 
 		for _, resource := range page.Results {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *resource.ResourceArn,
 				Name: nameFromArn(*resource.ResourceArn),
 				Description: model.BackupProtectedResourceDescription{
 					ProtectedResource: resource,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func BackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func BackupSelection(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
-	plans, err := BackupPlan(ctx, cfg)
+	plans, err := BackupPlan(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +158,7 @@ func BackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				}
 
 				name := "arn:" + describeCtx.Partition + ":backup:" + describeCtx.Region + ":" + describeCtx.AccountID + ":backup-plan:" + *v.BackupPlanId + "/selection/" + *v.SelectionId
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:  name,
 					Name: *v.SelectionName,
 					Description: model.BackupSelectionDescription{
@@ -145,7 +166,14 @@ func BackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 						ListOfTags:      out.BackupSelection.ListOfTags,
 						Resources:       out.BackupSelection.Resources,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -153,7 +181,7 @@ func BackupSelection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func BackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func BackupVault(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
 	paginator := backup.NewListBackupVaultsPaginator(client, &backup.ListBackupVaultsInput{})
 
@@ -189,7 +217,7 @@ func BackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.BackupVaultArn,
 				Name: *v.BackupVaultName,
 				Description: model.BackupVaultDescription{
@@ -198,14 +226,21 @@ func BackupVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					BackupVaultEvents: notification.BackupVaultEvents,
 					SNSTopicArn:       notification.SNSTopicArn,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func BackupFramework(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func BackupFramework(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
 	paginator := backup.NewListFrameworksPaginator(client, &backup.ListFrameworksInput{})
 
@@ -228,21 +263,28 @@ func BackupFramework(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				ResourceArn: v.FrameworkArn,
 			})
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.FrameworkArn,
 				Name: *v.FrameworkName,
 				Description: model.BackupFrameworkDescription{
 					Framework: *framework,
 					Tags:      tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func BackupLegalHold(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func BackupLegalHold(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := backup.NewFromConfig(cfg)
 	paginator := backup.NewListLegalHoldsPaginator(client, &backup.ListLegalHoldsInput{})
 
@@ -261,14 +303,21 @@ func BackupLegalHold(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *v.Title,
 				ARN:  *v.LegalHoldArn,
 				ID:   *v.LegalHoldId,
 				Description: model.BackupLegalHoldDescription{
 					LegalHold: *legalHold,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

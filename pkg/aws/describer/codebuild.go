@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func CodeBuildProject(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CodeBuildProject(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := codebuild.NewFromConfig(cfg)
 	paginator := codebuild.NewListProjectsPaginator(client, &codebuild.ListProjectsInput{})
 
@@ -31,20 +31,27 @@ func CodeBuildProject(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, project := range projects.Projects {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *project.Arn,
 				Name: *project.Name,
 				Description: model.CodeBuildProjectDescription{
 					Project: project,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func CodeBuildSourceCredential(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CodeBuildSourceCredential(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := codebuild.NewFromConfig(cfg)
 	out, err := client.ListSourceCredentials(ctx, &codebuild.ListSourceCredentialsInput{})
 	if err != nil {
@@ -53,13 +60,20 @@ func CodeBuildSourceCredential(ctx context.Context, cfg aws.Config) ([]Resource,
 
 	var values []Resource
 	for _, item := range out.SourceCredentialsInfos {
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:  *item.Arn,
 			Name: nameFromArn(*item.Arn),
 			Description: model.CodeBuildSourceCredentialDescription{
 				SourceCredentialsInfo: item,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil

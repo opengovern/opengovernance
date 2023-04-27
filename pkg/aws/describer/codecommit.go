@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func CodeCommitRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CodeCommitRepository(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := codecommit.NewFromConfig(cfg)
 	paginator := codecommit.NewListRepositoriesPaginator(client, &codecommit.ListRepositoriesInput{})
 
@@ -48,14 +48,21 @@ func CodeCommitRepository(ctx context.Context, cfg aws.Config) ([]Resource, erro
 				tags = &codecommit.ListTagsForResourceOutput{}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.Arn,
 				Name: *v.RepositoryName,
 				Description: model.CodeCommitRepositoryDescription{
 					Repository: v,
 					Tags:       tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func CodePipelinePipeline(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CodePipelinePipeline(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := codepipeline.NewFromConfig(cfg)
 	paginator := codepipeline.NewListPipelinesPaginator(client, &codepipeline.ListPipelinesInput{})
 
@@ -43,7 +43,7 @@ func CodePipelinePipeline(ctx context.Context, cfg aws.Config) ([]Resource, erro
 				tags = &codepipeline.ListTagsForResourceOutput{}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *pipeline.Metadata.PipelineArn,
 				Name: *pipeline.Pipeline.Name,
 				Description: model.CodePipelinePipelineDescription{
@@ -51,7 +51,14 @@ func CodePipelinePipeline(ctx context.Context, cfg aws.Config) ([]Resource, erro
 					Metadata: *pipeline.Metadata,
 					Tags:     tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

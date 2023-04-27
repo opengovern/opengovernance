@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func ApplicationAutoScalingTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ApplicationAutoScalingTarget(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := applicationautoscaling.NewFromConfig(cfg)
 
 	describeCtx := GetDescribeContext(ctx)
@@ -29,13 +29,20 @@ func ApplicationAutoScalingTarget(ctx context.Context, cfg aws.Config) ([]Resour
 			for _, item := range page.ScalableTargets {
 				arn := "arn:" + describeCtx.Partition + ":application-autoscaling:" + describeCtx.Region + ":" + describeCtx.AccountID + ":service-namespace:" + string(item.ServiceNamespace) + "/target/" + *item.ResourceId
 
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:  arn,
 					Name: *item.ResourceId,
 					Description: model.ApplicationAutoScalingTargetDescription{
 						ScalableTarget: item,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}

@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func AMPWorkspace(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AMPWorkspace(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := amp.NewFromConfig(cfg)
 	paginator := amp.NewListWorkspacesPaginator(client, &amp.ListWorkspacesInput{})
 
@@ -20,13 +20,22 @@ func AMPWorkspace(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Workspaces {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.Arn,
 				Name: *v.WorkspaceId,
 				Description: model.AMPWorkspaceDescription{
 					Workspace: v,
 				},
-			})
+			}
+			if stream != nil {
+				m := *stream
+				err := m(resource)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

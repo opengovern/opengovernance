@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func AuditManagerAssessment(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AuditManagerAssessment(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := auditmanager.NewFromConfig(cfg)
 	paginator := auditmanager.NewListAssessmentsPaginator(client, &auditmanager.ListAssessmentsInput{})
 
@@ -31,21 +31,28 @@ func AuditManagerAssessment(ctx context.Context, cfg aws.Config) ([]Resource, er
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *assessment.Assessment.Arn,
 				Name: *assessment.Assessment.Metadata.Name,
 				ID:   *assessment.Assessment.Metadata.Id,
 				Description: model.AuditManagerAssessmentDescription{
 					Assessment: *assessment.Assessment,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func AuditManagerControl(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AuditManagerControl(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := auditmanager.NewFromConfig(cfg)
 	paginator := auditmanager.NewListControlsPaginator(client, &auditmanager.ListControlsInput{})
 
@@ -66,14 +73,21 @@ func AuditManagerControl(ctx context.Context, cfg aws.Config) ([]Resource, error
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *control.Control.Arn,
 				Name: *control.Control.Name,
 				ID:   *control.Control.Id,
 				Description: model.AuditManagerControlDescription{
 					Control: *control.Control,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -103,7 +117,7 @@ func GetAuditManagerControl(ctx context.Context, cfg aws.Config, fields map[stri
 	return values, nil
 }
 
-func AuditManagerEvidence(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AuditManagerEvidence(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := auditmanager.NewFromConfig(cfg)
 	paginator := auditmanager.NewListAssessmentsPaginator(client, &auditmanager.ListAssessmentsInput{})
 
@@ -140,7 +154,7 @@ func AuditManagerEvidence(ctx context.Context, cfg aws.Config) ([]Resource, erro
 
 						for _, evidence := range evidencePage.Evidence {
 							arn := fmt.Sprintf("arn:%s:auditmanager:%s:%s:evidence/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *evidence.Id)
-							values = append(values, Resource{
+							resource := Resource{
 								ARN: arn,
 								ID:  *evidence.Id,
 								Description: model.AuditManagerEvidenceDescription{
@@ -148,7 +162,14 @@ func AuditManagerEvidence(ctx context.Context, cfg aws.Config) ([]Resource, erro
 									ControlSetID: *evidenceFolder.ControlSetId,
 									AssessmentID: *assessmentMetadataItem.Id,
 								},
-							})
+							}
+							if stream != nil {
+								if err := (*stream)(resource); err != nil {
+									return nil, err
+								}
+							} else {
+								values = append(values, resource)
+							}
 						}
 					}
 				}
@@ -159,7 +180,7 @@ func AuditManagerEvidence(ctx context.Context, cfg aws.Config) ([]Resource, erro
 	return values, nil
 }
 
-func AuditManagerEvidenceFolder(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AuditManagerEvidenceFolder(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := auditmanager.NewFromConfig(cfg)
 	paginator := auditmanager.NewListAssessmentsPaginator(client, &auditmanager.ListAssessmentsInput{})
 
@@ -185,7 +206,7 @@ func AuditManagerEvidenceFolder(ctx context.Context, cfg aws.Config) ([]Resource
 
 				for _, evidenceFolder := range evidenceFolderPage.EvidenceFolders {
 					arn := fmt.Sprintf("arn:%s:auditmanager:%s:%s:evidence-folder/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *evidenceFolder.Id)
-					values = append(values, Resource{
+					resource := Resource{
 						ARN:  arn,
 						Name: *evidenceFolder.Name,
 						ID:   *evidenceFolder.Id,
@@ -193,7 +214,14 @@ func AuditManagerEvidenceFolder(ctx context.Context, cfg aws.Config) ([]Resource
 							EvidenceFolder: evidenceFolder,
 							AssessmentID:   *assessmentMetadataItem.Id,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -202,7 +230,7 @@ func AuditManagerEvidenceFolder(ctx context.Context, cfg aws.Config) ([]Resource
 	return values, nil
 }
 
-func AuditManagerFramework(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AuditManagerFramework(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := auditmanager.NewFromConfig(cfg)
 	paginator := auditmanager.NewListAssessmentFrameworksPaginator(client, &auditmanager.ListAssessmentFrameworksInput{})
 
@@ -223,14 +251,21 @@ func AuditManagerFramework(ctx context.Context, cfg aws.Config) ([]Resource, err
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *framework.Framework.Arn,
 				Name: *framework.Framework.Name,
 				ID:   *framework.Framework.Id,
 				Description: model.AuditManagerFrameworkDescription{
 					Framework: *framework.Framework,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

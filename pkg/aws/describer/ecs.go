@@ -12,7 +12,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func ECSCapacityProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ECSCapacityProvider(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ecs.NewFromConfig(cfg)
 
 	var values []Resource
@@ -26,11 +26,18 @@ func ECSCapacityProvider(ctx context.Context, cfg aws.Config) ([]Resource, error
 		}
 
 		for _, v := range output.CapacityProviders {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.CapacityProviderArn,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		return output.NextToken, nil
@@ -42,8 +49,8 @@ func ECSCapacityProvider(ctx context.Context, cfg aws.Config) ([]Resource, error
 	return values, nil
 }
 
-func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	clusters, err := listEcsClusters(ctx, cfg)
+func ECSCluster(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	clusters, err := listEcsClusters(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -69,13 +76,20 @@ func ECSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range output.Clusters {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.ClusterArn,
 				Name: *v.ClusterName,
 				Description: model.ECSClusterDescription{
 					Cluster: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -111,8 +125,8 @@ func GetECSCluster(ctx context.Context, cfg aws.Config, fields map[string]string
 	return values, nil
 }
 
-func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	clusters, err := listEcsClusters(ctx, cfg)
+func ECSService(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	clusters, err := listEcsClusters(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -147,13 +161,20 @@ func ECSService(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			for _, v := range output.Services {
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:  *v.ServiceArn,
 					Name: *v.ServiceName,
 					Description: model.ECSServiceDescription{
 						Service: v,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -191,7 +212,7 @@ func GetECSService(ctx context.Context, cfg aws.Config, fields map[string]string
 	return values, nil
 }
 
-func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ECSTaskDefinition(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ecs.NewFromConfig(cfg)
 	paginator := ecs.NewListTaskDefinitionsPaginator(client, &ecs.ListTaskDefinitionsInput{})
 
@@ -217,14 +238,21 @@ func ECSTaskDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 			splitArn := strings.Split(arn, ":")
 			name := splitArn[len(splitArn)-1]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: name,
 				Description: model.ECSTaskDefinitionDescription{
 					TaskDefinition: output.TaskDefinition,
 					Tags:           output.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -262,8 +290,8 @@ func GetECSTaskDefinition(ctx context.Context, cfg aws.Config, fields map[string
 	return values, nil
 }
 
-func ECSTaskSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	clusters, err := listEcsClusters(ctx, cfg)
+func ECSTaskSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	clusters, err := listEcsClusters(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -301,13 +329,20 @@ func ECSTaskSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					return nil, err
 				}
 				for _, v := range service.TaskSets {
-					values = append(values, Resource{
+					resource := Resource{
 						ARN:  *v.TaskSetArn,
 						Name: *v.Id,
 						Description: model.ECSTaskSetDescription{
 							TaskSet: v,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -336,7 +371,7 @@ func listECsServices(ctx context.Context, cfg aws.Config, cluster string) ([]str
 	return services, nil
 }
 
-func listEcsClusters(ctx context.Context, cfg aws.Config) ([]string, error) {
+func listEcsClusters(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]string, error) {
 	client := ecs.NewFromConfig(cfg)
 	paginator := ecs.NewListClustersPaginator(client, &ecs.ListClustersInput{})
 
@@ -353,8 +388,8 @@ func listEcsClusters(ctx context.Context, cfg aws.Config) ([]string, error) {
 	return clusters, nil
 }
 
-func ECSContainerInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	clusters, err := listEcsClusters(ctx, cfg)
+func ECSContainerInstance(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	clusters, err := listEcsClusters(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -387,13 +422,20 @@ func ECSContainerInstance(ctx context.Context, cfg aws.Config) ([]Resource, erro
 			}
 
 			for _, v := range output.ContainerInstances {
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:  *v.ContainerInstanceArn,
 					Name: *v.ContainerInstanceArn,
 					Description: model.ECSContainerInstanceDescription{
 						ContainerInstance: v,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -401,8 +443,8 @@ func ECSContainerInstance(ctx context.Context, cfg aws.Config) ([]Resource, erro
 	return values, nil
 }
 
-func ECSTask(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	clusters, err := listEcsClusters(ctx, cfg)
+func ECSTask(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	clusters, err := listEcsClusters(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -467,11 +509,18 @@ func ECSTask(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					if taskProtection, ok := taskProtectionMap[*v.TaskArn]; ok {
 						description.TaskProtection = &taskProtection
 					}
-					values = append(values, Resource{
+					resource := Resource{
 						ARN:         *v.TaskArn,
 						Name:        *v.TaskArn,
 						Description: description,
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}

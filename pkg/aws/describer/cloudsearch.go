@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func CloudSearchDomain(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudSearchDomain(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudsearch.NewFromConfig(cfg)
 
 	var values []Resource
@@ -31,14 +31,21 @@ func CloudSearchDomain(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	}
 
 	for _, domain := range domains.DomainStatusList {
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:  *domain.ARN,
 			Name: *domain.DomainName,
 			ID:   *domain.DomainId,
 			Description: model.CloudSearchDomainDescription{
 				DomainStatus: domain,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 	return values, nil
 }

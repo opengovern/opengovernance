@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func DRSSourceServer(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func DRSSourceServer(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := drs.NewFromConfig(cfg)
 	paginator := drs.NewDescribeSourceServersPaginator(client, &drs.DescribeSourceServersInput{
 		MaxResults: 100,
@@ -27,20 +27,27 @@ func DRSSourceServer(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Items {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.Arn,
 				Name: *v.SourceServerID,
 				Description: model.DRSSourceServerDescription{
 					SourceServer: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func DRSRecoveryInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func DRSRecoveryInstance(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := drs.NewFromConfig(cfg)
 	paginator := drs.NewDescribeRecoveryInstancesPaginator(client, &drs.DescribeRecoveryInstancesInput{
 		MaxResults: 100,
@@ -59,20 +66,27 @@ func DRSRecoveryInstance(ctx context.Context, cfg aws.Config) ([]Resource, error
 		}
 
 		for _, v := range page.Items {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.Arn,
 				Name: *v.RecoveryInstanceID,
 				Description: model.DRSRecoveryInstanceDescription{
 					RecoveryInstance: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func DRSJob(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func DRSJob(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := drs.NewFromConfig(cfg)
 	paginator := drs.NewDescribeJobsPaginator(client, &drs.DescribeJobsInput{
 		MaxResults: 100,
@@ -91,20 +105,27 @@ func DRSJob(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Items {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN: *v.Arn,
 				ID:  *v.JobID,
 				Description: model.DRSJobDescription{
 					Job: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func DRSRecoverySnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func DRSRecoverySnapshot(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := drs.NewFromConfig(cfg)
 	paginator := drs.NewDescribeSourceServersPaginator(client, &drs.DescribeSourceServersInput{
 		MaxResults: 100,
@@ -137,12 +158,19 @@ func DRSRecoverySnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error
 				}
 
 				for _, recoverySnapshot := range recoverySnapshotPage.Items {
-					values = append(values, Resource{
+					resource := Resource{
 						ID: *recoverySnapshot.SnapshotID,
 						Description: model.DRSRecoverySnapshotDescription{
 							RecoverySnapshot: recoverySnapshot,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}

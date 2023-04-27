@@ -34,7 +34,7 @@ func GetAccessAnalyzerAnalyzer(ctx context.Context, cfg aws.Config, fields map[s
 	}}, nil
 }
 
-func AccessAnalyzerAnalyzer(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AccessAnalyzerAnalyzer(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := accessanalyzer.NewFromConfig(cfg)
 	paginator := accessanalyzer.NewListAnalyzersPaginator(client, &accessanalyzer.ListAnalyzersInput{})
 
@@ -50,14 +50,23 @@ func AccessAnalyzerAnalyzer(ctx context.Context, cfg aws.Config) ([]Resource, er
 			if err != nil {
 				return nil, err
 			}
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.Arn,
 				Name: *v.Name,
 				Description: model.AccessAnalyzerAnalyzerDescription{
 					Analyzer: v,
 					Findings: findings,
 				},
-			})
+			}
+			if stream != nil {
+				m := *stream
+				err := m(resource)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

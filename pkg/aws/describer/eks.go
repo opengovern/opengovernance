@@ -33,7 +33,7 @@ type EKSIdentityProviderConfigDescription struct {
 	IdentityProviderConfig types.OidcIdentityProviderConfig
 }
 
-func EKSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EKSCluster(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	clusters, err := listEksClusters(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -50,19 +50,26 @@ func EKSCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			return nil, err
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:  *output.Cluster.Arn,
 			Name: *output.Cluster.Name,
 			Description: model.EKSClusterDescription{
 				Cluster: *output.Cluster,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func EKSAddon(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EKSAddon(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	clusters, err := listEksClusters(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -93,20 +100,27 @@ func EKSAddon(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *output.Addon.AddonArn,
 				Name: *output.Addon.AddonName,
 				Description: model.EKSAddonDescription{
 					Addon: *output.Addon,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func EKSFargateProfile(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EKSFargateProfile(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	clusters, err := listEksClusters(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -137,20 +151,27 @@ func EKSFargateProfile(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *output.FargateProfile.FargateProfileArn,
 				Name: *output.FargateProfile.FargateProfileName,
 				Description: model.EKSFargateProfileDescription{
 					FargateProfile: *output.FargateProfile,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func EKSNodegroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EKSNodegroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	clusters, err := listEksClusters(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -182,20 +203,27 @@ func EKSNodegroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *output.Nodegroup.NodegroupArn,
 				Name: *output.Nodegroup.NodegroupName,
 				Description: model.EKSNodegroupDescription{
 					Nodegroup: *output.Nodegroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func EKSIdentityProviderConfig(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EKSIdentityProviderConfig(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	clusters, err := listEksClusters(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -225,7 +253,7 @@ func EKSIdentityProviderConfig(ctx context.Context, cfg aws.Config) ([]Resource,
 					return nil, err
 				}
 
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:  *output.IdentityProviderConfig.Oidc.IdentityProviderConfigArn,
 					Name: *config.Name,
 					Description: EKSIdentityProviderConfigDescription{
@@ -233,7 +261,14 @@ func EKSIdentityProviderConfig(ctx context.Context, cfg aws.Config) ([]Resource,
 						ConfigType:             *config.Type,
 						IdentityProviderConfig: *output.IdentityProviderConfig.Oidc,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 
 			}
 		}
@@ -242,7 +277,7 @@ func EKSIdentityProviderConfig(ctx context.Context, cfg aws.Config) ([]Resource,
 	return values, nil
 }
 
-func EKSAddonVersion(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EKSAddonVersion(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := eks.NewFromConfig(cfg)
 	paginator := eks.NewDescribeAddonVersionsPaginator(client, &eks.DescribeAddonVersionsInput{})
@@ -266,7 +301,7 @@ func EKSAddonVersion(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					return nil, err
 				}
 
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:  arn,
 					Name: *version.AddonVersion,
 					Description: model.EKSAddonVersionDescription{
@@ -275,7 +310,14 @@ func EKSAddonVersion(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 						AddonName:          *addon.AddonName,
 						AddonType:          *addon.Type,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}

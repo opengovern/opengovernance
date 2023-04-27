@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func CloudControlResource(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudControlResource(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudcontrol.NewFromConfig(cfg)
 	paginator := cloudcontrol.NewListResourcesPaginator(client, &cloudcontrol.ListResourcesInput{})
 
@@ -20,12 +20,19 @@ func CloudControlResource(ctx context.Context, cfg aws.Config) ([]Resource, erro
 		}
 
 		for _, v := range page.ResourceDescriptions {
-			values = append(values, Resource{
+			resource := Resource{
 				ID: *v.Identifier,
 				Description: model.CloudControlResourceDescription{
 					Resource: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

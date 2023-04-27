@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func CloudFrontDistribution(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudFrontDistribution(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudfront.NewFromConfig(cfg)
 	paginator := cloudfront.NewListDistributionsPaginator(client, &cloudfront.ListDistributionsInput{})
 
@@ -35,7 +35,7 @@ func CloudFrontDistribution(ctx context.Context, cfg aws.Config) ([]Resource, er
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *item.ARN,
 				Name: *item.Id,
 				Description: model.CloudFrontDistributionDescription{
@@ -43,7 +43,14 @@ func CloudFrontDistribution(ctx context.Context, cfg aws.Config) ([]Resource, er
 					ETag:         distribution.ETag,
 					Tags:         tags.Tags.Items,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -87,7 +94,7 @@ func GetCloudFrontDistribution(ctx context.Context, cfg aws.Config, id string) (
 	return values, nil
 }
 
-func CloudFrontOriginAccessControl(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudFrontOriginAccessControl(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := cloudfront.NewFromConfig(cfg)
 
@@ -110,14 +117,22 @@ func CloudFrontOriginAccessControl(ctx context.Context, cfg aws.Config) ([]Resou
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *v.Id,
 				Description: model.CloudFrontOriginAccessControlDescription{
 					OriginAccessControl: v,
 					Tags:                tags.Tags.Items,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.OriginAccessControlList.NextMarker, nil
 	})
@@ -128,7 +143,7 @@ func CloudFrontOriginAccessControl(ctx context.Context, cfg aws.Config) ([]Resou
 	return values, nil
 }
 
-func CloudFrontCachePolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudFrontCachePolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := cloudfront.NewFromConfig(cfg)
 
@@ -152,13 +167,21 @@ func CloudFrontCachePolicy(ctx context.Context, cfg aws.Config) ([]Resource, err
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN: arn,
 				ID:  *v.CachePolicy.Id,
 				Description: model.CloudFrontCachePolicyDescription{
 					CachePolicy: *cachePolicy,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.CachePolicyList.NextMarker, nil
 	})
@@ -169,7 +192,7 @@ func CloudFrontCachePolicy(ctx context.Context, cfg aws.Config) ([]Resource, err
 	return values, nil
 }
 
-func CloudFrontFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudFrontFunction(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	//describeCtx := GetDescribeContext(ctx)
 	client := cloudfront.NewFromConfig(cfg)
 
@@ -192,13 +215,21 @@ func CloudFrontFunction(ctx context.Context, cfg aws.Config) ([]Resource, error)
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *function.FunctionSummary.FunctionMetadata.FunctionARN,
 				Name: *function.FunctionSummary.Name,
 				Description: model.CloudFrontFunctionDescription{
 					Function: *function,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.FunctionList.NextMarker, nil
 	})
@@ -209,7 +240,7 @@ func CloudFrontFunction(ctx context.Context, cfg aws.Config) ([]Resource, error)
 	return values, nil
 }
 
-func CloudFrontOriginAccessIdentity(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudFrontOriginAccessIdentity(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := cloudfront.NewFromConfig(cfg)
 	var values []Resource
@@ -230,13 +261,20 @@ func CloudFrontOriginAccessIdentity(ctx context.Context, cfg aws.Config) ([]Reso
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *item.Id,
 				Description: model.CloudFrontOriginAccessIdentityDescription{
 					OriginAccessIdentity: *originAccessIdentity,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -276,7 +314,7 @@ func GetCloudFrontOriginAccessIdentity(ctx context.Context, cfg aws.Config, id s
 	return values, nil
 }
 
-func CloudFrontOriginRequestPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudFrontOriginRequestPolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := cloudfront.NewFromConfig(cfg)
 	var values []Resource
@@ -299,13 +337,21 @@ func CloudFrontOriginRequestPolicy(ctx context.Context, cfg aws.Config) ([]Resou
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN: arn,
 				ID:  *policy.OriginRequestPolicy.Id,
 				Description: model.CloudFrontOriginRequestPolicyDescription{
 					OriginRequestPolicy: *policy,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.OriginRequestPolicyList.NextMarker, nil
 	})
@@ -316,7 +362,7 @@ func CloudFrontOriginRequestPolicy(ctx context.Context, cfg aws.Config) ([]Resou
 	return values, nil
 }
 
-func CloudFrontResponseHeadersPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudFrontResponseHeadersPolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := cloudfront.NewFromConfig(cfg)
 	var values []Resource
@@ -339,13 +385,21 @@ func CloudFrontResponseHeadersPolicy(ctx context.Context, cfg aws.Config) ([]Res
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN: arn,
 				ID:  *policy.ResponseHeadersPolicy.Id,
 				Description: model.CloudFrontResponseHeadersPolicyDescription{
 					ResponseHeadersPolicy: *policy,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.ResponseHeadersPolicyList.NextMarker, nil
 	})

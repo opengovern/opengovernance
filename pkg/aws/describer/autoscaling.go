@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func AutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := autoscaling.NewFromConfig(cfg)
 	paginator := autoscaling.NewDescribeAutoScalingGroupsPaginator(client, &autoscaling.DescribeAutoScalingGroupsInput{})
 
@@ -31,11 +31,18 @@ func AutoScalingAutoScalingGroup(ctx context.Context, cfg aws.Config) ([]Resourc
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.AutoScalingGroupARN,
 				Name:        *v.AutoScalingGroupName,
 				Description: desc,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -95,7 +102,7 @@ func getAutoScalingPolicies(ctx context.Context, cfg aws.Config, asgName *string
 	return values, nil
 }
 
-func AutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := autoscaling.NewFromConfig(cfg)
 	paginator := autoscaling.NewDescribeLaunchConfigurationsPaginator(client, &autoscaling.DescribeLaunchConfigurationsInput{})
 
@@ -107,13 +114,20 @@ func AutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config) ([]Reso
 		}
 
 		for _, v := range page.LaunchConfigurations {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.LaunchConfigurationARN,
 				Name: *v.LaunchConfigurationName,
 				Description: model.AutoScalingLaunchConfigurationDescription{
 					LaunchConfiguration: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -144,8 +158,8 @@ func GetAutoScalingLaunchConfiguration(ctx context.Context, cfg aws.Config, fiel
 	return values, nil
 }
 
-func AutoScalingLifecycleHook(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	groups, err := AutoScalingAutoScalingGroup(ctx, cfg)
+func AutoScalingLifecycleHook(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	groups, err := AutoScalingAutoScalingGroup(ctx, cfg, nil)
 	if groups != nil {
 		return nil, err
 	}
@@ -163,18 +177,25 @@ func AutoScalingLifecycleHook(ctx context.Context, cfg aws.Config) ([]Resource, 
 		}
 
 		for _, v := range output.LifecycleHooks {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          CompositeID(*v.AutoScalingGroupName, *v.LifecycleHookName),
 				Name:        *v.AutoScalingGroupName,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func AutoScalingScalingPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AutoScalingScalingPolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := autoscaling.NewFromConfig(cfg)
 	paginator := autoscaling.NewDescribePoliciesPaginator(client, &autoscaling.DescribePoliciesInput{})
 
@@ -186,18 +207,25 @@ func AutoScalingScalingPolicy(ctx context.Context, cfg aws.Config) ([]Resource, 
 		}
 
 		for _, v := range page.ScalingPolicies {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.PolicyARN,
 				Name:        *v.PolicyName,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func AutoScalingScheduledAction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AutoScalingScheduledAction(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := autoscaling.NewFromConfig(cfg)
 	paginator := autoscaling.NewDescribeScheduledActionsPaginator(client, &autoscaling.DescribeScheduledActionsInput{})
 
@@ -209,19 +237,26 @@ func AutoScalingScheduledAction(ctx context.Context, cfg aws.Config) ([]Resource
 		}
 
 		for _, v := range page.ScheduledUpdateGroupActions {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.ScheduledActionARN,
 				Name:        *v.ScheduledActionName,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func AutoScalingWarmPool(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	groups, err := AutoScalingAutoScalingGroup(ctx, cfg)
+func AutoScalingWarmPool(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	groups, err := AutoScalingAutoScalingGroup(ctx, cfg, nil)
 	if groups != nil {
 		return nil, err
 	}
@@ -242,11 +277,19 @@ func AutoScalingWarmPool(ctx context.Context, cfg aws.Config) ([]Resource, error
 			}
 
 			for _, v := range output.Instances {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:          CompositeID(*group.AutoScalingGroupName, *v.InstanceId), // TODO
 					Name:        *v.LaunchConfigurationName,
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
+
 			}
 
 			return output.NextToken, nil

@@ -15,7 +15,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ECRPublicRepository(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	// Only supported in US-EAST-1
 	if !strings.EqualFold(cfg.Region, "us-east-1") {
 		return []Resource{}, nil
@@ -69,7 +69,7 @@ func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]Resource, error
 				}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.RepositoryArn,
 				Name: *v.RepositoryName,
 				Description: model.ECRPublicRepositoryDescription{
@@ -78,14 +78,21 @@ func ECRPublicRepository(ctx context.Context, cfg aws.Config) ([]Resource, error
 					Policy:           policyOutput,
 					Tags:             tagsOutput.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func ECRPublicRegistry(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ECRPublicRegistry(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	// Only supported in US-EAST-1
 	if !strings.EqualFold(cfg.Region, "us-east-1") {
 		return []Resource{}, nil
@@ -108,21 +115,28 @@ func ECRPublicRegistry(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.RegistryArn,
 				Name: *v.RegistryId,
 				Description: model.ECRPublicRegistryDescription{
 					PublicRegistry: v,
 					Tags:           tagsOutput.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func ECRRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ECRRepository(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ecr.NewFromConfig(cfg)
 	paginator := ecr.NewDescribeRepositoriesPaginator(client, &ecr.DescribeRepositoriesInput{})
 
@@ -181,7 +195,7 @@ func ECRRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.RepositoryArn,
 				Name: *v.RepositoryName,
 				Description: model.ECRRepositoryDescription{
@@ -191,14 +205,21 @@ func ECRRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					Policy:          policyOutput,
 					Tags:            tagsOutput.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func ECRRegistryPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ECRRegistryPolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ecr.NewFromConfig(cfg)
 	output, err := client.GetRegistryPolicy(ctx, &ecr.GetRegistryPolicyInput{})
 	if err != nil {
@@ -210,28 +231,48 @@ func ECRRegistryPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		return nil, err
 	}
 
-	return []Resource{{
+	var values []Resource
+	resource := Resource{
 		ID:          *output.RegistryId,
 		Name:        *output.RegistryId,
 		Description: output,
-	}}, nil
+	}
+	if stream != nil {
+		if err := (*stream)(resource); err != nil {
+			return nil, err
+		}
+	} else {
+		values = append(values, resource)
+	}
+
+	return values, nil
 }
 
-func ECRRegistry(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ECRRegistry(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ecr.NewFromConfig(cfg)
 	output, err := client.DescribeRegistry(ctx, &ecr.DescribeRegistryInput{})
 	if err != nil {
 		return nil, err
 	}
 
-	return []Resource{{
+	var values []Resource
+	resource := Resource{
 		ID:          *output.RegistryId,
 		Name:        *output.RegistryId,
 		Description: output,
-	}}, nil
+	}
+	if stream != nil {
+		if err := (*stream)(resource); err != nil {
+			return nil, err
+		}
+	} else {
+		values = append(values, resource)
+	}
+
+	return values, nil
 }
 
-func ECRImage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ECRImage(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ecr.NewFromConfig(cfg)
 	repositoryPaginator := ecr.NewDescribeRepositoriesPaginator(client, &ecr.DescribeRepositoriesInput{})
 
@@ -257,12 +298,19 @@ func ECRImage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					return nil, err
 				}
 				for _, image := range page.ImageDetails {
-					values = append(values, Resource{
+					resource := Resource{
 						Name: fmt.Sprintf("%s:%s", *repository.RepositoryName, *image.ImageDigest),
 						Description: model.ECRImageDescription{
 							Image: image,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}

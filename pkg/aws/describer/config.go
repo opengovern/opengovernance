@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func ConfigConfigurationRecorder(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ConfigConfigurationRecorder(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
 	client := configservice.NewFromConfig(cfg)
@@ -28,20 +28,28 @@ func ConfigConfigurationRecorder(ctx context.Context, cfg aws.Config) ([]Resourc
 		}
 
 		arn := "arn:" + describeCtx.Partition + ":config:" + describeCtx.Region + ":" + describeCtx.AccountID + ":config-recorder" + "/" + *item.Name
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:  arn,
 			Name: *item.Name,
 			Description: model.ConfigConfigurationRecorderDescription{
 				ConfigurationRecorder:        item,
 				ConfigurationRecordersStatus: status.ConfigurationRecordersStatus[0],
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
+
 	}
 
 	return values, nil
 }
 
-func ConfigAggregateAuthorization(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ConfigAggregateAuthorization(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := configservice.NewFromConfig(cfg)
 	paginator := configservice.NewDescribeAggregationAuthorizationsPaginator(client, &configservice.DescribeAggregationAuthorizationsInput{})
 
@@ -59,21 +67,28 @@ func ConfigAggregateAuthorization(ctx context.Context, cfg aws.Config) ([]Resour
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN: *item.AggregationAuthorizationArn,
 				ID:  *item.AuthorizedAccountId,
 				Description: model.ConfigAggregationAuthorizationDescription{
 					AggregationAuthorization: item,
 					Tags:                     tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func ConfigConformancePack(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ConfigConformancePack(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := configservice.NewFromConfig(cfg)
 	paginator := configservice.NewDescribeConformancePacksPaginator(client, &configservice.DescribeConformancePacksInput{})
 
@@ -84,21 +99,28 @@ func ConfigConformancePack(ctx context.Context, cfg aws.Config) ([]Resource, err
 			return nil, err
 		}
 		for _, item := range page.ConformancePackDetails {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *item.ConformancePackArn,
 				ID:   *item.ConformancePackId,
 				Name: *item.ConformancePackName,
 				Description: model.ConfigConformancePackDescription{
 					ConformancePack: item,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func ConfigRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ConfigRule(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := configservice.NewFromConfig(cfg)
 	paginator := configservice.NewDescribeConfigRulesPaginator(client, &configservice.DescribeConfigRulesInput{})
 
@@ -133,7 +155,7 @@ func ConfigRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *item.ConfigRuleArn,
 				ID:   *item.ConfigRuleId,
 				Name: *item.ConfigRuleName,
@@ -142,7 +164,15 @@ func ConfigRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					Compliance: complianceMap[*item.ConfigRuleName],
 					Tags:       tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 	}
 

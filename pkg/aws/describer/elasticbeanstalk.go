@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func ElasticBeanstalkEnvironment(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ElasticBeanstalkEnvironment(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := elasticbeanstalk.NewFromConfig(cfg)
 	out, err := client.DescribeEnvironments(ctx, &elasticbeanstalk.DescribeEnvironmentsInput{})
 	if err != nil {
@@ -24,20 +24,27 @@ func ElasticBeanstalkEnvironment(ctx context.Context, cfg aws.Config) ([]Resourc
 			return nil, err
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:  *item.EnvironmentArn,
 			Name: *item.EnvironmentName,
 			Description: model.ElasticBeanstalkEnvironmentDescription{
 				EnvironmentDescription: item,
 				Tags:                   tags.ResourceTags,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func ElasticBeanstalkApplication(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ElasticBeanstalkApplication(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := elasticbeanstalk.NewFromConfig(cfg)
 	out, err := client.DescribeApplications(ctx, &elasticbeanstalk.DescribeApplicationsInput{})
 	if err != nil {
@@ -59,20 +66,27 @@ func ElasticBeanstalkApplication(ctx context.Context, cfg aws.Config) ([]Resourc
 			tags = &elasticbeanstalk.ListTagsForResourceOutput{}
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:  *item.ApplicationArn,
 			Name: *item.ApplicationName,
 			Description: model.ElasticBeanstalkApplicationDescription{
 				Application: item,
 				Tags:        tags.ResourceTags,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func ElasticBeanstalkPlatform(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ElasticBeanstalkPlatform(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := elasticbeanstalk.NewFromConfig(cfg)
 	paginator := elasticbeanstalk.NewListPlatformVersionsPaginator(client, &elasticbeanstalk.ListPlatformVersionsInput{})
 
@@ -91,13 +105,20 @@ func ElasticBeanstalkPlatform(ctx context.Context, cfg aws.Config) ([]Resource, 
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *platform.PlatformDescription.PlatformArn,
 				Name: *platform.PlatformDescription.PlatformName,
 				Description: model.ElasticBeanstalkPlatformDescription{
 					Platform: *platform.PlatformDescription,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

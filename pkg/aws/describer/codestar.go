@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func CodeStarProject(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CodeStarProject(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := codestar.NewFromConfig(cfg)
 
 	var values []Resource
@@ -36,14 +36,22 @@ func CodeStarProject(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *project.Arn,
 				Name: *project.Id,
 				Description: model.CodeStarProjectDescription{
 					Project: *project,
 					Tags:    tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 
 		return projects.NextToken, nil
