@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func MemoryDbCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func MemoryDbCluster(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := memorydb.NewFromConfig(cfg)
 
 	var values []Resource
@@ -28,14 +28,22 @@ func MemoryDbCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *cluster.ARN,
 				Name: *cluster.Name,
 				Description: model.MemoryDbClusterDescription{
 					Cluster: cluster,
 					Tags:    tags.TagList,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 
 		return clusters.NextToken, nil

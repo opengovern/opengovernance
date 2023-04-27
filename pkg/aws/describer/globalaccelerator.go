@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func GlobalAcceleratorAccelerator(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GlobalAcceleratorAccelerator(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := globalaccelerator.NewFromConfig(cfg)
 	paginator := globalaccelerator.NewListAcceleratorsPaginator(client, &globalaccelerator.ListAcceleratorsInput{})
 
@@ -33,7 +33,7 @@ func GlobalAcceleratorAccelerator(ctx context.Context, cfg aws.Config) ([]Resour
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *accelerator.AcceleratorArn,
 				Name: *accelerator.Name,
 				Description: model.GlobalAcceleratorAcceleratorDescription{
@@ -41,14 +41,21 @@ func GlobalAcceleratorAccelerator(ctx context.Context, cfg aws.Config) ([]Resour
 					AcceleratorAttributes: attribute.AcceleratorAttributes,
 					Tags:                  tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func GlobalAcceleratorListener(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GlobalAcceleratorListener(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := globalaccelerator.NewFromConfig(cfg)
 	paginator := globalaccelerator.NewListAcceleratorsPaginator(client, &globalaccelerator.ListAcceleratorsInput{})
 
@@ -68,14 +75,21 @@ func GlobalAcceleratorListener(ctx context.Context, cfg aws.Config) ([]Resource,
 					return nil, err
 				}
 				for _, listener := range listenerPage.Listeners {
-					values = append(values, Resource{
+					resource := Resource{
 						ARN:  *listener.ListenerArn,
 						Name: *listener.ListenerArn,
 						Description: model.GlobalAcceleratorListenerDescription{
 							Listener:       listener,
 							AcceleratorArn: *accelerator.AcceleratorArn,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -84,7 +98,7 @@ func GlobalAcceleratorListener(ctx context.Context, cfg aws.Config) ([]Resource,
 	return values, nil
 }
 
-func GlobalAcceleratorEndpointGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GlobalAcceleratorEndpointGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := globalaccelerator.NewFromConfig(cfg)
 	paginator := globalaccelerator.NewListAcceleratorsPaginator(client, &globalaccelerator.ListAcceleratorsInput{})
 
@@ -113,7 +127,7 @@ func GlobalAcceleratorEndpointGroup(ctx context.Context, cfg aws.Config) ([]Reso
 							return nil, err
 						}
 						for _, endpointGroup := range endpointGroupPage.EndpointGroups {
-							values = append(values, Resource{
+							resource := Resource{
 								ARN:  *endpointGroup.EndpointGroupArn,
 								Name: *endpointGroup.EndpointGroupArn,
 								Description: model.GlobalAcceleratorEndpointGroupDescription{
@@ -121,7 +135,14 @@ func GlobalAcceleratorEndpointGroup(ctx context.Context, cfg aws.Config) ([]Reso
 									ListenerArn:    *listener.ListenerArn,
 									AcceleratorArn: *accelerator.AcceleratorArn,
 								},
-							})
+							}
+							if stream != nil {
+								if err := (*stream)(resource); err != nil {
+									return nil, err
+								}
+							} else {
+								values = append(values, resource)
+							}
 						}
 					}
 				}

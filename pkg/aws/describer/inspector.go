@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func InspectorAssessmentRun(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func InspectorAssessmentRun(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := inspector.NewFromConfig(cfg)
 	paginator := inspector.NewListAssessmentRunsPaginator(client, &inspector.ListAssessmentRunsInput{})
 
@@ -27,20 +27,27 @@ func InspectorAssessmentRun(ctx context.Context, cfg aws.Config) ([]Resource, er
 		}
 
 		for _, assessmentRun := range assessmentRuns.AssessmentRuns {
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *assessmentRun.Name,
 				ARN:  *assessmentRun.Arn,
 				Description: model.InspectorAssessmentRunDescription{
 					AssessmentRun: assessmentRun,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func InspectorAssessmentTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func InspectorAssessmentTarget(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := inspector.NewFromConfig(cfg)
 	paginator := inspector.NewListAssessmentTargetsPaginator(client, &inspector.ListAssessmentTargetsInput{})
 
@@ -59,20 +66,27 @@ func InspectorAssessmentTarget(ctx context.Context, cfg aws.Config) ([]Resource,
 		}
 
 		for _, assessmentTarget := range assessmentTargets.AssessmentTargets {
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *assessmentTarget.Name,
 				ARN:  *assessmentTarget.Arn,
 				Description: model.InspectorAssessmentTargetDescription{
 					AssessmentTarget: assessmentTarget,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func InspectorAssessmentTemplate(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func InspectorAssessmentTemplate(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := inspector.NewFromConfig(cfg)
 	paginator := inspector.NewListAssessmentTemplatesPaginator(client, &inspector.ListAssessmentTemplatesInput{})
 
@@ -105,7 +119,7 @@ func InspectorAssessmentTemplate(ctx context.Context, cfg aws.Config) ([]Resourc
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *assessmentTemplate.Name,
 				ARN:  *assessmentTemplate.Arn,
 				Description: model.InspectorAssessmentTemplateDescription{
@@ -113,7 +127,14 @@ func InspectorAssessmentTemplate(ctx context.Context, cfg aws.Config) ([]Resourc
 					EventSubscriptions: eventSubscriptions.Subscriptions,
 					Tags:               tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -161,7 +182,7 @@ func GetInspectorAssessmentTemplate(ctx context.Context, cfg aws.Config, fields 
 	return values, nil
 }
 
-func InspectorExclusion(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func InspectorExclusion(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := inspector.NewFromConfig(cfg)
 	paginator := inspector.NewListAssessmentRunsPaginator(client, &inspector.ListAssessmentRunsInput{})
 
@@ -191,13 +212,20 @@ func InspectorExclusion(ctx context.Context, cfg aws.Config) ([]Resource, error)
 				}
 
 				for _, exclusion := range exclusions.Exclusions {
-					values = append(values, Resource{
+					resource := Resource{
 						Name: *exclusion.Title,
 						ARN:  *exclusion.Arn,
 						Description: model.InspectorExclusionDescription{
 							Exclusion: exclusion,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -205,7 +233,7 @@ func InspectorExclusion(ctx context.Context, cfg aws.Config) ([]Resource, error)
 	return values, nil
 }
 
-func InspectorFinding(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func InspectorFinding(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := inspector.NewFromConfig(cfg)
 	paginator := inspector.NewListFindingsPaginator(client, &inspector.ListFindingsInput{})
 
@@ -224,7 +252,7 @@ func InspectorFinding(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, finding := range findings.Findings {
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *finding.Title,
 				ID:   *finding.Id,
 				ARN:  *finding.Arn,
@@ -232,7 +260,14 @@ func InspectorFinding(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					Finding:     finding,
 					FailedItems: findings.FailedItems,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

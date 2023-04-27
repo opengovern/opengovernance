@@ -22,7 +22,7 @@ func OrganizationOrganization(ctx context.Context, cfg aws.Config) (*types.Organ
 	return req.Organization, nil
 }
 
-func OrganizationsOrganization(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func OrganizationsOrganization(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := organizations.NewFromConfig(cfg)
 
 	req, err := client.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
@@ -31,13 +31,20 @@ func OrganizationsOrganization(ctx context.Context, cfg aws.Config) ([]Resource,
 	}
 
 	var values []Resource
-	values = append(values, Resource{
+	resource := Resource{
 		ARN:  *req.Organization.Arn,
 		Name: *req.Organization.Id,
 		Description: model.OrganizationsOrganizationDescription{
 			Organization: *req.Organization,
 		},
-	})
+	}
+	if stream != nil {
+		if err := (*stream)(resource); err != nil {
+			return nil, err
+		}
+	} else {
+		values = append(values, resource)
+	}
 
 	return values, nil
 }

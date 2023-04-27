@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func HealthEvent(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func HealthEvent(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := health.NewFromConfig(cfg)
 	paginator := health.NewDescribeEventsPaginator(client, &health.DescribeEventsInput{})
 
@@ -20,12 +20,19 @@ func HealthEvent(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, event := range page.Events {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN: *event.Arn,
 				Description: model.HealthEventDescription{
 					Event: event,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 	return values, nil

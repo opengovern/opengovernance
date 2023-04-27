@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func OpsWorksCMServer(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func OpsWorksCMServer(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := opsworkscm.NewFromConfig(cfg)
 	paginator := opsworkscm.NewDescribeServersPaginator(client, &opsworkscm.DescribeServersInput{})
 
@@ -27,14 +27,21 @@ func OpsWorksCMServer(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.ServerArn,
 				Name: *v.ServerName,
 				Description: model.OpsWorksCMServerDescription{
 					Server: v,
 					Tags:   tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

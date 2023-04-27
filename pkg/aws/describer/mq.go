@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func MQBroker(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func MQBroker(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := mq.NewFromConfig(cfg)
 	paginator := mq.NewListBrokersPaginator(client, &mq.ListBrokersInput{})
 
@@ -27,14 +27,21 @@ func MQBroker(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.BrokerArn,
 				Name: *v.BrokerName,
 				Description: model.MQBrokerDescription{
 					Broker: v,
 					Tags:   tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

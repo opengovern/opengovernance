@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func MWAAEnvironment(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func MWAAEnvironment(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := mwaa.NewFromConfig(cfg)
 	paginator := mwaa.NewListEnvironmentsPaginator(client, &mwaa.ListEnvironmentsInput{})
 
@@ -27,13 +27,20 @@ func MWAAEnvironment(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *environment.Environment.Arn,
 				Name: *environment.Environment.Name,
 				Description: model.MWAAEnvironmentDescription{
 					Environment: *environment.Environment,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

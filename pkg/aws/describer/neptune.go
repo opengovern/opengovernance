@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func NeptuneDatabase(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func NeptuneDatabase(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := neptune.NewFromConfig(cfg)
 	paginator := neptune.NewDescribeDBInstancesPaginator(client, &neptune.DescribeDBInstancesInput{})
 
@@ -27,14 +27,21 @@ func NeptuneDatabase(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.DBInstanceArn,
 				Name: *v.DBClusterIdentifier,
 				Description: model.NeptuneDatabaseDescription{
 					Database: v,
 					Tags:     tags.TagList,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
