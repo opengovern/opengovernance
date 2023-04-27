@@ -34,7 +34,7 @@ type Credential struct {
 	HealthStatus        source.HealthStatus `json:"healthStatus"`
 	HealthReason        *string             `json:"healthReason,omitempty"`
 
-	Metadata string `json:"metadata,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 
 	Connections []Source `json:"connections,omitempty"`
 
