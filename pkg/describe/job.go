@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
+	azureDescriber "gitlab.com/keibiengine/keibi-engine/pkg/azure/describer"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/proto/src/golang"
 	"google.golang.org/grpc"
 	"regexp"
@@ -412,7 +413,7 @@ func doDescribe(ctx context.Context, rdb *redis.Client, job DescribeJob, config 
 	case api.SourceCloudAWS:
 		return doDescribeAWS(ctx, rdb, job, config, logger, describeDeliverEndpoint)
 	case api.SourceCloudAzure:
-		return doDescribeAzure(ctx, rdb, job, config, logger)
+		return doDescribeAzure(ctx, rdb, job, config, logger, describeDeliverEndpoint)
 	default:
 		return nil, nil, fmt.Errorf("invalid SourceType: %s", job.SourceType)
 	}
@@ -644,7 +645,54 @@ func doDescribeAWS(ctx context.Context, rdb *redis.Client, job DescribeJob, conf
 	return msgs, resourceIDs, err
 }
 
-func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger) ([]kafka.Doc, []string, error) {
+func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, config map[string]interface{}, logger *zap.Logger, describeDeliverEndpoint *string) ([]kafka.Doc, []string, error) {
+	var clientStream *azureDescriber.StreamSender
+	if describeDeliverEndpoint != nil {
+		conn, err := grpc.Dial(*describeDeliverEndpoint)
+		if err != nil {
+			return nil, nil, err
+		}
+		defer conn.Close()
+
+		client := golang.NewDescribeServiceClient(conn)
+
+		stream, err := client.DeliverAzureResources(context.Background())
+		if err != nil {
+			return nil, nil, err
+		}
+
+		f := func(resource azureDescriber.Resource) error {
+			descriptionJSON, err := json.Marshal(resource.Description)
+			if err != nil {
+				return err
+			}
+
+			return stream.Send(&golang.AzureResource{
+				Id:              resource.ID,
+				Name:            resource.Name,
+				Type:            resource.Type,
+				ResourceGroup:   resource.ResourceGroup,
+				Location:        resource.Location,
+				SubscriptionId:  resource.SubscriptionID,
+				DescriptionJson: string(descriptionJSON),
+				Job: &golang.DescribeJob{
+					JobId:         uint32(job.JobID),
+					ScheduleJobId: uint32(job.ScheduleJobID),
+					ParentJobId:   uint32(job.ParentJobID),
+					ResourceType:  job.ResourceType,
+					SourceId:      job.SourceID,
+					AccountId:     job.AccountID,
+					DescribedAt:   job.DescribedAt,
+					SourceType:    string(job.SourceType),
+					ConfigReg:     job.ConfigReg,
+					TriggerType:   string(job.TriggerType),
+					RetryCounter:  uint32(job.RetryCounter),
+				},
+			})
+		}
+		clientStream = (*azureDescriber.StreamSender)(&f)
+	}
+
 	var resourceIDs []string
 
 	logger.Warn("starting to describe azure subscription", zap.String("resourceType", job.ResourceType), zap.Uint("jobID", job.JobID))
@@ -675,6 +723,7 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 		},
 		string(azure.AuthEnv),
 		"",
+		clientStream,
 	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("azure: %w", err)

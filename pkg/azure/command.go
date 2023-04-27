@@ -108,6 +108,7 @@ or --auth-location flag.
 				},
 				azureAuth,
 				azureAuthLoc,
+				nil,
 			)
 			if err != nil {
 				return err

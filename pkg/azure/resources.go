@@ -17,13 +17,13 @@ import (
 )
 
 type ResourceDescriber interface {
-	DescribeResources(context.Context, autorest.Authorizer, hamiltonAuth.Authorizer, []string, string, enums.DescribeTriggerType) ([]describer.Resource, error)
+	DescribeResources(context.Context, autorest.Authorizer, hamiltonAuth.Authorizer, []string, string, enums.DescribeTriggerType, *describer.StreamSender) ([]describer.Resource, error)
 }
 
-type ResourceDescribeFunc func(context.Context, autorest.Authorizer, hamiltonAuth.Authorizer, []string, string, enums.DescribeTriggerType) ([]describer.Resource, error)
+type ResourceDescribeFunc func(context.Context, autorest.Authorizer, hamiltonAuth.Authorizer, []string, string, enums.DescribeTriggerType, *describer.StreamSender) ([]describer.Resource, error)
 
-func (fn ResourceDescribeFunc) DescribeResources(c context.Context, a autorest.Authorizer, ah hamiltonAuth.Authorizer, s []string, t string, triggerType enums.DescribeTriggerType) ([]describer.Resource, error) {
-	return fn(c, a, ah, s, t, triggerType)
+func (fn ResourceDescribeFunc) DescribeResources(c context.Context, a autorest.Authorizer, ah hamiltonAuth.Authorizer, s []string, t string, triggerType enums.DescribeTriggerType, stream *describer.StreamSender) ([]describer.Resource, error) {
+	return fn(c, a, ah, s, t, triggerType, stream)
 }
 
 type ResourceType struct {
@@ -1414,6 +1414,7 @@ func GetResources(
 	cfg AuthConfig,
 	azureAuth string,
 	azureAuthLoc string,
+	stream *describer.StreamSender,
 ) (*Resources, error) {
 	// Create and authorize a ResourceGraph client
 	var authorizer autorest.Authorizer
@@ -1444,7 +1445,7 @@ func GetResources(
 		return nil, err
 	}
 
-	resources, err := describe(ctx, authorizer, hamiltonAuthorizer, resourceType, subscriptions, cfg.TenantID, triggerType)
+	resources, err := describe(ctx, authorizer, hamiltonAuthorizer, resourceType, subscriptions, cfg.TenantID, triggerType, stream)
 	if err != nil {
 		return nil, err
 	}
@@ -1480,7 +1481,7 @@ func setEnvIfNotEmpty(env, s string) {
 	}
 }
 
-func describe(ctx context.Context, authorizer autorest.Authorizer, hamiltonAuth hamiltonAuth.Authorizer, resourceType string, subscriptions []string, tenantId string, triggerType enums.DescribeTriggerType) ([]describer.Resource, error) {
+func describe(ctx context.Context, authorizer autorest.Authorizer, hamiltonAuth hamiltonAuth.Authorizer, resourceType string, subscriptions []string, tenantId string, triggerType enums.DescribeTriggerType, stream *describer.StreamSender) ([]describer.Resource, error) {
 	resourceTypeObject, ok := resourceTypes[resourceType]
 	if !ok {
 		return nil, fmt.Errorf("unsupported resource type: %s", resourceType)
@@ -1491,15 +1492,15 @@ func describe(ctx context.Context, authorizer autorest.Authorizer, hamiltonAuth 
 		listDescriber = describer.GenericResourceGraph{Table: "Resources", Type: resourceType}
 	}
 
-	return listDescriber.DescribeResources(ctx, authorizer, hamiltonAuth, subscriptions, tenantId, triggerType)
+	return listDescriber.DescribeResources(ctx, authorizer, hamiltonAuth, subscriptions, tenantId, triggerType, stream)
 }
 
-func DescribeBySubscription(describe func(context.Context, autorest.Authorizer, string) ([]describer.Resource, error)) ResourceDescriber {
-	return ResourceDescribeFunc(func(ctx context.Context, authorizer autorest.Authorizer, hamiltonAuth hamiltonAuth.Authorizer, subscriptions []string, tenantId string, triggerType enums.DescribeTriggerType) ([]describer.Resource, error) {
+func DescribeBySubscription(describe func(context.Context, autorest.Authorizer, string, *describer.StreamSender) ([]describer.Resource, error)) ResourceDescriber {
+	return ResourceDescribeFunc(func(ctx context.Context, authorizer autorest.Authorizer, hamiltonAuth hamiltonAuth.Authorizer, subscriptions []string, tenantId string, triggerType enums.DescribeTriggerType, stream *describer.StreamSender) ([]describer.Resource, error) {
 		ctx = describer.WithTriggerType(ctx, triggerType)
 		values := []describer.Resource{}
 		for _, subscription := range subscriptions {
-			result, err := describe(ctx, authorizer, subscription)
+			result, err := describe(ctx, authorizer, subscription, stream)
 			if err != nil {
 				return nil, err
 			}
@@ -1514,11 +1515,11 @@ func DescribeBySubscription(describe func(context.Context, autorest.Authorizer, 
 	})
 }
 
-func DescribeADByTenantID(describe func(context.Context, hamiltonAuth.Authorizer, string) ([]describer.Resource, error)) ResourceDescriber {
-	return ResourceDescribeFunc(func(ctx context.Context, authorizer autorest.Authorizer, hamiltonAuth hamiltonAuth.Authorizer, subscription []string, tenantId string, triggerType enums.DescribeTriggerType) ([]describer.Resource, error) {
+func DescribeADByTenantID(describe func(context.Context, hamiltonAuth.Authorizer, string, *describer.StreamSender) ([]describer.Resource, error)) ResourceDescriber {
+	return ResourceDescribeFunc(func(ctx context.Context, authorizer autorest.Authorizer, hamiltonAuth hamiltonAuth.Authorizer, subscription []string, tenantId string, triggerType enums.DescribeTriggerType, stream *describer.StreamSender) ([]describer.Resource, error) {
 		ctx = describer.WithTriggerType(ctx, triggerType)
 		var values []describer.Resource
-		result, err := describe(ctx, hamiltonAuth, tenantId)
+		result, err := describe(ctx, hamiltonAuth, tenantId, stream)
 		if err != nil {
 			return nil, err
 		}
