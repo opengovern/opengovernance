@@ -727,6 +727,11 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 
 	apiCredentials := make([]api.Credential, 0, len(credentials))
 	for _, cred := range credentials {
+		metadata := make(map[string]any)
+		err = json.Unmarshal(cred.Metadata, &metadata)
+		if err != nil {
+			return err
+		}
 		apiCredentials = append(apiCredentials, api.Credential{
 			ID:                  cred.ID.String(),
 			Name:                cred.Name,
@@ -737,7 +742,7 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 			LastHealthCheckTime: cred.LastHealthCheckTime,
 			HealthStatus:        cred.HealthStatus,
 			HealthReason:        cred.HealthReason,
-			Metadata:            cred.Metadata.String(),
+			Metadata:            metadata,
 		})
 	}
 
@@ -775,6 +780,12 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	metadata := make(map[string]any)
+	err = json.Unmarshal(credential.Metadata, &metadata)
+	if err != nil {
+		return err
+	}
+
 	apiCredential := api.Credential{
 		ID:                  credential.ID.String(),
 		Name:                credential.Name,
@@ -785,7 +796,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		LastHealthCheckTime: credential.LastHealthCheckTime,
 		HealthStatus:        credential.HealthStatus,
 		HealthReason:        credential.HealthReason,
-		Metadata:            credential.Metadata.String(),
+		Metadata:            metadata,
 		Connections:         make([]api.Source, 0, len(connections)),
 	}
 	for _, conn := range connections {
@@ -1031,6 +1042,11 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 
 	apiCredentials := make(map[string]api.Credential)
 	for _, cred := range credentials {
+		metadata := make(map[string]any)
+		err = json.Unmarshal(cred.Metadata, &metadata)
+		if err != nil {
+			return err
+		}
 		apiCredentials[cred.ID.String()] = api.Credential{
 			ID:                  cred.ID.String(),
 			Name:                cred.Name,
@@ -1041,7 +1057,7 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 			LastHealthCheckTime: cred.LastHealthCheckTime,
 			HealthStatus:        cred.HealthStatus,
 			HealthReason:        cred.HealthReason,
-			Metadata:            cred.Metadata.String(),
+			Metadata:            metadata,
 			Connections:         nil,
 		}
 	}
