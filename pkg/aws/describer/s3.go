@@ -37,7 +37,7 @@ type s3bucketResult struct {
 // S3Bucket describe S3 buckets.
 // ListBuckets returns buckets in all regions. However, this function categorizes the buckets based
 // on their location constaint, aka the regions they reside in.
-func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string][]Resource, error) {
+func S3Bucket(ctx context.Context, cfg aws.Config, regions []string, stream *StreamSender) (map[string][]Resource, error) {
 	regionalValues := make(map[string][]Resource, len(regions))
 	for _, r := range regions {
 		regionalValues[r] = make([]Resource, 0)
@@ -136,6 +136,16 @@ func S3Bucket(ctx context.Context, cfg aws.Config, regions []string) (map[string
 
 	for i := 0; i < s3BucketNoOfWorkers; i++ {
 		done <- i
+	}
+	if stream != nil {
+		for _, v := range regionalValues {
+			for _, resource := range v {
+				if err := (*stream)(resource); err != nil {
+					return regionalValues, err
+				}
+			}
+		}
+		return map[string][]Resource{}, nil
 	}
 	fmt.Println("S3Bucket", "return", regionalValues, globalErr)
 	return regionalValues, globalErr
@@ -475,7 +485,7 @@ func isErr(err error, code string) bool {
 	return errors.As(err, &ae) && ae.ErrorCode() == code
 }
 
-func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func S3AccessPoint(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	stsClient := sts.NewFromConfig(cfg)
 	output, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
@@ -528,7 +538,7 @@ func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.AccessPointArn,
 				Name: *v.Name,
 				Description: model.S3AccessPointDescription{
@@ -536,13 +546,20 @@ func S3AccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					Policy:       app.Policy,
 					PolicyStatus: apps.PolicyStatus,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 	return values, nil
 }
 
-func S3StorageLens(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func S3StorageLens(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	stsClient := sts.NewFromConfig(cfg)
 	output, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
@@ -562,18 +579,25 @@ func S3StorageLens(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.StorageLensConfigurationList {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.StorageLensArn,
 				Name:        *v.Id,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func S3AccountSetting(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func S3AccountSetting(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	accountId, err := STSAccount(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -598,13 +622,21 @@ func S3AccountSetting(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 	}
 
-	return []Resource{
-		{
-			// No ARN or ID. Account level setting
-			Name: accountId + " S3 Account Setting",
-			Description: model.S3AccountSettingDescription{
-				PublicAccessBlockConfiguration: *output.PublicAccessBlockConfiguration,
-			},
+	var values []Resource
+	resource := Resource{
+		// No ARN or ID. Account level setting
+		Name: accountId + " S3 Account Setting",
+		Description: model.S3AccountSettingDescription{
+			PublicAccessBlockConfiguration: *output.PublicAccessBlockConfiguration,
 		},
-	}, nil
+	}
+	if stream != nil {
+		if err := (*stream)(resource); err != nil {
+			return nil, err
+		}
+	} else {
+		values = append(values, resource)
+	}
+
+	return values, nil
 }

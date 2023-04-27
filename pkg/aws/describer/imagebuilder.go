@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func ImageBuilderImage(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ImageBuilderImage(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := imagebuilder.NewFromConfig(cfg)
 	paginator := imagebuilder.NewListImagesPaginator(client, &imagebuilder.ListImagesInput{})
 
@@ -27,13 +27,20 @@ func ImageBuilderImage(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *image.Image.Arn,
 				Name: *image.Image.Name,
 				Description: model.ImageBuilderImageDescription{
 					Image: *image.Image,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

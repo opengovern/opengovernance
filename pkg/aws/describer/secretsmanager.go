@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func SecretsManagerSecret(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SecretsManagerSecret(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := secretsmanager.NewFromConfig(cfg)
 	paginator := secretsmanager.NewListSecretsPaginator(client, &secretsmanager.ListSecretsInput{})
 
@@ -34,14 +34,21 @@ func SecretsManagerSecret(ctx context.Context, cfg aws.Config) ([]Resource, erro
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *item.ARN,
 				Name: *item.Name,
 				Description: model.SecretsManagerSecretDescription{
 					Secret:         out,
 					ResourcePolicy: policy.ResourcePolicy,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 	return values, nil

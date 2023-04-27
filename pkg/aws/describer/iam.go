@@ -16,7 +16,7 @@ const (
 	organizationsNotInUseException = "AWSOrganizationsNotInUseException"
 )
 
-func IAMAccount(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMAccount(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	orgClient := organizations.NewFromConfig(cfg)
 
 	accountId, err := STSAccount(ctx, cfg)
@@ -46,19 +46,27 @@ func IAMAccount(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		aliases = append(aliases, page.AccountAliases...)
 	}
 
-	return []Resource{
-		{
-			// No ID or ARN. Per Account Configuration
-			Name: accountId,
-			Description: model.IAMAccountDescription{
-				Aliases:      aliases,
-				Organization: output.Organization,
-			},
+	var values []Resource
+	resource := Resource{
+		// No ID or ARN. Per Account Configuration
+		Name: accountId,
+		Description: model.IAMAccountDescription{
+			Aliases:      aliases,
+			Organization: output.Organization,
 		},
-	}, nil
+	}
+	if stream != nil {
+		if err := (*stream)(resource); err != nil {
+			return nil, err
+		}
+	} else {
+		values = append(values, resource)
+	}
+
+	return values, nil
 }
 
-func IAMAccountSummary(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMAccountSummary(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	output, err := client.GetAccountSummary(ctx, &iam.GetAccountSummaryInput{})
 	if err != nil {
@@ -108,16 +116,25 @@ func IAMAccountSummary(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		return nil, err
 	}
 
-	return []Resource{
-		{
-			// No ID or ARN. Per Account Configuration
-			Name:        accountId + " Account Summary",
-			Description: desc,
-		},
-	}, nil
+	var values []Resource
+	resource := Resource{
+		// No ID or ARN. Per Account Configuration
+		Name:        accountId + " Account Summary",
+		Description: desc,
+	}
+
+	if stream != nil {
+		if err := (*stream)(resource); err != nil {
+			return nil, err
+		}
+	} else {
+		values = append(values, resource)
+	}
+
+	return values, nil
 }
 
-func IAMAccountPasswordPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMAccountPasswordPolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	output, err := client.GetAccountPasswordPolicy(ctx, &iam.GetAccountPasswordPolicyInput{})
 	if err != nil {
@@ -137,18 +154,25 @@ func IAMAccountPasswordPolicy(ctx context.Context, cfg aws.Config) ([]Resource, 
 		return nil, err
 	}
 
-	return []Resource{
-		{
-			// No ID or ARN. Per Account Configuration
-			Name: accountId + " IAM Password Policy",
-			Description: model.IAMAccountPasswordPolicyDescription{
-				PasswordPolicy: *output.PasswordPolicy,
-			},
+	var values []Resource
+	resource := Resource{
+		// No ID or ARN. Per Account Configuration
+		Name: accountId + " IAM Password Policy",
+		Description: model.IAMAccountPasswordPolicyDescription{
+			PasswordPolicy: *output.PasswordPolicy,
 		},
-	}, nil
+	}
+	if stream != nil {
+		if err := (*stream)(resource); err != nil {
+			return nil, err
+		}
+	} else {
+		values = append(values, resource)
+	}
+	return values, nil
 }
 
-func IAMAccessKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMAccessKey(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListAccessKeysPaginator(client, &iam.ListAccessKeysInput{})
 
@@ -163,20 +187,27 @@ func IAMAccessKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.AccessKeyMetadata {
 			arn := "arn:" + describeCtx.Partition + ":iam::" + describeCtx.AccountID + ":user/" + *v.UserName + "/accesskey/" + *v.AccessKeyId
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *v.UserName,
 				Description: model.IAMAccessKeyDescription{
 					AccessKey: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func IAMCredentialReport(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMCredentialReport(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	output, err := client.GetCredentialReport(ctx, &iam.GetCredentialReportInput{})
 	if err != nil {
@@ -196,19 +227,27 @@ func IAMCredentialReport(ctx context.Context, cfg aws.Config) ([]Resource, error
 	var values []Resource
 	for _, report := range reports {
 		report.GeneratedTime = output.GeneratedTime
-		values = append(values, Resource{
+		resource := Resource{
 			ID:   report.UserName, // Unique report entry per user
 			Name: report.UserName + " Credential Report",
 			Description: model.IAMCredentialReportDescription{
 				CredentialReport: report,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
+
 	}
 
 	return values, nil
 }
 
-func IAMPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMPolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListPoliciesPaginator(client, &iam.ListPoliciesInput{
 		OnlyAttached: false,
@@ -231,14 +270,21 @@ func IAMPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.Arn,
 				Name: *v.PolicyName,
 				Description: model.IAMPolicyDescription{
 					Policy:        v,
 					PolicyVersion: *version.PolicyVersion,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -274,7 +320,7 @@ func GetIAMPolicy(ctx context.Context, cfg aws.Config, arn string) ([]Resource, 
 	return values, nil
 }
 
-func IAMGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListGroupsPaginator(client, &iam.ListGroupsInput{})
 
@@ -301,7 +347,7 @@ func IAMGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.Arn,
 				Name: *v.GroupName,
 				Description: model.IAMGroupDescription{
@@ -310,7 +356,14 @@ func IAMGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					InlinePolicies:     policies,
 					AttachedPolicyArns: aPolicies,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -387,7 +440,7 @@ func getGroupAttachedPolicyArns(ctx context.Context, client *iam.Client, groupna
 	return arns, nil
 }
 
-func IAMInstanceProfile(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMInstanceProfile(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListInstanceProfilesPaginator(client, &iam.ListInstanceProfilesInput{})
 
@@ -399,18 +452,25 @@ func IAMInstanceProfile(ctx context.Context, cfg aws.Config) ([]Resource, error)
 		}
 
 		for _, v := range page.InstanceProfiles {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.Arn,
 				Name:        *v.InstanceProfileName,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func IAMManagedPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMManagedPolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListPoliciesPaginator(client, &iam.ListPoliciesInput{
 		OnlyAttached: true,
@@ -424,18 +484,25 @@ func IAMManagedPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Policies {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.Arn,
 				Name:        *v.PolicyName,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func IAMOIDCProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMOIDCProvider(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	output, err := client.ListOpenIDConnectProviders(ctx, &iam.ListOpenIDConnectProvidersInput{})
 	if err != nil {
@@ -444,18 +511,25 @@ func IAMOIDCProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 	for _, v := range output.OpenIDConnectProviderList {
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:         *v.Arn,
 			Name:        *v.Arn,
 			Description: v,
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func IAMGroupPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	groups, err := IAMGroup(ctx, cfg)
+func IAMGroupPolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	groups, err := IAMGroup(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -483,11 +557,19 @@ func IAMGroupPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					return nil, err
 				}
 
-				values = append(values, Resource{
+				resource := Resource{
 					ID:          CompositeID(*v.GroupName, *v.PolicyName),
 					Name:        *v.GroupName,
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
+
 			}
 
 			return output.Marker, nil
@@ -500,8 +582,8 @@ func IAMGroupPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func IAMUserPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	users, err := IAMUser(ctx, cfg)
+func IAMUserPolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	users, err := IAMUser(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -529,11 +611,18 @@ func IAMUserPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					return nil, err
 				}
 
-				values = append(values, Resource{
+				resource := Resource{
 					ID:          CompositeID(*v.UserName, *v.PolicyName),
 					Name:        *v.UserName,
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 
 			return output.Marker, nil
@@ -546,8 +635,8 @@ func IAMUserPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	roles, err := IAMRole(ctx, cfg)
+func IAMRolePolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	roles, err := IAMRole(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -576,11 +665,18 @@ func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					return nil, err
 				}
 
-				values = append(values, Resource{
+				resource := Resource{
 					ID:          CompositeID(*v.RoleName, *v.PolicyName),
 					Name:        *v.RoleName,
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 
 			return output.Marker, nil
@@ -593,7 +689,7 @@ func IAMRolePolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func IAMRole(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMRole(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListRolesPaginator(client, &iam.ListRolesInput{})
 
@@ -620,7 +716,7 @@ func IAMRole(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.Arn,
 				Name: *v.RoleName,
 				Description: model.IAMRoleDescription{
@@ -629,7 +725,14 @@ func IAMRole(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					InlinePolicies:      policies,
 					AttachedPolicyArns:  aPolicies,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -753,7 +856,7 @@ func getRoleAttachedPolicyArns(ctx context.Context, client *iam.Client, rolename
 	return arns, nil
 }
 
-func IAMSAMLProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMSAMLProvider(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	output, err := client.ListSAMLProviders(ctx, &iam.ListSAMLProvidersInput{})
 	if err != nil {
@@ -762,17 +865,24 @@ func IAMSAMLProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 	for _, v := range output.SAMLProviderList {
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:         *v.Arn,
 			Name:        *v.Arn,
 			Description: v,
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func IAMServerCertificate(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMServerCertificate(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListServerCertificatesPaginator(client, &iam.ListServerCertificatesInput{})
 
@@ -791,20 +901,27 @@ func IAMServerCertificate(ctx context.Context, cfg aws.Config) ([]Resource, erro
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.Arn,
 				Name: *v.ServerCertificateName,
 				Description: model.IAMServerCertificateDescription{
 					ServerCertificate: *output.ServerCertificate,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func IAMUser(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMUser(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListUsersPaginator(client, &iam.ListUsersInput{})
 
@@ -836,7 +953,7 @@ func IAMUser(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.Arn,
 				Name: *v.UserName,
 				Description: model.IAMUserDescription{
@@ -846,7 +963,14 @@ func IAMUser(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					AttachedPolicyArns: aPolicies,
 					MFADevices:         devices,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -899,7 +1023,7 @@ func GetIAMUser(ctx context.Context, cfg aws.Config, userName string) ([]Resourc
 	return values, nil
 }
 
-func IAMPolicyAttachment(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMPolicyAttachment(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListPoliciesPaginator(client, &iam.ListPoliciesInput{
 		OnlyAttached: false,
@@ -931,7 +1055,7 @@ func IAMPolicyAttachment(ctx context.Context, cfg aws.Config) ([]Resource, error
 				policyRoles = append(policyRoles, attachmentPage.PolicyRoles...)
 				policyUsers = append(policyUsers, attachmentPage.PolicyUsers...)
 			}
-			values = append(values, Resource{
+			resource := Resource{
 				Name: fmt.Sprintf("%s - Attachments", *policy.Arn),
 				Description: model.IAMPolicyAttachmentDescription{
 					PolicyArn:             *policy.Arn,
@@ -941,7 +1065,15 @@ func IAMPolicyAttachment(ctx context.Context, cfg aws.Config) ([]Resource, error
 					PolicyRoles:           policyRoles,
 					PolicyUsers:           policyUsers,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 	}
 
@@ -988,7 +1120,7 @@ func GetIAMPolicyAttachment(ctx context.Context, cfg aws.Config, policyARN strin
 	return values, nil
 }
 
-func IAMSamlProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMSamlProvider(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	output, err := client.ListSAMLProviders(ctx, &iam.ListSAMLProvidersInput{})
 	if err != nil {
@@ -1003,18 +1135,25 @@ func IAMSamlProvider(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		if err != nil {
 			return nil, err
 		}
-		values = append(values, Resource{
+		resource := Resource{
 			ARN: *v.Arn,
 			Description: model.IAMSamlProviderDescription{
 				SamlProvider: *samlProvider,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func IAMServiceSpecificCredential(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMServiceSpecificCredential(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	paginator := iam.NewListUsersPaginator(client, &iam.ListUsersInput{})
 
@@ -1034,12 +1173,19 @@ func IAMServiceSpecificCredential(ctx context.Context, cfg aws.Config) ([]Resour
 			}
 
 			for _, credential := range serviceSpecificCredentials.ServiceSpecificCredentials {
-				values = append(values, Resource{
+				resource := Resource{
 					ID: *credential.ServiceSpecificCredentialId,
 					Description: model.IAMServiceSpecificCredentialDescription{
 						ServiceSpecificCredential: credential,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -1135,7 +1281,7 @@ func getUserMFADevices(ctx context.Context, client *iam.Client, username *string
 	return devices, nil
 }
 
-func IAMVirtualMFADevice(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IAMVirtualMFADevice(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := iam.NewFromConfig(cfg)
 	output, err := client.ListVirtualMFADevices(ctx, &iam.ListVirtualMFADevicesInput{})
 	if err != nil {
@@ -1151,14 +1297,21 @@ func IAMVirtualMFADevice(ctx context.Context, cfg aws.Config) ([]Resource, error
 			return nil, err
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:  *v.SerialNumber,
 			Name: *v.SerialNumber,
 			Description: model.IAMVirtualMFADeviceDescription{
 				VirtualMFADevice: v,
 				Tags:             output.Tags,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil

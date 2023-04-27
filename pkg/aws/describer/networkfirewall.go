@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func NetworkFirewallFirewall(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func NetworkFirewallFirewall(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := networkfirewall.NewFromConfig(cfg)
 	paginator := networkfirewall.NewListFirewallsPaginator(client, &networkfirewall.ListFirewallsInput{})
 
@@ -27,13 +27,20 @@ func NetworkFirewallFirewall(ctx context.Context, cfg aws.Config) ([]Resource, e
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.FirewallArn,
 				Name: *v.FirewallName,
 				Description: model.NetworkFirewallFirewallDescription{
 					Firewall: *firewall.Firewall,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

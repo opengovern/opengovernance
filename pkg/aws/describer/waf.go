@@ -17,7 +17,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func WAFv2IPSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFv2IPSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := wafv2.NewFromConfig(cfg)
 
 	scopes := []types.Scope{
@@ -39,11 +39,19 @@ func WAFv2IPSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			for _, v := range output.IPSets {
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:         *v.ARN,
 					Name:        *v.Name,
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
+
 			}
 			return output.NextMarker, nil
 		})
@@ -55,7 +63,7 @@ func WAFv2IPSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func WAFv2LoggingConfiguration(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFv2LoggingConfiguration(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := wafv2.NewFromConfig(cfg)
 
 	scopes := []types.Scope{
@@ -77,11 +85,19 @@ func WAFv2LoggingConfiguration(ctx context.Context, cfg aws.Config) ([]Resource,
 			}
 
 			for _, v := range output.LoggingConfigurations {
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:         *v.ResourceArn, // TODO: might not be the actual ARN
 					Name:        *v.ResourceArn,
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
+
 			}
 			return output.NextMarker, nil
 		})
@@ -93,7 +109,7 @@ func WAFv2LoggingConfiguration(ctx context.Context, cfg aws.Config) ([]Resource,
 	return values, nil
 }
 
-func WAFv2RegexPatternSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFv2RegexPatternSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := wafv2.NewFromConfig(cfg)
 
 	scopes := []types.Scope{
@@ -115,11 +131,19 @@ func WAFv2RegexPatternSet(ctx context.Context, cfg aws.Config) ([]Resource, erro
 			}
 
 			for _, v := range output.RegexPatternSets {
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:         *v.ARN,
 					Name:        *v.Name,
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
+
 			}
 			return output.NextMarker, nil
 		})
@@ -131,7 +155,7 @@ func WAFv2RegexPatternSet(ctx context.Context, cfg aws.Config) ([]Resource, erro
 	return values, nil
 }
 
-func WAFv2RuleGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFv2RuleGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := wafv2.NewFromConfig(cfg)
 
 	scopes := []types.Scope{
@@ -153,11 +177,19 @@ func WAFv2RuleGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			for _, v := range output.RuleGroups {
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:         *v.ARN,
 					Name:        *v.Name,
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
+
 			}
 			return output.NextMarker, nil
 		})
@@ -169,7 +201,7 @@ func WAFv2RuleGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func WAFv2WebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFv2WebACL(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := wafv2.NewFromConfig(cfg)
 
 	scopes := []types.Scope{
@@ -223,7 +255,7 @@ func WAFv2WebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.ARN,
 				Name: *v.Name,
 				Description: model.WAFv2WebACLDescription{
@@ -233,7 +265,14 @@ func WAFv2WebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					TagInfoForResource:   tags.TagInfoForResource,
 					LockToken:            v.LockToken,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -264,7 +303,7 @@ func listWAFv2WebACLs(ctx context.Context, cfg aws.Config, scope types.Scope) ([
 }
 
 // Returns ResourceArns that have a WebAcl Associated
-func WAFv2WebACLAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFv2WebACLAssociation(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	var values []Resource
 
 	regionalACls, err := listWAFv2WebACLs(ctx, cfg, types.ScopeRegional)
@@ -281,14 +320,22 @@ func WAFv2WebACLAssociation(ctx context.Context, cfg aws.Config) ([]Resource, er
 			return nil, err
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:   *acl.Id, // Unique per WebACL
 			Name: *acl.Name,
 			Description: map[string]interface{}{
 				"WebACLArn":    *acl.ARN,
 				"ResourceArns": output.ResourceArns,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
+
 	}
 
 	if strings.EqualFold(cfg.Region, "us-east-1") {
@@ -308,14 +355,21 @@ func WAFv2WebACLAssociation(ctx context.Context, cfg aws.Config) ([]Resource, er
 					return nil, err
 				}
 
-				values = append(values, Resource{
+				resource := Resource{
 					ID:   *acl.Id, // Unique per WebACL
 					Name: *acl.Name,
 					Description: map[string]interface{}{
 						"WebACLArn":     *acl.ARN,
 						"Distributions": output.DistributionList.Items,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 
 				return output.DistributionList.NextMarker, nil
 			})
@@ -328,7 +382,7 @@ func WAFv2WebACLAssociation(ctx context.Context, cfg aws.Config) ([]Resource, er
 	return values, nil
 }
 
-func WAFRegionalByteMatchSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFRegionalByteMatchSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := wafregional.NewFromConfig(cfg)
 
 	var values []Resource
@@ -341,11 +395,19 @@ func WAFRegionalByteMatchSet(ctx context.Context, cfg aws.Config) ([]Resource, e
 		}
 
 		for _, v := range output.ByteMatchSets {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.ByteMatchSetId,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.NextMarker, nil
 	})
@@ -356,7 +418,7 @@ func WAFRegionalByteMatchSet(ctx context.Context, cfg aws.Config) ([]Resource, e
 	return values, nil
 }
 
-func WAFRegionalGeoMatchSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFRegionalGeoMatchSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := wafregional.NewFromConfig(cfg)
 
 	var values []Resource
@@ -369,11 +431,19 @@ func WAFRegionalGeoMatchSet(ctx context.Context, cfg aws.Config) ([]Resource, er
 		}
 
 		for _, v := range output.GeoMatchSets {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.GeoMatchSetId,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.NextMarker, nil
 	})
@@ -384,7 +454,7 @@ func WAFRegionalGeoMatchSet(ctx context.Context, cfg aws.Config) ([]Resource, er
 	return values, nil
 }
 
-func WAFRegionalIPSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFRegionalIPSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := wafregional.NewFromConfig(cfg)
 
 	var values []Resource
@@ -397,11 +467,19 @@ func WAFRegionalIPSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range output.IPSets {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.IPSetId,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.NextMarker, nil
 	})
@@ -412,7 +490,7 @@ func WAFRegionalIPSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func WAFRegionalRateBasedRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFRegionalRateBasedRule(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := wafregional.NewFromConfig(cfg)
 
 	var values []Resource
@@ -425,11 +503,19 @@ func WAFRegionalRateBasedRule(ctx context.Context, cfg aws.Config) ([]Resource, 
 		}
 
 		for _, v := range output.Rules {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.RuleId,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.NextMarker, nil
 	})
@@ -440,7 +526,7 @@ func WAFRegionalRateBasedRule(ctx context.Context, cfg aws.Config) ([]Resource, 
 	return values, nil
 }
 
-func WAFRegionalRegexPatternSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFRegionalRegexPatternSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := wafregional.NewFromConfig(cfg)
 
 	var values []Resource
@@ -453,11 +539,19 @@ func WAFRegionalRegexPatternSet(ctx context.Context, cfg aws.Config) ([]Resource
 		}
 
 		for _, v := range output.RegexPatternSets {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.RegexPatternSetId,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.NextMarker, nil
 	})
@@ -468,7 +562,7 @@ func WAFRegionalRegexPatternSet(ctx context.Context, cfg aws.Config) ([]Resource
 	return values, nil
 }
 
-func WAFRegionalRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFRegionalRule(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := wafregional.NewFromConfig(cfg)
 
@@ -491,7 +585,7 @@ func WAFRegionalRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				ID:   *v.RuleId,
 				Name: *v.Name,
@@ -499,7 +593,15 @@ func WAFRegionalRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					Rule: v,
 					Tags: tags.TagInfoForResource.TagList,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.NextMarker, nil
 	})
@@ -510,7 +612,7 @@ func WAFRegionalRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func WAFRegionalSizeConstraintSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFRegionalSizeConstraintSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := wafregional.NewFromConfig(cfg)
 
 	var values []Resource
@@ -523,11 +625,19 @@ func WAFRegionalSizeConstraintSet(ctx context.Context, cfg aws.Config) ([]Resour
 		}
 
 		for _, v := range output.SizeConstraintSets {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.SizeConstraintSetId,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.NextMarker, nil
 	})
@@ -538,7 +648,7 @@ func WAFRegionalSizeConstraintSet(ctx context.Context, cfg aws.Config) ([]Resour
 	return values, nil
 }
 
-func WAFRegionalSqlInjectionMatchSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFRegionalSqlInjectionMatchSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := wafregional.NewFromConfig(cfg)
 
 	var values []Resource
@@ -551,11 +661,19 @@ func WAFRegionalSqlInjectionMatchSet(ctx context.Context, cfg aws.Config) ([]Res
 		}
 
 		for _, v := range output.SqlInjectionMatchSets {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.SqlInjectionMatchSetId,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.NextMarker, nil
 	})
@@ -566,7 +684,7 @@ func WAFRegionalSqlInjectionMatchSet(ctx context.Context, cfg aws.Config) ([]Res
 	return values, nil
 }
 
-func WAFRegionalWebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFRegionalWebACL(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := wafregional.NewFromConfig(cfg)
 
 	var values []Resource
@@ -579,11 +697,19 @@ func WAFRegionalWebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		}
 
 		for _, v := range output.WebACLs {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.WebACLId,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.NextMarker, nil
 	})
@@ -594,8 +720,8 @@ func WAFRegionalWebACL(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	return values, nil
 }
 
-func WAFRegionalWebACLAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	acls, err := WAFRegionalWebACL(ctx, cfg)
+func WAFRegionalWebACLAssociation(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	acls, err := WAFRegionalWebACL(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -612,20 +738,28 @@ func WAFRegionalWebACLAssociation(ctx context.Context, cfg aws.Config) ([]Resour
 			return nil, err
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:   *acl.WebACLId, // Unique per WebACL
 			Name: *acl.Name,
 			Description: map[string]interface{}{
 				"WebACLId":     *acl.WebACLId,
 				"ResourceArns": output.ResourceArns,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
+
 	}
 
 	return values, nil
 }
 
-func WAFRegionalXssMatchSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFRegionalXssMatchSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := wafregional.NewFromConfig(cfg)
 
 	var values []Resource
@@ -638,11 +772,19 @@ func WAFRegionalXssMatchSet(ctx context.Context, cfg aws.Config) ([]Resource, er
 		}
 
 		for _, v := range output.XssMatchSets {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.XssMatchSetId,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.NextMarker, nil
 	})
@@ -653,7 +795,7 @@ func WAFRegionalXssMatchSet(ctx context.Context, cfg aws.Config) ([]Resource, er
 	return values, nil
 }
 
-func WAFRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WAFRule(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := waf.NewFromConfig(cfg)
 
@@ -694,14 +836,22 @@ func WAFRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *rule.Rule.Name,
 				Description: model.WAFRuleDescription{
 					Rule: *rule.Rule,
 					Tags: tags.TagInfoForResource.TagList,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.NextMarker, nil
 	})

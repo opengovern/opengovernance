@@ -15,7 +15,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func KMSAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func KMSAlias(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := kms.NewFromConfig(cfg)
 	paginator := kms.NewListAliasesPaginator(client, &kms.ListAliasesInput{})
 
@@ -27,18 +27,25 @@ func KMSAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Aliases {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.AliasArn,
 				Name:        *v.AliasName,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func KMSKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func KMSKey(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := kms.NewFromConfig(cfg)
 	paginator := kms.NewListKeysPaginator(client, &kms.ListKeysInput{})
 
@@ -115,7 +122,7 @@ func KMSKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.KeyArn,
 				Name: *v.KeyId,
 				Description: model.KMSKeyDescription{
@@ -125,7 +132,14 @@ func KMSKey(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					Policy:             policy.Policy,
 					Tags:               tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

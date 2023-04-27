@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func GuardDutyFinding(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GuardDutyFinding(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	var values []Resource
 
 	client := guardduty.NewFromConfig(cfg)
@@ -44,13 +44,20 @@ func GuardDutyFinding(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				}
 
 				for _, item := range findings.Findings {
-					values = append(values, Resource{
+					resource := Resource{
 						ARN:  *item.Arn,
 						Name: *item.Id,
 						Description: model.GuardDutyFindingDescription{
 							Finding: item,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -58,7 +65,7 @@ func GuardDutyFinding(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GuardDutyDetector(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GuardDutyDetector(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	var values []Resource
 
 	client := guardduty.NewFromConfig(cfg)
@@ -82,20 +89,27 @@ func GuardDutyDetector(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 			}
 
 			arn := "arn:" + describeCtx.Partition + ":guardduty:" + describeCtx.Region + ":" + describeCtx.AccountID + ":detector/" + id
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: id,
 				Description: model.GuardDutyDetectorDescription{
 					DetectorId: id,
 					Detector:   out,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 	return values, nil
 }
 
-func GuardDutyFilter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GuardDutyFilter(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := guardduty.NewFromConfig(cfg)
 	paginator := guardduty.NewListDetectorsPaginator(client, &guardduty.ListDetectorsInput{})
@@ -128,14 +142,21 @@ func GuardDutyFilter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 						return nil, err
 					}
 
-					values = append(values, Resource{
+					resource := Resource{
 						ARN:  arn,
 						Name: *filterOutput.Name,
 						Description: model.GuardDutyFilterDescription{
 							Filter:     *filterOutput,
 							DetectorId: detectorId,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -143,7 +164,7 @@ func GuardDutyFilter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GuardDutyIPSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GuardDutyIPSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := guardduty.NewFromConfig(cfg)
 	paginator := guardduty.NewListDetectorsPaginator(client, &guardduty.ListDetectorsInput{})
@@ -176,7 +197,7 @@ func GuardDutyIPSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 						return nil, err
 					}
 
-					values = append(values, Resource{
+					resource := Resource{
 						ARN:  arn,
 						Name: *ipSetOutput.Name,
 						Description: model.GuardDutyIPSetDescription{
@@ -184,7 +205,14 @@ func GuardDutyIPSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 							DetectorId: detectorId,
 							IPSetId:    ipSetId,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -192,7 +220,7 @@ func GuardDutyIPSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GuardDutyMember(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GuardDutyMember(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	//describeCtx := GetDescribeContext(ctx)
 	client := guardduty.NewFromConfig(cfg)
 	paginator := guardduty.NewListDetectorsPaginator(client, &guardduty.ListDetectorsInput{})
@@ -215,12 +243,19 @@ func GuardDutyMember(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					return nil, err
 				}
 				for _, member := range membersPage.Members {
-					values = append(values, Resource{
+					resource := Resource{
 						Name: *member.AccountId,
 						Description: model.GuardDutyMemberDescription{
 							Member: member,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -228,7 +263,7 @@ func GuardDutyMember(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GuardDutyPublishingDestination(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GuardDutyPublishingDestination(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := guardduty.NewFromConfig(cfg)
 	paginator := guardduty.NewListDetectorsPaginator(client, &guardduty.ListDetectorsInput{})
@@ -261,14 +296,21 @@ func GuardDutyPublishingDestination(ctx context.Context, cfg aws.Config) ([]Reso
 						return nil, err
 					}
 
-					values = append(values, Resource{
+					resource := Resource{
 						ARN: arn,
 						ID:  *destinationOutput.DestinationId,
 						Description: model.GuardDutyPublishingDestinationDescription{
 							PublishingDestination: *destinationOutput,
 							DetectorId:            detectorId,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -276,7 +318,7 @@ func GuardDutyPublishingDestination(ctx context.Context, cfg aws.Config) ([]Reso
 	return values, nil
 }
 
-func GuardDutyThreatIntelSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GuardDutyThreatIntelSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := guardduty.NewFromConfig(cfg)
 	paginator := guardduty.NewListDetectorsPaginator(client, &guardduty.ListDetectorsInput{})
@@ -309,7 +351,7 @@ func GuardDutyThreatIntelSet(ctx context.Context, cfg aws.Config) ([]Resource, e
 						return nil, err
 					}
 
-					values = append(values, Resource{
+					resource := Resource{
 						ARN:  arn,
 						Name: *threatIntelSetOutput.Name,
 						Description: model.GuardDutyThreatIntelSetDescription{
@@ -317,7 +359,14 @@ func GuardDutyThreatIntelSet(ctx context.Context, cfg aws.Config) ([]Resource, e
 							DetectorId:       detectorId,
 							ThreatIntelSetID: threatIntelSetId,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
