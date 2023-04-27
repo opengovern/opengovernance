@@ -74,6 +74,7 @@ func Command() *cobra.Command {
 				awsSessionToken,
 				assumeRoleArn,
 				disabledRegions,
+				nil,
 			)
 			if err != nil {
 				return err
