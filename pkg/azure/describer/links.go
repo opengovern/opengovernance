@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func ResourceLink(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ResourceLink(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := links.NewResourceLinksClient(subscription)
 	client.Authorizer = authorizer
 
@@ -20,14 +20,21 @@ func ResourceLink(ctx context.Context, authorizer autorest.Authorizer, subscript
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: "global",
 				Description: model.ResourceLinkDescription{
 					ResourceLink: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {

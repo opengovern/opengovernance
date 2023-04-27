@@ -12,7 +12,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func SqlServer(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SqlServer(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	virtualNetworkClient := sql.NewVirtualNetworkRulesClient(subscription)
 	virtualNetworkClient.Authorizer = authorizer
 
@@ -146,7 +146,7 @@ func SqlServer(ctx context.Context, authorizer autorest.Authorizer, subscription
 				nop = append(nop, networkOp.Values()...)
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *server.ID,
 				Name:     *server.Name,
 				Location: *server.Location,
@@ -162,7 +162,14 @@ func SqlServer(ctx context.Context, authorizer autorest.Authorizer, subscription
 					VirtualNetworkRules:            nop,
 					ResourceGroup:                  resourceGroupName,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -175,7 +182,7 @@ func SqlServer(ctx context.Context, authorizer autorest.Authorizer, subscription
 	return values, nil
 }
 
-func SqlServerElasticPool(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SqlServerElasticPool(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := sqlv3.NewServersClient(subscription)
 	client.Authorizer = authorizer
 
@@ -200,7 +207,7 @@ func SqlServerElasticPool(ctx context.Context, authorizer autorest.Authorizer, s
 			for {
 				for _, elasticPool := range *elasticPoolResult.Value {
 					resourceGroup := strings.Split(string(*elasticPool.ID), "/")[4]
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *elasticPool.ID,
 						Name:     *elasticPool.Name,
 						Location: *elasticPool.Location,
@@ -209,7 +216,14 @@ func SqlServerElasticPool(ctx context.Context, authorizer autorest.Authorizer, s
 							ServerName:    *server.Name,
 							ResourceGroup: resourceGroup,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -224,7 +238,7 @@ func SqlServerElasticPool(ctx context.Context, authorizer autorest.Authorizer, s
 	return values, nil
 }
 
-func SqlServerVirtualMachine(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SqlServerVirtualMachine(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := sqlvirtualmachine.NewSQLVirtualMachinesClient(subscription)
 	client.Authorizer = authorizer
 
@@ -237,7 +251,7 @@ func SqlServerVirtualMachine(ctx context.Context, authorizer autorest.Authorizer
 	for {
 		for _, vm := range result.Values() {
 			resourceGroup := strings.Split(string(*vm.ID), "/")[4]
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *vm.ID,
 				Name:     *vm.Name,
 				Location: *vm.Location,
@@ -245,7 +259,14 @@ func SqlServerVirtualMachine(ctx context.Context, authorizer autorest.Authorizer
 					VirtualMachine: vm,
 					ResourceGroup:  resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 
 		}
 		if !result.NotDone() {
@@ -259,7 +280,7 @@ func SqlServerVirtualMachine(ctx context.Context, authorizer autorest.Authorizer
 	return values, nil
 }
 
-func SqlServerFlexibleServer(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SqlServerFlexibleServer(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := mysqlflexibleservers.NewServersClient(subscription)
 	client.Authorizer = authorizer
 
@@ -272,7 +293,7 @@ func SqlServerFlexibleServer(ctx context.Context, authorizer autorest.Authorizer
 	for {
 		for _, fs := range result.Values() {
 			resourceGroup := strings.Split(string(*fs.ID), "/")[4]
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *fs.ID,
 				Name:     *fs.Name,
 				Location: *fs.Location,
@@ -280,7 +301,14 @@ func SqlServerFlexibleServer(ctx context.Context, authorizer autorest.Authorizer
 					FlexibleServer: fs,
 					ResourceGroup:  resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 
 		}
 		if !result.NotDone() {

@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func RecoveryServicesVault(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func RecoveryServicesVault(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := recoveryservices.NewVaultsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -23,7 +23,7 @@ func RecoveryServicesVault(ctx context.Context, authorizer autorest.Authorizer, 
 		for _, vault := range result.Values() {
 			resourceGroup := strings.Split(*vault.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *vault.ID,
 				Name:     *vault.Name,
 				Location: *vault.Location,
@@ -31,7 +31,14 @@ func RecoveryServicesVault(ctx context.Context, authorizer autorest.Authorizer, 
 					Vault:         vault,
 					ResourceGroup: resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {

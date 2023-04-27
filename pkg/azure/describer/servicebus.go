@@ -11,7 +11,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func ServiceBusQueue(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ServiceBusQueue(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -34,12 +34,19 @@ func ServiceBusQueue(ctx context.Context, authorizer autorest.Authorizer, subscr
 			}
 
 			for v := it.Value(); it.NotDone(); v = it.Value() {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:          *v.ID,
 					Name:        *v.Name,
 					Location:    "global",
 					Description: JSONAllFieldsMarshaller{Value: v},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 
 				err := it.NextWithContext(ctx)
 				if err != nil {
@@ -52,7 +59,7 @@ func ServiceBusQueue(ctx context.Context, authorizer autorest.Authorizer, subscr
 	return values, nil
 }
 
-func ServiceBusTopic(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ServiceBusTopic(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -75,12 +82,19 @@ func ServiceBusTopic(ctx context.Context, authorizer autorest.Authorizer, subscr
 			}
 
 			for v := it.Value(); it.NotDone(); v = it.Value() {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:          *v.ID,
 					Name:        *v.Name,
 					Location:    "global",
 					Description: JSONAllFieldsMarshaller{Value: v},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 
 				err := it.NextWithContext(ctx)
 				if err != nil {
@@ -114,7 +128,7 @@ func serviceBusNamespace(ctx context.Context, authorizer autorest.Authorizer, su
 
 	return values, nil
 }
-func ServicebusNamespace(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ServicebusNamespace(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	servicebusClient := previewservicebus.NewPrivateEndpointConnectionsClient(subscription)
 	servicebusClient.Authorizer = authorizer
 
@@ -159,7 +173,7 @@ func ServicebusNamespace(ctx context.Context, authorizer autorest.Authorizer, su
 
 				v = append(v, servicebusListOp.Values()...)
 			}
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *namespace.ID,
 				Name:     *namespace.Name,
 				Location: *namespace.Location,
@@ -170,7 +184,14 @@ func ServicebusNamespace(ctx context.Context, authorizer autorest.Authorizer, su
 					PrivateEndpointConnections:  v,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break

@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func MariadbServer(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func MariadbServer(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := mariadb.NewServersClient(subscription)
 	client.Authorizer = authorizer
 
@@ -22,7 +22,7 @@ func MariadbServer(ctx context.Context, authorizer autorest.Authorizer, subscrip
 	for _, v := range *result.Value {
 		resourceGroup := strings.Split(*v.ID, "/")[4]
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:       *v.ID,
 			Name:     *v.Name,
 			Location: *v.Location,
@@ -30,7 +30,14 @@ func MariadbServer(ctx context.Context, authorizer autorest.Authorizer, subscrip
 				Server:        v,
 				ResourceGroup: resourceGroup,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 	return values, nil
 }

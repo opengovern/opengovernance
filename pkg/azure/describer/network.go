@@ -11,7 +11,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func NetworkInterface(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func NetworkInterface(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := network.NewInterfacesClient(subscription)
 	client.Authorizer = authorizer
 
@@ -25,7 +25,7 @@ func NetworkInterface(ctx context.Context, authorizer autorest.Authorizer, subsc
 		for _, v := range result.Values() {
 			resourceGroup := strings.Split(*v.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: *v.Location,
@@ -33,7 +33,14 @@ func NetworkInterface(ctx context.Context, authorizer autorest.Authorizer, subsc
 					Interface:     v,
 					ResourceGroup: resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -49,7 +56,7 @@ func NetworkInterface(ctx context.Context, authorizer autorest.Authorizer, subsc
 	return values, nil
 }
 
-func NetworkWatcherFlowLog(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func NetworkWatcherFlowLog(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := network.NewFlowLogsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -75,7 +82,7 @@ func NetworkWatcherFlowLog(ctx context.Context, authorizer autorest.Authorizer, 
 
 		for {
 			for _, v := range result.Values() {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       *v.ID,
 					Name:     *v.Name,
 					Location: *v.Location,
@@ -84,7 +91,14 @@ func NetworkWatcherFlowLog(ctx context.Context, authorizer autorest.Authorizer, 
 						FlowLog:            v,
 						ResourceGroup:      resourceGroupID,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 
 			if !result.NotDone() {
@@ -101,7 +115,7 @@ func NetworkWatcherFlowLog(ctx context.Context, authorizer autorest.Authorizer, 
 	return values, nil
 }
 
-func Subnet(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func Subnet(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	networkClient := network.NewVirtualNetworksClient(subscription)
 	networkClient.Authorizer = authorizer
 
@@ -124,7 +138,7 @@ func Subnet(ctx context.Context, authorizer autorest.Authorizer, subscription st
 
 			for {
 				for _, v := range result.Values() {
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *v.ID,
 						Name:     *v.Name,
 						Location: "global",
@@ -133,7 +147,14 @@ func Subnet(ctx context.Context, authorizer autorest.Authorizer, subscription st
 							Subnet:             v,
 							ResourceGroup:      *resourceGroupName,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 
 				if !result.NotDone() {
@@ -160,7 +181,7 @@ func Subnet(ctx context.Context, authorizer autorest.Authorizer, subscription st
 	return values, nil
 }
 
-func VirtualNetwork(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func VirtualNetwork(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := network.NewVirtualNetworksClient(subscription)
 	client.Authorizer = authorizer
 
@@ -174,7 +195,7 @@ func VirtualNetwork(ctx context.Context, authorizer autorest.Authorizer, subscri
 		for _, v := range result.Values() {
 			resourceGroup := strings.Split(*v.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: *v.Location,
@@ -182,7 +203,14 @@ func VirtualNetwork(ctx context.Context, authorizer autorest.Authorizer, subscri
 					VirtualNetwork: v,
 					ResourceGroup:  resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -197,7 +225,7 @@ func VirtualNetwork(ctx context.Context, authorizer autorest.Authorizer, subscri
 
 	return values, nil
 }
-func ApplicationGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ApplicationGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	insightsClient := insights.NewDiagnosticSettingsClient(subscription)
 	insightsClient.Authorizer = authorizer
 
@@ -219,7 +247,7 @@ func ApplicationGateway(ctx context.Context, authorizer autorest.Authorizer, sub
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *gateway.ID,
 				Name:     *gateway.Name,
 				Location: *gateway.Location,
@@ -228,7 +256,14 @@ func ApplicationGateway(ctx context.Context, authorizer autorest.Authorizer, sub
 					DiagnosticSettingsResources: networkListOp.Value,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -241,7 +276,7 @@ func ApplicationGateway(ctx context.Context, authorizer autorest.Authorizer, sub
 	return values, nil
 }
 
-func NetworkSecurityGroup(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func NetworkSecurityGroup(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := insights.NewDiagnosticSettingsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -268,7 +303,7 @@ func NetworkSecurityGroup(ctx context.Context, authorizer autorest.Authorizer, s
 				}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *networkSecurityGroup.ID,
 				Name:     *networkSecurityGroup.Name,
 				Location: *networkSecurityGroup.Location,
@@ -277,7 +312,14 @@ func NetworkSecurityGroup(ctx context.Context, authorizer autorest.Authorizer, s
 					DiagnosticSettingsResources: networkListOp.Value,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -290,7 +332,7 @@ func NetworkSecurityGroup(ctx context.Context, authorizer autorest.Authorizer, s
 	return values, nil
 }
 
-func NetworkWatcher(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func NetworkWatcher(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	networkWatcherClient := newnetwork.NewWatchersClient(subscription)
 	networkWatcherClient.Authorizer = authorizer
 	result, err := networkWatcherClient.ListAll(ctx)
@@ -302,7 +344,7 @@ func NetworkWatcher(ctx context.Context, authorizer autorest.Authorizer, subscri
 	for _, networkWatcher := range *result.Value {
 		resourceGroup := strings.Split(*networkWatcher.ID, "/")[4]
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:       *networkWatcher.ID,
 			Name:     *networkWatcher.Name,
 			Location: *networkWatcher.Location,
@@ -310,13 +352,20 @@ func NetworkWatcher(ctx context.Context, authorizer autorest.Authorizer, subscri
 				Watcher:       networkWatcher,
 				ResourceGroup: resourceGroup,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func RouteTables(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func RouteTables(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := newnetwork.NewRouteTablesClient(subscription)
 	client.Authorizer = authorizer
 
@@ -330,7 +379,7 @@ func RouteTables(ctx context.Context, authorizer autorest.Authorizer, subscripti
 		for _, routeTable := range result.Values() {
 			resourceGroup := strings.Split(*routeTable.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *routeTable.ID,
 				Name:     *routeTable.Name,
 				Location: *routeTable.Location,
@@ -338,7 +387,14 @@ func RouteTables(ctx context.Context, authorizer autorest.Authorizer, subscripti
 					ResourceGroup: resourceGroup,
 					RouteTable:    routeTable,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -351,7 +407,7 @@ func RouteTables(ctx context.Context, authorizer autorest.Authorizer, subscripti
 	return values, nil
 }
 
-func NetworkApplicationSecurityGroups(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func NetworkApplicationSecurityGroups(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := newnetwork.NewApplicationSecurityGroupsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -365,7 +421,7 @@ func NetworkApplicationSecurityGroups(ctx context.Context, authorizer autorest.A
 		for _, applicationSecurityGroup := range result.Values() {
 			resourceGroup := strings.Split(*applicationSecurityGroup.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *applicationSecurityGroup.ID,
 				Name:     *applicationSecurityGroup.Name,
 				Location: *applicationSecurityGroup.Location,
@@ -373,7 +429,14 @@ func NetworkApplicationSecurityGroups(ctx context.Context, authorizer autorest.A
 					ApplicationSecurityGroup: applicationSecurityGroup,
 					ResourceGroup:            resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -387,7 +450,7 @@ func NetworkApplicationSecurityGroups(ctx context.Context, authorizer autorest.A
 	return values, nil
 }
 
-func NetworkAzureFirewall(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func NetworkAzureFirewall(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := newnetwork.NewAzureFirewallsClient(subscription)
 	client.Authorizer = authorizer
 	result, err := client.ListAll(ctx)
@@ -401,7 +464,7 @@ func NetworkAzureFirewall(ctx context.Context, authorizer autorest.Authorizer, s
 		for _, azureFirewall := range result.Values() {
 			resourceGroup := strings.Split(*azureFirewall.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *azureFirewall.ID,
 				Name:     *azureFirewall.Name,
 				Location: *azureFirewall.Location,
@@ -409,7 +472,14 @@ func NetworkAzureFirewall(ctx context.Context, authorizer autorest.Authorizer, s
 					AzureFirewall: azureFirewall,
 					ResourceGroup: resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -424,7 +494,7 @@ func NetworkAzureFirewall(ctx context.Context, authorizer autorest.Authorizer, s
 	return values, nil
 }
 
-func ExpressRouteCircuit(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ExpressRouteCircuit(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := newnetwork.NewExpressRouteCircuitsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -438,7 +508,7 @@ func ExpressRouteCircuit(ctx context.Context, authorizer autorest.Authorizer, su
 		for _, expressRouteCircuit := range result.Values() {
 			resourceGroup := strings.Split(*expressRouteCircuit.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *expressRouteCircuit.ID,
 				Name:     *expressRouteCircuit.Name,
 				Location: *expressRouteCircuit.Location,
@@ -446,7 +516,14 @@ func ExpressRouteCircuit(ctx context.Context, authorizer autorest.Authorizer, su
 					ExpressRouteCircuit: expressRouteCircuit,
 					ResourceGroup:       resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -459,7 +536,7 @@ func ExpressRouteCircuit(ctx context.Context, authorizer autorest.Authorizer, su
 	return values, nil
 }
 
-func VirtualNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func VirtualNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := newnetwork.NewVirtualNetworkGatewaysClient(subscription)
 	client.Authorizer = authorizer
 
@@ -487,7 +564,7 @@ func VirtualNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, 
 
 				resourceGroup := strings.Split(*virtualNetworkGateway.ID, "/")[4]
 
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       *virtualNetworkGateway.ID,
 					Name:     *virtualNetworkGateway.Name,
 					Location: *virtualNetworkGateway.Location,
@@ -496,7 +573,14 @@ func VirtualNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, 
 						VirtualNetworkGateway:           virtualNetworkGateway,
 						VirtualNetworkGatewayConnection: virtualNetworkGatewayConnection,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 			if !result.NotDone() {
 				break
@@ -511,7 +595,7 @@ func VirtualNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, 
 	return values, nil
 }
 
-func FirewallPolicy(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func FirewallPolicy(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := newnetwork.NewFirewallPoliciesClient(subscription)
 	client.Authorizer = authorizer
 
@@ -525,7 +609,7 @@ func FirewallPolicy(ctx context.Context, authorizer autorest.Authorizer, subscri
 		for _, firewallPolicy := range result.Values() {
 			resourceGroup := strings.Split(*firewallPolicy.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *firewallPolicy.ID,
 				Name:     *firewallPolicy.Name,
 				Location: *firewallPolicy.Location,
@@ -533,7 +617,14 @@ func FirewallPolicy(ctx context.Context, authorizer autorest.Authorizer, subscri
 					ResourceGroup:  resourceGroup,
 					FirewallPolicy: firewallPolicy,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -546,7 +637,7 @@ func FirewallPolicy(ctx context.Context, authorizer autorest.Authorizer, subscri
 	return values, nil
 }
 
-func LocalNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func LocalNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := newnetwork.NewLocalNetworkGatewaysClient(subscription)
 	client.Authorizer = authorizer
 
@@ -566,7 +657,7 @@ func LocalNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, su
 			for _, localNetworkGateway := range result.Values() {
 				resourceGroup := strings.Split(*localNetworkGateway.ID, "/")[4]
 
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       *localNetworkGateway.ID,
 					Name:     *localNetworkGateway.Name,
 					Location: *localNetworkGateway.Location,
@@ -574,7 +665,14 @@ func LocalNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, su
 						ResourceGroup:       resourceGroup,
 						LocalNetworkGateway: localNetworkGateway,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 			if !result.NotDone() {
 				break
@@ -589,7 +687,7 @@ func LocalNetworkGateway(ctx context.Context, authorizer autorest.Authorizer, su
 	return values, nil
 }
 
-func NatGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func NatGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := newnetwork.NewNatGatewaysClient(subscription)
 	client.Authorizer = authorizer
 
@@ -609,7 +707,7 @@ func NatGateway(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 			for _, natGateway := range result.Values() {
 				resourceGroup := strings.Split(*natGateway.ID, "/")[4]
 
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       *natGateway.ID,
 					Name:     *natGateway.Name,
 					Location: *natGateway.Location,
@@ -617,7 +715,14 @@ func NatGateway(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 						ResourceGroup: resourceGroup,
 						NatGateway:    natGateway,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 			if !result.NotDone() {
 				break
@@ -632,7 +737,7 @@ func NatGateway(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 	return values, nil
 }
 
-func PrivateLinkService(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func PrivateLinkService(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := newnetwork.NewPrivateLinkServicesClient(subscription)
 	client.Authorizer = authorizer
 
@@ -652,7 +757,7 @@ func PrivateLinkService(ctx context.Context, authorizer autorest.Authorizer, sub
 			for _, privateLinkService := range result.Values() {
 				resourceGroup := strings.Split(*privateLinkService.ID, "/")[4]
 
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       *privateLinkService.ID,
 					Name:     *privateLinkService.Name,
 					Location: *privateLinkService.Location,
@@ -660,7 +765,14 @@ func PrivateLinkService(ctx context.Context, authorizer autorest.Authorizer, sub
 						ResourceGroup:      resourceGroup,
 						PrivateLinkService: privateLinkService,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 			if !result.NotDone() {
 				break
@@ -675,7 +787,7 @@ func PrivateLinkService(ctx context.Context, authorizer autorest.Authorizer, sub
 	return values, nil
 }
 
-func RouteFilter(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func RouteFilter(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := newnetwork.NewRouteFiltersClient(subscription)
 	client.Authorizer = authorizer
 
@@ -689,7 +801,7 @@ func RouteFilter(ctx context.Context, authorizer autorest.Authorizer, subscripti
 		for _, routeFilter := range result.Values() {
 			resourceGroup := strings.Split(*routeFilter.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *routeFilter.ID,
 				Name:     *routeFilter.Name,
 				Location: *routeFilter.Location,
@@ -697,7 +809,14 @@ func RouteFilter(ctx context.Context, authorizer autorest.Authorizer, subscripti
 					ResourceGroup: resourceGroup,
 					RouteFilter:   routeFilter,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -711,7 +830,7 @@ func RouteFilter(ctx context.Context, authorizer autorest.Authorizer, subscripti
 	return values, nil
 }
 
-func VpnGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func VpnGateway(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := newnetwork.NewVpnGatewaysClient(subscription)
 	client.Authorizer = authorizer
 
@@ -725,7 +844,7 @@ func VpnGateway(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 		for _, vpnGateway := range result.Values() {
 			resourceGroup := strings.Split(*vpnGateway.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *vpnGateway.ID,
 				Name:     *vpnGateway.Name,
 				Location: *vpnGateway.Location,
@@ -733,7 +852,14 @@ func VpnGateway(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 					ResourceGroup: resourceGroup,
 					VpnGateway:    vpnGateway,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -747,7 +873,7 @@ func VpnGateway(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 	return values, nil
 }
 
-func PublicIPAddress(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func PublicIPAddress(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := newnetwork.NewPublicIPAddressesClient(subscription)
 	client.Authorizer = authorizer
 
@@ -765,7 +891,7 @@ func PublicIPAddress(ctx context.Context, authorizer autorest.Authorizer, subscr
 
 		for {
 			for _, publicIPAddress := range result.Values() {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       *publicIPAddress.ID,
 					Name:     *publicIPAddress.Name,
 					Location: *publicIPAddress.Location,
@@ -773,7 +899,14 @@ func PublicIPAddress(ctx context.Context, authorizer autorest.Authorizer, subscr
 						ResourceGroup:   *resourceGroup.Name,
 						PublicIPAddress: publicIPAddress,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 			if !result.NotDone() {
 				break

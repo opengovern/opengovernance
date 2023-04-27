@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func SignalrService(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SignalrService(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	insightsClient := insights.NewDiagnosticSettingsClient(subscription)
 	insightsClient.Authorizer = authorizer
 
@@ -32,7 +32,7 @@ func SignalrService(ctx context.Context, authorizer autorest.Authorizer, subscri
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *service.ID,
 				Name:     *service.Name,
 				Location: *service.Location,
@@ -41,7 +41,14 @@ func SignalrService(ctx context.Context, authorizer autorest.Authorizer, subscri
 					DiagnosticSettingsResources: signalrListOp.Value,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break

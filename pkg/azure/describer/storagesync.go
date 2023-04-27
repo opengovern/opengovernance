@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func StorageSync(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func StorageSync(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := storagesync.NewServicesClient(subscription)
 	client.Authorizer = authorizer
 
@@ -22,14 +22,21 @@ func StorageSync(ctx context.Context, authorizer autorest.Authorizer, subscripti
 	for _, storage := range *result.Value {
 		resourceGroup := strings.Split(*storage.ID, "/")[4]
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:       *storage.ID,
 			Name:     *storage.Name,
 			Location: *storage.Location,
 			Description: model.StorageSyncDescription{
 				Service:       storage,
 				ResourceGroup: resourceGroup,
-			}})
+			}}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 	return values, nil
 }

@@ -68,10 +68,19 @@ func (d GenericResourceGraph) DescribeResources(ctx context.Context, authorizer 
 
 			for _, v := range response.Data.([]interface{}) {
 				m := v.(map[string]interface{})
-				values = append(values, Resource{
+				resource := Resource{
 					ID:          m["id"].(string),
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
+
+				values = append(values)
 			}
 			first, skipToken = false, response.SkipToken
 		}
