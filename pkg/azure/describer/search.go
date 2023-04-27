@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func SearchService(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SearchService(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := insights.NewDiagnosticSettingsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -31,7 +31,7 @@ func SearchService(ctx context.Context, authorizer autorest.Authorizer, subscrip
 			if err != nil {
 				return nil, err
 			}
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *service.ID,
 				Name:     *service.Name,
 				Location: *service.Location,
@@ -40,7 +40,14 @@ func SearchService(ctx context.Context, authorizer autorest.Authorizer, subscrip
 					DiagnosticSettingsResources: searchListOp.Value,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break

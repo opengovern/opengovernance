@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func LoadBalancer(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func LoadBalancer(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := network.NewLoadBalancersClient(subscription)
 	client.Authorizer = authorizer
 
@@ -33,7 +33,7 @@ func LoadBalancer(ctx context.Context, authorizer autorest.Authorizer, subscript
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *loadBalancer.ID,
 				Name:     *loadBalancer.Name,
 				Location: *loadBalancer.Location,
@@ -42,7 +42,14 @@ func LoadBalancer(ctx context.Context, authorizer autorest.Authorizer, subscript
 					DiagnosticSetting: diagnosticSettings.Value,
 					LoadBalancer:      loadBalancer,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -55,7 +62,7 @@ func LoadBalancer(ctx context.Context, authorizer autorest.Authorizer, subscript
 	return values, nil
 }
 
-func LoadBalancerBackendAddressPool(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func LoadBalancerBackendAddressPool(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := network.NewLoadBalancersClient(subscription)
 	client.Authorizer = authorizer
 
@@ -79,7 +86,7 @@ func LoadBalancerBackendAddressPool(ctx context.Context, authorizer autorest.Aut
 			for {
 				for _, pool := range backendAddressPools.Values() {
 					resourceGroup := strings.Split(*pool.ID, "/")[4]
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *pool.ID,
 						Name:     *pool.Name,
 						Location: *pool.Location,
@@ -88,7 +95,14 @@ func LoadBalancerBackendAddressPool(ctx context.Context, authorizer autorest.Aut
 							LoadBalancer:  loadBalancer,
 							Pool:          pool,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 				if !backendAddressPools.NotDone() {
 					break
@@ -110,7 +124,7 @@ func LoadBalancerBackendAddressPool(ctx context.Context, authorizer autorest.Aut
 	return values, nil
 }
 
-func LoadBalancerNatRule(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func LoadBalancerNatRule(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := network.NewLoadBalancersClient(subscription)
 	client.Authorizer = authorizer
 
@@ -134,7 +148,7 @@ func LoadBalancerNatRule(ctx context.Context, authorizer autorest.Authorizer, su
 			for {
 				for _, natRule := range natRules.Values() {
 					resourceGroup := strings.Split(*natRule.ID, "/")[4]
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *natRule.ID,
 						Name:     *natRule.Name,
 						Location: *loadBalancer.Location,
@@ -143,7 +157,14 @@ func LoadBalancerNatRule(ctx context.Context, authorizer autorest.Authorizer, su
 							LoadBalancerName: *loadBalancer.Name,
 							Rule:             natRule,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 				if !natRules.NotDone() {
 					break
@@ -165,7 +186,7 @@ func LoadBalancerNatRule(ctx context.Context, authorizer autorest.Authorizer, su
 	return values, nil
 }
 
-func LoadBalancerOutboundRule(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func LoadBalancerOutboundRule(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := network.NewLoadBalancersClient(subscription)
 	client.Authorizer = authorizer
 
@@ -189,7 +210,7 @@ func LoadBalancerOutboundRule(ctx context.Context, authorizer autorest.Authorize
 			for {
 				for _, outboundRule := range outboundRuleListResultPage.Values() {
 					resourceGroup := strings.Split(*outboundRule.ID, "/")[4]
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *outboundRule.ID,
 						Name:     *outboundRule.Name,
 						Location: *loadBalancer.Location,
@@ -198,7 +219,14 @@ func LoadBalancerOutboundRule(ctx context.Context, authorizer autorest.Authorize
 							LoadBalancerName: *loadBalancer.Name,
 							Rule:             outboundRule,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 				if !outboundRuleListResultPage.NotDone() {
 					break
@@ -220,7 +248,7 @@ func LoadBalancerOutboundRule(ctx context.Context, authorizer autorest.Authorize
 	return values, nil
 }
 
-func LoadBalancerProbe(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func LoadBalancerProbe(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := network.NewLoadBalancersClient(subscription)
 	client.Authorizer = authorizer
 
@@ -244,7 +272,7 @@ func LoadBalancerProbe(ctx context.Context, authorizer autorest.Authorizer, subs
 			for {
 				for _, probe := range probeListResultPage.Values() {
 					resourceGroup := strings.Split(*probe.ID, "/")[4]
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *probe.ID,
 						Name:     *probe.Name,
 						Location: *loadBalancer.Location,
@@ -253,7 +281,14 @@ func LoadBalancerProbe(ctx context.Context, authorizer autorest.Authorizer, subs
 							LoadBalancerName: *loadBalancer.Name,
 							Probe:            probe,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 				if !probeListResultPage.NotDone() {
 					break
@@ -275,7 +310,7 @@ func LoadBalancerProbe(ctx context.Context, authorizer autorest.Authorizer, subs
 	return values, nil
 }
 
-func LoadBalancerRule(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func LoadBalancerRule(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := network.NewLoadBalancersClient(subscription)
 	client.Authorizer = authorizer
 
@@ -299,7 +334,7 @@ func LoadBalancerRule(ctx context.Context, authorizer autorest.Authorizer, subsc
 			for {
 				for _, rule := range ruleListResultPage.Values() {
 					resourceGroup := strings.Split(*rule.ID, "/")[4]
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *rule.ID,
 						Name:     *rule.Name,
 						Location: *loadBalancer.Location,
@@ -308,7 +343,14 @@ func LoadBalancerRule(ctx context.Context, authorizer autorest.Authorizer, subsc
 							LoadBalancerName: *loadBalancer.Name,
 							Rule:             rule,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 				if !ruleListResultPage.NotDone() {
 					break

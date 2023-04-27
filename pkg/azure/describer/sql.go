@@ -13,7 +13,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func MssqlManagedInstance(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func MssqlManagedInstance(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	managedInstanceClient := sqlV5.NewManagedInstanceVulnerabilityAssessmentsClient(subscription)
 	managedInstanceClient.Authorizer = authorizer
 
@@ -78,7 +78,7 @@ func MssqlManagedInstance(ctx context.Context, authorizer autorest.Authorizer, s
 				veop = append(veop, eop.Values()...)
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *managedInstance.ID,
 				Name:     *managedInstance.Name,
 				Location: *managedInstance.Location,
@@ -89,7 +89,14 @@ func MssqlManagedInstance(ctx context.Context, authorizer autorest.Authorizer, s
 					ManagedInstanceEncryptionProtectors:     veop,
 					ResourceGroup:                           resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -102,7 +109,7 @@ func MssqlManagedInstance(ctx context.Context, authorizer autorest.Authorizer, s
 	return values, nil
 }
 
-func SqlDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SqlDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	parentClient := sqlv3.NewServersClient(subscription)
 	parentClient.Authorizer = authorizer
 
@@ -190,7 +197,7 @@ func SqlDatabase(ctx context.Context, authorizer autorest.Authorizer, subscripti
 					return nil, err
 				}
 
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       *server.ID,
 					Name:     *server.Name,
 					Location: *server.Location,
@@ -202,7 +209,14 @@ func SqlDatabase(ctx context.Context, authorizer autorest.Authorizer, subscripti
 						VulnerabilityAssessmentScanRecords: v,
 						ResourceGroup:                      resourceGroupName,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 

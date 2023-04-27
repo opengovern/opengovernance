@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func RedisCache(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func RedisCache(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := redis.NewClient(subscription)
 	client.Authorizer = authorizer
 
@@ -22,7 +22,7 @@ func RedisCache(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 	for {
 		for _, v := range result.Values() {
 			resourceGroup := strings.Split(*v.ID, "/")[4]
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: *v.Location,
@@ -30,7 +30,14 @@ func RedisCache(ctx context.Context, authorizer autorest.Authorizer, subscriptio
 					ResourceType:  v,
 					ResourceGroup: resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {

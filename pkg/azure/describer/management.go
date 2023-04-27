@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func ManagementGroup(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ManagementGroup(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := managementgroups.NewClient()
 	client.Authorizer = authorizer
 
@@ -27,13 +27,20 @@ func ManagementGroup(ctx context.Context, authorizer autorest.Authorizer, subscr
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:   *info.ID,
 				Name: *info.Name,
 				Description: model.ManagementGroupDescription{
 					Group: group,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -46,7 +53,7 @@ func ManagementGroup(ctx context.Context, authorizer autorest.Authorizer, subscr
 	return values, nil
 }
 
-func ManagementLock(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ManagementLock(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := locks.NewManagementLocksClient(subscription)
 	client.Authorizer = authorizer
 
@@ -59,14 +66,21 @@ func ManagementLock(ctx context.Context, authorizer autorest.Authorizer, subscri
 	for {
 		for _, lockObject := range result.Values() {
 			resourceGroup := strings.Split(*lockObject.ID, "/")[4]
-			values = append(values, Resource{
+			resource := Resource{
 				ID:   *lockObject.ID,
 				Name: *lockObject.Name,
 				Description: model.ManagementLockDescription{
 					Lock:          lockObject,
 					ResourceGroup: resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break

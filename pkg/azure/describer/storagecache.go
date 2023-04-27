@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func HpcCache(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func HpcCache(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := storagecache.NewCachesClient(subscription)
 	client.Authorizer = authorizer
 
@@ -23,7 +23,7 @@ func HpcCache(ctx context.Context, authorizer autorest.Authorizer, subscription 
 		for _, v := range result.Values() {
 			resourceGroup := strings.Split(*v.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: *v.Location,
@@ -31,7 +31,14 @@ func HpcCache(ctx context.Context, authorizer autorest.Authorizer, subscription 
 					Cache:         v,
 					ResourceGroup: resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {

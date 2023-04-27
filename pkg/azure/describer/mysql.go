@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func MysqlServer(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func MysqlServer(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	keysClient := mysql.NewServerKeysClient(subscription)
 	keysClient.Authorizer = authorizer
 
@@ -49,7 +49,7 @@ func MysqlServer(ctx context.Context, authorizer autorest.Authorizer, subscripti
 			keys = append(keys, keysListOp.Values()...)
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:       *server.ID,
 			Name:     *server.Name,
 			Location: *server.Location,
@@ -59,7 +59,14 @@ func MysqlServer(ctx context.Context, authorizer autorest.Authorizer, subscripti
 				ServerKeys:     keys,
 				ResourceGroup:  resourceGroup,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 	return values, nil
 }
