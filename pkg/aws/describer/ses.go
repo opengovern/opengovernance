@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func SESConfigurationSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SESConfigurationSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
 	client := sesv2.NewFromConfig(cfg)
@@ -33,20 +33,27 @@ func SESConfigurationSet(ctx context.Context, cfg aws.Config) ([]Resource, error
 
 			arn := fmt.Sprintf("arn:%s:ses:%s:%s:configuration-set/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *output.ConfigurationSet.Name)
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *output.ConfigurationSet.Name,
 				Description: model.SESConfigurationSetDescription{
 					ConfigurationSet: *output.ConfigurationSet,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func SESIdentity(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SESIdentity(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
 	client := sesv2.NewFromConfig(cfg)
@@ -69,21 +76,28 @@ func SESIdentity(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *v.IdentityName,
 				Description: model.SESIdentityDescription{
 					Identity: v,
 					Tags:     tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func SESContactList(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SESContactList(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := sesv2.NewFromConfig(cfg)
 	paginator := sesv2.NewListContactListsPaginator(client, &sesv2.ListContactListsInput{})
 
@@ -95,18 +109,25 @@ func SESContactList(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.ContactLists {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.ContactListName,
 				Name:        *v.ContactListName,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func SESReceiptFilter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SESReceiptFilter(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ses.NewFromConfig(cfg)
 
 	output, err := client.ListReceiptFilters(ctx, &ses.ListReceiptFiltersInput{})
@@ -116,17 +137,24 @@ func SESReceiptFilter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 	var values []Resource
 	for _, v := range output.Filters {
-		values = append(values, Resource{
+		resource := Resource{
 			ID:          *v.Name,
 			Name:        *v.Name,
 			Description: v,
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func SESReceiptRuleSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SESReceiptRuleSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ses.NewFromConfig(cfg)
 
 	var values []Resource
@@ -142,11 +170,19 @@ func SESReceiptRuleSet(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *output.Metadata.Name,
 				Name:        *output.Metadata.Name,
 				Description: output,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 
 		return output.NextToken, nil
@@ -158,7 +194,7 @@ func SESReceiptRuleSet(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	return values, nil
 }
 
-func SESTemplate(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SESTemplate(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ses.NewFromConfig(cfg)
 
 	var values []Resource
@@ -169,11 +205,19 @@ func SESTemplate(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range output.TemplatesMetadata {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.Name,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 
 		return output.NextToken, nil

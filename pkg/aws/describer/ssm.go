@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func SSMManagedInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SSMManagedInstance(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewDescribeInstanceInformationPaginator(client, &ssm.DescribeInstanceInformationInput{})
 
@@ -30,19 +30,26 @@ func SSMManagedInstance(ctx context.Context, cfg aws.Config) ([]Resource, error)
 			} else {
 				name = *item.InstanceId
 			}
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: name,
 				Description: model.SSMManagedInstanceDescription{
 					InstanceInformation: item,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 	return values, nil
 }
 
-func SSMManagedInstanceCompliance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SSMManagedInstanceCompliance(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewDescribeInstanceInformationPaginator(client, &ssm.DescribeInstanceInformationInput{})
 
@@ -68,13 +75,20 @@ func SSMManagedInstanceCompliance(ctx context.Context, cfg aws.Config) ([]Resour
 
 				for _, item := range cpage.ComplianceItems {
 					arn := "arn:" + describeCtx.Partition + ":ssm:" + describeCtx.Region + ":" + describeCtx.AccountID + ":managed-instance/" + *item.ResourceId + "/compliance-item/" + *item.Id + ":" + *item.ComplianceType
-					values = append(values, Resource{
+					resource := Resource{
 						ARN:  arn,
 						Name: *item.Title,
 						Description: model.SSMManagedInstanceComplianceDescription{
 							ComplianceItem: item,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -83,7 +97,7 @@ func SSMManagedInstanceCompliance(ctx context.Context, cfg aws.Config) ([]Resour
 	return values, nil
 }
 
-func SSMAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SSMAssociation(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewListAssociationsPaginator(client, &ssm.ListAssociationsInput{})
 
@@ -95,18 +109,25 @@ func SSMAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Associations {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.AssociationId,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func SSMDocument(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SSMDocument(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewListDocumentsPaginator(client, &ssm.ListDocumentsInput{})
 
@@ -118,18 +139,25 @@ func SSMDocument(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.DocumentIdentifiers {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.Name,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func SSMMaintenanceWindow(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SSMMaintenanceWindow(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewDescribeMaintenanceWindowsPaginator(client, &ssm.DescribeMaintenanceWindowsInput{})
 
@@ -141,19 +169,26 @@ func SSMMaintenanceWindow(ctx context.Context, cfg aws.Config) ([]Resource, erro
 		}
 
 		for _, v := range page.WindowIdentities {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.WindowId,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func SSMMaintenanceWindowTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	windows, err := SSMMaintenanceWindow(ctx, cfg)
+func SSMMaintenanceWindowTarget(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	windows, err := SSMMaintenanceWindow(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -174,11 +209,18 @@ func SSMMaintenanceWindowTarget(ctx context.Context, cfg aws.Config) ([]Resource
 			}
 
 			for _, v := range page.Targets {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:          *v.WindowTargetId,
 					Name:        *v.Name,
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -186,8 +228,8 @@ func SSMMaintenanceWindowTarget(ctx context.Context, cfg aws.Config) ([]Resource
 	return values, nil
 }
 
-func SSMMaintenanceWindowTask(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	windows, err := SSMMaintenanceWindow(ctx, cfg)
+func SSMMaintenanceWindowTask(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	windows, err := SSMMaintenanceWindow(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -208,11 +250,18 @@ func SSMMaintenanceWindowTask(ctx context.Context, cfg aws.Config) ([]Resource, 
 			}
 
 			for _, v := range page.Tasks {
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:         *v.TaskArn,
 					Name:        *v.Name,
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -220,7 +269,7 @@ func SSMMaintenanceWindowTask(ctx context.Context, cfg aws.Config) ([]Resource, 
 	return values, nil
 }
 
-func SSMParameter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SSMParameter(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewDescribeParametersPaginator(client, &ssm.DescribeParametersInput{})
 
@@ -232,18 +281,25 @@ func SSMParameter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.Parameters {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.Name,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func SSMPatchBaseline(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SSMPatchBaseline(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewDescribePatchBaselinesPaginator(client, &ssm.DescribePatchBaselinesInput{})
 
@@ -255,18 +311,25 @@ func SSMPatchBaseline(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.BaselineIdentities {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.BaselineId,
 				Name:        *v.BaselineName,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func SSMResourceDataSync(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SSMResourceDataSync(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ssm.NewFromConfig(cfg)
 	paginator := ssm.NewListResourceDataSyncPaginator(client, &ssm.ListResourceDataSyncInput{})
 
@@ -278,11 +341,18 @@ func SSMResourceDataSync(ctx context.Context, cfg aws.Config) ([]Resource, error
 		}
 
 		for _, v := range page.ResourceDataSyncItems {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.SyncName,
 				Name:        *v.SyncName,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

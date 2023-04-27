@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func SSOAdminInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SSOAdminInstance(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := ssoadmin.NewFromConfig(cfg)
 	paginator := ssoadmin.NewListInstancesPaginator(client, &ssoadmin.ListInstancesInput{})
 
@@ -19,13 +19,20 @@ func SSOAdminInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			return nil, err
 		}
 		for _, v := range page.Instances {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.InstanceArn,
 				Name: *v.InstanceArn,
 				Description: model.SSOAdminInstanceDescription{
 					Instance: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 	return values, nil

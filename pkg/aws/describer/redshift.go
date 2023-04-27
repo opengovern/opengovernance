@@ -14,7 +14,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func RedshiftCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func RedshiftCluster(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := redshift.NewFromConfig(cfg)
 	paginator := redshift.NewDescribeClustersPaginator(client, &redshift.DescribeClustersInput{})
 
@@ -45,7 +45,7 @@ func RedshiftCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.ClusterNamespaceArn,
 				Name: *v.ClusterIdentifier,
 				Description: model.RedshiftClusterDescription{
@@ -53,14 +53,21 @@ func RedshiftCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					LoggingStatus:    logStatus,
 					ScheduledActions: sactions.ScheduledActions,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func RedshiftClusterParameterGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func RedshiftClusterParameterGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := redshift.NewFromConfig(cfg)
 	paginator := redshift.NewDescribeClusterParameterGroupsPaginator(client, &redshift.DescribeClusterParameterGroupsInput{})
 
@@ -87,21 +94,28 @@ func RedshiftClusterParameterGroup(ctx context.Context, cfg aws.Config) ([]Resou
 			} else {
 				arn = arn + ":" + *v.ParameterGroupName
 			}
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *v.ParameterGroupName,
 				Description: model.RedshiftClusterParameterGroupDescription{
 					ClusterParameterGroup: v,
 					Parameters:            param.Parameters,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func RedshiftClusterSecurityGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func RedshiftClusterSecurityGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := redshift.NewFromConfig(cfg)
 	paginator := redshift.NewDescribeClusterSecurityGroupsPaginator(client, &redshift.DescribeClusterSecurityGroupsInput{})
 
@@ -118,18 +132,25 @@ func RedshiftClusterSecurityGroup(ctx context.Context, cfg aws.Config) ([]Resour
 		}
 
 		for _, v := range page.ClusterSecurityGroups {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.ClusterSecurityGroupName,
 				Name:        *v.ClusterSecurityGroupName,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func RedshiftClusterSubnetGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func RedshiftClusterSubnetGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := redshift.NewFromConfig(cfg)
 	paginator := redshift.NewDescribeClusterSubnetGroupsPaginator(client, &redshift.DescribeClusterSubnetGroupsInput{})
 
@@ -141,18 +162,25 @@ func RedshiftClusterSubnetGroup(ctx context.Context, cfg aws.Config) ([]Resource
 		}
 
 		for _, v := range page.ClusterSubnetGroups {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.ClusterSubnetGroupName,
 				Name:        *v.ClusterSubnetGroupName,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func RedshiftSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func RedshiftSnapshot(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
 	client := redshift.NewFromConfig(cfg)
@@ -170,13 +198,20 @@ func RedshiftSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.Snapshots {
 			arn := fmt.Sprintf("arn:%s:redshift:%s:%s:snapshot:%s/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.ClusterIdentifier, *v.SnapshotIdentifier)
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *v.SnapshotIdentifier,
 				Description: model.RedshiftSnapshotDescription{
 					Snapshot: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -214,7 +249,7 @@ func GetRedshiftSnapshot(ctx context.Context, cfg aws.Config, fields map[string]
 	return values, nil
 }
 
-func RedshiftServerlessNamespace(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func RedshiftServerlessNamespace(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := redshiftserverless.NewFromConfig(cfg)
 	paginator := redshiftserverless.NewListNamespacesPaginator(client, &redshiftserverless.ListNamespacesInput{})
 
@@ -233,21 +268,28 @@ func RedshiftServerlessNamespace(ctx context.Context, cfg aws.Config) ([]Resourc
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.NamespaceArn,
 				Name: *v.NamespaceName,
 				Description: model.RedshiftServerlessNamespaceDescription{
 					Namespace: v,
 					Tags:      tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func RedshiftServerlessSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func RedshiftServerlessSnapshot(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := redshiftserverless.NewFromConfig(cfg)
 	paginator := redshiftserverless.NewListSnapshotsPaginator(client, &redshiftserverless.ListSnapshotsInput{})
 
@@ -266,14 +308,21 @@ func RedshiftServerlessSnapshot(ctx context.Context, cfg aws.Config) ([]Resource
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.NamespaceArn,
 				Name: *v.NamespaceName,
 				Description: model.RedshiftServerlessSnapshotDescription{
 					Snapshot: v,
 					Tags:     tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

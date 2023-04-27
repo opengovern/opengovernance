@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func SQSQueue(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SQSQueue(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := sqs.NewFromConfig(cfg)
 	paginator := sqs.NewListQueuesPaginator(client, &sqs.ListQueuesInput{})
 
@@ -45,14 +45,21 @@ func SQSQueue(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			// Add Queue URL since it doesn't exists in the description
 			output.Attributes["QueueUrl"] = url
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  url,
 				Name: nameFromArn(url),
 				Description: model.SQSQueueDescription{
 					Attributes: output.Attributes,
 					Tags:       tOutput.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

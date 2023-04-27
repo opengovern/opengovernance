@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func SNSSubscription(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SNSSubscription(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := sns.NewFromConfig(cfg)
 	paginator := sns.NewListSubscriptionsPaginator(client, &sns.ListSubscriptionsInput{})
 
@@ -31,21 +31,28 @@ func SNSSubscription(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				output = &sns.GetSubscriptionAttributesOutput{}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.SubscriptionArn,
 				Name: nameFromArn(*v.SubscriptionArn),
 				Description: model.SNSSubscriptionDescription{
 					Subscription: v,
 					Attributes:   output.Attributes,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func SNSTopic(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SNSTopic(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := sns.NewFromConfig(cfg)
 	paginator := sns.NewListTopicsPaginator(client, &sns.ListTopicsInput{})
 
@@ -71,14 +78,21 @@ func SNSTopic(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.TopicArn,
 				Name: nameFromArn(*v.TopicArn),
 				Description: model.SNSTopicDescription{
 					Attributes: output.Attributes,
 					Tags:       tOutput.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
