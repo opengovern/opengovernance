@@ -426,7 +426,7 @@ func InitializeScheduler(
 	}
 
 	s.grpcServer = grpc.NewServer()
-	describeServer := NewDescribeServer(s.rdb, producer, s.kafkaResourcesTopic, s.logger)
+	describeServer := NewDescribeServer(s.rdb, producer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.logger)
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
 
 	return s, nil
@@ -1614,4 +1614,35 @@ func newCheckupJob() CheckupJob {
 	return CheckupJob{
 		Status: checkupapi.CheckupJobInProgress,
 	}
+}
+
+func newKafkaProducer(brokers []string) (sarama.SyncProducer, error) {
+	cfg := sarama.NewConfig()
+	cfg.Producer.Retry.Max = 3
+	cfg.Producer.RequiredAcks = sarama.WaitForAll
+	cfg.Producer.Return.Successes = true
+	cfg.Version = sarama.V2_1_0_0
+
+	producer, err := sarama.NewSyncProducer(strings.Split(KafkaService, ","), cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return producer, nil
+}
+
+func newKafkaClient(brokers []string) (sarama.Client, error) {
+	cfg := sarama.NewConfig()
+	cfg.Producer.Retry.Max = 3
+	cfg.Producer.RequiredAcks = sarama.WaitForAll
+	cfg.Producer.Return.Successes = true
+	cfg.Version = sarama.V2_1_0_0
+	cfg.Producer.MaxMessageBytes = 1024 * 1024 * 100 // 10MiB
+
+	client, err := sarama.NewClient(brokers, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }

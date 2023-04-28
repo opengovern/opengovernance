@@ -41,10 +41,20 @@ message AzureResource {
   DescribeJob job = 8;
 }
 
+message DeliverResultRequest {
+  uint32 job_id = 1;
+  uint32 parent_job_id = 2;
+  string status = 3;
+  string error = 4;
+  DescribeJob describe_job = 5;
+  repeated string described_resource_ids = 6;
+}
+
 message ResponseOK {
 }
 
 service DescribeService {
+  rpc DeliverResult(DeliverResultRequest) returns (ResponseOK) {}
   rpc DeliverAWSResources(stream AWSResource) returns (ResponseOK) {}
   rpc DeliverAzureResources(stream AzureResource) returns (ResponseOK) {}
 }

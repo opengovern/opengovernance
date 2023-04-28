@@ -181,7 +181,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob) error {
 			AccountID:    ds.AccountID,
 			DescribedAt:  ds.DescribedAt.UnixMilli(),
 			SourceType:   ds.SourceType,
-			ConfigReg:    src.ConfigRef,
+			CipherText:   src.ConfigRef,
 			TriggerType:  ds.TriggerType,
 			RetryCounter: 0,
 		},

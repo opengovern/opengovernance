@@ -9,6 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 	aws "gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
@@ -26,20 +30,22 @@ import (
 )
 
 type GRPCDescribeServer struct {
-	rdb      *redis.Client
-	producer sarama.SyncProducer
-	topic    string
-	logger   *zap.Logger
+	rdb                    *redis.Client
+	producer               sarama.SyncProducer
+	topic                  string
+	logger                 *zap.Logger
+	describeJobResultQueue queue.Interface
 
 	golang.DescribeServiceServer
 }
 
-func NewDescribeServer(rdb *redis.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) *GRPCDescribeServer {
+func NewDescribeServer(rdb *redis.Client, producer sarama.SyncProducer, topic string, describeJobResultQueue queue.Interface, logger *zap.Logger) *GRPCDescribeServer {
 	return &GRPCDescribeServer{
-		rdb:      rdb,
-		producer: producer,
-		topic:    topic,
-		logger:   logger,
+		rdb:                    rdb,
+		producer:               producer,
+		topic:                  topic,
+		describeJobResultQueue: describeJobResultQueue,
+		logger:                 logger,
 	}
 }
 
@@ -381,4 +387,28 @@ func (s *GRPCDescribeServer) HandleAzureResource(resource azure.Resource, job *g
 		return fmt.Errorf("send to kafka: %w", err)
 	}
 	return nil
+}
+
+func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.DeliverResultRequest) (*golang.ResponseOK, error) {
+	err := s.describeJobResultQueue.Publish(DescribeJobResult{
+		JobID:       uint(req.JobId),
+		ParentJobID: uint(req.ParentJobId),
+		Status:      api.DescribeResourceJobStatus(req.Status),
+		Error:       req.Error,
+		DescribeJob: DescribeJob{
+			JobID:         uint(req.DescribeJob.JobId),
+			ScheduleJobID: uint(req.DescribeJob.ScheduleJobId),
+			ParentJobID:   uint(req.DescribeJob.ParentJobId),
+			ResourceType:  req.DescribeJob.ResourceType,
+			SourceID:      req.DescribeJob.SourceId,
+			AccountID:     req.DescribeJob.AccountId,
+			DescribedAt:   req.DescribeJob.DescribedAt,
+			SourceType:    api.SourceType(req.DescribeJob.SourceType),
+			CipherText:    req.DescribeJob.ConfigReg,
+			TriggerType:   enums.DescribeTriggerType(req.DescribeJob.TriggerType),
+			RetryCounter:  uint(req.DescribeJob.RetryCounter),
+		},
+		DescribedResourceIDs: req.DescribedResourceIds,
+	})
+	return &golang.ResponseOK{}, err
 }

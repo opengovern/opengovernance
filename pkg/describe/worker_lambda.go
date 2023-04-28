@@ -48,6 +48,7 @@ type LambdaDescribeWorker struct {
 	workspaceId      string
 	describeEndpoint string
 	vault            *vault.KMSVaultSourceConfig
+	keyARN           string
 	job              DescribeJob
 	logger           *zap.Logger
 }
@@ -67,7 +68,7 @@ func InitializeLambdaDescribeWorker(
 		return nil, fmt.Errorf("'describeEndpoint' must be set to a non empty string")
 	}
 
-	kmsVault, err := vault.NewKMSVaultSourceConfig(ctx, keyARN)
+	kmsVault, err := vault.NewKMSVaultSourceConfig(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize KMS vault: %w", err)
 	}
@@ -76,6 +77,7 @@ func InitializeLambdaDescribeWorker(
 		workspaceId:      workspaceId,
 		describeEndpoint: describeEndpoint,
 		vault:            kmsVault,
+		keyARN:           keyARN,
 		job:              describeJob,
 		logger:           logger,
 	}
@@ -97,7 +99,7 @@ func (w *LambdaDescribeWorker) Run(ctx context.Context) (err error) {
 		}
 	}()
 
-	w.job.Do(ctx, w.vault, nil, w.logger, &w.describeEndpoint)
+	w.job.Do(ctx, w.vault, w.keyARN, nil, w.logger, &w.describeEndpoint)
 
 	return nil
 }
