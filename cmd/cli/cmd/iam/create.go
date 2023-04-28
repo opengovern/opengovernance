@@ -3,13 +3,21 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	apis "gitlab.com/keibiengine/keibi-engine/pkg/cli"
 )
 
 var Create = &cobra.Command{
 	Use:   "create",
 	Short: "this use for create something",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			err := cmd.Help()
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("create")
 	},
@@ -18,10 +26,24 @@ var Create = &cobra.Command{
 var UserCreate = &cobra.Command{
 	Use:   "user",
 	Short: "create a profile for user ",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			err := cmd.Help()
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		accessToken, err := apis.GetConfig()
 		if err != nil {
 			return err
+		}
+		if cmd.Flags().Lookup("workspaceName").Changed {
+		} else {
+			fmt.Println("please enter the workspaceName flag .")
+			return nil
 		}
 		response, err := apis.CreateUser(workspacesNameCreate, accessToken, email, roleForUser)
 		if err != nil {
@@ -35,18 +57,35 @@ var UserCreate = &cobra.Command{
 var CreateKeyCmd = &cobra.Command{
 	Use:   "keys",
 	Short: "create Key user ",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			err := cmd.Help()
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		accessToken, err := apis.GetConfig()
 		if err != nil {
 			fmt.Println(1.1)
 			return err
 		}
-		response, err := apis.CreateKeys(workspacesNameCreate, accessToken, nameKey, api.Role(roleName))
+		if cmd.Flags().Lookup("workspaceName").Changed {
+		} else {
+			fmt.Println("please enter the workspaceName flag .")
+			return nil
+		}
+		response, err := apis.CreateKeys(workspacesNameCreate, accessToken, nameKey, roleName)
 		if err != nil {
 			fmt.Println(1.2)
 			return err
 		}
-		fmt.Println(response)
+		err = apis.PrintOutput(response, "table")
+		if err != nil {
+			return err
+		}
 		return nil
 	},
 }

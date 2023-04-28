@@ -9,7 +9,7 @@ import (
 
 type OutputType string
 
-func PrintOutputForWorkspaces(obj interface{}, typeOutput string) error {
+func PrintOutputForTypeArray(obj interface{}, typeOutput string) error {
 	bytes, err := json.Marshal(obj)
 	if err != nil {
 		return fmt.Errorf("[printoutput] : %v", err)
@@ -42,7 +42,7 @@ func PrintOutputForWorkspaces(obj interface{}, typeOutput string) error {
 	printTable.Render()
 	return nil
 }
-func PrintOutputForAbout(obj interface{}, typeOutput string) error {
+func PrintOutput(obj interface{}, typeOutput string) error {
 	bytes, err := json.Marshal(obj)
 	if err != nil {
 		return fmt.Errorf("[printoutput] : %v", err)

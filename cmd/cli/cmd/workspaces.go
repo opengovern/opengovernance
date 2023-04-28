@@ -21,7 +21,7 @@ var workspacesCmd = &cobra.Command{
 			return fmt.Errorf("[workspaces] : %v", err)
 		}
 
-		err = cli.PrintOutputForWorkspaces(response, OutputType)
+		err = cli.PrintOutputForTypeArray(response, OutputType)
 		if err != nil {
 			return fmt.Errorf("[workspaces] : %v", err)
 		}

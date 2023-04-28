@@ -12,7 +12,7 @@ type CreateAPIKeyRequest struct {
 type CreateAPIKeyResponse struct {
 	ID        uint      `json:"id"`
 	Name      string    `json:"name"`
-	Active    bool      `json:"acrive"`
+	Active    bool      `json:"active"`
 	CreatedAt time.Time `json:"createdAt"`
 	Role      Role      `json:"role"`
 	Token     string    `json:"token"`

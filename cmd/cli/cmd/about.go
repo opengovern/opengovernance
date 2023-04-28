@@ -20,7 +20,7 @@ var aboutCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("[about]: %v", err)
 		}
-		err = cli.PrintOutputForAbout(bodyResponse, OutputType)
+		err = cli.PrintOutput(bodyResponse, OutputType)
 		if err != nil {
 			return fmt.Errorf("[about]: %v", err)
 		}

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"time"
 )
 
@@ -39,9 +40,9 @@ type ResponseAbout struct {
 	EmailVerified bool   `json:"emailVerified"`
 }
 type RequestGetIamUsers struct {
-	Email         string `json:"email"`
-	EmailVerified bool   `json:"emailVerified"`
-	Role          string `json:"role"`
+	Email         string   `json:"email,omitempty"`
+	EmailVerified bool     `json:"emailVerified,omitempty"`
+	Role          api.Role `json:"role,omitempty"`
 }
 type ResponseGetIamUsers struct {
 	Blocked       bool   `json:"blocked"`
@@ -53,6 +54,15 @@ type ResponseGetIamUsers struct {
 	Status        string `json:"status"`
 	UserId        string `json:"userId"`
 	UserName      string `json:"userName"`
+}
+type RequestCreateUser struct {
+	Email string `json:"email,omitempty"`
+	Role  string `json:"role,omitempty"`
+}
+
+type RequestCreateAPIKey struct {
+	Name     string `json:"name,omitempty"`
+	RoleName string `json:"role,omitempty"`
 }
 
 type ResponseListRoles struct {
@@ -77,10 +87,6 @@ type GetUserResponse struct {
 	CreatedAt     time.Time `json:"createdAt"`     // Creation timestamp in UTC
 	Blocked       bool      `json:"blocked"`       // Is the user blocked or not
 }
-type RequestCreateUser struct {
-	Email string `json:"email"`
-	Role  string `json:"role"`
-}
 type RequestCreateKey struct {
 	Name string `json:"name"`
 	Role string `json:"role"`
@@ -90,13 +96,13 @@ type RequestUpdateUser struct {
 	UserId string `json:"userId"`
 }
 type ResponseUserDetails struct {
-	UserID        string `json:"userId"`        // Unique identifier for the user
-	UserName      string `json:"userName"`      // Username
-	Email         string `json:"email"`         // Email address of the user
-	EmailVerified bool   `json:"emailVerified"` // Is email verified or not
-	Role          string `json:"role"`          // Name of the role in the specified workspace
-	Status        string `json:"status"`        // Invite status
-	LastActivity  string `json:"lastActivity"`  // Last activity timestamp in UTC
-	CreatedAt     string `json:"createdAt"`     // Creation timestamp in UTC
-	Blocked       bool
+	UserID        string `json:"userId,omitempty"`        // Unique identifier for the user
+	UserName      string `json:"userName,omitempty"`      // Username
+	Email         string `json:"email,omitempty"`         // Email address of the user
+	EmailVerified bool   `json:"emailVerified,omitempty"` // Is email verified or not
+	Role          string `json:"role,omitempty"`          // Name of the role in the specified workspace
+	Status        string `json:"status,omitempty"`        // Invite status
+	LastActivity  string `json:"lastActivity,omitempty"`  // Last activity timestamp in UTC
+	CreatedAt     string `json:"createdAt,omitempty"`     // Creation timestamp in UTC
+	Blocked       bool   `json:"blocked,omitempty"`
 }
