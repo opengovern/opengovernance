@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
-	azureDescriber "gitlab.com/keibiengine/keibi-engine/pkg/azure/describer"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/proto/src/golang"
-	"google.golang.org/grpc"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
+	azureDescriber "gitlab.com/keibiengine/keibi-engine/pkg/azure/describer"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/proto/src/golang"
+	"google.golang.org/grpc"
 
 	awsmodel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 	azuremodel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
@@ -241,7 +242,7 @@ func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, 
 					wg.Done()
 					return
 				case job := <-workChannel:
-					res := job.Do(ictx, vlt, rdb, producer, topic, logger, describeDeliverEndpoint)
+					res := job.Do(ictx, vlt, rdb, logger, describeDeliverEndpoint)
 
 					resultChannel <- res
 				}
@@ -320,7 +321,7 @@ func (j DescribeConnectionJob) CloudTimeout() (r DescribeConnectionJobResult) {
 // do its best to complete the task even if some errors occur along the way. However,
 // if any error occurs, The JobResult will indicate that through the Status and Error
 // will be set to the first error that occured.
-func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger, describeDeliverEndpoint *string) (r DescribeJobResult) {
+func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, logger *zap.Logger, describeDeliverEndpoint *string) (r DescribeJobResult) {
 	logger.Info("Starting DescribeJob", zap.Uint("jobID", j.JobID), zap.Uint("scheduleJobID", j.ScheduleJobID), zap.Uint("parentJobID", j.ParentJobID), zap.String("resourceType", j.ResourceType), zap.String("sourceID", j.SourceID), zap.String("accountID", j.AccountID), zap.Int64("describedAt", j.DescribedAt), zap.String("sourceType", string(j.SourceType)), zap.String("configReg", j.ConfigReg), zap.String("triggerType", string(j.TriggerType)), zap.Uint("retryCounter", j.RetryCounter))
 	ctx, span := otel.Tracer(trace2.DescribeWorkerTrace).Start(ictx, "Do")
 	defer span.End()
@@ -368,21 +369,12 @@ func (j DescribeJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis
 	} else if config == nil {
 		fail(fmt.Errorf("config is null! path is: %s", j.ConfigReg))
 	} else {
-		var msgs []kafka.Doc
-		msgs, resourceIDs, err = doDescribe(ctx, rdb, j, config, logger, describeDeliverEndpoint)
+		_, resourceIDs, err = doDescribe(ctx, rdb, j, config, logger, describeDeliverEndpoint)
 		if err != nil {
 			// Don't return here. In certain cases, such as AWS, resources might be
 			// available for some regions while there was failures in other regions.
 			// Instead, continue to write whatever you can to kafka.
 			fail(fmt.Errorf("describe resources: %w", err))
-		}
-
-		if len(msgs) > 0 {
-			if err := kafka.DoSend(producer, topic, msgs, logger); err != nil {
-				fail(fmt.Errorf("send to kafka: %w", err))
-			} else {
-				status = api.DescribeResourceJobSucceeded
-			}
 		}
 	}
 

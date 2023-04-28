@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -12,17 +11,19 @@ import (
 )
 
 type LambdaDescribeWorkerInput struct {
-	WorkspaceId      string `json:"workspaceId"`
-	ConnectionId     string `json:"connectionId"`
-	ResourceType     string `json:"resourceType"`
-	DescribeEndpoint string `json:"describeEndpoint"`
-	KeyARN           string `json:"keyARN"`
+	WorkspaceId      string               `json:"workspaceId"`
+	ConnectionId     string               `json:"connectionId"`
+	ResourceType     string               `json:"resourceType"`
+	DescribeEndpoint string               `json:"describeEndpoint"`
+	KeyARN           string               `json:"keyARN"`
+	SecretCypher     string               `json:"secretCypher"`
+	DescribeJob      describe.DescribeJob `json:"describeJob"`
 }
 
-func DescribeHandler(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+func DescribeHandler(ctx context.Context, req events.APIGatewayProxyRequest) error {
 	logger, err := zap.NewProduction()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	logger.Info(req.Body)
@@ -31,7 +32,7 @@ func DescribeHandler(ctx context.Context, req events.APIGatewayProxyRequest) (*e
 	err = json.Unmarshal([]byte(req.Body), &input)
 	if err != nil {
 		logger.Error("Failed to unmarshal input", zap.Error(err))
-		return nil, err
+		return err
 	}
 
 	w, err := describe.InitializeLambdaDescribeWorker(
@@ -41,17 +42,11 @@ func DescribeHandler(ctx context.Context, req events.APIGatewayProxyRequest) (*e
 		input.ResourceType,
 		input.DescribeEndpoint,
 		input.KeyARN,
+		input.DescribeJob,
 		logger,
 	)
-	return &events.APIGatewayProxyResponse{
-		StatusCode: http.StatusOK,
-		Body:       req.Body,
-	}, nil
 
-	//if err != nil {
-	//	logger.Error("Failed to initialize lambda describe worker", zap.Error(err))
-	//	return nil, err
-	//}
+	return w.Run(ctx)
 }
 
 func main() {

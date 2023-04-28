@@ -212,7 +212,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		return nil
 	}
 
-	result := job.Do(ctx, w.vault, w.rdb, w.kfkProducer, w.kfkTopic, w.logger, w.describeDeliverEndpoint)
+	result := job.Do(ctx, w.vault, w.rdb, w.logger, w.describeDeliverEndpoint)
 	if strings.Contains(result.Error, "ThrottlingException") ||
 		strings.Contains(result.Error, "Rate exceeded") ||
 		strings.Contains(result.Error, "RateExceeded") {
@@ -425,6 +425,7 @@ type LambdaDescribeWorker struct {
 	resourceType     string
 	describeEndpoint string
 	vault            *vault.KMSVaultSourceConfig
+	job              DescribeJob
 	logger           *zap.Logger
 }
 
@@ -435,6 +436,7 @@ func InitializeLambdaDescribeWorker(
 	resourceType string,
 	describeEndpoint string,
 	keyARN string,
+	describeJob DescribeJob,
 	logger *zap.Logger,
 ) (w *LambdaDescribeWorker, err error) {
 	if workspaceId == "" {
@@ -461,6 +463,7 @@ func InitializeLambdaDescribeWorker(
 		resourceType:     resourceType,
 		describeEndpoint: describeEndpoint,
 		vault:            kmsVault,
+		job:              describeJob,
 		logger:           logger,
 	}
 	defer func() {
@@ -480,20 +483,8 @@ func (w *LambdaDescribeWorker) Run(ctx context.Context) (err error) {
 			err = fmt.Errorf("%v", r)
 		}
 	}()
-	var job = DescribeJob{ //TODO: populate this
-		JobID:         0,
-		ScheduleJobID: 0,
-		ParentJobID:   0,
-		ResourceType:  "",
-		SourceID:      "",
-		AccountID:     "",
-		DescribedAt:   0,
-		SourceType:    "",
-		ConfigReg:     "",
-		TriggerType:   "",
-		RetryCounter:  0,
-	}
-	job.Do(ctx, w.vault, nil, w.kfkProducer, w.kfkTopic, w.logger, w.describeDeliverEndpoint)
+
+	w.job.Do(ctx, w.vault, nil, w.logger, &w.describeEndpoint)
 
 	return nil
 }
