@@ -14,11 +14,9 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 
 	"github.com/google/uuid"
-	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"gitlab.com/keibiengine/keibi-engine/pkg/checkup"
 	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 	"gopkg.in/Shopify/sarama.v1"
@@ -128,10 +126,6 @@ type Scheduler struct {
 
 	// describeJobResultQueue is used to consume the describe job results returned by the workers.
 	describeJobResultQueue queue.Interface
-	// describeCleanupJobQueue is used to publish describe cleanup jobs to be performed by the workers.
-	describeCleanupJobQueue queue.Interface
-	// describeConnectionJobResultQueue is used to consume the describe job results returned by the workers.
-	describeConnectionJobResultQueue queue.Interface
 
 	// sourceQueue is used to consume source updates by the onboarding service.
 	sourceQueue queue.Interface
@@ -174,7 +168,6 @@ type Scheduler struct {
 	onboardClient       onboardClient.OnboardServiceClient
 	es                  keibi.Client
 	rdb                 *redis.Client
-	vault               vault.SourceConfig
 	kafkaClient         sarama.Client
 	kafkaProducer       sarama.SyncProducer
 	kafkaResourcesTopic string
@@ -205,12 +198,7 @@ func initRabbitQueue(queueName string) (queue.Interface, error) {
 
 func InitializeScheduler(
 	id string,
-	describeJobQueueName string,
 	describeJobResultQueueName string,
-	describeConnectionJobResultQueueName string,
-	cloudNativeAPIBaseURL string,
-	cloudNativeAPIAuthKey string,
-	describeCleanupJobQueueName string,
 	complianceReportJobQueueName string,
 	complianceReportJobResultQueueName string,
 	complianceReportCleanupJobQueueName string,
@@ -227,11 +215,6 @@ func InitializeScheduler(
 	postgresPort string,
 	postgresDb string,
 	postgresSSLMode string,
-	vaultAddress string,
-	vaultRoleName string,
-	vaultToken string,
-	vaultCaPath string,
-	vaultUseTLS bool,
 	httpServerAddress string,
 	describeIntervalHours string,
 	describeTimeoutHours string,
@@ -246,10 +229,8 @@ func InitializeScheduler(
 	}
 
 	s = &Scheduler{
-		id:                    id,
-		deletedSources:        make(chan string, ConcurrentDeletedSources),
-		cloudNativeAPIBaseURL: cloudNativeAPIBaseURL,
-		cloudNativeAPIAuthKey: cloudNativeAPIAuthKey,
+		id:             id,
+		deletedSources: make(chan string, ConcurrentDeletedSources),
 	}
 	defer func() {
 		if err != nil && s != nil {
@@ -264,12 +245,8 @@ func InitializeScheduler(
 
 	s.logger.Info("Initializing the scheduler")
 
+	s.describeEndpoint = DescribeDeliverEndpoint
 	s.describeJobResultQueue, err = initRabbitQueue(describeJobResultQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.describeConnectionJobResultQueue, err = initRabbitQueue(describeConnectionJobResultQueueName)
 	if err != nil {
 		return nil, err
 	}
@@ -300,11 +277,6 @@ func InitializeScheduler(
 	}
 
 	s.summarizerJobResultQueue, err = initRabbitQueue(summarizerJobResultQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.describeCleanupJobQueue, err = initRabbitQueue(describeCleanupJobQueueName)
 	if err != nil {
 		return nil, err
 	}
@@ -406,20 +378,6 @@ func InitializeScheduler(
 		DB:       0,  // use default DB
 	})
 
-	k8sAuth, err := kubernetes.NewKubernetesAuth(
-		vaultRoleName,
-		kubernetes.WithServiceAccountToken(vaultToken),
-	)
-	if err != nil {
-		return nil, err
-	}
-	// setup vault
-	v, err := vault.NewSourceConfig(vaultAddress, vaultCaPath, k8sAuth, vaultUseTLS)
-	if err != nil {
-		return nil, err
-	}
-	s.vault = v
-
 	producer, err := newKafkaProducer(strings.Split(KafkaService, ","))
 	if err != nil {
 		return nil, err
@@ -500,12 +458,12 @@ func (s *Scheduler) Run() error {
 	})
 	//
 
-	EnsureRunGoroutin(func() {
-		s.RunScheduleJobCompletionUpdater()
-	})
-	EnsureRunGoroutin(func() {
-		s.RunInsightJobScheduler()
-	})
+	//EnsureRunGoroutin(func() {
+	//	s.RunScheduleJobCompletionUpdater()
+	//})
+	//EnsureRunGoroutin(func() {
+	//	s.RunInsightJobScheduler()
+	//})
 	EnsureRunGoroutin(func() {
 		s.RunCheckupJobScheduler()
 	})
@@ -518,9 +476,9 @@ func (s *Scheduler) Run() error {
 	EnsureRunGoroutin(func() {
 		s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
 	})
-	EnsureRunGoroutin(func() {
-		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
-	})
+	//EnsureRunGoroutin(func() {
+	//	s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
+	//})
 	EnsureRunGoroutin(func() {
 		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
 	})
@@ -998,8 +956,6 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 func (s *Scheduler) Stop() {
 	queues := []queue.Interface{
 		s.describeJobResultQueue,
-		s.describeConnectionJobResultQueue,
-		s.describeCleanupJobQueue,
 		s.complianceReportJobQueue,
 		s.complianceReportJobResultQueue,
 		s.sourceQueue,

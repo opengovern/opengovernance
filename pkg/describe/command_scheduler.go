@@ -2,16 +2,12 @@ package describe
 
 import (
 	"errors"
-	"os"
-	"strings"
-
 	"github.com/spf13/cobra"
+	"os"
 )
 
 const (
-	DescribeJobsQueueName                = "describe-jobs-queue"
 	DescribeResultsQueueName             = "describe-results-queue"
-	DescribeCleanupJobsQueueName         = "describe-cleanup-jobs-queue"
 	ComplianceReportJobsQueueName        = "compliance-report-jobs-queue"
 	ComplianceReportResultsQueueName     = "compliance-report-results-queue"
 	ComplianceReportCleanupJobsQueueName = "compliance-report-cleanup-jobs-queue"
@@ -22,8 +18,6 @@ const (
 	SummarizerJobsQueueName              = "summarizer-jobs-queue"
 	SummarizerResultsQueueName           = "summarizer-results-queue"
 	SourceEventsQueueName                = "source-events-queue"
-	DescribeConnectionJobsQueueName      = "describe-connection-jobs-queue"
-	DescribeConnectionResultsQueueName   = "describe-connection-results-queue"
 )
 
 var (
@@ -42,12 +36,6 @@ var (
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
 	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
 
-	VaultAddress  = os.Getenv("VAULT_ADDRESS")
-	VaultToken    = os.Getenv("VAULT_TOKEN")
-	VaultRoleName = os.Getenv("VAULT_ROLE")
-	VaultCaPath   = os.Getenv("VAULT_TLS_CA_PATH")
-	VaultUseTLS   = strings.ToLower(strings.TrimSpace(os.Getenv("VAULT_USE_TLS"))) == "true"
-
 	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
 	ElasticSearchUsername = os.Getenv("ES_USERNAME")
 	ElasticSearchPassword = os.Getenv("ES_PASSWORD")
@@ -56,11 +44,7 @@ var (
 	GRPCServerAddress       = os.Getenv("GRPC_ADDRESS")
 	DescribeDeliverEndpoint = os.Getenv("DESCRIBE_DELIVER_ENDPOINT")
 
-	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
-
-	RedisAddress  = os.Getenv("REDIS_ADDRESS")
-	CacheAddress  = os.Getenv("CACHE_ADDRESS")
-	JaegerAddress = os.Getenv("JAEGER_ADDRESS")
+	RedisAddress = os.Getenv("REDIS_ADDRESS")
 
 	DescribeIntervalHours      = os.Getenv("DESCRIBE_INTERVAL_HOURS")
 	DescribeTimeoutHours       = os.Getenv("DESCRIBE_TIMEOUT_HOURS")
@@ -74,15 +58,8 @@ var (
 	MetadataBaseURL            = os.Getenv("METADATA_BASE_URL")
 	ComplianceBaseURL          = os.Getenv("COMPLIANCE_BASE_URL")
 	OnboardBaseURL             = os.Getenv("ONBOARD_BASE_URL")
-	IngressBaseURL             = os.Getenv("BASE_URL")
-
-	CloudNativeAPIBaseURL = os.Getenv("CLOUD_NATIVE_API_BASE_URL")
-	CloudNativeAPIAuthKey = os.Getenv("CLOUD_NATIVE_API_AUTH_KEY")
 
 	LambdaFuncURL = os.Getenv("LAMBDA_FUNC_URL")
-
-	// For cloud native connection job command
-	AccountConcurrentDescribe = os.Getenv("ACCOUNT_CONCURRENT_DESCRIBE")
 )
 
 func SchedulerCommand() *cobra.Command {
@@ -101,12 +78,7 @@ func SchedulerCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := InitializeScheduler(
 				id,
-				DescribeJobsQueueName,
 				DescribeResultsQueueName,
-				DescribeConnectionResultsQueueName,
-				CloudNativeAPIBaseURL,
-				CloudNativeAPIAuthKey,
-				DescribeCleanupJobsQueueName,
 				ComplianceReportJobsQueueName,
 				ComplianceReportResultsQueueName,
 				ComplianceReportCleanupJobsQueueName,
@@ -123,11 +95,6 @@ func SchedulerCommand() *cobra.Command {
 				PostgreSQLPort,
 				PostgreSQLDb,
 				PostgreSQLSSLMode,
-				VaultAddress,
-				VaultRoleName,
-				VaultToken,
-				VaultCaPath,
-				VaultUseTLS,
 				HttpServerAddress,
 				DescribeIntervalHours,
 				DescribeTimeoutHours,

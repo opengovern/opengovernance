@@ -1,9 +1,9 @@
 package onboard
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"go.uber.org/zap"
 	"gopkg.in/go-playground/validator.v9"
 
@@ -16,10 +16,11 @@ import (
 type HttpHandler struct {
 	db                    Database
 	sourceEventsQueue     queue.Interface
-	vault                 vault.SourceConfig
+	kms                   *vault.KMSVaultSourceConfig
 	awsPermissionCheckURL string
 	inventoryClient       inventory.InventoryServiceClient
 	validator             *validator.Validate
+	keyARN                string
 }
 
 func InitializeHttpHandler(
@@ -34,13 +35,9 @@ func InitializeHttpHandler(
 	postgresPort string,
 	postgresDb string,
 	postgresSSLMode string,
-	vaultAddress string,
-	vaultToken string,
-	vaultRoleName string,
-	vaultCaPath string,
-	vaultUseTLS bool,
 	logger *zap.Logger,
 	awsPermissionCheckURL string,
+	keyARN string,
 	inventoryBaseURL string,
 ) (*HttpHandler, error) {
 
@@ -76,21 +73,10 @@ func InitializeHttpHandler(
 	}
 	fmt.Println("Connected to the postgres database: ", postgresDb)
 
-	k8sAuth, err := kubernetes.NewKubernetesAuth(
-		vaultRoleName,
-		kubernetes.WithServiceAccountToken(vaultToken),
-	)
+	kms, err := vault.NewKMSVaultSourceConfig(context.Background())
 	if err != nil {
 		return nil, err
 	}
-
-	// setup vault
-	v, err := vault.NewSourceConfig(vaultAddress, vaultCaPath, k8sAuth, vaultUseTLS)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Println("Connected to vault:", vaultAddress)
 
 	db := Database{orm: orm}
 	err = db.Initialize()
@@ -102,11 +88,12 @@ func InitializeHttpHandler(
 	inventoryClient := inventory.NewInventoryServiceClient(inventoryBaseURL)
 
 	return &HttpHandler{
-		vault:                 v,
+		kms:                   kms,
 		db:                    db,
 		sourceEventsQueue:     sourceEventsQueue,
 		awsPermissionCheckURL: awsPermissionCheckURL,
 		inventoryClient:       inventoryClient,
+		keyARN:                keyARN,
 		validator:             validator.New(),
 	}, nil
 }
