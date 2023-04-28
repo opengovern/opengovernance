@@ -9,8 +9,8 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	inventory "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
+	"gitlab.com/keibiengine/keibi-engine/pkg/vault"
 )
 
 type HttpHandler struct {

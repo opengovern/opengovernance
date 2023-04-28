@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
 type SourceType string
@@ -23,11 +24,11 @@ func IsValidSourceType(t SourceType) bool {
 }
 
 type Source struct {
-	ID                     uuid.UUID  `json:"id"`
-	Type                   SourceType `json:"type"`
-	LastDescribedAt        time.Time  `json:"lastDescribedAt"`
-	LastDescribeJobStatus  string     `json:"lastDescribeJobStatus"`
-	LastComplianceReportAt time.Time  `json:"lastComplianceReportAt"`
+	ID                     uuid.UUID   `json:"id"`
+	Type                   source.Type `json:"type"`
+	LastDescribedAt        time.Time   `json:"lastDescribedAt"`
+	LastDescribeJobStatus  string      `json:"lastDescribeJobStatus"`
+	LastComplianceReportAt time.Time   `json:"lastComplianceReportAt"`
 }
 
 type DescribeSource struct {

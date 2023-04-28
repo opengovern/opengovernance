@@ -12,9 +12,9 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
+	awsmodel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
+	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	awsmodel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
-	azuremodel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 )

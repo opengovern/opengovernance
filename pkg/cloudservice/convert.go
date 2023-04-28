@@ -4,8 +4,8 @@ import (
 	"encoding/csv"
 	"strings"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-azure-describer/azure"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
