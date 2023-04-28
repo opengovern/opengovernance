@@ -21,9 +21,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/google/uuid"
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/labstack/echo/v4"
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 )
 

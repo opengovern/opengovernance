@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	vaultmocks "gitlab.com/keibiengine/keibi-engine/pkg/vault/mocks"
 
 	describeapi "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	inventoryapi "gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
@@ -25,7 +26,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	queuemocks "gitlab.com/keibiengine/keibi-engine/pkg/internal/queue/mocks"
-	vaultmocks "gitlab.com/keibiengine/keibi-engine/pkg/internal/vault/mocks"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 
 	"gorm.io/gorm"

@@ -17,8 +17,8 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
-	keibiaws "gitlab.com/keibiengine/keibi-engine/pkg/aws"
-	keibiazure "gitlab.com/keibiengine/keibi-engine/pkg/azure"
+	keibiaws "github.com/kaytu-io/kaytu-aws-describer/aws"
+	keibiazure "github.com/kaytu-io/kaytu-azure-describer/azure"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 

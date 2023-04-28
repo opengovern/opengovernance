@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	awsModel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
-	azureModel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
+	awsModel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
+	azureModel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/helpers"

@@ -14,11 +14,11 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 
 	"github.com/go-redis/redis/v8"
+	aws "github.com/kaytu-io/kaytu-aws-describer/aws/describer"
+	awsmodel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
+	azure "github.com/kaytu-io/kaytu-azure-describer/azure/describer"
+	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	aws "gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
-	awsmodel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
-	azure "gitlab.com/keibiengine/keibi-engine/pkg/azure/describer"
-	azuremodel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/proto/src/golang"
@@ -403,7 +403,7 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 			SourceID:      req.DescribeJob.SourceId,
 			AccountID:     req.DescribeJob.AccountId,
 			DescribedAt:   req.DescribeJob.DescribedAt,
-			SourceType:    api.SourceType(req.DescribeJob.SourceType),
+			SourceType:    source.Type(req.DescribeJob.SourceType),
 			CipherText:    req.DescribeJob.ConfigReg,
 			TriggerType:   enums.DescribeTriggerType(req.DescribeJob.TriggerType),
 			RetryCounter:  uint(req.DescribeJob.RetryCounter),

@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
@@ -127,9 +127,9 @@ func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.Des
 	}
 	var resourceTypes []string
 	switch a.Type {
-	case api.SourceCloudAWS:
+	case source.CloudAWS:
 		resourceTypes = aws.ListResourceTypes()
-	case api.SourceCloudAzure:
+	case source.CloudAzure:
 		resourceTypes = azure.ListResourceTypes()
 	default:
 		panic(fmt.Errorf("unsupported source type: %s", a.Type))

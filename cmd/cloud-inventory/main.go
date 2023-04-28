@@ -3,9 +3,9 @@ package main
 import (
 	"os"
 
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 )
 
 func main() {

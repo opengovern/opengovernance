@@ -3,8 +3,9 @@ package keibi
 
 import (
 	"context"
+
+	azure "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
-	azure "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
 // ==========================  START: APIManagement =============================

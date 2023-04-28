@@ -207,8 +207,8 @@ func Get{{ .Name }}(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	// for _, pkg := range []string{
 	// 	"context",
 	// 	"github.com/turbot/steampipe-plugin-sdk/plugin",
-	// 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model",
-	// 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model",
+	// 	"github.com/kaytu-io/kaytu-aws-describer/aws/model",
+	// 	"github.com/kaytu-io/kaytu-azure-describer/azure/model",
 	// } {
 	// 	fmt.Fprintf(&buf, "\"%s\"\n", pkg)
 	// }
@@ -264,11 +264,12 @@ func Get{{ .Name }}(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	})
 
 	if len(sources) > 0 {
+		//kaytu-aws-describer
 		fmt.Fprintln(&buf, `
 		import (
 			"context"
 			"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
-			`+*sourceType+` "gitlab.com/keibiengine/keibi-engine/pkg/`+*sourceType+`/model"
+			`+*sourceType+` "gitlab.com/keibiengine/kaytu-`+*sourceType+`-describer/aws/model"
 		)
 		`)
 	}

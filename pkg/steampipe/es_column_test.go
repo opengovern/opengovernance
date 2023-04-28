@@ -6,7 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
 	"github.com/stretchr/testify/require"
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
+	"github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 )
 

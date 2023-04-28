@@ -14,7 +14,7 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 	mocksqueue "gitlab.com/keibiengine/keibi-engine/pkg/internal/queue/mocks"
