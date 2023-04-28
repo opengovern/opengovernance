@@ -2,7 +2,6 @@ package cli
 
 import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"time"
 )
 
 type DeviceCodeResponse struct {
@@ -44,17 +43,6 @@ type RequestGetIamUsers struct {
 	EmailVerified bool     `json:"emailVerified,omitempty"`
 	Role          api.Role `json:"role,omitempty"`
 }
-type ResponseGetIamUsers struct {
-	Blocked       bool   `json:"blocked"`
-	CreateAt      string `json:"createAt"`
-	Email         string `json:"email"`
-	EmailVerified bool   `json:"emailVerified"`
-	LastActivity  string `json:"lastActivity"`
-	Role          string `json:"role"`
-	Status        string `json:"status"`
-	UserId        string `json:"userId"`
-	UserName      string `json:"userName"`
-}
 type RequestCreateUser struct {
 	Email string `json:"email,omitempty"`
 	Role  string `json:"role,omitempty"`
@@ -63,37 +51,6 @@ type RequestCreateUser struct {
 type RequestCreateAPIKey struct {
 	Name     string `json:"name,omitempty"`
 	RoleName string `json:"role,omitempty"`
-}
-
-type ResponseListRoles struct {
-	Role        string `json:"role"`
-	Description string `json:"description"`
-	UserCount   int    `json:"user-count"`
-}
-type RoleDetailsResponse struct {
-	Role        string
-	Description string
-	UserCount   int
-	Users       []GetUserResponse
-}
-type GetUserResponse struct {
-	UserID        string    `json:"userId"`        // Unique identifier for the user
-	UserName      string    `json:"userName"`      // Username
-	Email         string    `json:"email"`         // Email address of the user
-	EmailVerified bool      `json:"emailVerified"` // Is email verified or not
-	Role          string    `json:"role"`          // Name of the role in the specified workspace
-	Status        string    `json:"status"`        // Invite status
-	LastActivity  time.Time `json:"lastActivity"`  // Last activity timestamp in UTC
-	CreatedAt     time.Time `json:"createdAt"`     // Creation timestamp in UTC
-	Blocked       bool      `json:"blocked"`       // Is the user blocked or not
-}
-type RequestCreateKey struct {
-	Name string `json:"name"`
-	Role string `json:"role"`
-}
-type RequestUpdateUser struct {
-	Role   string `json:"role"`
-	UserId string `json:"userId"`
 }
 type ResponseUserDetails struct {
 	UserID        string `json:"userId,omitempty"`        // Unique identifier for the user

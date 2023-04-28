@@ -10,10 +10,28 @@ import (
 var workspacesCmd = &cobra.Command{
 	Use:   "workspaces",
 	Short: "A brief description of your command",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
+			fmt.Println("please enter right flag .")
+			return cmd.Help()
+		}
+		if len(args) == 0 {
+			return cmd.Help()
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		accessToken, err := cli.GetConfig()
 		if err != nil {
 			return fmt.Errorf("[workspaces] : %v", err)
+		}
+		checkEXP, err := cli.CheckExpirationTime(accessToken)
+		if err != nil {
+			return err
+		}
+		if checkEXP == true {
+			fmt.Println("your access token was expire please login again ")
+			return nil
 		}
 
 		response, err := cli.RequestWorkspaces(accessToken)

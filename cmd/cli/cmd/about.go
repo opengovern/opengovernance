@@ -10,10 +10,28 @@ import (
 var aboutCmd = &cobra.Command{
 	Use:   "about",
 	Short: "About user",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
+			fmt.Println("please enter right flag .")
+			return cmd.Help()
+		}
+		if len(args) == 0 {
+			fmt.Println(cmd.Help())
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		accessToken, err := cli.GetConfig()
 		if err != nil {
 			return fmt.Errorf("[about]: %v", err)
+		}
+		checkEXP, err := cli.CheckExpirationTime(accessToken)
+		if err != nil {
+			return err
+		}
+		if checkEXP == true {
+			fmt.Println("your access token was expire please login again ")
+			return nil
 		}
 
 		bodyResponse, err := cli.RequestAbout(accessToken)

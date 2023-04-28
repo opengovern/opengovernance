@@ -11,8 +11,14 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "kctl",
+	Use:   "ktucli",
 	Short: "Kaytu cli",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			return cmd.Help()
+		}
+		return nil
+	},
 }
 
 func Execute() {
@@ -24,8 +30,6 @@ func Execute() {
 
 func init() {
 	rootCmd.AddCommand(iam.Get)
-	//rootCmd.AddCommand(role.GetRole)
-	//rootCmd.AddCommand(users.GetUsers)
 	rootCmd.AddCommand(iam.Delete)
 	rootCmd.AddCommand(iam.Create)
 	rootCmd.AddCommand(iam.Update)
