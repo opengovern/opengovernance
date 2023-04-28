@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func EventBridgeBus(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EventBridgeBus(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := eventbridge.NewFromConfig(cfg)
 
 	input := eventbridge.ListEventBusesInput{Limit: aws.Int32(100)}
@@ -33,14 +33,21 @@ func EventBridgeBus(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				tagsOutput = &eventbridge.ListTagsForResourceOutput{}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *bus.Arn,
 				Name: *bus.Name,
 				Description: model.EventBridgeBusDescription{
 					Bus:  bus,
 					Tags: tagsOutput.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if response.NextToken == nil {
 			break
@@ -51,7 +58,7 @@ func EventBridgeBus(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func EventBridgeRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EventBridgeRule(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := eventbridge.NewFromConfig(cfg)
 
 	var values []Resource
@@ -90,7 +97,7 @@ func EventBridgeRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				targets = &eventbridge.ListTargetsByRuleOutput{}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *rule.Arn,
 				Name: *rule.Name,
 				Description: model.EventBridgeRuleDescription{
@@ -98,7 +105,15 @@ func EventBridgeRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					Tags:    tagsOutput.Tags,
 					Targets: targets.Targets,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 
 		return listRulesOutput.NextToken, nil

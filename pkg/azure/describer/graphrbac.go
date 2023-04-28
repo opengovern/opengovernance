@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func AdUsers(ctx context.Context, authorizer auth.Authorizer, tenantId string) ([]Resource, error) {
+func AdUsers(ctx context.Context, authorizer auth.Authorizer, tenantId string, stream *StreamSender) ([]Resource, error) {
 	client := msgraph.NewUsersClient(tenantId)
 	client.BaseClient.Authorizer = authorizer
 
@@ -31,7 +31,7 @@ func AdUsers(ctx context.Context, authorizer auth.Authorizer, tenantId string) (
 	var values []Resource
 	for _, user := range *users {
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:       *user.ID,
 			Name:     *user.DisplayName,
 			Location: "global",
@@ -39,13 +39,20 @@ func AdUsers(ctx context.Context, authorizer auth.Authorizer, tenantId string) (
 				TenantID: tenantId,
 				AdUsers:  user,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func AdGroup(ctx context.Context, authorizer auth.Authorizer, tenantId string) ([]Resource, error) {
+func AdGroup(ctx context.Context, authorizer auth.Authorizer, tenantId string, stream *StreamSender) ([]Resource, error) {
 	client := msgraph.NewGroupsClient(tenantId)
 	client.BaseClient.Authorizer = authorizer
 
@@ -61,7 +68,7 @@ func AdGroup(ctx context.Context, authorizer auth.Authorizer, tenantId string) (
 
 	var values []Resource
 	for _, group := range *groups {
-		values = append(values, Resource{
+		resource := Resource{
 			ID:       *group.ID,
 			Name:     *group.DisplayName,
 			Location: "global",
@@ -69,13 +76,20 @@ func AdGroup(ctx context.Context, authorizer auth.Authorizer, tenantId string) (
 				TenantID: tenantId,
 				AdGroup:  group,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func AdServicePrinciple(ctx context.Context, authorizer auth.Authorizer, tenantId string) ([]Resource, error) {
+func AdServicePrinciple(ctx context.Context, authorizer auth.Authorizer, tenantId string, stream *StreamSender) ([]Resource, error) {
 	client := msgraph.NewServicePrincipalsClient(tenantId)
 	client.BaseClient.Authorizer = authorizer
 
@@ -91,7 +105,7 @@ func AdServicePrinciple(ctx context.Context, authorizer auth.Authorizer, tenantI
 
 	var values []Resource
 	for _, servicePrincipal := range *servicePrincipals {
-		values = append(values, Resource{
+		resource := Resource{
 			ID:       *servicePrincipal.ID,
 			Name:     *servicePrincipal.DisplayName,
 			Location: "global",
@@ -99,7 +113,14 @@ func AdServicePrinciple(ctx context.Context, authorizer auth.Authorizer, tenantI
 				TenantID:           tenantId,
 				AdServicePrincipal: servicePrincipal,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil

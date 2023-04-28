@@ -13,7 +13,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func ElasticLoadBalancingV2LoadBalancer(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ElasticLoadBalancingV2LoadBalancer(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := elasticloadbalancingv2.NewFromConfig(cfg)
 	paginator := elasticloadbalancingv2.NewDescribeLoadBalancersPaginator(client, &elasticloadbalancingv2.DescribeLoadBalancersInput{})
 
@@ -48,11 +48,18 @@ func ElasticLoadBalancingV2LoadBalancer(ctx context.Context, cfg aws.Config) ([]
 				description.Tags = tags.TagDescriptions[0].Tags
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.LoadBalancerArn,
 				Name:        *v.LoadBalancerName,
 				Description: description,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -104,8 +111,8 @@ func GetElasticLoadBalancingV2LoadBalancer(ctx context.Context, cfg aws.Config, 
 	return values, nil
 }
 
-func ElasticLoadBalancingV2Listener(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	lbs, err := ElasticLoadBalancingV2LoadBalancer(ctx, cfg)
+func ElasticLoadBalancingV2Listener(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	lbs, err := ElasticLoadBalancingV2LoadBalancer(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -125,13 +132,20 @@ func ElasticLoadBalancingV2Listener(ctx context.Context, cfg aws.Config) ([]Reso
 			}
 
 			for _, v := range page.Listeners {
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:  *v.ListenerArn,
 					Name: nameFromArn(*v.ListenerArn),
 					Description: model.ElasticLoadBalancingV2ListenerDescription{
 						Listener: v,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 
@@ -166,8 +180,8 @@ func GetElasticLoadBalancingV2Listener(ctx context.Context, cfg aws.Config, fiel
 	return values, nil
 }
 
-func ElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	listeners, err := ElasticLoadBalancingV2Listener(ctx, cfg)
+func ElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	listeners, err := ElasticLoadBalancingV2Listener(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -186,13 +200,21 @@ func ElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config) ([]
 			}
 
 			for _, v := range output.Rules {
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:  *v.RuleArn,
 					Name: *v.RuleArn,
 					Description: model.ElasticLoadBalancingV2RuleDescription{
 						Rule: v,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
+
 			}
 
 			return output.NextMarker, nil
@@ -205,8 +227,8 @@ func ElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config) ([]
 	return values, nil
 }
 
-func GetElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	listeners, err := ElasticLoadBalancingV2Listener(ctx, cfg)
+func GetElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	listeners, err := ElasticLoadBalancingV2Listener(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -225,13 +247,21 @@ func GetElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config) 
 			}
 
 			for _, v := range output.Rules {
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:  *v.RuleArn,
 					Name: *v.RuleArn,
 					Description: model.ElasticLoadBalancingV2RuleDescription{
 						Rule: v,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
+
 			}
 
 			return output.NextMarker, nil
@@ -244,7 +274,7 @@ func GetElasticLoadBalancingV2ListenerRule(ctx context.Context, cfg aws.Config) 
 	return values, nil
 }
 
-func ElasticLoadBalancingLoadBalancer(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ElasticLoadBalancingLoadBalancer(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := elasticloadbalancing.NewFromConfig(cfg)
 	paginator := elasticloadbalancing.NewDescribeLoadBalancersPaginator(client, &elasticloadbalancing.DescribeLoadBalancersInput{})
 
@@ -282,18 +312,25 @@ func ElasticLoadBalancingLoadBalancer(ctx context.Context, cfg aws.Config) ([]Re
 			}
 
 			arn := "arn:" + describeCtx.Partition + ":elasticloadbalancing:" + describeCtx.Region + ":" + describeCtx.AccountID + ":loadbalancer/" + *v.LoadBalancerName
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         arn,
 				Name:        *v.LoadBalancerName,
 				Description: description,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func ElasticLoadBalancingV2SslPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ElasticLoadBalancingV2SslPolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := elasticloadbalancingv2.NewFromConfig(cfg)
 
@@ -308,13 +345,21 @@ func ElasticLoadBalancingV2SslPolicy(ctx context.Context, cfg aws.Config) ([]Res
 
 		for _, v := range output.SslPolicies {
 			arn := fmt.Sprintf("arn:%s:elbv2:%s:%s:ssl-policy/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.Name)
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *v.Name,
 				ARN:  arn,
 				Description: model.ElasticLoadBalancingV2SslPolicyDescription{
 					SslPolicy: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 
 		return output.NextMarker, nil
@@ -326,7 +371,7 @@ func ElasticLoadBalancingV2SslPolicy(ctx context.Context, cfg aws.Config) ([]Res
 	return values, nil
 }
 
-func ElasticLoadBalancingV2TargetGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ElasticLoadBalancingV2TargetGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := elasticloadbalancingv2.NewFromConfig(cfg)
 	paginator := elasticloadbalancingv2.NewDescribeTargetGroupsPaginator(client, &elasticloadbalancingv2.DescribeTargetGroupsInput{})
 
@@ -357,7 +402,7 @@ func ElasticLoadBalancingV2TargetGroup(ctx context.Context, cfg aws.Config) ([]R
 				tagsA = tags.TagDescriptions[0].Tags
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.TargetGroupArn,
 				Name: *v.TargetGroupName,
 				Description: model.ElasticLoadBalancingV2TargetGroupDescription{
@@ -365,14 +410,21 @@ func ElasticLoadBalancingV2TargetGroup(ctx context.Context, cfg aws.Config) ([]R
 					Health:      healthDescriptions.TargetHealthDescriptions,
 					Tags:        tagsA,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func ApplicationLoadBalancerMetricRequestCount(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ApplicationLoadBalancerMetricRequestCount(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := elasticloadbalancingv2.NewFromConfig(cfg)
 	paginator := elasticloadbalancingv2.NewDescribeLoadBalancersPaginator(client, &elasticloadbalancingv2.DescribeLoadBalancersInput{})
 
@@ -393,12 +445,19 @@ func ApplicationLoadBalancerMetricRequestCount(ctx context.Context, cfg aws.Conf
 				return nil, err
 			}
 			for _, metric := range metrics {
-				values = append(values, Resource{
+				resource := Resource{
 					ID: fmt.Sprintf("%s:%s:%s:%s", arn, metric.Timestamp.Format(time.RFC3339), *metric.DimensionName, *metric.DimensionValue),
 					Description: model.ApplicationLoadBalancerMetricRequestCountDescription{
 						CloudWatchMetricRow: metric,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -439,7 +498,7 @@ func GetApplicationLoadBalancerMetricRequestCount(ctx context.Context, cfg aws.C
 	return values, nil
 }
 
-func ApplicationLoadBalancerMetricRequestCountDaily(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ApplicationLoadBalancerMetricRequestCountDaily(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := elasticloadbalancingv2.NewFromConfig(cfg)
 	paginator := elasticloadbalancingv2.NewDescribeLoadBalancersPaginator(client, &elasticloadbalancingv2.DescribeLoadBalancersInput{})
 
@@ -460,12 +519,19 @@ func ApplicationLoadBalancerMetricRequestCountDaily(ctx context.Context, cfg aws
 				return nil, err
 			}
 			for _, metric := range metrics {
-				values = append(values, Resource{
+				resource := Resource{
 					ID: fmt.Sprintf("%s:%s:%s:%s", arn, metric.Timestamp.Format(time.RFC3339), *metric.DimensionName, *metric.DimensionValue),
 					Description: model.ApplicationLoadBalancerMetricRequestCountDailyDescription{
 						CloudWatchMetricRow: metric,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -505,7 +571,7 @@ func GetApplicationLoadBalancerMetricRequestCountDaily(ctx context.Context, cfg 
 	return values, nil
 }
 
-func NetworkLoadBalancerMetricNetFlowCount(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func NetworkLoadBalancerMetricNetFlowCount(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := elasticloadbalancingv2.NewFromConfig(cfg)
 	paginator := elasticloadbalancingv2.NewDescribeLoadBalancersPaginator(client, &elasticloadbalancingv2.DescribeLoadBalancersInput{})
 
@@ -526,12 +592,19 @@ func NetworkLoadBalancerMetricNetFlowCount(ctx context.Context, cfg aws.Config) 
 				return nil, err
 			}
 			for _, metric := range metrics {
-				values = append(values, Resource{
+				resource := Resource{
 					ID: fmt.Sprintf("%s:%s:%s:%s", arn, metric.Timestamp.Format(time.RFC3339), *metric.DimensionName, *metric.DimensionValue),
 					Description: model.NetworkLoadBalancerMetricNetFlowCountDescription{
 						CloudWatchMetricRow: metric,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -539,7 +612,7 @@ func NetworkLoadBalancerMetricNetFlowCount(ctx context.Context, cfg aws.Config) 
 	return values, nil
 }
 
-func NetworkLoadBalancerMetricNetFlowCountDaily(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func NetworkLoadBalancerMetricNetFlowCountDaily(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := elasticloadbalancingv2.NewFromConfig(cfg)
 	paginator := elasticloadbalancingv2.NewDescribeLoadBalancersPaginator(client, &elasticloadbalancingv2.DescribeLoadBalancersInput{})
 
@@ -560,12 +633,19 @@ func NetworkLoadBalancerMetricNetFlowCountDaily(ctx context.Context, cfg aws.Con
 				return nil, err
 			}
 			for _, metric := range metrics {
-				values = append(values, Resource{
+				resource := Resource{
 					ID: fmt.Sprintf("%s:%s:%s:%s", arn, metric.Timestamp.Format(time.RFC3339), *metric.DimensionName, *metric.DimensionValue),
 					Description: model.NetworkLoadBalancerMetricNetFlowCountDailyDescription{
 						CloudWatchMetricRow: metric,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}

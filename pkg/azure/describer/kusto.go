@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func KustoCluster(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func KustoCluster(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	kustoClient := kusto.NewClustersClient(subscription)
 	kustoClient.Authorizer = authorizer
 	result, err := kustoClient.List(ctx)
@@ -21,7 +21,7 @@ func KustoCluster(ctx context.Context, authorizer autorest.Authorizer, subscript
 	for _, kusto := range *result.Value {
 		resourceGroup := strings.Split(*kusto.ID, "/")[4]
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:       *kusto.ID,
 			Name:     *kusto.Name,
 			Location: *kusto.Location,
@@ -29,7 +29,14 @@ func KustoCluster(ctx context.Context, authorizer autorest.Authorizer, subscript
 				Cluster:       kusto,
 				ResourceGroup: resourceGroup,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 	return values, nil
 }

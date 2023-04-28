@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func KafkaCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func KafkaCluster(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := kafka.NewFromConfig(cfg)
 	paginator := kafka.NewListClustersV2Paginator(client, &kafka.ListClustersV2Input{})
 
@@ -20,13 +20,20 @@ func KafkaCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, v := range page.ClusterInfoList {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.ClusterArn,
 				Name: *v.ClusterName,
 				Description: model.KafkaClusterDescription{
 					Cluster: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

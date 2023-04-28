@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func PolicyAssignment(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func PolicyAssignment(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := policy.NewAssignmentsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -25,14 +25,21 @@ func PolicyAssignment(ctx context.Context, authorizer autorest.Authorizer, subsc
 				location = *v.Location
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: location,
 				Description: model.PolicyAssignmentDescription{
 					Assignment: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {

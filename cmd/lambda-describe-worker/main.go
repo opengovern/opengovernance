@@ -1,13 +1,10 @@
 package main
 
 import (
-	"os"
-
+	"github.com/aws/aws-lambda-go/lambda"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 )
 
 func main() {
-	if err := describe.WorkerCommand().Execute(); err != nil {
-		os.Exit(1)
-	}
+	lambda.Start(describe.DescribeHandler)
 }

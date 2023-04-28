@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func CloudFormationStack(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudFormationStack(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudformation.NewFromConfig(cfg)
 	paginator := cloudformation.NewDescribeStacksPaginator(client, &cloudformation.DescribeStacksInput{})
 
@@ -43,7 +43,7 @@ func CloudFormationStack(ctx context.Context, cfg aws.Config) ([]Resource, error
 				stackResources = &cloudformation.DescribeStackResourcesOutput{}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.StackId,
 				Name: *v.StackName,
 				Description: model.CloudFormationStackDescription{
@@ -51,14 +51,21 @@ func CloudFormationStack(ctx context.Context, cfg aws.Config) ([]Resource, error
 					StackTemplate:  *template,
 					StackResources: stackResources.StackResources,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func CloudFormationStackSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudFormationStackSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudformation.NewFromConfig(cfg)
 	paginator := cloudformation.NewListStackSetsPaginator(client, &cloudformation.ListStackSetsInput{})
 
@@ -76,13 +83,20 @@ func CloudFormationStackSet(ctx context.Context, cfg aws.Config) ([]Resource, er
 			if err != nil {
 				return nil, err
 			}
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *stackSet.StackSet.StackSetARN,
 				Name: *stackSet.StackSet.StackSetName,
 				Description: model.CloudFormationStackSetDescription{
 					StackSet: *stackSet.StackSet,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

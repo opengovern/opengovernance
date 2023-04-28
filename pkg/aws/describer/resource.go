@@ -4,6 +4,8 @@ import (
 	"strings"
 )
 
+type StreamSender func(Resource) error
+
 type Resource struct {
 	// ARN uniquely identifies an AWS resource across regions, accounts and types.
 	ARN string

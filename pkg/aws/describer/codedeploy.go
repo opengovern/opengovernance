@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func CodeDeployDeploymentGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CodeDeployDeploymentGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
 	client := codedeploy.NewFromConfig(cfg)
@@ -52,14 +52,21 @@ func CodeDeployDeploymentGroup(ctx context.Context, cfg aws.Config) ([]Resource,
 						return nil, err
 					}
 
-					values = append(values, Resource{
+					resource := Resource{
 						ARN:  arn,
 						Name: *deploymentGroup.DeploymentGroupInfo.DeploymentGroupName,
 						Description: model.CodeDeployDeploymentGroupDescription{
 							DeploymentGroup: *deploymentGroup.DeploymentGroupInfo,
 							Tags:            tags.Tags,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -68,7 +75,7 @@ func CodeDeployDeploymentGroup(ctx context.Context, cfg aws.Config) ([]Resource,
 	return values, nil
 }
 
-func CodeDeployApplication(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CodeDeployApplication(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
 	client := codedeploy.NewFromConfig(cfg)
@@ -98,14 +105,21 @@ func CodeDeployApplication(ctx context.Context, cfg aws.Config) ([]Resource, err
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *application.Application.ApplicationName,
 				Description: model.CodeDeployApplicationDescription{
 					Application: *application.Application,
 					Tags:        tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

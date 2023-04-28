@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func DirectoryServiceDirectory(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func DirectoryServiceDirectory(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
 	client := directoryservice.NewFromConfig(cfg)
@@ -38,14 +38,21 @@ func DirectoryServiceDirectory(ctx context.Context, cfg aws.Config) ([]Resource,
 				tags = &directoryservice.ListTagsForResourceOutput{}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *v.Name,
 				Description: model.DirectoryServiceDirectoryDescription{
 					Directory: v,
 					Tags:      tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

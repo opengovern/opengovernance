@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func FMSPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func FMSPolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := fms.NewFromConfig(cfg)
 	paginator := fms.NewListPoliciesPaginator(client, &fms.ListPoliciesInput{})
 
@@ -28,14 +28,21 @@ func FMSPolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			if err != nil {
 				return nil, err
 			}
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.PolicyArn,
 				Name: *v.PolicyName,
 				Description: model.FMSPolicyDescription{
 					Policy: v,
 					Tags:   tags.TagList,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

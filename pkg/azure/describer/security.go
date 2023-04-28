@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func SecurityCenterAutoProvisioning(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SecurityCenterAutoProvisioning(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := security.NewAutoProvisioningSettingsClient(subscription, "")
 	client.Authorizer = authorizer
 
@@ -21,14 +21,21 @@ func SecurityCenterAutoProvisioning(ctx context.Context, authorizer autorest.Aut
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: "global",
 				Description: model.SecurityCenterAutoProvisioningDescription{
 					AutoProvisioningSetting: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -44,7 +51,7 @@ func SecurityCenterAutoProvisioning(ctx context.Context, authorizer autorest.Aut
 	return values, nil
 }
 
-func SecurityCenterContact(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SecurityCenterContact(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := security.NewContactsClient(subscription, "")
 	client.Authorizer = authorizer
 
@@ -56,14 +63,21 @@ func SecurityCenterContact(ctx context.Context, authorizer autorest.Authorizer, 
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: "global",
 				Description: model.SecurityCenterContactDescription{
 					Contact: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -79,7 +93,7 @@ func SecurityCenterContact(ctx context.Context, authorizer autorest.Authorizer, 
 	return values, nil
 }
 
-func SecurityCenterJitNetworkAccessPolicy(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SecurityCenterJitNetworkAccessPolicy(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := security.NewJitNetworkAccessPoliciesClient(subscription, "")
 	client.Authorizer = authorizer
 
@@ -91,14 +105,21 @@ func SecurityCenterJitNetworkAccessPolicy(ctx context.Context, authorizer autore
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: *v.Location,
 				Description: model.SecurityCenterJitNetworkAccessPolicyDescription{
 					JitNetworkAccessPolicy: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -114,7 +135,7 @@ func SecurityCenterJitNetworkAccessPolicy(ctx context.Context, authorizer autore
 	return values, nil
 }
 
-func SecurityCenterSetting(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SecurityCenterSetting(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := security.NewSettingsClient(subscription, "")
 	client.Authorizer = authorizer
 
@@ -126,14 +147,21 @@ func SecurityCenterSetting(ctx context.Context, authorizer autorest.Authorizer, 
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: "global",
 				Description: model.SecurityCenterSettingDescription{
 					Setting: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -149,7 +177,7 @@ func SecurityCenterSetting(ctx context.Context, authorizer autorest.Authorizer, 
 	return values, nil
 }
 
-func SecurityCenterSubscriptionPricing(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SecurityCenterSubscriptionPricing(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := security.NewPricingsClient(subscription, "")
 	client.Authorizer = authorizer
 
@@ -161,14 +189,21 @@ func SecurityCenterSubscriptionPricing(ctx context.Context, authorizer autorest.
 	var values []Resource
 	for {
 		for _, v := range result.Values() {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: "global",
 				Description: model.SecurityCenterSubscriptionPricingDescription{
 					Pricing: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -184,7 +219,7 @@ func SecurityCenterSubscriptionPricing(ctx context.Context, authorizer autorest.
 	return values, nil
 }
 
-func SecurityCenterAutomation(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SecurityCenterAutomation(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := security.NewAutomationsClient(subscription, "")
 	client.Authorizer = authorizer
 
@@ -197,7 +232,7 @@ func SecurityCenterAutomation(ctx context.Context, authorizer autorest.Authorize
 	for {
 		for _, v := range result.Values() {
 			resourceGroup := strings.Split(*v.ID, "/")[4]
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: *v.Location,
@@ -205,7 +240,14 @@ func SecurityCenterAutomation(ctx context.Context, authorizer autorest.Authorize
 					Automation:    v,
 					ResourceGroup: resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -221,7 +263,7 @@ func SecurityCenterAutomation(ctx context.Context, authorizer autorest.Authorize
 	return values, nil
 }
 
-func SecurityCenterSubAssessment(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SecurityCenterSubAssessment(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := security.NewSubAssessmentsClient(subscription, "")
 	client.Authorizer = authorizer
 
@@ -234,14 +276,21 @@ func SecurityCenterSubAssessment(ctx context.Context, authorizer autorest.Author
 	for {
 		for _, v := range result.Values() {
 			resourceGroup := strings.Split(*v.ID, "/")[4]
-			values = append(values, Resource{
+			resource := Resource{
 				ID:   *v.ID,
 				Name: *v.Name,
 				Description: model.SecurityCenterSubAssessmentDescription{
 					SubAssessment: v,
 					ResourceGroup: resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {

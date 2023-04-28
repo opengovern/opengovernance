@@ -14,7 +14,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func LambdaFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func LambdaFunction(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := lambda.NewFromConfig(cfg)
 	paginator := lambda.NewListFunctionsPaginator(client, &lambda.ListFunctionsInput{
 		FunctionVersion: types.FunctionVersionAll,
@@ -58,14 +58,21 @@ func LambdaFunction(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.FunctionArn,
 				Name: *v.FunctionName,
 				Description: model.LambdaFunctionDescription{
 					Function: function,
 					Policy:   policy,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -127,7 +134,7 @@ func GetLambdaFunction(ctx context.Context, cfg aws.Config, fields map[string]st
 	return values, nil
 }
 
-func LambdaFunctionVersion(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func LambdaFunctionVersion(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := lambda.NewFromConfig(cfg)
 	paginator := lambda.NewListFunctionsPaginator(client, &lambda.ListFunctionsInput{
 		FunctionVersion: types.FunctionVersionAll,
@@ -143,21 +150,28 @@ func LambdaFunctionVersion(ctx context.Context, cfg aws.Config) ([]Resource, err
 		for _, v := range page.Functions {
 			arn := fmt.Sprintf("%s:%s", *v.FunctionArn, *v.Version)
 			id := fmt.Sprintf("%s:%s", *v.FunctionName, *v.Version)
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: id,
 				Description: model.LambdaFunctionVersionDescription{
 					ID:              id,
 					FunctionVersion: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 	return values, nil
 }
 
-func LambdaAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	fns, err := LambdaFunction(ctx, cfg)
+func LambdaAlias(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	fns, err := LambdaFunction(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -179,11 +193,18 @@ func LambdaAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			for _, v := range page.Aliases {
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:         *v.AliasArn,
 					Name:        *v.Name,
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -191,8 +212,8 @@ func LambdaAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func LambdaPermission(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	fns, err := LambdaFunction(ctx, cfg)
+func LambdaPermission(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	fns, err := LambdaFunction(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -214,18 +235,25 @@ func LambdaPermission(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			return nil, err
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:          CompositeID(*fn.FunctionArn, *v.Policy),
 			Name:        *v.Policy,
 			Description: v,
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func LambdaEventInvokeConfig(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	fns, err := LambdaFunction(ctx, cfg)
+func LambdaEventInvokeConfig(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	fns, err := LambdaFunction(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -246,11 +274,19 @@ func LambdaEventInvokeConfig(ctx context.Context, cfg aws.Config) ([]Resource, e
 			}
 
 			for _, v := range page.FunctionEventInvokeConfigs {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:          *fn.FunctionName, // Invoke Config is unique per function
 					Name:        *fn.FunctionName,
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
+
 			}
 		}
 	}
@@ -258,7 +294,7 @@ func LambdaEventInvokeConfig(ctx context.Context, cfg aws.Config) ([]Resource, e
 	return values, nil
 }
 
-func LambdaCodeSigningConfig(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func LambdaCodeSigningConfig(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := lambda.NewFromConfig(cfg)
 	paginator := lambda.NewListCodeSigningConfigsPaginator(client, &lambda.ListCodeSigningConfigsInput{})
 
@@ -270,18 +306,25 @@ func LambdaCodeSigningConfig(ctx context.Context, cfg aws.Config) ([]Resource, e
 		}
 
 		for _, v := range page.CodeSigningConfigs {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.CodeSigningConfigArn,
 				Name:        *v.CodeSigningConfigArn,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func LambdaEventSourceMapping(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func LambdaEventSourceMapping(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := lambda.NewFromConfig(cfg)
 	paginator := lambda.NewListEventSourceMappingsPaginator(client, &lambda.ListEventSourceMappingsInput{})
 
@@ -293,18 +336,25 @@ func LambdaEventSourceMapping(ctx context.Context, cfg aws.Config) ([]Resource, 
 		}
 
 		for _, v := range page.EventSourceMappings {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.EventSourceArn,
 				Name:        *v.UUID,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func LambdaLayerVersion(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func LambdaLayerVersion(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	layers, err := listLayers(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -325,11 +375,18 @@ func LambdaLayerVersion(ctx context.Context, cfg aws.Config) ([]Resource, error)
 			}
 
 			for _, v := range page.LayerVersions {
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:         *v.LayerVersionArn,
 					Name:        *v.LayerVersionArn,
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -337,8 +394,8 @@ func LambdaLayerVersion(ctx context.Context, cfg aws.Config) ([]Resource, error)
 	return values, nil
 }
 
-func LambdaLayerVersionPermission(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	lvs, err := LambdaLayerVersion(ctx, cfg)
+func LambdaLayerVersionPermission(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	lvs, err := LambdaLayerVersion(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -357,11 +414,18 @@ func LambdaLayerVersionPermission(ctx context.Context, cfg aws.Config) ([]Resour
 			return nil, err
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:          CompositeID(*arn, fmt.Sprintf("%d", version)),
 			Name:        *arn,
 			Description: v,
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil

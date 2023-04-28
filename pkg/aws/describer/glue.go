@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func GlueCatalogDatabase(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GlueCatalogDatabase(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := glue.NewFromConfig(cfg)
 	paginator := glue.NewGetDatabasesPaginator(client, &glue.GetDatabasesInput{})
@@ -22,20 +22,27 @@ func GlueCatalogDatabase(ctx context.Context, cfg aws.Config) ([]Resource, error
 		}
 		for _, database := range page.DatabaseList {
 			arn := fmt.Sprintf("arn:aws:glue:%s:%s:database/%s", describeCtx.Region, describeCtx.AccountID, *database.Name)
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *database.Name,
 				ARN:  arn,
 				Description: model.GlueCatalogDatabaseDescription{
 					Database: database,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func GlueCatalogTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GlueCatalogTable(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := glue.NewFromConfig(cfg)
 	paginator := glue.NewGetDatabasesPaginator(client, &glue.GetDatabasesInput{})
@@ -58,13 +65,20 @@ func GlueCatalogTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				}
 				for _, table := range tablePage.TableList {
 					arn := fmt.Sprintf("arn:aws:glue:%s:%s:table/%s/%s", describeCtx.Region, describeCtx.AccountID, *database.Name, *table.Name)
-					values = append(values, Resource{
+					resource := Resource{
 						Name: *table.Name,
 						ARN:  arn,
 						Description: model.GlueCatalogTableDescription{
 							Table: table,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -73,7 +87,7 @@ func GlueCatalogTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func GlueConnection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GlueConnection(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := glue.NewFromConfig(cfg)
 	paginator := glue.NewGetConnectionsPaginator(client, &glue.GetConnectionsInput{})
@@ -86,20 +100,27 @@ func GlueConnection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 		for _, connection := range page.ConnectionList {
 			arn := fmt.Sprintf("arn:aws:glue:%s:%s:connection/%s", describeCtx.Region, describeCtx.AccountID, *connection.Name)
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *connection.Name,
 				ARN:  arn,
 				Description: model.GlueConnectionDescription{
 					Connection: connection,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func GlueCrawler(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GlueCrawler(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := glue.NewFromConfig(cfg)
 	paginator := glue.NewGetCrawlersPaginator(client, &glue.GetCrawlersInput{})
@@ -112,13 +133,20 @@ func GlueCrawler(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 		for _, crawler := range page.Crawlers {
 			arn := fmt.Sprintf("arn:aws:glue:%s:%s:crawler/%s", describeCtx.Region, describeCtx.AccountID, *crawler.Name)
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *crawler.Name,
 				ARN:  arn,
 				Description: model.GlueCrawlerDescription{
 					Crawler: crawler,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -151,7 +179,7 @@ func GetGlueCrawler(ctx context.Context, cfg aws.Config, fields map[string]strin
 	return values, nil
 }
 
-func GlueDataCatalogEncryptionSettings(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GlueDataCatalogEncryptionSettings(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := glue.NewFromConfig(cfg)
 
 	settings, err := client.GetDataCatalogEncryptionSettings(ctx, &glue.GetDataCatalogEncryptionSettingsInput{})
@@ -160,16 +188,23 @@ func GlueDataCatalogEncryptionSettings(ctx context.Context, cfg aws.Config) ([]R
 	}
 
 	var values []Resource
-	values = append(values, Resource{
+	resource := Resource{
 		Description: model.GlueDataCatalogEncryptionSettingsDescription{
 			DataCatalogEncryptionSettings: *settings.DataCatalogEncryptionSettings,
 		},
-	})
+	}
+	if stream != nil {
+		if err := (*stream)(resource); err != nil {
+			return nil, err
+		}
+	} else {
+		values = append(values, resource)
+	}
 
 	return values, nil
 }
 
-func GlueDataQualityRuleset(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GlueDataQualityRuleset(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	//describeCtx := GetDescribeContext(ctx)
 	client := glue.NewFromConfig(cfg)
 	paginator := glue.NewListDataQualityRulesetsPaginator(client, &glue.ListDataQualityRulesetsInput{})
@@ -188,19 +223,26 @@ func GlueDataQualityRuleset(ctx context.Context, cfg aws.Config) ([]Resource, er
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *listRuleset.Name,
 				Description: model.GlueDataQualityRulesetDescription{
 					DataQualityRuleset: *ruleset,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func GlueDevEndpoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GlueDevEndpoint(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := glue.NewFromConfig(cfg)
 	paginator := glue.NewGetDevEndpointsPaginator(client, &glue.GetDevEndpointsInput{})
@@ -213,20 +255,27 @@ func GlueDevEndpoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 		for _, devEndpoint := range page.DevEndpoints {
 			arn := fmt.Sprintf("arn:aws:glue:%s:%s:devEndpoint/%s", describeCtx.Region, describeCtx.AccountID, *devEndpoint.EndpointName)
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *devEndpoint.EndpointName,
 				ARN:  arn,
 				Description: model.GlueDevEndpointDescription{
 					DevEndpoint: devEndpoint,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func GlueJob(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GlueJob(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := glue.NewFromConfig(cfg)
 	paginator := glue.NewGetJobsPaginator(client, &glue.GetJobsInput{})
@@ -247,14 +296,21 @@ func GlueJob(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *job.Name,
 				ARN:  arn,
 				Description: model.GlueJobDescription{
 					Job:      job,
 					Bookmark: *bookmark.JobBookmarkEntry,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -296,7 +352,7 @@ func GetGlueJob(ctx context.Context, cfg aws.Config, fields map[string]string) (
 	return values, nil
 }
 
-func GlueSecurityConfiguration(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GlueSecurityConfiguration(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := glue.NewFromConfig(cfg)
 	paginator := glue.NewGetSecurityConfigurationsPaginator(client, &glue.GetSecurityConfigurationsInput{})
@@ -309,13 +365,20 @@ func GlueSecurityConfiguration(ctx context.Context, cfg aws.Config) ([]Resource,
 		}
 		for _, securityConfiguration := range page.SecurityConfigurations {
 			arn := fmt.Sprintf("arn:aws:glue:%s:%s:security-configuration/%s", describeCtx.Region, describeCtx.AccountID, *securityConfiguration.Name)
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *securityConfiguration.Name,
 				ARN:  arn,
 				Description: model.GlueSecurityConfigurationDescription{
 					SecurityConfiguration: securityConfiguration,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

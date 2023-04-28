@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func CertificateManagerAccount(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CertificateManagerAccount(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := acm.NewFromConfig(cfg)
 	output, err := client.GetAccountConfiguration(ctx, &acm.GetAccountConfigurationInput{})
 	if err != nil {
@@ -22,7 +22,7 @@ func CertificateManagerAccount(ctx context.Context, cfg aws.Config) ([]Resource,
 	}}, nil
 }
 
-func CertificateManagerCertificate(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CertificateManagerCertificate(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := acm.NewFromConfig(cfg)
 	paginator := acm.NewListCertificatesPaginator(client, &acm.ListCertificatesInput{})
 
@@ -55,7 +55,7 @@ func CertificateManagerCertificate(ctx context.Context, cfg aws.Config) ([]Resou
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.CertificateArn,
 				Name: nameFromArn(*v.CertificateArn),
 				Description: model.CertificateManagerCertificateDescription{
@@ -69,14 +69,23 @@ func CertificateManagerCertificate(ctx context.Context, cfg aws.Config) ([]Resou
 					},
 					Tags: tagsOutput.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				m := *stream
+				err := m(resource)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func ACMPCACertificateAuthority(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ACMPCACertificateAuthority(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := acmpca.NewFromConfig(cfg)
 	paginator := acmpca.NewListCertificateAuthoritiesPaginator(client, &acmpca.ListCertificateAuthoritiesInput{})
 
@@ -94,14 +103,23 @@ func ACMPCACertificateAuthority(ctx context.Context, cfg aws.Config) ([]Resource
 			if err != nil {
 				return nil, err
 			}
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.Arn,
 				Name: nameFromArn(*v.Arn),
 				Description: model.ACMPCACertificateAuthorityDescription{
 					CertificateAuthority: v,
 					Tags:                 tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				m := *stream
+				err := m(resource)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

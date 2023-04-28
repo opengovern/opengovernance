@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func ContainerRegistry(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ContainerRegistry(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	containerRegistryClient := containerregistry.NewRegistriesClient(subscription)
 	containerRegistryClient.Authorizer = authorizer
 
@@ -38,7 +38,7 @@ func ContainerRegistry(ctx context.Context, authorizer autorest.Authorizer, subs
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *registry.ID,
 				Name:     *registry.Name,
 				Location: *registry.Location,
@@ -48,7 +48,14 @@ func ContainerRegistry(ctx context.Context, authorizer autorest.Authorizer, subs
 					RegistryUsages:                containerRegistryListUsagesOp.Value,
 					ResourceGroup:                 resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break

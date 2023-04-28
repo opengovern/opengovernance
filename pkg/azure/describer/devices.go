@@ -11,7 +11,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func DevicesProvisioningServicesCertificates(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func DevicesProvisioningServicesCertificates(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -38,12 +38,19 @@ func DevicesProvisioningServicesCertificates(ctx context.Context, authorizer aut
 			}
 
 			for _, v := range *it.Value {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:          *v.ID,
 					Name:        *v.Name,
 					Location:    "global",
 					Description: JSONAllFieldsMarshaller{Value: v},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -74,7 +81,7 @@ func devicesProvisioningServices(ctx context.Context, authorizer autorest.Author
 	return values, nil
 }
 
-func IOTHub(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func IOTHub(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := insights.NewDiagnosticSettingsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -97,7 +104,7 @@ func IOTHub(ctx context.Context, authorizer autorest.Authorizer, subscription st
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *iotHubDescription.ID,
 				Name:     *iotHubDescription.Name,
 				Location: *iotHubDescription.Location,
@@ -106,7 +113,14 @@ func IOTHub(ctx context.Context, authorizer autorest.Authorizer, subscription st
 					DiagnosticSettingsResources: devicesListOp.Value,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -119,7 +133,7 @@ func IOTHub(ctx context.Context, authorizer autorest.Authorizer, subscription st
 	return values, nil
 }
 
-func IOTHubDps(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func IOTHubDps(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := insights.NewDiagnosticSettingsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -142,7 +156,7 @@ func IOTHubDps(ctx context.Context, authorizer autorest.Authorizer, subscription
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: *v.Location,
@@ -151,7 +165,14 @@ func IOTHubDps(ctx context.Context, authorizer autorest.Authorizer, subscription
 					DiagnosticSettingsResources: devicesListOp.Value,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break

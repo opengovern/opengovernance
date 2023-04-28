@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func DLMLifecyclePolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func DLMLifecyclePolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	//describeCtx := GetDescribeContext(ctx)
 	client := dlm.NewFromConfig(cfg)
 
@@ -25,13 +25,20 @@ func DLMLifecyclePolicy(ctx context.Context, cfg aws.Config) ([]Resource, error)
 		if err != nil {
 			return nil, err
 		}
-		values = append(values, Resource{
+		resource := Resource{
 			ID:  *policy.Policy.PolicyId,
 			ARN: *policy.Policy.PolicyArn,
 			Description: model.DLMLifecyclePolicyDescription{
 				LifecyclePolicy: *policy.Policy,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil

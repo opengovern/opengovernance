@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func HybridComputeMachine(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func HybridComputeMachine(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	hybridComputeClient := hybridcompute.NewMachineExtensionsClient(subscription)
 	hybridComputeClient.Authorizer = authorizer
 
@@ -40,7 +40,7 @@ func HybridComputeMachine(ctx context.Context, authorizer autorest.Authorizer, s
 				v = append(v, hybridComputeListResult.Values()...)
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *machine.ID,
 				Name:     *machine.Name,
 				Location: *machine.Location,
@@ -49,7 +49,14 @@ func HybridComputeMachine(ctx context.Context, authorizer autorest.Authorizer, s
 					MachineExtensions: v,
 					ResourceGroup:     resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break

@@ -124,7 +124,7 @@ func costMonthly(ctx context.Context, cfg aws.Config, by string, startDate, endD
 	return values, nil
 }
 
-func CostByServiceLastMonth(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CostByServiceLastMonth(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	triggerType := GetTriggerTypeFromContext(ctx)
 	startDate := time.Now().AddDate(0, -1, 0)
 	if triggerType == enums.DescribeTriggerTypeInitialDiscovery {
@@ -140,16 +140,23 @@ func CostByServiceLastMonth(ctx context.Context, cfg aws.Config) ([]Resource, er
 			fmt.Println("Dimention is null")
 			continue
 		}
-		values = append(values, Resource{
+		resource := Resource{
 			ID:          "service-" + *cost.Dimension1 + "-cost-monthly",
 			Description: model.CostExplorerByServiceMonthlyDescription{CostExplorerRow: cost},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func CostByAccountLastMonth(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CostByAccountLastMonth(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	triggerType := GetTriggerTypeFromContext(ctx)
 	startDate := time.Now().AddDate(0, -1, 0)
 	if triggerType == enums.DescribeTriggerTypeInitialDiscovery {
@@ -166,10 +173,17 @@ func CostByAccountLastMonth(ctx context.Context, cfg aws.Config) ([]Resource, er
 			fmt.Println("Dimention is null")
 			continue
 		}
-		values = append(values, Resource{
+		resource := Resource{
 			ID:          "account-" + *cost.Dimension1 + "-cost-monthly",
 			Description: model.CostExplorerByAccountMonthlyDescription{CostExplorerRow: cost},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 	return values, nil
 }
@@ -254,7 +268,7 @@ func costDaily(ctx context.Context, cfg aws.Config, by string, startDate, endDat
 	return values, nil
 }
 
-func CostByServiceLastDay(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CostByServiceLastDay(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	triggerType := GetTriggerTypeFromContext(ctx)
 	startDate := time.Now().AddDate(0, 0, -7)
 	if triggerType == enums.DescribeTriggerTypeInitialDiscovery {
@@ -271,16 +285,23 @@ func CostByServiceLastDay(ctx context.Context, cfg aws.Config) ([]Resource, erro
 			fmt.Println("Dimention is null")
 			continue
 		}
-		values = append(values, Resource{
+		resource := Resource{
 			ID:          "service-" + *cost.Dimension1 + "-cost-" + *cost.PeriodEnd,
 			Description: model.CostExplorerByServiceDailyDescription{CostExplorerRow: cost},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func CostByAccountLastDay(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CostByAccountLastDay(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	triggerType := GetTriggerTypeFromContext(ctx)
 	startDate := time.Now().AddDate(0, 0, -7)
 	if triggerType == enums.DescribeTriggerTypeInitialDiscovery {
@@ -297,10 +318,17 @@ func CostByAccountLastDay(ctx context.Context, cfg aws.Config) ([]Resource, erro
 			fmt.Println("Dimention is null")
 			continue
 		}
-		values = append(values, Resource{
+		resource := Resource{
 			ID:          "account-" + *cost.Dimension1 + "-cost-" + *cost.PeriodEnd,
 			Description: model.CostExplorerByAccountDailyDescription{CostExplorerRow: cost},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 	return values, nil
 }
@@ -343,7 +371,7 @@ func buildCostByRecordTypeInput(granularity string) *costexplorer.GetCostAndUsag
 	return params
 }
 
-func CostByRecordTypeLastMonth(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CostByRecordTypeLastMonth(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := costexplorer.NewFromConfig(cfg)
 
 	params := buildCostByRecordTypeInput("MONTHLY")
@@ -370,17 +398,24 @@ func CostByRecordTypeLastMonth(ctx context.Context, cfg aws.Config) ([]Resource,
 			}
 			setRowMetrics(&row, group.Metrics)
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          "account-" + *row.Dimension1 + "-" + *row.Dimension2 + "-cost-monthly",
 				Description: model.CostExplorerByRecordTypeMonthlyDescription{CostExplorerRow: row},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func CostByRecordTypeLastDay(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CostByRecordTypeLastDay(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := costexplorer.NewFromConfig(cfg)
 
 	params := buildCostByRecordTypeInput("DAILY")
@@ -407,10 +442,17 @@ func CostByRecordTypeLastDay(ctx context.Context, cfg aws.Config) ([]Resource, e
 			}
 			setRowMetrics(&row, group.Metrics)
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          "account-" + *row.Dimension1 + "-" + *row.Dimension2 + "-cost-" + *row.PeriodEnd,
 				Description: model.CostExplorerByRecordTypeDailyDescription{CostExplorerRow: row},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -455,7 +497,7 @@ func buildCostByServiceAndUsageInput(granularity string) *costexplorer.GetCostAn
 	return params
 }
 
-func CostByServiceUsageLastMonth(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CostByServiceUsageLastMonth(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := costexplorer.NewFromConfig(cfg)
 
 	params := buildCostByServiceAndUsageInput("MONTHLY")
@@ -482,17 +524,24 @@ func CostByServiceUsageLastMonth(ctx context.Context, cfg aws.Config) ([]Resourc
 			}
 			setRowMetrics(&row, group.Metrics)
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          "service-" + *row.Dimension1 + "-" + *row.Dimension2 + "-cost-monthly",
 				Description: model.CostExplorerByServiceUsageTypeMonthlyDescription{CostExplorerRow: row},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func CostByServiceUsageLastDay(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CostByServiceUsageLastDay(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := costexplorer.NewFromConfig(cfg)
 
 	params := buildCostByServiceAndUsageInput("DAILY")
@@ -519,10 +568,17 @@ func CostByServiceUsageLastDay(ctx context.Context, cfg aws.Config) ([]Resource,
 			}
 			setRowMetrics(&row, group.Metrics)
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          "service-" + *row.Dimension1 + "-" + *row.Dimension2 + "-cost-" + *row.PeriodEnd,
 				Description: model.CostExplorerByServiceUsageTypeDailyDescription{CostExplorerRow: row},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -548,7 +604,7 @@ func buildCostForecastInput(granularity string) *costexplorer.GetCostForecastInp
 	return params
 }
 
-func CostForecastMonthly(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CostForecastMonthly(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := costexplorer.NewFromConfig(cfg)
 
 	params := buildCostForecastInput("MONTHLY")
@@ -558,20 +614,27 @@ func CostForecastMonthly(ctx context.Context, cfg aws.Config) ([]Resource, error
 	}
 	var values []Resource
 	for _, forecast := range output.ForecastResultsByTime {
-		values = append(values, Resource{
+		resource := Resource{
 			ID: "forecast-monthly",
 			Description: model.CostExplorerForcastMonthlyDescription{CostExplorerRow: model.CostExplorerRow{
 				Estimated:   true,
 				PeriodStart: forecast.TimePeriod.Start,
 				PeriodEnd:   forecast.TimePeriod.End,
 				MeanValue:   forecast.MeanValue}},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func CostForecastDaily(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CostForecastDaily(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := costexplorer.NewFromConfig(cfg)
 
 	params := buildCostForecastInput("DAILY")
@@ -581,7 +644,7 @@ func CostForecastDaily(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	}
 	var values []Resource
 	for _, forecast := range output.ForecastResultsByTime {
-		values = append(values, Resource{
+		resource := Resource{
 			ID: "forecast-daily",
 			Description: model.CostExplorerForcastDailyDescription{CostExplorerRow: model.CostExplorerRow{
 				Estimated:   true,
@@ -589,7 +652,14 @@ func CostForecastDaily(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 				PeriodEnd:   forecast.TimePeriod.End,
 				MeanValue:   forecast.MeanValue,
 			}},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil

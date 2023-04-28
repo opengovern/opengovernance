@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func AppStreamApplication(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AppStreamApplication(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := appstream.NewFromConfig(cfg)
 
 	var values []Resource
@@ -27,14 +27,22 @@ func AppStreamApplication(ctx context.Context, cfg aws.Config) ([]Resource, erro
 			if err != nil {
 				return nil, err
 			}
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *item.Arn,
 				Name: *item.Name,
 				Description: model.AppStreamApplicationDescription{
 					Application: item,
 					Tags:        tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.NextToken, nil
 	})
@@ -45,7 +53,7 @@ func AppStreamApplication(ctx context.Context, cfg aws.Config) ([]Resource, erro
 	return values, nil
 }
 
-func AppStreamStack(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AppStreamStack(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := appstream.NewFromConfig(cfg)
 
 	var values []Resource
@@ -64,14 +72,22 @@ func AppStreamStack(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			if err != nil {
 				return nil, err
 			}
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *item.Arn,
 				Name: *item.Name,
 				Description: model.AppStreamStackDescription{
 					Stack: item,
 					Tags:  tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.NextToken, nil
 	})
@@ -82,7 +98,7 @@ func AppStreamStack(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func AppStreamFleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AppStreamFleet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := appstream.NewFromConfig(cfg)
 
 	var values []Resource
@@ -101,14 +117,22 @@ func AppStreamFleet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			if err != nil {
 				return nil, err
 			}
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *item.Arn,
 				Name: *item.Name,
 				Description: model.AppStreamFleetDescription{
 					Fleet: item,
 					Tags:  tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 		return output.NextToken, nil
 	})

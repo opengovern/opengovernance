@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func AppConfigApplication(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AppConfigApplication(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := appconfig.NewFromConfig(cfg)
 	paginator := appconfig.NewListApplicationsPaginator(client, &appconfig.ListApplicationsInput{})
 
@@ -32,7 +32,7 @@ func AppConfigApplication(ctx context.Context, cfg aws.Config) ([]Resource, erro
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:   *application.Id,
 				Name: *application.Name,
 				ARN:  arn,
@@ -40,7 +40,14 @@ func AppConfigApplication(ctx context.Context, cfg aws.Config) ([]Resource, erro
 					Application: application,
 					Tags:        tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 	return values, nil

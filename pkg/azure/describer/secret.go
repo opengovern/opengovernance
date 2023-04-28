@@ -11,7 +11,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2019-09-01/keyvault"
 )
 
-func KeyVaultSecret(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func KeyVaultSecret(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	keyVaultClient := keyvault.NewVaultsClient(subscription)
 	keyVaultClient.Authorizer = authorizer
 
@@ -76,7 +76,7 @@ func KeyVaultSecret(ctx context.Context, authorizer autorest.Authorizer, subscri
 						"Akas":           akas,
 					}
 
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *sc.ID,
 						Name:     *sc.ID,
 						Location: "global",
@@ -86,7 +86,14 @@ func KeyVaultSecret(ctx context.Context, authorizer autorest.Authorizer, subscri
 							TurboData:     turbotData,
 							ResourceGroup: resourceGroup,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 
 				}
 				if !res.NotDone() {

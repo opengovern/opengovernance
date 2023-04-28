@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func DAXCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func DAXCluster(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := dax.NewFromConfig(cfg)
 	out, err := client.DescribeClusters(ctx, &dax.DescribeClustersInput{})
 	if err != nil {
@@ -33,20 +33,27 @@ func DAXCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:  *cluster.ClusterArn,
 			Name: *cluster.ClusterName,
 			Description: model.DAXClusterDescription{
 				Cluster: cluster,
 				Tags:    tags.Tags,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func DAXParameterGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func DAXParameterGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	//describeCtx := GetDescribeContext(ctx)
 	client := dax.NewFromConfig(cfg)
 
@@ -61,12 +68,19 @@ func DAXParameterGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		}
 
 		for _, parameterGroup := range parameterGroups.ParameterGroups {
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *parameterGroup.ParameterGroupName,
 				Description: model.DAXParameterGroupDescription{
 					ParameterGroup: parameterGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		return parameterGroups.NextToken, nil
@@ -78,7 +92,7 @@ func DAXParameterGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 	return values, nil
 }
 
-func DAXParameter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func DAXParameter(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	//describeCtx := GetDescribeContext(ctx)
 	client := dax.NewFromConfig(cfg)
 
@@ -104,13 +118,21 @@ func DAXParameter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				}
 
 				for _, parameter := range parameters.Parameters {
-					values = append(values, Resource{
+					resource := Resource{
 						Name: *parameter.ParameterName,
 						Description: model.DAXParameterDescription{
 							Parameter:          parameter,
 							ParameterGroupName: *parameterGroup.ParameterGroupName,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
+
 				}
 
 				return parameters.NextToken, nil
@@ -129,7 +151,7 @@ func DAXParameter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func DAXSubnetGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func DAXSubnetGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := dax.NewFromConfig(cfg)
 
@@ -145,13 +167,21 @@ func DAXSubnetGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, subnetGroup := range subnetGroups.SubnetGroups {
 			arn := fmt.Sprintf("arn:%s:dax:%s::subnetgroup:%s", describeCtx.Partition, describeCtx.Region, *subnetGroup.SubnetGroupName)
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *subnetGroup.SubnetGroupName,
 				ARN:  arn,
 				Description: model.DAXSubnetGroupDescription{
 					SubnetGroup: subnetGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 
 		return subnetGroups.NextToken, nil

@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func AccountAlternateContact(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AccountAlternateContact(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := account.NewFromConfig(cfg)
 
@@ -29,19 +29,28 @@ func AccountAlternateContact(ctx context.Context, cfg aws.Config) ([]Resource, e
 			return nil, err
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			Name: *op.AlternateContact.Name,
 			Description: model.AccountAlternateContactDescription{
 				AlternateContact: *op.AlternateContact,
 				LinkedAccountID:  describeCtx.AccountID,
 			},
-		})
+		}
+		if stream != nil {
+			m := *stream
+			err := m(resource)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func AccountContact(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func AccountContact(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := account.NewFromConfig(cfg)
 
@@ -53,13 +62,22 @@ func AccountContact(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		return nil, err
 	}
 
-	values = append(values, Resource{
+	resource := Resource{
 		Name: *op.ContactInformation.FullName,
 		Description: model.AccountContactDescription{
 			AlternateContact: *op.ContactInformation,
 			LinkedAccountID:  describeCtx.AccountID,
 		},
-	})
+	}
+	if stream != nil {
+		m := *stream
+		err := m(resource)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		values = append(values, resource)
+	}
 
 	return values, nil
 }

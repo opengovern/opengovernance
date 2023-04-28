@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func ServiceFabricCluster(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ServiceFabricCluster(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	clusterClient := servicefabric.NewClustersClient(subscription)
 	clusterClient.Authorizer = authorizer
 	result, err := clusterClient.List(ctx)
@@ -20,12 +20,19 @@ func ServiceFabricCluster(ctx context.Context, authorizer autorest.Authorizer, s
 	for _, cluster := range *result.Value {
 		resourceGroup := strings.Split(*cluster.ID, "/")[4]
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:          *cluster.ID,
 			Name:        *cluster.Name,
 			Location:    *cluster.Location,
-			Description: model.ServiceFabricClusterDescription{Cluster: cluster, ResourceGroup: resourceGroup}},
-		)
+			Description: model.ServiceFabricClusterDescription{Cluster: cluster, ResourceGroup: resourceGroup}}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
+
 	}
 	return values, nil
 }

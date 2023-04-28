@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func BatchComputeEnvironment(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func BatchComputeEnvironment(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := batch.NewFromConfig(cfg)
 	paginator := batch.NewDescribeComputeEnvironmentsPaginator(client, &batch.DescribeComputeEnvironmentsInput{})
 
@@ -20,20 +20,27 @@ func BatchComputeEnvironment(ctx context.Context, cfg aws.Config) ([]Resource, e
 		}
 
 		for _, v := range page.ComputeEnvironments {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.ComputeEnvironmentArn,
 				Name: *v.ComputeEnvironmentName,
 				Description: model.BatchComputeEnvironmentDescription{
 					ComputeEnvironment: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func BatchJob(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func BatchJob(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := batch.NewFromConfig(cfg)
 	paginator := batch.NewDescribeJobQueuesPaginator(client, &batch.DescribeJobQueuesInput{})
 
@@ -54,13 +61,20 @@ func BatchJob(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				}
 
 				for _, v := range page.JobSummaryList {
-					values = append(values, Resource{
+					resource := Resource{
 						ARN:  *v.JobArn,
 						Name: *v.JobName,
 						Description: model.BatchJobDescription{
 							Job: v,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}

@@ -17,7 +17,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := storage.NewBlobContainersClient(subscription)
 	client.Authorizer = authorizer
 
@@ -116,10 +116,18 @@ func StorageContainer(ctx context.Context, authorizer autorest.Authorizer, subsc
 		}
 		values = append(values, r.Value.([]Resource)...)
 	}
+	if stream != nil {
+		for _, resource := range values {
+			if err := (*stream)(resource); err != nil {
+				return values, err
+			}
+		}
+		values = nil
+	}
 	return values, nil
 }
 
-func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	encryptionScopesStorageClient := storage.NewEncryptionScopesClient(subscription)
 	encryptionScopesStorageClient.Authorizer = authorizer
 
@@ -261,7 +269,7 @@ func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscri
 				}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *account.ID,
 				Name:     *account.Name,
 				Location: *account.Location,
@@ -276,7 +284,14 @@ func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscri
 					EncryptionScopes:            vsop,
 					ResourceGroup:               *resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -289,7 +304,7 @@ func StorageAccount(ctx context.Context, authorizer autorest.Authorizer, subscri
 	return values, nil
 }
 
-func StorageBlob(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func StorageBlob(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	accountClient := storage.NewAccountsClient(subscription)
 	accountClient.Authorizer = authorizer
 
@@ -357,7 +372,7 @@ func StorageBlob(ctx context.Context, authorizer autorest.Authorizer, subscripti
 									blobTags = nil
 								}
 
-								values = append(values, Resource{
+								resource := Resource{
 									ID:       *blob.Name,
 									Name:     *blob.Name,
 									Location: *storageAccount.Location,
@@ -415,7 +430,15 @@ func StorageBlob(ctx context.Context, authorizer autorest.Authorizer, subscripti
 										ResourceGroup: *resourceGroup.Name,
 										IsSnapshot:    len(*blob.Snapshot) > 0,
 									},
-								})
+								}
+								if stream != nil {
+									if err := (*stream)(resource); err != nil {
+										return nil, err
+									}
+								} else {
+									values = append(values, resource)
+								}
+
 							}
 						}
 					}
@@ -442,7 +465,7 @@ func StorageBlob(ctx context.Context, authorizer autorest.Authorizer, subscripti
 	return values, nil
 }
 
-func StorageBlobService(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func StorageBlobService(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	accountClient := storage.NewAccountsClient(subscription)
 	accountClient.Authorizer = authorizer
 
@@ -468,7 +491,7 @@ func StorageBlobService(ctx context.Context, authorizer autorest.Authorizer, sub
 					return nil, err
 				}
 				for _, blobService := range *blobServices.Value {
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *blobService.ID,
 						Name:     *blobService.Name,
 						Location: *account.Location,
@@ -478,7 +501,14 @@ func StorageBlobService(ctx context.Context, authorizer autorest.Authorizer, sub
 							Location:      *account.Location,
 							ResourceGroup: *resourceGroup.Name,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -495,7 +525,7 @@ func StorageBlobService(ctx context.Context, authorizer autorest.Authorizer, sub
 	return values, nil
 }
 
-func StorageQueue(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func StorageQueue(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	accountClient := storage.NewAccountsClient(subscription)
 	accountClient.Authorizer = authorizer
 
@@ -522,7 +552,7 @@ func StorageQueue(ctx context.Context, authorizer autorest.Authorizer, subscript
 				}
 				for {
 					for _, queue := range queuesRes.Values() {
-						values = append(values, Resource{
+						resource := Resource{
 							ID:       *queue.ID,
 							Name:     *queue.Name,
 							Location: *account.Location,
@@ -532,7 +562,14 @@ func StorageQueue(ctx context.Context, authorizer autorest.Authorizer, subscript
 								Location:      *account.Location,
 								ResourceGroup: *resourceGroup.Name,
 							},
-						})
+						}
+						if stream != nil {
+							if err := (*stream)(resource); err != nil {
+								return nil, err
+							}
+						} else {
+							values = append(values, resource)
+						}
 					}
 					if !queuesRes.NotDone() {
 						break
@@ -557,7 +594,7 @@ func StorageQueue(ctx context.Context, authorizer autorest.Authorizer, subscript
 	return values, nil
 }
 
-func StorageFileShare(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func StorageFileShare(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	accountClient := storage.NewAccountsClient(subscription)
 	accountClient.Authorizer = authorizer
 
@@ -584,7 +621,7 @@ func StorageFileShare(ctx context.Context, authorizer autorest.Authorizer, subsc
 				}
 				for {
 					for _, fileShareItem := range fileShares.Values() {
-						values = append(values, Resource{
+						resource := Resource{
 							ID:       *fileShareItem.ID,
 							Name:     *fileShareItem.Name,
 							Location: *account.Location,
@@ -594,7 +631,14 @@ func StorageFileShare(ctx context.Context, authorizer autorest.Authorizer, subsc
 								Location:      *account.Location,
 								ResourceGroup: *resourceGroup.Name,
 							},
-						})
+						}
+						if stream != nil {
+							if err := (*stream)(resource); err != nil {
+								return nil, err
+							}
+						} else {
+							values = append(values, resource)
+						}
 					}
 					if !fileShares.NotDone() {
 						break
@@ -619,7 +663,7 @@ func StorageFileShare(ctx context.Context, authorizer autorest.Authorizer, subsc
 	return values, nil
 }
 
-func StorageTable(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func StorageTable(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	accountClient := storage.NewAccountsClient(subscription)
 	accountClient.Authorizer = authorizer
 
@@ -646,7 +690,7 @@ func StorageTable(ctx context.Context, authorizer autorest.Authorizer, subscript
 				}
 				for {
 					for _, table := range tables.Values() {
-						values = append(values, Resource{
+						resource := Resource{
 							ID:       *table.ID,
 							Name:     *table.Name,
 							Location: *account.Location,
@@ -656,7 +700,14 @@ func StorageTable(ctx context.Context, authorizer autorest.Authorizer, subscript
 								Location:      *account.Location,
 								ResourceGroup: *resourceGroup.Name,
 							},
-						})
+						}
+						if stream != nil {
+							if err := (*stream)(resource); err != nil {
+								return nil, err
+							}
+						} else {
+							values = append(values, resource)
+						}
 					}
 					if !tables.NotDone() {
 						break
@@ -681,7 +732,7 @@ func StorageTable(ctx context.Context, authorizer autorest.Authorizer, subscript
 	return values, nil
 }
 
-func StorageTableService(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func StorageTableService(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	accountClient := storage.NewAccountsClient(subscription)
 	accountClient.Authorizer = authorizer
 
@@ -708,7 +759,7 @@ func StorageTableService(ctx context.Context, authorizer autorest.Authorizer, su
 				}
 
 				for _, tableService := range *tableServices.Value {
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *tableService.ID,
 						Name:     *tableService.Name,
 						Location: *account.Location,
@@ -718,7 +769,14 @@ func StorageTableService(ctx context.Context, authorizer autorest.Authorizer, su
 							Location:      *account.Location,
 							ResourceGroup: *resourceGroup.Name,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}

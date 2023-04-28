@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func CodeArtifactRepository(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CodeArtifactRepository(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := codeartifact.NewFromConfig(cfg)
 	paginator := codeartifact.NewListRepositoriesPaginator(client, &codeartifact.ListRepositoriesInput{})
 
@@ -27,21 +27,28 @@ func CodeArtifactRepository(ctx context.Context, cfg aws.Config) ([]Resource, er
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.Arn,
 				Name: *v.Name,
 				Description: model.CodeArtifactRepositoryDescription{
 					Repository: v,
 					Tags:       tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func CodeArtifactDomain(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CodeArtifactDomain(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := codeartifact.NewFromConfig(cfg)
 	paginator := codeartifact.NewListDomainsPaginator(client, &codeartifact.ListDomainsInput{})
 
@@ -76,7 +83,7 @@ func CodeArtifactDomain(ctx context.Context, cfg aws.Config) ([]Resource, error)
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.Arn,
 				Name: *v.Name,
 				Description: model.CodeArtifactDomainDescription{
@@ -84,7 +91,14 @@ func CodeArtifactDomain(ctx context.Context, cfg aws.Config) ([]Resource, error)
 					Policy: *policy.Policy,
 					Tags:   tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

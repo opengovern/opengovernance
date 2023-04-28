@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func SecurityHubHub(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SecurityHubHub(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := securityhub.NewFromConfig(cfg)
 	out, err := client.DescribeHub(ctx, &securityhub.DescribeHubInput{})
 	if err != nil {
@@ -25,14 +25,21 @@ func SecurityHubHub(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		return nil, err
 	}
 
-	values = append(values, Resource{
+	resource := Resource{
 		ARN:  *out.HubArn,
 		Name: nameFromArn(*out.HubArn),
 		Description: model.SecurityHubHubDescription{
 			Hub:  out,
 			Tags: tags.Tags,
 		},
-	})
+	}
+	if stream != nil {
+		if err := (*stream)(resource); err != nil {
+			return nil, err
+		}
+	} else {
+		values = append(values, resource)
+	}
 
 	return values, nil
 }

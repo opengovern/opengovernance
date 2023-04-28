@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func SageMakerEndpointConfiguration(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SageMakerEndpointConfiguration(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := sagemaker.NewFromConfig(cfg)
 	paginator := sagemaker.NewListEndpointConfigsPaginator(client, &sagemaker.ListEndpointConfigsInput{})
 
@@ -34,20 +34,27 @@ func SageMakerEndpointConfiguration(ctx context.Context, cfg aws.Config) ([]Reso
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *out.EndpointConfigArn,
 				Name: *out.EndpointConfigName,
 				Description: model.SageMakerEndpointConfigurationDescription{
 					EndpointConfig: out,
 					Tags:           tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 	return values, nil
 }
 
-func SageMakerNotebookInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func SageMakerNotebookInstance(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := sagemaker.NewFromConfig(cfg)
 	paginator := sagemaker.NewListNotebookInstancesPaginator(client, &sagemaker.ListNotebookInstancesInput{})
 
@@ -73,14 +80,21 @@ func SageMakerNotebookInstance(ctx context.Context, cfg aws.Config) ([]Resource,
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *out.NotebookInstanceArn,
 				Name: *out.NotebookInstanceName,
 				Description: model.SageMakerNotebookInstanceDescription{
 					NotebookInstance: out,
 					Tags:             tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

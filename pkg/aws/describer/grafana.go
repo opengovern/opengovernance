@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func GrafanaWorkspace(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GrafanaWorkspace(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
 	client := grafana.NewFromConfig(cfg)
@@ -24,13 +24,20 @@ func GrafanaWorkspace(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 
 		for _, v := range page.Workspaces {
 			arn := fmt.Sprintf("arn:%s:grafana:%s:%s:/workspaces/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.Id)
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *v.Id,
 				Description: model.GrafanaWorkspaceDescription{
 					Workspace: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

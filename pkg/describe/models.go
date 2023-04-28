@@ -2,8 +2,9 @@ package describe
 
 import (
 	"database/sql"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -58,6 +59,7 @@ type DescribeSourceJob struct {
 	gorm.Model
 	DescribedAt          time.Time
 	SourceID             uuid.UUID // Not the primary key but should be a unique identifier
+	SourceType           api.SourceType
 	AccountID            string
 	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
 	Status               api.DescribeSourceJobStatus

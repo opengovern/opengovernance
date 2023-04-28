@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func Location(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func Location(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	subscriptionsClient := sub.NewSubscriptionsClient()
 	subscriptionsClient.Authorizer = authorizer
 
@@ -22,7 +22,7 @@ func Location(ctx context.Context, authorizer autorest.Authorizer, subscription 
 	for _, location := range *result.Value {
 		resourceGroup := strings.Split(*location.ID, "/")[4]
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:       *location.ID,
 			Name:     *location.Name,
 			Location: "global",
@@ -30,7 +30,14 @@ func Location(ctx context.Context, authorizer autorest.Authorizer, subscription 
 				Location:      location,
 				ResourceGroup: resourceGroup,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 	return values, nil
 }

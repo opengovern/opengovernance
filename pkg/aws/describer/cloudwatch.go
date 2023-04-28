@@ -14,7 +14,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func CloudWatchAlarm(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchAlarm(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatch.NewFromConfig(cfg)
 	paginator := cloudwatch.NewDescribeAlarmsPaginator(client, &cloudwatch.DescribeAlarmsInput{
 		AlarmTypes: []types.AlarmType{types.AlarmTypeMetricAlarm},
@@ -35,14 +35,21 @@ func CloudWatchAlarm(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.AlarmArn,
 				Name: *v.AlarmName,
 				Description: model.CloudWatchAlarmDescription{
 					MetricAlarm: v,
 					Tags:        tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
@@ -81,7 +88,7 @@ func GetCloudWatchAlarm(ctx context.Context, cfg aws.Config, fields map[string]s
 	return values, nil
 }
 
-func CloudWatchAnomalyDetector(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchAnomalyDetector(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatch.NewFromConfig(cfg)
 	output, err := client.DescribeAnomalyDetectors(ctx, &cloudwatch.DescribeAnomalyDetectorsInput{})
 	if err != nil {
@@ -90,17 +97,24 @@ func CloudWatchAnomalyDetector(ctx context.Context, cfg aws.Config) ([]Resource,
 
 	var values []Resource
 	for _, v := range output.AnomalyDetectors {
-		values = append(values, Resource{
+		resource := Resource{
 			ID:          CompositeID(*v.SingleMetricAnomalyDetector.Namespace, *v.SingleMetricAnomalyDetector.MetricName),
 			Name:        *v.SingleMetricAnomalyDetector.MetricName,
 			Description: v,
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func CloudWatchCompositeAlarm(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchCompositeAlarm(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatch.NewFromConfig(cfg)
 	paginator := cloudwatch.NewDescribeAlarmsPaginator(client, &cloudwatch.DescribeAlarmsInput{
 		AlarmTypes: []types.AlarmType{types.AlarmTypeCompositeAlarm},
@@ -114,18 +128,25 @@ func CloudWatchCompositeAlarm(ctx context.Context, cfg aws.Config) ([]Resource, 
 		}
 
 		for _, v := range page.MetricAlarms {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.AlarmArn,
 				Name:        *v.AlarmName,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func CloudWatchDashboard(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchDashboard(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatch.NewFromConfig(cfg)
 	output, err := client.ListDashboards(ctx, &cloudwatch.ListDashboardsInput{})
 	if err != nil {
@@ -134,17 +155,24 @@ func CloudWatchDashboard(ctx context.Context, cfg aws.Config) ([]Resource, error
 
 	var values []Resource
 	for _, v := range output.DashboardEntries {
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:         *v.DashboardArn,
 			Name:        *v.DashboardName,
 			Description: v,
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func CloudWatchInsightRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchInsightRule(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatch.NewFromConfig(cfg)
 	paginator := cloudwatch.NewDescribeInsightRulesPaginator(client, &cloudwatch.DescribeInsightRulesInput{})
 
@@ -156,18 +184,25 @@ func CloudWatchInsightRule(ctx context.Context, cfg aws.Config) ([]Resource, err
 		}
 
 		for _, v := range page.InsightRules {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.Name,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func CloudWatchMetricStream(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchMetricStream(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatch.NewFromConfig(cfg)
 	output, err := client.ListMetricStreams(ctx, &cloudwatch.ListMetricStreamsInput{})
 	if err != nil {
@@ -176,17 +211,24 @@ func CloudWatchMetricStream(ctx context.Context, cfg aws.Config) ([]Resource, er
 
 	var values []Resource
 	for _, v := range output.Entries {
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:         *v.Arn,
 			Name:        *v.Name,
 			Description: v,
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func CloudWatchLogsDestination(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchLogsDestination(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatchlogs.NewFromConfig(cfg)
 	paginator := cloudwatchlogs.NewDescribeDestinationsPaginator(client, &cloudwatchlogs.DescribeDestinationsInput{})
 
@@ -198,18 +240,25 @@ func CloudWatchLogsDestination(ctx context.Context, cfg aws.Config) ([]Resource,
 		}
 
 		for _, v := range page.Destinations {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.Arn,
 				Name:        *v.DestinationName,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func CloudWatchLogsLogGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchLogsLogGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatchlogs.NewFromConfig(cfg)
 	paginator := cloudwatchlogs.NewDescribeLogGroupsPaginator(client, &cloudwatchlogs.DescribeLogGroupsInput{})
 
@@ -228,21 +277,28 @@ func CloudWatchLogsLogGroup(ctx context.Context, cfg aws.Config) ([]Resource, er
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.Arn,
 				Name: *v.LogGroupName,
 				Description: model.CloudWatchLogsLogGroupDescription{
 					LogGroup: v,
 					Tags:     tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func CloudWatchLogsMetricFilter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchLogsMetricFilter(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatchlogs.NewFromConfig(cfg)
 	paginator := cloudwatchlogs.NewDescribeMetricFiltersPaginator(client, &cloudwatchlogs.DescribeMetricFiltersInput{})
 
@@ -257,21 +313,28 @@ func CloudWatchLogsMetricFilter(ctx context.Context, cfg aws.Config) ([]Resource
 
 		for _, v := range page.MetricFilters {
 			arn := "arn:" + describeCtx.Partition + ":logs:" + describeCtx.Region + ":" + describeCtx.AccountID + ":log-group:" + *v.LogGroupName + ":metric-filter:" + *v.FilterName
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				ID:   *v.FilterName,
 				Name: *v.FilterName,
 				Description: model.CloudWatchLogsMetricFilterDescription{
 					MetricFilter: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func CloudWatchLogsQueryDefinition(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchLogsQueryDefinition(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatchlogs.NewFromConfig(cfg)
 
 	var values []Resource
@@ -282,11 +345,19 @@ func CloudWatchLogsQueryDefinition(ctx context.Context, cfg aws.Config) ([]Resou
 		}
 
 		for _, v := range output.QueryDefinitions {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.QueryDefinitionId,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 
 		return output.NextToken, nil
@@ -298,9 +369,9 @@ func CloudWatchLogsQueryDefinition(ctx context.Context, cfg aws.Config) ([]Resou
 	return values, nil
 }
 
-func CloudWatchLogEvent(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchLogEvent(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatchlogs.NewFromConfig(cfg)
-	logGroups, err := CloudWatchLogsLogGroup(ctx, cfg)
+	logGroups, err := CloudWatchLogsLogGroup(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -322,14 +393,21 @@ func CloudWatchLogEvent(ctx context.Context, cfg aws.Config) ([]Resource, error)
 			}
 
 			for _, v := range page.Events {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:   *v.EventId,
 					Name: *v.LogStreamName,
 					Description: model.CloudWatchLogEventDescription{
 						LogEvent:     v,
 						LogGroupName: *logGroupName,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -337,7 +415,7 @@ func CloudWatchLogEvent(ctx context.Context, cfg aws.Config) ([]Resource, error)
 	return values, nil
 }
 
-func CloudWatchLogsResourcePolicy(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchLogsResourcePolicy(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatchlogs.NewFromConfig(cfg)
 
 	var values []Resource
@@ -350,12 +428,20 @@ func CloudWatchLogsResourcePolicy(ctx context.Context, cfg aws.Config) ([]Resour
 		}
 
 		for _, v := range output.ResourcePolicies {
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *v.PolicyName,
 				Description: model.CloudWatchLogResourcePolicyDescription{
 					ResourcePolicy: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 
 		return output.NextToken, nil
@@ -367,9 +453,9 @@ func CloudWatchLogsResourcePolicy(ctx context.Context, cfg aws.Config) ([]Resour
 	return values, nil
 }
 
-func CloudWatchLogStream(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchLogStream(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatchlogs.NewFromConfig(cfg)
-	logGroups, err := CloudWatchLogsLogGroup(ctx, cfg)
+	logGroups, err := CloudWatchLogsLogGroup(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -395,14 +481,21 @@ func CloudWatchLogStream(ctx context.Context, cfg aws.Config) ([]Resource, error
 			}
 
 			for _, v := range page.LogStreams {
-				values = append(values, Resource{
+				resource := Resource{
 					ARN:  *v.Arn,
 					Name: *v.LogStreamName,
 					Description: model.CloudWatchLogStreamDescription{
 						LogStream:    v,
 						LogGroupName: *logGroupName,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -410,10 +503,10 @@ func CloudWatchLogStream(ctx context.Context, cfg aws.Config) ([]Resource, error
 	return values, nil
 }
 
-func CloudWatchLogsSubscriptionFilter(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchLogsSubscriptionFilter(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := cloudwatchlogs.NewFromConfig(cfg)
-	logGroups, err := CloudWatchLogsLogGroup(ctx, cfg)
+	logGroups, err := CloudWatchLogsLogGroup(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -433,7 +526,7 @@ func CloudWatchLogsSubscriptionFilter(ctx context.Context, cfg aws.Config) ([]Re
 
 			for _, v := range page.SubscriptionFilters {
 				arn := fmt.Sprintf("arn:%s:logs:%s:%s:log-group:%s:subscription-filter:%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *logGroupName, *v.FilterName)
-				values = append(values, Resource{
+				resource := Resource{
 					ID:   CompositeID(*v.LogGroupName, *v.FilterName),
 					ARN:  arn,
 					Name: *v.LogGroupName,
@@ -441,7 +534,14 @@ func CloudWatchLogsSubscriptionFilter(ctx context.Context, cfg aws.Config) ([]Re
 						SubscriptionFilter: v,
 						LogGroupName:       *logGroupName,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -449,7 +549,7 @@ func CloudWatchLogsSubscriptionFilter(ctx context.Context, cfg aws.Config) ([]Re
 	return values, nil
 }
 
-func CloudWatchMetrics(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudWatchMetrics(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatch.NewFromConfig(cfg)
 	paginator := cloudwatch.NewListMetricsPaginator(client, &cloudwatch.ListMetricsInput{})
 
@@ -461,12 +561,19 @@ func CloudWatchMetrics(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		}
 
 		for _, v := range page.Metrics {
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *v.MetricName,
 				Description: model.CloudWatchMetricDescription{
 					Metric: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func APIManagement(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func APIManagement(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	apiManagementClient := apimanagement.NewServiceClient(subscription)
 	apiManagementClient.Authorizer = authorizer
 
@@ -31,8 +31,7 @@ func APIManagement(ctx context.Context, authorizer autorest.Authorizer, subscrip
 			if err != nil {
 				return nil, err
 			}
-
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *apiManagement.ID,
 				Name:     *apiManagement.Name,
 				Location: *apiManagement.Location,
@@ -41,7 +40,14 @@ func APIManagement(ctx context.Context, authorizer autorest.Authorizer, subscrip
 					DiagnosticSettingsResources: *op.Value,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {

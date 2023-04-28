@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func DMSReplicationInstance(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func DMSReplicationInstance(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := dms.NewFromConfig(cfg)
 
 	paginator := dms.NewDescribeReplicationInstancesPaginator(client,
@@ -29,14 +29,21 @@ func DMSReplicationInstance(ctx context.Context, cfg aws.Config) ([]Resource, er
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *item.ReplicationInstanceArn,
 				Name: *item.ReplicationInstanceIdentifier,
 				Description: model.DMSReplicationInstanceDescription{
 					ReplicationInstance: item,
 					Tags:                tags.TagList,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

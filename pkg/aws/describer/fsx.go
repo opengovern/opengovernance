@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func FSXFileSystem(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func FSXFileSystem(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := fsx.NewFromConfig(cfg)
 	paginator := fsx.NewDescribeFileSystemsPaginator(client, &fsx.DescribeFileSystemsInput{})
 
@@ -20,20 +20,27 @@ func FSXFileSystem(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, item := range page.FileSystems {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *item.ResourceARN,
 				Name: *item.FileSystemId,
 				Description: model.FSXFileSystemDescription{
 					FileSystem: item,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func FSXStorageVirtualMachine(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func FSXStorageVirtualMachine(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := fsx.NewFromConfig(cfg)
 	paginator := fsx.NewDescribeStorageVirtualMachinesPaginator(client, &fsx.DescribeStorageVirtualMachinesInput{})
 
@@ -45,20 +52,27 @@ func FSXStorageVirtualMachine(ctx context.Context, cfg aws.Config) ([]Resource, 
 		}
 
 		for _, item := range page.StorageVirtualMachines {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *item.ResourceARN,
 				Name: *item.Name,
 				Description: model.FSXStorageVirtualMachineDescription{
 					StorageVirtualMachine: item,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func FSXTask(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func FSXTask(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := fsx.NewFromConfig(cfg)
 	paginator := fsx.NewDescribeDataRepositoryTasksPaginator(client, &fsx.DescribeDataRepositoryTasksInput{})
 
@@ -70,20 +84,27 @@ func FSXTask(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, item := range page.DataRepositoryTasks {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *item.ResourceARN,
 				Name: *item.TaskId,
 				Description: model.FSXTaskDescription{
 					Task: item,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func FSXVolume(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func FSXVolume(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := fsx.NewFromConfig(cfg)
 	paginator := fsx.NewDescribeVolumesPaginator(client, &fsx.DescribeVolumesInput{})
 
@@ -95,20 +116,27 @@ func FSXVolume(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, item := range page.Volumes {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *item.ResourceARN,
 				Name: *item.Name,
 				Description: model.FSXVolumeDescription{
 					Volume: item,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func FSXSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func FSXSnapshot(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := fsx.NewFromConfig(cfg)
 	paginator := fsx.NewDescribeSnapshotsPaginator(client, &fsx.DescribeSnapshotsInput{})
 
@@ -120,13 +148,20 @@ func FSXSnapshot(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 		}
 
 		for _, item := range page.Snapshots {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *item.ResourceARN,
 				Name: *item.Name,
 				Description: model.FSXSnapshotDescription{
 					Snapshot: item,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

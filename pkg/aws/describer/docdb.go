@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func DocDBCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func DocDBCluster(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	//describeCtx := GetDescribeContext(ctx)
 	client := docdb.NewFromConfig(cfg)
 	paginator := docdb.NewDescribeDBClustersPaginator(client, &docdb.DescribeDBClustersInput{})
@@ -27,14 +27,21 @@ func DocDBCluster(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:  *cluster.DBClusterIdentifier,
 				ARN: *cluster.DBClusterArn,
 				Description: model.DocDBClusterDescription{
 					DBCluster: cluster,
 					Tags:      tags.TagList,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

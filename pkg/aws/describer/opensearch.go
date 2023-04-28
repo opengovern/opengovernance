@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func OpenSearchDomain(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func OpenSearchDomain(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := opensearch.NewFromConfig(cfg)
 
 	domainNamesOutput, err := client.ListDomainNames(ctx, &opensearch.ListDomainNamesInput{})
@@ -36,14 +36,21 @@ func OpenSearchDomain(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			return nil, err
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:  *domain.ARN,
 			Name: *domain.DomainName,
 			Description: model.OpenSearchDomainDescription{
 				Domain: domain,
 				Tags:   tags.TagList,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil

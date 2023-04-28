@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func ShieldProtectionGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ShieldProtectionGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := shield.NewFromConfig(cfg)
 	paginator := shield.NewListProtectionGroupsPaginator(client, &shield.ListProtectionGroupsInput{})
 
@@ -30,14 +30,21 @@ func ShieldProtectionGroup(ctx context.Context, cfg aws.Config) ([]Resource, err
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.ProtectionGroupArn,
 				Name: *v.ProtectionGroupId,
 				Description: model.ShieldProtectionGroupDescription{
 					ProtectionGroup: v,
 					Tags:            tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

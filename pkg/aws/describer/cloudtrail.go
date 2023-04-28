@@ -12,7 +12,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func CloudTrailTrail(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudTrailTrail(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudtrail.NewFromConfig(cfg)
 	paginator := cloudtrail.NewListTrailsPaginator(client, &cloudtrail.ListTrailsInput{})
 
@@ -84,7 +84,7 @@ func CloudTrailTrail(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				tags = tagsOutput.ResourceTagList[0].TagsList
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.TrailARN,
 				Name: *v.Name,
 				Description: model.CloudTrailTrailDescription{
@@ -94,14 +94,21 @@ func CloudTrailTrail(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					AdvancedEventSelectors: selectorOutput.AdvancedEventSelectors,
 					Tags:                   tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func CloudTrailChannel(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudTrailChannel(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudtrail.NewFromConfig(cfg)
 	paginator := cloudtrail.NewListChannelsPaginator(client, &cloudtrail.ListChannelsInput{})
 
@@ -120,20 +127,27 @@ func CloudTrailChannel(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *channel.ChannelArn,
 				Name: *channel.Name,
 				Description: model.CloudTrailChannelDescription{
 					Channel: *output,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func CloudTrailEventDataStore(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudTrailEventDataStore(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudtrail.NewFromConfig(cfg)
 	paginator := cloudtrail.NewListEventDataStoresPaginator(client, &cloudtrail.ListEventDataStoresInput{})
 
@@ -152,20 +166,27 @@ func CloudTrailEventDataStore(ctx context.Context, cfg aws.Config) ([]Resource, 
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *eventDataStore.EventDataStoreArn,
 				Name: *eventDataStore.Name,
 				Description: model.CloudTrailEventDataStoreDescription{
 					EventDataStore: *output,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func CloudTrailImport(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudTrailImport(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudtrail.NewFromConfig(cfg)
 	paginator := cloudtrail.NewListImportsPaginator(client, &cloudtrail.ListImportsInput{})
 
@@ -190,19 +211,26 @@ func CloudTrailImport(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				Name: *trailImport.ImportId,
 				Description: model.CloudTrailImportDescription{
 					Import: *output,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func CloudTrailQuery(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudTrailQuery(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudtrail.NewFromConfig(cfg)
 	paginator := cloudtrail.NewListEventDataStoresPaginator(client, &cloudtrail.ListEventDataStoresInput{})
 
@@ -230,13 +258,20 @@ func CloudTrailQuery(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 						return nil, err
 					}
 
-					values = append(values, Resource{
+					resource := Resource{
 						Name: *query.QueryId,
 						Description: model.CloudTrailQueryDescription{
 							Query:             *output,
 							EventDataStoreARN: *eventDataStore.EventDataStoreArn,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}
@@ -245,10 +280,10 @@ func CloudTrailQuery(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func CloudTrailTrailEvent(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func CloudTrailTrailEvent(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := cloudwatchlogs.NewFromConfig(cfg)
 
-	logGroups, err := CloudWatchLogsLogGroup(ctx, cfg)
+	logGroups, err := CloudWatchLogsLogGroup(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -270,13 +305,20 @@ func CloudTrailTrailEvent(ctx context.Context, cfg aws.Config) ([]Resource, erro
 			}
 
 			for _, event := range page.Events {
-				values = append(values, Resource{
+				resource := Resource{
 					ID: *event.EventId,
 					Description: model.CloudTrailTrailEventDescription{
 						TrailEvent:   event,
 						LogGroupName: logGroup.Name,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}

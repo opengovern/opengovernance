@@ -8,7 +8,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 )
 
-func BlueprintBlueprint(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func BlueprintBlueprint(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	bps, err := blueprintBlueprint(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -16,16 +16,23 @@ func BlueprintBlueprint(ctx context.Context, authorizer autorest.Authorizer, sub
 
 	var values []Resource
 	for _, v := range bps {
-		values = append(values, Resource{
+		resource := Resource{
 			ID:          *v.ID,
 			Description: JSONAllFieldsMarshaller{Value: v},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func BlueprintArtifact(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func BlueprintArtifact(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	bps, err := blueprintBlueprint(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -58,10 +65,17 @@ func BlueprintArtifact(ctx context.Context, authorizer autorest.Authorizer, subs
 				panic("unknown artifact type")
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          id,
 				Description: JSONAllFieldsMarshaller{Value: value},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 			err := it.NextWithContext(ctx)
 			if err != nil {
 				return nil, err

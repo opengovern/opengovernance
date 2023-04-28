@@ -3,9 +3,13 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/proto/src/golang"
+	"google.golang.org/grpc"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 
@@ -120,6 +124,7 @@ type Scheduler struct {
 	id         string
 	db         Database
 	httpServer *HttpServer
+	grpcServer *grpc.Server
 
 	// describeJobResultQueue is used to consume the describe job results returned by the workers.
 	describeJobResultQueue queue.Interface
@@ -171,7 +176,11 @@ type Scheduler struct {
 	rdb                 *redis.Client
 	vault               vault.SourceConfig
 	kafkaClient         sarama.Client
+	kafkaProducer       sarama.SyncProducer
 	kafkaResourcesTopic string
+
+	describeEndpoint string
+	keyARN           string
 
 	cloudNativeAPIBaseURL string
 	cloudNativeAPIAuthKey string
@@ -341,9 +350,16 @@ func InitializeScheduler(
 		return nil, err
 	}
 	s.kafkaClient = kafkaClient
+
+	kafkaProducer, err := newKafkaProducer(strings.Split(KafkaService, ","))
+	if err != nil {
+		return nil, err
+	}
+	s.kafkaProducer = kafkaProducer
 	s.kafkaResourcesTopic = KafkaResourcesTopic
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
+
 	s.describeIntervalHours, err = strconv.ParseInt(describeIntervalHours, 10, 64)
 	if err != nil {
 		return nil, err
@@ -404,6 +420,15 @@ func InitializeScheduler(
 	}
 	s.vault = v
 
+	producer, err := newKafkaProducer(strings.Split(KafkaService, ","))
+	if err != nil {
+		return nil, err
+	}
+
+	s.grpcServer = grpc.NewServer()
+	describeServer := NewDescribeServer(s.rdb, producer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.logger)
+	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
+
 	return s, nil
 }
 
@@ -462,19 +487,6 @@ func (s *Scheduler) Run() error {
 	EnsureRunGoroutin(func() {
 		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
 	})
-	EnsureRunGoroutin(func() {
-		s.logger.Fatal("DescribeConnectionJobResultsConsumer consumer exited", zap.Error(s.RunDescribeConnectionJobResultsConsumer()))
-	})
-	EnsureRunGoroutin(func() {
-		s.RunCloudNativeDescribeConnectionJobResourcesConsumer()
-	})
-	//
-
-	// describe cleanup
-	EnsureRunGoroutin(func() {
-		s.RunDescribeCleanupJobScheduler()
-	})
-	//
 
 	// inventory summarizer
 	EnsureRunGoroutin(func() {
@@ -515,6 +527,17 @@ func (s *Scheduler) Run() error {
 	EnsureRunGoroutin(func() {
 		s.logger.Fatal("SummarizerJobResult consumer exited", zap.Error(s.RunSummarizerJobResultsConsumer()))
 	})
+
+	lis, err := net.Listen("tcp", GRPCServerAddress)
+	if err != nil {
+		s.logger.Fatal("failed to listen on grpc port", zap.Error(err))
+	}
+	go func() {
+		err := s.grpcServer.Serve(lis)
+		if err != nil {
+			s.logger.Fatal("failed to serve grpc server", zap.Error(err))
+		}
+	}()
 
 	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
 }
@@ -727,18 +750,7 @@ func (s *Scheduler) RunDeletedSourceCleanup() {
 }
 
 func (s Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
-	jobs, err := s.db.QueryDescribeSourceJobs(sourceId)
-	if err != nil {
-		s.logger.Error("Failed to find all completed DescribeSourceJobs for source",
-			zap.String("sourceId", sourceId),
-			zap.Error(err),
-		)
-		DescribeCleanupJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
-	s.handleConnectionDescribeJobsCleanup(jobs)
-
+	//TODO-Saleh remove all of source resources
 	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
 }
 
@@ -1602,4 +1614,35 @@ func newCheckupJob() CheckupJob {
 	return CheckupJob{
 		Status: checkupapi.CheckupJobInProgress,
 	}
+}
+
+func newKafkaProducer(brokers []string) (sarama.SyncProducer, error) {
+	cfg := sarama.NewConfig()
+	cfg.Producer.Retry.Max = 3
+	cfg.Producer.RequiredAcks = sarama.WaitForAll
+	cfg.Producer.Return.Successes = true
+	cfg.Version = sarama.V2_1_0_0
+
+	producer, err := sarama.NewSyncProducer(strings.Split(KafkaService, ","), cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return producer, nil
+}
+
+func newKafkaClient(brokers []string) (sarama.Client, error) {
+	cfg := sarama.NewConfig()
+	cfg.Producer.Retry.Max = 3
+	cfg.Producer.RequiredAcks = sarama.WaitForAll
+	cfg.Producer.Return.Successes = true
+	cfg.Version = sarama.V2_1_0_0
+	cfg.Producer.MaxMessageBytes = 1024 * 1024 * 100 // 10MiB
+
+	client, err := sarama.NewClient(brokers, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }

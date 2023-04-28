@@ -12,7 +12,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func Route53HealthCheck(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func Route53HealthCheck(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := route53.NewFromConfig(cfg)
 
 	var values []Resource
@@ -23,11 +23,19 @@ func Route53HealthCheck(ctx context.Context, cfg aws.Config) ([]Resource, error)
 		}
 
 		for _, v := range output.HealthChecks {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.Id,
 				Name:        *v.HealthCheckConfig.FullyQualifiedDomainName,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 
 		return output.NextMarker, nil
@@ -39,7 +47,7 @@ func Route53HealthCheck(ctx context.Context, cfg aws.Config) ([]Resource, error)
 	return values, nil
 }
 
-func Route53HostedZone(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func Route53HostedZone(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 	client := route53.NewFromConfig(cfg)
 
@@ -93,7 +101,7 @@ func Route53HostedZone(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 				}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *v.Name,
 				Description: model.Route53HostedZoneDescription{
@@ -103,7 +111,15 @@ func Route53HostedZone(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 					DNSSec:              *dnsSec,
 					Tags:                tags.ResourceTagSet.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 
 		return output.NextMarker, nil
@@ -184,8 +200,8 @@ func GetRoute53HostedZone(ctx context.Context, cfg aws.Config, hostedZoneID stri
 	return values, nil
 }
 
-func Route53DNSSEC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	zones, err := Route53HostedZone(ctx, cfg)
+func Route53DNSSEC(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	zones, err := Route53HostedZone(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -202,18 +218,26 @@ func Route53DNSSEC(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			return nil, err
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:          *id, // Unique per HostedZone
 			Name:        *id,
 			Description: v,
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
+
 	}
 
 	return values, nil
 }
 
-func Route53RecordSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	zones, err := Route53HostedZone(ctx, cfg)
+func Route53RecordSet(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	zones, err := Route53HostedZone(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -235,11 +259,18 @@ func Route53RecordSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			for _, v := range output.ResourceRecordSets {
-				values = append(values, Resource{
+				resource := Resource{
 					ID:          CompositeID(*id, *v.Name),
 					Name:        *v.Name,
 					Description: v,
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 
 			prevType = output.NextRecordType
@@ -253,7 +284,7 @@ func Route53RecordSet(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func Route53ResolverFirewallDomainList(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func Route53ResolverFirewallDomainList(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListFirewallDomainListsPaginator(client, &route53resolver.ListFirewallDomainListsInput{})
 
@@ -265,18 +296,25 @@ func Route53ResolverFirewallDomainList(ctx context.Context, cfg aws.Config) ([]R
 		}
 
 		for _, v := range page.FirewallDomainLists {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.Arn,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverFirewallRuleGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func Route53ResolverFirewallRuleGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListFirewallRuleGroupsPaginator(client, &route53resolver.ListFirewallRuleGroupsInput{})
 
@@ -288,18 +326,25 @@ func Route53ResolverFirewallRuleGroup(ctx context.Context, cfg aws.Config) ([]Re
 		}
 
 		for _, v := range page.FirewallRuleGroups {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.Arn,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverFirewallRuleGroupAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func Route53ResolverFirewallRuleGroupAssociation(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListFirewallRuleGroupAssociationsPaginator(client, &route53resolver.ListFirewallRuleGroupAssociationsInput{})
 
@@ -311,19 +356,26 @@ func Route53ResolverFirewallRuleGroupAssociation(ctx context.Context, cfg aws.Co
 		}
 
 		for _, v := range page.FirewallRuleGroupAssociations {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.Arn,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverResolverDNSSECConfig(ctx context.Context, cfg aws.Config) ([]Resource, error) {
-	vpcs, err := EC2VPC(ctx, cfg)
+func Route53ResolverResolverDNSSECConfig(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
+	vpcs, err := EC2VPC(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -339,17 +391,24 @@ func Route53ResolverResolverDNSSECConfig(ctx context.Context, cfg aws.Config) ([
 			return nil, err
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:          *v.ResolverDNSSECConfig.Id,
 			Name:        *v.ResolverDNSSECConfig.Id,
 			Description: v.ResolverDNSSECConfig,
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverResolverEndpoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func Route53ResolverResolverEndpoint(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListResolverEndpointsPaginator(client, &route53resolver.ListResolverEndpointsInput{})
 
@@ -361,18 +420,25 @@ func Route53ResolverResolverEndpoint(ctx context.Context, cfg aws.Config) ([]Res
 		}
 
 		for _, v := range page.ResolverEndpoints {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.Arn,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverResolverQueryLoggingConfig(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func Route53ResolverResolverQueryLoggingConfig(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListResolverQueryLogConfigsPaginator(client, &route53resolver.ListResolverQueryLogConfigsInput{})
 
@@ -384,18 +450,25 @@ func Route53ResolverResolverQueryLoggingConfig(ctx context.Context, cfg aws.Conf
 		}
 
 		for _, v := range page.ResolverQueryLogConfigs {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.Arn,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverResolverQueryLoggingConfigAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func Route53ResolverResolverQueryLoggingConfigAssociation(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListResolverQueryLogConfigAssociationsPaginator(client, &route53resolver.ListResolverQueryLogConfigAssociationsInput{})
 
@@ -407,18 +480,25 @@ func Route53ResolverResolverQueryLoggingConfigAssociation(ctx context.Context, c
 		}
 
 		for _, v := range page.ResolverQueryLogConfigAssociations {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.Id,
 				Name:        *v.Id,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverResolverRule(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func Route53ResolverResolverRule(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListResolverRulesPaginator(client, &route53resolver.ListResolverRulesInput{})
 
@@ -430,18 +510,25 @@ func Route53ResolverResolverRule(ctx context.Context, cfg aws.Config) ([]Resourc
 		}
 
 		for _, v := range page.ResolverRules {
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:         *v.Arn,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func Route53ResolverResolverRuleAssociation(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func Route53ResolverResolverRuleAssociation(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := route53resolver.NewFromConfig(cfg)
 	paginator := route53resolver.NewListResolverRuleAssociationsPaginator(client, &route53resolver.ListResolverRuleAssociationsInput{})
 
@@ -453,11 +540,18 @@ func Route53ResolverResolverRuleAssociation(ctx context.Context, cfg aws.Config)
 		}
 
 		for _, v := range page.ResolverRuleAssociations {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.Id,
 				Name:        *v.Name,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

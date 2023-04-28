@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func WorkSpacesConnectionAlias(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WorkSpacesConnectionAlias(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := workspaces.NewFromConfig(cfg)
 
 	var values []Resource
@@ -22,11 +22,19 @@ func WorkSpacesConnectionAlias(ctx context.Context, cfg aws.Config) ([]Resource,
 		}
 
 		for _, v := range output.ConnectionAliases {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:          *v.AliasId,
 				Name:        *v.AliasId,
 				Description: v,
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 
 		return output.NextToken, nil
@@ -38,7 +46,7 @@ func WorkSpacesConnectionAlias(ctx context.Context, cfg aws.Config) ([]Resource,
 	return values, nil
 }
 
-func WorkspacesWorkspace(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WorkspacesWorkspace(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
 	client := workspaces.NewFromConfig(cfg)
@@ -66,21 +74,28 @@ func WorkspacesWorkspace(ctx context.Context, cfg aws.Config) ([]Resource, error
 			}
 
 			arn := fmt.Sprintf("arn:%s:workspaces:%s:%s:workspace/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.WorkspaceId)
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *v.WorkspaceId,
 				Description: model.WorkspacesWorkspaceDescription{
 					Workspace: v,
 					Tags:      tags.TagList,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func WorkspacesBundle(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func WorkspacesBundle(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
 	client := workspaces.NewFromConfig(cfg)
@@ -102,14 +117,21 @@ func WorkspacesBundle(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			}
 
 			arn := fmt.Sprintf("arn:%s:workspaces:%s:%s:workspacebundle/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.BundleId)
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *v.BundleId,
 				Description: model.WorkspacesBundleDescription{
 					Bundle: v,
 					Tags:   tags.TagList,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

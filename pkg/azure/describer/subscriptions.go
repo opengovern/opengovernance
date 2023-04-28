@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func Tenant(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func Tenant(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := subscriptions.NewTenantsClient()
 	client.Authorizer = authorizer
 
@@ -25,20 +25,27 @@ func Tenant(ctx context.Context, authorizer autorest.Authorizer, subscription st
 		} else {
 			name = *v.ID
 		}
-		values = append(values, Resource{
+		resource := Resource{
 			ID:       *v.ID,
 			Name:     name,
 			Location: "global",
 			Description: model.TenantDescription{
 				TenantIDDescription: v,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
 }
 
-func Subscription(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func Subscription(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := subscriptions.NewClient()
 	client.Authorizer = authorizer
 
@@ -48,14 +55,21 @@ func Subscription(ctx context.Context, authorizer autorest.Authorizer, subscript
 	}
 
 	var values []Resource
-	values = append(values, Resource{
+	resource := Resource{
 		ID:       *op.ID,
 		Name:     *op.DisplayName,
 		Location: "global",
 		Description: model.SubscriptionDescription{
 			Subscription: op,
 		},
-	})
+	}
+	if stream != nil {
+		if err := (*stream)(resource); err != nil {
+			return nil, err
+		}
+	} else {
+		values = append(values, resource)
+	}
 
 	return values, nil
 }

@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func EventhubNamespace(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func EventhubNamespace(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	eventhubClient := eventhub.NewPrivateEndpointConnectionsClient(subscription)
 	eventhubClient.Authorizer = authorizer
 
@@ -54,7 +54,7 @@ func EventhubNamespace(ctx context.Context, authorizer autorest.Authorizer, subs
 				v = append(v, eventhubListOp.Values()...)
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *namespace.ID,
 				Name:     *namespace.Name,
 				Location: *namespace.Location,
@@ -65,7 +65,14 @@ func EventhubNamespace(ctx context.Context, authorizer autorest.Authorizer, subs
 					PrivateEndpointConnection:   v,
 					ResourceGroup:               resourceGroupName,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break

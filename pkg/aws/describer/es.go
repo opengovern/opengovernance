@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func ESDomain(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func ESDomain(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	var values []Resource
 
 	client := es.NewFromConfig(cfg)
@@ -41,14 +41,21 @@ func ESDomain(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 			return nil, err
 		}
 
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:  *v.ARN,
 			Name: *v.DomainName,
 			Description: model.ESDomainDescription{
 				Domain: v,
 				Tags:   out.TagList,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil

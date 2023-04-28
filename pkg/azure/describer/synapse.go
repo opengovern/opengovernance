@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func SynapseWorkspace(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SynapseWorkspace(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	insightsClient := insights.NewDiagnosticSettingsClient(subscription)
 	insightsClient.Authorizer = authorizer
 
@@ -58,7 +58,7 @@ func SynapseWorkspace(ctx context.Context, authorizer autorest.Authorizer, subsc
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *config.ID,
 				Name:     *config.Name,
 				Location: *config.Location,
@@ -68,7 +68,14 @@ func SynapseWorkspace(ctx context.Context, authorizer autorest.Authorizer, subsc
 					DiagnosticSettingsResources:    synapseListOp.Value,
 					ResourceGroup:                  resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break

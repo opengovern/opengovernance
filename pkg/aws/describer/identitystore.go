@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func IdentityStoreGroup(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IdentityStoreGroup(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := identitystore.NewFromConfig(cfg)
 	paginator := identitystore.NewListGroupsPaginator(client, &identitystore.ListGroupsInput{})
 
@@ -20,20 +20,27 @@ func IdentityStoreGroup(ctx context.Context, cfg aws.Config) ([]Resource, error)
 		}
 
 		for _, group := range page.Groups {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:   *group.GroupId,
 				Name: *group.DisplayName,
 				Description: model.IdentityStoreGroupDescription{
 					Group: group,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func IdentityStoreUser(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func IdentityStoreUser(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := identitystore.NewFromConfig(cfg)
 	paginator := identitystore.NewListUsersPaginator(client, &identitystore.ListUsersInput{})
 
@@ -45,13 +52,20 @@ func IdentityStoreUser(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 		}
 
 		for _, user := range page.Users {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:   *user.UserId,
 				Name: *user.UserName,
 				Description: model.IdentityStoreUserDescription{
 					User: user,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 

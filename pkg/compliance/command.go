@@ -20,7 +20,6 @@ type WorkerConfig struct {
 	RabbitMQ              config.RabbitMQ
 	ElasticSearch         config.ElasticSearch
 	Kafka                 config.Kafka
-	Vault                 config.Vault
 	Compliance            config.KeibiService
 	Onboard               config.KeibiService
 	PrometheusPushAddress string

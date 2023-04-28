@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func AppServiceEnvironment(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func AppServiceEnvironment(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := web.NewAppServiceEnvironmentsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -23,7 +23,7 @@ func AppServiceEnvironment(ctx context.Context, authorizer autorest.Authorizer, 
 		for _, v := range result.Values() {
 			resourceGroup := strings.Split(*v.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: *v.Location,
@@ -31,7 +31,14 @@ func AppServiceEnvironment(ctx context.Context, authorizer autorest.Authorizer, 
 					AppServiceEnvironmentResource: v,
 					ResourceGroup:                 resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -47,7 +54,7 @@ func AppServiceEnvironment(ctx context.Context, authorizer autorest.Authorizer, 
 	return values, nil
 }
 
-func AppServiceFunctionApp(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func AppServiceFunctionApp(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := web.NewAppsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -74,7 +81,7 @@ func AppServiceFunctionApp(ctx context.Context, authorizer autorest.Authorizer, 
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: *v.Location,
@@ -84,7 +91,14 @@ func AppServiceFunctionApp(ctx context.Context, authorizer autorest.Authorizer, 
 					SiteConfigResource: configuration,
 					ResourceGroup:      resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -100,7 +114,7 @@ func AppServiceFunctionApp(ctx context.Context, authorizer autorest.Authorizer, 
 	return values, nil
 }
 
-func AppServiceWebApp(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func AppServiceWebApp(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := web.NewAppsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -142,7 +156,7 @@ func AppServiceWebApp(ctx context.Context, authorizer autorest.Authorizer, subsc
 				location = *v.Location
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: location,
@@ -153,7 +167,14 @@ func AppServiceWebApp(ctx context.Context, authorizer autorest.Authorizer, subsc
 					VnetInfo:           vnetInfo,
 					ResourceGroup:      resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {
@@ -169,7 +190,7 @@ func AppServiceWebApp(ctx context.Context, authorizer autorest.Authorizer, subsc
 	return values, nil
 }
 
-func AppServicePlan(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func AppServicePlan(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := web.NewAppServicePlansClient(subscription)
 	client.Authorizer = authorizer
 
@@ -208,7 +229,7 @@ func AppServicePlan(ctx context.Context, authorizer autorest.Authorizer, subscri
 				}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *v.ID,
 				Name:     *v.Name,
 				Location: location,
@@ -217,7 +238,14 @@ func AppServicePlan(ctx context.Context, authorizer autorest.Authorizer, subscri
 					Apps:          webApps,
 					ResourceGroup: resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if !result.NotDone() {

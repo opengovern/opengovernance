@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func DocumentDBSQLDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func DocumentDBSQLDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func DocumentDBSQLDatabase(ctx context.Context, authorizer autorest.Authorizer, 
 					location = *v.Location
 				}
 
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       *v.ID,
 					Name:     *v.Name,
 					Location: location,
@@ -48,7 +48,14 @@ func DocumentDBSQLDatabase(ctx context.Context, authorizer autorest.Authorizer, 
 						SqlDatabase:   v,
 						ResourceGroup: *rg.Name,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -56,7 +63,7 @@ func DocumentDBSQLDatabase(ctx context.Context, authorizer autorest.Authorizer, 
 	return values, nil
 }
 
-func DocumentDBMongoDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func DocumentDBMongoDatabase(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	rgs, err := listResourceGroups(ctx, authorizer, subscription)
 	if err != nil {
 		return nil, err
@@ -86,7 +93,7 @@ func DocumentDBMongoDatabase(ctx context.Context, authorizer autorest.Authorizer
 					location = *v.Location
 				}
 
-				values = append(values, Resource{
+				resource := Resource{
 					ID:       *v.ID,
 					Name:     *v.Name,
 					Location: location,
@@ -95,7 +102,14 @@ func DocumentDBMongoDatabase(ctx context.Context, authorizer autorest.Authorizer
 						MongoDatabase: v,
 						ResourceGroup: *rg.Name,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
 			}
 		}
 	}
@@ -120,7 +134,7 @@ func documentDBDatabaseAccounts(ctx context.Context, authorizer autorest.Authori
 	return values, nil
 }
 
-func CosmosdbAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func CosmosdbAccount(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	documentDBClient := documentdb.NewDatabaseAccountsClient(subscription)
 	documentDBClient.Authorizer = authorizer
 	result, err := documentDBClient.List(ctx)
@@ -133,7 +147,7 @@ func CosmosdbAccount(ctx context.Context, authorizer autorest.Authorizer, subscr
 	for _, account := range *result.Value {
 		resourceGroup := strings.Split(*account.ID, "/")[4]
 
-		values = append(values, Resource{
+		resource := Resource{
 			ID:       *account.ID,
 			Name:     *account.Name,
 			Location: *account.Location,
@@ -141,7 +155,14 @@ func CosmosdbAccount(ctx context.Context, authorizer autorest.Authorizer, subscr
 				DatabaseAccountGetResults: account,
 				ResourceGroup:             resourceGroup,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 	return values, nil
 }

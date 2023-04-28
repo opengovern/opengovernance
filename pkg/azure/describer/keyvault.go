@@ -13,7 +13,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func KeyVaultKey(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func KeyVaultKey(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	keyVaultClient := keyvault.NewVaultsClient(subscription)
 	keyVaultClient.Authorizer = authorizer
 	maxResults := int32(100)
@@ -114,10 +114,19 @@ func KeyVaultKey(ctx context.Context, authorizer autorest.Authorizer, subscripti
 		}
 		values = append(values, result.Value.([]Resource)...)
 	}
+
+	if stream != nil {
+		for _, resource := range values {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		}
+		values = nil
+	}
 	return values, nil
 }
 
-func KeyVault(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func KeyVault(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	insightsClient := insights.NewDiagnosticSettingsClient(subscription)
 	insightsClient.Authorizer = authorizer
 
@@ -145,7 +154,7 @@ func KeyVault(ctx context.Context, authorizer autorest.Authorizer, subscription 
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *vault.ID,
 				Name:     *vault.Name,
 				Location: *vault.Location,
@@ -155,7 +164,14 @@ func KeyVault(ctx context.Context, authorizer autorest.Authorizer, subscription 
 					DiagnosticSettingsResources: insightsListOp.Value,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -168,7 +184,7 @@ func KeyVault(ctx context.Context, authorizer autorest.Authorizer, subscription 
 	return values, nil
 }
 
-func DeletedVault(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func DeletedVault(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	keyVaultClient := keyvault.NewVaultsClient(subscription)
 	keyVaultClient.Authorizer = authorizer
 
@@ -181,7 +197,7 @@ func DeletedVault(ctx context.Context, authorizer autorest.Authorizer, subscript
 		for _, vault := range result.Values() {
 			resourceGroup := strings.Split(*vault.ID, "/")[4]
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *vault.ID,
 				Name:     *vault.Name,
 				Location: *vault.Properties.Location,
@@ -189,7 +205,14 @@ func DeletedVault(ctx context.Context, authorizer autorest.Authorizer, subscript
 					Vault:         vault,
 					ResourceGroup: resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -202,7 +225,7 @@ func DeletedVault(ctx context.Context, authorizer autorest.Authorizer, subscript
 	return values, nil
 }
 
-func KeyVaultManagedHardwareSecurityModule(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func KeyVaultManagedHardwareSecurityModule(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := insights.NewDiagnosticSettingsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -225,7 +248,7 @@ func KeyVaultManagedHardwareSecurityModule(ctx context.Context, authorizer autor
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *vault.ID,
 				Name:     *vault.Name,
 				Location: *vault.Location,
@@ -234,7 +257,14 @@ func KeyVaultManagedHardwareSecurityModule(ctx context.Context, authorizer autor
 					DiagnosticSettingsResources: keyvaultListOp.Value,
 					ResourceGroup:               resourceGroup,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break

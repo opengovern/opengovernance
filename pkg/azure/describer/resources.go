@@ -30,7 +30,7 @@ func listResourceGroups(ctx context.Context, authorizer autorest.Authorizer, sub
 	return values, nil
 }
 
-func ResourceProvider(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ResourceProvider(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := resources.NewProvidersClient(subscription)
 	client.Authorizer = authorizer
 
@@ -42,12 +42,19 @@ func ResourceProvider(ctx context.Context, authorizer autorest.Authorizer, subsc
 	var values []Resource
 	for {
 		for _, provider := range result.Values() {
-			values = append(values, Resource{
+			resource := Resource{
 				ID: *provider.ID,
 				Description: model.ResourceProviderDescription{
 					Provider: provider,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !result.NotDone() {
 			break
@@ -61,7 +68,7 @@ func ResourceProvider(ctx context.Context, authorizer autorest.Authorizer, subsc
 	return values, nil
 }
 
-func ResourceGroup(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func ResourceGroup(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	client := resources.NewGroupsClient(subscription)
 	client.Authorizer = authorizer
 
@@ -73,14 +80,21 @@ func ResourceGroup(ctx context.Context, authorizer autorest.Authorizer, subscrip
 	var values []Resource
 	for {
 		for _, group := range groupListResultPage.Values() {
-			values = append(values, Resource{
+			resource := Resource{
 				ID:       *group.ID,
 				Name:     *group.Name,
 				Location: *group.Location,
 				Description: model.ResourceGroupDescription{
 					Group: group,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 		if !groupListResultPage.NotDone() {
 			break

@@ -13,7 +13,7 @@ const (
 	efsPolicyNotFound = "PolicyNotFound"
 )
 
-func EFSAccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EFSAccessPoint(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := efs.NewFromConfig(cfg)
 	paginator := efs.NewDescribeAccessPointsPaginator(client, &efs.DescribeAccessPointsInput{})
 
@@ -30,20 +30,27 @@ func EFSAccessPoint(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				name = *v.AccessPointId
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.AccessPointArn,
 				Name: name,
 				Description: model.EFSAccessPointDescription{
 					AccessPoint: v,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func EFSFileSystem(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EFSFileSystem(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := efs.NewFromConfig(cfg)
 	paginator := efs.NewDescribeFileSystemsPaginator(client, &efs.DescribeFileSystemsInput{})
 
@@ -74,27 +81,34 @@ func EFSFileSystem(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				name = *v.FileSystemId
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.FileSystemArn,
 				Name: name,
 				Description: model.EFSFileSystemDescription{
 					FileSystem: v,
 					Policy:     output.Policy,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func EFSMountTarget(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := efs.NewFromConfig(cfg)
 	describeCtx := GetDescribeContext(ctx)
 
 	var values []Resource
 
-	filesystems, err := EFSFileSystem(ctx, cfg)
+	filesystems, err := EFSFileSystem(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -119,14 +133,22 @@ func EFSMountTarget(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					return nil, err
 				}
 
-				values = append(values, Resource{
+				resource := Resource{
 					ARN: arn,
 					ID:  *v.MountTargetId,
 					Description: model.EFSMountTargetDescription{
 						MountTarget:    v,
 						SecurityGroups: securityGroups.SecurityGroups,
 					},
-				})
+				}
+				if stream != nil {
+					if err := (*stream)(resource); err != nil {
+						return nil, err
+					}
+				} else {
+					values = append(values, resource)
+				}
+
 			}
 			return output.NextMarker, nil
 		})

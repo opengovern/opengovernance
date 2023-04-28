@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
@@ -57,64 +56,17 @@ func (s Scheduler) scheduleDescribeJob() {
 		}
 	}
 
-	dss, err := s.db.ListCreatedDescribeSourceJobs()
+	drs, err := s.db.ListCreatedDescribeResourceJobs()
 	if err != nil {
 		s.logger.Error("Failed to fetch all describe source jobs", zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
 
-	for _, ds := range dss {
-		cloudNativeDaj, err := s.db.GetCloudNativeDescribeSourceJobBySourceJobID(ds.ID)
+	for _, ds := range drs {
+		err = s.enqueueCloudNativeDescribeJob(ds)
 		if err != nil {
-			s.logger.Error("Failed to GetCloudNativeDescribeSourceJobBySourceJobID", zap.Error(err))
-			DescribeJobsCount.WithLabelValues("failure").Inc()
-			return
-		}
-
-		if cloudNativeDaj == nil {
-			s.logger.Error("Failed to find cloud native job", zap.Uint("jobID", ds.ID))
-			DescribeJobsCount.WithLabelValues("failure").Inc()
-			return
-		}
-
-		sourceJob, err := s.db.GetDescribeSourceJob(cloudNativeDaj.SourceJob.ID)
-		if err != nil {
-			s.logger.Error("Failed to GetCloudNativeDescribeSourceJobBySourceJobID", zap.Error(err))
-			DescribeJobsCount.WithLabelValues("failure").Inc()
-			return
-		}
-
-		if sourceJob == nil {
-			s.logger.Error("Failed to find source describe job", zap.Uint("jobID", cloudNativeDaj.SourceJob.ID))
-			DescribeJobsCount.WithLabelValues("failure").Inc()
-			return
-		}
-
-		cloudNativeDaj.SourceJob = *sourceJob
-
-		src, err := s.db.GetSourceByUUID(ds.SourceID)
-		if err != nil {
-			s.logger.Error("Failed to GetSourceByUUID", zap.Error(err))
-			DescribeJobsCount.WithLabelValues("failure").Inc()
-			return
-		}
-
-		if src == nil {
-			s.logger.Error("Failed to find source", zap.String("sourceID", ds.SourceID.String()))
-			DescribeJobsCount.WithLabelValues("failure").Inc()
-			return
-		}
-
-		s.logger.Info("EnqueueCloudNativeDescribeConnectionJob",
-			zap.String("connectionID", src.ID.String()),
-			zap.Uint("jobID", ds.ID),
-			zap.Uint("cloudNativeJobID", cloudNativeDaj.ID),
-		)
-		err = enqueueCloudNativeDescribeConnectionJob(s.logger, s.db, CurrentWorkspaceID, s.cloudNativeAPIBaseURL,
-			s.cloudNativeAPIAuthKey, *src, *cloudNativeDaj, s.kafkaResourcesTopic, ds.DescribedAt, ds.TriggerType, s.describeIntervalHours)
-		if err != nil {
-			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.String("connectionID", src.ID.String()))
+			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", ds.ID))
 			DescribeJobsCount.WithLabelValues("failure").Inc()
 			return
 		}
@@ -147,7 +99,15 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 			return errors.New("connection is not healthy")
 		}
 
-		err = s.createCloudNativeDescribeSource(&connection, job)
+		describedAt := time.Now()
+		triggerType := enums.DescribeTriggerTypeScheduled
+		if job == nil {
+			triggerType = enums.DescribeTriggerTypeInitialDiscovery
+		}
+
+		s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", connection.ID.String()))
+		daj := newDescribeSourceJob(connection, describedAt, triggerType)
+		err = s.db.CreateDescribeSourceJob(&daj)
 		if err != nil {
 			return err
 		}
@@ -155,54 +115,11 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 	return nil
 }
 
-func (s Scheduler) createCloudNativeDescribeSource(source *Source, src *DescribeSourceJob) error {
-	describedAt := time.Now()
-	triggerType := enums.DescribeTriggerTypeScheduled
-	if src == nil {
-		triggerType = enums.DescribeTriggerTypeInitialDiscovery
-	}
-
-	s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", source.ID.String()))
-
-	daj := newDescribeSourceJob(*source, describedAt, triggerType)
-	err := s.db.CreateDescribeSourceJob(&daj)
-	if err != nil {
-		return err
-	}
-	describeSourceJobFailure := false
-	failureMsg := ""
-	defer func() {
-		if describeSourceJobFailure == true {
-			if err = s.db.UpdateDescribeSourceJob(daj.ID, api.DescribeSourceJobCompletedWithFailure); err != nil {
-				s.logger.Error("failed to update UpdateDescribeSourceJob in failure", zap.Error(err), zap.Uint("parentJobId", daj.ID))
-			}
-			if err = s.db.UpdateDescribeResourceJobStatusByParentId(daj.ID, api.DescribeResourceJobFailed, failureMsg); err != nil {
-				s.logger.Error("Failed to update DescribeResourceJob in failure", zap.Error(err), zap.Uint("parentJobId", daj.ID))
-			}
-		}
-	}()
-
-	cloudDaj, err := newCloudNativeDescribeSourceJob(daj)
-	if err != nil {
-		describeSourceJobFailure = true
-		failureMsg = fmt.Sprintf("%v", err)
-		return err
-	}
-
-	err = s.db.CreateCloudNativeDescribeSourceJob(&cloudDaj)
-	if err != nil {
-		describeSourceJobFailure = true
-		failureMsg = fmt.Sprintf("%v", err)
-		return err
-	}
-
-	return nil
-}
-
 func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.DescribeTriggerType) DescribeSourceJob {
 	daj := DescribeSourceJob{
 		DescribedAt:          describedAt,
 		SourceID:             a.ID,
+		SourceType:           a.Type,
 		AccountID:            a.AccountID,
 		DescribeResourceJobs: []DescribeResourceJob{},
 		Status:               api.DescribeSourceJobCreated,
@@ -227,95 +144,64 @@ func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.Des
 	return daj
 }
 
-func newCloudNativeDescribeSourceJob(j DescribeSourceJob) (CloudNativeDescribeSourceJob, error) {
-	credentialsKeypair, err := crypto.GenerateKey(j.AccountID, j.SourceID.String(), "x25519", 0)
+func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob) error {
+	ds, err := s.db.GetDescribeSourceJob(dr.ParentJobID)
 	if err != nil {
-		return CloudNativeDescribeSourceJob{}, err
-	}
-	credentialsPrivateKey, err := credentialsKeypair.Armor()
-	if err != nil {
-		return CloudNativeDescribeSourceJob{}, err
-	}
-	credentialsPublicKey, err := credentialsKeypair.GetArmoredPublicKey()
-	if err != nil {
-		return CloudNativeDescribeSourceJob{}, err
+		return err
 	}
 
-	resultEncryptionKeyPair, err := crypto.GenerateKey(j.AccountID, j.SourceID.String(), "x25519", 0)
+	s.logger.Info("enqueueCloudNativeDescribeJob",
+		zap.Uint("sourceJobID", ds.ID),
+		zap.Uint("jobID", dr.ID),
+		zap.String("connectionID", ds.SourceID.String()),
+		zap.String("resourceType", dr.ResourceType),
+	)
+
+	if ds.Status == api.DescribeSourceJobCreated {
+		err = s.db.UpdateDescribeSourceJob(ds.ID, api.DescribeSourceJobInProgress)
+		if err != nil {
+			return err
+		}
+	}
+
+	src, err := s.db.GetSourceByUUID(ds.SourceID)
 	if err != nil {
-		return CloudNativeDescribeSourceJob{}, err
+		return err
 	}
-	resultEncryptionPrivateKey, err := resultEncryptionKeyPair.Armor()
+
+	input := LambdaDescribeWorkerInput{
+		WorkspaceId:      CurrentWorkspaceID,
+		DescribeEndpoint: s.describeEndpoint,
+		KeyARN:           s.keyARN,
+		DescribeJob: DescribeJob{
+			JobID:        dr.ID,
+			ParentJobID:  ds.ID,
+			ResourceType: dr.ResourceType,
+			SourceID:     ds.SourceID.String(),
+			AccountID:    ds.AccountID,
+			DescribedAt:  ds.DescribedAt.UnixMilli(),
+			SourceType:   ds.SourceType,
+			CipherText:   src.ConfigRef,
+			TriggerType:  ds.TriggerType,
+			RetryCounter: 0,
+		},
+	}
+	lambdaRequest, err := json.Marshal(input)
 	if err != nil {
-		return CloudNativeDescribeSourceJob{}, err
-	}
-	resultEncryptionPublicKey, err := resultEncryptionKeyPair.GetArmoredPublicKey()
-	if err != nil {
-		return CloudNativeDescribeSourceJob{}, err
+		return fmt.Errorf("failed to marshal cloud native req due to %v", err)
 	}
 
-	job := CloudNativeDescribeSourceJob{
-		SourceJob:                      j,
-		CredentialEncryptionPrivateKey: credentialsPrivateKey,
-		CredentialEncryptionPublicKey:  credentialsPublicKey,
-		ResultEncryptionPrivateKey:     resultEncryptionPrivateKey,
-		ResultEncryptionPublicKey:      resultEncryptionPublicKey,
-	}
-
-	return job, nil
-}
-
-func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, workspaceId string,
-	cloudNativeAPIBaseURL string, cloudNativeAPIAuthKey string, a Source, daj CloudNativeDescribeSourceJob,
-	kafkaResourcesTopic string, describedAt time.Time, triggerType enums.DescribeTriggerType, describeIntervalHours int64) error {
-
-	resourceJobs := map[uint]string{}
-	for _, drj := range daj.SourceJob.DescribeResourceJobs {
-		resourceJobs[drj.ID] = drj.ResourceType
-	}
-	dcj := DescribeConnectionJob{
-		JobID:        daj.SourceJob.ID,
-		ResourceJobs: resourceJobs,
-		SourceID:     daj.SourceJob.SourceID.String(),
-		AccountID:    daj.SourceJob.AccountID,
-		DescribedAt:  describedAt.UnixMilli(),
-		SourceType:   a.Type,
-		ConfigReg:    a.ConfigRef,
-		TriggerType:  triggerType,
-	}
-	dcjJson, err := json.Marshal(dcj)
-	if err != nil {
-		return fmt.Errorf("failed to marshal DescribeConnectionJob due to %v", err)
-	}
-
-	cloudTriggerInput := api.CloudNativeConnectionWorkerTriggerInput{
-		WorkspaceID:             workspaceId,
-		JobID:                   daj.JobID.String(),
-		JobJson:                 string(dcjJson),
-		CredentialsCallbackURL:  fmt.Sprintf("%s/schedule/api/v1/jobs/%s/creds", IngressBaseURL, daj.JobID.String()),
-		EndOfJobCallbackURL:     fmt.Sprintf("%s/schedule/api/v1/jobs/%s/callback", IngressBaseURL, daj.JobID.String()),
-		CredentialDecryptionKey: daj.CredentialEncryptionPrivateKey,
-		OutputEncryptionKey:     daj.ResultEncryptionPublicKey,
-		ResourcesTopic:          kafkaResourcesTopic,
-	}
-
-	//call azure function to trigger describe connection job
-	cloudTriggerInputJson, err := json.Marshal(cloudTriggerInput)
-	if err != nil {
-		return fmt.Errorf("failed to marshal cloudTriggerInput due to %v", err)
-	}
-	//enqueue job to cloud native connection worker
 	httpClient := &http.Client{
-		Timeout: 5 * time.Minute,
+		Timeout: 1 * time.Minute,
 	}
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/orchestrators/ConnectionWorkerOrchestrator", cloudNativeAPIBaseURL), bytes.NewBuffer(cloudTriggerInputJson))
+	req, err := http.NewRequest(http.MethodPost, LambdaFuncURL, bytes.NewBuffer(lambdaRequest))
 	if err != nil {
 		return fmt.Errorf("failed to create http request due to %v", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("x-kaytu-cloud-auth-key", cloudNativeAPIAuthKey)
+
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send orchestrators http request due to %v", err)
@@ -328,33 +214,24 @@ func enqueueCloudNativeDescribeConnectionJob(logger *zap.Logger, db Database, wo
 	}
 
 	if resp.StatusCode != http.StatusAccepted {
-		return fmt.Errorf("failed to trigger cloud native connection worker due to %d: %s", resp.StatusCode, string(resBody))
+		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", resp.StatusCode, string(resBody))
 	}
 
-	logger.Error("enqueueCloudNativeDescribeConnectionJob",
-		zap.Uint("parentJobId", daj.ID),
-		zap.String("resBody", string(resBody)),
-		zap.String("connectionID", daj.SourceJob.SourceID.String()),
-		zap.Error(err),
+	s.logger.Info("Successful job trigger",
+		zap.Uint("sourceJobID", ds.ID),
+		zap.Uint("jobID", dr.ID),
+		zap.String("connectionID", ds.SourceID.String()),
+		zap.String("resourceType", dr.ResourceType),
 	)
 
-	if err := db.UpdateDescribeResourceJobStatusByParentId(daj.SourceJob.ID, api.DescribeResourceJobQueued, fmt.Sprintf("%v", err)); err != nil {
-		logger.Error("Failed to update DescribeResourceJob",
-			zap.Uint("parentJobId", daj.ID),
+	if err := s.db.UpdateDescribeResourceJobStatus(dr.ID, api.DescribeResourceJobQueued, fmt.Sprintf("%v", err)); err != nil {
+		s.logger.Error("Failed to update DescribeResourceJob",
+			zap.Uint("sourceJobID", ds.ID),
+			zap.Uint("jobID", dr.ID),
+			zap.String("connectionID", ds.SourceID.String()),
+			zap.String("resourceType", dr.ResourceType),
 			zap.Error(err),
 		)
 	}
-	for i := range daj.SourceJob.DescribeResourceJobs {
-		daj.SourceJob.DescribeResourceJobs[i].Status = api.DescribeResourceJobQueued
-	}
-	errUpdate := db.UpdateDescribeSourceJob(daj.SourceJob.ID, api.DescribeSourceJobInProgress)
-	if errUpdate != nil {
-		return errUpdate
-	}
-	errSourceDescribed := db.UpdateSourceDescribed(a.ID, describedAt, time.Duration(describeIntervalHours)*time.Hour)
-	if errSourceDescribed != nil {
-		return errSourceDescribed
-	}
-
 	return nil
 }

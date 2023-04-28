@@ -10,7 +10,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func DirectConnectConnection(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func DirectConnectConnection(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
 	client := directconnect.NewFromConfig(cfg)
@@ -24,13 +24,20 @@ func DirectConnectConnection(ctx context.Context, cfg aws.Config) ([]Resource, e
 	for _, v := range connections.Connections {
 		arn := fmt.Sprintf("arn:%s:directconnect:%s:%s:dxcon/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, *v.ConnectionId)
 
-		values = append(values, Resource{
+		resource := Resource{
 			ARN:  arn,
 			Name: *v.ConnectionId,
 			Description: model.DirectConnectConnectionDescription{
 				Connection: v,
 			},
-		})
+		}
+		if stream != nil {
+			if err := (*stream)(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			values = append(values, resource)
+		}
 	}
 
 	return values, nil
@@ -40,7 +47,7 @@ func getDirectConnectGatewayArn(describeCtx DescribeContext, directConnectGatewa
 	return fmt.Sprintf("arn:%s:directconnect:%s:%s:dx-gateway/%s", describeCtx.Partition, describeCtx.Region, describeCtx.AccountID, directConnectGatewayId)
 }
 
-func DirectConnectGateway(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func DirectConnectGateway(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
 	client := directconnect.NewFromConfig(cfg)
@@ -81,14 +88,21 @@ func DirectConnectGateway(ctx context.Context, cfg aws.Config) ([]Resource, erro
 				tagsList = []types.Tag{}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  arn,
 				Name: *v.DirectConnectGatewayName,
 				Description: model.DirectConnectGatewayDescription{
 					Gateway: v,
 					Tags:    tagsList,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		return connections.NextToken, nil

@@ -8,7 +8,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func KeyspacesKeyspace(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func KeyspacesKeyspace(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := keyspaces.NewFromConfig(cfg)
 	paginator := keyspaces.NewListKeyspacesPaginator(client, &keyspaces.ListKeyspacesInput{})
 
@@ -27,21 +27,28 @@ func KeyspacesKeyspace(ctx context.Context, cfg aws.Config) ([]Resource, error) 
 				return nil, err
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *v.ResourceArn,
 				Name: *v.KeyspaceName,
 				Description: model.KeyspacesKeyspaceDescription{
 					Keyspace: v,
 					Tags:     tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
 	return values, nil
 }
 
-func KeyspacesTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func KeyspacesTable(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 
 	client := keyspaces.NewFromConfig(cfg)
 	keyspacePaginator := keyspaces.NewListKeyspacesPaginator(client, &keyspaces.ListKeyspacesInput{})
@@ -72,14 +79,21 @@ func KeyspacesTable(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 						return nil, err
 					}
 
-					values = append(values, Resource{
+					resource := Resource{
 						ID:   *v.ResourceArn,
 						Name: *v.KeyspaceName,
 						Description: model.KeyspacesTableDescription{
 							Table: v,
 							Tags:  tags.Tags,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 			}
 		}

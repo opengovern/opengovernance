@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func KinesisStream(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func KinesisStream(ctx context.Context, cfg aws.Config, streamS *StreamSender) ([]Resource, error) {
 	client := kinesis.NewFromConfig(cfg)
 
 	var values []Resource
@@ -56,7 +56,7 @@ func KinesisStream(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				tags = &kinesis.ListTagsForStreamOutput{}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *stream.StreamDescription.StreamARN,
 				Name: *stream.StreamDescription.StreamName,
 				Description: model.KinesisStreamDescription{
@@ -64,7 +64,14 @@ func KinesisStream(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					DescriptionSummary: *streamSummery.StreamDescriptionSummary,
 					Tags:               tags.Tags,
 				},
-			})
+			}
+			if streamS != nil {
+				if err := (*streamS)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 
 		if streams.HasMoreStreams == nil || !*streams.HasMoreStreams {
@@ -77,7 +84,7 @@ func KinesisStream(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 	return values, nil
 }
 
-func KinesisAnalyticsV2Application(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func KinesisAnalyticsV2Application(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	client := kinesisanalyticsv2.NewFromConfig(cfg)
 	var values []Resource
 
@@ -104,14 +111,22 @@ func KinesisAnalyticsV2Application(ctx context.Context, cfg aws.Config) ([]Resou
 				ResourceARN: description.ApplicationDetail.ApplicationARN,
 			})
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *description.ApplicationDetail.ApplicationARN,
 				Name: *description.ApplicationDetail.ApplicationName,
 				Description: model.KinesisAnalyticsV2ApplicationDescription{
 					Application: *description.ApplicationDetail,
 					Tags:        tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
+
 		}
 
 		return applications.NextToken, nil

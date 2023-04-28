@@ -11,7 +11,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
-func SpringCloudService(ctx context.Context, authorizer autorest.Authorizer, subscription string) ([]Resource, error) {
+func SpringCloudService(ctx context.Context, authorizer autorest.Authorizer, subscription string, stream *StreamSender) ([]Resource, error) {
 	resourcesClient := resources.NewGroupsClient(subscription)
 	resourcesClient.Authorizer = authorizer
 
@@ -47,7 +47,7 @@ func SpringCloudService(ctx context.Context, authorizer autorest.Authorizer, sub
 					if err != nil {
 						return nil, err
 					}
-					values = append(values, Resource{
+					resource := Resource{
 						ID:       *service.ID,
 						Name:     *service.Name,
 						Location: *service.Location,
@@ -56,7 +56,14 @@ func SpringCloudService(ctx context.Context, authorizer autorest.Authorizer, sub
 							DiagnosticSettingsResource: appplatformListOp.Value,
 							ResourceGroup:              resourceGroup,
 						},
-					})
+					}
+					if stream != nil {
+						if err := (*stream)(resource); err != nil {
+							return nil, err
+						}
+					} else {
+						values = append(values, resource)
+					}
 				}
 				if !res.NotDone() {
 					break

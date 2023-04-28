@@ -9,7 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
 )
 
-func GlacierVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
+func GlacierVault(ctx context.Context, cfg aws.Config, stream *StreamSender) ([]Resource, error) {
 	describeCtx := GetDescribeContext(ctx)
 
 	client := glacier.NewFromConfig(cfg)
@@ -63,7 +63,7 @@ func GlacierVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 				tags = &glacier.ListTagsForVaultOutput{}
 			}
 
-			values = append(values, Resource{
+			resource := Resource{
 				ARN:  *vault.VaultARN,
 				Name: *vault.VaultName,
 				Description: model.GlacierVaultDescription{
@@ -74,7 +74,14 @@ func GlacierVault(ctx context.Context, cfg aws.Config) ([]Resource, error) {
 					},
 					Tags: tags.Tags,
 				},
-			})
+			}
+			if stream != nil {
+				if err := (*stream)(resource); err != nil {
+					return nil, err
+				}
+			} else {
+				values = append(values, resource)
+			}
 		}
 	}
 
