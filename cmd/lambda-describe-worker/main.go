@@ -2,35 +2,56 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
+	"net/http"
+
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-lambda-go/lambdacontext"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
 	"go.uber.org/zap"
-	"log"
 )
 
-func DescribeHandler(ctx context.Context) {
-	lc, _ := lambdacontext.FromContext(ctx)
-	log.Print(lc.Identity.CognitoIdentityPoolID)
+type LambdaDescribeWorkerInput struct {
+	WorkspaceId      string `json:"workspaceId"`
+	ConnectionId     string `json:"connectionId"`
+	ResourceType     string `json:"resourceType"`
+	DescribeEndpoint string `json:"describeEndpoint"`
+	KeyARN           string `json:"keyARN"`
+}
 
+func DescribeHandler(ctx context.Context, req events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
 	logger, err := zap.NewProduction()
 	if err != nil {
-		fmt.Println(err)
-		return
+		return nil, err
+	}
+
+	logger.Info(req.Body)
+
+	var input LambdaDescribeWorkerInput
+	err = json.Unmarshal([]byte(req.Body), &input)
+	if err != nil {
+		logger.Error("Failed to unmarshal input", zap.Error(err))
+		return nil, err
 	}
 
 	w, err := describe.InitializeLambdaDescribeWorker(
-		workspaceId,
-		connectionId,
-		resourceType,
-		describeEndpoint,
+		ctx,
+		input.WorkspaceId,
+		input.ConnectionId,
+		input.ResourceType,
+		input.DescribeEndpoint,
+		input.KeyARN,
 		logger,
 	)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	return &events.APIGatewayProxyResponse{
+		StatusCode: http.StatusOK,
+		Body:       req.Body,
+	}, nil
+
+	//if err != nil {
+	//	logger.Error("Failed to initialize lambda describe worker", zap.Error(err))
+	//	return nil, err
+	//}
 }
 
 func main() {

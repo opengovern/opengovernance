@@ -35,8 +35,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/push"
 
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
@@ -426,14 +424,17 @@ type LambdaDescribeWorker struct {
 	connectionId     string
 	resourceType     string
 	describeEndpoint string
+	vault            *vault.KMSVaultSourceConfig
 	logger           *zap.Logger
 }
 
 func InitializeLambdaDescribeWorker(
+	ctx context.Context,
 	workspaceId string,
 	connectionId string,
 	resourceType string,
 	describeEndpoint string,
+	keyARN string,
 	logger *zap.Logger,
 ) (w *LambdaDescribeWorker, err error) {
 	if workspaceId == "" {
@@ -449,7 +450,19 @@ func InitializeLambdaDescribeWorker(
 		return nil, fmt.Errorf("'describeEndpoint' must be set to a non empty string")
 	}
 
-	w = &LambdaDescribeWorker{}
+	kmsVault, err := vault.NewKMSVaultSourceConfig(ctx, keyARN)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize KMS vault: %w", err)
+	}
+
+	w = &LambdaDescribeWorker{
+		workspaceId:      workspaceId,
+		connectionId:     connectionId,
+		resourceType:     resourceType,
+		describeEndpoint: describeEndpoint,
+		vault:            kmsVault,
+		logger:           logger,
+	}
 	defer func() {
 		if err != nil && w != nil {
 			w.Stop()
@@ -467,62 +480,20 @@ func (w *LambdaDescribeWorker) Run(ctx context.Context) (err error) {
 			err = fmt.Errorf("%v", r)
 		}
 	}()
-	var job DescribeJob
+	var job = DescribeJob{ //TODO: populate this
+		JobID:         0,
+		ScheduleJobID: 0,
+		ParentJobID:   0,
+		ResourceType:  "",
+		SourceID:      "",
+		AccountID:     "",
+		DescribedAt:   0,
+		SourceType:    "",
+		ConfigReg:     "",
+		TriggerType:   "",
+		RetryCounter:  0,
+	}
 	job.Do(ctx, w.vault, nil, w.kfkProducer, w.kfkTopic, w.logger, w.describeDeliverEndpoint)
-
-	saramaMessages := w.kfkProducer.GetMessages()
-	messages := make([]*CloudNativeConnectionWorkerMessage, 0, len(saramaMessages))
-	for _, saramaMessage := range saramaMessages {
-		messages = append(messages, &CloudNativeConnectionWorkerMessage{
-			Topic:   saramaMessage.Topic,
-			Key:     saramaMessage.Key.(sarama.StringEncoder),
-			Headers: saramaMessage.Headers,
-			Value:   saramaMessage.Value.(sarama.ByteEncoder),
-		})
-	}
-
-	resultData := CloudNativeConnectionWorkerData{
-		JobID:     fmt.Sprint(w.instanceId),
-		JobResult: jobResult,
-		JobData:   messages,
-	}
-
-	resultDataJson, err := json.Marshal(resultData)
-	if err != nil {
-		w.logger.Error("Failed to marshal messages", zap.Error(err))
-		return err
-	}
-
-	encMessage, err := helper.EncryptMessageArmored(w.cloudNativeBlobOutputEncryptionKey, string(resultDataJson))
-	if err != nil {
-		w.logger.Error("Failed to encrypt messages", zap.Error(err))
-		return err
-	}
-
-	containerName := fmt.Sprintf("connection-worker-%s", strings.ToLower(fmt.Sprint(w.instanceId)))
-
-	// get hash of resource types
-	hash := sha256.New()
-	for _, v := range w.job.ResourceJobs {
-		hash.Write([]byte(v))
-	}
-	hashString := hex.EncodeToString(hash.Sum(nil))
-
-	blobName := fmt.Sprintf("%s---%s.json", w.job.SourceID, hashString)
-
-	retryCount := 30
-	for i := 0; i < retryCount; i++ {
-		_, err = w.cloudNativeBlobStorageClient.UploadBuffer(ctx, containerName, blobName, []byte(encMessage), nil)
-		if err != nil {
-			w.logger.Error("Failed to upload blob", zap.Error(err))
-			if i == retryCount-1 {
-				return err
-			}
-			time.Sleep(time.Duration(rand.Intn(15)+1) * time.Second)
-		} else {
-			break
-		}
-	}
 
 	return nil
 }
