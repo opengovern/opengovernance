@@ -14,7 +14,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 	client2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -47,7 +46,6 @@ type JobResult struct {
 func (j *Job) Do(
 	complianceClient client.ComplianceServiceClient,
 	onboardClient client2.OnboardServiceClient,
-	vault vault.SourceConfig,
 	elasticSearchConfig config.ElasticSearch,
 	kfkProducer sarama.SyncProducer,
 	kfkTopic string,
@@ -60,7 +58,7 @@ func (j *Job) Do(
 		Error:           "",
 	}
 
-	if err := j.Run(complianceClient, onboardClient, vault, elasticSearchConfig, kfkProducer, kfkTopic, logger); err != nil {
+	if err := j.Run(complianceClient, onboardClient, elasticSearchConfig, kfkProducer, kfkTopic, logger); err != nil {
 		result.Error = err.Error()
 		result.Status = api.ComplianceReportJobCompletedWithFailure
 	}
@@ -122,7 +120,7 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 	return findings, nil
 }
 
-func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient client2.OnboardServiceClient, vault vault.SourceConfig,
+func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient client2.OnboardServiceClient,
 	elasticSearchConfig config.ElasticSearch, kfkProducer sarama.SyncProducer, kfkTopic string, logger *zap.Logger) error {
 
 	ctx := &httpclient.Context{
@@ -149,7 +147,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return err
 	}
 
-	err = j.PopulateSteampipeConfig(vault, elasticSearchConfig)
+	err = j.PopulateSteampipeConfig(elasticSearchConfig)
 	if err != nil {
 		return err
 	}

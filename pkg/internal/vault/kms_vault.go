@@ -32,7 +32,24 @@ func NewKMSVaultSourceConfig(ctx context.Context, keyARN string) (*KMSVaultSourc
 }
 
 func (v *KMSVaultSourceConfig) Write(pathRef string, config map[string]any) error {
-	return errors.New("writing is not supported")
+	result, err := v.kmsClient.Encrypt(context.TODO(), &kms.EncryptInput{
+		KeyId:               &v.keyARN,
+		Plaintext:           nil,
+		EncryptionAlgorithm: types.EncryptionAlgorithmSpecSymmetricDefault,
+		EncryptionContext:   nil,
+		GrantTokens:         nil,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt ciphertext: %v", err)
+	}
+
+	conf := make(map[string]any)
+	err = json.Unmarshal(result.Plaintext, &conf)
+	if err != nil {
+		return nil, err
+	}
+
+	return conf, nil
 }
 
 func (v *KMSVaultSourceConfig) Read(cypherText string) (map[string]any, error) {

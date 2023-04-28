@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/describer"
@@ -37,15 +35,12 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 
-	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/go-errors/errors"
 	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"go.uber.org/zap"
-	"gopkg.in/Shopify/sarama.v1"
 )
 
 const MAX_INT64 = 9223372036854775807
@@ -65,28 +60,10 @@ var DoDescribeJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
 }, []string{"provider", "resource_type", "status"})
 
-var DoDescribeCleanupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "keibi",
-	Subsystem: "describe_cleanup_worker",
-	Name:      "do_describe_cleanup_jobs_total",
-	Help:      "Count of done describe cleanup jobs in describe-worker service",
-}, []string{"resource_type", "status"})
-
-var DoDescribeCleanupJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-	Namespace: "keibi",
-	Subsystem: "describe_cleanup_worker",
-	Name:      "do_describe_cleanup_jobs_duration_seconds",
-	Help:      "Duration of done describe cleanup jobs in describe-worker service",
-	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
-}, []string{"resource_type", "status"})
-
 const (
 	InventorySummaryIndex = "inventory_summary"
 	describeJobTimeout    = 3 * 60 * time.Minute
-	cleanupJobTimeout     = 5 * time.Minute
 )
-
-var stopWordsRe = regexp.MustCompile(`\W+`)
 
 type AWSAccountConfig struct {
 	AccountID     string   `json:"accountId"`
@@ -161,155 +138,6 @@ type DescribeJobResult struct {
 	Error                string
 	DescribeJob          DescribeJob
 	DescribedResourceIDs []string
-}
-
-type DescribeConnectionJob struct {
-	JobID        uint            // DescribeSourceJob ID
-	ResourceJobs map[uint]string // DescribeResourceJob ID -> ResourceType
-	SourceID     string
-	AccountID    string
-	DescribedAt  int64
-	SourceType   api.SourceType
-	ConfigReg    string
-	TriggerType  enums.DescribeTriggerType
-}
-
-type DescribeConnectionJobResult struct {
-	JobID  uint
-	Result map[uint]DescribeJobResult // DescribeResourceJob ID -> DescribeJobResult
-}
-
-func (j DescribeConnectionJob) Do(ictx context.Context, vlt vault.SourceConfig, rdb *redis.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger, describeDeliverEndpoint *string) (r DescribeConnectionJobResult) {
-	defer func() {
-		if rec := recover(); rec != nil {
-			describeConnectionJobResult := DescribeConnectionJobResult{
-				JobID:  j.JobID,
-				Result: map[uint]DescribeJobResult{},
-			}
-			for id, resourceType := range j.ResourceJobs {
-				dj := DescribeJob{
-					JobID:        id,
-					ParentJobID:  j.JobID,
-					ResourceType: resourceType,
-					SourceID:     j.SourceID,
-					AccountID:    j.AccountID,
-					DescribedAt:  j.DescribedAt,
-					SourceType:   j.SourceType,
-					ConfigReg:    j.ConfigReg,
-					TriggerType:  j.TriggerType,
-					RetryCounter: 0,
-				}
-				describeConnectionJobResult.Result[id] = DescribeJobResult{
-					JobID:                dj.JobID,
-					ParentJobID:          dj.ParentJobID,
-					Status:               api.DescribeResourceJobFailed,
-					Error:                fmt.Sprintf("Cloud job paniced: %v", rec),
-					DescribeJob:          dj,
-					DescribedResourceIDs: nil,
-				}
-
-			}
-			r = describeConnectionJobResult
-		}
-	}()
-	if j.TriggerType == "" {
-		j.TriggerType = enums.DescribeTriggerTypeScheduled
-	}
-	workerCount, err := strconv.Atoi(AccountConcurrentDescribe)
-	if err != nil {
-		fmt.Println("Invalid worker count:", AccountConcurrentDescribe, err)
-	}
-
-	if workerCount < 1 {
-		workerCount = 1
-	}
-
-	workChannel := make(chan DescribeJob, workerCount*2)
-	resultChannel := make(chan DescribeJobResult, len(j.ResourceJobs)*2)
-	doneChannel := make(chan struct{}, workerCount*2)
-	defer close(doneChannel)
-	defer close(resultChannel)
-	defer close(workChannel)
-
-	var wg sync.WaitGroup
-
-	for i := 0; i < workerCount; i++ {
-		wg.Add(1)
-		go func() {
-			for {
-				select {
-				case <-doneChannel:
-					wg.Done()
-					return
-				case job := <-workChannel:
-					res := job.Do(ictx, vlt, rdb, logger, describeDeliverEndpoint)
-
-					resultChannel <- res
-				}
-			}
-		}()
-	}
-
-	for id, resourceType := range j.ResourceJobs {
-		workChannel <- DescribeJob{
-			JobID:        id,
-			ParentJobID:  j.JobID,
-			ResourceType: resourceType,
-			SourceID:     j.SourceID,
-			AccountID:    j.AccountID,
-			DescribedAt:  j.DescribedAt,
-			SourceType:   j.SourceType,
-			ConfigReg:    j.ConfigReg,
-			TriggerType:  j.TriggerType,
-			RetryCounter: 0,
-		}
-	}
-
-	result := map[uint]DescribeJobResult{}
-	for range j.ResourceJobs {
-		res := <-resultChannel
-		result[res.JobID] = res
-	}
-
-	for i := 0; i < workerCount; i++ {
-		doneChannel <- struct{}{}
-	}
-	wg.Wait()
-
-	return DescribeConnectionJobResult{
-		JobID:  j.JobID,
-		Result: result,
-	}
-}
-
-func (j DescribeConnectionJob) CloudTimeout() (r DescribeConnectionJobResult) {
-	describeConnectionJobResult := DescribeConnectionJobResult{
-		JobID:  j.JobID,
-		Result: map[uint]DescribeJobResult{},
-	}
-	for id, resourceType := range j.ResourceJobs {
-		dj := DescribeJob{
-			JobID:        id,
-			ParentJobID:  j.JobID,
-			ResourceType: resourceType,
-			SourceID:     j.SourceID,
-			AccountID:    j.AccountID,
-			DescribedAt:  j.DescribedAt,
-			SourceType:   j.SourceType,
-			ConfigReg:    j.ConfigReg,
-			TriggerType:  j.TriggerType,
-			RetryCounter: 0,
-		}
-		describeConnectionJobResult.Result[id] = DescribeJobResult{
-			JobID:                dj.JobID,
-			ParentJobID:          dj.ParentJobID,
-			Status:               api.DescribeResourceJobCloudTimeout,
-			Error:                "Cloud job timed out",
-			DescribeJob:          dj,
-			DescribedResourceIDs: nil,
-		}
-	}
-	return describeConnectionJobResult
 }
 
 // Do will perform the job which includes the following tasks:
@@ -870,113 +698,4 @@ func doDescribeAzure(ctx context.Context, rdb *redis.Client, job DescribeJob, co
 		err = nil
 	}
 	return msgs, resourceIDs, err
-}
-
-func ResourceTypeToESIndex(t string) string {
-	t = stopWordsRe.ReplaceAllString(t, "_")
-	return strings.ToLower(t)
-}
-
-type DescribeCleanupJobType string
-
-const (
-	DescribeCleanupJobTypeInclusiveDelete DescribeCleanupJobType = "inclusive_delete"
-	DescribeCleanupJobTypeExclusiveDelete DescribeCleanupJobType = "exclusive_delete"
-)
-
-type DescribeCleanupJob struct {
-	JobType      DescribeCleanupJobType `json:"job_type"`
-	ResourceType string                 `json:"resource_type"`
-	JobIDs       []uint                 `json:"job_id"` // DescribeResourceJob ID
-}
-
-func (j DescribeCleanupJob) Do(esClient *elasticsearch.Client) error {
-	startTime := time.Now().Unix()
-	ctx, cancel := context.WithTimeout(context.Background(), cleanupJobTimeout)
-	defer cancel()
-
-	rIndex := ResourceTypeToESIndex(j.ResourceType)
-
-	if j.JobIDs == nil || len(j.JobIDs) == 0 {
-		return nil
-	}
-
-	var query map[string]any
-	switch j.JobType {
-	case DescribeCleanupJobTypeInclusiveDelete:
-		fmt.Printf("Cleaning resources with resource_job_id of %v from index %s inclusivly\n", j.JobIDs, rIndex)
-		query = map[string]any{
-			"query": map[string]any{
-				"bool": map[string]any{
-					"filter": []any{
-						map[string]any{
-							"terms": map[string]any{
-								"resource_job_id": j.JobIDs,
-							},
-						},
-						map[string]any{
-							"term": map[string]any{
-								"resource_type": strings.ToLower(j.ResourceType),
-							},
-						},
-					},
-				},
-			},
-		}
-	case DescribeCleanupJobTypeExclusiveDelete:
-		fmt.Printf("Cleaning resources with resource_job_id of %v from index %s exclusivly\n", j.JobIDs, rIndex)
-		query = map[string]any{
-			"query": map[string]any{
-				"bool": map[string]any{
-					"must_not": []any{
-						map[string]any{
-							"terms": map[string]any{
-								"resource_job_id": j.JobIDs,
-							},
-						},
-					},
-					"filter": []any{
-						map[string]any{
-							"term": map[string]any{
-								"resource_type": strings.ToLower(j.ResourceType),
-							},
-						},
-					},
-				},
-			},
-		}
-	}
-
-	// Delete the resources from both inventory_summary and resource specific index
-	indices := []string{
-		rIndex,
-		InventorySummaryIndex,
-	}
-
-	resp, err := keibi.DeleteByQuery(ctx, esClient, indices, query,
-		esClient.DeleteByQuery.WithRefresh(true),
-		esClient.DeleteByQuery.WithConflicts("proceed"),
-	)
-	if err != nil {
-		DoDescribeCleanupJobsDuration.WithLabelValues(j.ResourceType, "failure").Observe(float64(time.Now().Unix() - startTime))
-		DoDescribeCleanupJobsCount.WithLabelValues(j.ResourceType, "failure").Inc()
-		return err
-	}
-
-	if len(resp.Failures) != 0 {
-		body, err := json.Marshal(resp)
-		if err != nil {
-			return err
-		}
-
-		DoDescribeCleanupJobsDuration.WithLabelValues(j.ResourceType, "failure").Observe(float64(time.Now().Unix() - startTime))
-		DoDescribeCleanupJobsCount.WithLabelValues(j.ResourceType, "failure").Inc()
-		fmt.Printf("Failed to delete %d resources of type %s with error: %s\n", resp.Deleted, j.ResourceType, string(body))
-		return fmt.Errorf("elasticsearch: delete by query: %s", string(body))
-	}
-
-	fmt.Printf("Successfully delete %d resources of type %s\n", resp.Deleted, j.ResourceType)
-	DoDescribeCleanupJobsDuration.WithLabelValues(j.ResourceType, "successful").Observe(float64(time.Now().Unix() - startTime))
-	DoDescribeCleanupJobsCount.WithLabelValues(j.ResourceType, "successful").Inc()
-	return nil
 }

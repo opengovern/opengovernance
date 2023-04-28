@@ -179,6 +179,9 @@ type Scheduler struct {
 	kafkaProducer       sarama.SyncProducer
 	kafkaResourcesTopic string
 
+	describeEndpoint string
+	keyARN           string
+
 	cloudNativeAPIBaseURL string
 	cloudNativeAPIAuthKey string
 }

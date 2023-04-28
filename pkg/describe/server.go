@@ -2,7 +2,6 @@ package describe
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -13,7 +12,6 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
-	"github.com/ProtonMail/gopenpgp/v2/helper"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
@@ -78,8 +76,6 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/compliance/report/last/completed", httpserver.AuthorizeHandler(h.HandleGetLastCompletedComplianceReport, api3.ViewerRole))
 
 	v1.GET("/benchmark/evaluations", httpserver.AuthorizeHandler(h.HandleListBenchmarkEvaluations, api3.ViewerRole))
-
-	v1.POST("/jobs/:job_id/creds", httpserver.AuthorizeHandler(h.HandleGetCredsForJob, api3.AdminRole))
 
 	v1.POST("/describe/resource", httpserver.AuthorizeHandler(h.DescribeSingleResource, api3.AdminRole))
 }
@@ -706,66 +702,6 @@ func (h HttpServer) DescribeSingleResource(ctx echo.Context) error {
 
 	}
 	return echo.NewHTTPError(http.StatusNotImplemented, "provider not implemented")
-}
-
-// HandleGetCredsForJob godoc
-//
-//	@Summary	Get credentials for a cloud native job by providing job info
-//	@Tags		jobs
-//	@Produce	json
-//	@Param		request	body		api.GetCredsForJobRequest	true	"Request Body"
-//	@Success	200		{object}	api.GetCredsForJobResponse
-//	@Router		/schedule/api/v1/jobs/{job_id}/creds [post]
-func (h HttpServer) HandleGetCredsForJob(ctx echo.Context) error {
-	var req api.GetCredsForJobRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	jobId := ctx.Param("job_id")
-
-	job, err := h.DB.GetCloudNativeDescribeSourceJob(jobId)
-	if err != nil {
-		return err
-	}
-	if job == nil || job.SourceJob.SourceID.String() != req.SourceID {
-		return echo.NewHTTPError(http.StatusNotFound, "job not found")
-	}
-	if job.SourceJob.Status != api.DescribeSourceJobInProgress {
-		return echo.NewHTTPError(http.StatusBadRequest, "job not in progress")
-	}
-	describeIntervalHours, err := strconv.ParseInt(DescribeIntervalHours, 10, 64)
-	if err != nil {
-		describeIntervalHours = 6
-	}
-	if job.CreatedAt.Add(time.Hour * time.Duration(describeIntervalHours)).Before(time.Now()) {
-		return echo.NewHTTPError(http.StatusBadRequest, "job expired")
-	}
-
-	// TODO: check if any other job is in progress for this source and return error if so
-
-	src, err := h.DB.GetSourceByUUID(job.SourceJob.SourceID)
-	if err != nil {
-		return err
-	}
-	if src == nil {
-		return echo.NewHTTPError(http.StatusNotFound, "source not found")
-	}
-
-	creds, err := h.Scheduler.vault.Read(src.ConfigRef)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read creds")
-	}
-	jsonCreds, err := json.Marshal(creds)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to marshal creds")
-	}
-	encryptedCreds, err := helper.EncryptMessageArmored(job.CredentialEncryptionPublicKey, string(jsonCreds))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt creds")
-	}
-	return ctx.JSON(http.StatusOK, api.GetCredsForJobResponse{
-		Credentials: encryptedCreds,
-	})
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {

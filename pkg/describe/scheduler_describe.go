@@ -2,6 +2,7 @@ package describe
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -118,6 +119,7 @@ func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.Des
 	daj := DescribeSourceJob{
 		DescribedAt:          describedAt,
 		SourceID:             a.ID,
+		SourceType:           a.Type,
 		AccountID:            a.AccountID,
 		DescribeResourceJobs: []DescribeResourceJob{},
 		Status:               api.DescribeSourceJobCreated,
@@ -160,6 +162,33 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	src, err := s.db.GetSourceByUUID(ds.SourceID)
+	if err != nil {
+		return err
+	}
+
+	input := LambdaDescribeWorkerInput{
+		WorkspaceId:      CurrentWorkspaceID,
+		DescribeEndpoint: s.describeEndpoint,
+		KeyARN:           s.keyARN,
+		DescribeJob: DescribeJob{
+			JobID:        dr.ID,
+			ParentJobID:  ds.ID,
+			ResourceType: dr.ResourceType,
+			SourceID:     ds.SourceID.String(),
+			AccountID:    ds.AccountID,
+			DescribedAt:  ds.DescribedAt.UnixMilli(),
+			SourceType:   ds.SourceType,
+			ConfigReg:    src.ConfigRef,
+			TriggerType:  ds.TriggerType,
+			RetryCounter: 0,
+		},
+	}
+	lambdaRequest, err := json.Marshal(input)
+	if err != nil {
+		return fmt.Errorf("failed to marshal cloud native req due to %v", err)
 	}
 
 	httpClient := &http.Client{

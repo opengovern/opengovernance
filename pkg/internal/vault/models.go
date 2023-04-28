@@ -1,4 +1,4 @@
-package describe
+package vault
 
 import (
 	"database/sql"
@@ -20,7 +20,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type Source struct {
+type Secret struct {
 	ID                     uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
 	AccountID              string
 	Type                   api.SourceType
