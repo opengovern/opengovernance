@@ -83,6 +83,8 @@ var (
 	CloudNativeAPIBaseURL = os.Getenv("CLOUD_NATIVE_API_BASE_URL")
 	CloudNativeAPIAuthKey = os.Getenv("CLOUD_NATIVE_API_AUTH_KEY")
 
+	LambdaFuncURL = os.Getenv("LAMBDA_FUNC_URL")
+
 	// For cloud native connection job command
 	AccountConcurrentDescribe              = os.Getenv("ACCOUNT_CONCURRENT_DESCRIBE")
 	CloudNativeCredentialsJson             = os.Getenv("CLOUDNATIVE_CREDENTIALS")

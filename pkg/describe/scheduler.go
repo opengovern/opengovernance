@@ -176,6 +176,7 @@ type Scheduler struct {
 	rdb                 *redis.Client
 	vault               vault.SourceConfig
 	kafkaClient         sarama.Client
+	kafkaProducer       sarama.SyncProducer
 	kafkaResourcesTopic string
 
 	cloudNativeAPIBaseURL string
@@ -346,6 +347,12 @@ func InitializeScheduler(
 		return nil, err
 	}
 	s.kafkaClient = kafkaClient
+
+	kafkaProducer, err := newKafkaProducer(strings.Split(KafkaService, ","))
+	if err != nil {
+		return nil, err
+	}
+	s.kafkaProducer = kafkaProducer
 	s.kafkaResourcesTopic = KafkaResourcesTopic
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
@@ -477,19 +484,6 @@ func (s *Scheduler) Run() error {
 	EnsureRunGoroutin(func() {
 		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
 	})
-	EnsureRunGoroutin(func() {
-		s.logger.Fatal("DescribeConnectionJobResultsConsumer consumer exited", zap.Error(s.RunDescribeConnectionJobResultsConsumer()))
-	})
-	EnsureRunGoroutin(func() {
-		s.RunCloudNativeDescribeConnectionJobResourcesConsumer()
-	})
-	//
-
-	// describe cleanup
-	EnsureRunGoroutin(func() {
-		s.RunDescribeCleanupJobScheduler()
-	})
-	//
 
 	// inventory summarizer
 	EnsureRunGoroutin(func() {
@@ -753,18 +747,7 @@ func (s *Scheduler) RunDeletedSourceCleanup() {
 }
 
 func (s Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
-	jobs, err := s.db.QueryDescribeSourceJobs(sourceId)
-	if err != nil {
-		s.logger.Error("Failed to find all completed DescribeSourceJobs for source",
-			zap.String("sourceId", sourceId),
-			zap.Error(err),
-		)
-		DescribeCleanupJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
-	s.handleConnectionDescribeJobsCleanup(jobs)
-
+	//TODO-Saleh remove all of source resources
 	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
 }
 
