@@ -232,7 +232,7 @@ func CheckExpirationTime(accessToken string) (bool, error) {
 	}
 
 	var tm time.Time
-	switch iat := claims["iat"].(type) {
+	switch iat := claims["exp"].(type) {
 	case float64:
 		tm = time.Unix(int64(iat), 0)
 	case json.Number:
@@ -240,30 +240,12 @@ func CheckExpirationTime(accessToken string) (bool, error) {
 		tm = time.Unix(v, 0)
 	}
 	timeNow := time.Now()
-	fmt.Println(tm)
-	if tm.Year() < timeNow.Year() {
-		fmt.Println(tm.Year(), timeNow.Year())
-		fmt.Println(1)
+	if tm.Before(timeNow) {
 		return true, nil
-	} else if tm.Month() < timeNow.Month() {
-		fmt.Println(tm.Month(), timeNow.Month())
-		fmt.Println(2)
-		return true, nil
-	} else if tm.Day() < timeNow.Day() {
-		fmt.Println(tm.Day(), timeNow.Day())
-		fmt.Println(3)
-		return true, nil
-	} else if tm.Hour() < timeNow.Hour() {
-		fmt.Println(tm.Hour(), timeNow.Hour())
-		fmt.Println(4)
-		return true, nil
-	} else if tm.Minute() < timeNow.Minute() {
-		fmt.Println(tm.Minute(), timeNow.Minute())
-		fmt.Println(5)
-		return true, nil
-	} else {
-		fmt.Println(6)
+	} else if tm.After(timeNow) {
 		return false, nil
+	} else {
+		return true, err
 	}
 }
 
