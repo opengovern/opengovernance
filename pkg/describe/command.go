@@ -401,6 +401,58 @@ func CloudNativeConnectionWorkerCommand() *cobra.Command {
 	return cmd
 }
 
+func LambdaDescribeWorkerCommand() *cobra.Command {
+	var (
+		workspaceId      string
+		connectionId     string
+		resourceType     string
+		describeEndpoint string
+	)
+	cmd := &cobra.Command{
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			switch {
+			case workspaceId == "":
+				return errors.New("missing required flag 'workspace-id'")
+			case connectionId == "":
+				return errors.New("missing required flag 'connection-id'")
+			case resourceType == "":
+				return errors.New("missing required flag 'resource-type'")
+			case describeEndpoint == "":
+				return errors.New("missing required flag 'describe-endpoint'")
+			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			logger, err := zap.NewProduction()
+			if err != nil {
+				return err
+			}
+			cmd.SilenceUsage = true
+			w, err := InitializeLambdaDescribeWorker(
+				workspaceId,
+				connectionId,
+				resourceType,
+				describeEndpoint,
+				logger,
+			)
+			if err != nil {
+				return err
+			}
+
+			defer w.Stop()
+
+			return w.Run(context.Background())
+		},
+	}
+
+	cmd.Flags().StringVar(&workspaceId, "workspace-id", "w", "The workspace id")
+	cmd.Flags().StringVar(&connectionId, "connection-id", "c", "The connection id")
+	cmd.Flags().StringVarP(&resourceType, "resource-type", "t", "", "resource type")
+	cmd.Flags().StringVarP(&describeEndpoint, "describe-endpoint", "d", "", "describe grpc endpoint")
+
+	return cmd
+}
+
 func OldCleanerWorkerCommand() *cobra.Command {
 	var (
 		lowerThan string
