@@ -156,7 +156,7 @@ type SourceEvent struct {
 	SourceID   uuid.UUID
 	AccountID  string
 	SourceType source.Type
-	ConfigRef  string
+	Secret     string
 }
 
 type AWSCredential struct {
