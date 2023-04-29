@@ -1674,7 +1674,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 		}
 		src.Credential.Secret = string(secretBytes)
 
-		if _, err := h.db.UpdateSource(&src); err != nil {
+		if _, err := h.db.UpdateCredential(&src.Credential); err != nil {
 			return err
 		}
 		return ctx.NoContent(http.StatusOK)
@@ -1695,6 +1695,10 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 			return err
 		}
 		src.Credential.Secret = string(secretBytes)
+		if _, err := h.db.UpdateCredential(&src.Credential); err != nil {
+			return err
+		}
+
 		return ctx.NoContent(http.StatusOK)
 	default:
 		return errors.New("invalid provider")
