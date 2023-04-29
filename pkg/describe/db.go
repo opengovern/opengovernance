@@ -560,7 +560,7 @@ func (db Database) UpdateDescribeResourceJobsTimedOut(describeIntervalHours int6
 	tx := db.orm.
 		Model(&DescribeResourceJob{}).
 		Where("updated_at < NOW() - INTERVAL '20 minutes'").
-		Where("status IN ?", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
+		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
 		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
 		return tx.Error
