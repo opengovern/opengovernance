@@ -98,14 +98,9 @@ var DescribeSourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help: "Count of describe source jobs in scheduler service",
 }, []string{"status"})
 
-var DescribeCleanupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "keibi_scheduler_schedule_describe_cleanup_jobs_total",
-	Help: "Count of describe jobs in scheduler service",
-}, []string{"status"})
-
-var DescribeCleanupSourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "keibi_scheduler_schedule_describe_cleanup_source_jobs_total",
-	Help: "Count of describe source jobs in scheduler service",
+var DescribeResourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Name: "keibi_scheduler_schedule_describe_resource_jobs_total",
+	Help: "Count of describe resource jobs in scheduler service",
 }, []string{"status"})
 
 var ComplianceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -709,7 +704,6 @@ func (s *Scheduler) RunDeletedSourceCleanup() {
 
 func (s Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
 	//TODO-Saleh remove all of source resources
-	DescribeCleanupJobsCount.WithLabelValues("successful").Inc()
 }
 
 func (s Scheduler) cleanupComplianceReportJobForDeletedSource(sourceId string) {

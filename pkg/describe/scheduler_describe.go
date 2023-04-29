@@ -56,22 +56,27 @@ func (s Scheduler) scheduleDescribeJob() {
 		}
 	}
 
-	drs, err := s.db.ListCreatedDescribeResourceJobs()
-	if err != nil {
-		s.logger.Error("Failed to fetch all describe source jobs", zap.Error(err))
-		DescribeJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
-	for _, ds := range drs {
-		err = s.enqueueCloudNativeDescribeJob(ds)
+	for {
+		drs, err := s.db.FetchRandomCreatedDescribeResourceJobs()
 		if err != nil {
-			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", ds.ID))
+			s.logger.Error("Failed to fetch all describe source jobs", zap.Error(err))
 			DescribeJobsCount.WithLabelValues("failure").Inc()
 			return
 		}
-	}
 
+		if drs == nil {
+			break
+		}
+
+		err = s.enqueueCloudNativeDescribeJob(*drs)
+		if err != nil {
+			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", drs.ID))
+			DescribeJobsCount.WithLabelValues("failure").Inc()
+			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+			return
+		}
+		DescribeResourceJobsCount.WithLabelValues("successful").Inc()
+	}
 	DescribeJobsCount.WithLabelValues("successful").Inc()
 }
 
@@ -211,6 +216,10 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob) error {
 	resBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read orchestrators http response due to %v", err)
+	}
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", resp.StatusCode, string(resBody))
 	}
 
 	if resp.StatusCode != http.StatusOK {

@@ -286,12 +286,24 @@ func (db Database) ListPendingDescribeResourceJobs() ([]DescribeResourceJob, err
 
 func (db Database) ListCreatedDescribeResourceJobs() ([]DescribeResourceJob, error) {
 	var jobs []DescribeResourceJob
-	tx := db.orm.Where("status in (?, ?)", api.DescribeResourceJobQueued, api.DescribeResourceJobCreated).Find(&jobs)
+	tx := db.orm.Where("status = ?", api.DescribeResourceJobCreated).Find(&jobs)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 
 	return jobs, nil
+}
+
+func (db Database) FetchRandomCreatedDescribeResourceJobs() (*DescribeResourceJob, error) {
+	var job DescribeResourceJob
+	tx := db.orm.Where("status = ?", api.DescribeResourceJobCreated).Order("random()").First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &job, nil
 }
 
 func (db Database) ListCreatedDescribeSourceJobs() ([]DescribeSourceJob, error) {
