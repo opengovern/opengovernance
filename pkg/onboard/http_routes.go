@@ -1647,26 +1647,15 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 		return err
 	}
 
-	cnf, err := h.kms.Decrypt(src.Credential.Secret, h.keyARN)
-	if err != nil {
-		return err
-	}
-
 	switch src.Type {
 	case source.CloudAWS:
-		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
-		if err != nil {
-			return err
-		}
-
 		var req api.AWSCredential
 		if err := bindValidate(ctx, &req); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 		}
 
 		newCnf := api.SourceConfigAWS{
-			AccountId: awsCnf.AccountID,
-			Regions:   awsCnf.Regions,
+			AccountId: src.SourceId,
 			AccessKey: req.AccessKey,
 			SecretKey: req.SecretKey,
 		}
@@ -1690,19 +1679,14 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 		}
 		return ctx.NoContent(http.StatusOK)
 	case source.CloudAzure:
-		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
-		if err != nil {
-			return err
-		}
-
 		var req api.AzureCredential
 		if err := bindValidate(ctx, &req); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 		}
 
 		newCnf := api.SourceConfigAzure{
-			SubscriptionId: azureCnf.SubscriptionID,
-			TenantId:       azureCnf.TenantID,
+			SubscriptionId: src.SourceId,
+			TenantId:       req.TenantID,
 			ClientId:       req.ClientID,
 			ClientSecret:   req.ClientSecret,
 		}
