@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
 
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
 )
@@ -14,8 +14,8 @@ type KMSVaultSourceConfig struct {
 	kmsClient *kms.Client
 }
 
-func NewKMSVaultSourceConfig(ctx context.Context) (*KMSVaultSourceConfig, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
+func NewKMSVaultSourceConfig(ctx context.Context, accessKey, secretKey string) (*KMSVaultSourceConfig, error) {
+	cfg, err := aws.GetConfig(ctx, accessKey, secretKey, "", "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to load SDK configuration: %v", err)
 	}
