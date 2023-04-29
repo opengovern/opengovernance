@@ -56,7 +56,7 @@ func CreateSource(db Database, event SourceEvent) error {
 		return fmt.Errorf("source has invalid uuid format")
 	case len(event.AccountID) == 0:
 		return fmt.Errorf("account id must be provided")
-	case !event.SourceType.IsNull():
+	case event.SourceType.IsNull():
 		return fmt.Errorf("source has invalid source type")
 	case event.Secret == "": // TODO: should check if the config ref exists?
 		return fmt.Errorf("source has invalid config ref")
