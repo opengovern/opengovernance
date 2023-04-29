@@ -213,7 +213,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob) error {
 		return fmt.Errorf("failed to read orchestrators http response due to %v", err)
 	}
 
-	if resp.StatusCode != http.StatusAccepted {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", resp.StatusCode, string(resBody))
 	}
 
