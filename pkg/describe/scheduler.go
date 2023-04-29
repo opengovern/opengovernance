@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/proto/src/golang"
-	"gitlab.com/keibiengine/keibi-engine/pkg/vault"
 	"google.golang.org/grpc"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
