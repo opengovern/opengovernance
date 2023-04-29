@@ -73,7 +73,7 @@ func InitializeHttpHandler(
 	}
 	fmt.Println("Connected to the postgres database: ", postgresDb)
 
-	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), KMSAccessKey, KMSSecretKey)
+	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), KMSAccessKey, KMSSecretKey, KMSAccountRegion)
 	if err != nil {
 		return nil, err
 	}

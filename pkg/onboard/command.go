@@ -30,9 +30,10 @@ var (
 	AWSPermissionCheckURL = os.Getenv("AWS_PERMISSION_CHECK_URL")
 	InventoryBaseURL      = os.Getenv("INVENTORY_BASE_URL")
 
-	KeyARN       = os.Getenv("KMS_KEY_ARN")
-	KMSAccessKey = os.Getenv("KMS_KEY_ACCESS_KEY")
-	KMSSecretKey = os.Getenv("KMS_KEY_SECRET_KEY")
+	KeyARN           = os.Getenv("KMS_KEY_ARN")
+	KMSAccountRegion = os.Getenv("KMS_ACCOUNT_REGION")
+	KMSAccessKey     = os.Getenv("KMS_KEY_ACCESS_KEY")
+	KMSSecretKey     = os.Getenv("KMS_KEY_SECRET_KEY")
 
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )

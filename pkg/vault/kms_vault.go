@@ -14,12 +14,13 @@ type KMSVaultSourceConfig struct {
 	kmsClient *kms.Client
 }
 
-func NewKMSVaultSourceConfig(ctx context.Context, accessKey, secretKey string) (*KMSVaultSourceConfig, error) {
+func NewKMSVaultSourceConfig(ctx context.Context, accessKey, secretKey, region string) (*KMSVaultSourceConfig, error) {
 	cfg, err := aws.GetConfig(ctx, accessKey, secretKey, "", "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to load SDK configuration: %v", err)
 	}
 
+	cfg.Region = region
 	// Create KMS client with loaded configuration
 	svc := kms.NewFromConfig(cfg)
 
