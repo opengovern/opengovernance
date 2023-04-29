@@ -1,7 +1,7 @@
 image: golang:1.19
 
 variables:
-  GOPRIVATE: gitlab.com/keibiengine
+  GOPRIVATE: gitlab.com/keibiengine,github.com/kaytu-io
   GOPATH: ${CI_PROJECT_DIR}/.go
   GOCACHE: ${CI_PROJECT_DIR}/.cache
   GOOS: linux
