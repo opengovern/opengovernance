@@ -559,7 +559,7 @@ func (db Database) UpdateDescribeResourceJobStatusByParentId(id uint, status api
 func (db Database) UpdateDescribeResourceJobsTimedOut(describeIntervalHours int64) error {
 	tx := db.orm.
 		Model(&DescribeResourceJob{}).
-		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", describeIntervalHours)).
+		Where("updated_at < NOW() - INTERVAL '20 minutes'").
 		Where("status IN ?", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
 		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
