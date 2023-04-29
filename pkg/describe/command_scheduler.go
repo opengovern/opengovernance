@@ -40,9 +40,8 @@ var (
 	ElasticSearchUsername = os.Getenv("ES_USERNAME")
 	ElasticSearchPassword = os.Getenv("ES_PASSWORD")
 
-	HttpServerAddress       = os.Getenv("HTTP_ADDRESS")
-	GRPCServerAddress       = os.Getenv("GRPC_ADDRESS")
-	DescribeDeliverEndpoint = os.Getenv("DESCRIBE_DELIVER_ENDPOINT")
+	HttpServerAddress = os.Getenv("HTTP_ADDRESS")
+	GRPCServerAddress = os.Getenv("GRPC_ADDRESS")
 
 	RedisAddress = os.Getenv("REDIS_ADDRESS")
 
@@ -59,7 +58,9 @@ var (
 	ComplianceBaseURL          = os.Getenv("COMPLIANCE_BASE_URL")
 	OnboardBaseURL             = os.Getenv("ONBOARD_BASE_URL")
 
-	LambdaFuncURL = os.Getenv("LAMBDA_FUNC_URL")
+	LambdaFuncURL           = os.Getenv("LAMBDA_FUNC_URL")
+	KeyARN                  = os.Getenv("KMS_KEY_ARN")
+	DescribeDeliverEndpoint = os.Getenv("DESCRIBE_DELIVER_ENDPOINT")
 )
 
 func SchedulerCommand() *cobra.Command {

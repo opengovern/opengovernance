@@ -241,6 +241,7 @@ func InitializeScheduler(
 	s.logger.Info("Initializing the scheduler")
 
 	s.describeEndpoint = DescribeDeliverEndpoint
+	s.keyARN = KeyARN
 	s.describeJobResultQueue, err = initRabbitQueue(describeJobResultQueueName)
 	if err != nil {
 		return nil, err
