@@ -18,7 +18,7 @@ stages:
     - mkdir -p .go
     - mkdir -p .cache
     - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
-    - echo -e "machine github.com login ${GITHUB_CI_TOKEN}" > ~/.netrc
+    - echo -e "machine github.com login api password ${GITHUB_CI_TOKEN}" > ~/.netrc
   cache:
     - key: go-cache
       paths:
