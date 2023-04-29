@@ -51,7 +51,7 @@ import (
 const (
 	JobCompletionInterval    = 1 * time.Minute
 	JobSchedulingInterval    = 1 * time.Minute
-	JobTimeoutCheckInterval  = 15 * time.Minute
+	JobTimeoutCheckInterval  = 1 * time.Minute
 	MaxJobInQueue            = 10000
 	ConcurrentDeletedSources = 1000
 
