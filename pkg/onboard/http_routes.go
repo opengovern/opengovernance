@@ -456,17 +456,17 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	}
 
 	src := NewAzureSourceWithCredentials(*azSub, source.SourceCreationMethodManual, req.Description, *cred)
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		err := h.db.CreateSource(&src)
-		if err != nil {
-			return err
-		}
+	secretBytes, err := h.kms.Encrypt(req.Config.AsMap(), h.keyARN)
+	if err != nil {
+		return err
+	}
+	src.Credential.Secret = string(secretBytes)
 
-		secretBytes, err := h.kms.Encrypt(req.Config.AsMap(), h.keyARN)
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		err = h.db.CreateSource(&src)
 		if err != nil {
 			return err
 		}
-		src.Credential.Secret = string(secretBytes)
 
 		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
 			Action:     api.SourceCreated,
@@ -596,14 +596,13 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 	if err != nil {
 		return err
 	}
+	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
+	if err != nil {
+		return err
+	}
+	cred.Secret = string(secretBytes)
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
-		if err != nil {
-			return err
-		}
-		cred.Secret = string(secretBytes)
-
 		if err := h.db.CreateCredential(cred); err != nil {
 			return err
 		}
@@ -645,14 +644,13 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 	if err != nil {
 		return err
 	}
+	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
+	if err != nil {
+		return err
+	}
+	cred.Secret = string(secretBytes)
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
-		if err != nil {
-			return err
-		}
-		cred.Secret = string(secretBytes)
-
 		if err := h.db.CreateCredential(cred); err != nil {
 			return err
 		}
@@ -1169,14 +1167,13 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 		}
 		cred.Metadata = jsonMetadata
 	}
+	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
+	if err != nil {
+		return err
+	}
+	cred.Secret = string(secretBytes)
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
-		if err != nil {
-			return err
-		}
-		cred.Secret = string(secretBytes)
-
 		if _, err := h.db.UpdateCredential(cred); err != nil {
 			return err
 		}
@@ -1243,13 +1240,13 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		}
 		cred.Metadata = jsonMetadata
 	}
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
-		if err != nil {
-			return err
-		}
-		cred.Secret = string(secretBytes)
+	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
+	if err != nil {
+		return err
+	}
+	cred.Secret = string(secretBytes)
 
+	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		if err := h.db.CreateCredential(cred); err != nil {
 			return err
 		}

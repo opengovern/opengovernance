@@ -2,6 +2,7 @@ package vault
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -45,12 +46,18 @@ func (v *KMSVaultSourceConfig) Encrypt(cred map[string]any, keyARN string) ([]by
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt ciphertext: %v", err)
 	}
-	return result.CiphertextBlob, nil
+	encoded := base64.StdEncoding.EncodeToString(result.CiphertextBlob)
+	return []byte(encoded), nil
 }
 
 func (v *KMSVaultSourceConfig) Decrypt(cypherText string, keyARN string) (map[string]any, error) {
+	bytes, err := base64.StdEncoding.DecodeString(cypherText)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode ciphertext: %v", err)
+	}
+
 	result, err := v.kmsClient.Decrypt(context.TODO(), &kms.DecryptInput{
-		CiphertextBlob:      []byte(cypherText),
+		CiphertextBlob:      bytes,
 		EncryptionAlgorithm: types.EncryptionAlgorithmSpecSymmetricDefault,
 		KeyId:               &keyARN,
 		EncryptionContext:   nil, //TODO-Saleh use workspaceID
