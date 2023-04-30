@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
@@ -79,7 +77,6 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 
 func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 	var kafkaMsgs []*sarama.ProducerMessage
-	var esResourceIDs []string
 	var searchAfter []interface{}
 
 	for {
@@ -93,57 +90,55 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 		}
 
 		for _, hit := range esResp.Hits.Hits {
-			esResourceIDs = append(esResourceIDs, hit.Source.ResourceID)
 			searchAfter = hit.Sort
-		}
-	}
+			esResourceID := hit.Source.ResourceID
 
-	for _, esResourceID := range esResourceIDs {
-		exists := false
-		for _, describedResourceID := range res.DescribedResourceIDs {
-			if esResourceID == describedResourceID {
-				exists = true
-				break
+			exists := false
+			for _, describedResourceID := range res.DescribedResourceIDs {
+				if esResourceID == describedResourceID {
+					exists = true
+					break
+				}
 			}
-		}
 
-		if !exists {
-			fmt.Println("deleting ", esResourceID)
-			resource := es.Resource{
-				ID: esResourceID,
-			}
-			keys, idx := resource.KeysAndIndex()
-			key := kafka.HashOf(keys...)
-			kafkaMsgs = append(kafkaMsgs, &sarama.ProducerMessage{
-				Topic: s.kafkaResourcesTopic,
-				Key:   sarama.StringEncoder(key),
-				Headers: []sarama.RecordHeader{
-					{
-						Key:   []byte(kafka.EsIndexHeader),
-						Value: []byte(idx),
+			if !exists {
+				fmt.Println("deleting ", esResourceID)
+				resource := es.Resource{
+					ID: esResourceID,
+				}
+				keys, idx := resource.KeysAndIndex()
+				key := kafka.HashOf(keys...)
+				kafkaMsgs = append(kafkaMsgs, &sarama.ProducerMessage{
+					Topic: s.kafkaResourcesTopic,
+					Key:   sarama.StringEncoder(key),
+					Headers: []sarama.RecordHeader{
+						{
+							Key:   []byte(kafka.EsIndexHeader),
+							Value: []byte(idx),
+						},
 					},
-				},
-				Value: nil,
-			})
+					Value: nil,
+				})
 
-			lookupResource := es.LookupResource{
-				ResourceID:   esResourceID,
-				ResourceType: res.DescribeJob.ResourceType,
-				SourceType:   source.Type(res.DescribeJob.SourceType),
-			}
-			keys, idx = lookupResource.KeysAndIndex()
-			key = kafka.HashOf(keys...)
-			kafkaMsgs = append(kafkaMsgs, &sarama.ProducerMessage{
-				Topic: s.kafkaResourcesTopic,
-				Key:   sarama.StringEncoder(key),
-				Headers: []sarama.RecordHeader{
-					{
-						Key:   []byte(kafka.EsIndexHeader),
-						Value: []byte(idx),
+				lookupResource := es.LookupResource{
+					ResourceID:   esResourceID,
+					ResourceType: res.DescribeJob.ResourceType,
+					SourceType:   res.DescribeJob.SourceType,
+				}
+				keys, idx = lookupResource.KeysAndIndex()
+				key = kafka.HashOf(keys...)
+				kafkaMsgs = append(kafkaMsgs, &sarama.ProducerMessage{
+					Topic: s.kafkaResourcesTopic,
+					Key:   sarama.StringEncoder(key),
+					Headers: []sarama.RecordHeader{
+						{
+							Key:   []byte(kafka.EsIndexHeader),
+							Value: []byte(idx),
+						},
 					},
-				},
-				Value: nil,
-			})
+					Value: nil,
+				})
+			}
 		}
 	}
 
