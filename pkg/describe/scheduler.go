@@ -381,7 +381,8 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	s.grpcServer = grpc.NewServer()
+	s.grpcServer = grpc.NewServer(grpc.MaxRecvMsgSize(128 * 1024 * 1024))
+
 	describeServer := NewDescribeServer(s.db, s.rdb, producer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.logger)
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
 
