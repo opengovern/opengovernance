@@ -98,9 +98,9 @@ func DescriptionToRecord(plg *plugin.Plugin, resource interface{}, indexName str
 
 			cells[column.Name] = c
 		} else if column == nil {
-			fmt.Println("column is null", indexName, resource)
+			fmt.Println("column is null", indexName)
 		} else if column.Transform == nil {
-			fmt.Println("column transform is null", column, indexName)
+			fmt.Println("column transform is null", indexName, column.Name)
 		}
 	}
 

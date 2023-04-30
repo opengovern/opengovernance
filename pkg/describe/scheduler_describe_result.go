@@ -44,17 +44,17 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			s.logger.Info("Processing JobResult for Job",
 				zap.Uint("jobId", result.JobID),
 				zap.String("status", string(result.Status)),
-				zap.Strings("resourceIDs", result.DescribedResourceIDs),
+				//zap.Strings("resourceIDs", result.DescribedResourceIDs),
 			)
 
-			//if err := s.cleanupOldResources(result); err != nil {
-			//	s.logger.Error("failed to cleanupOldResources", zap.Error(err))
-			//	err = msg.Nack(false, true)
-			//	if err != nil {
-			//		s.logger.Error("failure while sending nack for message", zap.Error(err))
-			//	}
-			//	continue
-			//}
+			if err := s.cleanupOldResources(result); err != nil {
+				s.logger.Error("failed to cleanupOldResources", zap.Error(err))
+				err = msg.Nack(false, true)
+				if err != nil {
+					s.logger.Error("failure while sending nack for message", zap.Error(err))
+				}
+				continue
+			}
 
 			if err := s.db.UpdateDescribeResourceJobStatus(result.JobID, result.Status, result.Error); err != nil {
 				s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
