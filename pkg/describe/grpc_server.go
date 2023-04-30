@@ -30,6 +30,7 @@ import (
 )
 
 type GRPCDescribeServer struct {
+	db                     Database
 	rdb                    *redis.Client
 	producer               sarama.SyncProducer
 	topic                  string
@@ -39,8 +40,9 @@ type GRPCDescribeServer struct {
 	golang.DescribeServiceServer
 }
 
-func NewDescribeServer(rdb *redis.Client, producer sarama.SyncProducer, topic string, describeJobResultQueue queue.Interface, logger *zap.Logger) *GRPCDescribeServer {
+func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProducer, topic string, describeJobResultQueue queue.Interface, logger *zap.Logger) *GRPCDescribeServer {
 	return &GRPCDescribeServer{
+		db:                     db,
 		rdb:                    rdb,
 		producer:               producer,
 		topic:                  topic,
@@ -50,6 +52,13 @@ func NewDescribeServer(rdb *redis.Client, producer sarama.SyncProducer, topic st
 }
 
 func (s *GRPCDescribeServer) DeliverAWSResources(stream golang.DescribeService_DeliverAWSResourcesServer) error {
+	resourceJobId := stream.Context().Value("resourceJobID")
+	if resourceJobId != nil {
+		err := s.db.UpdateDescribeResourceJobStatus(resourceJobId.(uint), api.DescribeResourceJobInProgress, "")
+		if err != nil {
+			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", resourceJobId.(uint)))
+		}
+	}
 	for {
 		protoResource, err := stream.Recv()
 		if err == io.EOF {
@@ -219,6 +228,13 @@ func (s *GRPCDescribeServer) HandleAWSResource(resource aws.Resource, job *golan
 }
 
 func (s *GRPCDescribeServer) DeliverAzureResources(stream golang.DescribeService_DeliverAzureResourcesServer) error {
+	resourceJobId := stream.Context().Value("resourceJobID")
+	if resourceJobId != nil {
+		err := s.db.UpdateDescribeResourceJobStatus(resourceJobId.(uint), api.DescribeResourceJobInProgress, "")
+		if err != nil {
+			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", resourceJobId.(uint)))
+		}
+	}
 	for {
 		resource, err := stream.Recv()
 		if err == io.EOF {
