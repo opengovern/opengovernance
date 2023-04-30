@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	apis "gitlab.com/keibiengine/keibi-engine/pkg/cli"
+	"log"
 )
 
 var workspacesNameCreate string
@@ -11,7 +12,7 @@ var email string
 var roleForUser string
 var roleName string
 var nameKey string
-var outputCreate string
+var outputCreate = "table"
 
 var Create = &cobra.Command{
 	Use:   "create",
@@ -38,13 +39,11 @@ var CreateUser = &cobra.Command{
 
 		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags != false {
 			fmt.Println("please enter right flag .")
+			return cmd.Help()
 		}
 
 		if len(args) == 0 {
-			err := cmd.Help()
-			if err != nil {
-				return err
-			}
+			return cmd.Help()
 		}
 		return nil
 	},
@@ -78,15 +77,15 @@ var CreateKeyCmd = &cobra.Command{
 		if cmd.Flags().Lookup("workspaceName").Changed {
 		} else {
 			fmt.Println("please enter the workspaceName flag .")
+			log.Fatalln(cmd.Help())
 		}
 		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags != false {
 			fmt.Println("please enter right  flag .")
+			return cmd.Help()
 		}
+
 		if len(args) == 0 {
-			err := cmd.Help()
-			if err != nil {
-				return err
-			}
+			return cmd.Help()
 		}
 		return nil
 	},
@@ -107,6 +106,7 @@ var CreateKeyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		err = apis.PrintOutput(response, outputCreate)
 		if err != nil {
 			return err

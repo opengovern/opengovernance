@@ -404,6 +404,7 @@ func IamListRoles(WorkspacesName string, accessToken string) ([]api.RolesListRes
 	if err != nil {
 		return []api.RolesListResponse{{}}, err
 	}
+	fmt.Println(string(body))
 	err = res.Body.Close()
 	if err != nil {
 		return []api.RolesListResponse{{}}, err

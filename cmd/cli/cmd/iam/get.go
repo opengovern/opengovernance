@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	apis "gitlab.com/keibiengine/keibi-engine/pkg/cli"
+	"log"
 )
 
 var KeyID string
@@ -13,7 +14,7 @@ var userID string
 var emailVerified bool
 var roleUser string
 var emailForUser string
-var outputType string
+var outputType = "table"
 
 var Get = &cobra.Command{
 	Use:   "get",
@@ -33,12 +34,7 @@ var userDetails = &cobra.Command{
 		if cmd.Flags().Lookup("workspaceName").Changed {
 		} else {
 			fmt.Println("please enter the workspaceName flag .")
-			return cmd.Help()
-		}
-
-		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags != false {
-			fmt.Println("please enter right  flag .")
-			return cmd.Help()
+			log.Fatalln(cmd.Help())
 		}
 
 		if len(args) == 0 {
@@ -51,7 +47,6 @@ var userDetails = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		checkEXP, err := apis.CheckExpirationTime(accessToken)
 		if err != nil {
 			return err
@@ -60,7 +55,6 @@ var userDetails = &cobra.Command{
 			fmt.Println("your access token was expire please login again ")
 			return nil
 		}
-
 		response, err := apis.IamGetUserDetails(accessToken, workspacesNameGet, userID)
 		if err != nil {
 			return err
@@ -77,16 +71,11 @@ var Users = &cobra.Command{
 	Use:   "users",
 	Short: "print the users",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags != false {
-			fmt.Println("please enter right flag .")
-			return cmd.Help()
-		}
 		if cmd.Flags().Lookup("workspaceName").Changed {
 		} else {
 			fmt.Println("please enter the workspaceName flag .")
-			return cmd.Help()
+			log.Fatalln(cmd.Help())
 		}
-
 		if len(args) == 0 {
 			return cmd.Help()
 		}
@@ -105,7 +94,6 @@ var Users = &cobra.Command{
 			fmt.Println("your access token was expire please login again ")
 			return nil
 		}
-
 		users, err := apis.IamGetUsers(workspacesNameGet, accessToken, emailForUser, emailVerified, roleUser)
 		if err != nil {
 			return err
@@ -125,11 +113,7 @@ var roleDetails = &cobra.Command{
 		if cmd.Flags().Lookup("workspaceName").Changed {
 		} else {
 			fmt.Println("please enter the workspaceName flag .")
-			return nil
-		}
-		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags != false {
-			fmt.Println("please enter right flag .")
-			return cmd.Help()
+			log.Fatalln(cmd.Help())
 		}
 		if len(args) == 0 {
 			return cmd.Help()
@@ -155,7 +139,6 @@ var roleDetails = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		err = apis.PrintOutput(response, outputType)
 		if err != nil {
 			return err
@@ -171,7 +154,7 @@ var roles = &cobra.Command{
 		if cmd.Flags().Lookup("workspaceName").Changed {
 		} else {
 			fmt.Println("please enter the workspaceName flag ")
-			return cmd.Help()
+			log.Fatalln(cmd.Help())
 		}
 		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
 			fmt.Println("please enter right flag ")
@@ -215,7 +198,7 @@ var KeysCmd = &cobra.Command{
 		if cmd.Flags().Lookup("workspaceName").Changed {
 		} else {
 			fmt.Println("please enter the workspaceName flag .")
-			return cmd.Help()
+			log.Fatalln(cmd.Help())
 		}
 		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
 			fmt.Println("please enter right flag .")
@@ -243,6 +226,7 @@ var KeysCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		err = apis.PrintOutputForTypeArray(response, outputType)
 		if err != nil {
 			return err
@@ -257,7 +241,7 @@ var KeyDetailsCmd = &cobra.Command{
 		if cmd.Flags().Lookup("workspaceName").Changed {
 		} else {
 			fmt.Println("please enter the workspaceName flag .")
-			return nil
+			log.Fatalln(cmd.Help())
 		}
 		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
 			fmt.Println("please enter right flag .")
@@ -285,6 +269,7 @@ var KeyDetailsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
 		err = apis.PrintOutput(response, outputType)
 		if err != nil {
 			return err

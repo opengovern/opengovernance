@@ -13,7 +13,7 @@ var workspacesNameUpdate string
 var userId string
 var roleUpdate string
 var state string
-var outputUpdate string
+var outputUpdate = "table"
 var Update = &cobra.Command{
 	Use:   "update",
 	Short: "it is use for update user or key user  ",
@@ -55,7 +55,6 @@ var UpdateUser = &cobra.Command{
 			fmt.Println("your access token was expire please login again ")
 			return nil
 		}
-
 		response, err := apis.IamUpdateUser(workspacesNameUpdate, accessToken, roleUpdate, userId)
 		if err != nil {
 			return err

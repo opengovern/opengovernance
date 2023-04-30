@@ -22,5 +22,13 @@ var IamGet = &cobra.Command{
 			return cmd.Help()
 		}
 		return nil
+		subcommand := args[0]
+		if subcommand != "users" {
+			return nil
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }

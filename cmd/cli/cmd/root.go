@@ -14,10 +14,7 @@ var rootCmd = &cobra.Command{
 	Use:   "ktucli",
 	Short: "Kaytu cli",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return cmd.Help()
-		}
-		return nil
+		return cmd.Help()
 	},
 }
 
@@ -29,6 +26,7 @@ func Execute() {
 }
 
 func init() {
+
 	rootCmd.AddCommand(iam.Get)
 	rootCmd.AddCommand(iam.Delete)
 	rootCmd.AddCommand(iam.Create)

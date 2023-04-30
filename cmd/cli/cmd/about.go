@@ -6,6 +6,8 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
 )
 
+var outputAbout = "table"
+
 // aboutCmd represents the about command
 var aboutCmd = &cobra.Command{
 	Use:   "about",
@@ -16,7 +18,7 @@ var aboutCmd = &cobra.Command{
 			return cmd.Help()
 		}
 		if len(args) == 0 {
-			fmt.Println(cmd.Help())
+			return cmd.Help()
 		}
 		return nil
 	},
@@ -33,12 +35,11 @@ var aboutCmd = &cobra.Command{
 			fmt.Println("your access token was expire please login again ")
 			return nil
 		}
-
 		bodyResponse, err := cli.RequestAbout(accessToken)
 		if err != nil {
 			return fmt.Errorf("[about]: %v", err)
 		}
-		err = cli.PrintOutput(bodyResponse, OutputType)
+		err = cli.PrintOutput(bodyResponse, outputAbout)
 		if err != nil {
 			return fmt.Errorf("[about]: %v", err)
 		}
@@ -49,5 +50,5 @@ var aboutCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(aboutCmd)
-	aboutCmd.Flags().StringVar(&OutputType, "output", "", "specifying output type [json, table]")
+	aboutCmd.Flags().StringVar(&outputAbout, "output", "", "specifying output type [json, table]")
 }

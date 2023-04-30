@@ -39,16 +39,16 @@ var workspacesCmd = &cobra.Command{
 			return fmt.Errorf("[workspaces] : %v", err)
 		}
 
-		err = cli.PrintOutputForTypeArray(response, OutputType)
+		err = cli.PrintOutputForTypeArray(response, outputTypeWorkspaces)
 		if err != nil {
 			return fmt.Errorf("[workspaces] : %v", err)
 		}
 		return nil
 	},
 }
-var OutputType string
+var outputTypeWorkspaces = "table"
 
 func init() {
 	rootCmd.AddCommand(workspacesCmd)
-	workspacesCmd.Flags().StringVar(&OutputType, "output", "", "specifying output type [json, table]")
+	workspacesCmd.Flags().StringVar(&outputTypeWorkspaces, "output", "", "specifying output type [json, table]")
 }

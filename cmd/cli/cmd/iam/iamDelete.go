@@ -18,4 +18,7 @@ var IamDelete = &cobra.Command{
 		}
 		return nil
 	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
+	},
 }
