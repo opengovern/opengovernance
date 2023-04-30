@@ -169,6 +169,7 @@ type Scheduler struct {
 
 	describeEndpoint string
 	keyARN           string
+	keyRegion        string
 
 	cloudNativeAPIBaseURL string
 	cloudNativeAPIAuthKey string
@@ -242,6 +243,7 @@ func InitializeScheduler(
 
 	s.describeEndpoint = DescribeDeliverEndpoint
 	s.keyARN = KeyARN
+	s.keyRegion = KeyRegion
 	s.describeJobResultQueue, err = initRabbitQueue(describeJobResultQueueName)
 	if err != nil {
 		return nil, err

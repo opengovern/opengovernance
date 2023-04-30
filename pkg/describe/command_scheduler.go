@@ -60,6 +60,7 @@ var (
 
 	LambdaFuncURL           = os.Getenv("LAMBDA_FUNC_URL")
 	KeyARN                  = os.Getenv("KMS_KEY_ARN")
+	KeyRegion               = os.Getenv("KMS_KEY_REGION")
 	DescribeDeliverEndpoint = os.Getenv("DESCRIBE_DELIVER_ENDPOINT")
 )
 

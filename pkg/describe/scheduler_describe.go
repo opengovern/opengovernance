@@ -178,6 +178,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob) error {
 		WorkspaceId:      CurrentWorkspaceID,
 		DescribeEndpoint: s.describeEndpoint,
 		KeyARN:           s.keyARN,
+		KeyRegion:        s.keyRegion,
 		DescribeJob: DescribeJob{
 			JobID:        dr.ID,
 			ParentJobID:  ds.ID,
