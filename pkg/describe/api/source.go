@@ -60,6 +60,7 @@ type DescribeResourceJobStatus string
 const (
 	DescribeResourceJobCreated      DescribeResourceJobStatus = "CREATED"
 	DescribeResourceJobQueued       DescribeResourceJobStatus = "QUEUED"
+	DescribeResourceJobInProgress   DescribeResourceJobStatus = "IN_PROGRESS"
 	DescribeResourceJobCloudTimeout DescribeResourceJobStatus = "CLOUD_TIMEOUT"
 	DescribeResourceJobFailed       DescribeResourceJobStatus = "FAILED"
 	DescribeResourceJobSucceeded    DescribeResourceJobStatus = "SUCCEEDED"
