@@ -67,7 +67,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(stream golang.DescribeService_D
 		err = json.Unmarshal([]byte(protoResource.DescriptionJson), &description)
 		if err != nil {
 			s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", protoResource.Job.JobId), zap.String("resourceID", protoResource.Id))
-			continue
+			return err
 		}
 
 		resource := aws.Resource{
@@ -84,7 +84,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(stream golang.DescribeService_D
 		err = s.HandleAWSResource(resource, protoResource.Job)
 		if err != nil {
 			s.logger.Error("failed to handle aws resource", zap.Error(err), zap.Uint32("jobID", protoResource.Job.JobId), zap.String("resourceID", protoResource.Id))
-			continue
+			return err
 		}
 	}
 }
