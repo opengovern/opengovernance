@@ -90,7 +90,7 @@ require (
 	github.com/swaggo/echo-swagger v1.3.0
 	github.com/swaggo/swag v1.8.0
 	github.com/turbot/go-kit v0.4.0
-	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230428233854-2e19fb4a698e
+	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230430153000-90bee900eb0c
 	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230428233925-0d0d195ef25e
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230330133010-4edcf1226e17
 	go.uber.org/zap v1.21.0
