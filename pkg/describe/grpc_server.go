@@ -12,6 +12,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/go-redis/redis/v8"
 	aws "github.com/kaytu-io/kaytu-aws-describer/aws/describer"
@@ -52,11 +53,16 @@ func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProdu
 }
 
 func (s *GRPCDescribeServer) DeliverAWSResources(stream golang.DescribeService_DeliverAWSResourcesServer) error {
-	resourceJobId := stream.Context().Value("resourceJobID")
-	if resourceJobId != nil {
-		err := s.db.UpdateDescribeResourceJobStatus(resourceJobId.(uint), api.DescribeResourceJobInProgress, "")
+	md, ok := metadata.FromIncomingContext(stream.Context())
+	if ok && md.Get("resource-job-id") != nil {
+		resourceJobIdStr := md.Get("resource-job-id")[0]
+		resourceJobId, err := strconv.ParseUint(resourceJobIdStr, 10, 64)
 		if err != nil {
-			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", resourceJobId.(uint)))
+			return fmt.Errorf("failed to parse resource job id: %v", err)
+		}
+		err = s.db.UpdateDescribeResourceJobStatus(uint(resourceJobId), api.DescribeResourceJobInProgress, "")
+		if err != nil {
+			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
 		}
 	}
 	for {
@@ -229,11 +235,16 @@ func (s *GRPCDescribeServer) HandleAWSResource(resource aws.Resource, job *golan
 }
 
 func (s *GRPCDescribeServer) DeliverAzureResources(stream golang.DescribeService_DeliverAzureResourcesServer) error {
-	resourceJobId := stream.Context().Value("resourceJobID")
-	if resourceJobId != nil {
-		err := s.db.UpdateDescribeResourceJobStatus(resourceJobId.(uint), api.DescribeResourceJobInProgress, "")
+	md, ok := metadata.FromIncomingContext(stream.Context())
+	if ok && md.Get("resource-job-id") != nil {
+		resourceJobIdStr := md.Get("resource-job-id")[0]
+		resourceJobId, err := strconv.ParseUint(resourceJobIdStr, 10, 64)
 		if err != nil {
-			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", resourceJobId.(uint)))
+			return fmt.Errorf("failed to parse resource job id: %v", err)
+		}
+		err = s.db.UpdateDescribeResourceJobStatus(uint(resourceJobId), api.DescribeResourceJobInProgress, "")
+		if err != nil {
+			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
 		}
 	}
 	for {
