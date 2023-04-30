@@ -2,8 +2,9 @@ package describe
 
 import (
 	"errors"
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -57,6 +58,7 @@ var (
 	MetadataBaseURL            = os.Getenv("METADATA_BASE_URL")
 	ComplianceBaseURL          = os.Getenv("COMPLIANCE_BASE_URL")
 	OnboardBaseURL             = os.Getenv("ONBOARD_BASE_URL")
+	AuthGRPCURI                = os.Getenv("AUTH_GRPC_URI")
 
 	LambdaFuncURL           = os.Getenv("LAMBDA_FUNC_URL")
 	KeyARN                  = os.Getenv("KMS_KEY_ARN")
