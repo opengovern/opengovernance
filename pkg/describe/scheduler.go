@@ -1,15 +1,24 @@
 package describe
 
 import (
+	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	"github.com/gogo/googleapis/google/rpc"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/proto/src/golang"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 
@@ -161,6 +170,7 @@ type Scheduler struct {
 	metadataClient      metadataClient.MetadataServiceClient
 	complianceClient    client.ComplianceServiceClient
 	onboardClient       onboardClient.OnboardServiceClient
+	authGrpcClient      envoyauth.AuthorizationClient
 	es                  keibi.Client
 	rdb                 *redis.Client
 	kafkaClient         sarama.Client
@@ -190,6 +200,56 @@ func initRabbitQueue(queueName string) (queue.Interface, error) {
 	}
 
 	return insightQueue, nil
+}
+
+func (s *Scheduler) checkGRPCAuth(ctx context.Context) error {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return status.Errorf(codes.Unauthenticated, "missing metadata")
+	}
+
+	mdHeaders := make(map[string]string)
+	for k, v := range md {
+		if len(v) > 0 {
+			mdHeaders[k] = v[0]
+		}
+	}
+
+	s.logger.Debug("checkGRPCAuth", zap.Any("mdHeaders", mdHeaders))
+
+	result, err := s.authGrpcClient.Check(ctx, &envoyauth.CheckRequest{
+		Attributes: &envoyauth.AttributeContext{
+			Request: &envoyauth.AttributeContext_Request{
+				Http: &envoyauth.AttributeContext_HttpRequest{
+					Headers: mdHeaders,
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		return status.Errorf(codes.Unauthenticated, "authentication failed: %v", err)
+	}
+
+	if result.GetStatus() == nil || result.GetStatus().GetCode() != int32(rpc.OK) {
+		return status.Errorf(codes.Unauthenticated, http.StatusText(http.StatusUnauthorized))
+	}
+
+	return nil
+}
+
+func (s *Scheduler) grpcUnaryAuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	if err := s.checkGRPCAuth(ctx); err != nil {
+		return nil, err
+	}
+	return handler(ctx, req)
+}
+
+func (s *Scheduler) grpcStreamAuthInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	if err := s.checkGRPCAuth(ss.Context()); err != nil {
+		return err
+	}
+	return handler(srv, ss)
 }
 
 func InitializeScheduler(
@@ -363,6 +423,11 @@ func InitializeScheduler(
 	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
 	s.complianceClient = client.NewComplianceClient(ComplianceBaseURL)
 	s.onboardClient = onboardClient.NewOnboardServiceClient(OnboardBaseURL, nil)
+	authGRPCConn, err := grpc.Dial(AuthGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	if err != nil {
+		return nil, err
+	}
+	s.authGrpcClient = envoyauth.NewAuthorizationClient(authGRPCConn)
 	defaultAccountID := "default"
 	s.es, err = keibi.NewClient(keibi.ClientConfig{
 		Addresses: []string{ElasticSearchAddress},
@@ -381,7 +446,11 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	s.grpcServer = grpc.NewServer(grpc.MaxRecvMsgSize(128 * 1024 * 1024))
+	s.grpcServer = grpc.NewServer(
+		grpc.MaxRecvMsgSize(128*1024*1024),
+		grpc.UnaryInterceptor(s.grpcUnaryAuthInterceptor),
+		grpc.StreamInterceptor(s.grpcStreamAuthInterceptor),
+	)
 
 	describeServer := NewDescribeServer(s.db, s.rdb, producer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.logger)
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
