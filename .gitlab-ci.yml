@@ -18,7 +18,7 @@ stages:
     - mkdir -p .go
     - mkdir -p .cache
     - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
-    - echo -e "machine github.com login api password ${GITHUB_CI_TOKEN}" > ~/.netrc
+    - echo -e "machine github.com login api password ${GITHUB_CI_TOKEN}" >> ~/.netrc
   cache:
     - key: go-cache
       paths:
@@ -31,7 +31,7 @@ stages:
     - mkdir -p .go
     - mkdir -p .cache
     - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
-    - echo -e "machine github.com login api password ${GITHUB_CI_TOKEN}" > ~/.netrc
+    - echo -e "machine github.com login api password ${GITHUB_CI_TOKEN}" >> ~/.netrc
   cache:
     - key: go-cache
       paths:
@@ -47,7 +47,7 @@ stages:
     - mkdir -p .cache
     - mkdir -p .linter-cache
     - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
-    - echo -e "machine github.com login api password ${GITHUB_CI_TOKEN}" > ~/.netrc
+    - echo -e "machine github.com login api password ${GITHUB_CI_TOKEN}" >> ~/.netrc
   cache:
     - key: linter-cache
       paths:
@@ -64,7 +64,7 @@ stages:
     - mkdir -p .cache
     - mkdir -p .linter-cache
     - echo -e "machine gitlab.com login gitlab-ci-token password ${CI_JOB_TOKEN}" > ~/.netrc
-    - echo -e "machine github.com login api password ${GITHUB_CI_TOKEN}" > ~/.netrc
+    - echo -e "machine github.com login api password ${GITHUB_CI_TOKEN}" >> ~/.netrc
   cache:
     - key: linter-cache
       paths:
