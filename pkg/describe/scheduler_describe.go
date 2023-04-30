@@ -205,8 +205,6 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob) error {
 		return fmt.Errorf("failed to marshal cloud native req due to %v", err)
 	}
 
-	s.logger.Info("lambdaRequest", zap.String("lambdaRequest", string(lambdaRequest)))
-
 	httpClient := &http.Client{
 		Timeout: 1 * time.Minute,
 	}
