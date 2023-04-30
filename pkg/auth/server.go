@@ -59,6 +59,8 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 	httpRequest := req.GetAttributes().GetRequest().GetHttp()
 	headers := httpRequest.GetHeaders()
 
+	s.logger.Info("headers", zap.Any("headers", headers))
+
 	user, err := s.Verify(ctx, headers[strings.ToLower(echo.HeaderAuthorization)])
 	if err != nil {
 		s.logger.Warn("denied access due to unsuccessful token verification",
