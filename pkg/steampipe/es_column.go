@@ -100,7 +100,11 @@ func DescriptionToRecord(plg *plugin.Plugin, resource interface{}, indexName str
 		} else if column == nil {
 			fmt.Println("column is null", indexName)
 		} else if column.Transform == nil {
-			fmt.Println("column transform is null", indexName, column.Name)
+			if indexName != "aws_cloudtrail_trail_event" && //ignore warnings
+				indexName != "aws_cost_by_account_daily" &&
+				indexName != "aws_ecr_repository" {
+				fmt.Println("column transform is null", indexName, column.Name)
+			}
 		}
 	}
 

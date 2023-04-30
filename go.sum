@@ -1956,6 +1956,8 @@ gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230428233854-2e19fb4a698e h
 gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230428233854-2e19fb4a698e/go.mod h1:jkdIoi0PYenb2K5hi0nBhV8rFP0EUw81ISVZM0C0WBQ=
 gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230430153000-90bee900eb0c h1:GO4Zp3CsPL36mZtA9pBMWZETmq/MuxepaG3aowJc9XU=
 gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230430153000-90bee900eb0c/go.mod h1:jkdIoi0PYenb2K5hi0nBhV8rFP0EUw81ISVZM0C0WBQ=
+gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230430190047-ef74b7c1c11a h1:qMTm/sMZCS+FqRBRQUu19fDZPRnSA3EHgl9P7jheuZM=
+gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230430190047-ef74b7c1c11a/go.mod h1:jkdIoi0PYenb2K5hi0nBhV8rFP0EUw81ISVZM0C0WBQ=
 gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230428233925-0d0d195ef25e h1:MuU1bu2EA5CHL2EEvn7j6s7oOMvNnt+HXF1iV7MQiwQ=
 gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230428233925-0d0d195ef25e/go.mod h1:zdp2wAidqPuK7wZ2ZnBuW+n6VqpX51JFpa8aYJIn6+A=
 gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230330133010-4edcf1226e17 h1:eYsJxTV+HkDQtAu8+MLvXxps7FdmLVxIPXrWx6YZ7N4=
