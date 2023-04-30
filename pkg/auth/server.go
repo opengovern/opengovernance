@@ -84,6 +84,10 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		workspaceName = workspaceName[:idx]
 	}
 
+	if headerWorkspace, ok := headers["workspace-name"]; ok {
+		workspaceName = headerWorkspace
+	}
+
 	rb, limits, err := s.GetWorkspaceByName(workspaceName, user)
 	if err != nil {
 		s.logger.Warn("denied access due to failure in getting workspace",

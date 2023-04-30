@@ -174,8 +174,16 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob) error {
 		return err
 	}
 
+	workspace, err := s.workspaceClient.GetByID(&httpclient.Context{
+		UserRole: api2.EditorRole,
+	}, CurrentWorkspaceID)
+	if err != nil {
+		return err
+	}
+
 	input := LambdaDescribeWorkerInput{
 		WorkspaceId:      CurrentWorkspaceID,
+		WorkspaceName:    workspace.Name,
 		DescribeEndpoint: s.describeEndpoint,
 		KeyARN:           s.keyARN,
 		KeyRegion:        s.keyRegion,
