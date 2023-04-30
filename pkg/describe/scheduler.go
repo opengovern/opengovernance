@@ -382,7 +382,7 @@ func InitializeScheduler(
 	}
 
 	s.grpcServer = grpc.NewServer()
-	describeServer := NewDescribeServer(s.rdb, producer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.logger)
+	describeServer := NewDescribeServer(s.db, s.rdb, producer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.logger)
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
 
 	return s, nil
