@@ -28,6 +28,7 @@ message AWSResource {
   string type = 7;
   string description_json = 8;
   DescribeJob job = 9;
+  string unique_id = 10;
 }
 
 message AzureResource {
@@ -39,6 +40,7 @@ message AzureResource {
   string subscription_id = 6;
   string description_json = 7;
   DescribeJob job = 8;
+  string unique_id = 9;
 }
 
 message DeliverResultRequest {
