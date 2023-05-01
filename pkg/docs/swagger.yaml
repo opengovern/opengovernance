@@ -39,7 +39,7 @@ definitions:
       resources:
         additionalProperties:
           items:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_aws_describer.Resource'
+            $ref: '#/definitions/describer.Resource'
           type: array
         type: object
     type: object
@@ -69,6 +69,29 @@ definitions:
       status:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus'
       updatedAt:
+        type: string
+    type: object
+  describer.Resource:
+    properties:
+      account:
+        type: string
+      arn:
+        description: ARN uniquely identifies an AWS resource across regions, accounts
+          and types.
+        type: string
+      description: {}
+      id:
+        description: |-
+          ID doesn't uniquely identifies a resource. It will be used to create a
+          unique identifier by concating PARTITION|REGION|ACCOUNT|TYPE|ID
+        type: string
+      name:
+        type: string
+      partition:
+        type: string
+      region:
+        type: string
+      type:
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest:
@@ -471,29 +494,6 @@ definitions:
       userName:
         description: Username
         example: sampleName
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_aws_describer.Resource:
-    properties:
-      account:
-        type: string
-      arn:
-        description: ARN uniquely identifies an AWS resource across regions, accounts
-          and types.
-        type: string
-      description: {}
-      id:
-        description: |-
-          ID doesn't uniquely identifies a resource. It will be used to create a
-          unique identifier by concating PARTITION|REGION|ACCOUNT|TYPE|ID
-        type: string
-      name:
-        type: string
-      partition:
-        type: string
-      region:
-        type: string
-      type:
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Benchmark:
@@ -1054,14 +1054,16 @@ definitions:
     enum:
     - CREATED
     - QUEUED
-    - CLOUD_TIMEOUT
+    - IN_PROGRESS
+    - TIMEOUT
     - FAILED
     - SUCCEEDED
     type: string
     x-enum-varnames:
     - DescribeResourceJobCreated
     - DescribeResourceJobQueued
-    - DescribeResourceJobCloudTimeout
+    - DescribeResourceJobInProgress
+    - DescribeResourceJobTimeout
     - DescribeResourceJobFailed
     - DescribeResourceJobSucceeded
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSingleResourceRequest:
@@ -1102,16 +1104,6 @@ definitions:
     - DescribeSourceJobInProgress
     - DescribeSourceJobCompletedWithFailure
     - DescribeSourceJobCompleted
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobRequest:
-    properties:
-      sourceId:
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobResponse:
-    properties:
-      creds:
-        type: string
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest:
     properties:
       benchmarkID:
@@ -1143,16 +1135,8 @@ definitions:
       lastDescribedAt:
         type: string
       type:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.SourceType'
+        $ref: '#/definitions/source.Type'
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.SourceType:
-    enum:
-    - AWS
-    - Azure
-    type: string
-    x-enum-varnames:
-    - SourceCloudAWS
-    - SourceCloudAzure
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest:
     properties:
       benchmarkID:
@@ -2537,7 +2521,8 @@ definitions:
       lastHealthCheckTime:
         type: string
       metadata:
-        type: string
+        additionalProperties: {}
+        type: object
       name:
         type: string
       onboardDate:
@@ -6386,25 +6371,6 @@ paths:
       summary: Listing insight jobs
       tags:
       - schedule
-  /schedule/api/v1/jobs/{job_id}/creds:
-    post:
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobResponse'
-      summary: Get credentials for a cloud native job by providing job info
-      tags:
-      - jobs
   /schedule/api/v1/resource_type/{provider}:
     get:
       description: get resource type by provider
