@@ -44,6 +44,7 @@ type {{ .Name }} struct {
 	ResourceType  string ` + "`json:\"resource_type\"`" + `
 	SourceType    string ` + "`json:\"source_type\"`" + `
 	ID            string ` + "`json:\"id\"`" + `
+	ARN            string ` + "`json:\"arn\"`" + `
 	SourceID      string ` + "`json:\"source_id\"`" + `
 }
 
@@ -264,12 +265,11 @@ func Get{{ .Name }}(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	})
 
 	if len(sources) > 0 {
-		//kaytu-aws-describer
 		fmt.Fprintln(&buf, `
 		import (
 			"context"
 			"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
-			`+*sourceType+` "gitlab.com/keibiengine/kaytu-`+*sourceType+`-describer/aws/model"
+			`+*sourceType+` "github.com/kaytu-io/kaytu-`+*sourceType+`-describer/`+*sourceType+`/model"
 		)
 		`)
 	}

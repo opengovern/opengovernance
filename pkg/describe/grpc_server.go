@@ -150,6 +150,7 @@ func (s *GRPCDescribeServer) HandleAWSResource(resource aws.Resource, job *golan
 
 	kafkaResource := es.Resource{
 		ID:            resource.UniqueID(),
+		ARN:           resource.ARN,
 		Name:          resource.Name,
 		SourceType:    source.CloudAWS,
 		ResourceType:  strings.ToLower(job.ResourceType),
