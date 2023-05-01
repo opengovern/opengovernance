@@ -36,9 +36,10 @@ var userDetails = &cobra.Command{
 			fmt.Println("please enter the workspaceName flag .")
 			log.Fatalln(cmd.Help())
 		}
-
-		if len(args) == 0 {
-			return cmd.Help()
+		if cmd.Flags().Lookup("userId").Changed {
+		} else {
+			fmt.Println("please enter the userId flag .")
+			log.Fatalln(cmd.Help())
 		}
 		return nil
 	},
@@ -76,9 +77,6 @@ var Users = &cobra.Command{
 			fmt.Println("please enter the workspaceName flag .")
 			log.Fatalln(cmd.Help())
 		}
-		if len(args) == 0 {
-			return cmd.Help()
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -115,8 +113,10 @@ var roleDetails = &cobra.Command{
 			fmt.Println("please enter the workspaceName flag .")
 			log.Fatalln(cmd.Help())
 		}
-		if len(args) == 0 {
-			return cmd.Help()
+		if cmd.Flags().Lookup("role").Changed {
+		} else {
+			fmt.Println("please enter the role flag .")
+			log.Fatalln(cmd.Help())
 		}
 		return nil
 	},
@@ -160,9 +160,6 @@ var roles = &cobra.Command{
 			fmt.Println("please enter right flag ")
 			return cmd.Help()
 		}
-		if len(args) == 0 {
-			return cmd.Help()
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -204,9 +201,6 @@ var KeysCmd = &cobra.Command{
 			fmt.Println("please enter right flag .")
 			return cmd.Help()
 		}
-		if len(args) == 0 {
-			return cmd.Help()
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -243,11 +237,13 @@ var KeyDetailsCmd = &cobra.Command{
 			fmt.Println("please enter the workspaceName flag .")
 			log.Fatalln(cmd.Help())
 		}
+		if cmd.Flags().Lookup("keyId").Changed {
+		} else {
+			fmt.Println("please enter the key id flag .")
+			log.Fatalln(cmd.Help())
+		}
 		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
 			fmt.Println("please enter right flag .")
-			return cmd.Help()
-		}
-		if len(args) == 0 {
 			return cmd.Help()
 		}
 		return nil
@@ -281,25 +277,25 @@ var KeyDetailsCmd = &cobra.Command{
 func init() {
 	Get.AddCommand(IamGet)
 	// users flags
-	Users.Flags().StringVar(&workspacesNameGet, "workspaceName", "", "specifying the workspace name ")
-	Users.Flags().StringVar(&emailForUser, "userEmail", "", "specifying email user")
-	Users.Flags().BoolVar(&emailVerified, "userEmailVerified", true, "specifying emailVerification user")
-	Users.Flags().StringVar(&roleUser, "userRole", "", "specifying the roles user ")
-	Users.Flags().StringVar(&outputType, "output", "", "specifying the output type [json, table].")
-	userDetails.Flags().StringVar(&workspacesNameGet, "workspaceName", "", "specifying the workspace name  ")
-	userDetails.Flags().StringVar(&userID, "userId", "", "specifying the userID")
-	userDetails.Flags().StringVar(&outputType, "output", "", "specifying the output type [json, table].")
+	Users.Flags().StringVar(&workspacesNameGet, "workspaceName", "", "specifying the workspace name[mandatory]. ")
+	Users.Flags().StringVar(&emailForUser, "userEmail", "", "specifying email user[optional] .")
+	Users.Flags().BoolVar(&emailVerified, "userEmailVerified", true, "specifying emailVerification user[optional]. ")
+	Users.Flags().StringVar(&roleUser, "userRole", "", "specifying the roles user [optional]. ")
+	Users.Flags().StringVar(&outputType, "output", "", "specifying the output type [json, table][optional] .")
+	userDetails.Flags().StringVar(&workspacesNameGet, "workspaceName", "", "specifying the workspace name[mandatory].  ")
+	userDetails.Flags().StringVar(&userID, "userId", "", "specifying the userID[mandatory].")
+	userDetails.Flags().StringVar(&outputType, "output", "", "specifying the output type [json, table][optional] .")
 	//roles flags
-	roles.Flags().StringVar(&workspacesNameGet, "workspaceName", "", "specifying the workspace name  ")
-	roles.Flags().StringVar(&outputType, "output", "", "specifying the output type  [json, table].")
-	roleDetails.Flags().StringVar(&workspacesNameGet, "workspaceName", "", "specifying the workspace name  ")
-	roleDetails.Flags().StringVar(&role, "role", "", "specifying the role for details role ")
-	roleDetails.Flags().StringVar(&outputType, "output", "", "specifying the output type [json, table].")
+	roles.Flags().StringVar(&workspacesNameGet, "workspaceName", "", "specifying the workspace name[mandatory].  ")
+	roles.Flags().StringVar(&outputType, "output", "", "specifying the output type  [json, table][optional] .")
+	roleDetails.Flags().StringVar(&workspacesNameGet, "workspaceName", "", "specifying the workspace name [mandatory]. ")
+	roleDetails.Flags().StringVar(&role, "role", "", "specifying the role for details role [mandatory]. ")
+	roleDetails.Flags().StringVar(&outputType, "output", "", "specifying the output type [json, table][optional] .")
 	//keys flags
-	KeysCmd.Flags().StringVar(&workspacesNameGet, "workspaceName", "", "specifying the workspace name  ")
-	KeysCmd.Flags().StringVar(&outputType, "output", "", "specifying the output type [json, table].")
-	KeyDetailsCmd.Flags().StringVar(&workspacesNameGet, "workspaceName", "", "specifying the workspace name")
-	KeyDetailsCmd.Flags().StringVar(&KeyID, "keyID", "", "specifying the keyID ")
-	KeyDetailsCmd.Flags().StringVar(&outputType, "output", "", "specifying the output type [json, table].")
+	KeysCmd.Flags().StringVar(&workspacesNameGet, "workspaceName", "", "specifying the workspace name [mandatory] ")
+	KeysCmd.Flags().StringVar(&outputType, "output", "", "specifying the output type [json, table][optional] .")
+	KeyDetailsCmd.Flags().StringVar(&workspacesNameGet, "workspaceName", "", "specifying the workspace name[mandatory]")
+	KeyDetailsCmd.Flags().StringVar(&KeyID, "keyID", "", "specifying the keyID [mandatory]+")
+	KeyDetailsCmd.Flags().StringVar(&outputType, "output", "", "specifying the output type [json, table][optional] .")
 
 }

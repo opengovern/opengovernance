@@ -17,9 +17,6 @@ var aboutCmd = &cobra.Command{
 			fmt.Println("please enter right flag .")
 			return cmd.Help()
 		}
-		if len(args) == 0 {
-			return cmd.Help()
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -29,7 +26,7 @@ var aboutCmd = &cobra.Command{
 		}
 		checkEXP, err := cli.CheckExpirationTime(accessToken)
 		if err != nil {
-			return err
+			return fmt.Errorf("[about]: %v", err)
 		}
 		if checkEXP == true {
 			fmt.Println("your access token was expire please login again ")

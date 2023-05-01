@@ -44,14 +44,10 @@ type RequestGetIamUsers struct {
 	Role          api.Role `json:"role,omitempty"`
 }
 type RequestCreateUser struct {
-	Email string `json:"email,omitempty"`
-	Role  string `json:"role,omitempty"`
+	Email string   `json:"email" validate:"required,email"`
+	Role  api.Role `json:"role"`
 }
 
-type RequestCreateAPIKey struct {
-	Name     string `json:"name,omitempty"`
-	RoleName string `json:"role,omitempty"`
-}
 type ResponseUserDetails struct {
 	UserID        string `json:"userId,omitempty"`        // Unique identifier for the user
 	UserName      string `json:"userName,omitempty"`      // Username
@@ -62,4 +58,9 @@ type ResponseUserDetails struct {
 	LastActivity  string `json:"lastActivity,omitempty"`  // Last activity timestamp in UTC
 	CreatedAt     string `json:"createdAt,omitempty"`     // Creation timestamp in UTC
 	Blocked       bool   `json:"blocked,omitempty"`
+}
+type RolesListResponse struct {
+	Role        api.Role `json:"roleName"`
+	Description string   `json:"description"`
+	UserCount   int      `json:"userCount"`
 }

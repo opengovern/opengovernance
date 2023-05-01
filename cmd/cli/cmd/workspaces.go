@@ -15,9 +15,6 @@ var workspacesCmd = &cobra.Command{
 			fmt.Println("please enter right flag .")
 			return cmd.Help()
 		}
-		if len(args) == 0 {
-			return cmd.Help()
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {

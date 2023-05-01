@@ -276,6 +276,9 @@ func IamGetUsers(workspaceName string, accessToken string, email string, emailVe
 	if err != nil {
 		return []api.GetUserResponse{{}}, err
 	}
+	if res.StatusCode != http.StatusOK {
+		return []api.GetUserResponse{{}}, fmt.Errorf("[IamGetUsers] invalid status code: %d, body=%s", res.StatusCode, string(bodyResponse))
+	}
 	err = res.Body.Close()
 	if err != nil {
 		return []api.GetUserResponse{{}}, err
@@ -289,12 +292,12 @@ func IamGetUsers(workspaceName string, accessToken string, email string, emailVe
 }
 
 func IamGetUserDetails(accessToken string, workspaceName string, userId string) (ResponseUserDetails, error) {
-	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/auth/api/v1/user/:"+userId, nil)
+	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/auth/api/v1/user/"+userId, nil)
 	if err != nil {
 		return ResponseUserDetails{}, err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Add("Content-type", "application/json")
+	req.Header.Add("content-type", "application/json")
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return ResponseUserDetails{}, err
@@ -302,6 +305,9 @@ func IamGetUserDetails(accessToken string, workspaceName string, userId string) 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return ResponseUserDetails{}, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return ResponseUserDetails{}, fmt.Errorf("[IamGetUserDetails] invalid status code: %d, body=%s", res.StatusCode, string(body))
 	}
 	err = res.Body.Close()
 	if err != nil {
@@ -325,20 +331,24 @@ func IamDeleteUser(workspacesName string, accessToken string, userId string) (st
 	query := req.URL.Query()
 	query.Set("userId", userId)
 	res, err := http.DefaultClient.Do(req)
+	err = res.Body.Close()
+	if err != nil {
+		return "", err
+	}
 	if err != nil {
 		return "", err
 	}
 	if res.StatusCode == http.StatusOK {
 		return "user deleted ", nil
 	} else {
-		return "deleting user was fail", nil
+		return "deleting user was fail", fmt.Errorf("[IamDeleteUser] invalid status code: %d", res.StatusCode)
 	}
 }
 
-func IamCreateUser(workspaceName string, accessToken string, email string, role string) (string, error) {
-	request := RequestCreateUser{
+func IamCreateUser(workspaceName string, accessToken string, email string, role string, userid string) (string, error) {
+	request := api.InviteRequest{
 		Email: email,
-		Role:  role,
+		Role:  api.Role(role),
 	}
 	reqBody, err := json.Marshal(request)
 	if err != nil {
@@ -346,6 +356,7 @@ func IamCreateUser(workspaceName string, accessToken string, email string, role 
 	}
 	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/auth/api/v1/user/invite", bytes.NewBuffer(reqBody))
 	req.Header.Set("Authorization", "Bearer "+accessToken)
+
 	req.Header.Add("Content-type", "application/json")
 	if err != nil {
 		return "", err
@@ -385,40 +396,42 @@ func IamUpdateUser(workspaceName string, accessToken string, role string, userID
 	if res.StatusCode == http.StatusOK {
 		return "user updated successfully ", nil
 	} else {
-		return "updating user was fail", nil
+		return "updating user was fail", fmt.Errorf("[IamUpdateUser] invalid status code: %d", res.StatusCode)
 	}
 }
 
-func IamListRoles(WorkspacesName string, accessToken string) ([]api.RolesListResponse, error) {
+func IamListRoles(WorkspacesName string, accessToken string) ([]RolesListResponse, error) {
 	req, err := http.NewRequest("GET", urls.Url+WorkspacesName+"/auth/api/v1/roles", nil)
 	if err != nil {
-		return []api.RolesListResponse{{}}, err
+		return []RolesListResponse{{}}, err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Add("Content-type", "application/json")
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return []api.RolesListResponse{{}}, err
+		return []RolesListResponse{{}}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return []api.RolesListResponse{{}}, err
+		return []RolesListResponse{{}}, err
 	}
-	fmt.Println(string(body))
+	if res.StatusCode != http.StatusOK {
+		return []RolesListResponse{{}}, fmt.Errorf("[IamListRoles] invalid status code: %d, body : %v", res.StatusCode, string(body))
+	}
 	err = res.Body.Close()
 	if err != nil {
-		return []api.RolesListResponse{{}}, err
+		return []RolesListResponse{{}}, err
 	}
-	var response []api.RolesListResponse
+	var response []RolesListResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return []api.RolesListResponse{{}}, err
+		return []RolesListResponse{{}}, err
 	}
 	return response, nil
 }
 
 func IamRoleDetails(workspaceName string, roleName string, accessToken string) (api.RoleDetailsResponse, error) {
-	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/auth/api/v1/roles/:"+roleName, nil)
+	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/auth/api/v1/roles/"+roleName, nil)
 	if err != nil {
 		return api.RoleDetailsResponse{}, err
 	}
@@ -431,6 +444,9 @@ func IamRoleDetails(workspaceName string, roleName string, accessToken string) (
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return api.RoleDetailsResponse{}, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return api.RoleDetailsResponse{}, fmt.Errorf("[IamRoleDetails] invalid status code: %d, body : %v", res.StatusCode, string(body))
 	}
 	err = res.Body.Close()
 	if err != nil {
@@ -459,6 +475,9 @@ func IamGetListKeys(workspacesName string, accessToken string) ([]api.WorkspaceA
 	if err != nil {
 		return []api.WorkspaceApiKey{{}}, err
 	}
+	if res.StatusCode != http.StatusOK {
+		return []api.WorkspaceApiKey{{}}, fmt.Errorf("[IamGetListKeys] invalid status code: %d, body : %v", res.StatusCode, string(body))
+	}
 	err = res.Body.Close()
 	if err != nil {
 		return []api.WorkspaceApiKey{{}}, err
@@ -472,7 +491,7 @@ func IamGetListKeys(workspacesName string, accessToken string) ([]api.WorkspaceA
 }
 
 func IamGetKeyDetails(workspacesName string, accessToken string, id string) (api.WorkspaceApiKey, error) {
-	req, err := http.NewRequest("GET", urls.Url+workspacesName+"/auth/api/v1/key/:"+id, nil)
+	req, err := http.NewRequest("GET", urls.Url+workspacesName+"/auth/api/v1/key/"+id, nil)
 	if err != nil {
 		return api.WorkspaceApiKey{}, err
 	}
@@ -485,6 +504,9 @@ func IamGetKeyDetails(workspacesName string, accessToken string, id string) (api
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return api.WorkspaceApiKey{}, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return api.WorkspaceApiKey{}, fmt.Errorf("[IamGetKeyDetails] invalid status code: %d, body : %v", res.StatusCode, string(body))
 	}
 	err = res.Body.Close()
 	if err != nil {
@@ -499,8 +521,8 @@ func IamGetKeyDetails(workspacesName string, accessToken string, id string) (api
 }
 
 func IamCreateKeys(workspacesName string, accessToken string, keyName string, role string) (api.CreateAPIKeyResponse, error) {
-	var request RequestCreateAPIKey
-	request.RoleName = role
+	var request api.CreateAPIKeyRequest
+	request.Role = api.Role(role)
 	request.Name = keyName
 	reqBody, err := json.Marshal(request)
 	if err != nil {
@@ -519,6 +541,9 @@ func IamCreateKeys(workspacesName string, accessToken string, keyName string, ro
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return api.CreateAPIKeyResponse{}, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return api.CreateAPIKeyResponse{}, fmt.Errorf("[IamCreateKeys] invalid status code: %d, body : %v", res.StatusCode, string(body))
 	}
 	err = res.Body.Close()
 	if err != nil {
@@ -552,6 +577,9 @@ func IamUpdateKeyRole(workspacesName string, accessToken string, id uint, role s
 	if err != nil {
 		return api.WorkspaceApiKey{}, err
 	}
+	if res.StatusCode != http.StatusOK {
+		return api.WorkspaceApiKey{}, fmt.Errorf("[IamUpdateKeyRole] invalid status code: %d, body : %v", res.StatusCode, string(body))
+	}
 	err = res.Body.Close()
 	if err != nil {
 		return api.WorkspaceApiKey{}, err
@@ -565,7 +593,7 @@ func IamUpdateKeyRole(workspacesName string, accessToken string, id uint, role s
 }
 
 func IamSuspendKey(workspaceName string, accessToken string, id string) (api.WorkspaceApiKey, error) {
-	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/auth/api/v1/key/:"+id+"/suspend", nil)
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/auth/api/v1/key/"+id+"/suspend", nil)
 	if err != nil {
 		return api.WorkspaceApiKey{}, err
 	}
@@ -576,6 +604,9 @@ func IamSuspendKey(workspaceName string, accessToken string, id string) (api.Wor
 		return api.WorkspaceApiKey{}, err
 	}
 	body, err := io.ReadAll(res.Body)
+	if res.StatusCode != http.StatusOK {
+		return api.WorkspaceApiKey{}, fmt.Errorf("[IamSuspendKey] invalid status code: %d, body : %v", res.StatusCode, string(body))
+	}
 	if err != nil {
 		return api.WorkspaceApiKey{}, err
 	}
@@ -592,7 +623,7 @@ func IamSuspendKey(workspaceName string, accessToken string, id string) (api.Wor
 }
 
 func IamActivateKey(workspaceName string, accessToken string, id string) (api.WorkspaceApiKey, error) {
-	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/auth/api/v1/key/:"+id+"/activate", nil)
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/auth/api/v1/key/"+id+"/activate", nil)
 	if err != nil {
 		return api.WorkspaceApiKey{}, err
 	}
@@ -605,6 +636,9 @@ func IamActivateKey(workspaceName string, accessToken string, id string) (api.Wo
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return api.WorkspaceApiKey{}, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return api.WorkspaceApiKey{}, fmt.Errorf("[IamActivateKey] invalid status code: %d, body : %v", res.StatusCode, string(body))
 	}
 	err = res.Body.Close()
 	if err != nil {
@@ -619,7 +653,7 @@ func IamActivateKey(workspaceName string, accessToken string, id string) (api.Wo
 }
 
 func IamDeleteKey(workspacesName string, accessToken string, id string) (string, error) {
-	req, err := http.NewRequest("DELETE", urls.Url+workspacesName+"/auth/api/v1/key/:"+id+"/delete", nil)
+	req, err := http.NewRequest("DELETE", urls.Url+workspacesName+"/auth/api/v1/key/"+id+"/delete", nil)
 	if err != nil {
 		return "", err
 	}
