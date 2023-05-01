@@ -8,6 +8,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -208,7 +209,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob) error {
 	httpClient := &http.Client{
 		Timeout: 1 * time.Minute,
 	}
-	req, err := http.NewRequest(http.MethodPost, LambdaFuncURL, bytes.NewBuffer(lambdaRequest))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", LambdaFuncsBaseURL, strings.ToLower(ds.SourceType.String())), bytes.NewBuffer(lambdaRequest))
 	if err != nil {
 		return fmt.Errorf("failed to create http request due to %v", err)
 	}
