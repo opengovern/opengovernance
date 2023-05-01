@@ -84,6 +84,12 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 	var kafkaMsgs []*sarama.ProducerMessage
 	var searchAfter []interface{}
 
+	if res.DescribeJob.ResourceType == "AWS::EC2::Instance" {
+		for _, describedResourceID := range res.DescribedResourceIDs {
+			fmt.Println("described ec2 instance", describedResourceID)
+		}
+	}
+
 	for {
 		esResp, err := es.GetResourceIDsForAccountResourceTypeFromES(s.es, res.DescribeJob.SourceID, res.DescribeJob.ResourceType, searchAfter, 1000)
 		if err != nil {
