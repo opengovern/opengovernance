@@ -1646,18 +1646,13 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 
 	switch src.Type {
 	case source.CloudAWS:
-		var req api.AWSCredential
+		var req api.SourceConfigAWS
 		if err := bindValidate(ctx, &req); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 		}
 
-		newCnf := api.SourceConfigAWS{
-			AccountId: src.SourceId,
-			AccessKey: req.AccessKey,
-			SecretKey: req.SecretKey,
-		}
-
-		isAttached, err := keibiaws.CheckAttachedPolicy(newCnf.AccessKey, newCnf.SecretKey, keibiaws.SecurityAuditPolicyARN)
+		req.AccountId = src.SourceId
+		isAttached, err := keibiaws.CheckAttachedPolicy(req.AccessKey, req.SecretKey, keibiaws.SecurityAuditPolicyARN)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
@@ -1665,7 +1660,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "Failed to find read permission")
 		}
 
-		secretBytes, err := h.kms.Encrypt(newCnf.AsMap(), h.keyARN)
+		secretBytes, err := h.kms.Encrypt(req.AsMap(), h.keyARN)
 		if err != nil {
 			return err
 		}
@@ -1676,18 +1671,13 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 		}
 		return ctx.NoContent(http.StatusOK)
 	case source.CloudAzure:
-		var req api.AzureCredential
+		var req api.SourceConfigAzure
 		if err := bindValidate(ctx, &req); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 		}
 
-		newCnf := api.SourceConfigAzure{
-			SubscriptionId: src.SourceId,
-			TenantId:       req.TenantID,
-			ClientId:       req.ClientID,
-			ClientSecret:   req.ClientSecret,
-		}
-		secretBytes, err := h.kms.Encrypt(newCnf.AsMap(), h.keyARN)
+		req.SubscriptionId = src.SourceId
+		secretBytes, err := h.kms.Encrypt(req.AsMap(), h.keyARN)
 		if err != nil {
 			return err
 		}

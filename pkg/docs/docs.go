@@ -5327,36 +5327,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v1/jobs/{job_id}/creds": {
-            "post": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "jobs"
-                ],
-                "summary": "Get credentials for a cloud native job by providing job info",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/schedule/api/v1/resource_type/{provider}": {
             "get": {
                 "description": "get resource type by provider",
@@ -6045,7 +6015,7 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_aws_describer.Resource"
+                            "$ref": "#/definitions/describer.Resource"
                         }
                     }
                 }
@@ -6088,6 +6058,35 @@ const docTemplate = `{
                     "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus"
                 },
                 "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "describer.Resource": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string"
+                },
+                "arn": {
+                    "description": "ARN uniquely identifies an AWS resource across regions, accounts and types.",
+                    "type": "string"
+                },
+                "description": {},
+                "id": {
+                    "description": "ID doesn't uniquely identifies a resource. It will be used to create a\nunique identifier by concating PARTITION|REGION|ACCOUNT|TYPE|ID",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "partition": {
+                    "type": "string"
+                },
+                "region": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -6669,35 +6668,6 @@ const docTemplate = `{
                     "description": "Username",
                     "type": "string",
                     "example": "sampleName"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_aws_describer.Resource": {
-            "type": "object",
-            "properties": {
-                "account": {
-                    "type": "string"
-                },
-                "arn": {
-                    "description": "ARN uniquely identifies an AWS resource across regions, accounts and types.",
-                    "type": "string"
-                },
-                "description": {},
-                "id": {
-                    "description": "ID doesn't uniquely identifies a resource. It will be used to create a\nunique identifier by concating PARTITION|REGION|ACCOUNT|TYPE|ID",
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "partition": {
-                    "type": "string"
-                },
-                "region": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
                 }
             }
         },
@@ -7527,14 +7497,16 @@ const docTemplate = `{
             "enum": [
                 "CREATED",
                 "QUEUED",
-                "CLOUD_TIMEOUT",
+                "IN_PROGRESS",
+                "TIMEOUT",
                 "FAILED",
                 "SUCCEEDED"
             ],
             "x-enum-varnames": [
                 "DescribeResourceJobCreated",
                 "DescribeResourceJobQueued",
-                "DescribeResourceJobCloudTimeout",
+                "DescribeResourceJobInProgress",
+                "DescribeResourceJobTimeout",
                 "DescribeResourceJobFailed",
                 "DescribeResourceJobSucceeded"
             ]
@@ -7594,22 +7566,6 @@ const docTemplate = `{
                 "DescribeSourceJobCompleted"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobRequest": {
-            "type": "object",
-            "properties": {
-                "sourceId": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetCredsForJobResponse": {
-            "type": "object",
-            "properties": {
-                "creds": {
-                    "type": "string"
-                }
-            }
-        },
         "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest": {
             "type": "object",
             "properties": {
@@ -7657,20 +7613,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.SourceType"
+                    "$ref": "#/definitions/source.Type"
                 }
             }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.SourceType": {
-            "type": "string",
-            "enum": [
-                "AWS",
-                "Azure"
-            ],
-            "x-enum-varnames": [
-                "SourceCloudAWS",
-                "SourceCloudAzure"
-            ]
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest": {
             "type": "object",
@@ -9650,7 +9595,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "metadata": {
-                    "type": "string"
+                    "type": "object",
+                    "additionalProperties": {}
                 },
                 "name": {
                     "type": "string"
