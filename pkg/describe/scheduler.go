@@ -423,7 +423,7 @@ func InitializeScheduler(
 	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
 	s.complianceClient = client.NewComplianceClient(ComplianceBaseURL)
 	s.onboardClient = onboardClient.NewOnboardServiceClient(OnboardBaseURL, nil)
-	authGRPCConn, err := grpc.Dial(AuthGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	authGRPCConn, err := grpc.Dial(AuthGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
 	if err != nil {
 		return nil, err
 	}
