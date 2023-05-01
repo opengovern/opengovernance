@@ -58,12 +58,12 @@ func (s *GRPCDescribeServer) DeliverAWSResources(stream golang.DescribeService_D
 		resourceJobIdStr := md.Get("resource-job-id")[0]
 		resourceJobId, err := strconv.ParseUint(resourceJobIdStr, 10, 64)
 		if err != nil {
-			ResourcesDescribedCount.WithLabelValues("aws").Inc()
+			StreamFailureCount.WithLabelValues("aws").Inc()
 			return fmt.Errorf("failed to parse resource job id: %v", err)
 		}
 		err = s.db.UpdateDescribeResourceJobToInProgress(uint(resourceJobId))
 		if err != nil {
-			ResourcesDescribedCount.WithLabelValues("aws").Inc()
+			StreamFailureCount.WithLabelValues("aws").Inc()
 			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
 		}
 	}
@@ -74,7 +74,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(stream golang.DescribeService_D
 			return stream.SendAndClose(&golang.ResponseOK{})
 		}
 		if err != nil {
-			ResourcesDescribedCount.WithLabelValues("aws").Inc()
+			StreamFailureCount.WithLabelValues("aws").Inc()
 			return err
 		}
 
@@ -246,12 +246,12 @@ func (s *GRPCDescribeServer) DeliverAzureResources(stream golang.DescribeService
 		resourceJobIdStr := md.Get("resource-job-id")[0]
 		resourceJobId, err := strconv.ParseUint(resourceJobIdStr, 10, 64)
 		if err != nil {
-			ResourcesDescribedCount.WithLabelValues("aws").Inc()
+			StreamFailureCount.WithLabelValues("aws").Inc()
 			return fmt.Errorf("failed to parse resource job id: %v", err)
 		}
 		err = s.db.UpdateDescribeResourceJobToInProgress(uint(resourceJobId))
 		if err != nil {
-			ResourcesDescribedCount.WithLabelValues("aws").Inc()
+			StreamFailureCount.WithLabelValues("aws").Inc()
 			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
 		}
 	}
@@ -261,7 +261,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(stream golang.DescribeService
 			return stream.SendAndClose(&golang.ResponseOK{})
 		}
 		if err != nil {
-			ResourcesDescribedCount.WithLabelValues("aws").Inc()
+			StreamFailureCount.WithLabelValues("aws").Inc()
 			return err
 		}
 		if resource == nil {
