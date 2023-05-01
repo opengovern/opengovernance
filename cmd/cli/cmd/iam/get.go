@@ -156,10 +156,6 @@ var roles = &cobra.Command{
 			fmt.Println("please enter the workspaceName flag ")
 			log.Fatalln(cmd.Help())
 		}
-		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
-			fmt.Println("please enter right flag ")
-			return cmd.Help()
-		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -196,10 +192,6 @@ var KeysCmd = &cobra.Command{
 		} else {
 			fmt.Println("please enter the workspaceName flag .")
 			log.Fatalln(cmd.Help())
-		}
-		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
-			fmt.Println("please enter right flag .")
-			return cmd.Help()
 		}
 		return nil
 	},
@@ -241,10 +233,6 @@ var KeyDetailsCmd = &cobra.Command{
 		} else {
 			fmt.Println("please enter the key id flag .")
 			log.Fatalln(cmd.Help())
-		}
-		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
-			fmt.Println("please enter right flag .")
-			return cmd.Help()
 		}
 		return nil
 	},

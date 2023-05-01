@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	apis "gitlab.com/keibiengine/keibi-engine/pkg/cli"
+	"log"
 )
 
 var workspacesNameForDelete string
@@ -28,14 +29,12 @@ var DeleteUser = &cobra.Command{
 		if cmd.Flags().Lookup("workspaceName").Changed {
 		} else {
 			fmt.Println("please enter the workspaceName flag .")
-			return cmd.Help()
+			log.Fatalln(cmd.Help())
 		}
-		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags != false {
-			fmt.Println("please enter right flag .")
-			return cmd.Help()
-		}
-		if len(args) == 0 {
-			return cmd.Help()
+		if cmd.Flags().Lookup("userId").Changed {
+		} else {
+			fmt.Println("please enter the userId flag .")
+			log.Fatalln(cmd.Help())
 		}
 		return nil
 	},
@@ -69,14 +68,12 @@ var DeleteKey = &cobra.Command{
 		if cmd.Flags().Lookup("workspaceName").Changed {
 		} else {
 			fmt.Println("please enter the workspaceName flag .")
-			return cmd.Help()
+			log.Fatalln(cmd.Help())
 		}
-		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags != false {
-			fmt.Println("please enter right flag .")
-			return cmd.Help()
-		}
-		if len(args) == 0 {
-			return cmd.Help()
+		if cmd.Flags().Lookup("keyId").Changed {
+		} else {
+			fmt.Println("please enter the keyId flag .")
+			log.Fatalln(cmd.Help())
 		}
 		return nil
 	},

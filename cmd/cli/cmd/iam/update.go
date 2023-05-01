@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	apies "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	apis "gitlab.com/keibiengine/keibi-engine/pkg/cli"
+	"log"
 )
 
 var idForSuspendAndActive string
@@ -31,15 +32,19 @@ var UpdateUser = &cobra.Command{
 		if cmd.Flags().Lookup("workspaceName").Changed {
 		} else {
 			fmt.Println("please enter the workspaceName flag .")
-			return cmd.Help()
+			log.Fatalln(cmd.Help())
 		}
-		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
-			fmt.Println("please enter right flag .")
-			return cmd.Help()
+		if cmd.Flags().Lookup("userId").Changed {
+		} else {
+			fmt.Println("please enter the userId flag .")
+			log.Fatalln(cmd.Help())
 		}
-		if len(args) == 0 {
-			return cmd.Help()
+		if cmd.Flags().Lookup("role").Changed {
+		} else {
+			fmt.Println("please enter the role flag .")
+			log.Fatalln(cmd.Help())
 		}
+
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -71,14 +76,17 @@ var StateWorkspaceKey = &cobra.Command{
 		if cmd.Flags().Lookup("workspaceName").Changed {
 		} else {
 			fmt.Println("please enter the workspaceName flag .")
-			return cmd.Help()
+			log.Fatalln(cmd.Help())
 		}
-		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
-			fmt.Println("please enter right flag .")
-			return cmd.Help()
+		if cmd.Flags().Lookup("state").Changed {
+		} else {
+			fmt.Println("please enter the state flag .")
+			log.Fatalln(cmd.Help())
 		}
-		if len(args) == 0 {
-			return cmd.Help()
+		if cmd.Flags().Lookup("id").Changed {
+		} else {
+			fmt.Println("please enter the id flag .")
+			log.Fatalln(cmd.Help())
 		}
 		return nil
 	},
@@ -121,14 +129,17 @@ var UpdateKeyRole = &cobra.Command{
 		if cmd.Flags().Lookup("workspaceName").Changed {
 		} else {
 			fmt.Println("please enter the workspaceName flag .")
-			return cmd.Help()
+			log.Fatalln(cmd.Help())
 		}
-		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
-			fmt.Println("please enter right flag .")
-			return cmd.Help()
+		if cmd.Flags().Lookup("userId").Changed {
+		} else {
+			fmt.Println("please enter the userId flag .")
+			log.Fatalln(cmd.Help())
 		}
-		if len(args) == 0 {
-			return cmd.Help()
+		if cmd.Flags().Lookup("role").Changed {
+		} else {
+			fmt.Println("please enter the role flag .")
+			log.Fatalln(cmd.Help())
 		}
 		return nil
 	},
