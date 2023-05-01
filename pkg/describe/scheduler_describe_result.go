@@ -102,7 +102,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 			}
 
 			if !exists {
-				fmt.Println("deleting ", esResourceID)
+				fmt.Println("deleting", res.DescribeJob.ResourceType, esResourceID, "does not exists in new described", len(res.DescribedResourceIDs))
 				resource := es.Resource{
 					ID: esResourceID,
 				}

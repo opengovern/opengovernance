@@ -227,7 +227,6 @@ func (s *GRPCDescribeServer) HandleAWSResource(resource aws.Resource, job *golan
 	msgs = append(msgs, kafkaResource)
 	msgs = append(msgs, lookupResource)
 
-	fmt.Println("indexing resource ", lookupResource.ResourceType, lookupResource.ResourceID)
 	if err := kafka.DoSend(s.producer, s.topic, msgs, s.logger); err != nil {
 		return fmt.Errorf("send to kafka: %w", err)
 	}
