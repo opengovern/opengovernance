@@ -169,11 +169,11 @@ func (s *Scheduler) RunDescribeJobCompletionUpdater() {
 		for _, v := range results {
 			if _, ok := jobIDToStatus[v.DescribeSourceJobID]; !ok {
 				jobIDToStatus[v.DescribeSourceJobID] = map[api.DescribeResourceJobStatus]int{
-					api.DescribeResourceJobCreated:      0,
-					api.DescribeResourceJobQueued:       0,
-					api.DescribeResourceJobCloudTimeout: 0,
-					api.DescribeResourceJobFailed:       0,
-					api.DescribeResourceJobSucceeded:    0,
+					api.DescribeResourceJobCreated:   0,
+					api.DescribeResourceJobQueued:    0,
+					api.DescribeResourceJobTimeout:   0,
+					api.DescribeResourceJobFailed:    0,
+					api.DescribeResourceJobSucceeded: 0,
 				}
 			}
 
@@ -183,12 +183,13 @@ func (s *Scheduler) RunDescribeJobCompletionUpdater() {
 		for id, status := range jobIDToStatus {
 			// If any CREATED or QUEUED, job is still in progress
 			if status[api.DescribeResourceJobCreated] > 0 ||
-				status[api.DescribeResourceJobQueued] > 0 {
+				status[api.DescribeResourceJobQueued] > 0 ||
+				status[api.DescribeResourceJobInProgress] > 0 {
 				continue
 			}
 
 			// If any FAILURE, job is completed with failure
-			if status[api.DescribeResourceJobFailed] > 0 || status[api.DescribeResourceJobCloudTimeout] > 0 {
+			if status[api.DescribeResourceJobFailed] > 0 || status[api.DescribeResourceJobTimeout] > 0 {
 				err := s.db.UpdateDescribeSourceJob(id, api.DescribeSourceJobCompletedWithFailure)
 				if err != nil {
 					s.logger.Error("Failed to update DescribeSourceJob status\n",

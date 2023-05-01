@@ -60,7 +60,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(stream golang.DescribeService_D
 		if err != nil {
 			return fmt.Errorf("failed to parse resource job id: %v", err)
 		}
-		err = s.db.UpdateDescribeResourceJobStatus(uint(resourceJobId), api.DescribeResourceJobInProgress, "")
+		err = s.db.UpdateDescribeResourceJobToInProgress(uint(resourceJobId))
 		if err != nil {
 			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
 		}
@@ -242,7 +242,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(stream golang.DescribeService
 		if err != nil {
 			return fmt.Errorf("failed to parse resource job id: %v", err)
 		}
-		err = s.db.UpdateDescribeResourceJobStatus(uint(resourceJobId), api.DescribeResourceJobInProgress, "")
+		err = s.db.UpdateDescribeResourceJobToInProgress(uint(resourceJobId))
 		if err != nil {
 			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
 		}

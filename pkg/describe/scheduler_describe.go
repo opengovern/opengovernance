@@ -242,7 +242,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob) error {
 		zap.String("resourceType", dr.ResourceType),
 	)
 
-	if err := s.db.UpdateDescribeResourceJobStatus(dr.ID, api.DescribeResourceJobQueued, fmt.Sprintf("%v", err)); err != nil {
+	if err := s.db.UpdateDescribeResourceJobStatus(dr.ID, api.DescribeResourceJobQueued, ""); err != nil {
 		s.logger.Error("Failed to update DescribeResourceJob",
 			zap.Uint("sourceJobID", ds.ID),
 			zap.Uint("jobID", dr.ID),

@@ -539,13 +539,12 @@ func (db Database) UpdateDescribeResourceJobStatus(id uint, status api.DescribeR
 	return nil
 }
 
-// UpdateDescribeResourceJobStatusByParentId updates the status of the DescribeResourceJob s to the provided status.
-// If the status if 'FAILED', msg could be used to indicate the failure reason
-func (db Database) UpdateDescribeResourceJobStatusByParentId(id uint, status api.DescribeResourceJobStatus, msg string) error {
+func (db Database) UpdateDescribeResourceJobToInProgress(id uint) error {
 	tx := db.orm.
 		Model(&DescribeResourceJob{}).
-		Where("parent_job_id = ?", id).
-		Updates(DescribeResourceJob{Status: status, FailureMessage: msg})
+		Where("id = ?", id).
+		Where("status IN (?, ?)", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
+		Updates(DescribeResourceJob{Status: api.DescribeResourceJobInProgress})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -560,8 +559,17 @@ func (db Database) UpdateDescribeResourceJobsTimedOut(describeIntervalHours int6
 	tx := db.orm.
 		Model(&DescribeResourceJob{}).
 		Where("updated_at < NOW() - INTERVAL '20 minutes'").
-		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
-		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job timed out"})
+		Where("status IN ?", []string{string(api.DescribeResourceJobInProgress)}).
+		Updates(DescribeResourceJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	tx = db.orm.
+		Model(&DescribeResourceJob{}).
+		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
+		Where("status IN (?, ?)", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
+		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job didn't get a chance to run"})
 	if tx.Error != nil {
 		return tx.Error
 	}
