@@ -543,7 +543,7 @@ func (db Database) UpdateDescribeResourceJobToInProgress(id uint) error {
 	tx := db.orm.
 		Model(&DescribeResourceJob{}).
 		Where("id = ?", id).
-		Where("status IN (?, ?)", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
+		Where("status IN ?", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
 		Updates(DescribeResourceJob{Status: api.DescribeResourceJobInProgress})
 	if tx.Error != nil {
 		return tx.Error
@@ -568,7 +568,7 @@ func (db Database) UpdateDescribeResourceJobsTimedOut(describeIntervalHours int6
 	tx = db.orm.
 		Model(&DescribeResourceJob{}).
 		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
-		Where("status IN (?, ?)", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
+		Where("status IN ?", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
 		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job didn't get a chance to run"})
 	if tx.Error != nil {
 		return tx.Error
