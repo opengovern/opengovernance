@@ -79,10 +79,11 @@ type CloudNativeDescribeSourceJob struct {
 
 type DescribeResourceJob struct {
 	gorm.Model
-	ParentJobID    uint
-	ResourceType   string
-	Status         api.DescribeResourceJobStatus
-	FailureMessage string // Should be NULLSTRING
+	ParentJobID            uint
+	ResourceType           string
+	Status                 api.DescribeResourceJobStatus
+	FailureMessage         string // Should be NULLSTRING
+	DescribedResourceCount int64
 }
 
 type InsightJob struct {

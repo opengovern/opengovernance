@@ -284,16 +284,6 @@ func (db Database) ListPendingDescribeResourceJobs() ([]DescribeResourceJob, err
 	return jobs, nil
 }
 
-func (db Database) ListCreatedDescribeResourceJobs() ([]DescribeResourceJob, error) {
-	var jobs []DescribeResourceJob
-	tx := db.orm.Where("status = ?", api.DescribeResourceJobCreated).Find(&jobs)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return jobs, nil
-}
-
 func (db Database) FetchRandomCreatedDescribeResourceJobs() (*DescribeResourceJob, error) {
 	var job DescribeResourceJob
 	tx := db.orm.Where("status = ?", api.DescribeResourceJobCreated).Order("random()").First(&job)
@@ -515,23 +505,13 @@ func (db Database) GetCloudNativeDescribeSourceJobBySourceJobID(jobID uint) (*Cl
 
 // =============================== DescribeResourceJob ===============================
 
-func (db Database) GetDescribeResourceJob(id uint) (DescribeResourceJob, error) {
-	var job DescribeResourceJob
-	tx := db.orm.Where("id = ?", id).First(&job)
-	if tx.Error != nil {
-		return DescribeResourceJob{}, tx.Error
-	}
-
-	return job, nil
-}
-
 // UpdateDescribeResourceJobStatus updates the status of the DescribeResourceJob to the provided status.
 // If the status if 'FAILED', msg could be used to indicate the failure reason
-func (db Database) UpdateDescribeResourceJobStatus(id uint, status api.DescribeResourceJobStatus, msg string) error {
+func (db Database) UpdateDescribeResourceJobStatus(id uint, status api.DescribeResourceJobStatus, msg string, resourceCount int64) error {
 	tx := db.orm.
 		Model(&DescribeResourceJob{}).
 		Where("id = ?", id).
-		Updates(DescribeResourceJob{Status: status, FailureMessage: msg})
+		Updates(DescribeResourceJob{Status: status, FailureMessage: msg, DescribedResourceCount: resourceCount})
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -572,42 +552,6 @@ func (db Database) UpdateDescribeResourceJobsTimedOut(describeIntervalHours int6
 		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job didn't get a chance to run"})
 	if tx.Error != nil {
 		return tx.Error
-	}
-
-	return nil
-}
-
-// ListAllDescribeResourceJobs lists all the DescribeResourceJobs.
-func (db Database) ListAllDescribeResourceJobs() ([]DescribeResourceJob, error) {
-	var jobs []DescribeResourceJob
-	tx := db.orm.Find(&jobs)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return jobs, nil
-}
-
-// ListDescribeResourceJobs lists the DescribeResourceJob for the given source job .
-func (db Database) ListDescribeResourceJobs(describeSourceJobID uint) ([]DescribeResourceJob, error) {
-	var jobs []DescribeResourceJob
-	tx := db.orm.Where("parent_job_id = ?", describeSourceJobID).Find(&jobs)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return jobs, nil
-}
-
-func (db Database) DeleteDescribeResourceJob(id uint) error {
-	tx := db.orm.
-		Where("id = ?", id).
-		Unscoped().
-		Delete(&DescribeResourceJob{})
-	if tx.Error != nil {
-		return tx.Error
-	} else if tx.RowsAffected != 1 {
-		return fmt.Errorf("delete source: didn't find the describe resource job to delete")
 	}
 
 	return nil
