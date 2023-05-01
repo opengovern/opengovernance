@@ -345,7 +345,7 @@ func IamDeleteUser(workspacesName string, accessToken string, userId string) (st
 	}
 }
 
-func IamCreateUser(workspaceName string, accessToken string, email string, role string, userid string) (string, error) {
+func IamCreateUser(workspaceName string, accessToken string, email string, role string) (string, error) {
 	request := api.InviteRequest{
 		Email: email,
 		Role:  api.Role(role),

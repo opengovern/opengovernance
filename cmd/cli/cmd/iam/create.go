@@ -13,7 +13,6 @@ var roleForUser string
 var roleName string
 var nameKey string
 var outputCreate = "table"
-var userId string
 var Create = &cobra.Command{
 	Use:   "create",
 	Short: "this use for create user or key",
@@ -63,7 +62,7 @@ var CreateUser = &cobra.Command{
 			return nil
 		}
 
-		response, err := apis.IamCreateUser(workspacesNameCreate, accessToken, email, roleForUser, userId)
+		response, err := apis.IamCreateUser(workspacesNameCreate, accessToken, email, roleForUser)
 		if err != nil {
 			return err
 		}
@@ -106,7 +105,7 @@ var CreateKeyCmd = &cobra.Command{
 			fmt.Println("your access token was expire please login again ")
 			return nil
 		}
-		response, err := apis.IamCreateKeys(workspacesNameCreate, accessToken, nameKey, roleName, userId)
+		response, err := apis.IamCreateKeys(workspacesNameCreate, accessToken, nameKey, roleName)
 		if err != nil {
 			return err
 		}
@@ -125,12 +124,10 @@ func init() {
 	CreateUser.Flags().StringVar(&workspacesNameCreate, "workspaceName", "", "specifying the workspaces name [mandatory] .")
 	CreateUser.Flags().StringVar(&email, "email", "", "specifying the user email [mandatory]")
 	CreateUser.Flags().StringVar(&roleForUser, "role", "", "specifying the user role[mandatory] ")
-	CreateUser.Flags().StringVar(&userId, "userId", "", "specifying the user id [mandatory]")
 	//flags create keys :
 	CreateKeyCmd.Flags().StringVar(&workspacesNameCreate, "workspaceName", "", "specifying the workspace name [mandatory].")
 	CreateKeyCmd.Flags().StringVar(&roleName, "roleName", "", "specifying the role name [mandatory].")
 	CreateKeyCmd.Flags().StringVar(&nameKey, "keyName", "", "specifying the key name[mandatory] .")
 	CreateKeyCmd.Flags().StringVar(&outputCreate, "output", "", "specifying the output type [json, table].")
-	CreateKeyCmd.Flags().StringVar(&userId, "userId", "", "specifying the user id [mandatory].")
 
 }
