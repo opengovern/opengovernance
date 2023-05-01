@@ -20,11 +20,13 @@ var Delete = &cobra.Command{
 		}
 		return nil
 	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
+	},
 }
-
-var DeleteUser = &cobra.Command{
-	Use:   "user",
-	Short: "delete user",
+var DeleteUserAccess = &cobra.Command{
+	Use:   "user-Access",
+	Short: "delete user access",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("workspaceName").Changed {
 		} else {
@@ -52,7 +54,45 @@ var DeleteUser = &cobra.Command{
 			return nil
 		}
 
-		response, err := apis.IamDeleteUser(workspacesNameForDelete, accessToken, UserIdForDelete)
+		response, err := apis.IamDeleteUserAccess(workspacesNameForDelete, accessToken, UserIdForDelete)
+		if err != nil {
+			return err
+		}
+		fmt.Println(response)
+		return nil
+	},
+}
+var DeleteUserInvite = &cobra.Command{
+	Use:   "user-invite",
+	Short: "delete user invite ",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Lookup("workspaceName").Changed {
+		} else {
+			fmt.Println("please enter the workspaceName flag .")
+			log.Fatalln(cmd.Help())
+		}
+		if cmd.Flags().Lookup("userId").Changed {
+		} else {
+			fmt.Println("please enter the userId flag .")
+			log.Fatalln(cmd.Help())
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		accessToken, err := apis.GetConfig()
+		if err != nil {
+			return err
+		}
+		checkEXP, err := apis.CheckExpirationTime(accessToken)
+		if err != nil {
+			return err
+		}
+		if checkEXP == true {
+			fmt.Println("your access token was expire please login again ")
+			return nil
+		}
+
+		response, err := apis.IamDeleteUserInvite(workspacesNameForDelete, accessToken, UserIdForDelete)
 		if err != nil {
 			return err
 		}
@@ -62,7 +102,7 @@ var DeleteUser = &cobra.Command{
 }
 
 var DeleteKey = &cobra.Command{
-	Use:   "user",
+	Use:   "key",
 	Short: "delete key",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("workspaceName").Changed {
@@ -103,10 +143,13 @@ var DeleteKey = &cobra.Command{
 func init() {
 	Delete.AddCommand(IamDelete)
 	//flags delete user
-	DeleteUser.Flags().StringVar(&workspacesNameForDelete, "workspaceName", "", "specifying the workspace name ")
-	DeleteUser.Flags().StringVar(&UserIdForDelete, "userId", "", "specifying the userId ")
+	DeleteUserInvite.Flags().StringVar(&workspacesNameForDelete, "workspaceName", "", "specifying the workspace name[mandatory] ")
+	DeleteUserInvite.Flags().StringVar(&UserIdForDelete, "userId", "", "specifying the userId [mandatory]")
+	DeleteUserAccess.Flags().StringVar(&workspacesNameForDelete, "workspaceName", "", "specifying the workspace name[mandatory] ")
+	DeleteUserAccess.Flags().StringVar(&UserIdForDelete, "userId", "", "specifying the userId [mandatory]")
+
 	//flags delete key
-	DeleteKey.Flags().StringVar(&workspacesNameForDelete, "workspaceName", "", "specifying the workspace name ")
-	DeleteKey.Flags().StringVar(&KeyIdForDelete, "keyId", "", "specifying the keyID ")
+	DeleteKey.Flags().StringVar(&workspacesNameForDelete, "workspaceName", "", "specifying the workspace name[mandatory] ")
+	DeleteKey.Flags().StringVar(&KeyIdForDelete, "keyId", "", "specifying the keyID [mandatory]")
 
 }

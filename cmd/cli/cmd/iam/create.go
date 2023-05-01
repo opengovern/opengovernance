@@ -25,6 +25,9 @@ var Create = &cobra.Command{
 		}
 		return nil
 	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
+	},
 }
 
 var CreateUser = &cobra.Command{
@@ -128,6 +131,6 @@ func init() {
 	CreateKeyCmd.Flags().StringVar(&workspacesNameCreate, "workspaceName", "", "specifying the workspace name [mandatory].")
 	CreateKeyCmd.Flags().StringVar(&roleName, "roleName", "", "specifying the role name [mandatory].")
 	CreateKeyCmd.Flags().StringVar(&nameKey, "keyName", "", "specifying the key name[mandatory] .")
-	CreateKeyCmd.Flags().StringVar(&outputCreate, "output", "", "specifying the output type [json, table].")
+	CreateKeyCmd.Flags().StringVar(&outputCreate, "output", "", "specifying the output type [json, table][optional].")
 
 }

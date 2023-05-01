@@ -321,7 +321,7 @@ func IamGetUserDetails(accessToken string, workspaceName string, userId string) 
 	return response, nil
 }
 
-func IamDeleteUser(workspacesName string, accessToken string, userId string) (string, error) {
+func IamDeleteUserInvite(workspacesName string, accessToken string, userId string) (string, error) {
 	req, err := http.NewRequest("DELETE", urls.Url+workspacesName+"/auth/api/v1/user/invite", nil)
 	if err != nil {
 		return "", err
@@ -331,17 +331,41 @@ func IamDeleteUser(workspacesName string, accessToken string, userId string) (st
 	query := req.URL.Query()
 	query.Set("userId", userId)
 	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
 	err = res.Body.Close()
 	if err != nil {
 		return "", err
 	}
+	if res.StatusCode == http.StatusOK {
+		return "user invite deleted ", nil
+	} else {
+		return "deleting user was fail", fmt.Errorf("[IamDeleteUserInvite] invalid status code: %d", res.StatusCode)
+	}
+}
+
+func IamDeleteUserAccess(workspacesName string, accessToken string, userId string) (string, error) {
+	req, err := http.NewRequest("DELETE", urls.Url+workspacesName+"/auth/api/v1/user/role/binding", nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Add("Content-Type", "application/json")
+	query := req.URL.Query()
+	query.Set("userId", userId)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	err = res.Body.Close()
 	if err != nil {
 		return "", err
 	}
 	if res.StatusCode == http.StatusOK {
-		return "user deleted ", nil
+		return "user access deleted ", nil
 	} else {
-		return "deleting user was fail", fmt.Errorf("[IamDeleteUser] invalid status code: %d", res.StatusCode)
+		return "deleting user was fail", fmt.Errorf("[IamDeleteUserAccess] invalid status code: %d", res.StatusCode)
 	}
 }
 
@@ -426,6 +450,64 @@ func IamListRoles(WorkspacesName string, accessToken string) ([]RolesListRespons
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return []RolesListResponse{{}}, err
+	}
+	return response, nil
+}
+func IamListRoleKeys(WorkspacesName string, accessToken string, roleName string) ([]api.WorkspaceApiKey, error) {
+	req, err := http.NewRequest("GET", urls.Url+WorkspacesName+"/auth/api/v1/role/"+roleName+"/keys", nil)
+	if err != nil {
+		return []api.WorkspaceApiKey{{}}, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Add("Content-type", "application/json")
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return []api.WorkspaceApiKey{{}}, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return []api.WorkspaceApiKey{{}}, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return []api.WorkspaceApiKey{{}}, fmt.Errorf("[IamListRoleKeys] invalid status code: %d, body : %v", res.StatusCode, string(body))
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return []api.WorkspaceApiKey{{}}, err
+	}
+	var response []api.WorkspaceApiKey
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return []api.WorkspaceApiKey{{}}, err
+	}
+	return response, nil
+}
+func IamListRoleUsers(WorkspacesName string, accessToken string, roleName string) (api.GetRoleUsersResponse, error) {
+	req, err := http.NewRequest("GET", urls.Url+WorkspacesName+"/auth/api/v1/role/"+roleName+"/users", nil)
+	if err != nil {
+		return api.GetRoleUsersResponse{}, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Add("Content-type", "application/json")
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return api.GetRoleUsersResponse{}, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return api.GetRoleUsersResponse{}, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return api.GetRoleUsersResponse{}, fmt.Errorf("[IamListRoleUsers] invalid status code: %d, body : %v", res.StatusCode, string(body))
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return api.GetRoleUsersResponse{}, err
+	}
+	var response api.GetRoleUsersResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return api.GetRoleUsersResponse{}, err
 	}
 	return response, nil
 }

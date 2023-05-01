@@ -7,6 +7,8 @@ import (
 func init() {
 	IamGet.AddCommand(roles)
 	IamGet.AddCommand(roleDetails)
+	IamGet.AddCommand(listRoleUsers)
+	IamGet.AddCommand(listRoleKeys)
 	IamGet.AddCommand(KeysCmd)
 	IamGet.AddCommand(KeyDetailsCmd)
 	IamGet.AddCommand(userDetails)

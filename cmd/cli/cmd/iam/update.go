@@ -175,6 +175,7 @@ func init() {
 	UpdateKeyRole.Flags().UintVar(&userIdForKey, "userId", 0, "specifying the userID")
 	UpdateKeyRole.Flags().StringVar(&roleUpdate, "role", "", "specifying the role name ")
 	UpdateKeyRole.Flags().StringVar(&outputUpdate, "output", "", "specifying the output type  [json, table]")
+
 	//update workspace key flag
 	StateWorkspaceKey.Flags().StringVar(&idForSuspendAndActive, "id", "", "specifying the id for suspend and active key")
 	StateWorkspaceKey.Flags().StringVar(&workspacesNameUpdate, "workspaceName", "", "specifying the workspaces name ")

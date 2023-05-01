@@ -5,8 +5,9 @@ import (
 )
 
 func init() {
-	IamDelete.AddCommand(DeleteUser)
-
+	IamDelete.AddCommand(DeleteUserInvite)
+	IamDelete.AddCommand(DeleteUserAccess)
+	IamDelete.AddCommand(DeleteKey)
 }
 
 var IamDelete = &cobra.Command{
