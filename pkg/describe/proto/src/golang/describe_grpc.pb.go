@@ -23,8 +23,8 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DescribeServiceClient interface {
 	DeliverResult(ctx context.Context, in *DeliverResultRequest, opts ...grpc.CallOption) (*ResponseOK, error)
-	DeliverAWSResources(ctx context.Context, opts ...grpc.CallOption) (DescribeService_DeliverAWSResourcesClient, error)
-	DeliverAzureResources(ctx context.Context, opts ...grpc.CallOption) (DescribeService_DeliverAzureResourcesClient, error)
+	DeliverAWSResources(ctx context.Context, in *AWSResource, opts ...grpc.CallOption) (*ResponseOK, error)
+	DeliverAzureResources(ctx context.Context, in *AzureResource, opts ...grpc.CallOption) (*ResponseOK, error)
 }
 
 type describeServiceClient struct {
@@ -44,72 +44,22 @@ func (c *describeServiceClient) DeliverResult(ctx context.Context, in *DeliverRe
 	return out, nil
 }
 
-func (c *describeServiceClient) DeliverAWSResources(ctx context.Context, opts ...grpc.CallOption) (DescribeService_DeliverAWSResourcesClient, error) {
-	stream, err := c.cc.NewStream(ctx, &DescribeService_ServiceDesc.Streams[0], "/kaytu.describe.v1.DescribeService/DeliverAWSResources", opts...)
+func (c *describeServiceClient) DeliverAWSResources(ctx context.Context, in *AWSResource, opts ...grpc.CallOption) (*ResponseOK, error) {
+	out := new(ResponseOK)
+	err := c.cc.Invoke(ctx, "/kaytu.describe.v1.DescribeService/DeliverAWSResources", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &describeServiceDeliverAWSResourcesClient{stream}
-	return x, nil
+	return out, nil
 }
 
-type DescribeService_DeliverAWSResourcesClient interface {
-	Send(*AWSResource) error
-	CloseAndRecv() (*ResponseOK, error)
-	grpc.ClientStream
-}
-
-type describeServiceDeliverAWSResourcesClient struct {
-	grpc.ClientStream
-}
-
-func (x *describeServiceDeliverAWSResourcesClient) Send(m *AWSResource) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *describeServiceDeliverAWSResourcesClient) CloseAndRecv() (*ResponseOK, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(ResponseOK)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *describeServiceClient) DeliverAzureResources(ctx context.Context, opts ...grpc.CallOption) (DescribeService_DeliverAzureResourcesClient, error) {
-	stream, err := c.cc.NewStream(ctx, &DescribeService_ServiceDesc.Streams[1], "/kaytu.describe.v1.DescribeService/DeliverAzureResources", opts...)
+func (c *describeServiceClient) DeliverAzureResources(ctx context.Context, in *AzureResource, opts ...grpc.CallOption) (*ResponseOK, error) {
+	out := new(ResponseOK)
+	err := c.cc.Invoke(ctx, "/kaytu.describe.v1.DescribeService/DeliverAzureResources", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &describeServiceDeliverAzureResourcesClient{stream}
-	return x, nil
-}
-
-type DescribeService_DeliverAzureResourcesClient interface {
-	Send(*AzureResource) error
-	CloseAndRecv() (*ResponseOK, error)
-	grpc.ClientStream
-}
-
-type describeServiceDeliverAzureResourcesClient struct {
-	grpc.ClientStream
-}
-
-func (x *describeServiceDeliverAzureResourcesClient) Send(m *AzureResource) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *describeServiceDeliverAzureResourcesClient) CloseAndRecv() (*ResponseOK, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(ResponseOK)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 // DescribeServiceServer is the server API for DescribeService service.
@@ -117,8 +67,8 @@ func (x *describeServiceDeliverAzureResourcesClient) CloseAndRecv() (*ResponseOK
 // for forward compatibility
 type DescribeServiceServer interface {
 	DeliverResult(context.Context, *DeliverResultRequest) (*ResponseOK, error)
-	DeliverAWSResources(DescribeService_DeliverAWSResourcesServer) error
-	DeliverAzureResources(DescribeService_DeliverAzureResourcesServer) error
+	DeliverAWSResources(context.Context, *AWSResource) (*ResponseOK, error)
+	DeliverAzureResources(context.Context, *AzureResource) (*ResponseOK, error)
 	mustEmbedUnimplementedDescribeServiceServer()
 }
 
@@ -129,11 +79,11 @@ type UnimplementedDescribeServiceServer struct {
 func (UnimplementedDescribeServiceServer) DeliverResult(context.Context, *DeliverResultRequest) (*ResponseOK, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeliverResult not implemented")
 }
-func (UnimplementedDescribeServiceServer) DeliverAWSResources(DescribeService_DeliverAWSResourcesServer) error {
-	return status.Errorf(codes.Unimplemented, "method DeliverAWSResources not implemented")
+func (UnimplementedDescribeServiceServer) DeliverAWSResources(context.Context, *AWSResource) (*ResponseOK, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeliverAWSResources not implemented")
 }
-func (UnimplementedDescribeServiceServer) DeliverAzureResources(DescribeService_DeliverAzureResourcesServer) error {
-	return status.Errorf(codes.Unimplemented, "method DeliverAzureResources not implemented")
+func (UnimplementedDescribeServiceServer) DeliverAzureResources(context.Context, *AzureResource) (*ResponseOK, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeliverAzureResources not implemented")
 }
 func (UnimplementedDescribeServiceServer) mustEmbedUnimplementedDescribeServiceServer() {}
 
@@ -166,56 +116,40 @@ func _DescribeService_DeliverResult_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DescribeService_DeliverAWSResources_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(DescribeServiceServer).DeliverAWSResources(&describeServiceDeliverAWSResourcesServer{stream})
-}
-
-type DescribeService_DeliverAWSResourcesServer interface {
-	SendAndClose(*ResponseOK) error
-	Recv() (*AWSResource, error)
-	grpc.ServerStream
-}
-
-type describeServiceDeliverAWSResourcesServer struct {
-	grpc.ServerStream
-}
-
-func (x *describeServiceDeliverAWSResourcesServer) SendAndClose(m *ResponseOK) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *describeServiceDeliverAWSResourcesServer) Recv() (*AWSResource, error) {
-	m := new(AWSResource)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _DescribeService_DeliverAWSResources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AWSResource)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
+	if interceptor == nil {
+		return srv.(DescribeServiceServer).DeliverAWSResources(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kaytu.describe.v1.DescribeService/DeliverAWSResources",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DescribeServiceServer).DeliverAWSResources(ctx, req.(*AWSResource))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _DescribeService_DeliverAzureResources_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(DescribeServiceServer).DeliverAzureResources(&describeServiceDeliverAzureResourcesServer{stream})
-}
-
-type DescribeService_DeliverAzureResourcesServer interface {
-	SendAndClose(*ResponseOK) error
-	Recv() (*AzureResource, error)
-	grpc.ServerStream
-}
-
-type describeServiceDeliverAzureResourcesServer struct {
-	grpc.ServerStream
-}
-
-func (x *describeServiceDeliverAzureResourcesServer) SendAndClose(m *ResponseOK) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *describeServiceDeliverAzureResourcesServer) Recv() (*AzureResource, error) {
-	m := new(AzureResource)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _DescribeService_DeliverAzureResources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AzureResource)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
+	if interceptor == nil {
+		return srv.(DescribeServiceServer).DeliverAzureResources(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kaytu.describe.v1.DescribeService/DeliverAzureResources",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DescribeServiceServer).DeliverAzureResources(ctx, req.(*AzureResource))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // DescribeService_ServiceDesc is the grpc.ServiceDesc for DescribeService service.
@@ -229,18 +163,15 @@ var DescribeService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "DeliverResult",
 			Handler:    _DescribeService_DeliverResult_Handler,
 		},
-	},
-	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "DeliverAWSResources",
-			Handler:       _DescribeService_DeliverAWSResources_Handler,
-			ClientStreams: true,
+			MethodName: "DeliverAWSResources",
+			Handler:    _DescribeService_DeliverAWSResources_Handler,
 		},
 		{
-			StreamName:    "DeliverAzureResources",
-			Handler:       _DescribeService_DeliverAzureResources_Handler,
-			ClientStreams: true,
+			MethodName: "DeliverAzureResources",
+			Handler:    _DescribeService_DeliverAzureResources_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "pkg/describe/proto/describe.proto",
 }

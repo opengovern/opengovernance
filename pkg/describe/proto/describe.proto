@@ -57,6 +57,6 @@ message ResponseOK {
 
 service DescribeService {
   rpc DeliverResult(DeliverResultRequest) returns (ResponseOK) {}
-  rpc DeliverAWSResources(stream AWSResource) returns (ResponseOK) {}
-  rpc DeliverAzureResources(stream AzureResource) returns (ResponseOK) {}
+  rpc DeliverAWSResources(AWSResource) returns (ResponseOK) {}
+  rpc DeliverAzureResources(AzureResource) returns (ResponseOK) {}
 }
