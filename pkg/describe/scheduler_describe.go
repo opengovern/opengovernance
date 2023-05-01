@@ -51,9 +51,6 @@ func (s Scheduler) scheduleDescribeJob() {
 		err = s.describeConnection(connection, true)
 		if err != nil {
 			s.logger.Error("Failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
-			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		} else {
-			DescribeSourceJobsCount.WithLabelValues("successful").Inc()
 		}
 	}
 
@@ -84,6 +81,7 @@ func (s Scheduler) scheduleDescribeJob() {
 func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 	job, err := s.db.GetLastDescribeSourceJob(connection.ID)
 	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		return err
 	}
 
@@ -94,14 +92,17 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 			UserRole: api2.EditorRole,
 		}, connection.ID.String())
 		if err != nil {
+			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			return err
 		}
 
 		if scheduled && healthCheckedSrc.AssetDiscoveryMethod != source.AssetDiscoveryMethodTypeScheduled {
+			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			return errors.New("asset discovery is not scheduled")
 		}
 
 		if healthCheckedSrc.HealthState == source.HealthStatusUnhealthy {
+			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			return errors.New("connection is not healthy")
 		}
 
@@ -115,8 +116,10 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 		daj := newDescribeSourceJob(connection, describedAt, triggerType)
 		err = s.db.CreateDescribeSourceJob(&daj)
 		if err != nil {
+			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			return err
 		}
+		DescribeSourceJobsCount.WithLabelValues("successful").Inc()
 	}
 	return nil
 }

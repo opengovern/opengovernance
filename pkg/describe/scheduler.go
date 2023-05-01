@@ -95,23 +95,6 @@ var SummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help:      "Count of summarizer jobs in scheduler service",
 }, []string{"status"})
 
-var DescribeJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "keibi",
-	Subsystem: "scheduler",
-	Name:      "schedule_describe_jobs_total",
-	Help:      "Count of describe jobs in scheduler service",
-}, []string{"status"})
-
-var DescribeSourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "keibi_scheduler_schedule_describe_source_jobs_total",
-	Help: "Count of describe source jobs in scheduler service",
-}, []string{"status"})
-
-var DescribeResourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "keibi_scheduler_schedule_describe_resource_jobs_total",
-	Help: "Count of describe resource jobs in scheduler service",
-}, []string{"status"})
-
 var ComplianceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Name: "keibi_scheduler_schedule_compliance_job_total",
 	Help: "Count of describe jobs in scheduler service",

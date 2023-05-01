@@ -58,19 +58,23 @@ func (s *GRPCDescribeServer) DeliverAWSResources(stream golang.DescribeService_D
 		resourceJobIdStr := md.Get("resource-job-id")[0]
 		resourceJobId, err := strconv.ParseUint(resourceJobIdStr, 10, 64)
 		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("aws").Inc()
 			return fmt.Errorf("failed to parse resource job id: %v", err)
 		}
 		err = s.db.UpdateDescribeResourceJobToInProgress(uint(resourceJobId))
 		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("aws").Inc()
 			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
 		}
 	}
+
 	for {
 		protoResource, err := stream.Recv()
 		if err == io.EOF {
 			return stream.SendAndClose(&golang.ResponseOK{})
 		}
 		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("aws").Inc()
 			return err
 		}
 
@@ -81,6 +85,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(stream golang.DescribeService_D
 		var description interface{}
 		err = json.Unmarshal([]byte(protoResource.DescriptionJson), &description)
 		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
 			s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", protoResource.Job.JobId), zap.String("resourceID", protoResource.Id))
 			return err
 		}
@@ -98,9 +103,11 @@ func (s *GRPCDescribeServer) DeliverAWSResources(stream golang.DescribeService_D
 
 		err = s.HandleAWSResource(resource, protoResource.Job)
 		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
 			s.logger.Error("failed to handle aws resource", zap.Error(err), zap.Uint32("jobID", protoResource.Job.JobId), zap.String("resourceID", protoResource.Id))
 			return err
 		}
+		ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
 	}
 }
 
@@ -239,10 +246,12 @@ func (s *GRPCDescribeServer) DeliverAzureResources(stream golang.DescribeService
 		resourceJobIdStr := md.Get("resource-job-id")[0]
 		resourceJobId, err := strconv.ParseUint(resourceJobIdStr, 10, 64)
 		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("aws").Inc()
 			return fmt.Errorf("failed to parse resource job id: %v", err)
 		}
 		err = s.db.UpdateDescribeResourceJobToInProgress(uint(resourceJobId))
 		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("aws").Inc()
 			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
 		}
 	}
@@ -252,6 +261,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(stream golang.DescribeService
 			return stream.SendAndClose(&golang.ResponseOK{})
 		}
 		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("aws").Inc()
 			return err
 		}
 		if resource == nil {
@@ -261,6 +271,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(stream golang.DescribeService
 		var description interface{}
 		err = json.Unmarshal([]byte(resource.DescriptionJson), &description)
 		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("azure", "failure").Inc()
 			s.logger.Error("failed to unmarshal azure resource", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
 			continue
 		}
@@ -276,9 +287,11 @@ func (s *GRPCDescribeServer) DeliverAzureResources(stream golang.DescribeService
 		}
 		err = s.HandleAzureResource(azureResource, resource.Job)
 		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("azure", "failure").Inc()
 			s.logger.Error("failed to handle azure resource", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
 			continue
 		}
+		ResourcesDescribedCount.WithLabelValues("azure", "successful").Inc()
 	}
 }
 
@@ -417,6 +430,8 @@ func (s *GRPCDescribeServer) HandleAzureResource(resource azure.Resource, job *g
 }
 
 func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.DeliverResultRequest) (*golang.ResponseOK, error) {
+	ResultsDeliveredCount.WithLabelValues(req.DescribeJob.SourceType).Inc()
+
 	err := s.describeJobResultQueue.Publish(DescribeJobResult{
 		JobID:       uint(req.JobId),
 		ParentJobID: uint(req.ParentJobId),

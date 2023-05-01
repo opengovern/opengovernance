@@ -31,6 +31,8 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			}
 			var result DescribeJobResult
 			if err := json.Unmarshal(msg.Body, &result); err != nil {
+				ResultsProcessedCount.WithLabelValues("", "failure").Inc()
+
 				s.logger.Error("failed to consume message from describeJobResult", zap.Error(err))
 				err = msg.Nack(false, false)
 				if err != nil {
@@ -46,6 +48,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			)
 
 			if err := s.cleanupOldResources(result); err != nil {
+				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 				s.logger.Error("failed to cleanupOldResources", zap.Error(err))
 				err = msg.Nack(false, true)
 				if err != nil {
@@ -55,6 +58,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			}
 
 			if err := s.db.UpdateDescribeResourceJobStatus(result.JobID, result.Status, result.Error, int64(len(result.DescribedResourceIDs))); err != nil {
+				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 				s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
 				err = msg.Nack(false, true)
 				if err != nil {
@@ -63,6 +67,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				continue
 			}
 
+			ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "successful").Inc()
 			if err := msg.Ack(false); err != nil {
 				s.logger.Error("failure while sending ack for message", zap.Error(err))
 			}
@@ -103,6 +108,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 
 			if !exists {
 				fmt.Println("deleting", res.DescribeJob.ResourceType, esResourceID, "does not exists in new described", len(res.DescribedResourceIDs))
+				OldResourcesDeletedCount.WithLabelValues(string(res.DescribeJob.SourceType)).Inc()
 				resource := es.Resource{
 					ID: esResourceID,
 				}
