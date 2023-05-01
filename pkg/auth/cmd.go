@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	client2 "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
 	"io/ioutil"
 	"net"
 	"os"
@@ -58,6 +59,7 @@ var (
 	keibiPrivateKey = os.Getenv("KEIBI_PRIVATE_KEY")
 
 	workspaceBaseUrl = os.Getenv("WORKSPACE_BASE_URL")
+	metadataBaseUrl  = os.Getenv("METADATA_BASE_URL")
 
 	RedisAddress = os.Getenv("REDIS_ADDRESS")
 
@@ -116,6 +118,8 @@ func start(ctx context.Context) error {
 	}
 
 	workspaceClient := client.NewWorkspaceClient(workspaceBaseUrl)
+
+	metadataService := client2.NewMetadataServiceClient(metadataBaseUrl)
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     RedisAddress,
@@ -210,6 +214,7 @@ func start(ctx context.Context) error {
 			logger:          logger,
 			emailService:    m,
 			workspaceClient: workspaceClient,
+			metadataService: metadataService,
 			auth0Service:    auth0Service,
 			keibiPrivateKey: pri.(*rsa.PrivateKey),
 			db:              adb,
