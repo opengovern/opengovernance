@@ -324,6 +324,7 @@ UPDATE describe_resource_jobs SET status = 'CREATED' WHERE id = (
 				parent_job_id = d.parent_job_id AND 
 				status in ('CREATED', 'QUEUED', 'IN_PROGRESS')
 		) = 0 
+	ORDER BY updated_at ASC
 	LIMIT 1
 );`)
 	if tx.Error != nil {
