@@ -59,6 +59,13 @@ func (s Scheduler) scheduleDescribeJob() {
 		}
 	}
 
+	err = s.db.RetryRateLimitedJobs()
+	if err != nil {
+		s.logger.Error("Failed to RetryRateLimitedJobs", zap.Error(err))
+		DescribeJobsCount.WithLabelValues("failure").Inc()
+		return
+	}
+
 	accountTriggerCount := map[string]int{}
 	var parentIdExceptionList []uint
 	for i := 0; i < MaxTriggerPerMinute; i++ {
@@ -95,13 +102,6 @@ func (s Scheduler) scheduleDescribeJob() {
 		}
 		accountTriggerCount[ds.SourceID.String()]++
 		DescribeResourceJobsCount.WithLabelValues("successful").Inc()
-	}
-
-	err = s.db.RetryRateLimitedJobs()
-	if err != nil {
-		s.logger.Error("Failed to RetryRateLimitedJobs", zap.Error(err))
-		DescribeJobsCount.WithLabelValues("failure").Inc()
-		return
 	}
 
 	DescribeJobsCount.WithLabelValues("successful").Inc()

@@ -304,17 +304,28 @@ func (db Database) FetchRandomCreatedDescribeResourceJobs(parentIdExceptionList 
 
 func (db Database) RetryRateLimitedJobs() error {
 	tx := db.orm.Raw(
-		`UPDATE describe_resource_jobs d 
-SET status = 'CREATED' 
-WHERE status = 'FAILED' 
-AND created_at > now() - interval '1 hours' 
-AND updated_at < now() - interval '5 minutes' 
-AND failure_message like '%Rate exceeded%' 
-AND (
-	SELECT count(*) FROM describe_resource_jobs WHERE 
-		parent_job_id = d.parent_job_id 
-		AND status in ('CREATED', 'QUEUED', 'IN_PROGRESS')
-) = 0;`)
+		`
+UPDATE describe_resource_jobs SET status = 'CREATED' WHERE id = ( 
+	SELECT 
+		id 
+	FROM 
+		describe_resource_jobs d  
+	WHERE 
+		status = 'FAILED' AND 
+		created_at > now() - interval '2 hours' AND 
+		updated_at < now() - interval '5 minutes' AND
+		failure_message like '%Rate exceeded%' AND 
+		(
+			SELECT 
+				count(*) 
+			FROM 
+				describe_resource_jobs 
+			WHERE 
+				parent_job_id = d.parent_job_id AND 
+				status in ('CREATED', 'QUEUED', 'IN_PROGRESS')
+		) = 0 
+	LIMIT 1
+);`)
 	if tx.Error != nil {
 		return tx.Error
 	}
