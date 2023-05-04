@@ -1655,7 +1655,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 
 		req.AccountId = src.SourceId
 
-		if ignoreHealth == "true" {
+		if ignoreHealth != "true" {
 			isAttached, err := keibiaws.CheckAttachedPolicy(req.AccessKey, req.SecretKey, keibiaws.SecurityAuditPolicyARN)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())

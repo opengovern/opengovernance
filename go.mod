@@ -84,7 +84,7 @@ require (
 	github.com/prometheus/client_golang v1.12.2
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.11.1+incompatible
-	github.com/spf13/cobra v1.6.1
+	github.com/spf13/cobra v1.7.0
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.8.0
 	github.com/swaggo/echo-swagger v1.3.0
@@ -121,7 +121,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/jedib0t/go-pretty/v6 v6.4.6
-	github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230428233555-2ecce2b57fad
+	github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230504165604-a7d125b466ff
 	github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230428233610-cbfa2f408c41
 	github.com/microsoft/kiota-abstractions-go v0.9.1
 	github.com/microsoft/kiota-authentication-azure-go v0.4.1
@@ -137,6 +137,7 @@ require (
 )
 
 require (
+	cloud.google.com/go v0.99.0 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.3.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.1.2 // indirect
@@ -297,6 +298,7 @@ require (
 	github.com/gocarina/gocsv v0.0.0-20211203214250-4735fba0c1d9 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
+	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect
