@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	describe2 "github.com/kaytu-io/kaytu-aws-describer/pkg/describe/enums"
 	"net/http"
 	"strconv"
 	"time"
@@ -685,7 +686,7 @@ func (h HttpServer) DescribeSingleResource(ctx echo.Context) error {
 		resources, err := aws.GetSingleResource(
 			context.Background(),
 			req.ResourceType,
-			enums.DescribeTriggerTypeManual,
+			describe2.DescribeTriggerType(enums.DescribeTriggerTypeManual),
 			req.AccountID,
 			nil,
 			req.AccessKey,
