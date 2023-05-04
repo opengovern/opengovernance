@@ -21,6 +21,11 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	MaxTriggerPerMinute           = 5000
+	MaxTriggerPerAccountPerMinute = 60
+)
+
 func (s Scheduler) RunDescribeJobScheduler() {
 	s.logger.Info("Scheduling describe jobs on a timer")
 
@@ -54,8 +59,10 @@ func (s Scheduler) scheduleDescribeJob() {
 		}
 	}
 
-	for {
-		drs, err := s.db.FetchRandomCreatedDescribeResourceJobs()
+	accountTriggerCount := map[string]int{}
+	var parentIdExceptionList []uint
+	for i := 0; i < MaxTriggerPerMinute; i++ {
+		drs, err := s.db.FetchRandomCreatedDescribeResourceJobs(parentIdExceptionList)
 		if err != nil {
 			s.logger.Error("Failed to fetch all describe source jobs", zap.Error(err))
 			DescribeJobsCount.WithLabelValues("failure").Inc()
@@ -66,15 +73,37 @@ func (s Scheduler) scheduleDescribeJob() {
 			break
 		}
 
-		err = s.enqueueCloudNativeDescribeJob(*drs)
+		ds, err := s.db.GetDescribeSourceJob(drs.ParentJobID)
+		if err != nil {
+			s.logger.Error("Failed to GetDescribeSourceJob in scheduler", zap.Error(err), zap.Uint("jobID", drs.ID))
+			DescribeJobsCount.WithLabelValues("failure").Inc()
+			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+			return
+		}
+
+		if accountTriggerCount[ds.SourceID.String()] > MaxTriggerPerAccountPerMinute {
+			parentIdExceptionList = append(parentIdExceptionList, drs.ParentJobID)
+			continue
+		}
+
+		err = s.enqueueCloudNativeDescribeJob(*drs, ds)
 		if err != nil {
 			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", drs.ID))
 			DescribeJobsCount.WithLabelValues("failure").Inc()
 			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 			return
 		}
+		accountTriggerCount[ds.SourceID.String()]++
 		DescribeResourceJobsCount.WithLabelValues("successful").Inc()
 	}
+
+	err = s.db.RetryRateLimitedJobs()
+	if err != nil {
+		s.logger.Error("Failed to RetryRateLimitedJobs", zap.Error(err))
+		DescribeJobsCount.WithLabelValues("failure").Inc()
+		return
+	}
+
 	DescribeJobsCount.WithLabelValues("successful").Inc()
 }
 
@@ -153,12 +182,7 @@ func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.Des
 	return daj
 }
 
-func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob) error {
-	ds, err := s.db.GetDescribeSourceJob(dr.ParentJobID)
-	if err != nil {
-		return err
-	}
-
+func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *DescribeSourceJob) error {
 	s.logger.Info("enqueueCloudNativeDescribeJob",
 		zap.Uint("sourceJobID", ds.ID),
 		zap.Uint("jobID", dr.ID),
@@ -167,7 +191,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob) error {
 	)
 
 	if ds.Status == api.DescribeSourceJobCreated {
-		err = s.db.UpdateDescribeSourceJob(ds.ID, api.DescribeSourceJobInProgress)
+		err := s.db.UpdateDescribeSourceJob(ds.ID, api.DescribeSourceJobInProgress)
 		if err != nil {
 			return err
 		}

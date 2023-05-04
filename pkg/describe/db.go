@@ -284,9 +284,15 @@ func (db Database) ListPendingDescribeResourceJobs() ([]DescribeResourceJob, err
 	return jobs, nil
 }
 
-func (db Database) FetchRandomCreatedDescribeResourceJobs() (*DescribeResourceJob, error) {
+func (db Database) FetchRandomCreatedDescribeResourceJobs(parentIdExceptionList []uint) (*DescribeResourceJob, error) {
 	var job DescribeResourceJob
-	tx := db.orm.Where("status = ?", api.DescribeResourceJobCreated).Order("random()").First(&job)
+	tx := db.orm.Where("status = ?", api.DescribeResourceJobCreated)
+
+	if len(parentIdExceptionList) > 0 {
+		tx = tx.Where("NOT(parent_job_id IN ?)", parentIdExceptionList)
+	}
+
+	tx = tx.Order("random()").First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -294,6 +300,25 @@ func (db Database) FetchRandomCreatedDescribeResourceJobs() (*DescribeResourceJo
 		return nil, tx.Error
 	}
 	return &job, nil
+}
+
+func (db Database) RetryRateLimitedJobs() error {
+	tx := db.orm.Raw(
+		`UPDATE describe_resource_jobs d 
+SET status = 'CREATED' 
+WHERE status = 'FAILED' 
+AND created_at > now() - interval '1 hours' 
+AND updated_at < now() - interval '5 minutes' 
+AND failure_message like '%Rate exceeded%' 
+AND (
+	SELECT count(*) FROM describe_resource_jobs WHERE 
+		parent_job_id = d.parent_job_id 
+		AND status in ('CREATED', 'QUEUED', 'IN_PROGRESS')
+) = 0;`)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
 }
 
 func (db Database) ListCreatedDescribeSourceJobs() ([]DescribeSourceJob, error) {
