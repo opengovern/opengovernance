@@ -314,7 +314,7 @@ UPDATE describe_resource_jobs SET status = 'CREATED' WHERE id = (
 		status = 'FAILED' AND 
 		created_at > now() - interval '2 hours' AND 
 		updated_at < now() - interval '5 minutes' AND
-		failure_message like '%Rate exceeded%' AND 
+		(failure_message like '%Rate exceeded%' OR failure_message like '%TooManyRequestsException%') AND 
 		(
 			SELECT 
 				count(*) 

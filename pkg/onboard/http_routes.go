@@ -1634,6 +1634,8 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 //	@Param		sourceId	query	string	true	"Source ID"
 //	@Router		/onboard/api/v1/source/{sourceId}/credentials [put]
 func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
+	ignoreHealth := ctx.Param("ignoreHealth")
+
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
@@ -1652,12 +1654,15 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 		}
 
 		req.AccountId = src.SourceId
-		isAttached, err := keibiaws.CheckAttachedPolicy(req.AccessKey, req.SecretKey, keibiaws.SecurityAuditPolicyARN)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-		}
-		if !isAttached {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to find read permission")
+
+		if ignoreHealth == "true" {
+			isAttached, err := keibiaws.CheckAttachedPolicy(req.AccessKey, req.SecretKey, keibiaws.SecurityAuditPolicyARN)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			}
+			if !isAttached {
+				return echo.NewHTTPError(http.StatusBadRequest, "Failed to find read permission")
+			}
 		}
 
 		secretBytes, err := h.kms.Encrypt(req.AsMap(), h.keyARN)
