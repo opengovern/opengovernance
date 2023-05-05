@@ -309,6 +309,7 @@ var awsMap = map[string]string{
 	"AWS::Kinesis::Consumer":                                                      "aws_kinesis_consumer",
 	"AWS::Firehose::DeliveryStream":                                               "aws_kinesis_firehose_delivery_stream",
 	"AWS::KinesisVideo::Stream":                                                   "aws_kinesis_video_stream",
+	"AWS::KMS::Alias":                                                             "aws_kms_alias",
 }
 
 var azureMap = map[string]string{
@@ -751,6 +752,7 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::Kinesis::Consumer":                                                      &keibi.KinesisConsumer{},
 	"AWS::Firehose::DeliveryStream":                                               &keibi.FirehoseDeliveryStream{},
 	"AWS::KinesisVideo::Stream":                                                   &keibi.KinesisVideoStream{},
+	"AWS::KMS::Alias":                                                             &keibi.KMSAlias{},
 }
 
 var AzureDescriptionMap = map[string]interface{}{

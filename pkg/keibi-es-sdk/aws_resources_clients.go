@@ -29067,6 +29067,152 @@ func GetKMSKey(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) 
 
 // ==========================  END: KMSKey =============================
 
+// ==========================  START: KMSAlias =============================
+
+type KMSAlias struct {
+	Description   aws.KMSAliasDescription `json:"description"`
+	Metadata      aws.Metadata            `json:"metadata"`
+	ResourceJobID int                     `json:"resource_job_id"`
+	SourceJobID   int                     `json:"source_job_id"`
+	ResourceType  string                  `json:"resource_type"`
+	SourceType    string                  `json:"source_type"`
+	ID            string                  `json:"id"`
+	ARN           string                  `json:"arn"`
+	SourceID      string                  `json:"source_id"`
+}
+
+type KMSAliasHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  KMSAlias      `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type KMSAliasHits struct {
+	Total SearchTotal   `json:"total"`
+	Hits  []KMSAliasHit `json:"hits"`
+}
+
+type KMSAliasSearchResponse struct {
+	PitID string       `json:"pit_id"`
+	Hits  KMSAliasHits `json:"hits"`
+}
+
+type KMSAliasPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewKMSAliasPaginator(filters []BoolFilter, limit *int64) (KMSAliasPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_kms_alias", filters, limit)
+	if err != nil {
+		return KMSAliasPaginator{}, err
+	}
+
+	p := KMSAliasPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p KMSAliasPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p KMSAliasPaginator) NextPage(ctx context.Context) ([]KMSAlias, error) {
+	var response KMSAliasSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []KMSAlias
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listKMSAliasFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListKMSAlias(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListKMSAlias")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewKMSAliasPaginator(buildFilter(d.KeyColumnQuals, listKMSAliasFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getKMSAliasFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetKMSAlias(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetKMSAlias")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewKMSAliasPaginator(buildFilter(d.KeyColumnQuals, getKMSAliasFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: KMSAlias =============================
+
 // ==========================  START: LambdaFunction =============================
 
 type LambdaFunction struct {
