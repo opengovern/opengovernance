@@ -32442,6 +32442,300 @@ func GetKinesisStream(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydrat
 
 // ==========================  END: KinesisStream =============================
 
+// ==========================  START: KinesisVideoStream =============================
+
+type KinesisVideoStream struct {
+	Description   aws.KinesisVideoStreamDescription `json:"description"`
+	Metadata      aws.Metadata                      `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
+	SourceID      string                            `json:"source_id"`
+}
+
+type KinesisVideoStreamHit struct {
+	ID      string             `json:"_id"`
+	Score   float64            `json:"_score"`
+	Index   string             `json:"_index"`
+	Type    string             `json:"_type"`
+	Version int64              `json:"_version,omitempty"`
+	Source  KinesisVideoStream `json:"_source"`
+	Sort    []interface{}      `json:"sort"`
+}
+
+type KinesisVideoStreamHits struct {
+	Total SearchTotal             `json:"total"`
+	Hits  []KinesisVideoStreamHit `json:"hits"`
+}
+
+type KinesisVideoStreamSearchResponse struct {
+	PitID string                 `json:"pit_id"`
+	Hits  KinesisVideoStreamHits `json:"hits"`
+}
+
+type KinesisVideoStreamPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewKinesisVideoStreamPaginator(filters []BoolFilter, limit *int64) (KinesisVideoStreamPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_kinesisvideo_stream", filters, limit)
+	if err != nil {
+		return KinesisVideoStreamPaginator{}, err
+	}
+
+	p := KinesisVideoStreamPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p KinesisVideoStreamPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p KinesisVideoStreamPaginator) NextPage(ctx context.Context) ([]KinesisVideoStream, error) {
+	var response KinesisVideoStreamSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []KinesisVideoStream
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listKinesisVideoStreamFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListKinesisVideoStream(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListKinesisVideoStream")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewKinesisVideoStreamPaginator(buildFilter(d.KeyColumnQuals, listKinesisVideoStreamFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getKinesisVideoStreamFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+	"stream_name":      "description.Stream.StreamName",
+}
+
+func GetKinesisVideoStream(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetKinesisVideoStream")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewKinesisVideoStreamPaginator(buildFilter(d.KeyColumnQuals, getKinesisVideoStreamFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: KinesisVideoStream =============================
+
+// ==========================  START: KinesisConsumer =============================
+
+type KinesisConsumer struct {
+	Description   aws.KinesisConsumerDescription `json:"description"`
+	Metadata      aws.Metadata                   `json:"metadata"`
+	ResourceJobID int                            `json:"resource_job_id"`
+	SourceJobID   int                            `json:"source_job_id"`
+	ResourceType  string                         `json:"resource_type"`
+	SourceType    string                         `json:"source_type"`
+	ID            string                         `json:"id"`
+	ARN           string                         `json:"arn"`
+	SourceID      string                         `json:"source_id"`
+}
+
+type KinesisConsumerHit struct {
+	ID      string          `json:"_id"`
+	Score   float64         `json:"_score"`
+	Index   string          `json:"_index"`
+	Type    string          `json:"_type"`
+	Version int64           `json:"_version,omitempty"`
+	Source  KinesisConsumer `json:"_source"`
+	Sort    []interface{}   `json:"sort"`
+}
+
+type KinesisConsumerHits struct {
+	Total SearchTotal          `json:"total"`
+	Hits  []KinesisConsumerHit `json:"hits"`
+}
+
+type KinesisConsumerSearchResponse struct {
+	PitID string              `json:"pit_id"`
+	Hits  KinesisConsumerHits `json:"hits"`
+}
+
+type KinesisConsumerPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewKinesisConsumerPaginator(filters []BoolFilter, limit *int64) (KinesisConsumerPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_kinesis_consumer", filters, limit)
+	if err != nil {
+		return KinesisConsumerPaginator{}, err
+	}
+
+	p := KinesisConsumerPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p KinesisConsumerPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p KinesisConsumerPaginator) NextPage(ctx context.Context) ([]KinesisConsumer, error) {
+	var response KinesisConsumerSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []KinesisConsumer
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listKinesisConsumerFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListKinesisConsumer(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListKinesisConsumer")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewKinesisConsumerPaginator(buildFilter(d.KeyColumnQuals, listKinesisConsumerFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getKinesisConsumerFilters = map[string]string{
+	"consumer_arn":     "description.Consumer.ConsumerARN",
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetKinesisConsumer(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetKinesisConsumer")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewKinesisConsumerPaginator(buildFilter(d.KeyColumnQuals, getKinesisConsumerFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: KinesisConsumer =============================
+
 // ==========================  START: KinesisAnalyticsV2Application =============================
 
 type KinesisAnalyticsV2Application struct {
@@ -44089,3 +44383,151 @@ func GetInspectorFinding(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 }
 
 // ==========================  END: InspectorFinding =============================
+
+// ==========================  START: FirehoseDeliveryStream =============================
+
+type FirehoseDeliveryStream struct {
+	Description   aws.FirehoseDeliveryStreamDescription `json:"description"`
+	Metadata      aws.Metadata                          `json:"metadata"`
+	ResourceJobID int                                   `json:"resource_job_id"`
+	SourceJobID   int                                   `json:"source_job_id"`
+	ResourceType  string                                `json:"resource_type"`
+	SourceType    string                                `json:"source_type"`
+	ID            string                                `json:"id"`
+	ARN           string                                `json:"arn"`
+	SourceID      string                                `json:"source_id"`
+}
+
+type FirehoseDeliveryStreamHit struct {
+	ID      string                 `json:"_id"`
+	Score   float64                `json:"_score"`
+	Index   string                 `json:"_index"`
+	Type    string                 `json:"_type"`
+	Version int64                  `json:"_version,omitempty"`
+	Source  FirehoseDeliveryStream `json:"_source"`
+	Sort    []interface{}          `json:"sort"`
+}
+
+type FirehoseDeliveryStreamHits struct {
+	Total SearchTotal                 `json:"total"`
+	Hits  []FirehoseDeliveryStreamHit `json:"hits"`
+}
+
+type FirehoseDeliveryStreamSearchResponse struct {
+	PitID string                     `json:"pit_id"`
+	Hits  FirehoseDeliveryStreamHits `json:"hits"`
+}
+
+type FirehoseDeliveryStreamPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewFirehoseDeliveryStreamPaginator(filters []BoolFilter, limit *int64) (FirehoseDeliveryStreamPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_firehose_deliverystream", filters, limit)
+	if err != nil {
+		return FirehoseDeliveryStreamPaginator{}, err
+	}
+
+	p := FirehoseDeliveryStreamPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p FirehoseDeliveryStreamPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p FirehoseDeliveryStreamPaginator) NextPage(ctx context.Context) ([]FirehoseDeliveryStream, error) {
+	var response FirehoseDeliveryStreamSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []FirehoseDeliveryStream
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listFirehoseDeliveryStreamFilters = map[string]string{
+	"delivery_stream_type": "description.DeliveryStream.DeliveryStreamType",
+	"keibi_account_id":     "metadata.SourceID",
+}
+
+func ListFirehoseDeliveryStream(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListFirehoseDeliveryStream")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewFirehoseDeliveryStreamPaginator(buildFilter(d.KeyColumnQuals, listFirehoseDeliveryStreamFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getFirehoseDeliveryStreamFilters = map[string]string{
+	"delivery_stream_name": "description.DeliveryStream.DeliveryStreamName",
+	"keibi_account_id":     "metadata.SourceID",
+}
+
+func GetFirehoseDeliveryStream(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetFirehoseDeliveryStream")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewFirehoseDeliveryStreamPaginator(buildFilter(d.KeyColumnQuals, getFirehoseDeliveryStreamFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: FirehoseDeliveryStream =============================

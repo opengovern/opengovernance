@@ -8,8 +8,8 @@ require (
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.9 // indirect
 	github.com/aws/aws-sdk-go v1.44.153
 	github.com/aws/aws-sdk-go-v2 v1.18.0
-	github.com/aws/aws-sdk-go-v2/config v1.17.8 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.12.21 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.18.22 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.21 // indirect
 	github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.16.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/acm v1.14.8 // indirect
 	github.com/aws/aws-sdk-go-v2/service/apigateway v1.15.10 // indirect
@@ -41,7 +41,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/fsx v1.24.14 // indirect
 	github.com/aws/aws-sdk-go-v2/service/guardduty v1.15.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/iam v1.18.9
-	github.com/aws/aws-sdk-go-v2/service/kms v1.18.11
+	github.com/aws/aws-sdk-go-v2/service/kms v1.20.12
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.26.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.16.8
 	github.com/aws/aws-sdk-go-v2/service/rds v1.26.1 // indirect
@@ -58,7 +58,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sns v1.17.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.19.10 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.30.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.16.19 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.18.10 // indirect
 	github.com/aws/aws-sdk-go-v2/service/wafregional v1.12.18 // indirect
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.22.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/workspaces v1.23.0 // indirect
@@ -90,7 +90,6 @@ require (
 	github.com/swaggo/echo-swagger v1.3.0
 	github.com/swaggo/swag v1.8.0
 	github.com/turbot/go-kit v0.4.0
-	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230430190047-ef74b7c1c11a
 	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230428233925-0d0d195ef25e
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230330133010-4edcf1226e17
 	go.uber.org/zap v1.21.0
@@ -130,6 +129,7 @@ require (
 	github.com/sony/sonyflake v1.1.0
 	github.com/turbot/steampipe-plugin-sdk/v4 v4.1.9
 	github.com/vmware-tanzu/velero v1.9.1
+	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230502111013-2e0939172011
 	google.golang.org/protobuf v1.28.0
 	gorm.io/datatypes v1.1.0
 	gorm.io/plugin/prometheus v0.0.0-20220517015831-ca6bfaf20bf4
@@ -170,10 +170,10 @@ require (
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/aws/aws-lambda-go v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.9 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.17 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.33 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.27 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.24 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.16 // indirect
 	github.com/aws/aws-sdk-go-v2/service/account v1.10.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/acmpca v1.21.0 // indirect
@@ -212,7 +212,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.8 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.20 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.27 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.8 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kafka v1.18.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/keyspaces v1.1.0 // indirect
@@ -245,9 +245,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sfn v1.14.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/shield v1.18.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/simspaceweaver v1.0.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.11.23 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.12.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.15.13 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.13.6 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/storagegateway v1.18.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/support v1.11.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/synthetics v1.9.1 // indirect

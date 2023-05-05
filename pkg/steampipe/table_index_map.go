@@ -306,6 +306,9 @@ var awsMap = map[string]string{
 	"AWS::Inspector::Exclusion":                                                   "aws_inspector_exclusion",
 	"AWS::Inspector::Finding":                                                     "aws_inspector_finding",
 	"AWS::KinesisAnalyticsV2::Application":                                        "aws_kinesisanalyticsv2_application",
+	"AWS::Kinesis::Consumer":                                                      "aws_kinesis_consumer",
+	"AWS::Firehose::DeliveryStream":                                               "aws_kinesis_firehose_delivery_stream",
+	"AWS::KinesisVideo::Stream":                                                   "aws_kinesis_video_stream",
 }
 
 var azureMap = map[string]string{
@@ -745,6 +748,9 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::Inspector::Exclusion":                                                   &keibi.InspectorExclusion{},
 	"AWS::Inspector::Finding":                                                     &keibi.InspectorFinding{},
 	"AWS::KinesisAnalyticsV2::Application":                                        &keibi.KinesisAnalyticsV2Application{},
+	"AWS::Kinesis::Consumer":                                                      &keibi.KinesisConsumer{},
+	"AWS::Firehose::DeliveryStream":                                               &keibi.FirehoseDeliveryStream{},
+	"AWS::KinesisVideo::Stream":                                                   &keibi.KinesisVideoStream{},
 }
 
 var AzureDescriptionMap = map[string]interface{}{
