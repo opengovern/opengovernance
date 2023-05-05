@@ -137,6 +137,7 @@ func (b *costSummaryBuilder) Build() []kafka.Doc {
 		case ec2.VolumeTypeSt1:
 			ebsCost.Desc.St1Size += size
 		}
+		ebsCost.Desc.CostValue = ebsCost.Desc.CalculateCostFromPriceJSON()
 		ebsCostsRegionMap[key] = ebsCost
 	}
 
