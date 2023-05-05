@@ -172,6 +172,7 @@ func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.Des
 	default:
 		panic(fmt.Errorf("unsupported source type: %s", a.Type))
 	}
+
 	rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
 	for _, rType := range resourceTypes {
 		daj.DescribeResourceJobs = append(daj.DescribeResourceJobs, DescribeResourceJob{
