@@ -1376,6 +1376,8 @@ github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230504172622-62e8657beb61 h1:0t
 github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230504172622-62e8657beb61/go.mod h1:c4x4G2S4yPzeJg09caS0wzIFiGrFrKDZHeUiFKXaWjI=
 github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230505163538-5b5166cdd9f0 h1:2xLfN0SPYpPLy+k77Ab4ePLFToIBTR5uMXWi2W4hE8s=
 github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230505163538-5b5166cdd9f0/go.mod h1:hV2QHahaTpo/qxQDGYwWdQVUfX4EEZlaMhXzV2WEjGo=
+github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230506091003-03b6027ae3ac h1:tI4Wi7HUtkPHyyC/4t9C7AZYcipqCKszrNw10wVOaUc=
+github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230506091003-03b6027ae3ac/go.mod h1:hV2QHahaTpo/qxQDGYwWdQVUfX4EEZlaMhXzV2WEjGo=
 github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230428233610-cbfa2f408c41 h1:uWGdFP1ayMre0sPArk05ZtNbCRP6tA+yHdV6u6DiBW4=
 github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230428233610-cbfa2f408c41/go.mod h1:mIyE5Oxu9c6GXTv6xXRwS61YWPy0H/XngvXEYnTjswI=
 github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=

@@ -760,6 +760,7 @@ func (s *Scheduler) RunDeletedSourceCleanup() {
 
 func (s Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
 	//TODO-Saleh remove all of source resources
+	
 }
 
 func (s Scheduler) cleanupComplianceReportJobForDeletedSource(sourceId string) {
