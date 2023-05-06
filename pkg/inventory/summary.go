@@ -271,9 +271,9 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 				directFilters[filter.ElementID] = api.FilterCloudResourceType{
 					FilterType:    api.FilterTypeCloudResourceType,
 					FilterID:      filter.ElementID,
-					CloudProvider: filter.Connector,
+					Connector:     filter.Connector,
 					ResourceLabel: filter.ResourceLabel,
-					ServiceCode:   filter.ServiceName,
+					ServiceName:   filter.ServiceName,
 					ResourceType:  filter.ResourceType,
 					ResourceCount: 0,
 				}
@@ -293,10 +293,10 @@ func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[st
 				filterWithCount := api.FilterCloudResourceType{
 					FilterType:    api.FilterTypeCloudResourceType,
 					FilterID:      filter.ElementID,
-					CloudProvider: filter.Connector,
+					Connector:     filter.Connector,
 					ResourceType:  filter.ResourceType,
 					ResourceLabel: filter.ResourceLabel,
-					ServiceCode:   filter.ServiceName,
+					ServiceName:   filter.ServiceName,
 					ResourceCount: 0,
 				}
 				if m, ok := metrics[filter.ResourceType]; ok {
@@ -345,7 +345,7 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, costs map[string]map[st
 				directFilters[filter.ElementID] = api.FilterCost{
 					FilterType:    api.FilterTypeCost,
 					FilterID:      filter.ElementID,
-					ServiceName:   filter.ServiceLabel,
+					ServiceLabel:  filter.ServiceLabel,
 					CloudProvider: filter.Connector,
 					Cost:          map[string]api.CostWithUnit{},
 				}
@@ -374,7 +374,7 @@ func GetCategoryNodeCostInfo(categoryNode *CategoryNode, costs map[string]map[st
 				filterWithCost := api.FilterCost{
 					FilterType:    api.FilterTypeCost,
 					FilterID:      filter.ElementID,
-					ServiceName:   filter.ServiceLabel,
+					ServiceLabel:  filter.ServiceLabel,
 					CloudProvider: filter.Connector,
 					Cost:          map[string]api.CostWithUnit{},
 				}

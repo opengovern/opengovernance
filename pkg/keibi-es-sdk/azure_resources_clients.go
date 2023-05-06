@@ -3,8 +3,8 @@ package keibi
 
 import (
 	"context"
+	azure "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
-	azure "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 )
 
 // ==========================  START: APIManagement =============================
@@ -17,6 +17,7 @@ type APIManagement struct {
 	ResourceType  string                         `json:"resource_type"`
 	SourceType    string                         `json:"source_type"`
 	ID            string                         `json:"id"`
+	ARN           string                         `json:"arn"`
 	SourceID      string                         `json:"source_id"`
 }
 
@@ -164,6 +165,7 @@ type AppConfiguration struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -311,6 +313,7 @@ type AppServiceEnvironment struct {
 	ResourceType  string                                 `json:"resource_type"`
 	SourceType    string                                 `json:"source_type"`
 	ID            string                                 `json:"id"`
+	ARN           string                                 `json:"arn"`
 	SourceID      string                                 `json:"source_id"`
 }
 
@@ -458,6 +461,7 @@ type AppServiceFunctionApp struct {
 	ResourceType  string                                 `json:"resource_type"`
 	SourceType    string                                 `json:"source_type"`
 	ID            string                                 `json:"id"`
+	ARN           string                                 `json:"arn"`
 	SourceID      string                                 `json:"source_id"`
 }
 
@@ -605,6 +609,7 @@ type AppServiceWebApp struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -752,6 +757,7 @@ type AppServicePlan struct {
 	ResourceType  string                          `json:"resource_type"`
 	SourceType    string                          `json:"source_type"`
 	ID            string                          `json:"id"`
+	ARN           string                          `json:"arn"`
 	SourceID      string                          `json:"source_id"`
 }
 
@@ -899,6 +905,7 @@ type ComputeDisk struct {
 	ResourceType  string                       `json:"resource_type"`
 	SourceType    string                       `json:"source_type"`
 	ID            string                       `json:"id"`
+	ARN           string                       `json:"arn"`
 	SourceID      string                       `json:"source_id"`
 }
 
@@ -1046,6 +1053,7 @@ type ComputeDiskReadOps struct {
 	ResourceType  string                              `json:"resource_type"`
 	SourceType    string                              `json:"source_type"`
 	ID            string                              `json:"id"`
+	ARN           string                              `json:"arn"`
 	SourceID      string                              `json:"source_id"`
 }
 
@@ -1191,6 +1199,7 @@ type ComputeDiskReadOpsDaily struct {
 	ResourceType  string                                   `json:"resource_type"`
 	SourceType    string                                   `json:"source_type"`
 	ID            string                                   `json:"id"`
+	ARN           string                                   `json:"arn"`
 	SourceID      string                                   `json:"source_id"`
 }
 
@@ -1336,6 +1345,7 @@ type ComputeDiskReadOpsHourly struct {
 	ResourceType  string                                    `json:"resource_type"`
 	SourceType    string                                    `json:"source_type"`
 	ID            string                                    `json:"id"`
+	ARN           string                                    `json:"arn"`
 	SourceID      string                                    `json:"source_id"`
 }
 
@@ -1481,6 +1491,7 @@ type ComputeDiskWriteOps struct {
 	ResourceType  string                               `json:"resource_type"`
 	SourceType    string                               `json:"source_type"`
 	ID            string                               `json:"id"`
+	ARN           string                               `json:"arn"`
 	SourceID      string                               `json:"source_id"`
 }
 
@@ -1626,6 +1637,7 @@ type ComputeDiskWriteOpsDaily struct {
 	ResourceType  string                                    `json:"resource_type"`
 	SourceType    string                                    `json:"source_type"`
 	ID            string                                    `json:"id"`
+	ARN           string                                    `json:"arn"`
 	SourceID      string                                    `json:"source_id"`
 }
 
@@ -1771,6 +1783,7 @@ type ComputeDiskWriteOpsHourly struct {
 	ResourceType  string                                     `json:"resource_type"`
 	SourceType    string                                     `json:"source_type"`
 	ID            string                                     `json:"id"`
+	ARN           string                                     `json:"arn"`
 	SourceID      string                                     `json:"source_id"`
 }
 
@@ -1916,6 +1929,7 @@ type ComputeDiskAccess struct {
 	ResourceType  string                             `json:"resource_type"`
 	SourceType    string                             `json:"source_type"`
 	ID            string                             `json:"id"`
+	ARN           string                             `json:"arn"`
 	SourceID      string                             `json:"source_id"`
 }
 
@@ -2063,6 +2077,7 @@ type ComputeVirtualMachineScaleSet struct {
 	ResourceType  string                                         `json:"resource_type"`
 	SourceType    string                                         `json:"source_type"`
 	ID            string                                         `json:"id"`
+	ARN           string                                         `json:"arn"`
 	SourceID      string                                         `json:"source_id"`
 }
 
@@ -2210,6 +2225,7 @@ type ComputeVirtualMachineScaleSetNetworkInterface struct {
 	ResourceType  string                                                         `json:"resource_type"`
 	SourceType    string                                                         `json:"source_type"`
 	ID            string                                                         `json:"id"`
+	ARN           string                                                         `json:"arn"`
 	SourceID      string                                                         `json:"source_id"`
 }
 
@@ -2355,6 +2371,7 @@ type ComputeVirtualMachineScaleSetVm struct {
 	ResourceType  string                                           `json:"resource_type"`
 	SourceType    string                                           `json:"source_type"`
 	ID            string                                           `json:"id"`
+	ARN           string                                           `json:"arn"`
 	SourceID      string                                           `json:"source_id"`
 }
 
@@ -2503,6 +2520,7 @@ type ComputeSnapshots struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -2650,6 +2668,7 @@ type ComputeAvailabilitySet struct {
 	ResourceType  string                                  `json:"resource_type"`
 	SourceType    string                                  `json:"source_type"`
 	ID            string                                  `json:"id"`
+	ARN           string                                  `json:"arn"`
 	SourceID      string                                  `json:"source_id"`
 }
 
@@ -2797,6 +2816,7 @@ type ComputeDiskEncryptionSet struct {
 	ResourceType  string                                    `json:"resource_type"`
 	SourceType    string                                    `json:"source_type"`
 	ID            string                                    `json:"id"`
+	ARN           string                                    `json:"arn"`
 	SourceID      string                                    `json:"source_id"`
 }
 
@@ -2944,6 +2964,7 @@ type ComputeGallery struct {
 	ResourceType  string                          `json:"resource_type"`
 	SourceType    string                          `json:"source_type"`
 	ID            string                          `json:"id"`
+	ARN           string                          `json:"arn"`
 	SourceID      string                          `json:"source_id"`
 }
 
@@ -3091,6 +3112,7 @@ type ComputeImage struct {
 	ResourceType  string                        `json:"resource_type"`
 	SourceType    string                        `json:"source_type"`
 	ID            string                        `json:"id"`
+	ARN           string                        `json:"arn"`
 	SourceID      string                        `json:"source_id"`
 }
 
@@ -3238,6 +3260,7 @@ type DataboxEdgeDevice struct {
 	ResourceType  string                             `json:"resource_type"`
 	SourceType    string                             `json:"source_type"`
 	ID            string                             `json:"id"`
+	ARN           string                             `json:"arn"`
 	SourceID      string                             `json:"source_id"`
 }
 
@@ -3385,6 +3408,7 @@ type HealthcareService struct {
 	ResourceType  string                             `json:"resource_type"`
 	SourceType    string                             `json:"source_type"`
 	ID            string                             `json:"id"`
+	ARN           string                             `json:"arn"`
 	SourceID      string                             `json:"source_id"`
 }
 
@@ -3532,6 +3556,7 @@ type HpcCache struct {
 	ResourceType  string                    `json:"resource_type"`
 	SourceType    string                    `json:"source_type"`
 	ID            string                    `json:"id"`
+	ARN           string                    `json:"arn"`
 	SourceID      string                    `json:"source_id"`
 }
 
@@ -3679,6 +3704,7 @@ type KeyVaultKey struct {
 	ResourceType  string                       `json:"resource_type"`
 	SourceType    string                       `json:"source_type"`
 	ID            string                       `json:"id"`
+	ARN           string                       `json:"arn"`
 	SourceID      string                       `json:"source_id"`
 }
 
@@ -3827,6 +3853,7 @@ type KubernetesCluster struct {
 	ResourceType  string                             `json:"resource_type"`
 	SourceType    string                             `json:"source_type"`
 	ID            string                             `json:"id"`
+	ARN           string                             `json:"arn"`
 	SourceID      string                             `json:"source_id"`
 }
 
@@ -3974,6 +4001,7 @@ type NetworkInterface struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -4121,6 +4149,7 @@ type NetworkWatcherFlowLog struct {
 	ResourceType  string                                 `json:"resource_type"`
 	SourceType    string                                 `json:"source_type"`
 	ID            string                                 `json:"id"`
+	ARN           string                                 `json:"arn"`
 	SourceID      string                                 `json:"source_id"`
 }
 
@@ -4269,6 +4298,7 @@ type RouteTables struct {
 	ResourceType  string                       `json:"resource_type"`
 	SourceType    string                       `json:"source_type"`
 	ID            string                       `json:"id"`
+	ARN           string                       `json:"arn"`
 	SourceID      string                       `json:"source_id"`
 }
 
@@ -4416,6 +4446,7 @@ type NetworkApplicationSecurityGroups struct {
 	ResourceType  string                                            `json:"resource_type"`
 	SourceType    string                                            `json:"source_type"`
 	ID            string                                            `json:"id"`
+	ARN           string                                            `json:"arn"`
 	SourceID      string                                            `json:"source_id"`
 }
 
@@ -4563,6 +4594,7 @@ type NetworkAzureFirewall struct {
 	ResourceType  string                                `json:"resource_type"`
 	SourceType    string                                `json:"source_type"`
 	ID            string                                `json:"id"`
+	ARN           string                                `json:"arn"`
 	SourceID      string                                `json:"source_id"`
 }
 
@@ -4710,6 +4742,7 @@ type ExpressRouteCircuit struct {
 	ResourceType  string                               `json:"resource_type"`
 	SourceType    string                               `json:"source_type"`
 	ID            string                               `json:"id"`
+	ARN           string                               `json:"arn"`
 	SourceID      string                               `json:"source_id"`
 }
 
@@ -4857,6 +4890,7 @@ type VirtualNetworkGateway struct {
 	ResourceType  string                                 `json:"resource_type"`
 	SourceType    string                                 `json:"source_type"`
 	ID            string                                 `json:"id"`
+	ARN           string                                 `json:"arn"`
 	SourceID      string                                 `json:"source_id"`
 }
 
@@ -5004,6 +5038,7 @@ type DNSZone struct {
 	ResourceType  string                   `json:"resource_type"`
 	SourceType    string                   `json:"source_type"`
 	ID            string                   `json:"id"`
+	ARN           string                   `json:"arn"`
 	SourceID      string                   `json:"source_id"`
 }
 
@@ -5151,6 +5186,7 @@ type FirewallPolicy struct {
 	ResourceType  string                          `json:"resource_type"`
 	SourceType    string                          `json:"source_type"`
 	ID            string                          `json:"id"`
+	ARN           string                          `json:"arn"`
 	SourceID      string                          `json:"source_id"`
 }
 
@@ -5298,6 +5334,7 @@ type FrontdoorWebApplicationFirewallPolicy struct {
 	ResourceType  string                                                 `json:"resource_type"`
 	SourceType    string                                                 `json:"source_type"`
 	ID            string                                                 `json:"id"`
+	ARN           string                                                 `json:"arn"`
 	SourceID      string                                                 `json:"source_id"`
 }
 
@@ -5445,6 +5482,7 @@ type LocalNetworkGateway struct {
 	ResourceType  string                               `json:"resource_type"`
 	SourceType    string                               `json:"source_type"`
 	ID            string                               `json:"id"`
+	ARN           string                               `json:"arn"`
 	SourceID      string                               `json:"source_id"`
 }
 
@@ -5592,6 +5630,7 @@ type NatGateway struct {
 	ResourceType  string                      `json:"resource_type"`
 	SourceType    string                      `json:"source_type"`
 	ID            string                      `json:"id"`
+	ARN           string                      `json:"arn"`
 	SourceID      string                      `json:"source_id"`
 }
 
@@ -5739,6 +5778,7 @@ type PrivateLinkService struct {
 	ResourceType  string                              `json:"resource_type"`
 	SourceType    string                              `json:"source_type"`
 	ID            string                              `json:"id"`
+	ARN           string                              `json:"arn"`
 	SourceID      string                              `json:"source_id"`
 }
 
@@ -5886,6 +5926,7 @@ type RouteFilter struct {
 	ResourceType  string                       `json:"resource_type"`
 	SourceType    string                       `json:"source_type"`
 	ID            string                       `json:"id"`
+	ARN           string                       `json:"arn"`
 	SourceID      string                       `json:"source_id"`
 }
 
@@ -6033,6 +6074,7 @@ type VpnGateway struct {
 	ResourceType  string                      `json:"resource_type"`
 	SourceType    string                      `json:"source_type"`
 	ID            string                      `json:"id"`
+	ARN           string                      `json:"arn"`
 	SourceID      string                      `json:"source_id"`
 }
 
@@ -6180,6 +6222,7 @@ type PublicIPAddress struct {
 	ResourceType  string                           `json:"resource_type"`
 	SourceType    string                           `json:"source_type"`
 	ID            string                           `json:"id"`
+	ARN           string                           `json:"arn"`
 	SourceID      string                           `json:"source_id"`
 }
 
@@ -6327,6 +6370,7 @@ type PolicyAssignment struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -6473,6 +6517,7 @@ type RedisCache struct {
 	ResourceType  string                      `json:"resource_type"`
 	SourceType    string                      `json:"source_type"`
 	ID            string                      `json:"id"`
+	ARN           string                      `json:"arn"`
 	SourceID      string                      `json:"source_id"`
 }
 
@@ -6620,6 +6665,7 @@ type ResourceLink struct {
 	ResourceType  string                        `json:"resource_type"`
 	SourceType    string                        `json:"source_type"`
 	ID            string                        `json:"id"`
+	ARN           string                        `json:"arn"`
 	SourceID      string                        `json:"source_id"`
 }
 
@@ -6766,6 +6812,7 @@ type RoleAssignment struct {
 	ResourceType  string                          `json:"resource_type"`
 	SourceType    string                          `json:"source_type"`
 	ID            string                          `json:"id"`
+	ARN           string                          `json:"arn"`
 	SourceID      string                          `json:"source_id"`
 }
 
@@ -6912,6 +6959,7 @@ type RoleDefinition struct {
 	ResourceType  string                          `json:"resource_type"`
 	SourceType    string                          `json:"source_type"`
 	ID            string                          `json:"id"`
+	ARN           string                          `json:"arn"`
 	SourceID      string                          `json:"source_id"`
 }
 
@@ -7058,6 +7106,7 @@ type PolicyDefinition struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -7204,6 +7253,7 @@ type SecurityCenterAutoProvisioning struct {
 	ResourceType  string                                          `json:"resource_type"`
 	SourceType    string                                          `json:"source_type"`
 	ID            string                                          `json:"id"`
+	ARN           string                                          `json:"arn"`
 	SourceID      string                                          `json:"source_id"`
 }
 
@@ -7350,6 +7400,7 @@ type SecurityCenterContact struct {
 	ResourceType  string                                 `json:"resource_type"`
 	SourceType    string                                 `json:"source_type"`
 	ID            string                                 `json:"id"`
+	ARN           string                                 `json:"arn"`
 	SourceID      string                                 `json:"source_id"`
 }
 
@@ -7496,6 +7547,7 @@ type SecurityCenterJitNetworkAccessPolicy struct {
 	ResourceType  string                                                `json:"resource_type"`
 	SourceType    string                                                `json:"source_type"`
 	ID            string                                                `json:"id"`
+	ARN           string                                                `json:"arn"`
 	SourceID      string                                                `json:"source_id"`
 }
 
@@ -7641,6 +7693,7 @@ type SecurityCenterSetting struct {
 	ResourceType  string                                 `json:"resource_type"`
 	SourceType    string                                 `json:"source_type"`
 	ID            string                                 `json:"id"`
+	ARN           string                                 `json:"arn"`
 	SourceID      string                                 `json:"source_id"`
 }
 
@@ -7787,6 +7840,7 @@ type SecurityCenterSubscriptionPricing struct {
 	ResourceType  string                                             `json:"resource_type"`
 	SourceType    string                                             `json:"source_type"`
 	ID            string                                             `json:"id"`
+	ARN           string                                             `json:"arn"`
 	SourceID      string                                             `json:"source_id"`
 }
 
@@ -7933,6 +7987,7 @@ type SecurityCenterAutomation struct {
 	ResourceType  string                                    `json:"resource_type"`
 	SourceType    string                                    `json:"source_type"`
 	ID            string                                    `json:"id"`
+	ARN           string                                    `json:"arn"`
 	SourceID      string                                    `json:"source_id"`
 }
 
@@ -8080,6 +8135,7 @@ type SecurityCenterSubAssessment struct {
 	ResourceType  string                                       `json:"resource_type"`
 	SourceType    string                                       `json:"source_type"`
 	ID            string                                       `json:"id"`
+	ARN           string                                       `json:"arn"`
 	SourceID      string                                       `json:"source_id"`
 }
 
@@ -8225,6 +8281,7 @@ type StorageContainer struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -8373,6 +8430,7 @@ type StorageBlob struct {
 	ResourceType  string                       `json:"resource_type"`
 	SourceType    string                       `json:"source_type"`
 	ID            string                       `json:"id"`
+	ARN           string                       `json:"arn"`
 	SourceID      string                       `json:"source_id"`
 }
 
@@ -8520,6 +8578,7 @@ type StorageBlobService struct {
 	ResourceType  string                              `json:"resource_type"`
 	SourceType    string                              `json:"source_type"`
 	ID            string                              `json:"id"`
+	ARN           string                              `json:"arn"`
 	SourceID      string                              `json:"source_id"`
 }
 
@@ -8667,6 +8726,7 @@ type StorageQueue struct {
 	ResourceType  string                        `json:"resource_type"`
 	SourceType    string                        `json:"source_type"`
 	ID            string                        `json:"id"`
+	ARN           string                        `json:"arn"`
 	SourceID      string                        `json:"source_id"`
 }
 
@@ -8815,6 +8875,7 @@ type StorageFileShare struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -8963,6 +9024,7 @@ type StorageTable struct {
 	ResourceType  string                        `json:"resource_type"`
 	SourceType    string                        `json:"source_type"`
 	ID            string                        `json:"id"`
+	ARN           string                        `json:"arn"`
 	SourceID      string                        `json:"source_id"`
 }
 
@@ -9111,6 +9173,7 @@ type StorageTableService struct {
 	ResourceType  string                               `json:"resource_type"`
 	SourceType    string                               `json:"source_type"`
 	ID            string                               `json:"id"`
+	ARN           string                               `json:"arn"`
 	SourceID      string                               `json:"source_id"`
 }
 
@@ -9259,6 +9322,7 @@ type Subnet struct {
 	ResourceType  string                  `json:"resource_type"`
 	SourceType    string                  `json:"source_type"`
 	ID            string                  `json:"id"`
+	ARN           string                  `json:"arn"`
 	SourceID      string                  `json:"source_id"`
 }
 
@@ -9407,6 +9471,7 @@ type VirtualNetwork struct {
 	ResourceType  string                          `json:"resource_type"`
 	SourceType    string                          `json:"source_type"`
 	ID            string                          `json:"id"`
+	ARN           string                          `json:"arn"`
 	SourceID      string                          `json:"source_id"`
 }
 
@@ -9554,6 +9619,7 @@ type Tenant struct {
 	ResourceType  string                  `json:"resource_type"`
 	SourceType    string                  `json:"source_type"`
 	ID            string                  `json:"id"`
+	ARN           string                  `json:"arn"`
 	SourceID      string                  `json:"source_id"`
 }
 
@@ -9699,6 +9765,7 @@ type Subscription struct {
 	ResourceType  string                        `json:"resource_type"`
 	SourceType    string                        `json:"source_type"`
 	ID            string                        `json:"id"`
+	ARN           string                        `json:"arn"`
 	SourceID      string                        `json:"source_id"`
 }
 
@@ -9844,6 +9911,7 @@ type ApplicationGateway struct {
 	ResourceType  string                              `json:"resource_type"`
 	SourceType    string                              `json:"source_type"`
 	ID            string                              `json:"id"`
+	ARN           string                              `json:"arn"`
 	SourceID      string                              `json:"source_id"`
 }
 
@@ -9991,6 +10059,7 @@ type BatchAccount struct {
 	ResourceType  string                        `json:"resource_type"`
 	SourceType    string                        `json:"source_type"`
 	ID            string                        `json:"id"`
+	ARN           string                        `json:"arn"`
 	SourceID      string                        `json:"source_id"`
 }
 
@@ -10138,6 +10207,7 @@ type CognitiveAccount struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -10285,6 +10355,7 @@ type ComputeVirtualMachine struct {
 	ResourceType  string                                 `json:"resource_type"`
 	SourceType    string                                 `json:"source_type"`
 	ID            string                                 `json:"id"`
+	ARN           string                                 `json:"arn"`
 	SourceID      string                                 `json:"source_id"`
 }
 
@@ -10432,6 +10503,7 @@ type ComputeResourceSKU struct {
 	ResourceType  string                              `json:"resource_type"`
 	SourceType    string                              `json:"source_type"`
 	ID            string                              `json:"id"`
+	ARN           string                              `json:"arn"`
 	SourceID      string                              `json:"source_id"`
 }
 
@@ -10577,6 +10649,7 @@ type ComputeVirtualMachineCpuUtilization struct {
 	ResourceType  string                                               `json:"resource_type"`
 	SourceType    string                                               `json:"source_type"`
 	ID            string                                               `json:"id"`
+	ARN           string                                               `json:"arn"`
 	SourceID      string                                               `json:"source_id"`
 }
 
@@ -10722,6 +10795,7 @@ type ComputeVirtualMachineCpuUtilizationDaily struct {
 	ResourceType  string                                                    `json:"resource_type"`
 	SourceType    string                                                    `json:"source_type"`
 	ID            string                                                    `json:"id"`
+	ARN           string                                                    `json:"arn"`
 	SourceID      string                                                    `json:"source_id"`
 }
 
@@ -10867,6 +10941,7 @@ type ComputeVirtualMachineCpuUtilizationHourly struct {
 	ResourceType  string                                                     `json:"resource_type"`
 	SourceType    string                                                     `json:"source_type"`
 	ID            string                                                     `json:"id"`
+	ARN           string                                                     `json:"arn"`
 	SourceID      string                                                     `json:"source_id"`
 }
 
@@ -11012,6 +11087,7 @@ type ContainerRegistry struct {
 	ResourceType  string                             `json:"resource_type"`
 	SourceType    string                             `json:"source_type"`
 	ID            string                             `json:"id"`
+	ARN           string                             `json:"arn"`
 	SourceID      string                             `json:"source_id"`
 }
 
@@ -11159,6 +11235,7 @@ type CosmosdbAccount struct {
 	ResourceType  string                           `json:"resource_type"`
 	SourceType    string                           `json:"source_type"`
 	ID            string                           `json:"id"`
+	ARN           string                           `json:"arn"`
 	SourceID      string                           `json:"source_id"`
 }
 
@@ -11306,6 +11383,7 @@ type CosmosdbMongoDatabase struct {
 	ResourceType  string                                 `json:"resource_type"`
 	SourceType    string                                 `json:"source_type"`
 	ID            string                                 `json:"id"`
+	ARN           string                                 `json:"arn"`
 	SourceID      string                                 `json:"source_id"`
 }
 
@@ -11454,6 +11532,7 @@ type CosmosdbSqlDatabase struct {
 	ResourceType  string                               `json:"resource_type"`
 	SourceType    string                               `json:"source_type"`
 	ID            string                               `json:"id"`
+	ARN           string                               `json:"arn"`
 	SourceID      string                               `json:"source_id"`
 }
 
@@ -11602,6 +11681,7 @@ type DataFactory struct {
 	ResourceType  string                       `json:"resource_type"`
 	SourceType    string                       `json:"source_type"`
 	ID            string                       `json:"id"`
+	ARN           string                       `json:"arn"`
 	SourceID      string                       `json:"source_id"`
 }
 
@@ -11749,6 +11829,7 @@ type DataFactoryDataset struct {
 	ResourceType  string                              `json:"resource_type"`
 	SourceType    string                              `json:"source_type"`
 	ID            string                              `json:"id"`
+	ARN           string                              `json:"arn"`
 	SourceID      string                              `json:"source_id"`
 }
 
@@ -11897,6 +11978,7 @@ type DataFactoryPipeline struct {
 	ResourceType  string                               `json:"resource_type"`
 	SourceType    string                               `json:"source_type"`
 	ID            string                               `json:"id"`
+	ARN           string                               `json:"arn"`
 	SourceID      string                               `json:"source_id"`
 }
 
@@ -12045,6 +12127,7 @@ type DataLakeAnalyticsAccount struct {
 	ResourceType  string                                    `json:"resource_type"`
 	SourceType    string                                    `json:"source_type"`
 	ID            string                                    `json:"id"`
+	ARN           string                                    `json:"arn"`
 	SourceID      string                                    `json:"source_id"`
 }
 
@@ -12192,6 +12275,7 @@ type DataLakeStore struct {
 	ResourceType  string                         `json:"resource_type"`
 	SourceType    string                         `json:"source_type"`
 	ID            string                         `json:"id"`
+	ARN           string                         `json:"arn"`
 	SourceID      string                         `json:"source_id"`
 }
 
@@ -12339,6 +12423,7 @@ type DiagnosticSetting struct {
 	ResourceType  string                             `json:"resource_type"`
 	SourceType    string                             `json:"source_type"`
 	ID            string                             `json:"id"`
+	ARN           string                             `json:"arn"`
 	SourceID      string                             `json:"source_id"`
 }
 
@@ -12486,6 +12571,7 @@ type EventGridDomain struct {
 	ResourceType  string                           `json:"resource_type"`
 	SourceType    string                           `json:"source_type"`
 	ID            string                           `json:"id"`
+	ARN           string                           `json:"arn"`
 	SourceID      string                           `json:"source_id"`
 }
 
@@ -12633,6 +12719,7 @@ type EventGridTopic struct {
 	ResourceType  string                          `json:"resource_type"`
 	SourceType    string                          `json:"source_type"`
 	ID            string                          `json:"id"`
+	ARN           string                          `json:"arn"`
 	SourceID      string                          `json:"source_id"`
 }
 
@@ -12780,6 +12867,7 @@ type EventhubNamespace struct {
 	ResourceType  string                             `json:"resource_type"`
 	SourceType    string                             `json:"source_type"`
 	ID            string                             `json:"id"`
+	ARN           string                             `json:"arn"`
 	SourceID      string                             `json:"source_id"`
 }
 
@@ -12927,6 +13015,7 @@ type Frontdoor struct {
 	ResourceType  string                     `json:"resource_type"`
 	SourceType    string                     `json:"source_type"`
 	ID            string                     `json:"id"`
+	ARN           string                     `json:"arn"`
 	SourceID      string                     `json:"source_id"`
 }
 
@@ -13074,6 +13163,7 @@ type HdinsightCluster struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -13221,6 +13311,7 @@ type HybridComputeMachine struct {
 	ResourceType  string                                `json:"resource_type"`
 	SourceType    string                                `json:"source_type"`
 	ID            string                                `json:"id"`
+	ARN           string                                `json:"arn"`
 	SourceID      string                                `json:"source_id"`
 }
 
@@ -13368,6 +13459,7 @@ type IOTHub struct {
 	ResourceType  string                  `json:"resource_type"`
 	SourceType    string                  `json:"source_type"`
 	ID            string                  `json:"id"`
+	ARN           string                  `json:"arn"`
 	SourceID      string                  `json:"source_id"`
 }
 
@@ -13515,6 +13607,7 @@ type IOTHubDps struct {
 	ResourceType  string                     `json:"resource_type"`
 	SourceType    string                     `json:"source_type"`
 	ID            string                     `json:"id"`
+	ARN           string                     `json:"arn"`
 	SourceID      string                     `json:"source_id"`
 }
 
@@ -13662,6 +13755,7 @@ type KeyVault struct {
 	ResourceType  string                    `json:"resource_type"`
 	SourceType    string                    `json:"source_type"`
 	ID            string                    `json:"id"`
+	ARN           string                    `json:"arn"`
 	SourceID      string                    `json:"source_id"`
 }
 
@@ -13809,6 +13903,7 @@ type KeyVaultDeletedVault struct {
 	ResourceType  string                                `json:"resource_type"`
 	SourceType    string                                `json:"source_type"`
 	ID            string                                `json:"id"`
+	ARN           string                                `json:"arn"`
 	SourceID      string                                `json:"source_id"`
 }
 
@@ -13956,6 +14051,7 @@ type KeyVaultManagedHardwareSecurityModule struct {
 	ResourceType  string                                                 `json:"resource_type"`
 	SourceType    string                                                 `json:"source_type"`
 	ID            string                                                 `json:"id"`
+	ARN           string                                                 `json:"arn"`
 	SourceID      string                                                 `json:"source_id"`
 }
 
@@ -14103,6 +14199,7 @@ type KeyVaultSecret struct {
 	ResourceType  string                          `json:"resource_type"`
 	SourceType    string                          `json:"source_type"`
 	ID            string                          `json:"id"`
+	ARN           string                          `json:"arn"`
 	SourceID      string                          `json:"source_id"`
 }
 
@@ -14250,6 +14347,7 @@ type KustoCluster struct {
 	ResourceType  string                        `json:"resource_type"`
 	SourceType    string                        `json:"source_type"`
 	ID            string                        `json:"id"`
+	ARN           string                        `json:"arn"`
 	SourceID      string                        `json:"source_id"`
 }
 
@@ -14397,6 +14495,7 @@ type LogAlert struct {
 	ResourceType  string                    `json:"resource_type"`
 	SourceType    string                    `json:"source_type"`
 	ID            string                    `json:"id"`
+	ARN           string                    `json:"arn"`
 	SourceID      string                    `json:"source_id"`
 }
 
@@ -14544,6 +14643,7 @@ type LogProfile struct {
 	ResourceType  string                      `json:"resource_type"`
 	SourceType    string                      `json:"source_type"`
 	ID            string                      `json:"id"`
+	ARN           string                      `json:"arn"`
 	SourceID      string                      `json:"source_id"`
 }
 
@@ -14691,6 +14791,7 @@ type LogicAppWorkflow struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -14838,6 +14939,7 @@ type MachineLearningWorkspace struct {
 	ResourceType  string                                    `json:"resource_type"`
 	SourceType    string                                    `json:"source_type"`
 	ID            string                                    `json:"id"`
+	ARN           string                                    `json:"arn"`
 	SourceID      string                                    `json:"source_id"`
 }
 
@@ -14985,6 +15087,7 @@ type MariadbServer struct {
 	ResourceType  string                         `json:"resource_type"`
 	SourceType    string                         `json:"source_type"`
 	ID            string                         `json:"id"`
+	ARN           string                         `json:"arn"`
 	SourceID      string                         `json:"source_id"`
 }
 
@@ -15132,6 +15235,7 @@ type MysqlServer struct {
 	ResourceType  string                       `json:"resource_type"`
 	SourceType    string                       `json:"source_type"`
 	ID            string                       `json:"id"`
+	ARN           string                       `json:"arn"`
 	SourceID      string                       `json:"source_id"`
 }
 
@@ -15279,6 +15383,7 @@ type NetworkSecurityGroup struct {
 	ResourceType  string                                `json:"resource_type"`
 	SourceType    string                                `json:"source_type"`
 	ID            string                                `json:"id"`
+	ARN           string                                `json:"arn"`
 	SourceID      string                                `json:"source_id"`
 }
 
@@ -15426,6 +15531,7 @@ type NetworkWatcher struct {
 	ResourceType  string                          `json:"resource_type"`
 	SourceType    string                          `json:"source_type"`
 	ID            string                          `json:"id"`
+	ARN           string                          `json:"arn"`
 	SourceID      string                          `json:"source_id"`
 }
 
@@ -15573,6 +15679,7 @@ type SearchService struct {
 	ResourceType  string                         `json:"resource_type"`
 	SourceType    string                         `json:"source_type"`
 	ID            string                         `json:"id"`
+	ARN           string                         `json:"arn"`
 	SourceID      string                         `json:"source_id"`
 }
 
@@ -15720,6 +15827,7 @@ type ServiceFabricCluster struct {
 	ResourceType  string                                `json:"resource_type"`
 	SourceType    string                                `json:"source_type"`
 	ID            string                                `json:"id"`
+	ARN           string                                `json:"arn"`
 	SourceID      string                                `json:"source_id"`
 }
 
@@ -15867,6 +15975,7 @@ type ServicebusNamespace struct {
 	ResourceType  string                               `json:"resource_type"`
 	SourceType    string                               `json:"source_type"`
 	ID            string                               `json:"id"`
+	ARN           string                               `json:"arn"`
 	SourceID      string                               `json:"source_id"`
 }
 
@@ -16014,6 +16123,7 @@ type SignalrService struct {
 	ResourceType  string                          `json:"resource_type"`
 	SourceType    string                          `json:"source_type"`
 	ID            string                          `json:"id"`
+	ARN           string                          `json:"arn"`
 	SourceID      string                          `json:"source_id"`
 }
 
@@ -16161,6 +16271,7 @@ type SpringCloudService struct {
 	ResourceType  string                              `json:"resource_type"`
 	SourceType    string                              `json:"source_type"`
 	ID            string                              `json:"id"`
+	ARN           string                              `json:"arn"`
 	SourceID      string                              `json:"source_id"`
 }
 
@@ -16308,6 +16419,7 @@ type StreamAnalyticsJob struct {
 	ResourceType  string                              `json:"resource_type"`
 	SourceType    string                              `json:"source_type"`
 	ID            string                              `json:"id"`
+	ARN           string                              `json:"arn"`
 	SourceID      string                              `json:"source_id"`
 }
 
@@ -16455,6 +16567,7 @@ type SynapseWorkspace struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -16602,6 +16715,7 @@ type Location struct {
 	ResourceType  string                    `json:"resource_type"`
 	SourceType    string                    `json:"source_type"`
 	ID            string                    `json:"id"`
+	ARN           string                    `json:"arn"`
 	SourceID      string                    `json:"source_id"`
 }
 
@@ -16749,6 +16863,7 @@ type AdUsers struct {
 	ResourceType  string                   `json:"resource_type"`
 	SourceType    string                   `json:"source_type"`
 	ID            string                   `json:"id"`
+	ARN           string                   `json:"arn"`
 	SourceID      string                   `json:"source_id"`
 }
 
@@ -16902,6 +17017,7 @@ type AdGroup struct {
 	ResourceType  string                   `json:"resource_type"`
 	SourceType    string                   `json:"source_type"`
 	ID            string                   `json:"id"`
+	ARN           string                   `json:"arn"`
 	SourceID      string                   `json:"source_id"`
 }
 
@@ -17053,6 +17169,7 @@ type AdServicePrincipal struct {
 	ResourceType  string                              `json:"resource_type"`
 	SourceType    string                              `json:"source_type"`
 	ID            string                              `json:"id"`
+	ARN           string                              `json:"arn"`
 	SourceID      string                              `json:"source_id"`
 }
 
@@ -17202,6 +17319,7 @@ type PostgresqlServer struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -17349,6 +17467,7 @@ type StorageSync struct {
 	ResourceType  string                       `json:"resource_type"`
 	SourceType    string                       `json:"source_type"`
 	ID            string                       `json:"id"`
+	ARN           string                       `json:"arn"`
 	SourceID      string                       `json:"source_id"`
 }
 
@@ -17496,6 +17615,7 @@ type MssqlManagedInstance struct {
 	ResourceType  string                                `json:"resource_type"`
 	SourceType    string                                `json:"source_type"`
 	ID            string                                `json:"id"`
+	ARN           string                                `json:"arn"`
 	SourceID      string                                `json:"source_id"`
 }
 
@@ -17643,6 +17763,7 @@ type SqlDatabase struct {
 	ResourceType  string                       `json:"resource_type"`
 	SourceType    string                       `json:"source_type"`
 	ID            string                       `json:"id"`
+	ARN           string                       `json:"arn"`
 	SourceID      string                       `json:"source_id"`
 }
 
@@ -17790,6 +17911,7 @@ type SqlServer struct {
 	ResourceType  string                     `json:"resource_type"`
 	SourceType    string                     `json:"source_type"`
 	ID            string                     `json:"id"`
+	ARN           string                     `json:"arn"`
 	SourceID      string                     `json:"source_id"`
 }
 
@@ -17937,6 +18059,7 @@ type SqlServerElasticPool struct {
 	ResourceType  string                                `json:"resource_type"`
 	SourceType    string                                `json:"source_type"`
 	ID            string                                `json:"id"`
+	ARN           string                                `json:"arn"`
 	SourceID      string                                `json:"source_id"`
 }
 
@@ -18085,6 +18208,7 @@ type SqlServerVirtualMachine struct {
 	ResourceType  string                                   `json:"resource_type"`
 	SourceType    string                                   `json:"source_type"`
 	ID            string                                   `json:"id"`
+	ARN           string                                   `json:"arn"`
 	SourceID      string                                   `json:"source_id"`
 }
 
@@ -18232,6 +18356,7 @@ type SqlServerFlexibleServer struct {
 	ResourceType  string                                   `json:"resource_type"`
 	SourceType    string                                   `json:"source_type"`
 	ID            string                                   `json:"id"`
+	ARN           string                                   `json:"arn"`
 	SourceID      string                                   `json:"source_id"`
 }
 
@@ -18379,6 +18504,7 @@ type StorageAccount struct {
 	ResourceType  string                          `json:"resource_type"`
 	SourceType    string                          `json:"source_type"`
 	ID            string                          `json:"id"`
+	ARN           string                          `json:"arn"`
 	SourceID      string                          `json:"source_id"`
 }
 
@@ -18526,6 +18652,7 @@ type RecoveryServicesVault struct {
 	ResourceType  string                                 `json:"resource_type"`
 	SourceType    string                                 `json:"source_type"`
 	ID            string                                 `json:"id"`
+	ARN           string                                 `json:"arn"`
 	SourceID      string                                 `json:"source_id"`
 }
 
@@ -18673,6 +18800,7 @@ type HybridKubernetesConnectedCluster struct {
 	ResourceType  string                                            `json:"resource_type"`
 	SourceType    string                                            `json:"source_type"`
 	ID            string                                            `json:"id"`
+	ARN           string                                            `json:"arn"`
 	SourceID      string                                            `json:"source_id"`
 }
 
@@ -18820,6 +18948,7 @@ type CostManagementCostByResourceType struct {
 	ResourceType  string                                            `json:"resource_type"`
 	SourceType    string                                            `json:"source_type"`
 	ID            string                                            `json:"id"`
+	ARN           string                                            `json:"arn"`
 	SourceID      string                                            `json:"source_id"`
 }
 
@@ -18965,6 +19094,7 @@ type CostManagementCostBySubscription struct {
 	ResourceType  string                                            `json:"resource_type"`
 	SourceType    string                                            `json:"source_type"`
 	ID            string                                            `json:"id"`
+	ARN           string                                            `json:"arn"`
 	SourceID      string                                            `json:"source_id"`
 }
 
@@ -19110,6 +19240,7 @@ type LoadBalancer struct {
 	ResourceType  string                        `json:"resource_type"`
 	SourceType    string                        `json:"source_type"`
 	ID            string                        `json:"id"`
+	ARN           string                        `json:"arn"`
 	SourceID      string                        `json:"source_id"`
 }
 
@@ -19257,6 +19388,7 @@ type LoadBalancerBackendAddressPool struct {
 	ResourceType  string                                          `json:"resource_type"`
 	SourceType    string                                          `json:"source_type"`
 	ID            string                                          `json:"id"`
+	ARN           string                                          `json:"arn"`
 	SourceID      string                                          `json:"source_id"`
 }
 
@@ -19405,6 +19537,7 @@ type LoadBalancerNatRule struct {
 	ResourceType  string                               `json:"resource_type"`
 	SourceType    string                               `json:"source_type"`
 	ID            string                               `json:"id"`
+	ARN           string                               `json:"arn"`
 	SourceID      string                               `json:"source_id"`
 }
 
@@ -19553,6 +19686,7 @@ type LoadBalancerOutboundRule struct {
 	ResourceType  string                                    `json:"resource_type"`
 	SourceType    string                                    `json:"source_type"`
 	ID            string                                    `json:"id"`
+	ARN           string                                    `json:"arn"`
 	SourceID      string                                    `json:"source_id"`
 }
 
@@ -19701,6 +19835,7 @@ type LoadBalancerProbe struct {
 	ResourceType  string                             `json:"resource_type"`
 	SourceType    string                             `json:"source_type"`
 	ID            string                             `json:"id"`
+	ARN           string                             `json:"arn"`
 	SourceID      string                             `json:"source_id"`
 }
 
@@ -19849,6 +19984,7 @@ type LoadBalancerRule struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -19997,6 +20133,7 @@ type ManagementGroup struct {
 	ResourceType  string                           `json:"resource_type"`
 	SourceType    string                           `json:"source_type"`
 	ID            string                           `json:"id"`
+	ARN           string                           `json:"arn"`
 	SourceID      string                           `json:"source_id"`
 }
 
@@ -20143,6 +20280,7 @@ type ManagementLock struct {
 	ResourceType  string                          `json:"resource_type"`
 	SourceType    string                          `json:"source_type"`
 	ID            string                          `json:"id"`
+	ARN           string                          `json:"arn"`
 	SourceID      string                          `json:"source_id"`
 }
 
@@ -20290,6 +20428,7 @@ type ResourceProvider struct {
 	ResourceType  string                            `json:"resource_type"`
 	SourceType    string                            `json:"source_type"`
 	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
 	SourceID      string                            `json:"source_id"`
 }
 
@@ -20436,6 +20575,7 @@ type ResourceGroup struct {
 	ResourceType  string                         `json:"resource_type"`
 	SourceType    string                         `json:"source_type"`
 	ID            string                         `json:"id"`
+	ARN           string                         `json:"arn"`
 	SourceID      string                         `json:"source_id"`
 }
 

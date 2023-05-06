@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
+	"github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"

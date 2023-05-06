@@ -12,3 +12,15 @@ func PAdd[T int | int64 | int32](a, b *T) *T {
 		return &v
 	}
 }
+
+func GetPointer[T int | int64 | int32 | string](a T) *T {
+	return &a
+}
+
+func GetPointerOrNil[T int | int64 | int32 | string](a T) *T {
+	var v T
+	if a == v {
+		return nil
+	}
+	return &a
+}

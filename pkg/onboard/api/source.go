@@ -23,7 +23,7 @@ const (
 )
 
 type SourceConfigAWS struct {
-	AccountId string   `json:"accountId" validate:"required,len=12"`
+	AccountId string   `json:"accountId"`
 	Regions   []string `json:"regions,omitempty"`
 	AccessKey string   `json:"accessKey" validate:"required"`
 	SecretKey string   `json:"secretKey" validate:"required"`
@@ -51,8 +51,10 @@ type SourceAwsRequest struct {
 }
 
 type SourceConfigAzure struct {
-	SubscriptionId string `json:"subscriptionId" validate:"required,uuid_rfc4122"`
+	SubscriptionId string `json:"subscriptionId"`
 	TenantId       string `json:"tenantId" validate:"required,uuid_rfc4122"`
+	ObjectId       string `json:"objectId" validate:"required,uuid_rfc4122"`
+	SecretId       string `json:"secretId" validate:"required,uuid_rfc4122"`
 	ClientId       string `json:"clientId" validate:"required"`
 	ClientSecret   string `json:"clientSecret" validate:"required"`
 }
@@ -108,11 +110,12 @@ type Source struct {
 	CredentialID         string                          `json:"credentialID"`
 	CredentialName       *string                         `json:"credentialName,omitempty"`
 	OnboardDate          time.Time                       `json:"onboardDate"`
-	Enabled              bool                            `json:"enabled"`
+	LifecycleState       ConnectionLifecycleState        `json:"lifecycleState"`
 	AssetDiscoveryMethod source.AssetDiscoveryMethodType `json:"assetDiscoveryMethod"`
 	HealthState          source.HealthStatus             `json:"healthState"`
 	LastHealthCheckTime  time.Time                       `json:"lastHealthCheckTime"`
 	HealthReason         *string                         `json:"healthReason,omitempty"`
+	Metadata             map[string]any                  `json:"metadata"`
 }
 
 type GetSourcesRequest struct {
@@ -135,9 +138,7 @@ type DiscoverAWSAccountsResponse struct {
 }
 
 type DiscoverAzureSubscriptionsRequest struct {
-	TenantId     string `json:"tenantId" validate:"required,uuid_rfc4122"`
-	ClientId     string `json:"clientId" validate:"required"`
-	ClientSecret string `json:"clientSecret" validate:"required"`
+	Config SourceConfigAzure `json:"config"`
 }
 
 type DiscoverAzureSubscriptionsSPNRequest struct {
@@ -148,7 +149,6 @@ type DiscoverAzureSubscriptionsResponse struct {
 	ID             string `json:"id"`
 	SubscriptionID string `json:"subscriptionId"`
 	Name           string `json:"name"`
-	Status         string `json:"status"`
 }
 
 type SourceEvent struct {
@@ -156,7 +156,7 @@ type SourceEvent struct {
 	SourceID   uuid.UUID
 	AccountID  string
 	SourceType source.Type
-	ConfigRef  string
+	Secret     string
 }
 
 type AWSCredential struct {

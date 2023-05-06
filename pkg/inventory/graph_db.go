@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 )
 
 type CategoryRootType string
@@ -55,7 +56,7 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 			"connector":      resourceType.Connector,
 			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   strings.ToLower(resourceType.ResourceName),
+			"resourceType":   resourceType.ResourceName,
 		})
 		if err != nil {
 			return GraphDatabase{}, err
@@ -65,7 +66,7 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 			"connector":      resourceType.Connector,
 			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   strings.ToLower(resourceType.ResourceName),
+			"resourceType":   resourceType.ResourceName,
 		})
 		if err != nil {
 			return GraphDatabase{}, err
@@ -78,7 +79,7 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 			"connector":      resourceType.Connector,
 			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   strings.ToLower(resourceType.ResourceName),
+			"resourceType":   resourceType.ResourceName,
 		})
 		if err != nil {
 			return GraphDatabase{}, err
@@ -88,7 +89,7 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 			"connector":      resourceType.Connector,
 			"serviceName":    strings.ToLower(resourceType.ServiceName),
 			"resource_label": resourceType.ResourceLabel,
-			"resourceType":   strings.ToLower(resourceType.ResourceName),
+			"resourceType":   resourceType.ResourceName,
 		})
 		if err != nil {
 			return GraphDatabase{}, err
@@ -101,12 +102,14 @@ func NewGraphDatabase(driver neo4j.DriverWithContext) (GraphDatabase, error) {
 }
 
 type Node struct {
+	Node      neo4j.Node
 	ElementID string
 }
 
 type CategoryNode struct {
 	Node
 	Name           string         `json:"name"`
+	LogoURI        *string        `json:"logo_uri,omitempty"`
 	Subcategories  []CategoryNode `json:"subcategories,omitempty"`
 	Filters        []Filter       `json:"filters,omitempty"` // Filters that are directly associated with this category
 	SubTreeFilters []Filter       `json:"-"`                 // SubTreeFilters List of all filters that are in the subtree of this category
@@ -117,6 +120,20 @@ type ServiceNode struct {
 	ServiceName string      `json:"service_name"`
 	Connector   source.Type `json:"connector"`
 	ServiceID   string      `json:"service_id"`
+	LogoURI     *string     `json:"logo_uri,omitempty"`
+}
+
+// GetParentService Returns the parent service name of this service node if it exists
+func (s ServiceNode) GetParentService() *string {
+	parent, ok := s.Node.Node.Props["parent_service"]
+	if !ok {
+		return nil
+	}
+	parentService, ok := parent.(string)
+	if !ok {
+		return nil
+	}
+	return &parentService
 }
 
 type Filter interface {
@@ -137,6 +154,7 @@ type FilterCloudResourceTypeNode struct {
 	ResourceType  string      `json:"resource_type"`
 	ResourceLabel string      `json:"resource_name"`
 	ServiceName   string      `json:"service_name"`
+	LogoURI       *string     `json:"logo_uri,omitempty"`
 }
 
 func (f FilterCloudResourceTypeNode) GetFilterType() FilterType {
@@ -218,14 +236,21 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 				return nil, ErrPropertyNotFound
 			}
 
+			logoURI, ok := node.Props["logo_uri"]
+			if !ok {
+				logoURI = ""
+			}
+
 			return &FilterCloudResourceTypeNode{
 				Node: Node{
+					Node:      node,
 					ElementID: node.ElementId,
 				},
 				Connector:     source.Type(connector.(string)),
-				ResourceType:  strings.ToLower(resourceType.(string)),
+				ResourceType:  resourceType.(string),
 				ResourceLabel: resourceLabel.(string),
 				ServiceName:   strings.ToLower(serviceName.(string)),
+				LogoURI:       utils.GetPointerOrNil(logoURI.(string)),
 			}, nil
 		case string(FilterTypeCost):
 			connector, ok := node.Props["connector"]
@@ -242,6 +267,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 			}
 			return &FilterCostNode{
 				Node: Node{
+					Node:      node,
 					ElementID: node.ElementId,
 				},
 				Connector:       source.Type(connector.(string)),
@@ -267,6 +293,7 @@ func getFilterFromNode(node neo4j.Node) (Filter, error) {
 			}
 			return &FilterInsightMetricNode{
 				Node: Node{
+					Node:      node,
 					ElementID: node.ElementId,
 				},
 				Connector: source.Type(connector.(string)),
@@ -286,11 +313,18 @@ func getCategoryFromNode(node neo4j.Node) (*CategoryNode, error) {
 		return nil, ErrPropertyNotFound
 	}
 
+	logoURI, ok := node.Props["logo_uri"]
+	if !ok {
+		logoURI = ""
+	}
+
 	return &CategoryNode{
 		Node: Node{
+			Node:      node,
 			ElementID: node.ElementId,
 		},
 		Name:           name.(string),
+		LogoURI:        utils.GetPointerOrNil(logoURI.(string)),
 		Filters:        []Filter{},
 		SubTreeFilters: []Filter{},
 		Subcategories:  []CategoryNode{},
@@ -316,11 +350,18 @@ func getCloudServiceFromNode(node neo4j.Node) (*ServiceNode, error) {
 		return nil, ErrPropertyNotFound
 	}
 
+	// optional property
+	logoURI, ok := node.Props["logo_uri"]
+	if !ok {
+		logoURI = ""
+	}
+
 	return &ServiceNode{
 		CategoryNode: *cat,
 		ServiceName:  serviceName.(string),
 		ServiceID:    serviceId.(string),
 		Connector:    source.Type(connector.(string)),
+		LogoURI:      utils.GetPointerOrNil(logoURI.(string)),
 	}, nil
 }
 
@@ -1309,7 +1350,141 @@ func (gdb *GraphDatabase) GetCloudServiceNodesByCategory(ctx context.Context, co
 	return servicesArr, nil
 }
 
-func (gdb *GraphDatabase) GetFilters(ctx context.Context, connector source.Type, servicenames []string, filterType *FilterType) ([]Filter, error) {
+func (gdb *GraphDatabase) GetCloudServiceNode(ctx context.Context, connector source.Type, serviceName string) (*ServiceNode, error) {
+	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	// Get all services of the selected connector
+	result, err := session.Run(ctx, "MATCH (c:Category:CloudServiceCategory) WHERE ($connector = '' OR c.connector = $connector) AND (c.service_name = $service_name) RETURN DISTINCT c", map[string]interface{}{
+		"connector":    connector.String(),
+		"service_name": serviceName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	singleNode, err := result.Single(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	rawCategory, ok := singleNode.Get("c")
+	if !ok {
+		return nil, ErrKeyColumnNotFound
+	}
+	categoryNode, ok := rawCategory.(neo4j.Node)
+	if !ok {
+		return nil, ErrColumnConversion
+	}
+
+	service, err := getCloudServiceFromNode(categoryNode)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err = session.Run(ctx, fmt.Sprintf(subTreeFiltersQuery, fmt.Sprintf(":CloudServiceCategory"), "($connector = '' OR c.connector = $connector) AND (c.service_name = $service_name)"), map[string]any{
+		"connector":    connector.String(),
+		"service_name": serviceName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for result.Next(ctx) {
+		rawFilter, ok := result.Record().Get("f")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		isChildRaw, ok := result.Record().Get("isDirectChild")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		filterNode, ok := rawFilter.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+		isChild, ok := isChildRaw.(bool)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		filter, err := getFilterFromNode(filterNode)
+		if err != nil {
+			return nil, err
+		}
+		service.SubTreeFilters = append(service.SubTreeFilters, filter)
+		if isChild {
+			service.Filters = append(service.Filters, filter)
+		}
+	}
+
+	result, err = session.Run(ctx, fmt.Sprintf("MATCH (c:Category:CloudServiceCategory)-[:INCLUDES]->(sub:Category) WHERE ($connector = '' OR c.connector = $connector) AND (c.service_name = $service_name) RETURN DISTINCT c, sub"), map[string]any{
+		"connector":    connector.String(),
+		"service_name": serviceName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for result.Next(ctx) {
+		rawSubcategory, ok := result.Record().Get("sub")
+		if !ok {
+			return nil, ErrKeyColumnNotFound
+		}
+		subcategoryNode, ok := rawSubcategory.(neo4j.Node)
+		if !ok {
+			return nil, ErrColumnConversion
+		}
+
+		subcategory, err := getCategoryFromNode(subcategoryNode)
+		if err != nil {
+			return nil, err
+		}
+		service.Subcategories = append(service.Subcategories, *subcategory)
+	}
+
+	return service, nil
+}
+
+func (gdb *GraphDatabase) GetResourceType(ctx context.Context, connector source.Type, resourceTypeName string) (*FilterCloudResourceTypeNode, error) {
+	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(ctx)
+
+	// Get all services of the selected connector
+	result, err := session.Run(ctx, "MATCH (f:Filter:FilterCloudResourceType{resource_type: $resourceType}) WHERE $connector = '' OR f.connector = $connector RETURN DISTINCT f", map[string]interface{}{
+		"resourceType": resourceTypeName,
+		"connector":    connector.String(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	singleNode, err := result.Single(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	rawFilter, ok := singleNode.Get("f")
+	if !ok {
+		return nil, ErrKeyColumnNotFound
+	}
+	filterNode, ok := rawFilter.(neo4j.Node)
+	if !ok {
+		return nil, ErrColumnConversion
+	}
+
+	filter, err := getFilterFromNode(filterNode)
+	if err != nil {
+		return nil, err
+	}
+
+	if filter.GetFilterType() != FilterTypeCloudResourceType {
+		return nil, fmt.Errorf("filter is not of type FilterTypeCloudResourceType")
+	}
+
+	return filter.(*FilterCloudResourceTypeNode), nil
+}
+
+func (gdb *GraphDatabase) GetFilters(ctx context.Context, connector source.Type, serviceNames []string, filterType *FilterType) ([]Filter, error) {
 	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
 	defer session.Close(ctx)
 
@@ -1317,15 +1492,15 @@ func (gdb *GraphDatabase) GetFilters(ctx context.Context, connector source.Type,
 	if filterType != nil {
 		filterTypeStr = string(*filterType)
 	}
-	if servicenames == nil {
-		servicenames = []string{}
+	if serviceNames == nil {
+		serviceNames = []string{}
 	}
 
 	result, err := session.Run(ctx,
 		fmt.Sprintf("MATCH (f:Filter:%s) WHERE ((f.connector IS NULL OR $connector = '' OR f.connector = $connector) AND ($service_names = [] OR (NOT f.service_name IS NULL AND f.service_name IN $service_names))) RETURN f;", filterTypeStr),
 		map[string]any{
 			"connector":     connector.String(),
-			"service_names": servicenames,
+			"service_names": serviceNames,
 		},
 	)
 	if err != nil {

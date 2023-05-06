@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
 type SourceAction string
@@ -21,8 +21,8 @@ type SourceEvent struct {
 	Action     SourceAction
 	SourceID   uuid.UUID
 	AccountID  string
-	SourceType api.SourceType
-	ConfigRef  string
+	SourceType source.Type
+	Secret     string
 }
 
 func ProcessSourceAction(db Database, event SourceEvent) error {
@@ -56,9 +56,9 @@ func CreateSource(db Database, event SourceEvent) error {
 		return fmt.Errorf("source has invalid uuid format")
 	case len(event.AccountID) == 0:
 		return fmt.Errorf("account id must be provided")
-	case !api.IsValidSourceType(event.SourceType):
+	case event.SourceType.IsNull():
 		return fmt.Errorf("source has invalid source type")
-	case event.ConfigRef == "": // TODO: should check if the config ref exists?
+	case event.Secret == "": // TODO: should check if the config ref exists?
 		return fmt.Errorf("source has invalid config ref")
 	}
 
@@ -66,7 +66,7 @@ func CreateSource(db Database, event SourceEvent) error {
 		ID:             event.SourceID,
 		AccountID:      event.AccountID,
 		Type:           event.SourceType,
-		ConfigRef:      event.ConfigRef,
+		ConfigRef:      event.Secret,
 		NextDescribeAt: sql.NullTime{Time: time.Now(), Valid: true},
 	})
 	if err != nil {
@@ -82,9 +82,9 @@ func UpdateSource(db Database, event SourceEvent) error {
 		return fmt.Errorf("source has invalid uuid format")
 	case len(event.AccountID) == 0:
 		return fmt.Errorf("account id must be provided")
-	case event.SourceType != "" && !api.IsValidSourceType(event.SourceType):
+	case event.SourceType != "" && !event.SourceType.IsNull():
 		return fmt.Errorf("source has invalid source type")
-	case event.ConfigRef == "": // TODO: should check if the config ref exists?
+	case event.Secret == "": // TODO: should check if the config ref exists?
 		return fmt.Errorf("source has invalid credentials")
 	}
 
@@ -92,7 +92,7 @@ func UpdateSource(db Database, event SourceEvent) error {
 		ID:        event.SourceID,
 		AccountID: event.AccountID,
 		Type:      event.SourceType,
-		ConfigRef: event.ConfigRef,
+		ConfigRef: event.Secret,
 	})
 	if err != nil {
 		return fmt.Errorf("update source: %w", err)

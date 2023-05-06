@@ -1,10 +1,7 @@
 auth-service
 compliance-report-worker
 compliance-service
-describe-cleanup-worker
-describe-connection-worker
 describe-scheduler
-describe-worker
 frontend
 insight-worker
 inventory-service

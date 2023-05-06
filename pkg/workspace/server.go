@@ -230,12 +230,13 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	var includes []contourv1.Include
+	var httpIncludes []contourv1.Include
+	var grpcIncludes []contourv1.Include
 	for _, w := range workspaces {
 		if w.Status != string(StatusProvisioned) {
 			continue
 		}
-		includes = append(includes, contourv1.Include{
+		httpIncludes = append(httpIncludes, contourv1.Include{
 			Name:      "http-proxy-route",
 			Namespace: w.ID,
 			Conditions: []contourv1.MatchCondition{
@@ -244,24 +245,52 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 				},
 			},
 		})
+		grpcIncludes = append(grpcIncludes, contourv1.Include{
+			Name:      "grpc-proxy-route",
+			Namespace: w.ID,
+			Conditions: []contourv1.MatchCondition{
+				{
+					Header: &contourv1.HeaderMatchCondition{
+						Name:    "workspace-name",
+						Present: true,
+						Exact:   w.Name,
+					},
+				},
+			},
+		})
 	}
 
-	key := types.NamespacedName{
+	httpKey := types.NamespacedName{
 		Name:      "http-proxy-route",
 		Namespace: s.cfg.KeibiOctopusNamespace,
 	}
 	var httpProxy contourv1.HTTPProxy
 
-	exists := true
-	if err := s.kubeClient.Get(ctx, key, &httpProxy); err != nil {
+	grpcKey := types.NamespacedName{
+		Name:      "grpc-proxy-route",
+		Namespace: s.cfg.KeibiOctopusNamespace,
+	}
+	var grpcProxy contourv1.HTTPProxy
+
+	httpExists := true
+	if err := s.kubeClient.Get(ctx, httpKey, &httpProxy); err != nil {
 		if apierrors.IsNotFound(err) {
-			exists = false
+			httpExists = false
 		} else {
 			return err
 		}
 	}
 
-	resourceVersion := httpProxy.GetResourceVersion()
+	grpcExists := true
+	if err := s.kubeClient.Get(ctx, grpcKey, &grpcProxy); err != nil {
+		if apierrors.IsNotFound(err) {
+			grpcExists = false
+		} else {
+			return err
+		}
+	}
+
+	httpResourceVersion := httpProxy.GetResourceVersion()
 	httpProxy = contourv1.HTTPProxy{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "HTTPProxy",
@@ -272,13 +301,29 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 			Namespace: s.cfg.KeibiOctopusNamespace,
 		},
 		Spec: contourv1.HTTPProxySpec{
-			Includes: includes,
+			Includes: httpIncludes,
 		},
 		Status: contourv1.HTTPProxyStatus{},
 	}
 
-	if exists {
-		httpProxy.SetResourceVersion(resourceVersion)
+	grpcResourceVersion := grpcProxy.GetResourceVersion()
+	grpcProxy = contourv1.HTTPProxy{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "HTTPProxy",
+			APIVersion: "projectcontour.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "grpc-proxy-route",
+			Namespace: s.cfg.KeibiOctopusNamespace,
+		},
+		Spec: contourv1.HTTPProxySpec{
+			Includes: grpcIncludes,
+		},
+		Status: contourv1.HTTPProxyStatus{},
+	}
+
+	if httpExists {
+		httpProxy.SetResourceVersion(httpResourceVersion)
 		err := s.kubeClient.Update(ctx, &httpProxy)
 		if err != nil {
 			return err
@@ -290,6 +335,18 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 		}
 	}
 
+	if grpcExists {
+		grpcProxy.SetResourceVersion(grpcResourceVersion)
+		err := s.kubeClient.Update(ctx, &grpcProxy)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := s.kubeClient.Create(ctx, &grpcProxy)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -353,8 +410,8 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			}
 
 			if err := s.authClient.PutRoleBinding(authCtx, &authapi.PutRoleBindingRequest{
-				UserID: workspace.OwnerId,
-				Role:   authapi.AdminRole,
+				UserID:   workspace.OwnerId,
+				RoleName: authapi.AdminRole,
 			}); err != nil {
 				return fmt.Errorf("put role binding: %w", err)
 			}

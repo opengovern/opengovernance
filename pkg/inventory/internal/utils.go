@@ -6,7 +6,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
-func Paginate[T api.ServiceSummary | api.AccountSummary | api.LocationResponse](page, size int64, arr []T) []T {
+func Paginate[T api.ServiceSummary | api.Connection | api.LocationResponse | api.FilterCloudResourceType](page, size int64, arr []T) []T {
 	if page < 1 {
 		page = 1
 	}

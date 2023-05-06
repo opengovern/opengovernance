@@ -366,7 +366,7 @@ func (ts *testSuite) TestGetRoleUsers() {
 			if tc.Role == api.KeibiAdminRole {
 				ts.Equal(len(response), 0)
 			} else {
-				ts.Equal(tc.Role, response[0].Role)
+				ts.Equal(tc.Role, response[0].RoleName)
 				ts.Equal("user1@test.com", response[0].Email)
 				ts.True(response[0].EmailVerified)
 			}
@@ -384,25 +384,25 @@ func (ts *testSuite) TestCreateAPIKey() { // not finished yet. has problem with 
 		Error       int
 	}{
 		{
-			Request:     api.CreateAPIKeyRequest{Name: "Key1", Role: api.AdminRole},
+			Request:     api.CreateAPIKeyRequest{Name: "Key1", RoleName: api.AdminRole},
 			UserID:      "test4",
 			WorkspaceID: "ws4",
 			Role:        "ADMIN",
 		},
 		{
-			Request:     api.CreateAPIKeyRequest{Name: "Key2", Role: api.EditorRole},
+			Request:     api.CreateAPIKeyRequest{Name: "Key2", RoleName: api.EditorRole},
 			UserID:      "test2",
 			WorkspaceID: "ws1",
 			Role:        "ADMIN",
 		},
 		{
-			Request:     api.CreateAPIKeyRequest{Name: "Key3", Role: api.ViewerRole},
+			Request:     api.CreateAPIKeyRequest{Name: "Key3", RoleName: api.ViewerRole},
 			UserID:      "test1",
 			WorkspaceID: "ws1",
 			Role:        "EDITOR",
 		},
 		{
-			Request:     api.CreateAPIKeyRequest{Name: "Key4", Role: api.ViewerRole},
+			Request:     api.CreateAPIKeyRequest{Name: "Key4", RoleName: api.ViewerRole},
 			UserID:      "test3",
 			WorkspaceID: "ws2",
 			Role:        "VIEWER",
@@ -742,19 +742,19 @@ func (ts *testSuite) TestUpdateKeyRole() {
 	}{
 		{
 			WorkspaceID: "ws1",
-			Request:     api.UpdateKeyRoleRequest{ID: 1, Role: api.EditorRole},
+			Request:     api.UpdateKeyRoleRequest{ID: 1, RoleName: api.EditorRole},
 		},
 		{
 			WorkspaceID: "ws4",
-			Request:     api.UpdateKeyRoleRequest{ID: 2, Role: api.EditorRole},
+			Request:     api.UpdateKeyRoleRequest{ID: 2, RoleName: api.EditorRole},
 		},
 		{
 			WorkspaceID: "ws1",
-			Request:     api.UpdateKeyRoleRequest{ID: 10, Role: api.EditorRole},
+			Request:     api.UpdateKeyRoleRequest{ID: 10, RoleName: api.EditorRole},
 		},
 		{
 			WorkspaceID: "ws1",
-			Request:     api.UpdateKeyRoleRequest{ID: 3, Role: api.ViewerRole},
+			Request:     api.UpdateKeyRoleRequest{ID: 3, RoleName: api.ViewerRole},
 		},
 	}
 	for i, tc := range updateKeyRoleTestCases {
@@ -774,8 +774,73 @@ func (ts *testSuite) TestUpdateKeyRole() {
 			if (tc.Request.ID == 10) || (tc.WorkspaceID == "ws1" && tc.Request.ID == 3) {
 			} else {
 				after, _ := ts.httpRoutes.db.GetApiKey(tc.WorkspaceID, tc.Request.ID)
-				ts.Equal(tc.Request.Role, after.Role)
+				ts.Equal(tc.Request.RoleName, after.Role)
 			}
+		})
+	}
+}
+
+func (ts *testSuite) TestGetRoles() {
+	GetRolesTestCases := []struct {
+		WorkspaceID string
+		Error       error
+	}{
+		{
+			WorkspaceID: "ws1",
+		},
+	}
+	for i, tc := range GetRolesTestCases {
+		ts.T().Run(fmt.Sprintf("GetRolesTestCases-%d", i), func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodPost, "/", nil)
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+
+			err := ts.httpRoutes.ListRoles(c)
+			ts.NoError(err, "error while running the API")
+			var response []api.RolesListResponse
+			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+				ts.T().Fatalf("json decode: %v", err)
+			}
+			fmt.Println(response)
+		})
+	}
+}
+
+func (ts *testSuite) TestGetRoleDetails() {
+	GetRoleDetailsTestCases := []struct {
+		WorkspaceID string
+		RoleName    string
+		Error       error
+	}{
+		{
+			WorkspaceID: "ws1",
+			RoleName:    "VIEWER",
+		},
+	}
+	for i, tc := range GetRoleDetailsTestCases {
+		ts.T().Run(fmt.Sprintf("GetRoleDetailsTestCases-%d", i), func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodPost, "/", nil)
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+			c.SetPath("/auth/api/v1/roles/:role")
+			c.SetParamNames("role")
+			c.SetParamValues(tc.RoleName)
+
+			err := ts.httpRoutes.RoleDetails(c)
+			ts.NoError(err, "error while running the API")
+			var response api.RoleDetailsResponse
+			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+				ts.T().Fatalf("json decode: %v", err)
+			}
+			fmt.Println(response)
 		})
 	}
 }

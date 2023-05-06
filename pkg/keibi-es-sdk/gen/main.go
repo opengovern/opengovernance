@@ -44,6 +44,7 @@ type {{ .Name }} struct {
 	ResourceType  string ` + "`json:\"resource_type\"`" + `
 	SourceType    string ` + "`json:\"source_type\"`" + `
 	ID            string ` + "`json:\"id\"`" + `
+	ARN            string ` + "`json:\"arn\"`" + `
 	SourceID      string ` + "`json:\"source_id\"`" + `
 }
 
@@ -207,8 +208,8 @@ func Get{{ .Name }}(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 	// for _, pkg := range []string{
 	// 	"context",
 	// 	"github.com/turbot/steampipe-plugin-sdk/plugin",
-	// 	"gitlab.com/keibiengine/keibi-engine/pkg/aws/model",
-	// 	"gitlab.com/keibiengine/keibi-engine/pkg/azure/model",
+	// 	"github.com/kaytu-io/kaytu-aws-describer/aws/model",
+	// 	"github.com/kaytu-io/kaytu-azure-describer/azure/model",
 	// } {
 	// 	fmt.Fprintf(&buf, "\"%s\"\n", pkg)
 	// }
@@ -268,7 +269,7 @@ func Get{{ .Name }}(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateD
 		import (
 			"context"
 			"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
-			`+*sourceType+` "gitlab.com/keibiengine/keibi-engine/pkg/`+*sourceType+`/model"
+			`+*sourceType+` "github.com/kaytu-io/kaytu-`+*sourceType+`-describer/`+*sourceType+`/model"
 		)
 		`)
 	}

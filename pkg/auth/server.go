@@ -84,6 +84,10 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 		workspaceName = workspaceName[:idx]
 	}
 
+	if headerWorkspace, ok := headers["workspace-name"]; ok {
+		workspaceName = headerWorkspace
+	}
+
 	rb, limits, err := s.GetWorkspaceByName(workspaceName, user)
 	if err != nil {
 		s.logger.Warn("denied access due to failure in getting workspace",
@@ -124,7 +128,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 					{
 						Header: &envoycore.HeaderValue{
 							Key:   httpserver.XKeibiUserRoleHeader,
-							Value: string(rb.Role),
+							Value: string(rb.RoleName),
 						},
 					},
 					{
@@ -161,7 +165,7 @@ func (s Server) GetWorkspaceLimits(rb api.RoleBinding, workspaceName string) (ap
 		}
 	}
 
-	limits, err := s.workspaceClient.GetLimits(&httpclient.Context{UserRole: rb.Role, UserID: rb.UserID,
+	limits, err := s.workspaceClient.GetLimits(&httpclient.Context{UserRole: rb.RoleName, UserID: rb.UserID,
 		WorkspaceName: workspaceName}, workspaceName)
 	if err != nil {
 		return api2.WorkspaceLimitsUsage{}, err
@@ -238,7 +242,7 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.R
 		UserID:        user.ExternalUserID,
 		WorkspaceID:   "",
 		WorkspaceName: "",
-		Role:          api.EditorRole,
+		RoleName:      api.EditorRole,
 	}
 
 	if workspaceName != "keibi" {
@@ -252,9 +256,9 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.R
 		rb.WorkspaceID = limits.ID
 
 		if rl, ok := user.WorkspaceAccess[limits.ID]; ok {
-			rb.Role = rl
+			rb.RoleName = rl
 		} else if user.GlobalAccess != nil {
-			rb.Role = *user.GlobalAccess
+			rb.RoleName = *user.GlobalAccess
 		} else {
 			return rb, limits, errors.New("access denied")
 		}

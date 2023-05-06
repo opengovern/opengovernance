@@ -350,39 +350,39 @@ type ListQueryRequest struct {
 	Labels         []string    `json:"labels"`         // Labels
 }
 
-type AccountResourceCountResponse struct {
-	SourceID               string      `json:"sourceID"`               // Source Id
-	SourceType             source.Type `json:"sourceType"`             // Source Type
-	ProviderConnectionName string      `json:"providerConnectionName"` // Provider Connection Name
-	ProviderConnectionID   string      `json:"providerConnectionID"`   // Provider Connection Id
-	Enabled                bool        `json:"enabled"`
-	ResourceCount          int         `json:"resourceCount"` // Number of resources
-	OnboardDate            time.Time   `json:"onboardDate"`
-	LastInventory          time.Time   `json:"lastInventory"`
+type ConnectionResourceCountResponse struct {
+	SourceID                string      `json:"sourceID"`                // Source Id
+	Connector               source.Type `json:"connector"`               // Source Type
+	ConnectorConnectionName string      `json:"connectorConnectionName"` // Provider Connection Name
+	ConnectorConnectionID   string      `json:"connectorConnectionID"`   // Provider Connection Id
+	LifecycleState          string      `json:"lifecycleState"`
+	ResourceCount           int         `json:"resourceCount"` // Number of resources
+	OnboardDate             time.Time   `json:"onboardDate"`
+	LastInventory           time.Time   `json:"lastInventory"`
 }
 
-type AccountSummaryResponse struct {
+type ListConnectionsResponse struct {
 	TotalCost           map[string]float64 `json:"totalCost"`
 	TotalCount          int                `json:"totalCount"`
 	TotalUnhealthyCount int                `json:"totalUnhealthyCount"`
 	TotalDisabledCount  int                `json:"totalDisabledCount"`
-	APIFilters          map[string]any     `json:"apiFilters"`
-	Accounts            []AccountSummary   `json:"accounts"`
+	Connections         []Connection       `json:"connections"`
 }
 
-type AccountSummary struct {
-	SourceID               string              `json:"sourceID"`
-	SourceType             source.Type         `json:"sourceType"`
-	ProviderConnectionName string              `json:"providerConnectionName"`
-	ProviderConnectionID   string              `json:"providerConnectionID"`
-	Enabled                bool                `json:"enabled"`
-	ResourceCount          int                 `json:"resourceCount"`
-	Cost                   map[string]float64  `json:"cost,omitempty"`
-	OnboardDate            time.Time           `json:"onboardDate"`
-	LastInventory          time.Time           `json:"lastInventory"`
-	HealthState            source.HealthStatus `json:"healthState"`
-	LastHealthCheckTime    time.Time           `json:"lastHealthCheckTime"`
-	HealthReason           *string             `json:"healthReason,omitempty"`
+type Connection struct {
+	ConnectionID            string              `json:"connectionID"`
+	Connector               source.Type         `json:"connector"`
+	ConnectorConnectionName string              `json:"connectorConnectionName"`
+	ConnectorConnectionID   string              `json:"connectorConnectionID"`
+	LifecycleState          string              `json:"lifecycleState"`
+	ResourceCount           int                 `json:"resourceCount"`
+	Cost                    map[string]float64  `json:"cost,omitempty"`
+	OnboardDate             time.Time           `json:"onboardDate"`
+	LastInventory           time.Time           `json:"lastInventory"`
+	HealthState             source.HealthStatus `json:"healthState"`
+	LastHealthCheckTime     time.Time           `json:"lastHealthCheckTime"`
+	HealthReason            *string             `json:"healthReason,omitempty"`
+	Metadata                map[string]any
 }
 
 type TopAccountResponse struct {
@@ -436,7 +436,6 @@ type LocationResponse struct {
 
 type RegionsByResourceCountResponse struct {
 	TotalCount int                `json:"totalCount"`
-	APIFilters map[string]any     `json:"apiFilters"`
 	Regions    []LocationResponse `json:"regions"`
 }
 
@@ -455,13 +454,13 @@ type Filter interface {
 }
 
 type FilterCloudResourceType struct {
-	FilterType          FilterType  `json:"filterType"`
+	FilterType          FilterType  `json:"filterType" example:"cloudResourceType"`
 	FilterID            string      `json:"filterId"`
-	CloudProvider       source.Type `json:"cloudProvider"`
-	ResourceType        string      `json:"resourceType"`
-	ResourceLabel       string      `json:"resourceName"`
-	ServiceCode         string      `json:"serviceCode"`
-	ResourceCount       int         `json:"resourceCount"`
+	Connector           source.Type `json:"connector" example:"AWS"`
+	ResourceType        string      `json:"resourceType" example:"AWS::AMP::Workspace"`
+	ResourceLabel       string      `json:"resourceName" example:""`
+	ServiceName         string      `json:"serviceName" example:"amp"`
+	ResourceCount       int         `json:"resourceCount" example:"0"`
 	ResourceCountChange *float64    `json:"resourceCountChange,omitempty"`
 }
 
@@ -481,7 +480,7 @@ type FilterCost struct {
 	FilterType    FilterType              `json:"filterType"`
 	FilterID      string                  `json:"filterID"`
 	CloudProvider source.Type             `json:"cloudProvider"`
-	ServiceName   string                  `json:"serviceName"`
+	ServiceLabel  string                  `json:"serviceLabel"`
 	Cost          map[string]CostWithUnit `json:"cost"`
 	CostChange    map[string]float64      `json:"costChange,omitempty"`
 }
@@ -495,7 +494,7 @@ func (f FilterCost) GetFilterType() FilterType {
 }
 
 func (f FilterCost) GetFilterName() string {
-	return f.ServiceName
+	return f.ServiceLabel
 }
 
 type FilterInsightMetric struct {
@@ -583,16 +582,20 @@ type ConnectionSummaryResponse struct {
 	ResourceTypes map[string]int                       `json:"resourceTypes"` // Resource types as Key, Number of them as Value
 }
 
-type ServiceSummaryResponse struct {
+type ListServiceSummariesResponse struct {
 	TotalCount int              `json:"totalCount"` // Number of services
-	APIFilters map[string]any   `json:"apiFilters"` // API Filters
 	Services   []ServiceSummary `json:"services"`   // A list of service summeries
 }
 
 type ServiceSummary struct {
-	CloudProvider SourceType              `json:"cloudProvider"`           // Cloud provider
+	Connector     source.Type             `json:"connector"`               // Cloud provider
+	ServiceLabel  string                  `json:"serviceLabel"`            // Service Label
 	ServiceName   string                  `json:"serviceName"`             // Service Name
-	ServiceCode   string                  `json:"serviceCode"`             // Service Code
 	ResourceCount *int                    `json:"resourceCount,omitempty"` // Number of Resources
 	Cost          map[string]CostWithUnit `json:"cost,omitempty"`          // Costs (Unit as Key, CostWithUnit as Value)
+}
+
+type ListResourceTypesResponse struct {
+	TotalCount    int                       `json:"totalCount" example:"1"` // Number of resource types
+	ResourceTypes []FilterCloudResourceType `json:"resourceTypes"`          // A list of resource types
 }

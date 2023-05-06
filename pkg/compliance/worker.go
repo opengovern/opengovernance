@@ -14,9 +14,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/push"
 
-	"github.com/hashicorp/vault/api/auth/kubernetes"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/vault"
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
 )
@@ -26,7 +24,6 @@ type Worker struct {
 	jobQueue         queue.Interface
 	jobResultQueue   queue.Interface
 	config           WorkerConfig
-	vault            vault.SourceConfig
 	kfkProducer      sarama.SyncProducer
 	kfkTopic         string
 	logger           *zap.Logger
@@ -92,23 +89,6 @@ func InitializeWorker(
 	w.config = config
 	w.logger = logger
 
-	k8sAuth, err := kubernetes.NewKubernetesAuth(
-		config.Vault.Role,
-		kubernetes.WithServiceAccountToken(config.Vault.Token),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// setup vault
-	v, err := vault.NewSourceConfig(config.Vault.Address, config.Vault.CaPath, k8sAuth, config.Vault.UseTLS)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Println("Connected to vault:", config.Vault.Address)
-	w.vault = v
-
 	w.onboardClient = client.NewOnboardServiceClient(config.Onboard.BaseURL, nil)
 	w.complianceClient = client2.NewComplianceClient(config.Compliance.BaseURL)
 
@@ -161,7 +141,7 @@ func (w *Worker) Run() error {
 
 	w.logger.Info("Running the job", zap.Uint("jobID", job.JobID))
 
-	result := job.Do(w.complianceClient, w.onboardClient, w.vault, w.config.ElasticSearch, w.kfkProducer, w.kfkTopic, w.logger)
+	result := job.Do(w.complianceClient, w.onboardClient, w.config.ElasticSearch, w.kfkProducer, w.kfkTopic, w.logger)
 
 	w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 

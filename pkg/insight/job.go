@@ -12,11 +12,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/managedgrafana"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/go-errors/errors"
+	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	azuremodel "gitlab.com/keibiengine/keibi-engine/pkg/azure/model"
 
-	awsmodel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
+	awsmodel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"

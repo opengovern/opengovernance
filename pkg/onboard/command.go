@@ -3,13 +3,11 @@ package onboard
 import (
 	"context"
 	"fmt"
-	"os"
-	"strings"
-
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/connector"
 	"go.uber.org/zap"
+	"os"
 )
 
 const (
@@ -29,14 +27,13 @@ var (
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
 	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
 
-	VaultAddress  = os.Getenv("VAULT_ADDRESS")
-	VaultToken    = os.Getenv("VAULT_TOKEN")
-	VaultRoleName = os.Getenv("VAULT_ROLE")
-	VaultCaPath   = os.Getenv("VAULT_TLS_CA_PATH")
-	VaultUseTLS   = strings.ToLower(strings.TrimSpace(os.Getenv("VAULT_USE_TLS"))) == "true"
-
 	AWSPermissionCheckURL = os.Getenv("AWS_PERMISSION_CHECK_URL")
 	InventoryBaseURL      = os.Getenv("INVENTORY_BASE_URL")
+
+	KeyARN           = os.Getenv("KMS_KEY_ARN")
+	KMSAccountRegion = os.Getenv("KMS_ACCOUNT_REGION")
+	KMSAccessKey     = os.Getenv("KMS_KEY_ACCESS_KEY")
+	KMSSecretKey     = os.Getenv("KMS_KEY_SECRET_KEY")
 
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
@@ -72,13 +69,9 @@ func start(ctx context.Context) error {
 		PostgreSQLPort,
 		PostgreSQLDb,
 		PostgreSQLSSLMode,
-		VaultAddress,
-		VaultToken,
-		VaultRoleName,
-		VaultCaPath,
-		VaultUseTLS,
 		logger,
 		AWSPermissionCheckURL,
+		KeyARN,
 		InventoryBaseURL,
 	)
 	if err != nil {

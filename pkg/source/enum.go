@@ -14,10 +14,9 @@ const (
 type HealthStatus string
 
 const (
-	HealthStatusNil              HealthStatus = ""
-	HealthStatusHealthy          HealthStatus = "healthy"
-	HealthStatusUnhealthy        HealthStatus = "unhealthy"
-	HealthStatusInitialDiscovery HealthStatus = "initial_discovery"
+	HealthStatusNil       HealthStatus = ""
+	HealthStatusHealthy   HealthStatus = "healthy"
+	HealthStatusUnhealthy HealthStatus = "unhealthy"
 )
 
 func ParseHealthStatus(str string) (HealthStatus, error) {
@@ -26,8 +25,6 @@ func ParseHealthStatus(str string) (HealthStatus, error) {
 		return HealthStatusHealthy, nil
 	case "unhealthy":
 		return HealthStatusUnhealthy, nil
-	case "initial_discovery":
-		return HealthStatusInitialDiscovery, nil
 	default:
 		return HealthStatusNil, fmt.Errorf("invalid health status: %s", str)
 	}
@@ -36,7 +33,8 @@ func ParseHealthStatus(str string) (HealthStatus, error) {
 type SourceCreationMethod string
 
 const (
-	SourceCreationMethodManual SourceCreationMethod = "manual"
+	SourceCreationMethodManual      SourceCreationMethod = "manual"
+	SourceCreationMethodAutoOnboard SourceCreationMethod = "auto-onboard"
 )
 
 type ConnectorDirectionType string
@@ -53,13 +51,6 @@ const (
 	ConnectorStatusEnabled    ConnectorStatus = "enabled"
 	ConnectorStatusDisabled   ConnectorStatus = "disabled"
 	ConnectorStatusComingSoon ConnectorStatus = "coming_soon"
-)
-
-type CredentialStatus string
-
-const (
-	CredentialStatusEnabled  CredentialStatus = "enabled"
-	CredentialStatusDisabled CredentialStatus = "disabled"
 )
 
 type CredentialType string

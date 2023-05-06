@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
+
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
@@ -21,7 +23,7 @@ import (
 type Source struct {
 	ID                     uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
 	AccountID              string
-	Type                   api.SourceType
+	Type                   source.Type
 	ConfigRef              string
 	LastDescribedAt        sql.NullTime
 	NextDescribeAt         sql.NullTime
@@ -55,12 +57,13 @@ type ScheduleJob struct {
 
 type DescribeSourceJob struct {
 	gorm.Model
-	ScheduleJobID        uint
 	DescribedAt          time.Time
 	SourceID             uuid.UUID // Not the primary key but should be a unique identifier
+	SourceType           source.Type
 	AccountID            string
 	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
 	Status               api.DescribeSourceJobStatus
+	TriggerType          enums.DescribeTriggerType
 }
 
 type CloudNativeDescribeSourceJob struct {
@@ -76,10 +79,11 @@ type CloudNativeDescribeSourceJob struct {
 
 type DescribeResourceJob struct {
 	gorm.Model
-	ParentJobID    uint
-	ResourceType   string
-	Status         api.DescribeResourceJobStatus
-	FailureMessage string // Should be NULLSTRING
+	ParentJobID            uint
+	ResourceType           string
+	Status                 api.DescribeResourceJobStatus
+	FailureMessage         string // Should be NULLSTRING
+	DescribedResourceCount int64
 }
 
 type InsightJob struct {

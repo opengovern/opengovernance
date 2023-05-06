@@ -17,26 +17,24 @@ type CreateCredentialResponse struct {
 }
 
 type UpdateCredentialRequest struct {
-	ID         string      `json:"id"`
-	SourceType source.Type `json:"source_type"`
-	Name       *string     `json:"name"`
-	Config     any         `json:"config"`
+	Connector source.Type `json:"connector"`
+	Name      *string     `json:"name"`
+	Config    any         `json:"config"`
 }
 
 type Credential struct {
-	ID             string                  `json:"id"`
-	Name           *string                 `json:"name,omitempty"`
-	ConnectorType  source.Type             `json:"connectorType"`
-	Status         source.CredentialStatus `json:"status"`
-	CredentialType source.CredentialType   `json:"credentialType"`
-	Enabled        bool                    `json:"enabled"`
-	OnboardDate    time.Time               `json:"onboardDate"`
+	ID             string                `json:"id"`
+	Name           *string               `json:"name,omitempty"`
+	ConnectorType  source.Type           `json:"connectorType"`
+	CredentialType source.CredentialType `json:"credentialType"`
+	Enabled        bool                  `json:"enabled"`
+	OnboardDate    time.Time             `json:"onboardDate"`
 
 	LastHealthCheckTime time.Time           `json:"lastHealthCheckTime"`
 	HealthStatus        source.HealthStatus `json:"healthStatus"`
 	HealthReason        *string             `json:"healthReason,omitempty"`
 
-	Metadata string `json:"metadata,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 
 	Connections []Source `json:"connections,omitempty"`
 

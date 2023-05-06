@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	vaultmocks "gitlab.com/keibiengine/keibi-engine/pkg/vault/mocks"
 
 	describeapi "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	inventoryapi "gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
@@ -25,7 +26,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	queuemocks "gitlab.com/keibiengine/keibi-engine/pkg/internal/queue/mocks"
-	vaultmocks "gitlab.com/keibiengine/keibi-engine/pkg/internal/vault/mocks"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 
 	"gorm.io/gorm"
@@ -166,7 +166,7 @@ func (s *HttpHandlerSuite) TestCreateAWSSource_Success() {
 		SourceID:   response.ID,
 		AccountID:  "123456789012",
 		SourceType: source.CloudAWS,
-		ConfigRef:  pathRef,
+		Secret:     pathRef,
 	})
 }
 
@@ -228,7 +228,7 @@ func (s *HttpHandlerSuite) TestCreateAzureSourceWithSPN_Success() {
 		SourceID:   response.ID,
 		AccountID:  "6948DF80-14BD-4E04-8842-7668D9C001F5",
 		SourceType: source.CloudAzure,
-		ConfigRef:  pathRef,
+		Secret:     pathRef,
 	})
 }
 
@@ -384,7 +384,7 @@ func (s *HttpHandlerSuite) TestCreateAzureSource_Success() {
 		SourceID:   response.ID,
 		AccountID:  "6948DF80-14BD-4E04-8842-7668D9C001F5",
 		SourceType: source.CloudAzure,
-		ConfigRef:  pathRef,
+		Secret:     pathRef,
 	})
 }
 
@@ -421,7 +421,7 @@ func (s *HttpHandlerSuite) TestDeleteAzureSource_Success() {
 		Action:     api.SourceDeleted,
 		SourceID:   response.ID,
 		SourceType: source.CloudAzure,
-		ConfigRef:  pathRef,
+		Secret:     pathRef,
 	})
 
 	vmock.AssertCalled(s.T(), "Delete", pathRef)

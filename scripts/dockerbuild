@@ -21,21 +21,9 @@ if [[ $SERVICES == *"compliance-service"* ]]; then
     podman build -f  docker/ComplianceServiceDockerfile . -t registry.digitalocean.com/keibi/compliance-service:$SVER_VERSION
     podman push registry.digitalocean.com/keibi/compliance-service:$SVER_VERSION
 fi
-if [[ $SERVICES == *"describe-cleanup-worker"* ]]; then
-    podman build -f  docker/DescribeCleanupWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-cleanup-worker:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/describe-cleanup-worker:$SVER_VERSION
-fi
-if [[ $SERVICES == *"describe-connection-worker"* ]]; then
-    podman build -f  docker/DescribeConnectionWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-connection-worker:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/describe-connection-worker:$SVER_VERSION
-fi
 if [[ $SERVICES == *"describe-scheduler"* ]]; then
     podman build -f  docker/DescribeSchedulerDockerfile . -t registry.digitalocean.com/keibi/describe-scheduler:$SVER_VERSION
     podman push registry.digitalocean.com/keibi/describe-scheduler:$SVER_VERSION
-fi
-if [[ $SERVICES == *"describe-worker"* ]]; then
-    podman build -f  docker/DescribeWorkerDockerfile . -t registry.digitalocean.com/keibi/describe-worker:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/describe-worker:$SVER_VERSION
 fi
 if [[ $SERVICES == *"insight-worker"* ]]; then
     podman build -f  docker/InsightWorkerDockerfile . -t registry.digitalocean.com/keibi/insight-worker:$SVER_VERSION
@@ -72,3 +60,6 @@ fi
 
 podman build -f  docker/RedocDockerfile . -t registry.digitalocean.com/keibi/redoc:$SVER_VERSION
 podman push registry.digitalocean.com/keibi/redoc:$SVER_VERSION
+
+podman build -f  docker/SteampipeServiceDockerfile . -t registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
+podman push registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION

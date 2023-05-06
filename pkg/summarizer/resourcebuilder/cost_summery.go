@@ -5,7 +5,7 @@ import (
 	"time"
 
 	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	awsModel "gitlab.com/keibiengine/keibi-engine/pkg/aws/model"
+	awsModel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
@@ -137,6 +137,7 @@ func (b *costSummaryBuilder) Build() []kafka.Doc {
 		case ec2.VolumeTypeSt1:
 			ebsCost.Desc.St1Size += size
 		}
+		ebsCost.Desc.CostValue = ebsCost.Desc.CalculateCostFromPriceJSON()
 		ebsCostsRegionMap[key] = ebsCost
 	}
 

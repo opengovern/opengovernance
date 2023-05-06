@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package kaytu.describe.v1;
+
+option go_package="gitlab.com/keibiengine/keibi-engine/pkg/describe/proto/src/golang";
+
+message DescribeJob {
+  uint32 job_id = 1;
+  uint32 schedule_job_id = 2;
+  uint32 parent_job_id = 3;
+  string resource_type = 4;
+  string source_id = 5;
+  string account_id = 6;
+  int64 described_at = 7;
+  string source_type = 8;
+  string config_reg = 9;
+  string trigger_type = 10;
+  uint32 retry_counter = 11;
+}
+
+message AWSResource {
+  string arn = 1;
+  string id = 2;
+  string name = 3;
+  string account = 4;
+  string region = 5;
+  string partition = 6;
+  string type = 7;
+  string description_json = 8;
+  DescribeJob job = 9;
+  string unique_id = 10;
+}
+
+message AzureResource {
+  string id = 1;
+  string name = 2;
+  string type = 3;
+  string resource_group = 4;
+  string location = 5;
+  string subscription_id = 6;
+  string description_json = 7;
+  DescribeJob job = 8;
+  string unique_id = 9;
+}
+
+message DeliverResultRequest {
+  uint32 job_id = 1;
+  uint32 parent_job_id = 2;
+  string status = 3;
+  string error = 4;
+  DescribeJob describe_job = 5;
+  repeated string described_resource_ids = 6;
+}
+
+message ResponseOK {
+}
+
+service DescribeService {
+  rpc DeliverResult(DeliverResultRequest) returns (ResponseOK) {}
+  rpc DeliverAWSResources(AWSResource) returns (ResponseOK) {}
+  rpc DeliverAzureResources(AzureResource) returns (ResponseOK) {}
+}

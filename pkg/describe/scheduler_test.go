@@ -11,10 +11,10 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 
 	"github.com/google/uuid"
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 	mocksqueue "gitlab.com/keibiengine/keibi-engine/pkg/internal/queue/mocks"
@@ -103,7 +103,7 @@ func (s *SchedulerTestSuite) TestSourceEventCreate() {
 		SourceID:   uuid,
 		AccountID:  "1234567890",
 		SourceType: api.SourceCloudAWS,
-		ConfigRef:  "config/ref/path",
+		Secret:     "config/ref/path",
 	})
 	require.NoError(err, "create source")
 
@@ -128,7 +128,7 @@ func (s *SchedulerTestSuite) TestSourceEventUpdate() {
 		SourceID:   uuid,
 		AccountID:  "1234567890",
 		SourceType: api.SourceCloudAWS,
-		ConfigRef:  "config/ref/path",
+		Secret:     "config/ref/path",
 	})
 	require.NoError(err, "create source")
 
@@ -137,7 +137,7 @@ func (s *SchedulerTestSuite) TestSourceEventUpdate() {
 		SourceID:   uuid,
 		AccountID:  "1234567890",
 		SourceType: api.SourceCloudAzure,
-		ConfigRef:  "config/ref/path2",
+		Secret:     "config/ref/path2",
 	})
 	require.NoError(err, "update source")
 
@@ -162,7 +162,7 @@ func (s *SchedulerTestSuite) TestSourceEventDelete() {
 		SourceID:   uuid,
 		AccountID:  "1234567890",
 		SourceType: api.SourceCloudAWS,
-		ConfigRef:  "config/ref/path",
+		Secret:     "config/ref/path",
 	})
 	require.NoError(err, "create source")
 
@@ -212,7 +212,7 @@ func (s *SchedulerTestSuite) TestDescribeJobQueue() {
 		SourceID:   uuid,
 		AccountID:  "1234567890",
 		SourceType: api.SourceCloudAWS,
-		ConfigRef:  "config/ref/path",
+		Secret:     "config/ref/path",
 	})
 	require.NoError(err, "create source")
 

@@ -27,9 +27,11 @@ type EBSCostDescription struct {
 	St1Size       int    `json:"st1Size"`
 	StandardSize  int    `json:"standardSize"`
 	StandardIOPS  int    `json:"standardIOPS"`
+
+	CostValue float64 `json:"costValue"`
 }
 
-func (e EBSCostDescription) GetCost() float64 {
+func (e EBSCostDescription) CalculateCostFromPriceJSON() float64 {
 	costManifest, ok := GetEbsCosts()[strings.ToLower(e.Region)]
 	if !ok {
 		return 0
@@ -37,39 +39,43 @@ func (e EBSCostDescription) GetCost() float64 {
 	total := float64(0)
 
 	// GP2
-	total += costManifest.Gp2.PricePerGBMonth.GetFloat64() * float64(e.Gp2Size)
+	total += costManifest.Gp2.PricePerGBMonth.GetPerDayFloat64() * float64(e.Gp2Size)
 
 	// GP3
-	total += costManifest.Gp3.PricePerGBMonth.GetFloat64() * float64(e.Gp3Size)
-	total += costManifest.Gp3.PricePerIOPSMonth.GetFloat64() * float64(e.Gp3IOPS)
-	total += costManifest.Gp3.PricePerGiBpsMonth.GetFloat64() * float64(e.Gp3Throughput)
+	total += costManifest.Gp3.PricePerGBMonth.GetPerDayFloat64() * float64(e.Gp3Size)
+	total += costManifest.Gp3.PricePerIOPSMonth.GetPerDayFloat64() * float64(e.Gp3IOPS)
+	total += costManifest.Gp3.PricePerGiBpsMonth.GetPerDayFloat64() * float64(e.Gp3Throughput)
 
 	//Io1
-	total += costManifest.Io1.PricePerGBMonth.GetFloat64() * float64(e.Io1Size)
-	total += costManifest.Io1.PricePerIOPSMonth.GetFloat64() * float64(e.Io1IOPS)
+	total += costManifest.Io1.PricePerGBMonth.GetPerDayFloat64() * float64(e.Io1Size)
+	total += costManifest.Io1.PricePerIOPSMonth.GetPerDayFloat64() * float64(e.Io1IOPS)
 
 	//Io2
-	total += costManifest.Io2.PricePerGBMonth.GetFloat64() * float64(e.Io2Size)
+	total += costManifest.Io2.PricePerGBMonth.GetPerDayFloat64() * float64(e.Io2Size)
 	switch {
 	case e.Io2IOPS <= io2Thresholds[0]:
-		total += costManifest.Io2.PricePerTier1IOPSMonth.GetFloat64() * float64(e.Io2IOPS)
+		total += costManifest.Io2.PricePerTier1IOPSMonth.GetPerDayFloat64() * float64(e.Io2IOPS)
 	case io2Thresholds[0] < e.Io2IOPS && e.Io2IOPS <= io2Thresholds[1]:
-		total += costManifest.Io2.PricePerTier2IOPSMonth.GetFloat64() * float64(e.Io2IOPS)
+		total += costManifest.Io2.PricePerTier2IOPSMonth.GetPerDayFloat64() * float64(e.Io2IOPS)
 	case io2Thresholds[1] < e.Io2IOPS:
-		total += costManifest.Io2.PricePerTier3IOPSMonth.GetFloat64() * float64(e.Io2IOPS)
+		total += costManifest.Io2.PricePerTier3IOPSMonth.GetPerDayFloat64() * float64(e.Io2IOPS)
 	}
 
 	//Sc1
-	total += costManifest.Sc1.PricePerGBMonth.GetFloat64() * float64(e.Sc1Size)
+	total += costManifest.Sc1.PricePerGBMonth.GetPerDayFloat64() * float64(e.Sc1Size)
 
 	//St1
-	total += costManifest.St1.PricePerGBMonth.GetFloat64() * float64(e.St1Size)
+	total += costManifest.St1.PricePerGBMonth.GetPerDayFloat64() * float64(e.St1Size)
 
 	//Standard
-	total += costManifest.Standard.PricePerGBMonth.GetFloat64() * float64(e.StandardSize)
-	total += costManifest.Standard.PricePerIOs.GetFloat64() * float64(e.StandardIOPS)
+	total += costManifest.Standard.PricePerGBMonth.GetPerDayFloat64() * float64(e.StandardSize)
+	total += costManifest.Standard.PricePerIOs.GetPerDayFloat64() * float64(e.StandardIOPS)
 
 	return total
+}
+
+func (e EBSCostDescription) GetCost() float64 {
+	return e.CostValue
 }
 
 type PricePerMonth struct {
@@ -79,6 +85,10 @@ type PricePerMonth struct {
 func (p PricePerMonth) GetFloat64() float64 {
 	res, _ := strconv.ParseFloat(p.USD, 64)
 	return res
+}
+
+func (p PricePerMonth) GetPerDayFloat64() float64 {
+	return p.GetFloat64() / 30
 }
 
 type EbsCost struct {

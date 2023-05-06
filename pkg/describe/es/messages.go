@@ -46,6 +46,8 @@ func (r ResourceCompliancyTrendResource) KeysAndIndex() ([]string, string) {
 type Resource struct {
 	// ID is the globally unique ID of the resource.
 	ID string `json:"id"`
+	// ID is the globally unique ID of the resource.
+	ARN string `json:"arn"`
 	// Description is the description of the resource based on the describe call.
 	Description interface{} `json:"description"`
 	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.

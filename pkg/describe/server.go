@@ -2,9 +2,9 @@ package describe
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	describe2 "github.com/kaytu-io/kaytu-aws-describer/pkg/describe/enums"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,7 +13,6 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
-	"github.com/ProtonMail/gopenpgp/v2/helper"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
@@ -23,9 +22,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/google/uuid"
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/labstack/echo/v4"
-	"gitlab.com/keibiengine/keibi-engine/pkg/aws"
-	"gitlab.com/keibiengine/keibi-engine/pkg/azure"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 )
 
@@ -58,6 +57,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v0.GET("/compliance/trigger", httpserver.AuthorizeHandler(h.TriggerComplianceJob, api3.AdminRole))
 	v0.GET("/compliance/summarizer/trigger", httpserver.AuthorizeHandler(h.TriggerComplianceSummarizerJob, api3.AdminRole))
 	v1.PUT("/benchmark/evaluation/trigger", httpserver.AuthorizeHandler(h.TriggerBenchmarkEvaluation, api3.AdminRole))
+	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerDescribeJobV1, api3.AdminRole))
 
 	v1.GET("/describe/source/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingDescribeSourceJobs, api3.ViewerRole))
 	v1.GET("/describe/resource/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingDescribeResourceJobs, api3.ViewerRole))
@@ -77,8 +77,6 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/compliance/report/last/completed", httpserver.AuthorizeHandler(h.HandleGetLastCompletedComplianceReport, api3.ViewerRole))
 
 	v1.GET("/benchmark/evaluations", httpserver.AuthorizeHandler(h.HandleListBenchmarkEvaluations, api3.ViewerRole))
-
-	v1.POST("/jobs/:job_id/creds", httpserver.AuthorizeHandler(h.HandleGetCredsForJob, api3.AdminRole))
 
 	v1.POST("/describe/resource", httpserver.AuthorizeHandler(h.DescribeSingleResource, api3.AdminRole))
 }
@@ -479,10 +477,32 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 	err = h.DB.AddScheduleJob(&job)
 	if err != nil {
 		errMsg := fmt.Sprintf("error adding schedule job: %v", err)
-		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
 	}
 	return ctx.JSON(http.StatusOK, "")
+}
+
+// TriggerDescribeJobV1 godoc
+//
+//	@Summary		Triggers a describe job to run immediately
+//	@Description	Triggers a describe job to run immediately
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200
+//	@Router			/schedule/api/v1/describe/trigger/{connection_id} [put]
+func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
+	connectionID := ctx.Param("connection_id")
+
+	src, err := h.DB.GetSourceByID(connectionID)
+	if err != nil || src == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection id")
+	}
+
+	err = h.Scheduler.describeConnection(*src, false)
+	if err != nil {
+		return err
+	}
+	return ctx.NoContent(http.StatusOK)
 }
 
 // TriggerSummarizeJob godoc
@@ -666,7 +686,7 @@ func (h HttpServer) DescribeSingleResource(ctx echo.Context) error {
 		resources, err := aws.GetSingleResource(
 			context.Background(),
 			req.ResourceType,
-			enums.DescribeTriggerTypeManual,
+			describe2.DescribeTriggerType(enums.DescribeTriggerTypeManual),
 			req.AccountID,
 			nil,
 			req.AccessKey,
@@ -683,66 +703,6 @@ func (h HttpServer) DescribeSingleResource(ctx echo.Context) error {
 
 	}
 	return echo.NewHTTPError(http.StatusNotImplemented, "provider not implemented")
-}
-
-// HandleGetCredsForJob godoc
-//
-//	@Summary	Get credentials for a cloud native job by providing job info
-//	@Tags		jobs
-//	@Produce	json
-//	@Param		request	body		api.GetCredsForJobRequest	true	"Request Body"
-//	@Success	200		{object}	api.GetCredsForJobResponse
-//	@Router		/schedule/api/v1/jobs/{job_id}/creds [post]
-func (h HttpServer) HandleGetCredsForJob(ctx echo.Context) error {
-	var req api.GetCredsForJobRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	jobId := ctx.Param("job_id")
-
-	job, err := h.DB.GetCloudNativeDescribeSourceJob(jobId)
-	if err != nil {
-		return err
-	}
-	if job == nil || job.SourceJob.SourceID.String() != req.SourceID {
-		return echo.NewHTTPError(http.StatusNotFound, "job not found")
-	}
-	if job.SourceJob.Status != api.DescribeSourceJobInProgress {
-		return echo.NewHTTPError(http.StatusBadRequest, "job not in progress")
-	}
-	describeIntervalHours, err := strconv.ParseInt(DescribeIntervalHours, 10, 64)
-	if err != nil {
-		describeIntervalHours = 6
-	}
-	if job.CreatedAt.Add(time.Hour * time.Duration(describeIntervalHours)).Before(time.Now()) {
-		return echo.NewHTTPError(http.StatusBadRequest, "job expired")
-	}
-
-	// TODO: check if any other job is in progress for this source and return error if so
-
-	src, err := h.DB.GetSourceByUUID(job.SourceJob.SourceID)
-	if err != nil {
-		return err
-	}
-	if src == nil {
-		return echo.NewHTTPError(http.StatusNotFound, "source not found")
-	}
-
-	creds, err := h.Scheduler.vault.Read(src.ConfigRef)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read creds")
-	}
-	jsonCreds, err := json.Marshal(creds)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to marshal creds")
-	}
-	encryptedCreds, err := helper.EncryptMessageArmored(job.CredentialEncryptionPublicKey, string(jsonCreds))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to encrypt creds")
-	}
-	return ctx.JSON(http.StatusOK, api.GetCredsForJobResponse{
-		Credentials: encryptedCreds,
-	})
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {

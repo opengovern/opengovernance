@@ -28,8 +28,8 @@ func (c *authClient) PutRoleBinding(ctx *httpclient.Context, request *api.PutRol
 	url := fmt.Sprintf("%s/api/v1/user/role/binding", c.baseURL)
 
 	payload, err := json.Marshal(api.PutRoleBindingRequest{
-		UserID: request.UserID,
-		Role:   request.Role,
+		UserID:   request.UserID,
+		RoleName: request.RoleName,
 	})
 	if err != nil {
 		return fmt.Errorf("json marshal: %w", err)

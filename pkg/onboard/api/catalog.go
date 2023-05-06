@@ -10,10 +10,10 @@ const (
 )
 
 type CatalogMetrics struct {
-	ConnectionsEnabled   int   `json:"connectionsEnabled"`
-	HealthyConnections   int   `json:"healthyConnections"`
-	UnhealthyConnections int   `json:"unhealthyConnections"`
-	ResourcesDiscovered  int64 `json:"resourcesDiscovered"`
+	TotalConnections     int `json:"totalConnections"`
+	ConnectionsEnabled   int `json:"connectionsEnabled"`
+	HealthyConnections   int `json:"healthyConnections"`
+	UnhealthyConnections int `json:"unhealthyConnections"`
 }
 
 type CatalogConnector struct {
