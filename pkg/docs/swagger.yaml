@@ -2611,7 +2611,6 @@ definitions:
         type: string
     required:
     - accessKey
-    - accountId
     - secretKey
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAzure:
