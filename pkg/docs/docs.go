@@ -9714,7 +9714,6 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "accessKey",
-                "accountId",
                 "secretKey"
             ],
             "properties": {
