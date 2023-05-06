@@ -23,7 +23,7 @@ const (
 )
 
 type SourceConfigAWS struct {
-	AccountId string   `json:"accountId""
+	AccountId string   `json:"accountId"
 	Regions   []string `json:"regions,omitempty"`
 	AccessKey string   `json:"accessKey" validate:"required"`
 	SecretKey string   `json:"secretKey" validate:"required"`
