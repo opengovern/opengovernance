@@ -29399,7 +29399,7 @@ type LambdaFunctionVersionPaginator struct {
 }
 
 func (k Client) NewLambdaFunctionVersionPaginator(filters []BoolFilter, limit *int64) (LambdaFunctionVersionPaginator, error) {
-	paginator, err := newPaginator(k.es, "aws_lambda_function_version", filters, limit)
+	paginator, err := newPaginator(k.es, "aws_lambda_functionversion", filters, limit)
 	if err != nil {
 		return LambdaFunctionVersionPaginator{}, err
 	}
@@ -29438,6 +29438,7 @@ func (p LambdaFunctionVersionPaginator) NextPage(ctx context.Context) ([]LambdaF
 }
 
 var listLambdaFunctionVersionFilters = map[string]string{
+	"function_name":    "description.FunctionVersion.FunctionName",
 	"keibi_account_id": "metadata.SourceID",
 }
 
@@ -29471,8 +29472,9 @@ func ListLambdaFunctionVersion(ctx context.Context, d *plugin.QueryData, _ *plug
 }
 
 var getLambdaFunctionVersionFilters = map[string]string{
-	"id":               "description.ID",
+	"function_name":    "description.FunctionVersion.FunctionName",
 	"keibi_account_id": "metadata.SourceID",
+	"version":          "description.FunctionVersion.Version",
 }
 
 func GetLambdaFunctionVersion(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
@@ -29506,6 +29508,452 @@ func GetLambdaFunctionVersion(ctx context.Context, d *plugin.QueryData, _ *plugi
 }
 
 // ==========================  END: LambdaFunctionVersion =============================
+
+// ==========================  START: LambdaAlias =============================
+
+type LambdaAlias struct {
+	Description   aws.LambdaAliasDescription `json:"description"`
+	Metadata      aws.Metadata               `json:"metadata"`
+	ResourceJobID int                        `json:"resource_job_id"`
+	SourceJobID   int                        `json:"source_job_id"`
+	ResourceType  string                     `json:"resource_type"`
+	SourceType    string                     `json:"source_type"`
+	ID            string                     `json:"id"`
+	ARN           string                     `json:"arn"`
+	SourceID      string                     `json:"source_id"`
+}
+
+type LambdaAliasHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  LambdaAlias   `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type LambdaAliasHits struct {
+	Total SearchTotal      `json:"total"`
+	Hits  []LambdaAliasHit `json:"hits"`
+}
+
+type LambdaAliasSearchResponse struct {
+	PitID string          `json:"pit_id"`
+	Hits  LambdaAliasHits `json:"hits"`
+}
+
+type LambdaAliasPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewLambdaAliasPaginator(filters []BoolFilter, limit *int64) (LambdaAliasPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_lambda_alias", filters, limit)
+	if err != nil {
+		return LambdaAliasPaginator{}, err
+	}
+
+	p := LambdaAliasPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p LambdaAliasPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p LambdaAliasPaginator) NextPage(ctx context.Context) ([]LambdaAlias, error) {
+	var response LambdaAliasSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []LambdaAlias
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listLambdaAliasFilters = map[string]string{
+	"function_name":    "description.FunctionName",
+	"function_version": "description.Alias.FunctionVersion",
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListLambdaAlias(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListLambdaAlias")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewLambdaAliasPaginator(buildFilter(d.KeyColumnQuals, listLambdaAliasFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getLambdaAliasFilters = map[string]string{
+	"function_name":    "description.FunctionName",
+	"keibi_account_id": "metadata.SourceID",
+	"name":             "description.Alias.Name",
+	"region":           "description.Alias.AliasName",
+}
+
+func GetLambdaAlias(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetLambdaAlias")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewLambdaAliasPaginator(buildFilter(d.KeyColumnQuals, getLambdaAliasFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: LambdaAlias =============================
+
+// ==========================  START: LambdaLayer =============================
+
+type LambdaLayer struct {
+	Description   aws.LambdaLayerDescription `json:"description"`
+	Metadata      aws.Metadata               `json:"metadata"`
+	ResourceJobID int                        `json:"resource_job_id"`
+	SourceJobID   int                        `json:"source_job_id"`
+	ResourceType  string                     `json:"resource_type"`
+	SourceType    string                     `json:"source_type"`
+	ID            string                     `json:"id"`
+	ARN           string                     `json:"arn"`
+	SourceID      string                     `json:"source_id"`
+}
+
+type LambdaLayerHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  LambdaLayer   `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type LambdaLayerHits struct {
+	Total SearchTotal      `json:"total"`
+	Hits  []LambdaLayerHit `json:"hits"`
+}
+
+type LambdaLayerSearchResponse struct {
+	PitID string          `json:"pit_id"`
+	Hits  LambdaLayerHits `json:"hits"`
+}
+
+type LambdaLayerPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewLambdaLayerPaginator(filters []BoolFilter, limit *int64) (LambdaLayerPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_lambda_layer", filters, limit)
+	if err != nil {
+		return LambdaLayerPaginator{}, err
+	}
+
+	p := LambdaLayerPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p LambdaLayerPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p LambdaLayerPaginator) NextPage(ctx context.Context) ([]LambdaLayer, error) {
+	var response LambdaLayerSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []LambdaLayer
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listLambdaLayerFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListLambdaLayer(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListLambdaLayer")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewLambdaLayerPaginator(buildFilter(d.KeyColumnQuals, listLambdaLayerFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getLambdaLayerFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetLambdaLayer(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetLambdaLayer")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewLambdaLayerPaginator(buildFilter(d.KeyColumnQuals, getLambdaLayerFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: LambdaLayer =============================
+
+// ==========================  START: LambdaLayerVersion =============================
+
+type LambdaLayerVersion struct {
+	Description   aws.LambdaLayerVersionDescription `json:"description"`
+	Metadata      aws.Metadata                      `json:"metadata"`
+	ResourceJobID int                               `json:"resource_job_id"`
+	SourceJobID   int                               `json:"source_job_id"`
+	ResourceType  string                            `json:"resource_type"`
+	SourceType    string                            `json:"source_type"`
+	ID            string                            `json:"id"`
+	ARN           string                            `json:"arn"`
+	SourceID      string                            `json:"source_id"`
+}
+
+type LambdaLayerVersionHit struct {
+	ID      string             `json:"_id"`
+	Score   float64            `json:"_score"`
+	Index   string             `json:"_index"`
+	Type    string             `json:"_type"`
+	Version int64              `json:"_version,omitempty"`
+	Source  LambdaLayerVersion `json:"_source"`
+	Sort    []interface{}      `json:"sort"`
+}
+
+type LambdaLayerVersionHits struct {
+	Total SearchTotal             `json:"total"`
+	Hits  []LambdaLayerVersionHit `json:"hits"`
+}
+
+type LambdaLayerVersionSearchResponse struct {
+	PitID string                 `json:"pit_id"`
+	Hits  LambdaLayerVersionHits `json:"hits"`
+}
+
+type LambdaLayerVersionPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewLambdaLayerVersionPaginator(filters []BoolFilter, limit *int64) (LambdaLayerVersionPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_lambda_layerversion", filters, limit)
+	if err != nil {
+		return LambdaLayerVersionPaginator{}, err
+	}
+
+	p := LambdaLayerVersionPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p LambdaLayerVersionPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p LambdaLayerVersionPaginator) NextPage(ctx context.Context) ([]LambdaLayerVersion, error) {
+	var response LambdaLayerVersionSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []LambdaLayerVersion
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listLambdaLayerVersionFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+	"layer_name":       "description.LayerName",
+}
+
+func ListLambdaLayerVersion(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListLambdaLayerVersion")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewLambdaLayerVersionPaginator(buildFilter(d.KeyColumnQuals, listLambdaLayerVersionFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getLambdaLayerVersionFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+	"layer_name":       "description.LayerName",
+	"version":          "description.LayerVersion.Version",
+}
+
+func GetLambdaLayerVersion(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetLambdaLayerVersion")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewLambdaLayerVersionPaginator(buildFilter(d.KeyColumnQuals, getLambdaLayerVersionFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: LambdaLayerVersion =============================
 
 // ==========================  START: S3AccessPoint =============================
 

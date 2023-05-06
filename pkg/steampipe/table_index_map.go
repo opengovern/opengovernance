@@ -175,7 +175,7 @@ var awsMap = map[string]string{
 	"AWS::DRS::RecoveryInstance":                "aws_drs_recovery_instance",
 	"AWS::DRS::SourceServer":                    "aws_drs_source_server",
 	"AWS::FMS::Policy":                          "aws_fms_policy",
-	"AWS::Lambda::FunctionVersion":              "aws_lambda_function_version",
+	"AWS::Lambda::FunctionVersion":              "aws_lambda_version",
 	"AWS::NetworkFirewall::Firewall":            "aws_networkfirewall_firewall",
 	"AWS::OpsWorksCM::Server":                   "aws_opsworkscm_server",
 	"AWS::Organizations::Organization":          "aws_organizations_organization",
@@ -310,6 +310,9 @@ var awsMap = map[string]string{
 	"AWS::Firehose::DeliveryStream":                                               "aws_kinesis_firehose_delivery_stream",
 	"AWS::KinesisVideo::Stream":                                                   "aws_kinesis_video_stream",
 	"AWS::KMS::Alias":                                                             "aws_kms_alias",
+	"AWS::Lambda::Alias":                                                          "aws_lambda_alias",
+	"AWS::Lambda::Layer":                                                          "aws_lambda_layer",
+	"AWS::Lambda::LayerVersion":                                                   "aws_lambda_layer_version",
 }
 
 var azureMap = map[string]string{
@@ -753,6 +756,9 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::Firehose::DeliveryStream":                                               &keibi.FirehoseDeliveryStream{},
 	"AWS::KinesisVideo::Stream":                                                   &keibi.KinesisVideoStream{},
 	"AWS::KMS::Alias":                                                             &keibi.KMSAlias{},
+	"AWS::Lambda::Alias":                                                          &keibi.LambdaAlias{},
+	"AWS::Lambda::Layer":                                                          &keibi.LambdaLayer{},
+	"AWS::Lambda::LayerVersion":                                                   &keibi.LambdaLayerVersion{},
 }
 
 var AzureDescriptionMap = map[string]interface{}{
