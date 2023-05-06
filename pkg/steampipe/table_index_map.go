@@ -313,6 +313,10 @@ var awsMap = map[string]string{
 	"AWS::Lambda::Alias":                                                          "aws_lambda_alias",
 	"AWS::Lambda::Layer":                                                          "aws_lambda_layer",
 	"AWS::Lambda::LayerVersion":                                                   "aws_lambda_layer_version",
+	"AWS::Lightsail::Instance":                                                    "aws_lightsail_instance",
+	"AWS::Macie2::ClassificationJob":                                              "aws_macie2_classification_job",
+	"AWS::MediaStore::Container":                                                  "aws_mediastore_container",
+	"AWS::Mgn::Application":                                                       "aws_mgn_application",
 }
 
 var azureMap = map[string]string{
@@ -759,6 +763,10 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::Lambda::Alias":                                                          &keibi.LambdaAlias{},
 	"AWS::Lambda::Layer":                                                          &keibi.LambdaLayer{},
 	"AWS::Lambda::LayerVersion":                                                   &keibi.LambdaLayerVersion{},
+	"AWS::Lightsail::Instance":                                                    &keibi.LightsailInstance{},
+	"AWS::Macie2::ClassificationJob":                                              &keibi.Macie2ClassificationJob{},
+	"AWS::MediaStore::Container":                                                  &keibi.MediaStoreContainer{},
+	"AWS::Mgn::Application":                                                       &keibi.MgnApplication{},
 }
 
 var AzureDescriptionMap = map[string]interface{}{
