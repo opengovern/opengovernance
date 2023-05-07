@@ -259,7 +259,7 @@ var awsMap = map[string]string{
 	"AWS::ElasticLoadBalancingV2::NetworkLoadBalancerMetricNetFlowCountDaily":     "aws_ec2_network_load_balancer_metric_net_flow_count_daily",
 	"AWS::ElasticLoadBalancingV2::SslPolicy":                                      "aws_ec2_ssl_policy",
 	"AWS::EC2::TransitGatewayRoute":                                               "aws_ec2_transit_gateway_route",
-	"AWS::EC2::TransitGatewayAttachment":                                          "aws_ec2_transit_gateway_attachment",
+	"AWS::EC2::TransitGatewayAttachment":                                          "aws_ec2_transit_gateway_vpc_attachment",
 	"AWS::EC2::InstanceAvailability":                                              "aws_ec2_instance_availability",
 	"AWS::EC2::InstanceType":                                                      "aws_ec2_instance_type",
 	"AWS::EC2::ManagedPrefixList":                                                 "aws_ec2_managed_prefix_list",
