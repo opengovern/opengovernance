@@ -7,7 +7,9 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	urls "gitlab.com/keibiengine/keibi-engine/pkg/cli/consts"
+	apiOnboard "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	workspace "gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
+
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -371,8 +373,8 @@ func IamDeleteUserAccess(workspacesName string, accessToken string, userId strin
 
 func IamCreateUser(workspaceName string, accessToken string, email string, role string) (string, error) {
 	request := api.InviteRequest{
-		Email: email,
-		Role:  api.Role(role),
+		Email:    email,
+		RoleName: api.Role(role),
 	}
 	reqBody, err := json.Marshal(request)
 	if err != nil {
@@ -398,7 +400,7 @@ func IamCreateUser(workspaceName string, accessToken string, email string, role 
 }
 
 func IamUpdateUser(workspaceName string, accessToken string, role string, userID string) (string, error) {
-	request := api.PutRoleBindingRequest{Role: api.Role(role), UserID: userID}
+	request := api.PutRoleBindingRequest{RoleName: api.Role(role), UserID: userID}
 	reqBody, err := json.Marshal(request)
 	if err != nil {
 		return "", err
@@ -604,7 +606,7 @@ func IamGetKeyDetails(workspacesName string, accessToken string, id string) (api
 
 func IamCreateKeys(workspacesName string, accessToken string, keyName string, role string) (api.CreateAPIKeyResponse, error) {
 	var request api.CreateAPIKeyRequest
-	request.Role = api.Role(role)
+	request.RoleName = api.Role(role)
 	request.Name = keyName
 	reqBody, err := json.Marshal(request)
 	if err != nil {
@@ -640,7 +642,7 @@ func IamCreateKeys(workspacesName string, accessToken string, keyName string, ro
 }
 
 func IamUpdateKeyRole(workspacesName string, accessToken string, id uint, role string) (api.WorkspaceApiKey, error) {
-	request := api.UpdateKeyRoleRequest{ID: id, Role: api.Role(role)}
+	request := api.UpdateKeyRoleRequest{ID: id, RoleName: api.Role(role)}
 	reqBody, err := json.Marshal(request)
 	if err != nil {
 		return api.WorkspaceApiKey{}, err
@@ -750,4 +752,99 @@ func IamDeleteKey(workspacesName string, accessToken string, id string) (string,
 	} else {
 		return "deleting key was fail", nil
 	}
+}
+
+func OnboardCreateAWS(accessToken string, workspaceName string, name string, email string, description string, accessKey string, accessId string, regions []string, secretKey string) (ResponseAWSCreate, int, error) {
+	var bodyRequest apiOnboard.SourceAwsRequest
+	bodyRequest.Name = name
+	bodyRequest.Email = email
+	bodyRequest.Description = description
+	bodyRequest.Config.AccessKey = accessKey
+	bodyRequest.Config.Regions = regions
+	bodyRequest.Config.AccountId = accessId
+	bodyRequest.Config.SecretKey = secretKey
+	reqBodyEncoded, err := json.Marshal(bodyRequest)
+	if err != nil {
+		return ResponseAWSCreate{}, http.StatusBadGateway, err
+	}
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/source/aws", bytes.NewBuffer(reqBodyEncoded))
+	if err != nil {
+		return ResponseAWSCreate{}, http.StatusBadRequest, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return ResponseAWSCreate{}, http.StatusBadGateway, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return ResponseAWSCreate{}, http.StatusBadGateway, err
+	}
+	var response ResponseAWSCreate
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return ResponseAWSCreate{}, http.StatusBadGateway, err
+	}
+	if res.StatusCode != http.StatusOK {
+		fmt.Println("failed creating AWS source.")
+		return ResponseAWSCreate{}, http.StatusBadGateway, err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return ResponseAWSCreate{}, http.StatusBadGateway, err
+	}
+	return response, http.StatusOK, nil
+}
+
+type ResponseAWSCreate struct {
+	ID [16]byte `json:"id"`
+}
+
+func OnboardCreateAzure(accessToken string, workspaceName string, name string, ObjectId string, description string, clientId string, clientSecret string, subscriptionId string, tenantId string) (ResponseCreateAzure, int, error) {
+	var request apiOnboard.SourceAzureRequest
+	request.Name = name
+	request.Description = description
+	request.Config.ClientId = clientId
+	request.Config.ClientSecret = clientSecret
+	request.Config.ClientSecret = clientSecret
+	request.Config.SubscriptionId = subscriptionId
+	request.Config.TenantId = tenantId
+	request.Config.ObjectId = ObjectId
+	reqBodyEncoded, err := json.Marshal(request)
+	if err != nil {
+		return ResponseCreateAzure{}, http.StatusBadGateway, err
+	}
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/source/azure", bytes.NewBuffer(reqBodyEncoded))
+	if err != nil {
+		return ResponseCreateAzure{}, http.StatusBadRequest, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return ResponseCreateAzure{}, http.StatusBadGateway, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return ResponseCreateAzure{}, http.StatusBadGateway, err
+	}
+	var response ResponseCreateAzure
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return ResponseCreateAzure{}, http.StatusBadGateway, err
+	}
+	if res.StatusCode != http.StatusOK {
+		fmt.Println("failed creating AWS source.")
+		return ResponseCreateAzure{}, http.StatusBadGateway, err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return ResponseCreateAzure{}, http.StatusBadGateway, err
+	}
+	return response, http.StatusOK, nil
+}
+
+type ResponseCreateAzure struct {
+	ID [16]byte `json:"ID"`
 }

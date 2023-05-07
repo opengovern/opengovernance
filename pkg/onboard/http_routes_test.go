@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/labstack/echo/v4"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -19,7 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
+	_ "github.com/labstack/echo/v4"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
