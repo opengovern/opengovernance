@@ -40121,6 +40121,751 @@ func GetRoute53ResolverResolverRule(ctx context.Context, d *plugin.QueryData, _ 
 
 // ==========================  END: Route53ResolverResolverRule =============================
 
+// ==========================  START: Route53ResolverEndpoint =============================
+
+type Route53ResolverEndpoint struct {
+	Description   aws.Route53ResolverEndpointDescription `json:"description"`
+	Metadata      aws.Metadata                           `json:"metadata"`
+	ResourceJobID int                                    `json:"resource_job_id"`
+	SourceJobID   int                                    `json:"source_job_id"`
+	ResourceType  string                                 `json:"resource_type"`
+	SourceType    string                                 `json:"source_type"`
+	ID            string                                 `json:"id"`
+	ARN           string                                 `json:"arn"`
+	SourceID      string                                 `json:"source_id"`
+}
+
+type Route53ResolverEndpointHit struct {
+	ID      string                  `json:"_id"`
+	Score   float64                 `json:"_score"`
+	Index   string                  `json:"_index"`
+	Type    string                  `json:"_type"`
+	Version int64                   `json:"_version,omitempty"`
+	Source  Route53ResolverEndpoint `json:"_source"`
+	Sort    []interface{}           `json:"sort"`
+}
+
+type Route53ResolverEndpointHits struct {
+	Total SearchTotal                  `json:"total"`
+	Hits  []Route53ResolverEndpointHit `json:"hits"`
+}
+
+type Route53ResolverEndpointSearchResponse struct {
+	PitID string                      `json:"pit_id"`
+	Hits  Route53ResolverEndpointHits `json:"hits"`
+}
+
+type Route53ResolverEndpointPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewRoute53ResolverEndpointPaginator(filters []BoolFilter, limit *int64) (Route53ResolverEndpointPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_route53resolver_resolverendpoint", filters, limit)
+	if err != nil {
+		return Route53ResolverEndpointPaginator{}, err
+	}
+
+	p := Route53ResolverEndpointPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p Route53ResolverEndpointPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p Route53ResolverEndpointPaginator) NextPage(ctx context.Context) ([]Route53ResolverEndpoint, error) {
+	var response Route53ResolverEndpointSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Route53ResolverEndpoint
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listRoute53ResolverEndpointFilters = map[string]string{
+	"creator_request_id": "description.ResolverEndpoint.CreatorRequestId",
+	"direction":          "description.ResolverEndpoint.Direction",
+	"host_vpc_id":        "description.ResolverEndpoint.HostVPCId",
+	"ip_address_count":   "description.ResolverEndpoint.IpAddressCount",
+	"keibi_account_id":   "metadata.SourceID",
+	"name":               "description.ResolverEndpoint.Name",
+	"status":             "description.ResolverEndpoint.Status",
+}
+
+func ListRoute53ResolverEndpoint(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListRoute53ResolverEndpoint")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewRoute53ResolverEndpointPaginator(buildFilter(d.KeyColumnQuals, listRoute53ResolverEndpointFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getRoute53ResolverEndpointFilters = map[string]string{
+	"id":               "description.ResolverEndpoint.Id",
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetRoute53ResolverEndpoint(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetRoute53ResolverEndpoint")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewRoute53ResolverEndpointPaginator(buildFilter(d.KeyColumnQuals, getRoute53ResolverEndpointFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: Route53ResolverEndpoint =============================
+
+// ==========================  START: Route53Domain =============================
+
+type Route53Domain struct {
+	Description   aws.Route53DomainDescription `json:"description"`
+	Metadata      aws.Metadata                 `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	ARN           string                       `json:"arn"`
+	SourceID      string                       `json:"source_id"`
+}
+
+type Route53DomainHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  Route53Domain `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type Route53DomainHits struct {
+	Total SearchTotal        `json:"total"`
+	Hits  []Route53DomainHit `json:"hits"`
+}
+
+type Route53DomainSearchResponse struct {
+	PitID string            `json:"pit_id"`
+	Hits  Route53DomainHits `json:"hits"`
+}
+
+type Route53DomainPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewRoute53DomainPaginator(filters []BoolFilter, limit *int64) (Route53DomainPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_route53domains_domain", filters, limit)
+	if err != nil {
+		return Route53DomainPaginator{}, err
+	}
+
+	p := Route53DomainPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p Route53DomainPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p Route53DomainPaginator) NextPage(ctx context.Context) ([]Route53Domain, error) {
+	var response Route53DomainSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Route53Domain
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listRoute53DomainFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListRoute53Domain(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListRoute53Domain")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewRoute53DomainPaginator(buildFilter(d.KeyColumnQuals, listRoute53DomainFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getRoute53DomainFilters = map[string]string{
+	"domain_name":      "description.Domain.DomainName",
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetRoute53Domain(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetRoute53Domain")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewRoute53DomainPaginator(buildFilter(d.KeyColumnQuals, getRoute53DomainFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: Route53Domain =============================
+
+// ==========================  START: Route53Record =============================
+
+type Route53Record struct {
+	Description   aws.Route53RecordDescription `json:"description"`
+	Metadata      aws.Metadata                 `json:"metadata"`
+	ResourceJobID int                          `json:"resource_job_id"`
+	SourceJobID   int                          `json:"source_job_id"`
+	ResourceType  string                       `json:"resource_type"`
+	SourceType    string                       `json:"source_type"`
+	ID            string                       `json:"id"`
+	ARN           string                       `json:"arn"`
+	SourceID      string                       `json:"source_id"`
+}
+
+type Route53RecordHit struct {
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  Route53Record `json:"_source"`
+	Sort    []interface{} `json:"sort"`
+}
+
+type Route53RecordHits struct {
+	Total SearchTotal        `json:"total"`
+	Hits  []Route53RecordHit `json:"hits"`
+}
+
+type Route53RecordSearchResponse struct {
+	PitID string            `json:"pit_id"`
+	Hits  Route53RecordHits `json:"hits"`
+}
+
+type Route53RecordPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewRoute53RecordPaginator(filters []BoolFilter, limit *int64) (Route53RecordPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_route53_record", filters, limit)
+	if err != nil {
+		return Route53RecordPaginator{}, err
+	}
+
+	p := Route53RecordPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p Route53RecordPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p Route53RecordPaginator) NextPage(ctx context.Context) ([]Route53Record, error) {
+	var response Route53RecordSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Route53Record
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listRoute53RecordFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+	"name":             "description.Record.Name",
+	"set_identifier":   "description.Record.SetIdentifier",
+	"type":             "description.Record.Type",
+	"zone_id":          "description.ZoneId",
+}
+
+func ListRoute53Record(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListRoute53Record")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewRoute53RecordPaginator(buildFilter(d.KeyColumnQuals, listRoute53RecordFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getRoute53RecordFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetRoute53Record(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetRoute53Record")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewRoute53RecordPaginator(buildFilter(d.KeyColumnQuals, getRoute53RecordFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: Route53Record =============================
+
+// ==========================  START: Route53TrafficPolicy =============================
+
+type Route53TrafficPolicy struct {
+	Description   aws.Route53TrafficPolicyDescription `json:"description"`
+	Metadata      aws.Metadata                        `json:"metadata"`
+	ResourceJobID int                                 `json:"resource_job_id"`
+	SourceJobID   int                                 `json:"source_job_id"`
+	ResourceType  string                              `json:"resource_type"`
+	SourceType    string                              `json:"source_type"`
+	ID            string                              `json:"id"`
+	ARN           string                              `json:"arn"`
+	SourceID      string                              `json:"source_id"`
+}
+
+type Route53TrafficPolicyHit struct {
+	ID      string               `json:"_id"`
+	Score   float64              `json:"_score"`
+	Index   string               `json:"_index"`
+	Type    string               `json:"_type"`
+	Version int64                `json:"_version,omitempty"`
+	Source  Route53TrafficPolicy `json:"_source"`
+	Sort    []interface{}        `json:"sort"`
+}
+
+type Route53TrafficPolicyHits struct {
+	Total SearchTotal               `json:"total"`
+	Hits  []Route53TrafficPolicyHit `json:"hits"`
+}
+
+type Route53TrafficPolicySearchResponse struct {
+	PitID string                   `json:"pit_id"`
+	Hits  Route53TrafficPolicyHits `json:"hits"`
+}
+
+type Route53TrafficPolicyPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewRoute53TrafficPolicyPaginator(filters []BoolFilter, limit *int64) (Route53TrafficPolicyPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_route53_trafficpolicy", filters, limit)
+	if err != nil {
+		return Route53TrafficPolicyPaginator{}, err
+	}
+
+	p := Route53TrafficPolicyPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p Route53TrafficPolicyPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p Route53TrafficPolicyPaginator) NextPage(ctx context.Context) ([]Route53TrafficPolicy, error) {
+	var response Route53TrafficPolicySearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Route53TrafficPolicy
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listRoute53TrafficPolicyFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListRoute53TrafficPolicy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListRoute53TrafficPolicy")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewRoute53TrafficPolicyPaginator(buildFilter(d.KeyColumnQuals, listRoute53TrafficPolicyFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getRoute53TrafficPolicyFilters = map[string]string{
+	"id":               "description.TrafficPolicy.Id",
+	"keibi_account_id": "metadata.SourceID",
+	"version":          "description.TrafficPolicy.Version",
+}
+
+func GetRoute53TrafficPolicy(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetRoute53TrafficPolicy")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewRoute53TrafficPolicyPaginator(buildFilter(d.KeyColumnQuals, getRoute53TrafficPolicyFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: Route53TrafficPolicy =============================
+
+// ==========================  START: Route53TrafficPolicyInstance =============================
+
+type Route53TrafficPolicyInstance struct {
+	Description   aws.Route53TrafficPolicyInstanceDescription `json:"description"`
+	Metadata      aws.Metadata                                `json:"metadata"`
+	ResourceJobID int                                         `json:"resource_job_id"`
+	SourceJobID   int                                         `json:"source_job_id"`
+	ResourceType  string                                      `json:"resource_type"`
+	SourceType    string                                      `json:"source_type"`
+	ID            string                                      `json:"id"`
+	ARN           string                                      `json:"arn"`
+	SourceID      string                                      `json:"source_id"`
+}
+
+type Route53TrafficPolicyInstanceHit struct {
+	ID      string                       `json:"_id"`
+	Score   float64                      `json:"_score"`
+	Index   string                       `json:"_index"`
+	Type    string                       `json:"_type"`
+	Version int64                        `json:"_version,omitempty"`
+	Source  Route53TrafficPolicyInstance `json:"_source"`
+	Sort    []interface{}                `json:"sort"`
+}
+
+type Route53TrafficPolicyInstanceHits struct {
+	Total SearchTotal                       `json:"total"`
+	Hits  []Route53TrafficPolicyInstanceHit `json:"hits"`
+}
+
+type Route53TrafficPolicyInstanceSearchResponse struct {
+	PitID string                           `json:"pit_id"`
+	Hits  Route53TrafficPolicyInstanceHits `json:"hits"`
+}
+
+type Route53TrafficPolicyInstancePaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewRoute53TrafficPolicyInstancePaginator(filters []BoolFilter, limit *int64) (Route53TrafficPolicyInstancePaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_route53_trafficpolicyinstance", filters, limit)
+	if err != nil {
+		return Route53TrafficPolicyInstancePaginator{}, err
+	}
+
+	p := Route53TrafficPolicyInstancePaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p Route53TrafficPolicyInstancePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p Route53TrafficPolicyInstancePaginator) NextPage(ctx context.Context) ([]Route53TrafficPolicyInstance, error) {
+	var response Route53TrafficPolicyInstanceSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []Route53TrafficPolicyInstance
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listRoute53TrafficPolicyInstanceFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListRoute53TrafficPolicyInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListRoute53TrafficPolicyInstance")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewRoute53TrafficPolicyInstancePaginator(buildFilter(d.KeyColumnQuals, listRoute53TrafficPolicyInstanceFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getRoute53TrafficPolicyInstanceFilters = map[string]string{
+	"id":               "description.TrafficPolicyInstance.Id",
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetRoute53TrafficPolicyInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetRoute53TrafficPolicyInstance")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewRoute53TrafficPolicyInstancePaginator(buildFilter(d.KeyColumnQuals, getRoute53TrafficPolicyInstanceFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: Route53TrafficPolicyInstance =============================
+
 // ==========================  START: BatchComputeEnvironment =============================
 
 type BatchComputeEnvironment struct {

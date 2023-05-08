@@ -318,6 +318,11 @@ var awsMap = map[string]string{
 	"AWS::MediaStore::Container":                                                  "aws_mediastore_container",
 	"AWS::Mgn::Application":                                                       "aws_mgn_application",
 	"AWS::ResourceExplorer2::SupportedResourceType":                               "aws_resource_explorer_supported_resource_type",
+	"AWS::Route53Resolver::ResolverEndpoint":                                      "aws_route53_resolver_endpoint",
+	"AWS::Route53Domains::Domain":                                                 "aws_route53_domain",
+	"AWS::Route53::Record":                                                        "aws_route53_record",
+	"AWS::Route53::TrafficPolicy":                                                 "aws_route53_traffic_policy",
+	"AWS::Route53::TrafficPolicyInstance":                                         "aws_route53_traffic_policy_instance",
 }
 
 var azureMap = map[string]string{
@@ -769,6 +774,11 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::MediaStore::Container":                                                  &keibi.MediaStoreContainer{},
 	"AWS::Mgn::Application":                                                       &keibi.MgnApplication{},
 	"AWS::ResourceExplorer2::SupportedResourceType":                               &keibi.ResourceExplorer2SupportedResourceType{},
+	"AWS::Route53Resolver::ResolverEndpoint":                                      &keibi.Route53ResolverEndpoint{},
+	"AWS::Route53Domains::Domain":                                                 &keibi.Route53Domain{},
+	"AWS::Route53::Record":                                                        &keibi.Route53Record{},
+	"AWS::Route53::TrafficPolicy":                                                 &keibi.Route53TrafficPolicy{},
+	"AWS::Route53::TrafficPolicyInstance":                                         &keibi.Route53TrafficPolicyInstance{},
 }
 
 var AzureDescriptionMap = map[string]interface{}{
