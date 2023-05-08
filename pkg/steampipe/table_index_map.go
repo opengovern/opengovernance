@@ -325,6 +325,14 @@ var awsMap = map[string]string{
 	"AWS::Route53::TrafficPolicyInstance":                                         "aws_route53_traffic_policy_instance",
 	"AWS::SageMaker::Model":                                                       "aws_sagemaker_model",
 	"AWS::SageMaker::TrainingJob":                                                 "aws_sagemaker_training_job",
+	"AWS::SecurityHub::ActionTarget":                                              "aws_securityhub_action_target",
+	"AWS::SecurityHub::Finding":                                                   "aws_securityhub_finding",
+	"AWS::SecurityHub::FindingAggregator":                                         "aws_securityhub_finding_aggregator",
+	"AWS::SecurityHub::Insight":                                                   "aws_securityhub_insight",
+	"AWS::SecurityHub::Member":                                                    "aws_securityhub_member",
+	"AWS::SecurityHub::Product":                                                   "aws_securityhub_product",
+	"AWS::SecurityHub::StandardsControl":                                          "aws_securityhub_standards_control",
+	"AWS::SecurityHub::StandardsSubscription":                                     "aws_securityhub_standards_subscription",
 }
 
 var azureMap = map[string]string{
@@ -783,6 +791,14 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::Route53::TrafficPolicyInstance":                                         &keibi.Route53TrafficPolicyInstance{},
 	"AWS::SageMaker::Model":                                                       &keibi.SageMakerModel{},
 	"AWS::SageMaker::TrainingJob":                                                 &keibi.SageMakerTrainingJob{},
+	"AWS::SecurityHub::ActionTarget":                                              &keibi.SecurityHubActionTarget{},
+	"AWS::SecurityHub::Finding":                                                   &keibi.SecurityHubFinding{},
+	"AWS::SecurityHub::FindingAggregator":                                         &keibi.SecurityHubFindingAggregator{},
+	"AWS::SecurityHub::Insight":                                                   &keibi.SecurityHubInsight{},
+	"AWS::SecurityHub::Member":                                                    &keibi.SecurityHubMember{},
+	"AWS::SecurityHub::Product":                                                   &keibi.SecurityHubProduct{},
+	"AWS::SecurityHub::StandardsControl":                                          &keibi.SecurityHubStandardsControl{},
+	"AWS::SecurityHub::StandardsSubscription":                                     &keibi.SecurityHubStandardsSubscription{},
 }
 
 var AzureDescriptionMap = map[string]interface{}{
