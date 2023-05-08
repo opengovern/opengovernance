@@ -31740,6 +31740,155 @@ func GetWAFv2IPSet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateDa
 
 // ==========================  END: WAFv2IPSet =============================
 
+// ==========================  START: WAFv2RegexPatternSet =============================
+
+type WAFv2RegexPatternSet struct {
+	Description   aws.WAFv2RegexPatternSetDescription `json:"description"`
+	Metadata      aws.Metadata                        `json:"metadata"`
+	ResourceJobID int                                 `json:"resource_job_id"`
+	SourceJobID   int                                 `json:"source_job_id"`
+	ResourceType  string                              `json:"resource_type"`
+	SourceType    string                              `json:"source_type"`
+	ID            string                              `json:"id"`
+	ARN           string                              `json:"arn"`
+	SourceID      string                              `json:"source_id"`
+}
+
+type WAFv2RegexPatternSetHit struct {
+	ID      string               `json:"_id"`
+	Score   float64              `json:"_score"`
+	Index   string               `json:"_index"`
+	Type    string               `json:"_type"`
+	Version int64                `json:"_version,omitempty"`
+	Source  WAFv2RegexPatternSet `json:"_source"`
+	Sort    []interface{}        `json:"sort"`
+}
+
+type WAFv2RegexPatternSetHits struct {
+	Total SearchTotal               `json:"total"`
+	Hits  []WAFv2RegexPatternSetHit `json:"hits"`
+}
+
+type WAFv2RegexPatternSetSearchResponse struct {
+	PitID string                   `json:"pit_id"`
+	Hits  WAFv2RegexPatternSetHits `json:"hits"`
+}
+
+type WAFv2RegexPatternSetPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewWAFv2RegexPatternSetPaginator(filters []BoolFilter, limit *int64) (WAFv2RegexPatternSetPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_wafv2_regexpatternset", filters, limit)
+	if err != nil {
+		return WAFv2RegexPatternSetPaginator{}, err
+	}
+
+	p := WAFv2RegexPatternSetPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p WAFv2RegexPatternSetPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p WAFv2RegexPatternSetPaginator) NextPage(ctx context.Context) ([]WAFv2RegexPatternSet, error) {
+	var response WAFv2RegexPatternSetSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []WAFv2RegexPatternSet
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listWAFv2RegexPatternSetFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListWAFv2RegexPatternSet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListWAFv2RegexPatternSet")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewWAFv2RegexPatternSetPaginator(buildFilter(d.KeyColumnQuals, listWAFv2RegexPatternSetFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getWAFv2RegexPatternSetFilters = map[string]string{
+	"id":               "description.IPSetSummary.Id",
+	"keibi_account_id": "metadata.SourceID",
+	"name":             "description.IPSetSummary.Name",
+	"scope":            "description.IPSetSummary.Scope",
+}
+
+func GetWAFv2RegexPatternSet(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetWAFv2RegexPatternSet")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewWAFv2RegexPatternSetPaginator(buildFilter(d.KeyColumnQuals, getWAFv2RegexPatternSetFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: WAFv2RegexPatternSet =============================
+
 // ==========================  START: WAFv2RuleGroup =============================
 
 type WAFv2RuleGroup struct {
@@ -38729,6 +38878,7 @@ func (p SESIdentityPaginator) NextPage(ctx context.Context) ([]SESIdentity, erro
 }
 
 var listSESIdentityFilters = map[string]string{
+	"identity_type":    "description.Identity.IdentityType",
 	"keibi_account_id": "metadata.SourceID",
 }
 
