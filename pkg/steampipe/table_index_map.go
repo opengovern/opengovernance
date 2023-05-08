@@ -340,6 +340,9 @@ var awsMap = map[string]string{
 	"AWS::RDS::ReservedDBInstance":                                                "aws_rds_reserved_db_instance",
 	"AWS::Redshift::SubnetGroup":                                                  "aws_redshift_subnet_group",
 	"AWS::SeverlessApplicationRepository::Application":                            "aws_serverlessapplicationrepository_application",
+	"AWS::ServiceQuotas::DefaultServiceQuota":                                     "aws_servicequotas_default_service_quota",
+	"AWS::ServiceQuotas::ServiceQuota":                                            "aws_servicequotas_service_quota",
+	"AWS::ServiceQuotas::ServiceQuotaChangeRequest":                               "aws_servicequotas_service_quota_change_request",
 }
 
 var azureMap = map[string]string{
@@ -813,6 +816,9 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::RDS::ReservedDBInstance":                                                &keibi.RDSReservedDBInstance{},
 	"AWS::Redshift::SubnetGroup":                                                  &keibi.RedshiftSubnetGroup{},
 	"AWS::SeverlessApplicationRepository::Application":                            &keibi.ServerlessApplicationRepositoryApplication{},
+	"AWS::ServiceQuotas::DefaultServiceQuota":                                     &keibi.ServiceQuotasDefaultServiceQuota{},
+	"AWS::ServiceQuotas::ServiceQuota":                                            &keibi.ServiceQuotasServiceQuota{},
+	"AWS::ServiceQuotas::ServiceQuotaChangeRequest":                               &keibi.ServiceQuotasServiceQuotaChangeRequest{},
 }
 
 var AzureDescriptionMap = map[string]interface{}{

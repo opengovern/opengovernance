@@ -53572,3 +53572,450 @@ func GetServerlessApplicationRepositoryApplication(ctx context.Context, d *plugi
 }
 
 // ==========================  END: ServerlessApplicationRepositoryApplication =============================
+
+// ==========================  START: ServiceQuotasDefaultServiceQuota =============================
+
+type ServiceQuotasDefaultServiceQuota struct {
+	Description   aws.ServiceQuotasDefaultServiceQuotaDescription `json:"description"`
+	Metadata      aws.Metadata                                    `json:"metadata"`
+	ResourceJobID int                                             `json:"resource_job_id"`
+	SourceJobID   int                                             `json:"source_job_id"`
+	ResourceType  string                                          `json:"resource_type"`
+	SourceType    string                                          `json:"source_type"`
+	ID            string                                          `json:"id"`
+	ARN           string                                          `json:"arn"`
+	SourceID      string                                          `json:"source_id"`
+}
+
+type ServiceQuotasDefaultServiceQuotaHit struct {
+	ID      string                           `json:"_id"`
+	Score   float64                          `json:"_score"`
+	Index   string                           `json:"_index"`
+	Type    string                           `json:"_type"`
+	Version int64                            `json:"_version,omitempty"`
+	Source  ServiceQuotasDefaultServiceQuota `json:"_source"`
+	Sort    []interface{}                    `json:"sort"`
+}
+
+type ServiceQuotasDefaultServiceQuotaHits struct {
+	Total SearchTotal                           `json:"total"`
+	Hits  []ServiceQuotasDefaultServiceQuotaHit `json:"hits"`
+}
+
+type ServiceQuotasDefaultServiceQuotaSearchResponse struct {
+	PitID string                               `json:"pit_id"`
+	Hits  ServiceQuotasDefaultServiceQuotaHits `json:"hits"`
+}
+
+type ServiceQuotasDefaultServiceQuotaPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewServiceQuotasDefaultServiceQuotaPaginator(filters []BoolFilter, limit *int64) (ServiceQuotasDefaultServiceQuotaPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_servicequotas_defaultservicequota", filters, limit)
+	if err != nil {
+		return ServiceQuotasDefaultServiceQuotaPaginator{}, err
+	}
+
+	p := ServiceQuotasDefaultServiceQuotaPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ServiceQuotasDefaultServiceQuotaPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ServiceQuotasDefaultServiceQuotaPaginator) NextPage(ctx context.Context) ([]ServiceQuotasDefaultServiceQuota, error) {
+	var response ServiceQuotasDefaultServiceQuotaSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ServiceQuotasDefaultServiceQuota
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listServiceQuotasDefaultServiceQuotaFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+	"service_code":     "description.DefaultServiceQuota.ServiceCode",
+}
+
+func ListServiceQuotasDefaultServiceQuota(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListServiceQuotasDefaultServiceQuota")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewServiceQuotasDefaultServiceQuotaPaginator(buildFilter(d.KeyColumnQuals, listServiceQuotasDefaultServiceQuotaFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getServiceQuotasDefaultServiceQuotaFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+	"quota_code":       "description.DefaultServiceQuota.QuotaCode",
+	"service_code":     "description.DefaultServiceQuota.ServiceCode",
+}
+
+func GetServiceQuotasDefaultServiceQuota(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetServiceQuotasDefaultServiceQuota")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewServiceQuotasDefaultServiceQuotaPaginator(buildFilter(d.KeyColumnQuals, getServiceQuotasDefaultServiceQuotaFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ServiceQuotasDefaultServiceQuota =============================
+
+// ==========================  START: ServiceQuotasServiceQuota =============================
+
+type ServiceQuotasServiceQuota struct {
+	Description   aws.ServiceQuotasServiceQuotaDescription `json:"description"`
+	Metadata      aws.Metadata                             `json:"metadata"`
+	ResourceJobID int                                      `json:"resource_job_id"`
+	SourceJobID   int                                      `json:"source_job_id"`
+	ResourceType  string                                   `json:"resource_type"`
+	SourceType    string                                   `json:"source_type"`
+	ID            string                                   `json:"id"`
+	ARN           string                                   `json:"arn"`
+	SourceID      string                                   `json:"source_id"`
+}
+
+type ServiceQuotasServiceQuotaHit struct {
+	ID      string                    `json:"_id"`
+	Score   float64                   `json:"_score"`
+	Index   string                    `json:"_index"`
+	Type    string                    `json:"_type"`
+	Version int64                     `json:"_version,omitempty"`
+	Source  ServiceQuotasServiceQuota `json:"_source"`
+	Sort    []interface{}             `json:"sort"`
+}
+
+type ServiceQuotasServiceQuotaHits struct {
+	Total SearchTotal                    `json:"total"`
+	Hits  []ServiceQuotasServiceQuotaHit `json:"hits"`
+}
+
+type ServiceQuotasServiceQuotaSearchResponse struct {
+	PitID string                        `json:"pit_id"`
+	Hits  ServiceQuotasServiceQuotaHits `json:"hits"`
+}
+
+type ServiceQuotasServiceQuotaPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewServiceQuotasServiceQuotaPaginator(filters []BoolFilter, limit *int64) (ServiceQuotasServiceQuotaPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_servicequotas_servicequota", filters, limit)
+	if err != nil {
+		return ServiceQuotasServiceQuotaPaginator{}, err
+	}
+
+	p := ServiceQuotasServiceQuotaPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ServiceQuotasServiceQuotaPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ServiceQuotasServiceQuotaPaginator) NextPage(ctx context.Context) ([]ServiceQuotasServiceQuota, error) {
+	var response ServiceQuotasServiceQuotaSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ServiceQuotasServiceQuota
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listServiceQuotasServiceQuotaFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+	"service_code":     "description.ServiceQuota.ServiceCode",
+}
+
+func ListServiceQuotasServiceQuota(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListServiceQuotasServiceQuota")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewServiceQuotasServiceQuotaPaginator(buildFilter(d.KeyColumnQuals, listServiceQuotasServiceQuotaFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getServiceQuotasServiceQuotaFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+	"quota_code":       "description.ServiceQuota.QuotaCode",
+	"service_code":     "description.ServiceQuota.ServiceCode",
+}
+
+func GetServiceQuotasServiceQuota(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetServiceQuotasServiceQuota")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewServiceQuotasServiceQuotaPaginator(buildFilter(d.KeyColumnQuals, getServiceQuotasServiceQuotaFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ServiceQuotasServiceQuota =============================
+
+// ==========================  START: ServiceQuotasServiceQuotaChangeRequest =============================
+
+type ServiceQuotasServiceQuotaChangeRequest struct {
+	Description   aws.ServiceQuotasServiceQuotaChangeRequestDescription `json:"description"`
+	Metadata      aws.Metadata                                          `json:"metadata"`
+	ResourceJobID int                                                   `json:"resource_job_id"`
+	SourceJobID   int                                                   `json:"source_job_id"`
+	ResourceType  string                                                `json:"resource_type"`
+	SourceType    string                                                `json:"source_type"`
+	ID            string                                                `json:"id"`
+	ARN           string                                                `json:"arn"`
+	SourceID      string                                                `json:"source_id"`
+}
+
+type ServiceQuotasServiceQuotaChangeRequestHit struct {
+	ID      string                                 `json:"_id"`
+	Score   float64                                `json:"_score"`
+	Index   string                                 `json:"_index"`
+	Type    string                                 `json:"_type"`
+	Version int64                                  `json:"_version,omitempty"`
+	Source  ServiceQuotasServiceQuotaChangeRequest `json:"_source"`
+	Sort    []interface{}                          `json:"sort"`
+}
+
+type ServiceQuotasServiceQuotaChangeRequestHits struct {
+	Total SearchTotal                                 `json:"total"`
+	Hits  []ServiceQuotasServiceQuotaChangeRequestHit `json:"hits"`
+}
+
+type ServiceQuotasServiceQuotaChangeRequestSearchResponse struct {
+	PitID string                                     `json:"pit_id"`
+	Hits  ServiceQuotasServiceQuotaChangeRequestHits `json:"hits"`
+}
+
+type ServiceQuotasServiceQuotaChangeRequestPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewServiceQuotasServiceQuotaChangeRequestPaginator(filters []BoolFilter, limit *int64) (ServiceQuotasServiceQuotaChangeRequestPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_servicequotas_servicequotachangerequest", filters, limit)
+	if err != nil {
+		return ServiceQuotasServiceQuotaChangeRequestPaginator{}, err
+	}
+
+	p := ServiceQuotasServiceQuotaChangeRequestPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ServiceQuotasServiceQuotaChangeRequestPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ServiceQuotasServiceQuotaChangeRequestPaginator) NextPage(ctx context.Context) ([]ServiceQuotasServiceQuotaChangeRequest, error) {
+	var response ServiceQuotasServiceQuotaChangeRequestSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ServiceQuotasServiceQuotaChangeRequest
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listServiceQuotasServiceQuotaChangeRequestFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+	"service_code":     "description.ServiceQuotaChangeRequest.ServiceCode",
+	"status":           "description.ServiceQuotaChangeRequest.Status",
+}
+
+func ListServiceQuotasServiceQuotaChangeRequest(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListServiceQuotasServiceQuotaChangeRequest")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewServiceQuotasServiceQuotaChangeRequestPaginator(buildFilter(d.KeyColumnQuals, listServiceQuotasServiceQuotaChangeRequestFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getServiceQuotasServiceQuotaChangeRequestFilters = map[string]string{
+	"id":               "description.ServiceQuotaChangeRequest.Id",
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetServiceQuotasServiceQuotaChangeRequest(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetServiceQuotasServiceQuotaChangeRequest")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewServiceQuotasServiceQuotaChangeRequestPaginator(buildFilter(d.KeyColumnQuals, getServiceQuotasServiceQuotaChangeRequestFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ServiceQuotasServiceQuotaChangeRequest =============================
