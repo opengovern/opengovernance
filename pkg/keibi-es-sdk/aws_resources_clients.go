@@ -28043,6 +28043,304 @@ func GetSageMakerNotebookInstance(ctx context.Context, d *plugin.QueryData, _ *p
 
 // ==========================  END: SageMakerNotebookInstance =============================
 
+// ==========================  START: SageMakerModel =============================
+
+type SageMakerModel struct {
+	Description   aws.SageMakerModelDescription `json:"description"`
+	Metadata      aws.Metadata                  `json:"metadata"`
+	ResourceJobID int                           `json:"resource_job_id"`
+	SourceJobID   int                           `json:"source_job_id"`
+	ResourceType  string                        `json:"resource_type"`
+	SourceType    string                        `json:"source_type"`
+	ID            string                        `json:"id"`
+	ARN           string                        `json:"arn"`
+	SourceID      string                        `json:"source_id"`
+}
+
+type SageMakerModelHit struct {
+	ID      string         `json:"_id"`
+	Score   float64        `json:"_score"`
+	Index   string         `json:"_index"`
+	Type    string         `json:"_type"`
+	Version int64          `json:"_version,omitempty"`
+	Source  SageMakerModel `json:"_source"`
+	Sort    []interface{}  `json:"sort"`
+}
+
+type SageMakerModelHits struct {
+	Total SearchTotal         `json:"total"`
+	Hits  []SageMakerModelHit `json:"hits"`
+}
+
+type SageMakerModelSearchResponse struct {
+	PitID string             `json:"pit_id"`
+	Hits  SageMakerModelHits `json:"hits"`
+}
+
+type SageMakerModelPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewSageMakerModelPaginator(filters []BoolFilter, limit *int64) (SageMakerModelPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_sagemaker_model", filters, limit)
+	if err != nil {
+		return SageMakerModelPaginator{}, err
+	}
+
+	p := SageMakerModelPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p SageMakerModelPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p SageMakerModelPaginator) NextPage(ctx context.Context) ([]SageMakerModel, error) {
+	var response SageMakerModelSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []SageMakerModel
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listSageMakerModelFilters = map[string]string{
+	"creation_time":    "description.Model.CreationTime",
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListSageMakerModel(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListSageMakerModel")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewSageMakerModelPaginator(buildFilter(d.KeyColumnQuals, listSageMakerModelFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getSageMakerModelFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+	"name":             "description.Model.ModelName",
+}
+
+func GetSageMakerModel(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetSageMakerModel")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewSageMakerModelPaginator(buildFilter(d.KeyColumnQuals, getSageMakerModelFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: SageMakerModel =============================
+
+// ==========================  START: SageMakerTrainingJob =============================
+
+type SageMakerTrainingJob struct {
+	Description   aws.SageMakerTrainingJobDescription `json:"description"`
+	Metadata      aws.Metadata                        `json:"metadata"`
+	ResourceJobID int                                 `json:"resource_job_id"`
+	SourceJobID   int                                 `json:"source_job_id"`
+	ResourceType  string                              `json:"resource_type"`
+	SourceType    string                              `json:"source_type"`
+	ID            string                              `json:"id"`
+	ARN           string                              `json:"arn"`
+	SourceID      string                              `json:"source_id"`
+}
+
+type SageMakerTrainingJobHit struct {
+	ID      string               `json:"_id"`
+	Score   float64              `json:"_score"`
+	Index   string               `json:"_index"`
+	Type    string               `json:"_type"`
+	Version int64                `json:"_version,omitempty"`
+	Source  SageMakerTrainingJob `json:"_source"`
+	Sort    []interface{}        `json:"sort"`
+}
+
+type SageMakerTrainingJobHits struct {
+	Total SearchTotal               `json:"total"`
+	Hits  []SageMakerTrainingJobHit `json:"hits"`
+}
+
+type SageMakerTrainingJobSearchResponse struct {
+	PitID string                   `json:"pit_id"`
+	Hits  SageMakerTrainingJobHits `json:"hits"`
+}
+
+type SageMakerTrainingJobPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewSageMakerTrainingJobPaginator(filters []BoolFilter, limit *int64) (SageMakerTrainingJobPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_sagemaker_trainingjob", filters, limit)
+	if err != nil {
+		return SageMakerTrainingJobPaginator{}, err
+	}
+
+	p := SageMakerTrainingJobPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p SageMakerTrainingJobPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p SageMakerTrainingJobPaginator) NextPage(ctx context.Context) ([]SageMakerTrainingJob, error) {
+	var response SageMakerTrainingJobSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []SageMakerTrainingJob
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listSageMakerTrainingJobFilters = map[string]string{
+	"creation_time":       "description.TrainingJob.CreationTime",
+	"keibi_account_id":    "metadata.SourceID",
+	"last_modified_time":  "description.TrainingJob.LastModifiedTime",
+	"training_job_status": "description.TrainingJob.TrainingJobStatus",
+}
+
+func ListSageMakerTrainingJob(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListSageMakerTrainingJob")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewSageMakerTrainingJobPaginator(buildFilter(d.KeyColumnQuals, listSageMakerTrainingJobFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getSageMakerTrainingJobFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+	"name":             "description.TrainingJob.Name",
+}
+
+func GetSageMakerTrainingJob(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetSageMakerTrainingJob")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewSageMakerTrainingJobPaginator(buildFilter(d.KeyColumnQuals, getSageMakerTrainingJobFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: SageMakerTrainingJob =============================
+
 // ==========================  START: SecretsManagerSecret =============================
 
 type SecretsManagerSecret struct {
@@ -28561,11 +28859,11 @@ func (p SSMAssociationPaginator) NextPage(ctx context.Context) ([]SSMAssociation
 }
 
 var listSSMAssociationFilters = map[string]string{
-	"association_name":    "description.",
-	"instance_id":         "description.",
+	"association_name":    "description.AssociationItem.AssociationName",
+	"instance_id":         "description.AssociationItem.InstanceId",
 	"keibi_account_id":    "metadata.SourceID",
-	"last_execution_date": "description.",
-	"status":              "description.",
+	"last_execution_date": "description.Association.AssociationDescription.LastExecutionDate",
+	"status":              "description.Association.AssociationDescription.Status",
 }
 
 func ListSSMAssociation(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
@@ -28598,7 +28896,7 @@ func ListSSMAssociation(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydr
 }
 
 var getSSMAssociationFilters = map[string]string{
-	"association_id":   "description.",
+	"association_id":   "description.AssociationItem.AssociationId",
 	"keibi_account_id": "metadata.SourceID",
 }
 

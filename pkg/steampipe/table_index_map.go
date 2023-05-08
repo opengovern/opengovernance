@@ -323,6 +323,8 @@ var awsMap = map[string]string{
 	"AWS::Route53::Record":                                                        "aws_route53_record",
 	"AWS::Route53::TrafficPolicy":                                                 "aws_route53_traffic_policy",
 	"AWS::Route53::TrafficPolicyInstance":                                         "aws_route53_traffic_policy_instance",
+	"AWS::SageMaker::Model":                                                       "aws_sagemaker_model",
+	"AWS::SageMaker::TrainingJob":                                                 "aws_sagemaker_training_job",
 }
 
 var azureMap = map[string]string{
@@ -779,6 +781,8 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::Route53::Record":                                                        &keibi.Route53Record{},
 	"AWS::Route53::TrafficPolicy":                                                 &keibi.Route53TrafficPolicy{},
 	"AWS::Route53::TrafficPolicyInstance":                                         &keibi.Route53TrafficPolicyInstance{},
+	"AWS::SageMaker::Model":                                                       &keibi.SageMakerModel{},
+	"AWS::SageMaker::TrainingJob":                                                 &keibi.SageMakerTrainingJob{},
 }
 
 var AzureDescriptionMap = map[string]interface{}{
