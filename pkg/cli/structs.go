@@ -64,3 +64,15 @@ type RolesListResponse struct {
 	Description string   `json:"description"`
 	UserCount   int      `json:"userCount"`
 }
+type CountConnectionsCLIRequest struct {
+	ConnectorsNames []string `json:"connectores"`
+	State           string   `json:"state"`
+	Health          string   `json:"health"`
+}
+type ResponseCreateAzure struct {
+	ID [16]byte `json:"ID"`
+}
+
+type ResponseAWSCreate struct {
+	ID [16]byte `json:"id"`
+}
