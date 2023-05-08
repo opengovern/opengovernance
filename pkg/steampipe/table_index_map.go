@@ -333,6 +333,8 @@ var awsMap = map[string]string{
 	"AWS::SecurityHub::Product":                                                   "aws_securityhub_product",
 	"AWS::SecurityHub::StandardsControl":                                          "aws_securityhub_standards_control",
 	"AWS::SecurityHub::StandardsSubscription":                                     "aws_securityhub_standards_subscription",
+	"AWS:SecurityLake::DataLake":                                                  "aws_securitylake_data_lake",
+	"AWS:SecurityLake::Subscriber":                                                "aws_securitylake_subscriber",
 }
 
 var azureMap = map[string]string{
@@ -799,6 +801,8 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::SecurityHub::Product":                                                   &keibi.SecurityHubProduct{},
 	"AWS::SecurityHub::StandardsControl":                                          &keibi.SecurityHubStandardsControl{},
 	"AWS::SecurityHub::StandardsSubscription":                                     &keibi.SecurityHubStandardsSubscription{},
+	"AWS:SecurityLake::DataLake":                                                  &keibi.SecurityLakeDataLake{},
+	"AWS:SecurityLake::Subscriber":                                                &keibi.SecurityLakeSubscriber{},
 }
 
 var AzureDescriptionMap = map[string]interface{}{

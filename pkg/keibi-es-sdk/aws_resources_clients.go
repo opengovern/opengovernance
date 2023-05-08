@@ -52540,3 +52540,296 @@ func GetMgnApplication(ctx context.Context, d *plugin.QueryData, _ *plugin.Hydra
 }
 
 // ==========================  END: MgnApplication =============================
+
+// ==========================  START: SecurityLakeDataLake =============================
+
+type SecurityLakeDataLake struct {
+	Description   aws.SecurityLakeDataLakeDescription `json:"description"`
+	Metadata      aws.Metadata                        `json:"metadata"`
+	ResourceJobID int                                 `json:"resource_job_id"`
+	SourceJobID   int                                 `json:"source_job_id"`
+	ResourceType  string                              `json:"resource_type"`
+	SourceType    string                              `json:"source_type"`
+	ID            string                              `json:"id"`
+	ARN           string                              `json:"arn"`
+	SourceID      string                              `json:"source_id"`
+}
+
+type SecurityLakeDataLakeHit struct {
+	ID      string               `json:"_id"`
+	Score   float64              `json:"_score"`
+	Index   string               `json:"_index"`
+	Type    string               `json:"_type"`
+	Version int64                `json:"_version,omitempty"`
+	Source  SecurityLakeDataLake `json:"_source"`
+	Sort    []interface{}        `json:"sort"`
+}
+
+type SecurityLakeDataLakeHits struct {
+	Total SearchTotal               `json:"total"`
+	Hits  []SecurityLakeDataLakeHit `json:"hits"`
+}
+
+type SecurityLakeDataLakeSearchResponse struct {
+	PitID string                   `json:"pit_id"`
+	Hits  SecurityLakeDataLakeHits `json:"hits"`
+}
+
+type SecurityLakeDataLakePaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewSecurityLakeDataLakePaginator(filters []BoolFilter, limit *int64) (SecurityLakeDataLakePaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_securitylake_datalake", filters, limit)
+	if err != nil {
+		return SecurityLakeDataLakePaginator{}, err
+	}
+
+	p := SecurityLakeDataLakePaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p SecurityLakeDataLakePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p SecurityLakeDataLakePaginator) NextPage(ctx context.Context) ([]SecurityLakeDataLake, error) {
+	var response SecurityLakeDataLakeSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []SecurityLakeDataLake
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listSecurityLakeDataLakeFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListSecurityLakeDataLake(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListSecurityLakeDataLake")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewSecurityLakeDataLakePaginator(buildFilter(d.KeyColumnQuals, listSecurityLakeDataLakeFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getSecurityLakeDataLakeFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetSecurityLakeDataLake(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetSecurityLakeDataLake")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewSecurityLakeDataLakePaginator(buildFilter(d.KeyColumnQuals, getSecurityLakeDataLakeFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: SecurityLakeDataLake =============================
+
+// ==========================  START: SecurityLakeSubscriber =============================
+
+type SecurityLakeSubscriber struct {
+	Description   aws.SecurityLakeSubscriberDescription `json:"description"`
+	Metadata      aws.Metadata                          `json:"metadata"`
+	ResourceJobID int                                   `json:"resource_job_id"`
+	SourceJobID   int                                   `json:"source_job_id"`
+	ResourceType  string                                `json:"resource_type"`
+	SourceType    string                                `json:"source_type"`
+	ID            string                                `json:"id"`
+	ARN           string                                `json:"arn"`
+	SourceID      string                                `json:"source_id"`
+}
+
+type SecurityLakeSubscriberHit struct {
+	ID      string                 `json:"_id"`
+	Score   float64                `json:"_score"`
+	Index   string                 `json:"_index"`
+	Type    string                 `json:"_type"`
+	Version int64                  `json:"_version,omitempty"`
+	Source  SecurityLakeSubscriber `json:"_source"`
+	Sort    []interface{}          `json:"sort"`
+}
+
+type SecurityLakeSubscriberHits struct {
+	Total SearchTotal                 `json:"total"`
+	Hits  []SecurityLakeSubscriberHit `json:"hits"`
+}
+
+type SecurityLakeSubscriberSearchResponse struct {
+	PitID string                     `json:"pit_id"`
+	Hits  SecurityLakeSubscriberHits `json:"hits"`
+}
+
+type SecurityLakeSubscriberPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewSecurityLakeSubscriberPaginator(filters []BoolFilter, limit *int64) (SecurityLakeSubscriberPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_securitylake_subscriber", filters, limit)
+	if err != nil {
+		return SecurityLakeSubscriberPaginator{}, err
+	}
+
+	p := SecurityLakeSubscriberPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p SecurityLakeSubscriberPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p SecurityLakeSubscriberPaginator) NextPage(ctx context.Context) ([]SecurityLakeSubscriber, error) {
+	var response SecurityLakeSubscriberSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []SecurityLakeSubscriber
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listSecurityLakeSubscriberFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListSecurityLakeSubscriber(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListSecurityLakeSubscriber")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewSecurityLakeSubscriberPaginator(buildFilter(d.KeyColumnQuals, listSecurityLakeSubscriberFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getSecurityLakeSubscriberFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+	"subscriber_id":    "description.Subscriber.SubscriberId",
+}
+
+func GetSecurityLakeSubscriber(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetSecurityLakeSubscriber")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewSecurityLakeSubscriberPaginator(buildFilter(d.KeyColumnQuals, getSecurityLakeSubscriberFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: SecurityLakeSubscriber =============================
