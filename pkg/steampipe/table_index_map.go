@@ -335,6 +335,11 @@ var awsMap = map[string]string{
 	"AWS::SecurityHub::StandardsSubscription":                                     "aws_securityhub_standards_subscription",
 	"AWS:SecurityLake::DataLake":                                                  "aws_securitylake_data_lake",
 	"AWS:SecurityLake::Subscriber":                                                "aws_securitylake_subscriber",
+	"AWS::Ram::PrincipalAssociation":                                              "aws_ram_principal_association",
+	"AWS::Ram::ResourceAssociation":                                               "aws_ram_resource_association",
+	"AWS::RDS::ReservedDBInstance":                                                "aws_rds_reserved_db_instance",
+	"AWS::Redshift::SubnetGroup":                                                  "aws_redshift_subnet_group",
+	"AWS::SeverlessApplicationRepository::Application":                            "aws_serverlessapplicationrepository_application",
 }
 
 var azureMap = map[string]string{
@@ -803,6 +808,11 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::SecurityHub::StandardsSubscription":                                     &keibi.SecurityHubStandardsSubscription{},
 	"AWS:SecurityLake::DataLake":                                                  &keibi.SecurityLakeDataLake{},
 	"AWS:SecurityLake::Subscriber":                                                &keibi.SecurityLakeSubscriber{},
+	"AWS::Ram::PrincipalAssociation":                                              &keibi.RamPrincipalAssociation{},
+	"AWS::Ram::ResourceAssociation":                                               &keibi.RamResourceAssociation{},
+	"AWS::RDS::ReservedDBInstance":                                                &keibi.RDSReservedDBInstance{},
+	"AWS::Redshift::SubnetGroup":                                                  &keibi.RedshiftSubnetGroup{},
+	"AWS::SeverlessApplicationRepository::Application":                            &keibi.ServerlessApplicationRepositoryApplication{},
 }
 
 var AzureDescriptionMap = map[string]interface{}{

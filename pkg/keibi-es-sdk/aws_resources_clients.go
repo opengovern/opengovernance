@@ -25687,6 +25687,159 @@ func GetRDSGlobalCluster(ctx context.Context, d *plugin.QueryData, _ *plugin.Hyd
 
 // ==========================  END: RDSGlobalCluster =============================
 
+// ==========================  START: RDSReservedDBInstance =============================
+
+type RDSReservedDBInstance struct {
+	Description   aws.RDSReservedDBInstanceDescription `json:"description"`
+	Metadata      aws.Metadata                         `json:"metadata"`
+	ResourceJobID int                                  `json:"resource_job_id"`
+	SourceJobID   int                                  `json:"source_job_id"`
+	ResourceType  string                               `json:"resource_type"`
+	SourceType    string                               `json:"source_type"`
+	ID            string                               `json:"id"`
+	ARN           string                               `json:"arn"`
+	SourceID      string                               `json:"source_id"`
+}
+
+type RDSReservedDBInstanceHit struct {
+	ID      string                `json:"_id"`
+	Score   float64               `json:"_score"`
+	Index   string                `json:"_index"`
+	Type    string                `json:"_type"`
+	Version int64                 `json:"_version,omitempty"`
+	Source  RDSReservedDBInstance `json:"_source"`
+	Sort    []interface{}         `json:"sort"`
+}
+
+type RDSReservedDBInstanceHits struct {
+	Total SearchTotal                `json:"total"`
+	Hits  []RDSReservedDBInstanceHit `json:"hits"`
+}
+
+type RDSReservedDBInstanceSearchResponse struct {
+	PitID string                    `json:"pit_id"`
+	Hits  RDSReservedDBInstanceHits `json:"hits"`
+}
+
+type RDSReservedDBInstancePaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewRDSReservedDBInstancePaginator(filters []BoolFilter, limit *int64) (RDSReservedDBInstancePaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_rds_reserveddbinstance", filters, limit)
+	if err != nil {
+		return RDSReservedDBInstancePaginator{}, err
+	}
+
+	p := RDSReservedDBInstancePaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p RDSReservedDBInstancePaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p RDSReservedDBInstancePaginator) NextPage(ctx context.Context) ([]RDSReservedDBInstance, error) {
+	var response RDSReservedDBInstanceSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []RDSReservedDBInstance
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listRDSReservedDBInstanceFilters = map[string]string{
+	"class":                             "description.ReservedDBInstance.DBInstanceClass",
+	"duration":                          "description.ReservedDBInstance.Duration",
+	"keibi_account_id":                  "metadata.SourceID",
+	"lease_id":                          "description.ReservedDBInstance.LeaseId",
+	"multi_az":                          "description.ReservedDBInstance.MultiAZ",
+	"offering_type":                     "description.ReservedDBInstance.OfferingType",
+	"reserved_db_instances_offering_id": "description.ReservedDBInstance.ReservedDBInstancesOfferingId",
+}
+
+func ListRDSReservedDBInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListRDSReservedDBInstance")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewRDSReservedDBInstancePaginator(buildFilter(d.KeyColumnQuals, listRDSReservedDBInstanceFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getRDSReservedDBInstanceFilters = map[string]string{
+	"keibi_account_id":        "metadata.SourceID",
+	"reserved_db_instance_id": "description.ReservedDBInstance.ReservedDBInstanceId",
+}
+
+func GetRDSReservedDBInstance(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetRDSReservedDBInstance")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewRDSReservedDBInstancePaginator(buildFilter(d.KeyColumnQuals, getRDSReservedDBInstanceFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: RDSReservedDBInstance =============================
+
 // ==========================  START: RedshiftCluster =============================
 
 type RedshiftCluster struct {
@@ -26715,6 +26868,153 @@ func GetRedshiftServerlessSnapshot(ctx context.Context, d *plugin.QueryData, _ *
 }
 
 // ==========================  END: RedshiftServerlessSnapshot =============================
+
+// ==========================  START: RedshiftSubnetGroup =============================
+
+type RedshiftSubnetGroup struct {
+	Description   aws.RedshiftSubnetGroupDescription `json:"description"`
+	Metadata      aws.Metadata                       `json:"metadata"`
+	ResourceJobID int                                `json:"resource_job_id"`
+	SourceJobID   int                                `json:"source_job_id"`
+	ResourceType  string                             `json:"resource_type"`
+	SourceType    string                             `json:"source_type"`
+	ID            string                             `json:"id"`
+	ARN           string                             `json:"arn"`
+	SourceID      string                             `json:"source_id"`
+}
+
+type RedshiftSubnetGroupHit struct {
+	ID      string              `json:"_id"`
+	Score   float64             `json:"_score"`
+	Index   string              `json:"_index"`
+	Type    string              `json:"_type"`
+	Version int64               `json:"_version,omitempty"`
+	Source  RedshiftSubnetGroup `json:"_source"`
+	Sort    []interface{}       `json:"sort"`
+}
+
+type RedshiftSubnetGroupHits struct {
+	Total SearchTotal              `json:"total"`
+	Hits  []RedshiftSubnetGroupHit `json:"hits"`
+}
+
+type RedshiftSubnetGroupSearchResponse struct {
+	PitID string                  `json:"pit_id"`
+	Hits  RedshiftSubnetGroupHits `json:"hits"`
+}
+
+type RedshiftSubnetGroupPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewRedshiftSubnetGroupPaginator(filters []BoolFilter, limit *int64) (RedshiftSubnetGroupPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_redshift_subnetgroup", filters, limit)
+	if err != nil {
+		return RedshiftSubnetGroupPaginator{}, err
+	}
+
+	p := RedshiftSubnetGroupPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p RedshiftSubnetGroupPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p RedshiftSubnetGroupPaginator) NextPage(ctx context.Context) ([]RedshiftSubnetGroup, error) {
+	var response RedshiftSubnetGroupSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []RedshiftSubnetGroup
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listRedshiftSubnetGroupFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListRedshiftSubnetGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListRedshiftSubnetGroup")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewRedshiftSubnetGroupPaginator(buildFilter(d.KeyColumnQuals, listRedshiftSubnetGroupFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getRedshiftSubnetGroupFilters = map[string]string{
+	"cluster_subnet_group_name": "description.ClusterSubnetGroup.ClusterSubnetGroupName",
+	"keibi_account_id":          "metadata.SourceID",
+}
+
+func GetRedshiftSubnetGroup(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetRedshiftSubnetGroup")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewRedshiftSubnetGroupPaginator(buildFilter(d.KeyColumnQuals, getRedshiftSubnetGroupFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: RedshiftSubnetGroup =============================
 
 // ==========================  START: SNSTopic =============================
 
@@ -52833,3 +53133,442 @@ func GetSecurityLakeSubscriber(ctx context.Context, d *plugin.QueryData, _ *plug
 }
 
 // ==========================  END: SecurityLakeSubscriber =============================
+
+// ==========================  START: RamPrincipalAssociation =============================
+
+type RamPrincipalAssociation struct {
+	Description   aws.RamPrincipalAssociationDescription `json:"description"`
+	Metadata      aws.Metadata                           `json:"metadata"`
+	ResourceJobID int                                    `json:"resource_job_id"`
+	SourceJobID   int                                    `json:"source_job_id"`
+	ResourceType  string                                 `json:"resource_type"`
+	SourceType    string                                 `json:"source_type"`
+	ID            string                                 `json:"id"`
+	ARN           string                                 `json:"arn"`
+	SourceID      string                                 `json:"source_id"`
+}
+
+type RamPrincipalAssociationHit struct {
+	ID      string                  `json:"_id"`
+	Score   float64                 `json:"_score"`
+	Index   string                  `json:"_index"`
+	Type    string                  `json:"_type"`
+	Version int64                   `json:"_version,omitempty"`
+	Source  RamPrincipalAssociation `json:"_source"`
+	Sort    []interface{}           `json:"sort"`
+}
+
+type RamPrincipalAssociationHits struct {
+	Total SearchTotal                  `json:"total"`
+	Hits  []RamPrincipalAssociationHit `json:"hits"`
+}
+
+type RamPrincipalAssociationSearchResponse struct {
+	PitID string                      `json:"pit_id"`
+	Hits  RamPrincipalAssociationHits `json:"hits"`
+}
+
+type RamPrincipalAssociationPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewRamPrincipalAssociationPaginator(filters []BoolFilter, limit *int64) (RamPrincipalAssociationPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ram_principalassociation", filters, limit)
+	if err != nil {
+		return RamPrincipalAssociationPaginator{}, err
+	}
+
+	p := RamPrincipalAssociationPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p RamPrincipalAssociationPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p RamPrincipalAssociationPaginator) NextPage(ctx context.Context) ([]RamPrincipalAssociation, error) {
+	var response RamPrincipalAssociationSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []RamPrincipalAssociation
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listRamPrincipalAssociationFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListRamPrincipalAssociation(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListRamPrincipalAssociation")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewRamPrincipalAssociationPaginator(buildFilter(d.KeyColumnQuals, listRamPrincipalAssociationFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getRamPrincipalAssociationFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetRamPrincipalAssociation(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetRamPrincipalAssociation")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewRamPrincipalAssociationPaginator(buildFilter(d.KeyColumnQuals, getRamPrincipalAssociationFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: RamPrincipalAssociation =============================
+
+// ==========================  START: RamResourceAssociation =============================
+
+type RamResourceAssociation struct {
+	Description   aws.RamResourceAssociationDescription `json:"description"`
+	Metadata      aws.Metadata                          `json:"metadata"`
+	ResourceJobID int                                   `json:"resource_job_id"`
+	SourceJobID   int                                   `json:"source_job_id"`
+	ResourceType  string                                `json:"resource_type"`
+	SourceType    string                                `json:"source_type"`
+	ID            string                                `json:"id"`
+	ARN           string                                `json:"arn"`
+	SourceID      string                                `json:"source_id"`
+}
+
+type RamResourceAssociationHit struct {
+	ID      string                 `json:"_id"`
+	Score   float64                `json:"_score"`
+	Index   string                 `json:"_index"`
+	Type    string                 `json:"_type"`
+	Version int64                  `json:"_version,omitempty"`
+	Source  RamResourceAssociation `json:"_source"`
+	Sort    []interface{}          `json:"sort"`
+}
+
+type RamResourceAssociationHits struct {
+	Total SearchTotal                 `json:"total"`
+	Hits  []RamResourceAssociationHit `json:"hits"`
+}
+
+type RamResourceAssociationSearchResponse struct {
+	PitID string                     `json:"pit_id"`
+	Hits  RamResourceAssociationHits `json:"hits"`
+}
+
+type RamResourceAssociationPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewRamResourceAssociationPaginator(filters []BoolFilter, limit *int64) (RamResourceAssociationPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_ram_resourceassociation", filters, limit)
+	if err != nil {
+		return RamResourceAssociationPaginator{}, err
+	}
+
+	p := RamResourceAssociationPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p RamResourceAssociationPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p RamResourceAssociationPaginator) NextPage(ctx context.Context) ([]RamResourceAssociation, error) {
+	var response RamResourceAssociationSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []RamResourceAssociation
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listRamResourceAssociationFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListRamResourceAssociation(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListRamResourceAssociation")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewRamResourceAssociationPaginator(buildFilter(d.KeyColumnQuals, listRamResourceAssociationFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getRamResourceAssociationFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetRamResourceAssociation(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetRamResourceAssociation")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewRamResourceAssociationPaginator(buildFilter(d.KeyColumnQuals, getRamResourceAssociationFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: RamResourceAssociation =============================
+
+// ==========================  START: ServerlessApplicationRepositoryApplication =============================
+
+type ServerlessApplicationRepositoryApplication struct {
+	Description   aws.ServerlessApplicationRepositoryApplicationDescription `json:"description"`
+	Metadata      aws.Metadata                                              `json:"metadata"`
+	ResourceJobID int                                                       `json:"resource_job_id"`
+	SourceJobID   int                                                       `json:"source_job_id"`
+	ResourceType  string                                                    `json:"resource_type"`
+	SourceType    string                                                    `json:"source_type"`
+	ID            string                                                    `json:"id"`
+	ARN           string                                                    `json:"arn"`
+	SourceID      string                                                    `json:"source_id"`
+}
+
+type ServerlessApplicationRepositoryApplicationHit struct {
+	ID      string                                     `json:"_id"`
+	Score   float64                                    `json:"_score"`
+	Index   string                                     `json:"_index"`
+	Type    string                                     `json:"_type"`
+	Version int64                                      `json:"_version,omitempty"`
+	Source  ServerlessApplicationRepositoryApplication `json:"_source"`
+	Sort    []interface{}                              `json:"sort"`
+}
+
+type ServerlessApplicationRepositoryApplicationHits struct {
+	Total SearchTotal                                     `json:"total"`
+	Hits  []ServerlessApplicationRepositoryApplicationHit `json:"hits"`
+}
+
+type ServerlessApplicationRepositoryApplicationSearchResponse struct {
+	PitID string                                         `json:"pit_id"`
+	Hits  ServerlessApplicationRepositoryApplicationHits `json:"hits"`
+}
+
+type ServerlessApplicationRepositoryApplicationPaginator struct {
+	paginator *baseESPaginator
+}
+
+func (k Client) NewServerlessApplicationRepositoryApplicationPaginator(filters []BoolFilter, limit *int64) (ServerlessApplicationRepositoryApplicationPaginator, error) {
+	paginator, err := newPaginator(k.es, "aws_serverlessapplicationrepository_application", filters, limit)
+	if err != nil {
+		return ServerlessApplicationRepositoryApplicationPaginator{}, err
+	}
+
+	p := ServerlessApplicationRepositoryApplicationPaginator{
+		paginator: paginator,
+	}
+
+	return p, nil
+}
+
+func (p ServerlessApplicationRepositoryApplicationPaginator) HasNext() bool {
+	return !p.paginator.done
+}
+
+func (p ServerlessApplicationRepositoryApplicationPaginator) NextPage(ctx context.Context) ([]ServerlessApplicationRepositoryApplication, error) {
+	var response ServerlessApplicationRepositoryApplicationSearchResponse
+	err := p.paginator.search(ctx, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var values []ServerlessApplicationRepositoryApplication
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.updateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.updateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+var listServerlessApplicationRepositoryApplicationFilters = map[string]string{
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func ListServerlessApplicationRepositoryApplication(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("ListServerlessApplicationRepositoryApplication")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	paginator, err := k.NewServerlessApplicationRepositoryApplicationPaginator(buildFilter(d.KeyColumnQuals, listServerlessApplicationRepositoryApplicationFilters, "aws", *cfg.AccountID), d.QueryContext.Limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			d.StreamListItem(ctx, v)
+		}
+	}
+
+	return nil, nil
+}
+
+var getServerlessApplicationRepositoryApplicationFilters = map[string]string{
+	"arn":              "description.Application.ApplicationId",
+	"keibi_account_id": "metadata.SourceID",
+}
+
+func GetServerlessApplicationRepositoryApplication(ctx context.Context, d *plugin.QueryData, _ *plugin.HydrateData) (interface{}, error) {
+	plugin.Logger(ctx).Trace("GetServerlessApplicationRepositoryApplication")
+
+	// create service
+	cfg := GetConfig(d.Connection)
+	k, err := NewClientCached(cfg, d.ConnectionManager.Cache, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := int64(1)
+	paginator, err := k.NewServerlessApplicationRepositoryApplicationPaginator(buildFilter(d.KeyColumnQuals, getServerlessApplicationRepositoryApplicationFilters, "aws", *cfg.AccountID), &limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range page {
+			return v, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// ==========================  END: ServerlessApplicationRepositoryApplication =============================
