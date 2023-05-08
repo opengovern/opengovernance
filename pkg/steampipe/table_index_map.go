@@ -317,6 +317,7 @@ var awsMap = map[string]string{
 	"AWS::Macie2::ClassificationJob":                                              "aws_macie2_classification_job",
 	"AWS::MediaStore::Container":                                                  "aws_mediastore_container",
 	"AWS::Mgn::Application":                                                       "aws_mgn_application",
+	"AWS::ResourceExplorer2::SupportedResourceType":                               "aws_resource_explorer_supported_resource_type",
 }
 
 var azureMap = map[string]string{
@@ -767,6 +768,7 @@ var AWSDescriptionMap = map[string]interface{}{
 	"AWS::Macie2::ClassificationJob":                                              &keibi.Macie2ClassificationJob{},
 	"AWS::MediaStore::Container":                                                  &keibi.MediaStoreContainer{},
 	"AWS::Mgn::Application":                                                       &keibi.MgnApplication{},
+	"AWS::ResourceExplorer2::SupportedResourceType":                               &keibi.ResourceExplorer2SupportedResourceType{},
 }
 
 var AzureDescriptionMap = map[string]interface{}{
