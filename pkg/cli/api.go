@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
+	_ "github.com/golang-jwt/jwt/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	urls "gitlab.com/keibiengine/keibi-engine/pkg/cli/consts"
 	apiOnboard "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
@@ -195,7 +196,8 @@ func AccessToken(deviceCode string) (string, error) {
 }
 
 func CheckExpirationTime(accessToken string) (bool, error) {
-	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, jwt.MapClaims{})
+	token, _, err := new(
+		jwt.Parser).ParseUnverified(accessToken, jwt.MapClaims{})
 	if err != nil {
 		return false, err
 	}
@@ -754,7 +756,7 @@ func IamDeleteKey(workspacesName string, accessToken string, id string) (string,
 	}
 }
 
-func OnboardCreateAWS(accessToken string, workspaceName string, name string, email string, description string, accessKey string, accessId string, regions []string, secretKey string) (ResponseAWSCreate, int, error) {
+func OnboardCreateAWS(accessToken string, name string, email string, description string, accessKey string, accessId string, regions []string, secretKey string) (ResponseAWSCreate, int, error) {
 	var bodyRequest apiOnboard.SourceAwsRequest
 	bodyRequest.Name = name
 	bodyRequest.Email = email
@@ -767,7 +769,7 @@ func OnboardCreateAWS(accessToken string, workspaceName string, name string, ema
 	if err != nil {
 		return ResponseAWSCreate{}, http.StatusBadGateway, err
 	}
-	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/source/aws", bytes.NewBuffer(reqBodyEncoded))
+	req, err := http.NewRequest("POST", urls.Url+"onboard/api/v1/source/aws", bytes.NewBuffer(reqBodyEncoded))
 	if err != nil {
 		return ResponseAWSCreate{}, http.StatusBadRequest, err
 	}
@@ -801,7 +803,7 @@ type ResponseAWSCreate struct {
 	ID [16]byte `json:"id"`
 }
 
-func OnboardCreateAzure(accessToken string, workspaceName string, name string, ObjectId string, description string, clientId string, clientSecret string, subscriptionId string, tenantId string) (ResponseCreateAzure, int, error) {
+func OnboardCreateAzure(accessToken string, name string, ObjectId string, description string, clientId string, clientSecret string, subscriptionId string, tenantId string) (ResponseCreateAzure, int, error) {
 	var request apiOnboard.SourceAzureRequest
 	request.Name = name
 	request.Description = description
@@ -815,7 +817,7 @@ func OnboardCreateAzure(accessToken string, workspaceName string, name string, O
 	if err != nil {
 		return ResponseCreateAzure{}, http.StatusBadGateway, err
 	}
-	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/source/azure", bytes.NewBuffer(reqBodyEncoded))
+	req, err := http.NewRequest("POST", urls.Url+"onboard/api/v1/source/azure", bytes.NewBuffer(reqBodyEncoded))
 	if err != nil {
 		return ResponseCreateAzure{}, http.StatusBadRequest, err
 	}
@@ -848,3 +850,142 @@ func OnboardCreateAzure(accessToken string, workspaceName string, name string, O
 type ResponseCreateAzure struct {
 	ID [16]byte `json:"ID"`
 }
+
+func OnboardCatalogConnectors(accessToken string, idFilter string, minimumConnectionFilter string, stateFilter string, categoryFilter string) (apiOnboard.CatalogConnector, int, error) {
+	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/catalog/connectors", nil)
+	if err != nil {
+		return apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
+	}
+	query := req.URL.Query()
+	query.Set("category", categoryFilter)
+	query.Set("state", stateFilter)
+	query.Set("minConnection", minimumConnectionFilter)
+	query.Set("id", idFilter)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return apiOnboard.CatalogConnector{}, http.StatusBadRequest, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
+	}
+	var response apiOnboard.CatalogConnector
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
+	}
+	return response, http.StatusOK, nil
+}
+
+func OnboardCatalogMetricsCLI(accessToken string) (apiOnboard.CatalogMetrics, int, error) {
+	req, err := http.NewRequest("GET", urls.Url+"/onboard/api/v1/catalog/metrics", nil)
+	if err != nil {
+		return apiOnboard.CatalogMetrics{}, http.StatusBadGateway, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return apiOnboard.CatalogMetrics{}, http.StatusBadGateway, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return apiOnboard.CatalogMetrics{}, http.StatusBadGateway, err
+	}
+	var response apiOnboard.CatalogMetrics
+	err = res.Body.Close()
+	if err != nil {
+		return apiOnboard.CatalogMetrics{}, http.StatusBadGateway, err
+	}
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return apiOnboard.CatalogMetrics{}, http.StatusBadGateway, err
+	}
+	return response, http.StatusOK, nil
+}
+
+type CountConnectionsCLIRequest struct {
+	ConnectorsNames []string `json:"connectores"`
+	State           string   `json:"state"`
+	Health          string   `json:"health"`
+}
+
+func OnboardCountConnectionsCLI(accessToken string, connectorsNames []string, health string, state string) (string, int, error) {
+	request := CountConnectionsCLIRequest{
+		connectorsNames,
+		state,
+		health,
+	}
+	reqEncoded, err := json.Marshal(request)
+	if err != nil {
+		return "", http.StatusBadRequest, err
+	}
+	req, err := http.NewRequest("POST", urls.Url+"onboard/api/v1/connections/count", bytes.NewBuffer(reqEncoded))
+	if err != nil {
+		return "", http.StatusBadGateway, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", http.StatusBadGateway, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return "", http.StatusBadGateway, err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return "", http.StatusBadGateway, err
+	}
+	return string(body), http.StatusOK, nil
+}
+func OnboardGetConnectors(accessToken string) (apiOnboard.ConnectorCount, int, error) {
+	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/connectors", nil)
+	if err != nil {
+		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+	}
+	var response apiOnboard.ConnectorCount
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+	}
+	return response, http.StatusOK, nil
+}
+func OnboardGetConnector(accessToken string, connectorName string) (int, error) {
+	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/connectors/"+connectorName, nil)
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization","Bearer "+accessToken)
+	res ,err := http.DefaultClient.Do(req)
+	if err!=nil{
+		return http.StatusBadGateway,err
+	}
+	body , err := io.ReadAll(res.Body)
+	if err!=nil{
+		return http.StatusBadGateway ,err
+	}
+	var response apiOnboard.
+}
+
