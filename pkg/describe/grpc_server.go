@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gitlab.com/keibiengine/keibi-engine/pkg/concurrency"
 	"strconv"
 	"strings"
 	"time"
@@ -52,83 +53,95 @@ func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProdu
 }
 
 func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, protoResources *golang.AWSResources) (*golang.ResponseOK, error) {
+	var err error
+	var resourceJobId uint64
+
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok && md.Get("resource-job-id") != nil {
 		resourceJobIdStr := md.Get("resource-job-id")[0]
-		resourceJobId, err := strconv.ParseUint(resourceJobIdStr, 10, 64)
+		resourceJobId, err = strconv.ParseUint(resourceJobIdStr, 10, 64)
 		if err != nil {
 			StreamFailureCount.WithLabelValues("aws").Inc()
 			s.logger.Error("failed to parse resource job id:", zap.Error(err))
 			return nil, fmt.Errorf("failed to parse resource job id: %v", err)
 		}
-		err = s.db.UpdateDescribeResourceJobToInProgress(uint(resourceJobId))
+		err = s.db.UpdateDescribeResourceJobToInProgress(uint(resourceJobId)) //TODO this is called too much
 		if err != nil {
 			StreamFailureCount.WithLabelValues("aws").Inc()
 			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
 		}
 	}
 
-	for _, protoResource := range protoResources.Resources {
-		var description interface{}
-		err := json.Unmarshal([]byte(protoResource.DescriptionJson), &description)
-		if err != nil {
-			ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
-			s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", protoResource.Job.JobId), zap.String("resourceID", protoResource.Id))
-			return nil, err
-		}
-
-		resource := aws.Resource{
-			ARN:         protoResource.Arn,
-			ID:          protoResource.Id,
-			Description: description,
-			Name:        protoResource.Name,
-			Account:     protoResource.Account,
-			Region:      protoResource.Region,
-			Partition:   protoResource.Partition,
-			Type:        protoResource.Type,
-		}
-
-		err = s.HandleAWSResource(resource, protoResource.Job)
-		if err != nil {
-			ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
-			s.logger.Error("failed to handle aws resource", zap.Error(err), zap.Uint32("jobID", protoResource.Job.JobId), zap.String("resourceID", protoResource.Id))
-			return nil, err
-		}
-		ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
-	}
-	return &golang.ResponseOK{}, nil
-}
-
-func (s *GRPCDescribeServer) HandleAWSResource(resource aws.Resource, job *golang.DescribeJob) error {
-	ctx := context.Background()
-
-	var msgs []kafka.Doc
 	var remaining int64 = MAX_INT64
 	if s.rdb != nil {
 		currentResourceLimitRemaining, err := s.rdb.Get(ctx, RedisKeyWorkspaceResourceRemaining).Result()
 		if err != nil {
-			return fmt.Errorf("redisGet: %v", err.Error())
+			return nil, fmt.Errorf("redisGet: %v", err.Error())
 		}
 
 		remaining, err = strconv.ParseInt(currentResourceLimitRemaining, 10, 64)
 		if remaining <= 0 {
-			return fmt.Errorf("workspace has reached its max resources limit")
+			return nil, fmt.Errorf("workspace has reached its max resources limit")
 		}
 
 		_, err = s.rdb.DecrBy(ctx, RedisKeyWorkspaceResourceRemaining, 1).Result()
 		if err != nil {
-			return fmt.Errorf("redisDecr: %v", err.Error())
+			return nil, fmt.Errorf("redisDecr: %v", err.Error())
 		}
 	}
 
-	if resource.Description == nil {
-		return nil
+	workerCount := len(protoResources.Resources)
+	if workerCount > 32 {
+		workerCount = 32
 	}
-	if s.rdb != nil {
-		if remaining <= 0 {
-			return fmt.Errorf("workspace has reached its max resources limit")
+	wp := concurrency.NewWorkPool(workerCount)
+	for _, protoResource := range protoResources.Resources {
+		wp.AddJob(func() (interface{}, error) {
+			return s.HandleAWSResource(protoResource)
+		})
+	}
+
+	var msgs []kafka.Doc
+	for _, res := range wp.Run() {
+		if res.Error != nil {
+			ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
+			s.logger.Error("failed to handle aws resource", zap.Error(res.Error), zap.Uint64("jobID", resourceJobId))
+			return nil, res.Error
 		}
-		remaining--
+		ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
+	}
+
+	if err := kafka.DoSend(s.producer, s.topic, msgs, s.logger); err != nil {
+		return nil, fmt.Errorf("send to kafka: %w", err)
+	}
+	return &golang.ResponseOK{}, nil
+}
+
+func (s *GRPCDescribeServer) HandleAWSResource(protoResource *golang.AWSResource) ([]kafka.Doc, error) {
+	var description interface{}
+	err := json.Unmarshal([]byte(protoResource.DescriptionJson), &description)
+	if err != nil {
+		ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
+		s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", protoResource.Job.JobId), zap.String("resourceID", protoResource.Id))
+		return nil, err
+	}
+
+	job := protoResource.Job
+
+	resource := aws.Resource{
+		ARN:         protoResource.Arn,
+		ID:          protoResource.Id,
+		Description: description,
+		Name:        protoResource.Name,
+		Account:     protoResource.Account,
+		Region:      protoResource.Region,
+		Partition:   protoResource.Partition,
+		Type:        protoResource.Type,
+	}
+
+	var msgs []kafka.Doc
+	if resource.Description == nil {
+		return nil, nil
 	}
 
 	awsMetadata := awsmodel.Metadata{
@@ -141,13 +154,13 @@ func (s *GRPCDescribeServer) HandleAWSResource(resource aws.Resource, job *golan
 	}
 	awsMetadataBytes, err := json.Marshal(awsMetadata)
 	if err != nil {
-		return fmt.Errorf("marshal metadata: %v", err.Error())
+		return nil, fmt.Errorf("marshal metadata: %v", err.Error())
 	}
 
 	metadata := make(map[string]string)
 	err = json.Unmarshal(awsMetadataBytes, &metadata)
 	if err != nil {
-		return fmt.Errorf("unmarshal metadata: %v", err.Error())
+		return nil, fmt.Errorf("unmarshal metadata: %v", err.Error())
 	}
 
 	kafkaResource := es.Resource{
@@ -186,12 +199,12 @@ func (s *GRPCDescribeServer) HandleAWSResource(resource aws.Resource, job *golan
 	pluginTableName := steampipe.ExtractTableName(job.ResourceType)
 	desc, err := steampipe.ConvertToDescription(job.ResourceType, kafkaResource)
 	if err != nil {
-		return fmt.Errorf("convertToDescription: %v", err.Error())
+		return nil, fmt.Errorf("convertToDescription: %v", err.Error())
 	}
 
 	cells, err := steampipe.AWSDescriptionToRecord(desc, pluginTableName)
 	if err != nil {
-		return fmt.Errorf("awsdescriptionToRecord: %v", err.Error())
+		return nil, fmt.Errorf("awsdescriptionToRecord: %v", err.Error())
 	}
 
 	for name, v := range cells {
@@ -202,7 +215,7 @@ func (s *GRPCDescribeServer) HandleAWSResource(resource aws.Resource, job *golan
 
 	tags, err := steampipe.ExtractTags(job.ResourceType, kafkaResource)
 	if err != nil {
-		return fmt.Errorf("failed to build tags for service: %v", err.Error())
+		return nil, fmt.Errorf("failed to build tags for service: %v", err.Error())
 	}
 	lookupResource.Tags = tags
 	if s.rdb != nil {
@@ -210,12 +223,12 @@ func (s *GRPCDescribeServer) HandleAWSResource(resource aws.Resource, job *golan
 			key = strings.TrimSpace(key)
 			_, err = s.rdb.SAdd(context.Background(), "tag-"+key, value).Result()
 			if err != nil {
-				return fmt.Errorf("failed to push tag into redis: %v", err.Error())
+				return nil, fmt.Errorf("failed to push tag into redis: %v", err.Error())
 			}
 
 			_, err = s.rdb.Expire(context.Background(), "tag-"+key, 12*time.Hour).Result() //TODO-Saleh set time based on describe interval
 			if err != nil {
-				return fmt.Errorf("failed to set tag expire into redis: %v", err.Error())
+				return nil, fmt.Errorf("failed to set tag expire into redis: %v", err.Error())
 			}
 		}
 	}
@@ -223,10 +236,7 @@ func (s *GRPCDescribeServer) HandleAWSResource(resource aws.Resource, job *golan
 	msgs = append(msgs, kafkaResource)
 	msgs = append(msgs, lookupResource)
 
-	if err := kafka.DoSend(s.producer, s.topic, msgs, s.logger); err != nil {
-		return fmt.Errorf("send to kafka: %w", err)
-	}
-	return nil
+	return msgs, nil
 }
 
 func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resources *golang.AzureResources) (*golang.ResponseOK, error) {
