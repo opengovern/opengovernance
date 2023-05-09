@@ -52,7 +52,11 @@ func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProdu
 	}
 }
 
-func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, protoResources *golang.AWSResources) (*golang.ResponseOK, error) {
+func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources *golang.AzureResources) (*golang.ResponseOK, error) {
+	return &golang.ResponseOK{}, nil
+}
+
+func (s *GRPCDescribeServer) TempDeliverAWSResources(ctx context.Context, protoResources *golang.AWSResources) (*golang.ResponseOK, error) {
 	var err error
 	var resourceJobId uint64
 
@@ -240,6 +244,10 @@ func (s *GRPCDescribeServer) HandleAWSResource(protoResource *golang.AWSResource
 }
 
 func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resources *golang.AzureResources) (*golang.ResponseOK, error) {
+	return &golang.ResponseOK{}, nil
+}
+
+func (s *GRPCDescribeServer) TempDeliverAzureResources(ctx context.Context, resources *golang.AzureResources) (*golang.ResponseOK, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok && md.Get("resource-job-id") != nil {
 		resourceJobIdStr := md.Get("resource-job-id")[0]
@@ -440,7 +448,7 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 			TriggerType:   enums.DescribeTriggerType(req.DescribeJob.TriggerType),
 			RetryCounter:  uint(req.DescribeJob.RetryCounter),
 		},
-		DescribedResourceIDs: req.DescribedResourceIds,
+		DescribedResourceIDs: nil, // req.DescribedResourceIds,
 	})
 	return &golang.ResponseOK{}, err
 }
