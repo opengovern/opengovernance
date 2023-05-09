@@ -53,10 +53,11 @@ func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProdu
 }
 
 func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources *golang.AWSResources) (*golang.ResponseOK, error) {
-	return &golang.ResponseOK{}, nil
-}
+	startTime := time.Now().UnixMilli()
+	defer func() {
+		ResourceBatchProcessLatency.WithLabelValues("aws").Observe(float64(time.Now().UnixMilli() - startTime))
+	}()
 
-func (s *GRPCDescribeServer) TempDeliverAWSResources(ctx context.Context, protoResources *golang.AWSResources) (*golang.ResponseOK, error) {
 	var err error
 	var resourceJobId uint64
 
@@ -94,18 +95,18 @@ func (s *GRPCDescribeServer) TempDeliverAWSResources(ctx context.Context, protoR
 	//	}
 	//}
 
-	workerCount := len(protoResources.Resources)
+	workerCount := len(resources.Resources)
 	if workerCount > 32 {
 		workerCount = 32
 	}
 	wp := concurrency.NewWorkPool(workerCount)
-	for _, protoResource := range protoResources.Resources {
+	for _, resource := range resources.Resources {
 		wp.AddJob(func() (interface{}, error) {
-			return s.HandleAWSResource(protoResource)
+			return s.HandleAWSResource(resource)
 		})
 	}
 
-	var msgs []kafka.Doc
+	//var msgs []kafka.Doc
 	for _, res := range wp.Run() {
 		if res.Error != nil {
 			ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
@@ -115,13 +116,18 @@ func (s *GRPCDescribeServer) TempDeliverAWSResources(ctx context.Context, protoR
 		ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
 	}
 
-	if err := kafka.DoSend(s.producer, s.topic, msgs, s.logger); err != nil {
-		return nil, fmt.Errorf("send to kafka: %w", err)
-	}
+	//if err := kafka.DoSend(s.producer, s.topic, msgs, s.logger); err != nil {
+	//	return nil, fmt.Errorf("send to kafka: %w", err)
+	//}
 	return &golang.ResponseOK{}, nil
 }
 
 func (s *GRPCDescribeServer) HandleAWSResource(protoResource *golang.AWSResource) ([]kafka.Doc, error) {
+	startTime := time.Now().UnixMilli()
+	defer func() {
+		ResourceProcessLatency.WithLabelValues("aws").Observe(float64(time.Now().UnixMilli() - startTime))
+	}()
+
 	var description interface{}
 	err := json.Unmarshal([]byte(protoResource.DescriptionJson), &description)
 	if err != nil {
