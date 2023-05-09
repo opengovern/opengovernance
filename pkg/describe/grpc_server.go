@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/concurrency"
 	"strconv"
 	"strings"
 	"time"
@@ -15,8 +14,6 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/go-redis/redis/v8"
-	aws "github.com/kaytu-io/kaytu-aws-describer/aws/describer"
-	awsmodel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	azure "github.com/kaytu-io/kaytu-azure-describer/azure/describer"
 	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
@@ -76,177 +73,56 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
 		}
 	}
-	//
-	//var remaining int64 = MAX_INT64
-	//if s.rdb != nil {
-	//	currentResourceLimitRemaining, err := s.rdb.Get(ctx, RedisKeyWorkspaceResourceRemaining).Result()
-	//	if err != nil {
-	//		return nil, fmt.Errorf("redisGet: %v", err.Error())
-	//	}
-	//
-	//	remaining, err = strconv.ParseInt(currentResourceLimitRemaining, 10, 64)
-	//	if remaining <= 0 {
-	//		return nil, fmt.Errorf("workspace has reached its max resources limit")
-	//	}
-	//
-	//	_, err = s.rdb.DecrBy(ctx, RedisKeyWorkspaceResourceRemaining, int64(len(protoResources.Resources))).Result()
-	//	if err != nil {
-	//		return nil, fmt.Errorf("redisDecr: %v", err.Error())
-	//	}
-	//}
-
-	workerCount := len(resources.Resources)
-	if workerCount > 32 {
-		workerCount = 32
-	}
-	wp := concurrency.NewWorkPool(workerCount)
-	for _, resource := range resources.Resources {
-		wp.AddJob(func() (interface{}, error) {
-			return s.HandleAWSResource(resource)
-		})
-	}
-
-	//var msgs []kafka.Doc
-	for _, res := range wp.Run() {
-		if res.Error != nil {
-			ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
-			s.logger.Error("failed to handle aws resource", zap.Error(res.Error), zap.Uint64("jobID", resourceJobId))
-			return nil, res.Error
-		}
-		ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
-	}
-
-	//if err := kafka.DoSend(s.producer, s.topic, msgs, s.logger); err != nil {
-	//	return nil, fmt.Errorf("send to kafka: %w", err)
-	//}
-	return &golang.ResponseOK{}, nil
-}
-
-func (s *GRPCDescribeServer) HandleAWSResource(protoResource *golang.AWSResource) ([]kafka.Doc, error) {
-	startTime := time.Now().UnixMilli()
-	defer func() {
-		ResourceProcessLatency.WithLabelValues("aws").Observe(float64(time.Now().UnixMilli() - startTime))
-	}()
-
-	var description interface{}
-	err := json.Unmarshal([]byte(protoResource.DescriptionJson), &description)
-	if err != nil {
-		ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
-		s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", protoResource.Job.JobId), zap.String("resourceID", protoResource.Id))
-		return nil, err
-	}
-
-	job := protoResource.Job
-
-	resource := aws.Resource{
-		ARN:         protoResource.Arn,
-		ID:          protoResource.Id,
-		Description: description,
-		Name:        protoResource.Name,
-		Account:     protoResource.Account,
-		Region:      protoResource.Region,
-		Partition:   protoResource.Partition,
-		Type:        protoResource.Type,
-	}
 
 	var msgs []kafka.Doc
-	if resource.Description == nil {
-		return nil, nil
-	}
-
-	awsMetadata := awsmodel.Metadata{
-		Name:         resource.Name,
-		AccountID:    resource.Account,
-		SourceID:     job.SourceId,
-		Region:       resource.Region,
-		Partition:    resource.Name,
-		ResourceType: strings.ToLower(resource.Type),
-	}
-	awsMetadataBytes, err := json.Marshal(awsMetadata)
-	if err != nil {
-		return nil, fmt.Errorf("marshal metadata: %v", err.Error())
-	}
-
-	metadata := make(map[string]string)
-	err = json.Unmarshal(awsMetadataBytes, &metadata)
-	if err != nil {
-		return nil, fmt.Errorf("unmarshal metadata: %v", err.Error())
-	}
-
-	kafkaResource := es.Resource{
-		ID:            resource.UniqueID(),
-		ARN:           resource.ARN,
-		Name:          resource.Name,
-		SourceType:    source.CloudAWS,
-		ResourceType:  strings.ToLower(job.ResourceType),
-		ResourceGroup: "",
-		Location:      resource.Region,
-		SourceID:      job.SourceId,
-		ResourceJobID: uint(job.JobId),
-		SourceJobID:   uint(job.ParentJobId),
-		ScheduleJobID: uint(job.ScheduleJobId),
-		CreatedAt:     job.DescribedAt,
-		Description:   resource.Description,
-		Metadata:      metadata,
-	}
-	lookupResource := es.LookupResource{
-		ResourceID:    resource.UniqueID(),
-		Name:          resource.Name,
-		SourceType:    source.CloudAWS,
-		ResourceType:  strings.ToLower(job.ResourceType),
-		ServiceName:   cloudservice.ServiceNameByResourceType(job.ResourceType),
-		Category:      cloudservice.CategoryByResourceType(job.ResourceType),
-		ResourceGroup: "",
-		Location:      resource.Region,
-		SourceID:      job.SourceId,
-		ResourceJobID: uint(job.JobId),
-		SourceJobID:   uint(job.ParentJobId),
-		ScheduleJobID: uint(job.ScheduleJobId),
-		CreatedAt:     job.DescribedAt,
-		IsCommon:      cloudservice.IsCommonByResourceType(job.ResourceType),
-	}
-
-	pluginTableName := steampipe.ExtractTableName(job.ResourceType)
-	desc, err := steampipe.ConvertToDescription(job.ResourceType, kafkaResource)
-	if err != nil {
-		return nil, fmt.Errorf("convertToDescription: %v", err.Error())
-	}
-
-	cells, err := steampipe.AWSDescriptionToRecord(desc, pluginTableName)
-	if err != nil {
-		return nil, fmt.Errorf("awsdescriptionToRecord: %v", err.Error())
-	}
-
-	for name, v := range cells {
-		if name == "title" || name == "name" {
-			kafkaResource.Metadata["name"] = v.GetStringValue()
+	for _, resource := range resources.GetResources() {
+		var description any
+		err := json.Unmarshal([]byte(resource.DescriptionJson), &description)
+		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
+			s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
+			return nil, err
 		}
+		kafkaResource := es.Resource{
+			ID:            resource.UniqueId,
+			ARN:           resource.Arn,
+			Name:          resource.Name,
+			SourceType:    source.CloudAWS,
+			ResourceType:  strings.ToLower(resource.Job.ResourceType),
+			ResourceGroup: "",
+			Location:      resource.Region,
+			SourceID:      resource.Job.SourceId,
+			ResourceJobID: uint(resource.Job.JobId),
+			SourceJobID:   uint(resource.Job.ParentJobId),
+			ScheduleJobID: uint(resource.Job.ScheduleJobId),
+			CreatedAt:     resource.Job.DescribedAt,
+			Description:   resource.DescriptionJson,
+			Metadata:      resource.Metadata,
+		}
+		lookupResource := es.LookupResource{
+			ResourceID:    resource.UniqueId,
+			Name:          resource.Name,
+			SourceType:    source.CloudAWS,
+			ResourceType:  strings.ToLower(resource.Job.ResourceType),
+			ServiceName:   cloudservice.ServiceNameByResourceType(resource.Job.ResourceType),
+			Category:      cloudservice.CategoryByResourceType(resource.Job.ResourceType),
+			ResourceGroup: "",
+			Location:      resource.Region,
+			SourceID:      resource.Job.SourceId,
+			ResourceJobID: uint(resource.Job.JobId),
+			SourceJobID:   uint(resource.Job.ParentJobId),
+			ScheduleJobID: uint(resource.Job.ScheduleJobId),
+			CreatedAt:     resource.Job.DescribedAt,
+			IsCommon:      cloudservice.IsCommonByResourceType(resource.Job.ResourceType),
+			Tags:          resource.Tags,
+		}
+		msgs = append(msgs, kafkaResource, lookupResource)
 	}
 
-	tags, err := steampipe.ExtractTags(job.ResourceType, kafkaResource)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build tags for service: %v", err.Error())
+	if err := kafka.DoSend(s.producer, s.topic, msgs, s.logger); err != nil {
+		return nil, fmt.Errorf("send to kafka: %w", err)
 	}
-	lookupResource.Tags = tags
-	//if s.rdb != nil {
-	//	for key, value := range tags {
-	//		key = strings.TrimSpace(key)
-	//		_, err = s.rdb.SAdd(context.Background(), "tag-"+key, value).Result()
-	//		if err != nil {
-	//			return nil, fmt.Errorf("failed to push tag into redis: %v", err.Error())
-	//		}
-	//
-	//		_, err = s.rdb.Expire(context.Background(), "tag-"+key, 12*time.Hour).Result() //TODO-Saleh set time based on describe interval
-	//		if err != nil {
-	//			return nil, fmt.Errorf("failed to set tag expire into redis: %v", err.Error())
-	//		}
-	//	}
-	//}
-
-	msgs = append(msgs, kafkaResource)
-	msgs = append(msgs, lookupResource)
-
-	return msgs, nil
+	return &golang.ResponseOK{}, nil
 }
 
 func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resources *golang.AzureResources) (*golang.ResponseOK, error) {

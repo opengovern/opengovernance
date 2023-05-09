@@ -21,6 +21,7 @@ message DescribeJob {
 message AWSResources {
   repeated AWSResource resources = 1;
 }
+
 message AWSResource {
   string arn = 1;
   string id = 2;
@@ -32,6 +33,8 @@ message AWSResource {
   string description_json = 8;
   DescribeJob job = 9;
   string unique_id = 10;
+  map<string,string> metadata = 11;
+  map<string,string> tags = 12;
 }
 
 message AzureResources {
