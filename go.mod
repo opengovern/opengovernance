@@ -129,14 +129,13 @@ require (
 	github.com/sony/sonyflake v1.1.0
 	github.com/turbot/steampipe-plugin-sdk/v4 v4.1.9
 	github.com/vmware-tanzu/velero v1.9.1
-	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230502111013-2e0939172011
+	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230509105403-bc39cec8572f
 	google.golang.org/protobuf v1.28.0
 	gorm.io/datatypes v1.1.0
 	gorm.io/plugin/prometheus v0.0.0-20220517015831-ca6bfaf20bf4
 )
 
 require (
-	cloud.google.com/go v0.99.0 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.3.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.1.2 // indirect
@@ -168,7 +167,6 @@ require (
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
-	github.com/aws/aws-lambda-go v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.9 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.33 // indirect
@@ -298,7 +296,6 @@ require (
 	github.com/gocarina/gocsv v0.0.0-20211203214250-4735fba0c1d9 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
-	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect
