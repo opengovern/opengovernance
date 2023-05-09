@@ -71,24 +71,24 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, protoResou
 			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
 		}
 	}
-
-	var remaining int64 = MAX_INT64
-	if s.rdb != nil {
-		currentResourceLimitRemaining, err := s.rdb.Get(ctx, RedisKeyWorkspaceResourceRemaining).Result()
-		if err != nil {
-			return nil, fmt.Errorf("redisGet: %v", err.Error())
-		}
-
-		remaining, err = strconv.ParseInt(currentResourceLimitRemaining, 10, 64)
-		if remaining <= 0 {
-			return nil, fmt.Errorf("workspace has reached its max resources limit")
-		}
-
-		_, err = s.rdb.DecrBy(ctx, RedisKeyWorkspaceResourceRemaining, 1).Result()
-		if err != nil {
-			return nil, fmt.Errorf("redisDecr: %v", err.Error())
-		}
-	}
+	//
+	//var remaining int64 = MAX_INT64
+	//if s.rdb != nil {
+	//	currentResourceLimitRemaining, err := s.rdb.Get(ctx, RedisKeyWorkspaceResourceRemaining).Result()
+	//	if err != nil {
+	//		return nil, fmt.Errorf("redisGet: %v", err.Error())
+	//	}
+	//
+	//	remaining, err = strconv.ParseInt(currentResourceLimitRemaining, 10, 64)
+	//	if remaining <= 0 {
+	//		return nil, fmt.Errorf("workspace has reached its max resources limit")
+	//	}
+	//
+	//	_, err = s.rdb.DecrBy(ctx, RedisKeyWorkspaceResourceRemaining, int64(len(protoResources.Resources))).Result()
+	//	if err != nil {
+	//		return nil, fmt.Errorf("redisDecr: %v", err.Error())
+	//	}
+	//}
 
 	workerCount := len(protoResources.Resources)
 	if workerCount > 32 {
@@ -218,20 +218,20 @@ func (s *GRPCDescribeServer) HandleAWSResource(protoResource *golang.AWSResource
 		return nil, fmt.Errorf("failed to build tags for service: %v", err.Error())
 	}
 	lookupResource.Tags = tags
-	if s.rdb != nil {
-		for key, value := range tags {
-			key = strings.TrimSpace(key)
-			_, err = s.rdb.SAdd(context.Background(), "tag-"+key, value).Result()
-			if err != nil {
-				return nil, fmt.Errorf("failed to push tag into redis: %v", err.Error())
-			}
-
-			_, err = s.rdb.Expire(context.Background(), "tag-"+key, 12*time.Hour).Result() //TODO-Saleh set time based on describe interval
-			if err != nil {
-				return nil, fmt.Errorf("failed to set tag expire into redis: %v", err.Error())
-			}
-		}
-	}
+	//if s.rdb != nil {
+	//	for key, value := range tags {
+	//		key = strings.TrimSpace(key)
+	//		_, err = s.rdb.SAdd(context.Background(), "tag-"+key, value).Result()
+	//		if err != nil {
+	//			return nil, fmt.Errorf("failed to push tag into redis: %v", err.Error())
+	//		}
+	//
+	//		_, err = s.rdb.Expire(context.Background(), "tag-"+key, 12*time.Hour).Result() //TODO-Saleh set time based on describe interval
+	//		if err != nil {
+	//			return nil, fmt.Errorf("failed to set tag expire into redis: %v", err.Error())
+	//		}
+	//	}
+	//}
 
 	msgs = append(msgs, kafkaResource)
 	msgs = append(msgs, lookupResource)
