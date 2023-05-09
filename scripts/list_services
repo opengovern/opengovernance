@@ -4,6 +4,11 @@
 
 #GIT_CHANGE=$(git status -s | awk '{print $2}')
 GIT_CHANGE=$(git  diff --name-only HEAD~1 HEAD)
+MOD_CHANGE=$(echo "$GIT_CHANGE" | grep "go.mod" | wc -l)
+if [[ $MOD_CHANGE != "0" ]]; then
+  ls cmd/
+  exit 0
+fi
 
 SERVICES=""
 while read -r SVC; do
