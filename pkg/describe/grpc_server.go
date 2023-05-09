@@ -52,7 +52,7 @@ func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProdu
 	}
 }
 
-func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources *golang.AzureResources) (*golang.ResponseOK, error) {
+func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources *golang.AWSResources) (*golang.ResponseOK, error) {
 	return &golang.ResponseOK{}, nil
 }
 
