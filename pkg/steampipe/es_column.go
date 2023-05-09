@@ -283,7 +283,7 @@ func ConvertToDescription(resourceType string, data interface{}) (interface{}, e
 				d = v
 			}
 		}
-		err = json.Unmarshal([]byte(bs), d)
+		err = json.Unmarshal([]byte(bs), &d)
 		if err != nil {
 			log.Println("failed to unmarshal to description: ", bs)
 			return nil, fmt.Errorf("unmarshalling: %v", err)
