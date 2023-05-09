@@ -51,7 +51,7 @@ func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProdu
 	}
 }
 
-func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, protoResource *golang.AWSResource) (*golang.ResponseOK, error) {
+func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, protoResources *golang.AWSResources) (*golang.ResponseOK, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok && md.Get("resource-job-id") != nil {
 		resourceJobIdStr := md.Get("resource-job-id")[0]
@@ -68,32 +68,34 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, protoResou
 		}
 	}
 
-	var description interface{}
-	err := json.Unmarshal([]byte(protoResource.DescriptionJson), &description)
-	if err != nil {
-		ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
-		s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", protoResource.Job.JobId), zap.String("resourceID", protoResource.Id))
-		return nil, err
-	}
+	for _, protoResource := range protoResources.Resources {
+		var description interface{}
+		err := json.Unmarshal([]byte(protoResource.DescriptionJson), &description)
+		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
+			s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", protoResource.Job.JobId), zap.String("resourceID", protoResource.Id))
+			return nil, err
+		}
 
-	resource := aws.Resource{
-		ARN:         protoResource.Arn,
-		ID:          protoResource.Id,
-		Description: description,
-		Name:        protoResource.Name,
-		Account:     protoResource.Account,
-		Region:      protoResource.Region,
-		Partition:   protoResource.Partition,
-		Type:        protoResource.Type,
-	}
+		resource := aws.Resource{
+			ARN:         protoResource.Arn,
+			ID:          protoResource.Id,
+			Description: description,
+			Name:        protoResource.Name,
+			Account:     protoResource.Account,
+			Region:      protoResource.Region,
+			Partition:   protoResource.Partition,
+			Type:        protoResource.Type,
+		}
 
-	err = s.HandleAWSResource(resource, protoResource.Job)
-	if err != nil {
-		ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
-		s.logger.Error("failed to handle aws resource", zap.Error(err), zap.Uint32("jobID", protoResource.Job.JobId), zap.String("resourceID", protoResource.Id))
-		return nil, err
+		err = s.HandleAWSResource(resource, protoResource.Job)
+		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
+			s.logger.Error("failed to handle aws resource", zap.Error(err), zap.Uint32("jobID", protoResource.Job.JobId), zap.String("resourceID", protoResource.Id))
+			return nil, err
+		}
+		ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
 	}
-	ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
 	return &golang.ResponseOK{}, nil
 }
 
@@ -227,7 +229,7 @@ func (s *GRPCDescribeServer) HandleAWSResource(resource aws.Resource, job *golan
 	return nil
 }
 
-func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource *golang.AzureResource) (*golang.ResponseOK, error) {
+func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resources *golang.AzureResources) (*golang.ResponseOK, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok && md.Get("resource-job-id") != nil {
 		resourceJobIdStr := md.Get("resource-job-id")[0]
@@ -244,30 +246,32 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		}
 	}
 
-	var description interface{}
-	err := json.Unmarshal([]byte(resource.DescriptionJson), &description)
-	if err != nil {
-		ResourcesDescribedCount.WithLabelValues("azure", "failure").Inc()
-		s.logger.Error("failed to unmarshal azure resource", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
-		return nil, err
-	}
+	for _, resource := range resources.Resources {
+		var description interface{}
+		err := json.Unmarshal([]byte(resource.DescriptionJson), &description)
+		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("azure", "failure").Inc()
+			s.logger.Error("failed to unmarshal azure resource", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
+			return nil, err
+		}
 
-	azureResource := azure.Resource{
-		ID:             resource.Id,
-		Description:    description,
-		Name:           resource.Name,
-		Type:           resource.Type,
-		ResourceGroup:  resource.ResourceGroup,
-		Location:       resource.Location,
-		SubscriptionID: resource.SubscriptionId,
+		azureResource := azure.Resource{
+			ID:             resource.Id,
+			Description:    description,
+			Name:           resource.Name,
+			Type:           resource.Type,
+			ResourceGroup:  resource.ResourceGroup,
+			Location:       resource.Location,
+			SubscriptionID: resource.SubscriptionId,
+		}
+		err = s.HandleAzureResource(azureResource, resource.Job)
+		if err != nil {
+			ResourcesDescribedCount.WithLabelValues("azure", "failure").Inc()
+			s.logger.Error("failed to handle azure resource", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
+			return nil, err
+		}
+		ResourcesDescribedCount.WithLabelValues("azure", "successful").Inc()
 	}
-	err = s.HandleAzureResource(azureResource, resource.Job)
-	if err != nil {
-		ResourcesDescribedCount.WithLabelValues("azure", "failure").Inc()
-		s.logger.Error("failed to handle azure resource", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
-		return nil, err
-	}
-	ResourcesDescribedCount.WithLabelValues("azure", "successful").Inc()
 	return &golang.ResponseOK{}, nil
 }
 

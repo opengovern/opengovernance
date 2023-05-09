@@ -18,6 +18,9 @@ message DescribeJob {
   uint32 retry_counter = 11;
 }
 
+message AWSResources {
+  repeated AWSResource resources = 1;
+}
 message AWSResource {
   string arn = 1;
   string id = 2;
@@ -31,6 +34,9 @@ message AWSResource {
   string unique_id = 10;
 }
 
+message AzureResources {
+  repeated AzureResource resources = 1;
+}
 message AzureResource {
   string id = 1;
   string name = 2;
@@ -57,6 +63,6 @@ message ResponseOK {
 
 service DescribeService {
   rpc DeliverResult(DeliverResultRequest) returns (ResponseOK) {}
-  rpc DeliverAWSResources(AWSResource) returns (ResponseOK) {}
-  rpc DeliverAzureResources(AzureResource) returns (ResponseOK) {}
+  rpc DeliverAWSResources(AWSResources) returns (ResponseOK) {}
+  rpc DeliverAzureResources(AzureResources) returns (ResponseOK) {}
 }
