@@ -76,3 +76,8 @@ type ResponseCreateAzure struct {
 type ResponseAWSCreate struct {
 	ID [16]byte `json:"id"`
 }
+type requestCreateConnectionCredentials struct {
+	Config     string `json:"config"`
+	Name       string `json:"name"`
+	SourceType string `json:"source_Type"`
+}

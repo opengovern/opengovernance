@@ -156,7 +156,6 @@ var GetConnectorCmd = &cobra.Command{
 			fmt.Println("your access token was expire please login again ")
 			return nil
 		}
-		//check this that return on array or a text
 		response, statusCode, err := cli.OnboardGetConnector(accessToken, connectorName)
 		if err != nil {
 			return fmt.Errorf("ERROR : status : %v \n error : %v ", statusCode, err)
@@ -168,6 +167,54 @@ var GetConnectorCmd = &cobra.Command{
 		return nil
 	},
 }
+var credentialsGetCmd = cobra.Command{
+	Use:   "credential",
+	Short: "credential command",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Lookup("connector").Changed {
+		} else {
+			fmt.Println("please enter the name for connector type [AWS or Azure].")
+			log.Fatalln(cmd.Help())
+		}
+		if cmd.Flags().Lookup("health").Changed {
+		} else {
+			fmt.Println("please enter the name for health status [healthy,unhealthy,initial_discovery] .")
+			log.Fatalln(cmd.Help())
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		accessToken, err := cli.GetConfig()
+		if err != nil {
+			return err
+		}
+		checkEXP, err := cli.CheckExpirationTime(accessToken)
+		if err != nil {
+			return err
+		}
+		if checkEXP == true {
+			fmt.Println("your access token was expire please login again ")
+			return nil
+		}
+		response, statusCode, err := cli.OnboardListCredentials(accessToken, connectorTypeGet, healthGet, pageSizeGet, pageNumberGet)
+		if err != nil {
+			return fmt.Errorf("ERROR : status : %v \n %v", statusCode, err)
+		}
+		if statusCode == http.StatusOK {
+			fmt.Println("OK")
+		}
+		err = cli.PrintOutputForTypeArray(response, outputType)
+		if err != nil {
+			return err
+		}
+		return nil
+	},
+}
+var connectorTypeGet string
+var healthGet string
+var pageSizeGet string
+var pageNumberGet string
+
 var connectorName string
 var connectorsCatalog string
 var metricsCatalog string
@@ -181,6 +228,14 @@ func init() {
 	Get.AddCommand(catalogCmd)
 	Get.AddCommand(GetConnectorCmd)
 	Get.AddCommand(GetConnectorsCmd)
+	Get.AddCommand(&credentialsGetCmd)
+	//credential flag :
+	credentialsGetCmd.Flags().StringVar(&connectorTypeGet, "connector", "", "it is use for filter by connector type [AWS or Azure][mandatory].")
+	credentialsGetCmd.Flags().StringVar(&healthGet, "health", "", "it is use for filter by health status [healthy,unhealthy,initial_discovery][mandatory] .")
+	credentialsGetCmd.Flags().StringVar(&pageSizeGet, "pageSize", "", "it is use for filter by page size,default value is 50 .")
+	credentialsGetCmd.Flags().StringVar(&pageNumberGet, "pageNumber", "", "it is use for filter by pageNumber , default value is 1.")
+	credentialsGetCmd.Flags().StringVar(&outputType, "output", "", "it is specifying the output type [table , json][optional]")
+
 	//catalog flag :
 	catalogCmd.Flags().StringVar(&outputType, "output", "", "it is specifying the output type [table , json][optional]")
 	catalogCmd.Flags().StringVar(&metricsCatalog, "metrics", "", "it is specifying the output catalog [metrics , connectors][mandatory]")

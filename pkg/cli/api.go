@@ -10,7 +10,6 @@ import (
 	urls "gitlab.com/keibiengine/keibi-engine/pkg/cli/consts"
 	apiOnboard "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	workspace "gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
-
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -983,10 +982,10 @@ func OnboardGetConnector(accessToken string, connectorName string) (apiOnboard.C
 	}
 	return response, http.StatusOK, nil
 }
-func OnboardListCredentials(accessToken string, connectorType string, healthStatus string, pageSize string, pageNumber string) (apiOnboard.Credential, int, error) {
+func OnboardListCredentials(accessToken string, connectorType string, healthStatus string, pageSize string, pageNumber string) ([]apiOnboard.Credential, int, error) {
 	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/credential", nil)
 	if err != nil {
-		return apiOnboard.Credential{}, http.StatusBadGateway, err
+		return []apiOnboard.Credential{}, http.StatusBadGateway, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
@@ -995,29 +994,21 @@ func OnboardListCredentials(accessToken string, connectorType string, healthStat
 	query.Set("health", healthStatus)
 	query.Set("pageSize", pageSize)
 	query.Set("pageNumber", pageNumber)
-	//default page number is 1 and default page size is 50
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return apiOnboard.Credential{}, http.StatusBadGateway, err
+		return []apiOnboard.Credential{}, http.StatusBadGateway, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return apiOnboard.Credential{}, http.StatusBadGateway, err
+		return []apiOnboard.Credential{}, http.StatusBadGateway, err
 	}
-	var response apiOnboard.Credential
+	var response []apiOnboard.Credential
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return apiOnboard.Credential{}, http.StatusBadGateway, err
+		return []apiOnboard.Credential{}, http.StatusBadGateway, err
 	}
 	return response, http.StatusBadGateway, err
 }
-
-type requestCreateConnectionCredentials struct {
-	Config     string `json:"config"`
-	Name       string `json:"name"`
-	SourceType string `json:"source_Type"`
-}
-
 func OnboardCreateConnectionCredentials(accessToken string, config string, name string, sourceType string) (apiOnboard.CreateCredentialResponse, int, error) {
 	var request requestCreateConnectionCredentials
 	request.Name = name
