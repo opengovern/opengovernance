@@ -34,7 +34,7 @@ var AwsCmd = &cobra.Command{
 			fmt.Println("your access token was expire please login again ")
 			return nil
 		}
-		response, status, err := cli.OnboardCreateAWS(accessToken, workspaceNameAWS, nameAWS, emailAWS, descriptionAWS, accessKeyAWS, accessIdAWS, regionsAWS, secretKey)
+		response, status, err := cli.OnboardCreateAWS(accessToken, nameAWS, emailAWS, descriptionAWS, accessKeyAWS, accessIdAWS, regionsAWS, secretKey)
 		if status != http.StatusOK {
 			if err != nil {
 				return err
@@ -54,7 +54,6 @@ var AwsCmd = &cobra.Command{
 
 func init() {
 	AwsCmd.Flags().StringVar(&outputTypeAWS, "outputType", "", "specifying the output type [optional].")
-	AwsCmd.Flags().StringVar(&workspaceNameAWS, "workspaceName", "", "specifying the workspaceName user[mandatory]")
 	AwsCmd.Flags().StringVar(&nameAWS, "name", "", "specifying the name for AWS[mandatory]")
 	AwsCmd.Flags().StringVar(&emailAWS, "email", "", "specifying the email for AWS[mandatory]")
 	AwsCmd.Flags().StringVar(&descriptionAWS, "description", "", "specifying the name for AWS[mandatory]")

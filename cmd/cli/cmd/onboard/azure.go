@@ -35,7 +35,7 @@ var AzureCmd = &cobra.Command{
 			fmt.Println("your access token was expire please login again ")
 			return nil
 		}
-		response, status, err := cli.OnboardCreateAzure(accessToken, workspaceNameAzure, nameAzure, ObjectId, descriptionAzure, clientIdAzure, clientSecretAzure, subscriptionIdAzure, tenantIdAzure)
+		response, status, err := cli.OnboardCreateAzure(accessToken, nameAzure, ObjectId, descriptionAzure, clientIdAzure, clientSecretAzure, subscriptionIdAzure, tenantIdAzure)
 		if status != http.StatusOK {
 			if err != nil {
 				return err
@@ -55,7 +55,6 @@ var AzureCmd = &cobra.Command{
 
 func init() {
 	AzureCmd.Flags().StringVar(&outputTypeAzure, "outputType", "", "specifying the output type [optional].")
-	AzureCmd.Flags().StringVar(&workspaceNameAzure, "workspaceName", "", "specifying the workspaceName [mandatory]")
 	AzureCmd.Flags().StringVar(&nameAzure, "name", "", "specifying the name for AZURE[mandatory]")
 	AzureCmd.Flags().StringVar(&descriptionAzure, "description", "", "specifying the description for AZURE[mandatory]")
 	AzureCmd.Flags().StringVar(&clientSecretAzure, "clientSecret", "", "specifying the clientSecret for AZURE[mandatory]")

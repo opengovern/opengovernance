@@ -843,10 +843,10 @@ func OnboardCreateAzure(accessToken string, name string, ObjectId string, descri
 	return response, http.StatusOK, nil
 }
 
-func OnboardCatalogConnectors(accessToken string, idFilter string, minimumConnectionFilter string, stateFilter string, categoryFilter string) (apiOnboard.CatalogConnector, int, error) {
+func OnboardCatalogConnectors(accessToken string, idFilter string, minimumConnectionFilter string, stateFilter string, categoryFilter string) ([]apiOnboard.CatalogConnector, int, error) {
 	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/catalog/connectors", nil)
 	if err != nil {
-		return apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
+		return []apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
 	}
 	query := req.URL.Query()
 	query.Set("category", categoryFilter)
@@ -857,25 +857,25 @@ func OnboardCatalogConnectors(accessToken string, idFilter string, minimumConnec
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return apiOnboard.CatalogConnector{}, http.StatusBadRequest, err
+		return []apiOnboard.CatalogConnector{}, http.StatusBadRequest, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
+		return []apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
+		return []apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
 	}
-	var response apiOnboard.CatalogConnector
+	var response []apiOnboard.CatalogConnector
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
+		return []apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
 	}
 	return response, http.StatusOK, nil
 }
 
-func OnboardCatalogMetricsCLI(accessToken string) (apiOnboard.CatalogMetrics, int, error) {
+func OnboardCatalogMetrics(accessToken string) (apiOnboard.CatalogMetrics, int, error) {
 	req, err := http.NewRequest("GET", urls.Url+"/onboard/api/v1/catalog/metrics", nil)
 	if err != nil {
 		return apiOnboard.CatalogMetrics{}, http.StatusBadGateway, err
@@ -902,7 +902,7 @@ func OnboardCatalogMetricsCLI(accessToken string) (apiOnboard.CatalogMetrics, in
 	return response, http.StatusOK, nil
 }
 
-func OnboardCountConnectionsCLI(accessToken string, connectorsNames []string, health string, state string) (string, int, error) {
+func OnboardCountConnections(accessToken string, connectorsNames []string, health string, state string) (string, int, error) {
 	request := CountConnectionsCLIRequest{
 		connectorsNames,
 		state,
@@ -931,8 +931,34 @@ func OnboardCountConnectionsCLI(accessToken string, connectorsNames []string, he
 	}
 	return string(body), http.StatusOK, nil
 }
-func OnboardGetConnectors(accessToken string) (apiOnboard.ConnectorCount, int, error) {
+func OnboardGetConnectors(accessToken string) ([]apiOnboard.ConnectorCount, int, error) {
 	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/connectors", nil)
+	if err != nil {
+		return []apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return []apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return []apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return []apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+	}
+	var response []apiOnboard.ConnectorCount
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return []apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+	}
+	return response, http.StatusOK, nil
+}
+func OnboardGetConnector(accessToken string, connectorName string) (apiOnboard.ConnectorCount, int, error) {
+	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/connectors/"+connectorName, nil)
 	if err != nil {
 		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
 	}
@@ -957,25 +983,72 @@ func OnboardGetConnectors(accessToken string) (apiOnboard.ConnectorCount, int, e
 	}
 	return response, http.StatusOK, nil
 }
-func OnboardGetConnector(accessToken string, connectorName string) (apiOnboard.ConnectorCount, int, error) {
-	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/connectors/"+connectorName, nil)
+func OnboardListCredentials(accessToken string, connectorType string, healthStatus string, pageSize string, pageNumber string) (apiOnboard.Credential, int, error) {
+	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/credential", nil)
 	if err != nil {
-		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+		return apiOnboard.Credential{}, http.StatusBadGateway, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	query := req.URL.Query()
+	query.Set("connector", connectorType)
+	query.Set("health", healthStatus)
+	query.Set("pageSize", pageSize)
+	query.Set("pageNumber", pageNumber)
+	//default page number is 1 and default page size is 50
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return apiOnboard.Credential{}, http.StatusBadGateway, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return apiOnboard.Credential{}, http.StatusBadGateway, err
+	}
+	var response apiOnboard.Credential
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return apiOnboard.Credential{}, http.StatusBadGateway, err
+	}
+	return response, http.StatusBadGateway, err
+}
+
+type requestCreateConnectionCredentials struct {
+	Config     string `json:"config"`
+	Name       string `json:"name"`
+	SourceType string `json:"source_Type"`
+}
+
+func OnboardCreateConnectionCredentials(accessToken string, config string, name string, sourceType string) (apiOnboard.CreateCredentialResponse, int, error) {
+	var request requestCreateConnectionCredentials
+	request.Name = name
+	request.SourceType = sourceType
+	request.Config = config
+	reqEncoded, err := json.Marshal(request)
+	if err != nil {
+		return apiOnboard.CreateCredentialResponse{}, http.StatusBadRequest, err
+	}
+	req, err := http.NewRequest("POST", urls.Url+"onboard/api/v1/credential", bytes.NewBuffer(reqEncoded))
+	if err != nil {
+		return apiOnboard.CreateCredentialResponse{}, http.StatusBadGateway, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+		return apiOnboard.CreateCredentialResponse{}, http.StatusBadGateway, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+		return apiOnboard.CreateCredentialResponse{}, http.StatusBadGateway, err
 	}
-	var response apiOnboard.ConnectorCount
+	err = res.Body.Close()
+	if err != nil {
+		return apiOnboard.CreateCredentialResponse{}, http.StatusBadGateway, err
+	}
+	var response apiOnboard.CreateCredentialResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+		return apiOnboard.CreateCredentialResponse{}, http.StatusBadGateway, err
 	}
 	return response, http.StatusOK, nil
 }
