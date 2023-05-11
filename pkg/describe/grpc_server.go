@@ -116,7 +116,10 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			IsCommon:      cloudservice.IsCommonByResourceType(resource.Job.ResourceType),
 			Tags:          resource.Tags,
 		}
-		msgs = append(msgs, kafkaResource, lookupResource)
+		fmt.Println("enqueue lookup", lookupResource)
+		fmt.Println("enqueue resource", kafkaResource)
+		msgs = append(msgs, kafkaResource)
+		msgs = append(msgs, lookupResource)
 	}
 
 	if err := kafka.DoSend(s.producer, s.topic, 1, msgs, s.logger); err != nil {
