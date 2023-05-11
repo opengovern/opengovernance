@@ -120,6 +120,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 		fmt.Println("enqueue resource", kafkaResource)
 		msgs = append(msgs, kafkaResource)
 		msgs = append(msgs, lookupResource)
+		ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
 	}
 
 	if err := kafka.DoSend(s.producer, s.topic, 1, msgs, s.logger); err != nil {
