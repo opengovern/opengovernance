@@ -82,7 +82,7 @@ func Msg(key string, value []byte, index string) *sarama.ProducerMessage {
 	}
 }
 
-func DoSend(producer sarama.SyncProducer, topic string, docs []Doc, logger *zap.Logger) error {
+func DoSend(producer sarama.SyncProducer, topic string, partition int32, docs []Doc, logger *zap.Logger) error {
 	var msgs []*sarama.ProducerMessage
 	for _, v := range docs {
 		msg, err := asProducerMessage(v)
@@ -93,6 +93,7 @@ func DoSend(producer sarama.SyncProducer, topic string, docs []Doc, logger *zap.
 
 		// Override the topic
 		msg.Topic = topic
+		msg.Partition = partition
 
 		msgs = append(msgs, msg)
 	}

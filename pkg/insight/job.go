@@ -263,7 +263,7 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 						S3Location:          result.Location,
 					})
 				}
-				if err := kafka.DoSend(producer, topic, resources, logger); err != nil {
+				if err := kafka.DoSend(producer, topic, 0, resources, logger); err != nil {
 					fail(fmt.Errorf("send to kafka: %w", err))
 				}
 			} else {

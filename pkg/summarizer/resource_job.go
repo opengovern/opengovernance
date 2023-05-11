@@ -147,7 +147,7 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 	logger.Info("cleanup done")
 
 	if len(msgs) > 0 {
-		err := kafka.DoSend(producer, topic, msgs, logger)
+		err := kafka.DoSend(producer, topic, 0, msgs, logger)
 		if err != nil {
 			fail(fmt.Errorf("Failed to send to kafka: %v ", err))
 		}
