@@ -124,6 +124,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 	}
 
 	if err := kafka.DoSend(s.producer, s.topic, 1, msgs, s.logger); err != nil {
+		StreamFailureCount.WithLabelValues("aws").Inc()
 		return nil, fmt.Errorf("send to kafka: %w", err)
 	}
 	return &golang.ResponseOK{}, nil
