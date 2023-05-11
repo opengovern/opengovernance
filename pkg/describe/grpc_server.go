@@ -96,7 +96,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			SourceJobID:   uint(resource.Job.ParentJobId),
 			ScheduleJobID: uint(resource.Job.ScheduleJobId),
 			CreatedAt:     resource.Job.DescribedAt,
-			Description:   resource.DescriptionJson,
+			Description:   description,
 			Metadata:      resource.Metadata,
 		}
 		lookupResource := es.LookupResource{
