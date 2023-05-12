@@ -116,8 +116,6 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			IsCommon:      cloudservice.IsCommonByResourceType(resource.Job.ResourceType),
 			Tags:          resource.Tags,
 		}
-		fmt.Println("enqueue lookup", lookupResource)
-		fmt.Println("enqueue resource", kafkaResource)
 		msgs = append(msgs, kafkaResource)
 		msgs = append(msgs, lookupResource)
 		ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
