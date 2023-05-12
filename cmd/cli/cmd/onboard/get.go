@@ -211,12 +211,47 @@ var credentialsGetCmd = cobra.Command{
 		return nil
 	},
 }
+var credentialCmd = cobra.Command{
+	Use:   "credential",
+	Short: "credential command",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Lookup("credentialId").Changed {
+		} else {
+			fmt.Println("please enter the credential id.")
+			log.Fatalln(cmd.Help())
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		accessToken, err := cli.GetConfig()
+		if err != nil {
+			return err
+		}
+		checkEXP, err := cli.CheckExpirationTime(accessToken)
+		if err != nil {
+			return err
+		}
+		if checkEXP == true {
+			fmt.Println("your access token was expire please login again ")
+			return nil
+		}
+		response, statusCode, err := cli.GetListCredential(accessToken, credentialId)
+		if err != nil {
+			return fmt.Errorf("ERROR : status : %v \n %v ", statusCode, err)
+		}
+		err = cli.PrintOutputForTypeArray(response, outputType)
+		if err != nil {
+			return err
+		}
+		return nil
+	},
+}
 
 var connectorTypeGet string
 var healthGet string
 var pageSizeGet string
 var pageNumberGet string
-
+var credentialId string
 var connectorName string
 var connectorsCatalog string
 var metricsCatalog string
@@ -232,6 +267,9 @@ func init() {
 	Get.AddCommand(GetConnectorsCmd)
 	Get.AddCommand(&credentialsGetCmd)
 	//credential flag :
+	credentialCmd.Flags().StringVar(&outputType, "output", "", "it is specifying the output type [table , json][optional]")
+	credentialCmd.Flags().StringVar(&credentialId, "credentialId", "", "it is use for get credential ")
+	//credentials flag :
 	credentialsGetCmd.Flags().StringVar(&connectorTypeGet, "connector", "", "it is use for filter by connector type [AWS or Azure][mandatory].")
 	credentialsGetCmd.Flags().StringVar(&healthGet, "health", "", "it is use for filter by health status [healthy,unhealthy,initial_discovery][mandatory] .")
 	credentialsGetCmd.Flags().StringVar(&pageSizeGet, "pageSize", "", "it is use for filter by page size,default value is 50 .")

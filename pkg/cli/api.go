@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt"
 	_ "github.com/golang-jwt/jwt/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	urls "gitlab.com/keibiengine/keibi-engine/pkg/cli/consts"
@@ -1043,7 +1043,7 @@ func OnboardCreateConnectionCredentials(accessToken string, config string, name 
 	}
 	return response, http.StatusOK, nil
 }
-func GetListCredentials(accessToken string, credentialId string) ([]apiOnboard.Credential, int, error) {
+func GetListCredential(accessToken string, credentialId string) ([]apiOnboard.Credential, int, error) {
 	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/credential/"+credentialId, nil)
 	if err != nil {
 		return []apiOnboard.Credential{}, http.StatusBadGateway, err
@@ -1055,6 +1055,10 @@ func GetListCredentials(accessToken string, credentialId string) ([]apiOnboard.C
 		return []apiOnboard.Credential{}, http.StatusBadGateway, err
 	}
 	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return []apiOnboard.Credential{}, http.StatusBadGateway, err
+	}
+	err = res.Body.Close()
 	if err != nil {
 		return []apiOnboard.Credential{}, http.StatusBadGateway, err
 	}
@@ -1085,11 +1089,155 @@ func OnboardEditeCredentialById(accessToken string, config string, connector str
 	if err != nil {
 		return http.StatusBadGateway, err
 	}
-	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
-	_, err = http.DefaultClient.Do(req)
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return http.StatusBadGateway, err
 	}
-	return http.StatusOK, nil
+	statusCode := res.StatusCode
+	err = res.Body.Close()
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	return statusCode, nil
+}
+func OnboardDeleteCredential(accessToken string, credentialId string) (int, error) {
+	req, err := http.NewRequest("DELETE", urls.Url+"/onboard/api/v1/credential/"+credentialId, nil)
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	statusCode := res.StatusCode
+	err = res.Body.Close()
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	return statusCode, nil
+}
+func onboardGetCredentialAvailableConnections(accessToken string, credentialId string) ([]apiOnboard.Source, int, error) {
+	req, err := http.NewRequest("POST", urls.Url+"/onboard/api/v1/credential/"+credentialId+"/autoonboard", nil)
+	if err != nil {
+		return []apiOnboard.Source{}, http.StatusBadGateway, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return []apiOnboard.Source{}, http.StatusBadGateway, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return []apiOnboard.Source{}, http.StatusBadGateway, err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return []apiOnboard.Source{}, http.StatusBadGateway, err
+	}
+	var response []apiOnboard.Source
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return []apiOnboard.Source{}, http.StatusBadGateway, err
+	}
+	return response, http.StatusOK, nil
+}
+func OnboardDisableCredential(accessToken string, credentialId string) (int, error) {
+	req, err := http.NewRequest("POST", urls.Url+"/onboard/api/v1/credential/"+credentialId+"/disable", nil)
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	statusCode := res.StatusCode
+	err = res.Body.Close()
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	return statusCode, nil
+}
+func OnboardEnableCredential(accessToken string, credentialId string) (int, error) {
+	req, err := http.NewRequest("POST", urls.Url+"/onboard/api/v1/credential/"+credentialId+"/enable", nil)
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	statusCode := res.StatusCode
+	err = res.Body.Close()
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	return statusCode, nil
+}
+func onboardGetLiveCredentialHealth(accessToken string, credentialId string) (int, error) {
+	req, err := http.NewRequest("POST", urls.Url+"/onboard/api/v1/credential/"+credentialId+"/healthcheck", nil)
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	statusCode := res.StatusCode
+	err = res.Body.Close()
+	return statusCode, nil
+}
+func OnboardGetProviders(accessToken string) (apiOnboard.ProvidersResponse, int, error) {
+	req, err := http.NewRequest("GET", "/onboard/api/v1/providers", nil)
+	if err != nil {
+		return apiOnboard.ProvidersResponse{}, http.StatusBadGateway, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Add("Content-Type", "application/json")
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return apiOnboard.ProvidersResponse{}, http.StatusBadGateway, err
+	}
+	var response apiOnboard.ProvidersResponse
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return apiOnboard.ProvidersResponse{}, http.StatusBadGateway, err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return apiOnboard.ProvidersResponse{}, http.StatusBadGateway, err
+	}
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return apiOnboard.ProvidersResponse{}, http.StatusBadGateway, err
+	}
+	return response, http.StatusOK, nil
+}
+func OnboardGetProviderTypes(accessToken string, credentialId string) (apiOnboard.ProviderTypesResponse, int, error) {
+	req, err := http.NewRequest("GET", "/onboard/api/v1/providers/types", nil)
+	if err != nil {
+		return apiOnboard.ProviderTypesResponse{}, http.StatusBadGateway, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return apiOnboard.ProviderTypesResponse{}, http.StatusBadGateway, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return apiOnboard.ProviderTypesResponse{}, http.StatusBadGateway, err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return apiOnboard.ProviderTypesResponse{}, http.StatusBadGateway, err
+	}
+	var response apiOnboard.ProviderTypesResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return apiOnboard.ProviderTypesResponse{}, http.StatusBadGateway, err
+	}
+	return response, http.StatusOK, nil
 }
