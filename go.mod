@@ -90,8 +90,8 @@ require (
 	github.com/swaggo/echo-swagger v1.3.0
 	github.com/swaggo/swag v1.8.0
 	github.com/turbot/go-kit v0.4.0
-	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230428233925-0d0d195ef25e
-	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230330133010-4edcf1226e17
+	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230512091330-df11e66ee449
+	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230512094147-8d4987c1e42c
 	go.uber.org/zap v1.21.0
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/genproto v0.0.0-20220407144326-9054f6ed7bac
@@ -119,8 +119,9 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/jedib0t/go-pretty/v6 v6.4.6
-	github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230509102758-b52890acf91b
-	github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230428233610-cbfa2f408c41
+	github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230512063024-d2eb8e06163e
+	github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230512094403-f18e161795af
+	github.com/kaytu-io/kaytu-util v0.0.0-20230512094935-e4f1cd8164dc
 	github.com/microsoft/kiota-abstractions-go v0.9.1
 	github.com/microsoft/kiota-authentication-azure-go v0.4.1
 	github.com/microsoftgraph/msgraph-sdk-go v0.37.0
@@ -129,7 +130,7 @@ require (
 	github.com/sony/sonyflake v1.1.0
 	github.com/turbot/steampipe-plugin-sdk/v4 v4.1.13
 	github.com/vmware-tanzu/velero v1.9.1
-	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230509105403-bc39cec8572f
+	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230509191550-e4dbf0b50f62
 	google.golang.org/protobuf v1.28.0
 	gorm.io/datatypes v1.1.0
 	gorm.io/plugin/prometheus v0.0.0-20220517015831-ca6bfaf20bf4
@@ -339,7 +340,6 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kaytu-io/kaytu-util v0.0.0-20230512094935-e4f1cd8164dc // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
@@ -367,7 +367,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oklog/run v1.1.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/onsi/gomega v1.19.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799 // indirect
 	github.com/opencontainers/runc v1.1.1 // indirect
