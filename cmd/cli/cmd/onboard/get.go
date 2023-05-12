@@ -21,6 +21,7 @@ var Get = &cobra.Command{
 		return cmd.Help()
 	},
 }
+
 var catalogCmd = &cobra.Command{
 	Use:   "catalog",
 	Short: "catalogCmd",
@@ -210,6 +211,7 @@ var credentialsGetCmd = cobra.Command{
 		return nil
 	},
 }
+
 var connectorTypeGet string
 var healthGet string
 var pageSizeGet string

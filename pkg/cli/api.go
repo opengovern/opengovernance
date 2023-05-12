@@ -1043,3 +1043,53 @@ func OnboardCreateConnectionCredentials(accessToken string, config string, name 
 	}
 	return response, http.StatusOK, nil
 }
+func GetListCredentials(accessToken string, credentialId string) ([]apiOnboard.Credential, int, error) {
+	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/credential/"+credentialId, nil)
+	if err != nil {
+		return []apiOnboard.Credential{}, http.StatusBadGateway, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return []apiOnboard.Credential{}, http.StatusBadGateway, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return []apiOnboard.Credential{}, http.StatusBadGateway, err
+	}
+	var response []apiOnboard.Credential
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return []apiOnboard.Credential{}, http.StatusBadGateway, err
+	}
+	return response, http.StatusOK, nil
+}
+
+type requestEditeCredentialById struct {
+	Name      string `json:"name"`
+	Config    string `json:"config"`
+	Connector string `json:"connector"`
+}
+
+func OnboardEditeCredentialById(accessToken string, config string, connector string, name string, credentialId string) (int, error) {
+	var request requestEditeCredentialById
+	request.Name = name
+	request.Config = config
+	request.Connector = connector
+	reqBody, err := json.Marshal(request)
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	req, err := http.NewRequest("PUT", urls.Url+"onboard/api/v1/credential/"+credentialId, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	_, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return http.StatusBadGateway, err
+	}
+	return http.StatusOK, nil
+}
