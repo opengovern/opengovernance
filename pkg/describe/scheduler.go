@@ -34,7 +34,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	metadataClient "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	workspaceClient "gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"

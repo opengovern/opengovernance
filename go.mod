@@ -66,7 +66,7 @@ require (
 	github.com/brpaz/echozap v1.1.2
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/coreos/go-oidc/v3 v3.1.0
-	github.com/elastic/go-elasticsearch/v7 v7.16.0
+	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/envoyproxy/go-control-plane v0.10.3-0.20220715065308-8bcd7ee0191a
 	github.com/fluxcd/helm-controller/api v0.21.0
 	github.com/fluxcd/pkg/apis/meta v0.13.0
@@ -127,7 +127,7 @@ require (
 	github.com/neo4j/neo4j-go-driver/v5 v5.2.0
 	github.com/projectcontour/contour v1.22.0
 	github.com/sony/sonyflake v1.1.0
-	github.com/turbot/steampipe-plugin-sdk/v4 v4.1.9
+	github.com/turbot/steampipe-plugin-sdk/v4 v4.1.13
 	github.com/vmware-tanzu/velero v1.9.1
 	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230509105403-bc39cec8572f
 	google.golang.org/protobuf v1.28.0
@@ -339,6 +339,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/kaytu-io/kaytu-util v0.0.0-20230512094935-e4f1cd8164dc // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect

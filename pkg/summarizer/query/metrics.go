@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 )
 

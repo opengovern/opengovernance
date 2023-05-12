@@ -50,6 +50,8 @@ message AzureResource {
   string description_json = 7;
   DescribeJob job = 8;
   string unique_id = 9;
+  map<string,string> metadata = 10;
+  map<string,string> tags = 11;
 }
 
 message DeliverResultRequest {

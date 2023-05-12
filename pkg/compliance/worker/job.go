@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"

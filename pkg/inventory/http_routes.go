@@ -33,7 +33,7 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"

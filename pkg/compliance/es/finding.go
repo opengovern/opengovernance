@@ -10,7 +10,7 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )
 
 const (

@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
 	"github.com/stretchr/testify/require"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/model"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )
 
 func strptr(str string) *string {
