@@ -1,7 +1,7 @@
 package metadata
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"net/http"
 
 	"github.com/labstack/echo/v4"

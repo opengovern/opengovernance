@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	describe2 "github.com/kaytu-io/kaytu-aws-describer/pkg/describe/enums"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"net/http"
 	"strconv"
 	"time"

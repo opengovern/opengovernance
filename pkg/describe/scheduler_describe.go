@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"io"
 	"math/rand"
 	"net/http"

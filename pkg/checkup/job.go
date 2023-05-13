@@ -2,7 +2,7 @@ package checkup
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"strconv"
 	"time"
 
