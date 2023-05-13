@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/config"

@@ -3,7 +3,7 @@ package inventory
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"os"
 
 	"github.com/spf13/cobra"

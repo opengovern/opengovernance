@@ -2,8 +2,8 @@ package describe
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"time"
 
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"

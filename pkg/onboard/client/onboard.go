@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"net/http"
 	"time"
 

@@ -3,8 +3,8 @@ package compliance
 import (
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"net/http"
 	"strconv"
 	"time"
