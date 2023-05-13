@@ -117,7 +117,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/jedib0t/go-pretty/v6 v6.4.6
-	github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230513095403-ef736e72e7f1
+	github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230513100205-b5256106a544
 	github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230512094403-f18e161795af
 	github.com/kaytu-io/kaytu-util v0.0.0-20230513085647-7cc62974cfef
 	github.com/microsoft/kiota-abstractions-go v0.9.1
