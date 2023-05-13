@@ -2,6 +2,8 @@ package inventory
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/neo4j"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -16,8 +18,6 @@ import (
 	"github.com/go-redis/redis/v8"
 
 	describeClient "gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/neo4j"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/pkg/keibi-es-sdk"

@@ -2,7 +2,7 @@ package describe
 
 import (
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 	"go.uber.org/zap"

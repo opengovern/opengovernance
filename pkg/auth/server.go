@@ -5,6 +5,8 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"net/http"
 	"strings"
 	"time"
@@ -12,8 +14,6 @@ import (
 	"github.com/golang-jwt/jwt"
 
 	"github.com/labstack/echo/v4"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 
@@ -27,7 +27,6 @@ import (
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/go-redis/cache/v8"
 	"github.com/gogo/googleapis/google/rpc"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
 )

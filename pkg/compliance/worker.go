@@ -3,10 +3,11 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"strings"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
 
 	client2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 
@@ -14,7 +15,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/push"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
 )

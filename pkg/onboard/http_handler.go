@@ -3,14 +3,14 @@ package onboard
 import (
 	"context"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 
 	"go.uber.org/zap"
 	"gopkg.in/go-playground/validator.v9"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	inventory "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
-	"gitlab.com/keibiengine/keibi-engine/pkg/vault"
 )
 
 type HttpHandler struct {

@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -23,14 +26,9 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
-	queuemocks "gitlab.com/keibiengine/keibi-engine/pkg/internal/queue/mocks"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 
 	"gorm.io/gorm"
-
-	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 )
 
 type HttpHandlerSuite struct {
@@ -87,7 +85,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 
 	s.handler = &HttpHandler{
 		db:                Database{orm: orm},
-		sourceEventsQueue: &queuemocks.Interface{},
+		sourceEventsQueue: &mocks.Interface{},
 		vault:             &vaultmocks.SourceConfig{},
 	}
 
@@ -134,7 +132,7 @@ func (s *HttpHandlerSuite) TestGetSource() {
 func (s *HttpHandlerSuite) TestCreateAWSSource_Success() {
 	require := s.Require()
 
-	qmock := s.handler.sourceEventsQueue.(*queuemocks.Interface)
+	qmock := s.handler.sourceEventsQueue.(*mocks.Interface)
 	vmock := s.handler.vault.(*vaultmocks.SourceConfig)
 
 	qmock.On("Publish", mock.Anything).Return(error(nil))
@@ -187,7 +185,7 @@ func (s *HttpHandlerSuite) TestCreateAzureSourceWithSPN_SPNNotExists() {
 func (s *HttpHandlerSuite) TestCreateAzureSourceWithSPN_Success() {
 	require := s.Require()
 
-	qmock := s.handler.sourceEventsQueue.(*queuemocks.Interface)
+	qmock := s.handler.sourceEventsQueue.(*mocks.Interface)
 	vmock := s.handler.vault.(*vaultmocks.SourceConfig)
 
 	qmock.On("Publish", mock.Anything).Return(error(nil))
@@ -235,7 +233,7 @@ func (s *HttpHandlerSuite) TestCreateAzureSourceWithSPN_Success() {
 func (s *HttpHandlerSuite) TestChangeAzureSPNSecret() {
 	require := s.Require()
 
-	qmock := s.handler.sourceEventsQueue.(*queuemocks.Interface)
+	qmock := s.handler.sourceEventsQueue.(*mocks.Interface)
 	vmock := s.handler.vault.(*vaultmocks.SourceConfig)
 
 	qmock.On("Publish", mock.Anything).Return(error(nil))
@@ -293,7 +291,7 @@ func (s *HttpHandlerSuite) TestChangeAzureSPNSecret() {
 func (s *HttpHandlerSuite) TestChangeAWSSecret() {
 	require := s.Require()
 
-	qmock := s.handler.sourceEventsQueue.(*queuemocks.Interface)
+	qmock := s.handler.sourceEventsQueue.(*mocks.Interface)
 	vmock := s.handler.vault.(*vaultmocks.SourceConfig)
 
 	qmock.On("Publish", mock.Anything).Return(error(nil))
@@ -350,7 +348,7 @@ func (s *HttpHandlerSuite) TestChangeAWSSecret() {
 func (s *HttpHandlerSuite) TestCreateAzureSource_Success() {
 	require := s.Require()
 
-	qmock := s.handler.sourceEventsQueue.(*queuemocks.Interface)
+	qmock := s.handler.sourceEventsQueue.(*mocks.Interface)
 	vmock := s.handler.vault.(*vaultmocks.SourceConfig)
 
 	qmock.On("Publish", mock.Anything).Return(error(nil))
@@ -391,7 +389,7 @@ func (s *HttpHandlerSuite) TestCreateAzureSource_Success() {
 func (s *HttpHandlerSuite) TestDeleteAzureSource_Success() {
 	require := s.Require()
 
-	qmock := s.handler.sourceEventsQueue.(*queuemocks.Interface)
+	qmock := s.handler.sourceEventsQueue.(*mocks.Interface)
 	vmock := s.handler.vault.(*vaultmocks.SourceConfig)
 
 	qmock.On("Publish", mock.Anything).Return(error(nil))
@@ -430,7 +428,7 @@ func (s *HttpHandlerSuite) TestDeleteAzureSource_Success() {
 func (s *HttpHandlerSuite) TestGetSources_Success() {
 	require := s.Require()
 
-	qmock := s.handler.sourceEventsQueue.(*queuemocks.Interface)
+	qmock := s.handler.sourceEventsQueue.(*mocks.Interface)
 	vmock := s.handler.vault.(*vaultmocks.SourceConfig)
 
 	qmock.On("Publish", mock.Anything).Return(error(nil))

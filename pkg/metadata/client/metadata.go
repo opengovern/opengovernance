@@ -2,12 +2,11 @@ package client
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"net/http"
 	"strconv"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 )
 
 type MetadataServiceClient interface {

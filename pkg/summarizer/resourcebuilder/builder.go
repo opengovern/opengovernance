@@ -1,8 +1,8 @@
 package resourcebuilder
 
 import (
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 )
 
 type Builder interface {

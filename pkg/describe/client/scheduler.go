@@ -2,11 +2,11 @@ package client
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"net/http"
 
 	compliance "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 )
 
 type TimeRangeFilter struct {

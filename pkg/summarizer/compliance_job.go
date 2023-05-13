@@ -2,6 +2,7 @@ package summarizer
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"strconv"
 	"time"
 
@@ -13,11 +14,9 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 
+	"github.com/go-errors/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
-
-	"github.com/go-errors/errors"
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
 )

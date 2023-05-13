@@ -5,6 +5,10 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"net"
 	"net/http"
 	"strconv"
@@ -32,9 +36,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/go-redis/redis/v8"
-	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	metadataClient "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	workspaceClient "gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
@@ -48,9 +51,6 @@ import (
 
 	complianceworker "gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"go.uber.org/zap"
 
 	"github.com/prometheus/client_golang/prometheus"

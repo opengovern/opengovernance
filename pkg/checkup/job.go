@@ -2,11 +2,11 @@ package checkup
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"strconv"
 	"time"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"

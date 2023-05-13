@@ -2,10 +2,10 @@ package workspace
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )

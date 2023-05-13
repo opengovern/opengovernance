@@ -3,14 +3,13 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/internal/cache"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/internal/database"
 	"go.uber.org/zap"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 )
 
 type HttpHandler struct {

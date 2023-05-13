@@ -1367,6 +1367,8 @@ github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230512094403-f18e161795af h1:
 github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230512094403-f18e161795af/go.mod h1:N0jbHqsjGRS9QWrcK6lS+IQ1bCGvCudTTT/4RnsPlxA=
 github.com/kaytu-io/kaytu-util v0.0.0-20230512094935-e4f1cd8164dc h1:D9rl51puvThEM+r8sZOqP3xGWsRj052r91rby+mSCSc=
 github.com/kaytu-io/kaytu-util v0.0.0-20230512094935-e4f1cd8164dc/go.mod h1:9+dmUF/1Fo9BDTpNlRcLDWh2WV1dTkkoSfVL21M/U9Y=
+github.com/kaytu-io/kaytu-util v0.0.0-20230513053908-27f9057c6ba7 h1:DHvlEdb4seAOjGi4/SDHZpWecvx+Sn62G5R+xpfh1r8=
+github.com/kaytu-io/kaytu-util v0.0.0-20230513053908-27f9057c6ba7/go.mod h1:9+dmUF/1Fo9BDTpNlRcLDWh2WV1dTkkoSfVL21M/U9Y=
 github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=
 github.com/kevinburke/ssh_config v1.2.0/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=

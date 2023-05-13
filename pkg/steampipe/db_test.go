@@ -3,12 +3,12 @@ package steampipe
 import (
 	"context"
 	"database/sql"
+	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
 	"testing"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/require"
-	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 )
 
 func TestNewStampipeDatabase(t *testing.T) {

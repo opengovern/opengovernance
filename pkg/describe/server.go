@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	describe2 "github.com/kaytu-io/kaytu-aws-describer/pkg/describe/enums"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"net/http"
 	"strconv"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 	"gorm.io/gorm"
 
