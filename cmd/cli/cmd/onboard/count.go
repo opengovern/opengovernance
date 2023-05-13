@@ -28,17 +28,17 @@ var CountConnections = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("connectorsNames").Changed {
 		} else {
-			fmt.Println("please enter connectorsNames flag ")
+			fmt.Println("Please enter connectorsNames flag. ")
 			log.Fatalln(cmd.Help())
 		}
 		if cmd.Flags().Lookup("health").Changed {
 		} else {
-			fmt.Println("please enter health flag ")
+			fmt.Println("Please enter health flag. ")
 			log.Fatalln(cmd.Help())
 		}
 		if cmd.Flags().Lookup("state").Changed {
 		} else {
-			fmt.Println("please enter state flag ")
+			fmt.Println("Please enter state flag. ")
 			log.Fatalln(cmd.Help())
 		}
 		return nil
@@ -53,7 +53,7 @@ var CountConnections = &cobra.Command{
 			return err
 		}
 		if checkEXP == true {
-			fmt.Println("your access token was expire please login again ")
+			fmt.Println("Your access token was expire please login again. ")
 			return nil
 		}
 		response, statusCode, err := cli.OnboardCountConnections(accessToken, connectorsNamesCountConnection, healthCountConnection, stateCountConnection)

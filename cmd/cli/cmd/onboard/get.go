@@ -139,7 +139,7 @@ var GetConnectorCmd = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("name").Changed {
 		} else {
-			fmt.Println("please enter the name for connector name .")
+			fmt.Println("Please enter the name for connector name .")
 			log.Fatalln(cmd.Help())
 		}
 		return nil
@@ -154,7 +154,7 @@ var GetConnectorCmd = &cobra.Command{
 			return err
 		}
 		if checkEXP == true {
-			fmt.Println("your access token was expire please login again ")
+			fmt.Println("Your access token was expire please login again ")
 			return nil
 		}
 		response, statusCode, err := cli.OnboardGetConnector(accessToken, connectorName)
@@ -174,12 +174,12 @@ var credentialsGetCmd = cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("connector").Changed {
 		} else {
-			fmt.Println("please enter the name for connector type [AWS or Azure].")
+			fmt.Println("Please enter the name for connector type [AWS or Azure].")
 			log.Fatalln(cmd.Help())
 		}
 		if cmd.Flags().Lookup("health").Changed {
 		} else {
-			fmt.Println("please enter the name for health status [healthy,unhealthy,initial_discovery] .")
+			fmt.Println("Please enter the name for health status [healthy,unhealthy,initial_discovery] .")
 			log.Fatalln(cmd.Help())
 		}
 		return nil

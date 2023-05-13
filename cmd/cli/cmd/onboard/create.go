@@ -29,17 +29,17 @@ var credentialCreateCmd = cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("config").Changed {
 		} else {
-			fmt.Println("please enter the name for config credential .")
+			fmt.Println("Please enter the name for config credential.")
 			log.Fatalln(cmd.Help())
 		}
 		if cmd.Flags().Lookup("name").Changed {
 		} else {
-			fmt.Println("please enter the name credential.")
+			fmt.Println("Please enter the name credential.")
 			log.Fatalln(cmd.Help())
 		}
 		if cmd.Flags().Lookup("sourceType").Changed {
 		} else {
-			fmt.Println("please enter the source type credential .")
+			fmt.Println("Please enter the source type credential.")
 			log.Fatalln(cmd.Help())
 		}
 		return nil
@@ -54,7 +54,7 @@ var credentialCreateCmd = cobra.Command{
 			return err
 		}
 		if checkEXP == true {
-			fmt.Println("your access token was expire please login again ")
+			fmt.Println("Your access token was expire please login again.")
 			return nil
 		}
 		response, statusCode, err := cli.OnboardCreateConnectionCredentials(accessToken, configCredential, nameCredential, sourceTypeCredential)

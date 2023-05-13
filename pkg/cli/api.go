@@ -21,7 +21,7 @@ func GetConfig() (string, error) {
 	home := os.Getenv("HOME")
 	accessTokenByte, err := os.ReadFile(home + "/.kaytu/config.json")
 	if err != nil {
-		return "", fmt.Errorf("[getConfig] : please firs login")
+		return "", fmt.Errorf("[getConfig] : Please log in first.")
 	}
 
 	var config Config
