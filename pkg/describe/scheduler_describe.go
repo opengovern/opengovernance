@@ -91,7 +91,7 @@ func (s Scheduler) scheduleDescribeJob() {
 		return
 	}
 
-	drs, err := s.db.ListRandomCreatedDescribeResourceJobs(MaxTriggerPerMinute)
+	drs, err := s.db.ListRandomCreatedDescribeResourceJobs(MaxTriggerPerMinute - int(count))
 	if err != nil {
 		s.logger.Error("failed to fetch describe resource jobs", zap.String("spot", "ListRandomCreatedDescribeResourceJobs"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
