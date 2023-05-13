@@ -6,8 +6,6 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	iam "gitlab.com/keibiengine/keibi-engine/cmd/cli/cmd/iam"
-	"os"
-	iam "gitlab.com/keibiengine/keibi-engine/cmd/cli/cmd/iam"
 	onboard "gitlab.com/keibiengine/keibi-engine/cmd/cli/cmd/onboard"
 	"os"
 )
@@ -39,7 +37,6 @@ func init() {
 	rootCmd.AddCommand(onboard.Count)
 	rootCmd.AddCommand(onboard.Update)
 	rootCmd.AddCommand(onboard.Delete)
-
 
 	rootCmd.AddCommand(iam.Get)
 	rootCmd.AddCommand(iam.Delete)
