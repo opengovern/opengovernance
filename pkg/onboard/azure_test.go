@@ -2,6 +2,7 @@ package onboard
 
 import (
 	"context"
+	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"testing"
 
 	"github.com/stretchr/testify/require"

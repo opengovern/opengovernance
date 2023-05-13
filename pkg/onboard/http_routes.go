@@ -834,9 +834,8 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 //	@Summary		Onboard all available connections for a credential
 //	@Description	Onboard all available connections for a credential
 //	@Tags			onboard
-//	@Produce		json
-//	@Success		200	{object}	[]api.Source
-//	@Router			/onboard/api/v1/credential/{credentialId}/autoonboard [post]
+//	@Produce		jsonSuccess		200	{object}	[]api.Source
+//	@Router			/onboard/api/v1/credential/{credentialId}/autoonboard
 func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
 	if err != nil {

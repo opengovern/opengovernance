@@ -3,9 +3,9 @@ package compliance
 import (
 	"sort"
 
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 )

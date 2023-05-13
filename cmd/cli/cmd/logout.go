@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
 )
@@ -13,7 +12,7 @@ var logoutCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := cli.RemoveConfig()
 		if err != nil {
-			return fmt.Errorf("[logout] : %v", err)
+			return err
 		}
 		return nil
 	},

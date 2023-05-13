@@ -7,6 +7,9 @@ import (
 	"github.com/spf13/cobra"
 	iam "gitlab.com/keibiengine/keibi-engine/cmd/cli/cmd/iam"
 	"os"
+	iam "gitlab.com/keibiengine/keibi-engine/cmd/cli/cmd/iam"
+	onboard "gitlab.com/keibiengine/keibi-engine/cmd/cli/cmd/onboard"
+	"os"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -26,6 +29,17 @@ func Execute() {
 }
 
 func init() {
+
+	rootCmd.AddCommand(iam.Get)
+	rootCmd.AddCommand(iam.Delete)
+	rootCmd.AddCommand(iam.Create)
+	rootCmd.AddCommand(iam.Update)
+	rootCmd.AddCommand(onboard.Get)
+	rootCmd.AddCommand(onboard.Create)
+	rootCmd.AddCommand(onboard.Count)
+	rootCmd.AddCommand(onboard.Update)
+	rootCmd.AddCommand(onboard.Delete)
+
 
 	rootCmd.AddCommand(iam.Get)
 	rootCmd.AddCommand(iam.Delete)
