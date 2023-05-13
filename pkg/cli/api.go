@@ -755,7 +755,7 @@ func IamDeleteKey(workspacesName string, accessToken string, id string) (string,
 	}
 }
 
-func OnboardCreateAWS(accessToken string, name string, email string, description string, accessKey string, accessId string, regions []string, secretKey string) (ResponseAWSCreate, int, error) {
+func OnboardCreateAWS(accessToken string, name string, email string, description string, accessKey string, accessId string, regions []string, secretKey string) (apiOnboard.CreateSourceResponse, int, error) {
 	var bodyRequest apiOnboard.SourceAwsRequest
 	bodyRequest.Name = name
 	bodyRequest.Email = email
@@ -766,34 +766,34 @@ func OnboardCreateAWS(accessToken string, name string, email string, description
 	bodyRequest.Config.SecretKey = secretKey
 	reqBodyEncoded, err := json.Marshal(bodyRequest)
 	if err != nil {
-		return ResponseAWSCreate{}, http.StatusBadGateway, err
+		return apiOnboard.CreateSourceResponse{}, http.StatusBadGateway, err
 	}
 	req, err := http.NewRequest("POST", urls.Url+"onboard/api/v1/source/aws", bytes.NewBuffer(reqBodyEncoded))
 	if err != nil {
-		return ResponseAWSCreate{}, http.StatusBadRequest, err
+		return apiOnboard.CreateSourceResponse{}, http.StatusBadRequest, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return ResponseAWSCreate{}, http.StatusBadGateway, err
+		return apiOnboard.CreateSourceResponse{}, http.StatusBadGateway, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return ResponseAWSCreate{}, http.StatusBadGateway, err
+		return apiOnboard.CreateSourceResponse{}, http.StatusBadGateway, err
 	}
-	var response ResponseAWSCreate
+	var response apiOnboard.CreateSourceResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return ResponseAWSCreate{}, http.StatusBadGateway, err
+		return apiOnboard.CreateSourceResponse{}, http.StatusBadGateway, err
 	}
 	if res.StatusCode != http.StatusOK {
 		fmt.Println("failed creating AWS source.")
-		return ResponseAWSCreate{}, http.StatusBadGateway, err
+		return apiOnboard.CreateSourceResponse{}, http.StatusBadGateway, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return ResponseAWSCreate{}, http.StatusBadGateway, err
+		return apiOnboard.CreateSourceResponse{}, http.StatusBadGateway, err
 	}
 	return response, http.StatusOK, nil
 }

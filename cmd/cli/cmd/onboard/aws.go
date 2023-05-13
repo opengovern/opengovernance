@@ -19,7 +19,7 @@ var secretKey string
 var outputTypeAWS string
 
 var AwsCmd = &cobra.Command{
-	Use:   "AWS",
+	Use:   "aws",
 	Short: "onboard command",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		accessToken, err := cli.GetConfig()
