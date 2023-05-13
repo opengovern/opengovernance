@@ -44,7 +44,6 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			s.logger.Info("Processing JobResult for Job",
 				zap.Uint("jobId", result.JobID),
 				zap.String("status", string(result.Status)),
-				//zap.Strings("resourceIDs", result.DescribedResourceIDs),
 			)
 
 			if err := s.cleanupOldResources(result); err != nil {

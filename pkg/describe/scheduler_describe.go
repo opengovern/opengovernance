@@ -50,30 +50,29 @@ func (s Scheduler) RunDescribeJobScheduler() {
 }
 
 func (s Scheduler) scheduleDescribeJob() {
-	s.logger.Info("scheduleDescribeJob")
 	err := s.CheckWorkspaceResourceLimit()
 	if err != nil {
-		s.logger.Error("failure on CheckWorkspaceResourceLimit", zap.Error(err))
+		s.logger.Error("failed to get limits", zap.String("spot", "CheckWorkspaceResourceLimit"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
 
 	connections, err := s.db.ListSources()
 	if err != nil {
-		s.logger.Error("Failed to fetch all connections", zap.Error(err))
+		s.logger.Error("failed to get list of sources", zap.String("spot", "ListSources"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
 	for _, connection := range connections {
 		err = s.describeConnection(connection, true)
 		if err != nil {
-			s.logger.Error("Failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+			s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 		}
 	}
 
 	err = s.db.RetryRateLimitedJobs()
 	if err != nil {
-		s.logger.Error("Failed to RetryRateLimitedJobs", zap.Error(err))
+		s.logger.Error("failed to update database", zap.String("spot", "RetryRateLimitedJobs"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
@@ -83,7 +82,7 @@ func (s Scheduler) scheduleDescribeJob() {
 
 	count, err := s.db.CountQueuedDescribeResourceJobs()
 	if err != nil {
-		s.logger.Error("Failed to fetch random describe resource jobs", zap.Error(err))
+		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeResourceJobs"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
@@ -94,7 +93,7 @@ func (s Scheduler) scheduleDescribeJob() {
 
 	drs, err := s.db.ListRandomCreatedDescribeResourceJobs(MaxTriggerPerMinute)
 	if err != nil {
-		s.logger.Error("Failed to fetch random describe resource jobs", zap.Error(err))
+		s.logger.Error("failed to fetch describe resource jobs", zap.String("spot", "ListRandomCreatedDescribeResourceJobs"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
@@ -113,7 +112,7 @@ func (s Scheduler) scheduleDescribeJob() {
 
 		ds, err := s.db.GetDescribeSourceJob(dr.ParentJobID)
 		if err != nil {
-			s.logger.Error("Failed to GetDescribeSourceJob in scheduler", zap.Error(err), zap.Uint("jobID", dr.ID))
+			s.logger.Error("failed to get describe source job", zap.String("spot", "GetDescribeSourceJob"), zap.Error(err), zap.Uint("jobID", dr.ID))
 			DescribeJobsCount.WithLabelValues("failure").Inc()
 			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 			return
@@ -183,7 +182,7 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 			triggerType = enums.DescribeTriggerTypeInitialDiscovery
 		}
 
-		s.logger.Info("Source is due for a describe. Creating a job now", zap.String("sourceId", connection.ID.String()))
+		s.logger.Debug("Source is due for a describe. Creating a job now", zap.String("sourceId", connection.ID.String()))
 		daj := newDescribeSourceJob(connection, describedAt, triggerType)
 		err = s.db.CreateDescribeSourceJob(&daj)
 		if err != nil {
@@ -226,7 +225,7 @@ func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.Des
 }
 
 func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *DescribeSourceJob) error {
-	s.logger.Info("enqueueCloudNativeDescribeJob",
+	s.logger.Debug("enqueueCloudNativeDescribeJob",
 		zap.Uint("sourceJobID", ds.ID),
 		zap.Uint("jobID", dr.ID),
 		zap.String("connectionID", ds.SourceID.String()),
@@ -306,7 +305,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *Des
 		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", resp.StatusCode, string(resBody))
 	}
 
-	s.logger.Info("Successful job trigger",
+	s.logger.Info("successful job trigger",
 		zap.Uint("sourceJobID", ds.ID),
 		zap.Uint("jobID", dr.ID),
 		zap.String("connectionID", ds.SourceID.String()),
@@ -314,7 +313,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *Des
 	)
 
 	if err := s.db.UpdateDescribeResourceJobStatus(dr.ID, api.DescribeResourceJobQueued, "", 0); err != nil {
-		s.logger.Error("Failed to update DescribeResourceJob",
+		s.logger.Error("failed to update DescribeResourceJob",
 			zap.Uint("sourceJobID", ds.ID),
 			zap.Uint("jobID", dr.ID),
 			zap.String("connectionID", ds.SourceID.String()),
