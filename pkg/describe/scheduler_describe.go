@@ -24,6 +24,7 @@ import (
 const (
 	MaxTriggerPerMinute           = 5000
 	MaxTriggerPerAccountPerMinute = 60
+	MaxQueued                     = 5000
 	MaxConcurrentCall             = 30
 )
 
@@ -79,6 +80,17 @@ func (s Scheduler) scheduleDescribeJob() {
 
 	accountTriggerCount := map[string]int{}
 	var parentIdExceptionList []uint
+
+	count, err := s.db.CountQueuedDescribeResourceJobs()
+	if err != nil {
+		s.logger.Error("Failed to fetch random describe resource jobs", zap.Error(err))
+		DescribeJobsCount.WithLabelValues("failure").Inc()
+		return
+	}
+
+	if count > MaxQueued {
+		return
+	}
 
 	drs, err := s.db.ListRandomCreatedDescribeResourceJobs(MaxTriggerPerMinute)
 	if err != nil {

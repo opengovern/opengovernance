@@ -315,6 +315,18 @@ func (db Database) ListRandomCreatedDescribeResourceJobs(limit int) ([]DescribeR
 	return job, nil
 }
 
+func (db Database) CountQueuedDescribeResourceJobs() (int64, error) {
+	var count int64
+	tx := db.orm.Where("status = ?", api.DescribeResourceJobQueued).Where("created_at > now() - interval '1 day'").Count(&count)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, tx.Error
+	}
+	return count, nil
+}
+
 func (db Database) RetryRateLimitedJobs() error {
 	tx := db.orm.Raw(
 		`
