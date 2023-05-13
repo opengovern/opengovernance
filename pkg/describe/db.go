@@ -302,6 +302,19 @@ func (db Database) FetchRandomCreatedDescribeResourceJobs(parentIdExceptionList 
 	return &job, nil
 }
 
+func (db Database) ListRandomCreatedDescribeResourceJobs(limit int) ([]DescribeResourceJob, error) {
+	var job []DescribeResourceJob
+	tx := db.orm.Where("status = ?", api.DescribeResourceJobCreated)
+	tx = tx.Order("random()").Limit(limit).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
 func (db Database) RetryRateLimitedJobs() error {
 	tx := db.orm.Raw(
 		`

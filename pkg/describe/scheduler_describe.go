@@ -68,34 +68,42 @@ func (s Scheduler) scheduleDescribeJob() {
 
 	accountTriggerCount := map[string]int{}
 	var parentIdExceptionList []uint
-	for i := 0; i < MaxTriggerPerMinute; i++ {
-		drs, err := s.db.FetchRandomCreatedDescribeResourceJobs(parentIdExceptionList)
-		if err != nil {
-			s.logger.Error("Failed to fetch all describe source jobs", zap.Error(err))
-			DescribeJobsCount.WithLabelValues("failure").Inc()
-			return
+
+	drs, err := s.db.ListRandomCreatedDescribeResourceJobs(MaxTriggerPerMinute)
+	if err != nil {
+		s.logger.Error("Failed to fetch random describe resource jobs", zap.Error(err))
+		DescribeJobsCount.WithLabelValues("failure").Inc()
+		return
+	}
+
+	for _, dr := range drs {
+		ignore := false
+		for _, ex := range parentIdExceptionList {
+			if dr.ParentJobID == ex {
+				ignore = true
+			}
 		}
 
-		if drs == nil {
-			break
+		if ignore {
+			continue
 		}
 
-		ds, err := s.db.GetDescribeSourceJob(drs.ParentJobID)
+		ds, err := s.db.GetDescribeSourceJob(dr.ParentJobID)
 		if err != nil {
-			s.logger.Error("Failed to GetDescribeSourceJob in scheduler", zap.Error(err), zap.Uint("jobID", drs.ID))
+			s.logger.Error("Failed to GetDescribeSourceJob in scheduler", zap.Error(err), zap.Uint("jobID", dr.ID))
 			DescribeJobsCount.WithLabelValues("failure").Inc()
 			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 			return
 		}
 
 		if accountTriggerCount[ds.SourceID.String()] > MaxTriggerPerAccountPerMinute {
-			parentIdExceptionList = append(parentIdExceptionList, drs.ParentJobID)
+			parentIdExceptionList = append(parentIdExceptionList, dr.ParentJobID)
 			continue
 		}
 
-		err = s.enqueueCloudNativeDescribeJob(*drs, ds)
+		err = s.enqueueCloudNativeDescribeJob(dr, ds)
 		if err != nil {
-			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", drs.ID))
+			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dr.ID))
 			DescribeJobsCount.WithLabelValues("failure").Inc()
 			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 			return
