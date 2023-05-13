@@ -15,7 +15,7 @@ import (
 	awsmodel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 )
 

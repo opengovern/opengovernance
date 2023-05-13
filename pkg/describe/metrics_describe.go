@@ -33,6 +33,24 @@ var ResourcesDescribedCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help:      "Count of resources described",
 }, []string{"provider", "status"})
 
+var ResourceBatchProcessLatency = prometheus.NewSummaryVec(
+	prometheus.SummaryOpts{
+		Namespace:  "keibi",
+		Subsystem:  "scheduler",
+		Name:       "resource_batch_process_millisecond",
+		Help:       "Total resource batch process latency.",
+		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+	}, []string{"provider"})
+
+var ResourceProcessLatency = prometheus.NewSummaryVec(
+	prometheus.SummaryOpts{
+		Namespace:  "keibi",
+		Subsystem:  "scheduler",
+		Name:       "resource_process_millisecond",
+		Help:       "Total resource process latency.",
+		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+	}, []string{"provider"})
+
 var ResultsDeliveredCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "keibi",
 	Subsystem: "scheduler",

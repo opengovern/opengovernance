@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	keibiaws "github.com/kaytu-io/kaytu-aws-describer/pkg/keibi-es-sdk"
 	"io"
 	"math"
 	"mime"
@@ -32,8 +33,6 @@ import (
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
@@ -614,7 +613,7 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 			return err
 		}
 
-		var response keibi.CostExplorerByAccountMonthlySearchResponse
+		var response keibiaws.CostExplorerByAccountMonthlySearchResponse
 		err = h.client.Search(context.Background(), "aws_costexplorer_byaccountmonthly", query, &response)
 		if err != nil {
 			return err
@@ -704,7 +703,7 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 			return err
 		}
 
-		var response keibi.CostExplorerByServiceMonthlySearchResponse
+		var response keibiaws.CostExplorerByServiceMonthlySearchResponse
 		err = h.client.Search(context.Background(), "aws_costexplorer_byservicemonthly", query, &response)
 		if err != nil {
 			return err
@@ -2953,8 +2952,8 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 //	@Param			endTime		query	string		true	"end time for cost calculation and time resource count in epoch seconds"
 //	@Param			serviceName	path	string		true	"service name"
 
-//	@Success	200	{object}	api.ListServiceSummariesResponse
-//	@Router		/inventory/api/v2/services/summary/{serviceName} [get]
+// @Success	200	{object}	api.ListServiceSummariesResponse
+// @Router		/inventory/api/v2/services/summary/{serviceName} [get]
 func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	serviceName := ctx.Param("serviceName")
 	if serviceName == "" {
@@ -3380,7 +3379,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 	var locations []api.LocationByProviderResponse
 
 	if provider == "aws" || provider == "all" {
-		regions, err := h.client.NewEC2RegionPaginator(nil, nil)
+		regions, err := h.awsClient.NewEC2RegionPaginator(nil, nil)
 		if err != nil {
 			return err
 		}
@@ -3404,7 +3403,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 	}
 
 	if provider == "azure" || provider == "all" {
-		locs, err := h.client.NewLocationPaginator(nil, nil)
+		locs, err := h.azureClient.NewLocationPaginator(nil, nil)
 		if err != nil {
 			return err
 		}

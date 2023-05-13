@@ -9,7 +9,7 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 
 	"go.uber.org/zap"
 )

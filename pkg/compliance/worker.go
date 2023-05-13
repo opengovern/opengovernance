@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
 
 	client2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 

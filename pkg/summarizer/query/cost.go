@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 )
 

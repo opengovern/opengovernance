@@ -20,12 +20,16 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	keibiaws "github.com/kaytu-io/kaytu-aws-describer/pkg/keibi-es-sdk"
+	keibiazure "github.com/kaytu-io/kaytu-azure-describer/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"go.uber.org/zap"
 )
 
 type HttpHandler struct {
 	client           keibi.Client
+	awsClient        keibiaws.Client
+	azureClient      keibiazure.Client
 	db               Database
 	graphDb          GraphDatabase
 	steampipeConn    *steampipe.Database
@@ -110,6 +114,26 @@ func InitializeHttpHandler(
 
 	defaultAccountID := "default"
 	h.client, err = keibi.NewClient(keibi.ClientConfig{
+		Addresses: []string{elasticSearchAddress},
+		Username:  &elasticSearchUsername,
+		Password:  &elasticSearchPassword,
+		AccountID: &defaultAccountID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	h.awsClient, err = keibiaws.NewClient(keibiaws.ClientConfig{
+		Addresses: []string{elasticSearchAddress},
+		Username:  &elasticSearchUsername,
+		Password:  &elasticSearchPassword,
+		AccountID: &defaultAccountID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	h.azureClient, err = keibiazure.NewClient(keibiazure.ClientConfig{
 		Addresses: []string{elasticSearchAddress},
 		Username:  &elasticSearchUsername,
 		Password:  &elasticSearchPassword,

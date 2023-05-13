@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 	"go.uber.org/zap"

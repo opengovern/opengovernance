@@ -34,7 +34,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	metadataClient "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	workspaceClient "gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
@@ -156,7 +156,6 @@ type Scheduler struct {
 	authGrpcClient      envoyauth.AuthorizationClient
 	es                  keibi.Client
 	rdb                 *redis.Client
-	kafkaClient         sarama.Client
 	kafkaProducer       sarama.SyncProducer
 	kafkaResourcesTopic string
 
@@ -358,12 +357,6 @@ func InitializeScheduler(
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
 	s.db = Database{orm: orm}
 
-	kafkaClient, err := newKafkaClient(strings.Split(KafkaService, ","))
-	if err != nil {
-		return nil, err
-	}
-	s.kafkaClient = kafkaClient
-
 	kafkaProducer, err := newKafkaProducer(strings.Split(KafkaService, ","))
 	if err != nil {
 		return nil, err
@@ -424,18 +417,13 @@ func InitializeScheduler(
 		DB:       0,  // use default DB
 	})
 
-	producer, err := newKafkaProducer(strings.Split(KafkaService, ","))
-	if err != nil {
-		return nil, err
-	}
-
 	s.grpcServer = grpc.NewServer(
 		grpc.MaxRecvMsgSize(128*1024*1024),
 		grpc.UnaryInterceptor(s.grpcUnaryAuthInterceptor),
 		grpc.StreamInterceptor(s.grpcStreamAuthInterceptor),
 	)
 
-	describeServer := NewDescribeServer(s.db, s.rdb, producer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.logger)
+	describeServer := NewDescribeServer(s.db, s.rdb, kafkaProducer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.logger)
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
 
 	return s, nil
@@ -760,7 +748,7 @@ func (s *Scheduler) RunDeletedSourceCleanup() {
 
 func (s Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
 	//TODO-Saleh remove all of source resources
-	
+
 }
 
 func (s Scheduler) cleanupComplianceReportJobForDeletedSource(sourceId string) {
@@ -1019,8 +1007,6 @@ func (s *Scheduler) Stop() {
 	for _, queue := range queues {
 		queue.Close()
 	}
-
-	s.kafkaClient.Close()
 }
 
 func newComplianceReportJob(connectionID string, connector source.Type, benchmarkID string, scheduleJobID uint) ComplianceReportJob {
@@ -1628,6 +1614,7 @@ func newKafkaProducer(brokers []string) (sarama.SyncProducer, error) {
 	cfg.Producer.Retry.Max = 3
 	cfg.Producer.RequiredAcks = sarama.WaitForAll
 	cfg.Producer.Return.Successes = true
+	cfg.Producer.Partitioner = sarama.NewRoundRobinPartitioner
 	cfg.Version = sarama.V2_1_0_0
 
 	producer, err := sarama.NewSyncProducer(strings.Split(KafkaService, ","), cfg)

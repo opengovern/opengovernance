@@ -1,15 +1,15 @@
 package steampipe
 
 import (
+	"github.com/kaytu-io/kaytu-aws-describer/pkg/keibi-es-sdk"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
-
 	"github.com/aws/aws-sdk-go-v2/service/backup/types"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/model"
-	"github.com/stretchr/testify/require"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
-)
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 
+)
 func strptr(str string) *string {
 	return &str
 }

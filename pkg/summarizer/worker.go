@@ -7,7 +7,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 
 	"github.com/prometheus/client_golang/prometheus/push"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"

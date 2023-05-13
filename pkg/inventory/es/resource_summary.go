@@ -15,7 +15,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 
 	"github.com/google/uuid"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )
 
 func FindAWSCostQuery(sourceID *uuid.UUID, fetchSize int, searchAfter []interface{}) (string, error) {

@@ -21,7 +21,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
@@ -263,7 +263,7 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 						S3Location:          result.Location,
 					})
 				}
-				if err := kafka.DoSend(producer, topic, resources, logger); err != nil {
+				if err := kafka.DoSend(producer, topic, 0, resources, logger); err != nil {
 					fail(fmt.Errorf("send to kafka: %w", err))
 				}
 			} else {

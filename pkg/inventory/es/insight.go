@@ -11,7 +11,7 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )
 
 var MAX_INSIGHTS = 10000
