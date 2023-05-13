@@ -10,10 +10,25 @@ import (
 var workspacesCmd = &cobra.Command{
 	Use:   "workspaces",
 	Short: "A brief description of your command",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
+			fmt.Println("please enter right flag .")
+			return cmd.Help()
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		accessToken, err := cli.GetConfig()
 		if err != nil {
 			return fmt.Errorf("[workspaces] : %v", err)
+		}
+		checkEXP, err := cli.CheckExpirationTime(accessToken)
+		if err != nil {
+			return err
+		}
+		if checkEXP == true {
+			fmt.Println("your access token was expire please login again ")
+			return nil
 		}
 
 		response, err := cli.RequestWorkspaces(accessToken)
@@ -21,16 +36,16 @@ var workspacesCmd = &cobra.Command{
 			return fmt.Errorf("[workspaces] : %v", err)
 		}
 
-		err = cli.PrintOutputForWorkspaces(response, OutputType)
+		err = cli.PrintOutputForTypeArray(response, outputTypeWorkspaces)
 		if err != nil {
 			return fmt.Errorf("[workspaces] : %v", err)
 		}
 		return nil
 	},
 }
-var OutputType string
+var outputTypeWorkspaces = "table"
 
 func init() {
 	rootCmd.AddCommand(workspacesCmd)
-	workspacesCmd.Flags().StringVar(&OutputType, "output", "", "specifying output type [json, table]")
+	workspacesCmd.Flags().StringVar(&outputTypeWorkspaces, "output", "", "specifying output type [json, table]")
 }
