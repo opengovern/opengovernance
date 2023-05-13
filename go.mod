@@ -92,8 +92,8 @@ require (
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230512094147-8d4987c1e42c
 	go.uber.org/zap v1.24.0
 	golang.org/x/text v0.8.0 // indirect
-	google.golang.org/genproto v0.0.0-20220407144326-9054f6ed7bac
-	google.golang.org/grpc v1.48.0
+	google.golang.org/genproto v0.0.0-20221202195650-67e5cbc046fd
+	google.golang.org/grpc v1.50.1
 	gopkg.in/Shopify/sarama.v1 v1.20.1
 	gopkg.in/go-playground/validator.v9 v9.31.0
 	gorm.io/driver/postgres v1.5.0 // indirect
@@ -117,9 +117,9 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/jedib0t/go-pretty/v6 v6.4.6
-	github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230512063024-d2eb8e06163e
+	github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230513095403-ef736e72e7f1
 	github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230512094403-f18e161795af
-	github.com/kaytu-io/kaytu-util v0.0.0-20230513071129-25c5ffa4fcf8
+	github.com/kaytu-io/kaytu-util v0.0.0-20230513085647-7cc62974cfef
 	github.com/microsoft/kiota-abstractions-go v0.9.1
 	github.com/microsoft/kiota-authentication-azure-go v0.4.1
 	github.com/microsoftgraph/msgraph-sdk-go v0.37.0
@@ -128,11 +128,13 @@ require (
 	github.com/sony/sonyflake v1.1.0
 	github.com/turbot/steampipe-plugin-sdk/v4 v4.1.13
 	github.com/vmware-tanzu/velero v1.9.1
-	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230509191550-e4dbf0b50f62
+	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230513092945-df77126012b5
 	gorm.io/datatypes v1.1.0
 )
 
 require (
+	cloud.google.com/go/compute v1.14.0 // indirect
+	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.3.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.1.2 // indirect
@@ -162,6 +164,7 @@ require (
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/allegro/bigcache/v3 v3.0.2 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
+	github.com/aws/aws-lambda-go v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.9 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.33 // indirect
@@ -200,7 +203,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/grafana v1.9.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/health v1.15.22 // indirect
 	github.com/aws/aws-sdk-go-v2/service/identitystore v1.15.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/imagebuilder v1.20.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/imagebuilder v1.23.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/inspector v1.12.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.9 // indirect
@@ -291,6 +294,7 @@ require (
 	github.com/gocarina/gocsv v0.0.0-20211203214250-4735fba0c1d9 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
+	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect
