@@ -2,8 +2,8 @@ package httpserver
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/api"
 	"github.com/labstack/echo/v4"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"net/http"
 	"strconv"
 	"strings"
