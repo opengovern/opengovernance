@@ -624,10 +624,7 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 
 		for _, hit := range response.Hits.Hits {
 			accountId := hit.Source.SourceID
-			cost, err := strconv.ParseFloat(*hit.Source.Description.UnblendedCostAmount, 64)
-			if err != nil {
-				return err
-			}
+			cost := *hit.Source.Description.UnblendedCostAmount
 
 			if v, ok := accountCostMap[accountId]; ok {
 				cost += v
@@ -714,10 +711,7 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 
 		for _, hit := range response.Hits.Hits {
 			serviceName := *hit.Source.Description.Dimension1
-			cost, err := strconv.ParseFloat(*hit.Source.Description.UnblendedCostAmount, 64)
-			if err != nil {
-				return err
-			}
+			cost := *hit.Source.Description.UnblendedCostAmount
 
 			if v, ok := serviceCostMap[serviceName]; ok {
 				cost += v

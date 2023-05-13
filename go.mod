@@ -88,8 +88,8 @@ require (
 	github.com/swaggo/echo-swagger v1.3.0
 	github.com/swaggo/swag v1.8.0
 	github.com/turbot/go-kit v0.4.0
-	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230512091330-df11e66ee449
-	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230512094147-8d4987c1e42c
+	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230513092014-8b7fb1de9887
+	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230513092024-06d62c29480c
 	go.uber.org/zap v1.24.0
 	golang.org/x/text v0.8.0 // indirect
 	google.golang.org/genproto v0.0.0-20221202195650-67e5cbc046fd
@@ -117,8 +117,8 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/jedib0t/go-pretty/v6 v6.4.6
-	github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230513100205-b5256106a544
-	github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230512094403-f18e161795af
+	github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230513131051-487f90781041
+	github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230513092309-666e3325e35e
 	github.com/kaytu-io/kaytu-util v0.0.0-20230513085647-7cc62974cfef
 	github.com/microsoft/kiota-abstractions-go v0.9.1
 	github.com/microsoft/kiota-authentication-azure-go v0.4.1
@@ -128,7 +128,7 @@ require (
 	github.com/sony/sonyflake v1.1.0
 	github.com/turbot/steampipe-plugin-sdk/v4 v4.1.13
 	github.com/vmware-tanzu/velero v1.9.1
-	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230513092945-df77126012b5
+	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230513131002-0e16b2f60580
 	gorm.io/datatypes v1.1.0
 )
 

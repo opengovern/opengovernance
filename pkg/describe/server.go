@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	describe2 "github.com/kaytu-io/kaytu-aws-describer/pkg/describe/enums"
+	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"net/http"
 	"strconv"
