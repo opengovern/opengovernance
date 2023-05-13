@@ -3,11 +3,11 @@ package checkup
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 
 	"github.com/prometheus/client_golang/prometheus/push"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"go.uber.org/zap"
 )
 

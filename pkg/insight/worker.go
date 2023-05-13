@@ -3,14 +3,14 @@ package insight
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/prometheus/client_golang/prometheus/push"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/prometheus/client_golang/prometheus/push"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 	"go.uber.org/zap"

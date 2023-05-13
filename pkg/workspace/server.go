@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	httpserver2 "github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -37,8 +39,6 @@ import (
 	velerov1api "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
 	authapi "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	authclient "gitlab.com/keibiengine/keibi-engine/pkg/auth/client"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -76,7 +76,7 @@ func NewServer(cfg *Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new zap logger: %s", err)
 	}
-	s.e = httpserver.Register(logger, s)
+	s.e = httpserver2.Register(logger, s)
 
 	db, err := NewDatabase(cfg, logger)
 	if err != nil {
@@ -124,23 +124,23 @@ func NewServer(cfg *Config) (*Server, error) {
 func (s *Server) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	v1.POST("/workspace", httpserver.AuthorizeHandler(s.CreateWorkspace, authapi.EditorRole))
-	v1.DELETE("/workspace/:workspace_id", httpserver.AuthorizeHandler(s.DeleteWorkspace, authapi.EditorRole))
-	v1.POST("/workspace/:workspace_id/suspend", httpserver.AuthorizeHandler(s.SuspendWorkspace, authapi.EditorRole))
-	v1.POST("/workspace/:workspace_id/resume", httpserver.AuthorizeHandler(s.ResumeWorkspace, authapi.EditorRole))
-	v1.GET("/workspaces/limits/:workspace_name", httpserver.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
-	v1.GET("/workspaces/limits/byid/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspaceLimitsByID, authapi.ViewerRole))
-	v1.GET("/workspaces/byid/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspaceByID, authapi.ViewerRole))
-	v1.GET("/workspaces", httpserver.AuthorizeHandler(s.ListWorkspaces, authapi.ViewerRole))
-	v1.GET("/workspaces/:workspace_id", httpserver.AuthorizeHandler(s.GetWorkspace, authapi.ViewerRole))
-	v1.POST("/workspace/:workspace_id/owner", httpserver.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
-	v1.POST("/workspace/:workspace_id/name", httpserver.AuthorizeHandler(s.ChangeName, authapi.KeibiAdminRole))
-	v1.POST("/workspace/:workspace_id/tier", httpserver.AuthorizeHandler(s.ChangeTier, authapi.KeibiAdminRole))
-	v1.POST("/workspace/:workspace_id/organization", httpserver.AuthorizeHandler(s.ChangeOrganization, authapi.KeibiAdminRole))
-	v1.GET("/workspace/:workspace_id/backup", httpserver.AuthorizeHandler(s.ListBackups, authapi.ViewerRole))
-	v1.POST("/workspace/:workspace_id/backup", httpserver.AuthorizeHandler(s.PerformBackup, authapi.EditorRole))
-	v1.GET("/workspace/:workspace_id/backup/restores", httpserver.AuthorizeHandler(s.ListRestore, authapi.ViewerRole))
-	v1.POST("/workspace/:workspace_id/backup/:backup_name/restore", httpserver.AuthorizeHandler(s.PerformRestore, authapi.EditorRole))
+	v1.POST("/workspace", httpserver2.AuthorizeHandler(s.CreateWorkspace, authapi.EditorRole))
+	v1.DELETE("/workspace/:workspace_id", httpserver2.AuthorizeHandler(s.DeleteWorkspace, authapi.EditorRole))
+	v1.POST("/workspace/:workspace_id/suspend", httpserver2.AuthorizeHandler(s.SuspendWorkspace, authapi.EditorRole))
+	v1.POST("/workspace/:workspace_id/resume", httpserver2.AuthorizeHandler(s.ResumeWorkspace, authapi.EditorRole))
+	v1.GET("/workspaces/limits/:workspace_name", httpserver2.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
+	v1.GET("/workspaces/limits/byid/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspaceLimitsByID, authapi.ViewerRole))
+	v1.GET("/workspaces/byid/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspaceByID, authapi.ViewerRole))
+	v1.GET("/workspaces", httpserver2.AuthorizeHandler(s.ListWorkspaces, authapi.ViewerRole))
+	v1.GET("/workspaces/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspace, authapi.ViewerRole))
+	v1.POST("/workspace/:workspace_id/owner", httpserver2.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
+	v1.POST("/workspace/:workspace_id/name", httpserver2.AuthorizeHandler(s.ChangeName, authapi.KeibiAdminRole))
+	v1.POST("/workspace/:workspace_id/tier", httpserver2.AuthorizeHandler(s.ChangeTier, authapi.KeibiAdminRole))
+	v1.POST("/workspace/:workspace_id/organization", httpserver2.AuthorizeHandler(s.ChangeOrganization, authapi.KeibiAdminRole))
+	v1.GET("/workspace/:workspace_id/backup", httpserver2.AuthorizeHandler(s.ListBackups, authapi.ViewerRole))
+	v1.POST("/workspace/:workspace_id/backup", httpserver2.AuthorizeHandler(s.PerformBackup, authapi.EditorRole))
+	v1.GET("/workspace/:workspace_id/backup/restores", httpserver2.AuthorizeHandler(s.ListRestore, authapi.ViewerRole))
+	v1.POST("/workspace/:workspace_id/backup/:backup_name/restore", httpserver2.AuthorizeHandler(s.PerformRestore, authapi.EditorRole))
 }
 
 func (s *Server) Start() error {
@@ -480,28 +480,28 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			return err
 		}
 
-		var backup *velerov1api.Backup
-		for _, v := range list.Items {
-			if !strings.HasPrefix(v.Name, workspace.Name+".") {
-				// . is to prevent backups from other workspaces with similar name to
-				// appear in the results
-				continue
-			}
-
-			timeStr := strings.Split(v.Name, ".")
-			tim, err := time.Parse("2006-02-01-15-04-05", timeStr[1])
-			if err != nil {
-				return err
-			}
-			if tim.After(time.Now().Add(-1 * time.Hour)) {
-				backup = &v
-			}
-		}
-		if backup == nil {
-			return s.CreateBackup(*workspace)
-		} /* else if backup.Status.Phase != velerov1api.BackupPhaseCompleted {
-			return nil
-		}*/
+		//var backup *velerov1api.Backup
+		//for _, v := range list.Items {
+		//	if !strings.HasPrefix(v.Name, workspace.Name+".") {
+		//		// . is to prevent backups from other workspaces with similar name to
+		//		// appear in the results
+		//		continue
+		//	}
+		//
+		//	timeStr := strings.Split(v.Name, ".")
+		//	tim, err := time.Parse("2006-02-01-15-04-05", timeStr[1])
+		//	if err != nil {
+		//		return err
+		//	}
+		//	if tim.After(time.Now().Add(-1 * time.Hour)) {
+		//		backup = &v
+		//	}
+		//}
+		//if backup == nil {
+		//	return s.CreateBackup(*workspace)
+		//} /* else if backup.Status.Phase != velerov1api.BackupPhaseCompleted {
+		//	return nil
+		//}*/
 
 		if helmRelease != nil {
 			s.e.Logger.Infof("delete helm release %s with status %s", workspace.ID, workspace.Status)
@@ -598,7 +598,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 //	@Success		200		{object}	api.CreateWorkspaceResponse
 //	@Router			/workspace/api/v1/workspace [post]
 func (s *Server) CreateWorkspace(c echo.Context) error {
-	userID := httpserver.GetUserID(c)
+	userID := httpserver2.GetUserID(c)
 
 	var request api.CreateWorkspaceRequest
 	if err := c.Bind(&request); err != nil {
@@ -662,7 +662,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 //	@Success		200
 //	@Router			/workspace/api/v1/workspace/:workspace_id [delete]
 func (s *Server) DeleteWorkspace(c echo.Context) error {
-	userID := httpserver.GetUserID(c)
+	userID := httpserver2.GetUserID(c)
 
 	id := c.Param("workspace_id")
 	if id == "" {
@@ -699,7 +699,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 //	@Success		200
 //	@Router			/workspace/api/v1/workspace/:workspace_id [get]
 func (s *Server) GetWorkspace(c echo.Context) error {
-	userId := httpserver.GetUserID(c)
+	userId := httpserver2.GetUserID(c)
 	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
 	if err != nil {
 		return fmt.Errorf("GetUserRoleBindings: %v", err)
@@ -869,7 +869,7 @@ func (s *Server) SuspendWorkspace(c echo.Context) error {
 //	@Success		200	{array}	[]api.WorkspaceResponse
 //	@Router			/workspace/api/v1/workspaces [get]
 func (s *Server) ListWorkspaces(c echo.Context) error {
-	userId := httpserver.GetUserID(c)
+	userId := httpserver2.GetUserID(c)
 	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
 	if err != nil {
 		return fmt.Errorf("GetUserRoleBindings: %v", err)
@@ -936,7 +936,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 //	@Param		request	body	api.ChangeWorkspaceOwnershipRequest	true	"Change ownership request"
 //	@Router		/workspace/api/v1/workspace/{workspace_id}/owner [post]
 func (s *Server) ChangeOwnership(c echo.Context) error {
-	userID := httpserver.GetUserID(c)
+	userID := httpserver2.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
 
 	var request api.ChangeWorkspaceOwnershipRequest
@@ -1084,7 +1084,7 @@ func (s *Server) ChangeOrganization(c echo.Context) error {
 //	@Produce	json
 //	@Router		/workspace/api/v1/workspace/{workspace_id}/backup [post]
 func (s *Server) PerformBackup(c echo.Context) error {
-	userID := httpserver.GetUserID(c)
+	userID := httpserver2.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
 
 	if workspaceID == "" {
@@ -1154,7 +1154,7 @@ func (s *Server) CreateBackup(w Workspace) error {
 //	@Produce	json
 //	@Router		/workspace/api/v1/workspace/{workspace_id}/backup [get]
 func (s *Server) ListBackups(c echo.Context) error {
-	userID := httpserver.GetUserID(c)
+	userID := httpserver2.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
 
 	if workspaceID == "" {
@@ -1212,7 +1212,7 @@ func (s *Server) ListBackups(c echo.Context) error {
 //	@Produce	json
 //	@Router		/workspace/api/v1/workspace/{workspace_id}/backup/{backup_name}/restore [post]
 func (s *Server) PerformRestore(c echo.Context) error {
-	userID := httpserver.GetUserID(c)
+	userID := httpserver2.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
 	backupName := c.Param("backup_name")
 
@@ -1268,7 +1268,7 @@ func (s *Server) PerformRestore(c echo.Context) error {
 //	@Produce	json
 //	@Router		/workspace/api/v1/workspace/{workspace_id}/backup/restores [get]
 func (s *Server) ListRestore(c echo.Context) error {
-	userID := httpserver.GetUserID(c)
+	userID := httpserver2.GetUserID(c)
 	workspaceID := c.Param("workspace_id")
 
 	if workspaceID == "" {

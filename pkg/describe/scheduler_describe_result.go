@@ -3,11 +3,11 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 	"go.uber.org/zap"
 	"gopkg.in/Shopify/sarama.v1"
 )

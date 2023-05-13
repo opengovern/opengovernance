@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"io"
 	"net/http/httptest"
 	"testing"
@@ -13,8 +15,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/suite"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
-	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 )
 
@@ -28,7 +28,7 @@ type HttpServerSuite struct {
 func (s *HttpServerSuite) SetupSuite() {
 	require := s.Require()
 
-	orm := idocker.StartupPostgreSQL(s.T())
+	orm := dockertest.StartupPostgreSQL(s.T())
 	s.handler = &HttpHandler{
 		db: db.Database{Orm: orm},
 	}

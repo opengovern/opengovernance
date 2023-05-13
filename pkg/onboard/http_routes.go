@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"net/http"
 	"sort"
 	"strconv"
@@ -19,8 +20,6 @@ import (
 
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	keibiazure "github.com/kaytu-io/kaytu-azure-describer/azure"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"

@@ -3,10 +3,10 @@ package describe
 import (
 	"context"
 	"errors"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"time"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 )
 
 func (s Scheduler) CheckWorkspaceResourceLimit() error {

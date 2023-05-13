@@ -2,15 +2,15 @@ package describe
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"time"
 
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	complianceworker "gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"go.uber.org/zap"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"net/http"
 	"time"
 
@@ -13,8 +14,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 )
 
 type OnboardServiceClient interface {

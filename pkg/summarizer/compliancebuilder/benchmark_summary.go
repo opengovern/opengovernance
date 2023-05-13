@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	es2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 )

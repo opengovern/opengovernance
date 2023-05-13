@@ -3,6 +3,8 @@ package worker
 import (
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"os/exec"
 	"time"
 
@@ -13,8 +15,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/config"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 	client2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"

@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
 	"testing"
 	"time"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
-	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"

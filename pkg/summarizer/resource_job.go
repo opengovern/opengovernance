@@ -2,6 +2,7 @@ package summarizer
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"strconv"
 	"time"
 
@@ -17,8 +18,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 
 	"github.com/go-errors/errors"
 	"go.uber.org/zap"

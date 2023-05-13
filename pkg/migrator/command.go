@@ -1,6 +1,7 @@
 package migrator
 
 import (
+	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 	"go.uber.org/zap"
@@ -19,7 +20,7 @@ func JobCommand() *cobra.Command {
 	var (
 		cnf JobConfig
 	)
-	config.ReadFromEnv(&cnf, nil)
+	config2.ReadFromEnv(&cnf, nil)
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {

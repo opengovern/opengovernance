@@ -3,10 +3,10 @@ package inventory
 import (
 	"context"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"os"
 
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 )
 

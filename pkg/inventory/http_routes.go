@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"io"
 	"math"
 	"mime"
@@ -25,8 +27,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 
 	insight "gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
@@ -42,7 +42,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 

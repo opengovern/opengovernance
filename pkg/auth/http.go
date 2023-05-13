@@ -8,6 +8,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/email"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -20,17 +23,12 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/db"
 
 	"github.com/golang-jwt/jwt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/email"
-
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 )
 

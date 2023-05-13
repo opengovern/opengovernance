@@ -3,6 +3,8 @@ package compliance
 import (
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"net/http"
 	"strconv"
 	"time"
@@ -11,13 +13,11 @@ import (
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	es2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gorm.io/gorm"
 

@@ -2,13 +2,13 @@ package resourcebuilder
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"time"
 
 	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	awsModel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
-	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/helpers"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"

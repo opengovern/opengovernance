@@ -8,6 +8,10 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/email"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	client2 "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
 	"io/ioutil"
 	"net"
@@ -15,22 +19,17 @@ import (
 	"strconv"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/db"
-	"gitlab.com/keibiengine/keibi-engine/pkg/config"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
-
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/db"
+	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/email"
-
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -88,7 +87,7 @@ type ServerConfig struct {
 // the user roles.
 func start(ctx context.Context) error {
 	var conf ServerConfig
-	config.ReadFromEnv(&conf, nil)
+	config2.ReadFromEnv(&conf, nil)
 
 	logger, err := zap.NewProduction()
 	if err != nil {

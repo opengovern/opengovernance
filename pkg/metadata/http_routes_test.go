@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -22,11 +25,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
 	"gorm.io/gorm"
-
-	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
 )
 
 type HttpHandlerSuite struct {

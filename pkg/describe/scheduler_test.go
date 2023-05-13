@@ -3,12 +3,13 @@ package describe
 import (
 	"database/sql"
 	"encoding/json"
+	"github.com/kaytu-io/kaytu-util/pkg/dockertest"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"github.com/kaytu-io/kaytu-util/pkg/queue/mocks"
 	"testing"
 	"time"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -16,8 +17,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
-	mocksqueue "gitlab.com/keibiengine/keibi-engine/pkg/internal/queue/mocks"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -60,12 +59,12 @@ func (s *SchedulerTestSuite) BeforeTest(suiteName, testName string) {
 		db: db,
 		//describeJobQueue:                &mocksqueue.Interface{},
 		//describeJobResultQueue:          &mocksqueue.Interface{},
-		describeCleanupJobQueue:         &mocksqueue.Interface{},
-		complianceReportJobQueue:        &mocksqueue.Interface{},
-		complianceReportJobResultQueue:  &mocksqueue.Interface{},
-		complianceReportCleanupJobQueue: &mocksqueue.Interface{},
-		insightJobQueue:                 &mocksqueue.Interface{},
-		insightJobResultQueue:           &mocksqueue.Interface{},
+		describeCleanupJobQueue:         &mocks.Interface{},
+		complianceReportJobQueue:        &mocks.Interface{},
+		complianceReportJobResultQueue:  &mocks.Interface{},
+		complianceReportCleanupJobQueue: &mocks.Interface{},
+		insightJobQueue:                 &mocks.Interface{},
+		insightJobResultQueue:           &mocks.Interface{},
 		logger:                          logger,
 		deletedSources:                  make(chan string, ConcurrentDeletedSources),
 	}
@@ -273,7 +272,7 @@ func (s *SchedulerTestSuite) TestDescribeResultJobQueue() {
 	require.NoError(err, "marshal job result")
 
 	// Insert a delivery object into the result queue
-	ack := mocksqueue.Acknowledger{}
+	ack := mocks.Acknowledger{}
 	ack.On("Ack", uint64(1), false).Return(error(nil))
 	ch <- amqp.Delivery{
 		Acknowledger: &ack,
@@ -376,7 +375,7 @@ func (s *SchedulerTestSuite) TestDescribeResultJobQueueFailed() {
 	require.NoError(err, "marshal job result")
 
 	// Insert a delivery object into the result queue
-	ack := mocksqueue.Acknowledger{}
+	ack := mocks.Acknowledger{}
 	ack.On("Ack", uint64(1), false).Return(error(nil))
 	ch <- amqp.Delivery{
 		Acknowledger: &ack,
@@ -425,7 +424,7 @@ func (s *SchedulerTestSuite) TestDescribeResultJobQueueInvalid() {
 	}()
 
 	// Insert an invalid delivery object into the result queue
-	ack := mocksqueue.Acknowledger{}
+	ack := mocks.Acknowledger{}
 	ack.On("Nack", uint64(1), false, false).Return(error(nil))
 	ch <- amqp.Delivery{
 		Acknowledger: &ack,
@@ -440,7 +439,7 @@ func (s *SchedulerTestSuite) TestDescribeResultJobQueueInvalid() {
 
 func (s *SchedulerTestSuite) TestDescribeCleanup_NoJob() {
 	s.cleanupDescribeJob() // Shouldn't fail
-	s.Scheduler.describeCleanupJobQueue.(*mocksqueue.Interface).AssertNotCalled(s.T(), "Publish", mock.Anything)
+	s.Scheduler.describeCleanupJobQueue.(*mocks.Interface).AssertNotCalled(s.T(), "Publish", mock.Anything)
 }
 
 func (s *SchedulerTestSuite) TestDescribeCleanup_NothingToClean() {
@@ -490,7 +489,7 @@ func (s *SchedulerTestSuite) TestDescribeCleanup_NothingToClean() {
 	s.cleanupDescribeJob()
 
 	// Nothing should be deleted
-	s.Scheduler.describeCleanupJobQueue.(*mocksqueue.Interface).AssertNotCalled(s.T(), "Publish", mock.Anything)
+	s.Scheduler.describeCleanupJobQueue.(*mocks.Interface).AssertNotCalled(s.T(), "Publish", mock.Anything)
 
 	sources, err := s.db.ListDescribeSourceJobs(source.ID)
 	require.NoError(err, "list describe source jobs")
@@ -551,7 +550,7 @@ func (s *SchedulerTestSuite) TestDescribeCleanup_NothingReadyToClean() {
 	s.cleanupDescribeJob()
 
 	// Nothing should be deleted
-	s.Scheduler.describeCleanupJobQueue.(*mocksqueue.Interface).AssertNotCalled(s.T(), "Publish", mock.Anything)
+	s.Scheduler.describeCleanupJobQueue.(*mocks.Interface).AssertNotCalled(s.T(), "Publish", mock.Anything)
 
 	sources, err := s.db.ListDescribeSourceJobs(source.ID)
 	require.NoError(err, "list describe source jobs")
@@ -653,7 +652,7 @@ func (s *SchedulerTestSuite) TestDescribeCleanup_DeleteSource() {
 func (s *SchedulerTestSuite) TestDescribeCleanup() {
 	require := s.Require()
 
-	s.Scheduler.describeCleanupJobQueue.(*mocksqueue.Interface).On("Publish", mock.Anything).Return(error(nil))
+	s.Scheduler.describeCleanupJobQueue.(*mocks.Interface).On("Publish", mock.Anything).Return(error(nil))
 
 	// Create a fake source with jobs
 	// There are more jobs than 5 but they are not all completed
@@ -724,19 +723,19 @@ func (s *SchedulerTestSuite) TestDescribeCleanup() {
 	err := s.db.CreateSource(&source)
 	require.NoError(err, "create source")
 
-	s.Scheduler.describeCleanupJobQueue.(*mocksqueue.Interface).On("Len", mock.Anything).Return(0, nil)
-	s.Scheduler.describeCleanupJobQueue.(*mocksqueue.Interface).On("Name", mock.Anything).Return("temp")
+	s.Scheduler.describeCleanupJobQueue.(*mocks.Interface).On("Len", mock.Anything).Return(0, nil)
+	s.Scheduler.describeCleanupJobQueue.(*mocks.Interface).On("Name", mock.Anything).Return("temp")
 
 	s.cleanupDescribeJob()
 
 	// Cleanup should be called
-	s.Scheduler.describeCleanupJobQueue.(*mocksqueue.Interface).
+	s.Scheduler.describeCleanupJobQueue.(*mocks.Interface).
 		AssertCalled(s.T(), "Publish", DescribeCleanupJob{
 			JobType:      DescribeCleanupJobTypeInclusiveDelete,
 			JobIDs:       []uint{1},
 			ResourceType: "resource-type-1",
 		})
-	s.Scheduler.describeCleanupJobQueue.(*mocksqueue.Interface).
+	s.Scheduler.describeCleanupJobQueue.(*mocks.Interface).
 		AssertCalled(s.T(), "Publish", DescribeCleanupJob{
 			JobType:      DescribeCleanupJobTypeInclusiveDelete,
 			JobIDs:       []uint{2},

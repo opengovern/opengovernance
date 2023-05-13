@@ -1,11 +1,11 @@
 package metadata
 
 import (
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/internal/src"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"

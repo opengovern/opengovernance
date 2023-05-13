@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/config"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 )
 
@@ -30,7 +31,7 @@ func WorkerCommand() *cobra.Command {
 		id  string
 		cnf WorkerConfig
 	)
-	config.ReadFromEnv(&cnf, nil)
+	config2.ReadFromEnv(&cnf, nil)
 
 	cmd := &cobra.Command{
 		PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -91,7 +92,7 @@ func ServerCommand() *cobra.Command {
 
 func startHttpServer(ctx context.Context) error {
 	var conf ServerConfig
-	config.ReadFromEnv(&conf, nil)
+	config2.ReadFromEnv(&conf, nil)
 
 	logger, err := zap.NewProduction()
 	if err != nil {

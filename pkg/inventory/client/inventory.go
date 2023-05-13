@@ -2,12 +2,11 @@ package client
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"net/http"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 )
 
 type InventoryServiceClient interface {

@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"strconv"
 	"strings"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/queue"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/go-redis/redis/v8"
@@ -20,7 +21,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/proto/src/golang"
-	"gitlab.com/keibiengine/keibi-engine/pkg/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 	"go.uber.org/zap"
