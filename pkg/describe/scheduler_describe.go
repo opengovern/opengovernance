@@ -24,13 +24,24 @@ import (
 const (
 	MaxTriggerPerMinute           = 5000
 	MaxTriggerPerAccountPerMinute = 60
+	MaxConcurrentCall             = 30
 )
+
+type CloudNativeCall struct {
+	dr DescribeResourceJob
+	ds *DescribeSourceJob
+}
 
 func (s Scheduler) RunDescribeJobScheduler() {
 	s.logger.Info("Scheduling describe jobs on a timer")
 
 	t := time.NewTicker(JobSchedulingInterval)
 	defer t.Stop()
+
+	s.cloudNativeCallChannel = make(chan CloudNativeCall, MaxConcurrentCall)
+	for i := 0; i < MaxConcurrentCall; i++ {
+		go s.cloudNativeCaller()
+	}
 
 	for ; ; <-t.C {
 		s.scheduleDescribeJob()
@@ -100,19 +111,30 @@ func (s Scheduler) scheduleDescribeJob() {
 			parentIdExceptionList = append(parentIdExceptionList, dr.ParentJobID)
 			continue
 		}
-
-		err = s.enqueueCloudNativeDescribeJob(dr, ds)
-		if err != nil {
-			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dr.ID))
-			DescribeJobsCount.WithLabelValues("failure").Inc()
-			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-			return
-		}
 		accountTriggerCount[ds.SourceID.String()]++
-		DescribeResourceJobsCount.WithLabelValues("successful").Inc()
+
+		s.cloudNativeCallChannel <- CloudNativeCall{
+			dr: dr,
+			ds: ds,
+		}
 	}
 
 	DescribeJobsCount.WithLabelValues("successful").Inc()
+}
+
+func (s Scheduler) cloudNativeCaller() {
+	var c CloudNativeCall
+	for {
+		c = <-s.cloudNativeCallChannel
+		err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds)
+		if err != nil {
+			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dr.ID))
+			DescribeJobsCount.WithLabelValues("failure").Inc()
+			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+			continue
+		}
+		DescribeResourceJobsCount.WithLabelValues("successful").Inc()
+	}
 }
 
 func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
