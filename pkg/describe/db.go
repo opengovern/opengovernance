@@ -611,7 +611,16 @@ func (db Database) UpdateDescribeResourceJobsTimedOut(describeIntervalHours int6
 		Model(&DescribeResourceJob{}).
 		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
 		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
-		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job didn't get a chance to run"})
+		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	tx = db.orm.
+		Model(&DescribeResourceJob{}).
+		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
+		Where("status IN ?", []string{string(api.DescribeResourceJobCreated)}).
+		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted"})
 	if tx.Error != nil {
 		return tx.Error
 	}

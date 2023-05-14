@@ -25,6 +25,10 @@ if [[ $SERVICES == *"describe-scheduler"* ]]; then
     podman build -f  docker/DescribeSchedulerDockerfile . -t registry.digitalocean.com/keibi/describe-scheduler:$SVER_VERSION
     podman push registry.digitalocean.com/keibi/describe-scheduler:$SVER_VERSION
 fi
+if [[ $SERVICES == *"hopper"* ]]; then
+    podman build -f  docker/HopperDockerfile . -t registry.digitalocean.com/keibi/hopper:$SVER_VERSION
+    podman push registry.digitalocean.com/keibi/hopper:$SVER_VERSION
+fi
 if [[ $SERVICES == *"insight-worker"* ]]; then
     podman build -f  docker/InsightWorkerDockerfile . -t registry.digitalocean.com/keibi/insight-worker:$SVER_VERSION
     podman push registry.digitalocean.com/keibi/insight-worker:$SVER_VERSION
