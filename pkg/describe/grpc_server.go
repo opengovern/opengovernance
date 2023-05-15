@@ -50,82 +50,84 @@ func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProdu
 }
 
 func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources *golang.AWSResources) (*golang.ResponseOK, error) {
-	startTime := time.Now().UnixMilli()
-	defer func() {
-		ResourceBatchProcessLatency.WithLabelValues("aws").Observe(float64(time.Now().UnixMilli() - startTime))
-	}()
-
-	var err error
-	var resourceJobId uint64
-
-	md, ok := metadata.FromIncomingContext(ctx)
-	if ok && md.Get("resource-job-id") != nil {
-		resourceJobIdStr := md.Get("resource-job-id")[0]
-		resourceJobId, err = strconv.ParseUint(resourceJobIdStr, 10, 64)
-		if err != nil {
-			StreamFailureCount.WithLabelValues("aws").Inc()
-			s.logger.Error("failed to parse resource job id:", zap.Error(err))
-			return nil, fmt.Errorf("failed to parse resource job id: %v", err)
-		}
-		err = s.db.UpdateDescribeResourceJobToInProgress(uint(resourceJobId)) //TODO this is called too much
-		if err != nil {
-			StreamFailureCount.WithLabelValues("aws").Inc()
-			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
-		}
-	}
-
-	var msgs []kafka.Doc
-	for _, resource := range resources.GetResources() {
-		var description any
-		err := json.Unmarshal([]byte(resource.DescriptionJson), &description)
-		if err != nil {
-			ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
-			s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
-			return nil, err
-		}
-		kafkaResource := es.Resource{
-			ID:            resource.UniqueId,
-			ARN:           resource.Arn,
-			Name:          resource.Name,
-			SourceType:    source.CloudAWS,
-			ResourceType:  strings.ToLower(resource.Job.ResourceType),
-			ResourceGroup: "",
-			Location:      resource.Region,
-			SourceID:      resource.Job.SourceId,
-			ResourceJobID: uint(resource.Job.JobId),
-			SourceJobID:   uint(resource.Job.ParentJobId),
-			ScheduleJobID: uint(resource.Job.ScheduleJobId),
-			CreatedAt:     resource.Job.DescribedAt,
-			Description:   description,
-			Metadata:      resource.Metadata,
-		}
-		lookupResource := es.LookupResource{
-			ResourceID:    resource.UniqueId,
-			Name:          resource.Name,
-			SourceType:    source.CloudAWS,
-			ResourceType:  strings.ToLower(resource.Job.ResourceType),
-			ServiceName:   cloudservice.ServiceNameByResourceType(resource.Job.ResourceType),
-			Category:      cloudservice.CategoryByResourceType(resource.Job.ResourceType),
-			ResourceGroup: "",
-			Location:      resource.Region,
-			SourceID:      resource.Job.SourceId,
-			ResourceJobID: uint(resource.Job.JobId),
-			SourceJobID:   uint(resource.Job.ParentJobId),
-			ScheduleJobID: uint(resource.Job.ScheduleJobId),
-			CreatedAt:     resource.Job.DescribedAt,
-			IsCommon:      cloudservice.IsCommonByResourceType(resource.Job.ResourceType),
-			Tags:          resource.Tags,
-		}
-		msgs = append(msgs, kafkaResource)
-		msgs = append(msgs, lookupResource)
-		ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
-	}
-
-	if err := kafka.DoSend(s.producer, s.topic, 1, msgs, s.logger); err != nil {
-		StreamFailureCount.WithLabelValues("aws").Inc()
-		return nil, fmt.Errorf("send to kafka: %w", err)
-	}
 	return &golang.ResponseOK{}, nil
+	//
+	//startTime := time.Now().UnixMilli()
+	//defer func() {
+	//	ResourceBatchProcessLatency.WithLabelValues("aws").Observe(float64(time.Now().UnixMilli() - startTime))
+	//}()
+	//
+	//var err error
+	//var resourceJobId uint64
+	//
+	//md, ok := metadata.FromIncomingContext(ctx)
+	//if ok && md.Get("resource-job-id") != nil {
+	//	resourceJobIdStr := md.Get("resource-job-id")[0]
+	//	resourceJobId, err = strconv.ParseUint(resourceJobIdStr, 10, 64)
+	//	if err != nil {
+	//		StreamFailureCount.WithLabelValues("aws").Inc()
+	//		s.logger.Error("failed to parse resource job id:", zap.Error(err))
+	//		return nil, fmt.Errorf("failed to parse resource job id: %v", err)
+	//	}
+	//	err = s.db.UpdateDescribeResourceJobToInProgress(uint(resourceJobId)) //TODO this is called too much
+	//	if err != nil {
+	//		StreamFailureCount.WithLabelValues("aws").Inc()
+	//		s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
+	//	}
+	//}
+	//
+	//var msgs []kafka.Doc
+	//for _, resource := range resources.GetResources() {
+	//	var description any
+	//	err := json.Unmarshal([]byte(resource.DescriptionJson), &description)
+	//	if err != nil {
+	//		ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
+	//		s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
+	//		return nil, err
+	//	}
+	//	kafkaResource := es.Resource{
+	//		ID:            resource.UniqueId,
+	//		ARN:           resource.Arn,
+	//		Name:          resource.Name,
+	//		SourceType:    source.CloudAWS,
+	//		ResourceType:  strings.ToLower(resource.Job.ResourceType),
+	//		ResourceGroup: "",
+	//		Location:      resource.Region,
+	//		SourceID:      resource.Job.SourceId,
+	//		ResourceJobID: uint(resource.Job.JobId),
+	//		SourceJobID:   uint(resource.Job.ParentJobId),
+	//		ScheduleJobID: uint(resource.Job.ScheduleJobId),
+	//		CreatedAt:     resource.Job.DescribedAt,
+	//		Description:   description,
+	//		Metadata:      resource.Metadata,
+	//	}
+	//	lookupResource := es.LookupResource{
+	//		ResourceID:    resource.UniqueId,
+	//		Name:          resource.Name,
+	//		SourceType:    source.CloudAWS,
+	//		ResourceType:  strings.ToLower(resource.Job.ResourceType),
+	//		ServiceName:   cloudservice.ServiceNameByResourceType(resource.Job.ResourceType),
+	//		Category:      cloudservice.CategoryByResourceType(resource.Job.ResourceType),
+	//		ResourceGroup: "",
+	//		Location:      resource.Region,
+	//		SourceID:      resource.Job.SourceId,
+	//		ResourceJobID: uint(resource.Job.JobId),
+	//		SourceJobID:   uint(resource.Job.ParentJobId),
+	//		ScheduleJobID: uint(resource.Job.ScheduleJobId),
+	//		CreatedAt:     resource.Job.DescribedAt,
+	//		IsCommon:      cloudservice.IsCommonByResourceType(resource.Job.ResourceType),
+	//		Tags:          resource.Tags,
+	//	}
+	//	msgs = append(msgs, kafkaResource)
+	//	msgs = append(msgs, lookupResource)
+	//	ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
+	//}
+	//
+	//if err := kafka.DoSend(s.producer, s.topic, 1, msgs, s.logger); err != nil {
+	//	StreamFailureCount.WithLabelValues("aws").Inc()
+	//	return nil, fmt.Errorf("send to kafka: %w", err)
+	//}
+	//return &golang.ResponseOK{}, nil
 }
 
 func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resources *golang.AzureResources) (*golang.ResponseOK, error) {
