@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"io"
 	"math/rand"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
@@ -294,7 +295,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *Des
 	httpClient := &http.Client{
 		Timeout: 1 * time.Minute,
 	}
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s", LambdaFuncsBaseURL, strings.ToLower(ds.SourceType.String())), bytes.NewBuffer(lambdaRequest))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/kaytu-%s-describer", LambdaFuncsBaseURL, strings.ToLower(ds.SourceType.String())), bytes.NewBuffer(lambdaRequest))
 	if err != nil {
 		return fmt.Errorf("failed to create http request due to %v", err)
 	}
