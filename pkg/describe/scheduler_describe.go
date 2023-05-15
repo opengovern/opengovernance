@@ -25,7 +25,7 @@ const (
 	MaxTriggerPerMinute           = 10000
 	MaxTriggerPerAccountPerMinute = 60
 	MaxQueued                     = 10000
-	MaxConcurrentCall             = 100
+	MaxConcurrentCall             = 1000
 )
 
 type CloudNativeCall struct {
