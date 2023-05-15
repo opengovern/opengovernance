@@ -78,9 +78,6 @@ func (s Scheduler) scheduleDescribeJob() {
 		return
 	}
 
-	accountTriggerCount := map[string]int{}
-	var parentIdExceptionList []uint
-
 	count, err := s.db.CountQueuedDescribeResourceJobs()
 	if err != nil {
 		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeResourceJobs"), zap.Error(err))
@@ -99,6 +96,12 @@ func (s Scheduler) scheduleDescribeJob() {
 		return
 	}
 
+	rand.Shuffle(len(drs), func(i, j int) {
+		drs[i], drs[j] = drs[j], drs[i]
+	})
+
+	var parentIdExceptionList []uint
+	accountTriggerCount := map[string]int{}
 	parentMap := map[uint]*DescribeSourceJob{}
 	srcMap := map[uint]*Source{}
 
@@ -125,7 +128,7 @@ func (s Scheduler) scheduleDescribeJob() {
 				s.logger.Error("failed to get describe source job", zap.String("spot", "GetDescribeSourceJob"), zap.Error(err), zap.Uint("jobID", dr.ID))
 				DescribeJobsCount.WithLabelValues("failure").Inc()
 				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-				return
+				continue
 			}
 
 			src, err = s.db.GetSourceByUUID(ds.SourceID)
@@ -133,7 +136,7 @@ func (s Scheduler) scheduleDescribeJob() {
 				s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dr.ID))
 				DescribeJobsCount.WithLabelValues("failure").Inc()
 				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-				return
+				continue
 			}
 
 			srcMap[dr.ParentJobID] = src
