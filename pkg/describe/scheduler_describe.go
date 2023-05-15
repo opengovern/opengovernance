@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"io"
 	"math/rand"
@@ -22,7 +23,6 @@ import (
 )
 
 const (
-	MaxTriggerPerMinute           = 10000
 	MaxTriggerPerAccountPerMinute = 60
 	MaxQueued                     = 10000
 	MaxConcurrentCall             = 1500
@@ -37,16 +37,112 @@ type CloudNativeCall struct {
 func (s Scheduler) RunDescribeJobScheduler() {
 	s.logger.Info("Scheduling describe jobs on a timer")
 
-	t := time.NewTicker(JobSchedulingInterval)
+	t := time.NewTicker(1 * time.Minute)
 	defer t.Stop()
 
-	s.cloudNativeCallChannel = make(chan CloudNativeCall, MaxConcurrentCall*2)
-	for i := 0; i < MaxConcurrentCall; i++ {
-		go s.cloudNativeCaller()
-	}
-
+	go s.RunDescribeResourceJobs()
 	for ; ; <-t.C {
 		s.scheduleDescribeJob()
+	}
+}
+
+func (s Scheduler) RunDescribeResourceJobCycle() error {
+	count, err := s.db.CountQueuedDescribeResourceJobs()
+	if err != nil {
+		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeResourceJobs"), zap.Error(err))
+		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+		return err
+	}
+
+	if count > MaxQueued {
+		return errors.New("queue is full")
+	}
+
+	drs, err := s.db.ListRandomCreatedDescribeResourceJobs(MaxConcurrentCall)
+	if err != nil {
+		s.logger.Error("failed to fetch describe resource jobs", zap.String("spot", "ListRandomCreatedDescribeResourceJobs"), zap.Error(err))
+		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+		return err
+	}
+
+	if len(drs) == 0 {
+		return errors.New("no job to run")
+	}
+
+	var parentIdExceptionList []uint
+	accountTriggerCount := map[string]int{}
+	parentMap := map[uint]*DescribeSourceJob{}
+	srcMap := map[uint]*Source{}
+
+	wp := concurrency.WorkPool{}
+	for _, dr := range drs {
+		ignore := false
+		for _, ex := range parentIdExceptionList {
+			if dr.ParentJobID == ex {
+				ignore = true
+			}
+		}
+
+		if ignore {
+			continue
+		}
+
+		var ds *DescribeSourceJob
+		var src *Source
+		if v, ok := parentMap[dr.ParentJobID]; ok {
+			ds = v
+			src = srcMap[dr.ParentJobID]
+		} else {
+			ds, err = s.db.GetDescribeSourceJob(dr.ParentJobID)
+			if err != nil {
+				s.logger.Error("failed to get describe source job", zap.String("spot", "GetDescribeSourceJob"), zap.Error(err), zap.Uint("jobID", dr.ID))
+				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+				return err
+			}
+
+			src, err = s.db.GetSourceByUUID(ds.SourceID)
+			if err != nil {
+				s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dr.ID))
+				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+				return err
+			}
+
+			srcMap[dr.ParentJobID] = src
+			parentMap[dr.ParentJobID] = ds
+		}
+
+		if accountTriggerCount[ds.SourceID.String()] > MaxTriggerPerAccountPerMinute {
+			parentIdExceptionList = append(parentIdExceptionList, dr.ParentJobID)
+			continue
+		}
+		accountTriggerCount[ds.SourceID.String()]++
+
+		c := CloudNativeCall{
+			dr:  dr,
+			ds:  ds,
+			src: src,
+		}
+		wp.AddJob(func() (interface{}, error) {
+			err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, c.src, s.WorkspaceName)
+			if err != nil {
+				s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dr.ID))
+				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+				return nil, err
+			}
+			DescribeResourceJobsCount.WithLabelValues("successful").Inc()
+			return nil, nil
+		})
+	}
+
+	wp.Run()
+	return nil
+}
+
+func (s Scheduler) RunDescribeResourceJobs() {
+	for {
+		if err := s.RunDescribeResourceJobCycle(); err != nil {
+			time.Sleep(5 * time.Second)
+		}
 	}
 }
 
@@ -78,100 +174,7 @@ func (s Scheduler) scheduleDescribeJob() {
 		return
 	}
 
-	count, err := s.db.CountQueuedDescribeResourceJobs()
-	if err != nil {
-		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeResourceJobs"), zap.Error(err))
-		DescribeJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
-	if count > MaxQueued {
-		return
-	}
-
-	drs, err := s.db.ListRandomCreatedDescribeResourceJobs(MaxTriggerPerMinute - int(count))
-	if err != nil {
-		s.logger.Error("failed to fetch describe resource jobs", zap.String("spot", "ListRandomCreatedDescribeResourceJobs"), zap.Error(err))
-		DescribeJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
-	rand.Shuffle(len(drs), func(i, j int) {
-		drs[i], drs[j] = drs[j], drs[i]
-	})
-
-	var parentIdExceptionList []uint
-	accountTriggerCount := map[string]int{}
-	parentMap := map[uint]*DescribeSourceJob{}
-	srcMap := map[uint]*Source{}
-
-	for _, dr := range drs {
-		ignore := false
-		for _, ex := range parentIdExceptionList {
-			if dr.ParentJobID == ex {
-				ignore = true
-			}
-		}
-
-		if ignore {
-			continue
-		}
-
-		var ds *DescribeSourceJob
-		var src *Source
-		if v, ok := parentMap[dr.ParentJobID]; ok {
-			ds = v
-			src = srcMap[dr.ParentJobID]
-		} else {
-			ds, err = s.db.GetDescribeSourceJob(dr.ParentJobID)
-			if err != nil {
-				s.logger.Error("failed to get describe source job", zap.String("spot", "GetDescribeSourceJob"), zap.Error(err), zap.Uint("jobID", dr.ID))
-				DescribeJobsCount.WithLabelValues("failure").Inc()
-				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-				continue
-			}
-
-			src, err = s.db.GetSourceByUUID(ds.SourceID)
-			if err != nil {
-				s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dr.ID))
-				DescribeJobsCount.WithLabelValues("failure").Inc()
-				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-				continue
-			}
-
-			srcMap[dr.ParentJobID] = src
-			parentMap[dr.ParentJobID] = ds
-		}
-
-		if accountTriggerCount[ds.SourceID.String()] > MaxTriggerPerAccountPerMinute {
-			parentIdExceptionList = append(parentIdExceptionList, dr.ParentJobID)
-			continue
-		}
-		accountTriggerCount[ds.SourceID.String()]++
-
-		s.cloudNativeCallChannel <- CloudNativeCall{
-			dr:  dr,
-			ds:  ds,
-			src: src,
-		}
-	}
-
 	DescribeJobsCount.WithLabelValues("successful").Inc()
-}
-
-func (s Scheduler) cloudNativeCaller() {
-	var c CloudNativeCall
-	for {
-		c = <-s.cloudNativeCallChannel
-		err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, c.src, s.WorkspaceName)
-		if err != nil {
-			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dr.ID))
-			DescribeJobsCount.WithLabelValues("failure").Inc()
-			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-			continue
-		}
-		DescribeResourceJobsCount.WithLabelValues("successful").Inc()
-	}
 }
 
 func (s Scheduler) describeConnection(connection Source, scheduled bool) error {

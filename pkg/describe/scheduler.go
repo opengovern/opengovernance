@@ -166,8 +166,7 @@ type Scheduler struct {
 	cloudNativeAPIBaseURL string
 	cloudNativeAPIAuthKey string
 
-	cloudNativeCallChannel chan CloudNativeCall
-	WorkspaceName          string
+	WorkspaceName string
 }
 
 func initRabbitQueue(queueName string) (queue.Interface, error) {
