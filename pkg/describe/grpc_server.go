@@ -71,9 +71,9 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 	}()
 
 	//TODO-Saleh expensive operation on psql
-	//if err := s.UpdateInProgress(ctx); err != nil {
-	//	return nil, err
-	//}
+	if err := s.UpdateInProgress(ctx); err != nil {
+		return nil, err
+	}
 
 	var msgs []kafka.Doc
 	for _, resource := range resources.GetResources() {
@@ -136,9 +136,9 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 	}()
 
 	//TODO-Saleh expensive operation on psql
-	//if err := s.UpdateInProgress(ctx); err != nil {
-	//	return nil, err
-	//}
+	if err := s.UpdateInProgress(ctx); err != nil {
+		return nil, err
+	}
 	var msgs []kafka.Doc
 	for _, resource := range resources.GetResources() {
 		var description any
