@@ -1625,7 +1625,7 @@ func newKafkaProducer(brokers []string) (sarama.SyncProducer, error) {
 	cfg.Producer.Retry.Max = 3
 	cfg.Producer.RequiredAcks = sarama.WaitForAll
 	cfg.Producer.Return.Successes = true
-	cfg.Producer.Partitioner = sarama.NewRoundRobinPartitioner
+	cfg.Producer.Partitioner = sarama.NewRandomPartitioner
 	cfg.Version = sarama.V2_1_0_0
 
 	producer, err := sarama.NewSyncProducer(strings.Split(KafkaService, ","), cfg)
