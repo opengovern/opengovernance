@@ -22,10 +22,10 @@ import (
 )
 
 const (
-	MaxTriggerPerMinute           = 5000
+	MaxTriggerPerMinute           = 10000
 	MaxTriggerPerAccountPerMinute = 60
-	MaxQueued                     = 5000
-	MaxConcurrentCall             = 30
+	MaxQueued                     = 10000
+	MaxConcurrentCall             = 100
 )
 
 type CloudNativeCall struct {
