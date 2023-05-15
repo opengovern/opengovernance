@@ -167,6 +167,7 @@ type Scheduler struct {
 	cloudNativeAPIAuthKey string
 
 	cloudNativeCallChannel chan CloudNativeCall
+	WorkspaceName          string
 }
 
 func initRabbitQueue(queueName string) (queue.Interface, error) {
@@ -427,6 +428,14 @@ func InitializeScheduler(
 
 	describeServer := NewDescribeServer(s.db, s.rdb, kafkaProducer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.logger)
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
+
+	workspace, err := s.workspaceClient.GetByID(&httpclient.Context{
+		UserRole: api2.EditorRole,
+	}, CurrentWorkspaceID)
+	if err != nil {
+		return nil, err
+	}
+	s.WorkspaceName = workspace.Name
 
 	return s, nil
 }

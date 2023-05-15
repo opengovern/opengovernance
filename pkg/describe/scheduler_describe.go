@@ -29,8 +29,9 @@ const (
 )
 
 type CloudNativeCall struct {
-	dr DescribeResourceJob
-	ds *DescribeSourceJob
+	dr  DescribeResourceJob
+	ds  *DescribeSourceJob
+	src *Source
 }
 
 func (s Scheduler) RunDescribeJobScheduler() {
@@ -98,6 +99,9 @@ func (s Scheduler) scheduleDescribeJob() {
 		return
 	}
 
+	parentMap := map[uint]*DescribeSourceJob{}
+	srcMap := map[uint]*Source{}
+
 	for _, dr := range drs {
 		ignore := false
 		for _, ex := range parentIdExceptionList {
@@ -110,12 +114,30 @@ func (s Scheduler) scheduleDescribeJob() {
 			continue
 		}
 
-		ds, err := s.db.GetDescribeSourceJob(dr.ParentJobID)
-		if err != nil {
-			s.logger.Error("failed to get describe source job", zap.String("spot", "GetDescribeSourceJob"), zap.Error(err), zap.Uint("jobID", dr.ID))
-			DescribeJobsCount.WithLabelValues("failure").Inc()
-			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-			return
+		var ds *DescribeSourceJob
+		var src *Source
+		if v, ok := parentMap[dr.ParentJobID]; ok {
+			ds = v
+			src = srcMap[dr.ParentJobID]
+		} else {
+			ds, err = s.db.GetDescribeSourceJob(dr.ParentJobID)
+			if err != nil {
+				s.logger.Error("failed to get describe source job", zap.String("spot", "GetDescribeSourceJob"), zap.Error(err), zap.Uint("jobID", dr.ID))
+				DescribeJobsCount.WithLabelValues("failure").Inc()
+				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+				return
+			}
+
+			src, err = s.db.GetSourceByUUID(ds.SourceID)
+			if err != nil {
+				s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dr.ID))
+				DescribeJobsCount.WithLabelValues("failure").Inc()
+				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+				return
+			}
+
+			srcMap[dr.ParentJobID] = src
+			parentMap[dr.ParentJobID] = ds
 		}
 
 		if accountTriggerCount[ds.SourceID.String()] > MaxTriggerPerAccountPerMinute {
@@ -125,8 +147,9 @@ func (s Scheduler) scheduleDescribeJob() {
 		accountTriggerCount[ds.SourceID.String()]++
 
 		s.cloudNativeCallChannel <- CloudNativeCall{
-			dr: dr,
-			ds: ds,
+			dr:  dr,
+			ds:  ds,
+			src: src,
 		}
 	}
 
@@ -137,7 +160,7 @@ func (s Scheduler) cloudNativeCaller() {
 	var c CloudNativeCall
 	for {
 		c = <-s.cloudNativeCallChannel
-		err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds)
+		err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, c.src, s.WorkspaceName)
 		if err != nil {
 			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dr.ID))
 			DescribeJobsCount.WithLabelValues("failure").Inc()
@@ -224,7 +247,7 @@ func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.Des
 	return daj
 }
 
-func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *DescribeSourceJob) error {
+func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *DescribeSourceJob, src *Source, workspaceName string) error {
 	s.logger.Debug("enqueueCloudNativeDescribeJob",
 		zap.Uint("sourceJobID", ds.ID),
 		zap.Uint("jobID", dr.ID),
@@ -232,28 +255,9 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *Des
 		zap.String("resourceType", dr.ResourceType),
 	)
 
-	if ds.Status == api.DescribeSourceJobCreated {
-		err := s.db.UpdateDescribeSourceJob(ds.ID, api.DescribeSourceJobInProgress)
-		if err != nil {
-			return err
-		}
-	}
-
-	src, err := s.db.GetSourceByUUID(ds.SourceID)
-	if err != nil {
-		return err
-	}
-
-	workspace, err := s.workspaceClient.GetByID(&httpclient.Context{
-		UserRole: api2.EditorRole,
-	}, CurrentWorkspaceID)
-	if err != nil {
-		return err
-	}
-
 	input := LambdaDescribeWorkerInput{
 		WorkspaceId:      CurrentWorkspaceID,
-		WorkspaceName:    workspace.Name,
+		WorkspaceName:    workspaceName,
 		DescribeEndpoint: s.describeEndpoint,
 		KeyARN:           s.keyARN,
 		KeyRegion:        s.keyRegion,
