@@ -489,6 +489,9 @@ func (s *Scheduler) Run() error {
 		s.RunDescribeJobScheduler()
 	})
 	EnsureRunGoroutin(func() {
+		s.RunDescribeResourceJobs()
+	})
+	EnsureRunGoroutin(func() {
 		s.RunDescribeJobCompletionUpdater()
 	})
 	EnsureRunGoroutin(func() {

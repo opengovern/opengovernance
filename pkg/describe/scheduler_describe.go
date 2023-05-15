@@ -40,7 +40,6 @@ func (s Scheduler) RunDescribeJobScheduler() {
 	t := time.NewTicker(1 * time.Minute)
 	defer t.Stop()
 
-	go s.RunDescribeResourceJobs()
 	for ; ; <-t.C {
 		s.scheduleDescribeJob()
 	}
@@ -55,6 +54,7 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 	}
 
 	if count > MaxQueued {
+		s.logger.Error("queue is full", zap.String("spot", "count > MaxQueued"), zap.Error(err))
 		return errors.New("queue is full")
 	}
 
@@ -68,13 +68,15 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 	if len(drs) == 0 {
 		return errors.New("no job to run")
 	}
+	s.logger.Info("preparing resource jobs to run", zap.Int("length", len(drs)))
 
 	var parentIdExceptionList []uint
 	accountTriggerCount := map[string]int{}
 	parentMap := map[uint]*DescribeSourceJob{}
 	srcMap := map[uint]*Source{}
 
-	wp := concurrency.WorkPool{}
+	wp := concurrency.NewWorkPool(MaxConcurrentCall)
+	jobCount := 0
 	for _, dr := range drs {
 		ignore := false
 		for _, ex := range parentIdExceptionList {
@@ -132,17 +134,21 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 			DescribeResourceJobsCount.WithLabelValues("successful").Inc()
 			return nil, nil
 		})
+		jobCount++
 	}
 
+	s.logger.Info("running jobs on workpool", zap.Int("length", jobCount))
 	wp.Run()
 	return nil
 }
 
 func (s Scheduler) RunDescribeResourceJobs() {
+
 	for {
 		if err := s.RunDescribeResourceJobCycle(); err != nil {
 			time.Sleep(5 * time.Second)
 		}
+		time.Sleep(1 * time.Second)
 	}
 }
 
