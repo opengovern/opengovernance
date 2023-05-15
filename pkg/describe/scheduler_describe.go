@@ -39,7 +39,7 @@ func (s Scheduler) RunDescribeJobScheduler() {
 	t := time.NewTicker(JobSchedulingInterval)
 	defer t.Stop()
 
-	s.cloudNativeCallChannel = make(chan CloudNativeCall, MaxConcurrentCall)
+	s.cloudNativeCallChannel = make(chan CloudNativeCall, MaxConcurrentCall*2)
 	for i := 0; i < MaxConcurrentCall; i++ {
 		go s.cloudNativeCaller()
 	}
