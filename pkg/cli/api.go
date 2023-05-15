@@ -19,15 +19,22 @@ import (
 
 func GetConfig() (string, error) {
 	home := os.Getenv("HOME")
-	accessTokenByte, err := os.ReadFile(home + "/.kaytu/config.json")
+	data, err := os.ReadFile(home + "/.kaytu/config.json")
 	if err != nil {
 		return "", fmt.Errorf("[getConfig] : Please log in first.")
 	}
 
 	var config Config
-	err = json.Unmarshal(accessTokenByte, &config)
+	err = json.Unmarshal(data, &config)
 	if err != nil {
 		return "", fmt.Errorf("[getConfig] : %v", err)
+	}
+	checkEXP, err := CheckExpirationTime(config.AccessToken)
+	if err != nil {
+		return "", err
+	}
+	if checkEXP == true {
+		return "", fmt.Errorf("accessToken was expire please loging againe ")
 	}
 	return config.AccessToken, nil
 }

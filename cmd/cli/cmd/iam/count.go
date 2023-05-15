@@ -1,10 +1,9 @@
-package onboard
+package cmd
 
 import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
-	_ "gitlab.com/keibiengine/keibi-engine/pkg/onboard"
 	"log"
 	"net/http"
 )
@@ -22,7 +21,7 @@ var Count = &cobra.Command{
 		return cmd.Help()
 	},
 }
-var CountConnections = &cobra.Command{
+var CountConnectionsCmd = &cobra.Command{
 	Use:   "connections",
 	Short: "show the count connections ",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -66,13 +65,44 @@ var CountConnections = &cobra.Command{
 		return nil
 	},
 }
+var countSourceCmd = &cobra.Command{
+	Use:   "source",
+	Short: "it will return a count of sources ",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		accessToken, err := cli.GetConfig()
+		if err != nil {
+			return err
+		}
+		checkEXP, err := cli.CheckExpirationTime(accessToken)
+		if err != nil {
+			return err
+		}
+		if checkEXP == true {
+			fmt.Println("Your access token was expire please login again. ")
+			return nil
+		}
+		count, statusCode, err := cli.OnboardCountSources(accessToken, connectorCount)
+		if err != nil {
+			return fmt.Errorf("ERROR: status: %v \n %v ", statusCode, err)
+		}
+		if statusCode == http.StatusOK {
+			fmt.Printf("OK\n%v", count)
+		}
+		return nil
+	},
+}
 var connectorsNamesCountConnection []string
 var healthCountConnection string
 var stateCountConnection string
+var connectorCount string
 
 func init() {
-	Count.AddCommand(CountConnections)
-	CountConnections.Flags().StringSliceVar(&connectorsNamesCountConnection, "connectorsNames", []string{}, "it is use for specifying the connectors names [mandatory] .")
-	CountConnections.Flags().StringVar(&healthCountConnection, "health", "", "it is use for specifying the health [mandatory] .")
-	CountConnections.Flags().StringVar(&stateCountConnection, "state", "", "it is use for specifying the state [mandatory] .")
+	Count.AddCommand(CountConnectionsCmd)
+	Count.AddCommand(countSourceCmd)
+	//count source flag :
+	countSourceCmd.Flags().StringVar(&connectorCount, "connector", "", "with it you can filter count with connector.")
+	//count connections flag :
+	CountConnectionsCmd.Flags().StringSliceVar(&connectorsNamesCountConnection, "connectorsNames", []string{}, "it is use for specifying the connectors names [mandatory] .")
+	CountConnectionsCmd.Flags().StringVar(&healthCountConnection, "health", "", "it is use for specifying the health [mandatory] .")
+	CountConnectionsCmd.Flags().StringVar(&stateCountConnection, "state", "", "it is use for specifying the state [mandatory] .")
 }

@@ -31,7 +31,8 @@ type RequestAccessToken struct {
 	ClientId   string `json:"client_id"`
 }
 type Config struct {
-	AccessToken string `json:"accessToken"`
+	AccessToken          string `json:"accessToken"`
+	DefaultWorkspaceName string `json:"defaultWorkspaceName"`
 }
 type ResponseAbout struct {
 	Sub           string `json:"sub"`
