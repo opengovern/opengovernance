@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt"
 	_ "github.com/golang-jwt/jwt/v4"
+	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	urls "gitlab.com/keibiengine/keibi-engine/pkg/cli/consts"
 	apiOnboard "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
@@ -17,26 +18,41 @@ import (
 	"time"
 )
 
-func GetConfig() (string, error) {
+func GetConfig(cmd *cobra.Command, workspaceNameRequired bool) (*Config, error) {
 	home := os.Getenv("HOME")
 	data, err := os.ReadFile(home + "/.kaytu/config.json")
 	if err != nil {
-		return "", fmt.Errorf("[getConfig] : Please log in first.")
+		return nil, fmt.Errorf("[getConfig] : %v", err)
+
 	}
 
 	var config Config
 	err = json.Unmarshal(data, &config)
 	if err != nil {
-		return "", fmt.Errorf("[getConfig] : %v", err)
+		return nil, fmt.Errorf("[getConfig] : %v", err)
 	}
+
+	if config.AccessToken == "" {
+		return nil, fmt.Errorf("please log in first")
+	}
+
 	checkEXP, err := CheckExpirationTime(config.AccessToken)
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("[getConfig] : %v", err)
 	}
 	if checkEXP == true {
-		return "", fmt.Errorf("accessToken was expire please loging againe ")
+		return nil, fmt.Errorf("accessToken was expire please loging againe ")
 	}
-	return config.AccessToken, nil
+	if workspaceNameRequired {
+		workspaceName := cmd.Flags().Lookup("workspace-name").Value.String()
+		if workspaceName != "" {
+			config.DefaultWorkspace = workspaceName
+		} else {
+			config.DefaultWorkspace = "demo"
+		}
+	}
+
+	return &config, nil
 }
 
 func RemoveConfig() error {
@@ -762,7 +778,7 @@ func IamDeleteKey(workspacesName string, accessToken string, id string) (string,
 	}
 }
 
-func OnboardCreateAWS(accessToken string, name string, email string, description string, accessKey string, accessId string, regions []string, secretKey string) (apiOnboard.CreateSourceResponse, int, error) {
+func OnboardCreateAWS(workspaceName string, accessToken string, name string, email string, description string, accessKey string, accessId string, regions []string, secretKey string) (apiOnboard.CreateSourceResponse, error) {
 	var bodyRequest apiOnboard.SourceAwsRequest
 	bodyRequest.Name = name
 	bodyRequest.Email = email
@@ -773,39 +789,39 @@ func OnboardCreateAWS(accessToken string, name string, email string, description
 	bodyRequest.Config.SecretKey = secretKey
 	reqBodyEncoded, err := json.Marshal(bodyRequest)
 	if err != nil {
-		return apiOnboard.CreateSourceResponse{}, http.StatusBadGateway, err
+		return apiOnboard.CreateSourceResponse{}, err
 	}
-	req, err := http.NewRequest("POST", urls.Url+"onboard/api/v1/source/aws", bytes.NewBuffer(reqBodyEncoded))
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/source/aws", bytes.NewBuffer(reqBodyEncoded))
 	if err != nil {
-		return apiOnboard.CreateSourceResponse{}, http.StatusBadRequest, err
+		return apiOnboard.CreateSourceResponse{}, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return apiOnboard.CreateSourceResponse{}, http.StatusBadGateway, err
+		return apiOnboard.CreateSourceResponse{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return apiOnboard.CreateSourceResponse{}, http.StatusBadGateway, err
+		return apiOnboard.CreateSourceResponse{}, err
 	}
 	var response apiOnboard.CreateSourceResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return apiOnboard.CreateSourceResponse{}, http.StatusBadGateway, err
+		return apiOnboard.CreateSourceResponse{}, err
 	}
 	if res.StatusCode != http.StatusOK {
 		fmt.Println("failed creating AWS source.")
-		return apiOnboard.CreateSourceResponse{}, http.StatusBadGateway, err
+		return apiOnboard.CreateSourceResponse{}, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return apiOnboard.CreateSourceResponse{}, http.StatusBadGateway, err
+		return apiOnboard.CreateSourceResponse{}, err
 	}
-	return response, http.StatusOK, nil
+	return response, nil
 }
 
-func OnboardCreateAzure(accessToken string, name string, ObjectId string, description string, clientId string, clientSecret string, subscriptionId string, tenantId string) (ResponseCreateAzure, int, error) {
+func OnboardCreateAzure(workspaceName string, accessToken string, name string, ObjectId string, description string, clientId string, clientSecret string, subscriptionId string, tenantId string) (ResponseCreateAzure, error) {
 	var request apiOnboard.SourceAzureRequest
 	request.Name = name
 	request.Description = description
@@ -817,42 +833,42 @@ func OnboardCreateAzure(accessToken string, name string, ObjectId string, descri
 	request.Config.ObjectId = ObjectId
 	reqBodyEncoded, err := json.Marshal(request)
 	if err != nil {
-		return ResponseCreateAzure{}, http.StatusBadGateway, err
+		return ResponseCreateAzure{}, err
 	}
-	req, err := http.NewRequest("POST", urls.Url+"onboard/api/v1/source/azure", bytes.NewBuffer(reqBodyEncoded))
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/source/azure", bytes.NewBuffer(reqBodyEncoded))
 	if err != nil {
-		return ResponseCreateAzure{}, http.StatusBadRequest, err
+		return ResponseCreateAzure{}, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return ResponseCreateAzure{}, http.StatusBadGateway, err
+		return ResponseCreateAzure{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return ResponseCreateAzure{}, http.StatusBadGateway, err
+		return ResponseCreateAzure{}, err
+	}
+	if res.StatusCode != http.StatusOK {
+		fmt.Println("failed creating AWS source.")
+		return ResponseCreateAzure{}, err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return ResponseCreateAzure{}, err
 	}
 	var response ResponseCreateAzure
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return ResponseCreateAzure{}, http.StatusBadGateway, err
+		return ResponseCreateAzure{}, err
 	}
-	if res.StatusCode != http.StatusOK {
-		fmt.Println("failed creating AWS source.")
-		return ResponseCreateAzure{}, http.StatusBadGateway, err
-	}
-	err = res.Body.Close()
-	if err != nil {
-		return ResponseCreateAzure{}, http.StatusBadGateway, err
-	}
-	return response, http.StatusOK, nil
+	return response, nil
 }
 
-func OnboardCatalogConnectors(accessToken string, idFilter string, minimumConnectionFilter string, stateFilter string, categoryFilter string) ([]apiOnboard.CatalogConnector, int, error) {
-	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/catalog/connectors", nil)
+func OnboardCatalogConnectors(workspaceName string, accessToken string, idFilter string, minimumConnectionFilter string, stateFilter string, categoryFilter string) ([]apiOnboard.CatalogConnector, error) {
+	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/onboard/api/v1/catalog/connectors", nil)
 	if err != nil {
-		return []apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
+		return []apiOnboard.CatalogConnector{}, err
 	}
 	query := req.URL.Query()
 	query.Set("category", categoryFilter)
@@ -863,52 +879,52 @@ func OnboardCatalogConnectors(accessToken string, idFilter string, minimumConnec
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return []apiOnboard.CatalogConnector{}, http.StatusBadRequest, err
+		return []apiOnboard.CatalogConnector{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return []apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
+		return []apiOnboard.CatalogConnector{}, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return []apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
+		return []apiOnboard.CatalogConnector{}, err
 	}
 	var response []apiOnboard.CatalogConnector
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return []apiOnboard.CatalogConnector{}, http.StatusBadGateway, err
+		return []apiOnboard.CatalogConnector{}, err
 	}
-	return response, http.StatusOK, nil
+	return response, nil
 }
 
-func OnboardCatalogMetrics(accessToken string) (apiOnboard.CatalogMetrics, int, error) {
-	req, err := http.NewRequest("GET", urls.Url+"/onboard/api/v1/catalog/metrics", nil)
+func OnboardCatalogMetrics(workspaceName string, accessToken string) (apiOnboard.CatalogMetrics, error) {
+	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/onboard/api/v1/catalog/metrics", nil)
 	if err != nil {
-		return apiOnboard.CatalogMetrics{}, http.StatusBadGateway, err
+		return apiOnboard.CatalogMetrics{}, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return apiOnboard.CatalogMetrics{}, http.StatusBadGateway, err
+		return apiOnboard.CatalogMetrics{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return apiOnboard.CatalogMetrics{}, http.StatusBadGateway, err
+		return apiOnboard.CatalogMetrics{}, err
 	}
 	var response apiOnboard.CatalogMetrics
 	err = res.Body.Close()
 	if err != nil {
-		return apiOnboard.CatalogMetrics{}, http.StatusBadGateway, err
+		return apiOnboard.CatalogMetrics{}, err
 	}
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return apiOnboard.CatalogMetrics{}, http.StatusBadGateway, err
+		return apiOnboard.CatalogMetrics{}, err
 	}
-	return response, http.StatusOK, nil
+	return response, nil
 }
 
-func OnboardCountConnections(accessToken string, connectorsNames []string, health string, state string) (string, int, error) {
+func OnboardCountConnections(accessToken string, workspaceName string, connectorsNames []string, health string, state string) (string, error) {
 	request := CountConnectionsCLIRequest{
 		connectorsNames,
 		state,
@@ -916,83 +932,83 @@ func OnboardCountConnections(accessToken string, connectorsNames []string, healt
 	}
 	reqEncoded, err := json.Marshal(request)
 	if err != nil {
-		return "", http.StatusBadRequest, err
+		return "", err
 	}
-	req, err := http.NewRequest("POST", urls.Url+"onboard/api/v1/connections/count", bytes.NewBuffer(reqEncoded))
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/connections/count", bytes.NewBuffer(reqEncoded))
 	if err != nil {
-		return "", http.StatusBadGateway, err
+		return "", err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", http.StatusBadGateway, err
+		return "", err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return "", http.StatusBadGateway, err
+		return "", err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return "", http.StatusBadGateway, err
+		return "", err
 	}
-	return string(body), http.StatusOK, nil
+	return string(body), nil
 }
-func OnboardGetConnectors(accessToken string) ([]apiOnboard.ConnectorCount, int, error) {
-	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/connectors", nil)
+func OnboardGetConnectors(workspaceName string, accessToken string) ([]apiOnboard.ConnectorCount, error) {
+	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/onboard/api/v1/connectors", nil)
 	if err != nil {
-		return []apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+		return []apiOnboard.ConnectorCount{}, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return []apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+		return []apiOnboard.ConnectorCount{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return []apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+		return []apiOnboard.ConnectorCount{}, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return []apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+		return []apiOnboard.ConnectorCount{}, err
 	}
 	var response []apiOnboard.ConnectorCount
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return []apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+		return []apiOnboard.ConnectorCount{}, err
 	}
-	return response, http.StatusOK, nil
+	return response, nil
 }
-func OnboardGetConnector(accessToken string, connectorName string) (apiOnboard.ConnectorCount, int, error) {
-	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/connectors/"+connectorName, nil)
+func OnboardGetConnector(workspaceName string, accessToken string, connectorName string) (apiOnboard.ConnectorCount, error) {
+	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/onboard/api/v1/connectors/"+connectorName, nil)
 	if err != nil {
-		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+		return apiOnboard.ConnectorCount{}, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+		return apiOnboard.ConnectorCount{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+		return apiOnboard.ConnectorCount{}, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+		return apiOnboard.ConnectorCount{}, err
 	}
 	var response apiOnboard.ConnectorCount
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return apiOnboard.ConnectorCount{}, http.StatusBadGateway, err
+		return apiOnboard.ConnectorCount{}, err
 	}
-	return response, http.StatusOK, nil
+	return response, nil
 }
-func OnboardListCredentials(accessToken string, connectorType string, healthStatus string, pageSize string, pageNumber string) ([]apiOnboard.Credential, int, error) {
-	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/credential", nil)
+func OnboardGetListCredentialsByFilter(workspacesName string, accessToken string, connectorType string, healthStatus string, pageSize string, pageNumber string) ([]apiOnboard.Credential, error) {
+	req, err := http.NewRequest("GET", urls.Url+workspacesName+"/onboard/api/v1/credential", nil)
 	if err != nil {
-		return []apiOnboard.Credential{}, http.StatusBadGateway, err
+		return []apiOnboard.Credential{}, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
@@ -1003,248 +1019,486 @@ func OnboardListCredentials(accessToken string, connectorType string, healthStat
 	query.Set("pageNumber", pageNumber)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return []apiOnboard.Credential{}, http.StatusBadGateway, err
+		return []apiOnboard.Credential{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return []apiOnboard.Credential{}, http.StatusBadGateway, err
+		return []apiOnboard.Credential{}, err
 	}
 	var response []apiOnboard.Credential
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return []apiOnboard.Credential{}, http.StatusBadGateway, err
+		return []apiOnboard.Credential{}, err
 	}
-	return response, http.StatusBadGateway, err
+	return response, err
 }
-func OnboardCreateConnectionCredentials(accessToken string, config string, name string, sourceType string) (apiOnboard.CreateCredentialResponse, int, error) {
+func OnboardCreateConnectionCredentials(workspaceName string, accessToken string, config string, name string, sourceType string) (apiOnboard.CreateCredentialResponse, error) {
 	var request requestCreateConnectionCredentials
 	request.Name = name
 	request.SourceType = sourceType
 	request.Config = config
 	reqEncoded, err := json.Marshal(request)
 	if err != nil {
-		return apiOnboard.CreateCredentialResponse{}, http.StatusBadRequest, err
+		return apiOnboard.CreateCredentialResponse{}, err
 	}
-	req, err := http.NewRequest("POST", urls.Url+"onboard/api/v1/credential", bytes.NewBuffer(reqEncoded))
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/credential", bytes.NewBuffer(reqEncoded))
 	if err != nil {
-		return apiOnboard.CreateCredentialResponse{}, http.StatusBadGateway, err
+		return apiOnboard.CreateCredentialResponse{}, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return apiOnboard.CreateCredentialResponse{}, http.StatusBadGateway, err
+		return apiOnboard.CreateCredentialResponse{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return apiOnboard.CreateCredentialResponse{}, http.StatusBadGateway, err
+		return apiOnboard.CreateCredentialResponse{}, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return apiOnboard.CreateCredentialResponse{}, http.StatusBadGateway, err
+		return apiOnboard.CreateCredentialResponse{}, err
 	}
 	var response apiOnboard.CreateCredentialResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return apiOnboard.CreateCredentialResponse{}, http.StatusBadGateway, err
+		return apiOnboard.CreateCredentialResponse{}, err
 	}
-	return response, http.StatusOK, nil
+	return response, nil
 }
-func GetListCredential(accessToken string, credentialId string) ([]apiOnboard.Credential, int, error) {
-	req, err := http.NewRequest("GET", urls.Url+"onboard/api/v1/credential/"+credentialId, nil)
+func OnboardGetCredentialById(workspaceName string, accessToken string, credentialId string) ([]apiOnboard.Credential, error) {
+	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/onboard/api/v1/credential/"+credentialId, nil)
 	if err != nil {
-		return []apiOnboard.Credential{}, http.StatusBadGateway, err
+		return []apiOnboard.Credential{}, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return []apiOnboard.Credential{}, http.StatusBadGateway, err
+		return []apiOnboard.Credential{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return []apiOnboard.Credential{}, http.StatusBadGateway, err
+		return []apiOnboard.Credential{}, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return []apiOnboard.Credential{}, http.StatusBadGateway, err
+		return []apiOnboard.Credential{}, err
 	}
 	var response []apiOnboard.Credential
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return []apiOnboard.Credential{}, http.StatusBadGateway, err
+		return []apiOnboard.Credential{}, err
 	}
-	return response, http.StatusOK, nil
+	return response, nil
 }
-
-type requestEditeCredentialById struct {
-	Name      string `json:"name"`
-	Config    string `json:"config"`
-	Connector string `json:"connector"`
-}
-
-func OnboardEditeCredentialById(accessToken string, config string, connector string, name string, credentialId string) (int, error) {
+func OnboardEditeCredentialById(workspaceName string, accessToken string, config string, connector string, name string, credentialId string) error {
 	var request requestEditeCredentialById
 	request.Name = name
 	request.Config = config
 	request.Connector = connector
 	reqBody, err := json.Marshal(request)
 	if err != nil {
-		return http.StatusBadGateway, err
+		return err
 	}
-	req, err := http.NewRequest("PUT", urls.Url+"onboard/api/v1/credential/"+credentialId, bytes.NewBuffer(reqBody))
+	req, err := http.NewRequest("PUT", urls.Url+workspaceName+"/onboard/api/v1/credential/"+credentialId, bytes.NewBuffer(reqBody))
 	if err != nil {
-		return http.StatusBadGateway, err
-	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return http.StatusBadGateway, err
-	}
-	statusCode := res.StatusCode
-	err = res.Body.Close()
-	if err != nil {
-		return http.StatusBadGateway, err
-	}
-	return statusCode, nil
-}
-func OnboardDeleteCredential(accessToken string, credentialId string) (int, error) {
-	req, err := http.NewRequest("DELETE", urls.Url+"/onboard/api/v1/credential/"+credentialId, nil)
-	if err != nil {
-		return http.StatusBadGateway, err
+		return err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return http.StatusBadGateway, err
+		return err
 	}
-	statusCode := res.StatusCode
 	err = res.Body.Close()
 	if err != nil {
-		return http.StatusBadGateway, err
+		return err
 	}
-	return statusCode, nil
+	return nil
 }
-func onboardGetCredentialAvailableConnections(accessToken string, credentialId string) ([]apiOnboard.Source, int, error) {
-	req, err := http.NewRequest("POST", urls.Url+"/onboard/api/v1/credential/"+credentialId+"/autoonboard", nil)
+func OnboardDeleteCredential(workspaceName string, accessToken string, credentialId string) error {
+	req, err := http.NewRequest("DELETE", urls.Url+workspaceName+"/onboard/api/v1/credential/"+credentialId, nil)
 	if err != nil {
-		return []apiOnboard.Source{}, http.StatusBadGateway, err
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func OnboardGetCredentialAvailableConnections(workspaceName string, accessToken string, credentialId string) ([]apiOnboard.Source, error) {
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/credential/"+credentialId+"/autoonboard", nil)
+	if err != nil {
+		return []apiOnboard.Source{}, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return []apiOnboard.Source{}, http.StatusBadGateway, err
+		return []apiOnboard.Source{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return []apiOnboard.Source{}, http.StatusBadGateway, err
+		return []apiOnboard.Source{}, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return []apiOnboard.Source{}, http.StatusBadGateway, err
+		return []apiOnboard.Source{}, err
 	}
 	var response []apiOnboard.Source
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return []apiOnboard.Source{}, http.StatusBadGateway, err
+		return []apiOnboard.Source{}, err
 	}
-	return response, http.StatusOK, nil
+	return response, nil
 }
-func OnboardDisableCredential(accessToken string, credentialId string) (int, error) {
-	req, err := http.NewRequest("POST", urls.Url+"/onboard/api/v1/credential/"+credentialId+"/disable", nil)
+func OnboardDisableCredential(workspaceName string, accessToken string, credentialId string) error {
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/credential/"+credentialId+"/disable", nil)
 	if err != nil {
-		return http.StatusBadGateway, err
+		return err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
-	statusCode := res.StatusCode
 	err = res.Body.Close()
 	if err != nil {
-		return http.StatusBadGateway, err
+		return err
 	}
-	return statusCode, nil
+	return nil
 }
-func OnboardEnableCredential(accessToken string, credentialId string) (int, error) {
-	req, err := http.NewRequest("POST", urls.Url+"/onboard/api/v1/credential/"+credentialId+"/enable", nil)
+func OnboardEnableCredential(workspaceName string, accessToken string, credentialId string) error {
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/credential/"+credentialId+"/enable", nil)
 	if err != nil {
-		return http.StatusBadGateway, err
-	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return http.StatusBadGateway, err
-	}
-	statusCode := res.StatusCode
-	err = res.Body.Close()
-	if err != nil {
-		return http.StatusBadGateway, err
-	}
-	return statusCode, nil
-}
-func onboardGetLiveCredentialHealth(accessToken string, credentialId string) (int, error) {
-	req, err := http.NewRequest("POST", urls.Url+"/onboard/api/v1/credential/"+credentialId+"/healthcheck", nil)
-	if err != nil {
-		return http.StatusBadGateway, err
+		return err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return http.StatusBadGateway, err
+		return err
 	}
-	statusCode := res.StatusCode
 	err = res.Body.Close()
-	return statusCode, nil
-}
-func OnboardGetProviders(accessToken string) (apiOnboard.ProvidersResponse, int, error) {
-	req, err := http.NewRequest("GET", "/onboard/api/v1/providers", nil)
 	if err != nil {
-		return apiOnboard.ProvidersResponse{}, http.StatusBadGateway, err
+		return err
+	}
+	return nil
+}
+func OnboardGetLiveCredentialHealth(workspaceName string, accessToken string, credentialId string) error {
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/credential/"+credentialId+"/healthcheck", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func OnboardGetProviders(workspaceName string, accessToken string) (apiOnboard.ProvidersResponse, error) {
+	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/onboard/api/v1/providers", nil)
+	if err != nil {
+		return apiOnboard.ProvidersResponse{}, err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Add("Content-Type", "application/json")
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return apiOnboard.ProvidersResponse{}, http.StatusBadGateway, err
+		return apiOnboard.ProvidersResponse{}, err
 	}
 	var response apiOnboard.ProvidersResponse
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return apiOnboard.ProvidersResponse{}, http.StatusBadGateway, err
+		return apiOnboard.ProvidersResponse{}, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return apiOnboard.ProvidersResponse{}, http.StatusBadGateway, err
+		return apiOnboard.ProvidersResponse{}, err
 	}
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return apiOnboard.ProvidersResponse{}, http.StatusBadGateway, err
+		return apiOnboard.ProvidersResponse{}, err
 	}
-	return response, http.StatusOK, nil
+	return response, nil
 }
-func OnboardGetProviderTypes(accessToken string, credentialId string) (apiOnboard.ProviderTypesResponse, int, error) {
-	req, err := http.NewRequest("GET", "/onboard/api/v1/providers/types", nil)
+func OnboardGetProviderTypes(workspaceName string, accessToken string) (apiOnboard.ProviderTypesResponse, error) {
+	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/onboard/api/v1/providers/types", nil)
 	if err != nil {
-		return apiOnboard.ProviderTypesResponse{}, http.StatusBadGateway, err
+		return apiOnboard.ProviderTypesResponse{}, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return apiOnboard.ProviderTypesResponse{}, http.StatusBadGateway, err
+		return apiOnboard.ProviderTypesResponse{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return apiOnboard.ProviderTypesResponse{}, http.StatusBadGateway, err
+		return apiOnboard.ProviderTypesResponse{}, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return apiOnboard.ProviderTypesResponse{}, http.StatusBadGateway, err
+		return apiOnboard.ProviderTypesResponse{}, err
 	}
 	var response apiOnboard.ProviderTypesResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return apiOnboard.ProviderTypesResponse{}, http.StatusBadGateway, err
+		return apiOnboard.ProviderTypesResponse{}, err
 	}
-	return response, http.StatusOK, nil
+	return response, nil
+}
+func OnboardPutSourceCredential(workspaceName string, accessToken string, sourceId string) error {
+	req, err := http.NewRequest("PUT", urls.Url+workspaceName+"/onboard/api/v1/source/"+sourceId+"/credentials", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	statusCode := res.StatusCode
+	err = res.Body.Close()
+	if err != nil {
+		return err
+	}
+	if statusCode == http.StatusOK {
+		return nil
+	} else {
+		return fmt.Errorf("error with status : %v", statusCode)
+	}
+}
+func OnboardCountSources(workspaceName string, accessToken string, connector string) (string, error) {
+	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/onboard/api/v1/sources/count", nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("connector", connector)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+func OnboardDeleteSource(workspaceName string, accessToken string, sourceId string) error {
+	req, err := http.NewRequest("DELETE", urls.Url+workspaceName+"/onboard/api/v1/source/"+sourceId, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode == http.StatusOK {
+		return nil
+	} else {
+		return fmt.Errorf("exist some error with status code : %v ", res.StatusCode)
+	}
+}
+func OnboardGetSingleSource(workspaceName string, accessToken string, sourceId string) (apiOnboard.Source, error) {
+	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/onboard/api/v1/source/"+sourceId, nil)
+	if err != nil {
+		return apiOnboard.Source{}, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return apiOnboard.Source{}, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return apiOnboard.Source{}, err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return apiOnboard.Source{}, err
+	}
+	var response apiOnboard.Source
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return apiOnboard.Source{}, err
+	}
+	return response, nil
+}
+func OnboardHealthSource(workspaceName string, accessToken string, sourceId string) (apiOnboard.Source, error) {
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/source/"+sourceId+"/healthcheck", nil)
+	if err != nil {
+		return apiOnboard.Source{}, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return apiOnboard.Source{}, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return apiOnboard.Source{}, err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return apiOnboard.Source{}, err
+	}
+	var response apiOnboard.Source
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return apiOnboard.Source{}, err
+	}
+	return response, nil
+}
+func OnboardGetListSourcesFilteredById(workspaceName string, accessToken string, sourceIDs []string) ([]apiOnboard.Source, error) {
+	var request apiOnboard.GetSourcesRequest
+	request.SourceIDs = sourceIDs
+	reqEncoded, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/sources", bytes.NewBuffer(reqEncoded))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	var response []apiOnboard.Source
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+func OnboardGetSourceCredential(workspaceName string, accessToken string, sourceId string) ([]byte, string, error) {
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/source/"+sourceId+"/credentials", nil)
+	if err != nil {
+		return nil, "", err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, "", err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, "", err
+	}
+	var fields map[string]interface{}
+	err = json.Unmarshal(body, &fields)
+	if err != nil {
+		return nil, "", err
+	}
+	if _, ok := fields["accessKey"]; ok {
+		return body, "aws", nil
+	} else {
+		return body, "azure", nil
+	}
+}
+func OnboardEnableSource(workspaceName string, accessToken string, sourceId string) error {
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/source/"+sourceId+"/enable", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	statusCode := res.StatusCode
+	err = res.Body.Close()
+	if err != nil {
+		return err
+	}
+	if statusCode == http.StatusOK {
+		return nil
+	} else {
+		return fmt.Errorf("error with status: %v", statusCode)
+	}
+}
+func OnboardDisableSource(workspaceName string, accessToken string, sourceId string) error {
+	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/source/"+sourceId+"/disable", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	statusCode := res.StatusCode
+	err = res.Body.Close()
+	if err != nil {
+		return err
+	}
+	if statusCode == http.StatusOK {
+		return nil
+	} else {
+		return fmt.Errorf("error with status: %v", statusCode)
+	}
+}
+func OnboardGetListOfSource(workspaceName string, accessToken string) ([]apiOnboard.Source, error) {
+	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/onboard/api/v1/sources", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	err = res.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+	var response []apiOnboard.Source
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+func OnboardGetListOfSourcesByFilters(workspaceName string, accessToken string, connectorType string, pageSize string, pageNumber string) error {
+	//req, err := http.NewRequest("GET", urls.Url+workspaceName+"/onboard/api/v1/credential/sources/list", nil)
+	//if err != nil {
+	//	return err
+	//}
+	//req.Header.Add("Content-Type", "application/json")
+	//req.Header.Set("Authorization", "Bearer "+accessToken)
+	//res, err := http.DefaultClient.Do(req)
+	//if err != nil {
+	//	return err
+	//}
+	//io.r
+	return nil
 }

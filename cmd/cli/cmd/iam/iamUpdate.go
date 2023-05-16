@@ -9,8 +9,7 @@ import (
 )
 
 var IamUpdate = &cobra.Command{
-	Use:   "iam",
-	Short: "iam command ",
+	Use: "iam",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return cmd.Help()
@@ -25,12 +24,7 @@ var UpdateUser = &cobra.Command{
 	Use:   "user-access",
 	Short: "update the account user ",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Lookup("workspaceName").Changed {
-		} else {
-			fmt.Println("please enter the workspaceName flag .")
-			log.Fatalln(cmd.Help())
-		}
-		if cmd.Flags().Lookup("userId").Changed {
+		if cmd.Flags().Lookup("user-id").Changed {
 		} else {
 			fmt.Println("please enter the userId flag .")
 			log.Fatalln(cmd.Help())
@@ -40,23 +34,15 @@ var UpdateUser = &cobra.Command{
 			fmt.Println("please enter the role flag .")
 			log.Fatalln(cmd.Help())
 		}
-
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		accessToken, err := apis.GetConfig()
+		cnf, err := apis.GetConfig(cmd, true)
 		if err != nil {
 			return err
 		}
-		checkEXP, err := apis.CheckExpirationTime(accessToken)
-		if err != nil {
-			return err
-		}
-		if checkEXP == true {
-			fmt.Println("your access token was expire please login again ")
-			return nil
-		}
-		response, err := apis.IamUpdateUser(workspacesNameUpdate, accessToken, roleUpdate, userId)
+
+		response, err := apis.IamUpdateUser(cnf.DefaultWorkspace, cnf.AccessToken, roleUpdate, userId)
 		if err != nil {
 			return err
 		}
@@ -69,11 +55,6 @@ var StateWorkspaceKey = &cobra.Command{
 	Use:   "key-state",
 	Short: "update the state key user ",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Lookup("workspaceName").Changed {
-		} else {
-			fmt.Println("please enter the workspaceName flag .")
-			log.Fatalln(cmd.Help())
-		}
 		if cmd.Flags().Lookup("state").Changed {
 		} else {
 			fmt.Println("please enter the state flag .")
@@ -87,23 +68,16 @@ var StateWorkspaceKey = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		accessToken, err := apis.GetConfig()
+		cnf, err := apis.GetConfig(cmd, true)
 		if err != nil {
 			return err
 		}
-		checkEXP, err := apis.CheckExpirationTime(accessToken)
-		if err != nil {
-			return err
-		}
-		if checkEXP == true {
-			fmt.Println("your access token was expire please login again ")
-			return nil
-		}
+
 		var response apies.WorkspaceApiKey
 		if state == "active " {
-			response, err = apis.IamActivateKey(workspacesNameUpdate, accessToken, idForSuspendAndActive)
+			response, err = apis.IamActivateKey(cnf.DefaultWorkspace, cnf.AccessToken, idForSuspendAndActive)
 		} else if state == "suspend" {
-			response, err = apis.IamSuspendKey(workspacesNameUpdate, accessToken, idForSuspendAndActive)
+			response, err = apis.IamSuspendKey(cnf.DefaultWorkspace, cnf.AccessToken, idForSuspendAndActive)
 			if err != nil {
 				return err
 			}
@@ -122,12 +96,7 @@ var UpdateKeyRole = &cobra.Command{
 	Use:   "key-role",
 	Short: "update key role",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Lookup("workspaceName").Changed {
-		} else {
-			fmt.Println("please enter the workspaceName flag .")
-			log.Fatalln(cmd.Help())
-		}
-		if cmd.Flags().Lookup("userId").Changed {
+		if cmd.Flags().Lookup("user-id").Changed {
 		} else {
 			fmt.Println("please enter the userId flag .")
 			log.Fatalln(cmd.Help())
@@ -140,19 +109,12 @@ var UpdateKeyRole = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		accessToken, err := apis.GetConfig()
+		cnf, err := apis.GetConfig(cmd, true)
 		if err != nil {
 			return err
 		}
-		checkEXP, err := apis.CheckExpirationTime(accessToken)
-		if err != nil {
-			return err
-		}
-		if checkEXP == true {
-			fmt.Println("your access token was expire please login again ")
-			return nil
-		}
-		response, err := apis.IamUpdateKeyRole(workspacesNameUpdate, accessToken, userIdForKey, role)
+
+		response, err := apis.IamUpdateKeyRole(cnf.DefaultWorkspace, cnf.AccessToken, userIdForKey, role)
 		if err != nil {
 			return err
 		}
@@ -170,7 +132,7 @@ var workspacesNameUpdate string
 var userId string
 var roleUpdate string
 var state string
-var outputUpdate = "table"
+var outputUpdate string
 
 func init() {
 
@@ -178,21 +140,21 @@ func init() {
 	IamUpdate.AddCommand(UpdateUser)
 	IamUpdate.AddCommand(StateWorkspaceKey)
 	//update key role flag
-	UpdateKeyRole.Flags().StringVar(&workspacesNameUpdate, "workspaceName", "", "specifying the workspaces name ")
-	UpdateKeyRole.Flags().UintVar(&userIdForKey, "userId", 0, "specifying the userID")
+	UpdateKeyRole.Flags().StringVar(&workspacesNameUpdate, "workspace-name", "", "specifying the workspaces name ")
+	UpdateKeyRole.Flags().UintVar(&userIdForKey, "user-id", 0, "specifying the userID")
 	UpdateKeyRole.Flags().StringVar(&roleUpdate, "role", "", "specifying the role name ")
-	UpdateKeyRole.Flags().StringVar(&outputUpdate, "output", "", "specifying the output type  [json, table]")
+	UpdateKeyRole.Flags().StringVar(&outputUpdate, "output-type", "table", "specifying the output type  [json, table]")
 
 	//update workspace key flag
 	StateWorkspaceKey.Flags().StringVar(&idForSuspendAndActive, "id", "", "specifying the id for suspend and active key")
-	StateWorkspaceKey.Flags().StringVar(&workspacesNameUpdate, "workspaceName", "", "specifying the workspaces name ")
+	StateWorkspaceKey.Flags().StringVar(&workspacesNameUpdate, "workspace-name", "", "specifying the workspaces name ")
 	StateWorkspaceKey.Flags().StringVar(&state, "state", "", "specifying the state workspace key ")
-	StateWorkspaceKey.Flags().StringVar(&outputUpdate, "output", "", "specifying the output type  [json, table]")
+	StateWorkspaceKey.Flags().StringVar(&outputUpdate, "output-type", "table", "specifying the output type  [json, table]")
 
 	//update user flags
-	UpdateUser.Flags().StringVar(&workspacesNameUpdate, "workspaceName", "", "specifying the workspaces name")
-	UpdateUser.Flags().StringVar(&userId, "userId", "", "specifying the userID")
+	UpdateUser.Flags().StringVar(&workspacesNameUpdate, "workspace-name", "", "specifying the workspaces name")
+	UpdateUser.Flags().StringVar(&userId, "user-id", "", "specifying the userID")
 	UpdateUser.Flags().StringVar(&roleUpdate, "role", "", "specifying the role name")
-	UpdateUser.Flags().StringVar(&outputUpdate, "output", "", "specifying the output type  [json, table] ")
+	UpdateUser.Flags().StringVar(&outputUpdate, "output-type", "table", "specifying the output type  [json, table] ")
 
 }

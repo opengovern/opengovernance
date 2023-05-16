@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
-	"net/http"
 )
 
 var Delete = &cobra.Command{
-	Use:   "delete",
-	Short: "it is use for deleting user or key ",
+	Use: "delete",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return cmd.Help()
@@ -25,60 +23,53 @@ var deleteCredentialCmd = &cobra.Command{
 	Use:   "credential",
 	Short: "it is remove credential",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Lookup("id").Changed {
+		} else {
+			fmt.Println("please enter the id flag")
+			return cmd.Help()
+		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		accessToken, err := cli.GetConfig()
+		cnf, err := cli.GetConfig(cmd, true)
 		if err != nil {
 			return err
 		}
-		checkEXP, err := cli.CheckExpirationTime(accessToken)
+		err = cli.OnboardDeleteCredential(cnf.DefaultWorkspace, cnf.AccessToken, credentialIdGet)
 		if err != nil {
 			return err
 		}
-		if checkEXP == true {
-			fmt.Println("your access token was expire please login again ")
-			return nil
-		}
-		statusCode, err := cli.OnboardDeleteCredential(accessToken, credentialIdGet)
-		if err != nil {
-			return fmt.Errorf("ERROR : status : %v \n %v ", statusCode, err)
-		}
-		if statusCode == http.StatusOK {
-			fmt.Println("OK")
-			return nil
-		}
+		fmt.Println("removed credential successfully.")
 		return nil
 	},
 }
 var deleteSourceCmd = &cobra.Command{
 	Use:   "source",
 	Short: "it will delete source ",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Lookup("id").Changed {
+		} else {
+			fmt.Println("please enter id flag.")
+			return cmd.Help()
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		accessToken, err := cli.GetConfig()
+		cnf, err := cli.GetConfig(cmd, true)
 		if err != nil {
 			return err
 		}
-		checkEXP, err := cli.CheckExpirationTime(accessToken)
+		err = cli.OnboardDeleteSource(cnf.DefaultWorkspace, cnf.AccessToken, sourceIdDelete)
 		if err != nil {
 			return err
 		}
-		if checkEXP == true {
-			fmt.Println("your access token was expire please login again ")
-			return nil
-		}
-		statusCode, err := cli.OnboardDeleteSource(accessToken, sourceIdDelete)
-		if err != nil {
-			return fmt.Errorf("ERROR: status: %v \n %v ", statusCode, err)
-		}
-		if statusCode == http.StatusOK {
-			fmt.Println("OK")
-		}
+		fmt.Println("removed source successfully")
 		return nil
 	},
 }
 var sourceIdDelete string
 var credentialIdDelete string
+var workspaceNameDelete string
 
 func init() {
 	Delete.AddCommand(IamDelete)
@@ -86,6 +77,9 @@ func init() {
 	Delete.AddCommand(deleteSourceCmd)
 	//delete source flag :
 	deleteSourceCmd.Flags().StringVar(&sourceIdDelete, "id", "", "it is specifying the source id. ")
+	deleteSourceCmd.Flags().StringVar(&workspaceNameDelete, "workspace-name", "", "it is specifying the workspace name[mandatory].")
 	//delete credential :
 	deleteCredentialCmd.Flags().StringVar(&credentialIdDelete, "id", "", "it is specifying the credentialIdGet[mandatory].")
+	deleteCredentialCmd.Flags().StringVar(&workspaceNameDelete, "workspace-name", "", "it is specifying the workspace name[mandatory].")
+
 }

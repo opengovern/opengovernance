@@ -18,20 +18,12 @@ var workspacesCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		accessToken, err := cli.GetConfig()
+		cnf, err := cli.GetConfig(cmd, false)
 		if err != nil {
 			return fmt.Errorf("[workspaces] : %v", err)
 		}
-		checkEXP, err := cli.CheckExpirationTime(accessToken)
-		if err != nil {
-			return err
-		}
-		if checkEXP == true {
-			fmt.Println("your access token was expire please login again ")
-			return nil
-		}
 
-		response, err := cli.RequestWorkspaces(accessToken)
+		response, err := cli.RequestWorkspaces(cnf.AccessToken)
 		if err != nil {
 			return fmt.Errorf("[workspaces] : %v", err)
 		}
@@ -43,9 +35,9 @@ var workspacesCmd = &cobra.Command{
 		return nil
 	},
 }
-var outputTypeWorkspaces = "table"
+var outputTypeWorkspaces string
 
 func init() {
 	rootCmd.AddCommand(workspacesCmd)
-	workspacesCmd.Flags().StringVar(&outputTypeWorkspaces, "output", "", "specifying output type [json, table]")
+	workspacesCmd.Flags().StringVar(&outputTypeWorkspaces, "output", "table", "specifying output type [json, table]")
 }

@@ -10,7 +10,6 @@ import (
 var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Login into Kaytu",
-	Long:  `Logging into Kaytu using device authentication mechanism`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		deviceCode, err := cli.RequestDeviceCode()
 		if err != nil {
@@ -26,7 +25,6 @@ var loginCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("[login] : %v", err)
 		}
-
 		return nil
 	},
 }
