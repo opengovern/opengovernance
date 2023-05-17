@@ -166,6 +166,9 @@ func FetchInsightValueAtTime(client keibi.Client, t time.Time, provider source.T
 	}
 
 	result := make(map[uint]es.InsightResource)
+	if response.Aggregations == nil {
+		return nil, nil
+	}
 	for _, bucket := range response.Aggregations.QueryIDGroup.Buckets {
 		if len(bucket.LatestGroup.Hits.Hits) > 0 {
 			result[uint(bucket.Key)] = bucket.LatestGroup.Hits.Hits[0].Source
