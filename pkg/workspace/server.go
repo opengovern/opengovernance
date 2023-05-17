@@ -408,6 +408,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 				UserID:         workspace.OwnerId,
 				UserRole:       authapi.AdminRole,
 				WorkspaceName:  workspace.Name,
+				WorkspaceID:    workspace.ID,
 				MaxUsers:       limits.MaxUsers,
 				MaxConnections: limits.MaxConnections,
 				MaxResources:   limits.MaxResources,
