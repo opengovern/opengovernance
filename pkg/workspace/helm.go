@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
@@ -16,6 +17,25 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+type WorkspaceConfig struct {
+	Name string `json:"name"`
+}
+type KeibiConfig struct {
+	ReplicaCount int             `json:"replicaCount"`
+	Workspace    WorkspaceConfig `json:"workspace"`
+	Domain       string          `json:"domain"`
+}
+type KaytuConfig struct {
+	Docker DockerConfig `json:"docker"`
+}
+type DockerConfig struct {
+	Config string `json:"config"`
+}
+type KaytuWorkspaceSettings struct {
+	Keibi KeibiConfig `json:"keibi"`
+	Kaytu KaytuConfig `json:"kaytu"`
+}
 
 func (s *Server) newKubeClient() (client.Client, error) {
 	scheme := runtime.NewScheme()
@@ -34,6 +54,25 @@ func (s *Server) newKubeClient() (client.Client, error) {
 
 func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace, dockerRegistryConfig string) error {
 	id := workspace.ID
+
+	settings := KaytuWorkspaceSettings{
+		Keibi: KeibiConfig{
+			ReplicaCount: 1,
+			Workspace: WorkspaceConfig{
+				Name: workspace.Name,
+			},
+			Domain: workspace.URI,
+		},
+		Kaytu: KaytuConfig{
+			Docker: DockerConfig{
+				Config: dockerRegistryConfig,
+			},
+		},
+	}
+	settingsJSON, err := json.Marshal(settings)
+	if err != nil {
+		return err
+	}
 
 	helmRelease := helmv2.HelmRelease{
 		TypeMeta: metav1.TypeMeta{
@@ -65,22 +104,7 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace, do
 				},
 			},
 			Values: &apiextensionsv1.JSON{
-				Raw: []byte(`
-{
-  "keibi": {
-	"replicaCount": 1,
-    "workspace": {
-      "name": "` + workspace.Name + `"
-    },
-    "domain": "` + workspace.URI + `"
-  },
-  "kaytu": {
-    "docker": {
-      "config": "` + dockerRegistryConfig + `"
-    }
-  }
-}
-`),
+				Raw: settingsJSON,
 			},
 			Install: &helmv2.Install{
 				CreateNamespace: true,
