@@ -11,13 +11,13 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/email"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	metadataClient "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
-	metadataClient "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/db"
@@ -42,7 +42,7 @@ type httpRoutes struct {
 	emailService    email.Service
 	workspaceClient client.WorkspaceServiceClient
 	auth0Service    *auth0.Service
-	metadataService metadataClient.MetadataServiceClient
+	metadataBaseUrl string
 	keibiPrivateKey *rsa.PrivateKey
 	db              db.Database
 }
@@ -226,7 +226,8 @@ func (r httpRoutes) PutRoleBinding(ctx echo.Context) error {
 
 	if _, ok := auth0User.AppMetadata.WorkspaceAccess[workspaceID]; !ok {
 		hctx := httpclient.FromEchoContext(ctx)
-		cnf, err := r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyUserLimit)
+		metadataService := metadataClient.NewMetadataServiceClient(fmt.Sprintf(metadataBaseUrl, workspaceID))
+		cnf, err := metadataService.GetConfigMetadata(hctx, models.MetadataKeyUserLimit)
 		if err != nil {
 			return err
 		}
@@ -498,7 +499,9 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 
 	hctx := httpclient.FromEchoContext(ctx)
-	cnf, err := r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyAllowInvite)
+
+	metadataService := metadataClient.NewMetadataServiceClient(fmt.Sprintf(metadataBaseUrl, workspaceID))
+	cnf, err := metadataService.GetConfigMetadata(hctx, models.MetadataKeyAllowInvite)
 	if err != nil {
 		return err
 	}
@@ -508,7 +511,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotAcceptable, "invite not allowed")
 	}
 
-	cnf, err = r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyUserLimit)
+	cnf, err = metadataService.GetConfigMetadata(hctx, models.MetadataKeyUserLimit)
 	if err != nil {
 		return err
 	}
@@ -522,7 +525,7 @@ func (r *httpRoutes) Invite(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotAcceptable, "cannot invite new user, max users reached")
 	}
 
-	cnf, err = r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyAllowedEmailDomains)
+	cnf, err = metadataService.GetConfigMetadata(hctx, models.MetadataKeyAllowedEmailDomains)
 	if err != nil {
 		return err
 	}
@@ -633,7 +636,9 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	hctx := httpclient.FromEchoContext(ctx)
-	cnf, err := r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceKeySupport)
+	metadataService := metadataClient.NewMetadataServiceClient(fmt.Sprintf(metadataBaseUrl, workspaceID))
+
+	cnf, err := metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceKeySupport)
 	if err != nil {
 		return err
 	}
@@ -684,7 +689,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		return err
 	}
 
-	cnf, err = r.metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceMaxKeys)
+	cnf, err = metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceMaxKeys)
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/email"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-	client2 "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
 	"io/ioutil"
 	"net"
 	"os"
@@ -118,8 +117,6 @@ func start(ctx context.Context) error {
 
 	workspaceClient := client.NewWorkspaceClient(workspaceBaseUrl)
 
-	metadataService := client2.NewMetadataServiceClient(metadataBaseUrl)
-
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     RedisAddress,
 		Password: "", // no password set
@@ -213,7 +210,7 @@ func start(ctx context.Context) error {
 			logger:          logger,
 			emailService:    m,
 			workspaceClient: workspaceClient,
-			metadataService: metadataService,
+			metadataBaseUrl: metadataBaseUrl,
 			auth0Service:    auth0Service,
 			keibiPrivateKey: pri.(*rsa.PrivateKey),
 			db:              adb,
