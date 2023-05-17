@@ -24,8 +24,6 @@ var regionsAWS []string
 var secretKey string
 var outputTypeAWS string
 
-//TODO-saber fix problem workspaceName
-
 // azure variables :
 var outputTypeAzure string
 var workspaceNameAzure string
@@ -38,19 +36,8 @@ var subscriptionIdAzure string
 var tenantIdAzure string
 var ObjectId string
 
-//TODO-saber fix problem workspaceName
-
 var Create = &cobra.Command{
 	Use: "create",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			err := cmd.Help()
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	},

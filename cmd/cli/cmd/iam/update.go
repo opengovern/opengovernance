@@ -7,13 +7,9 @@ import (
 )
 
 var Update = &cobra.Command{
-	Use:   "update",
-	Short: "It is used to update commands",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return cmd.Help()
-		}
-		return nil
+	Use: "update",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 

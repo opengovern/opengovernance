@@ -11,9 +11,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "keibi",
-	Short: "Keibi is a program for keeping the company's data without interruption and keeping the data in the most optimal form.",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Use:   "ktucli",
+	Short: "Kaytu cli",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	},
 }

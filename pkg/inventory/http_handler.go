@@ -122,25 +122,11 @@ func InitializeHttpHandler(
 	if err != nil {
 		return nil, err
 	}
-
-	h.awsClient, err = keibiaws.NewClient(keibiaws.ClientConfig{
-		Addresses: []string{elasticSearchAddress},
-		Username:  &elasticSearchUsername,
-		Password:  &elasticSearchPassword,
-		AccountID: &defaultAccountID,
-	})
-	if err != nil {
-		return nil, err
+	h.awsClient = keibiaws.Client{
+		Client: h.client,
 	}
-
-	h.azureClient, err = keibiazure.NewClient(keibiazure.ClientConfig{
-		Addresses: []string{elasticSearchAddress},
-		Username:  &elasticSearchUsername,
-		Password:  &elasticSearchPassword,
-		AccountID: &defaultAccountID,
-	})
-	if err != nil {
-		return nil, err
+	h.azureClient = keibiazure.Client{
+		Client: h.client,
 	}
 	h.schedulerClient = describeClient.NewSchedulerServiceClient(schedulerBaseUrl)
 

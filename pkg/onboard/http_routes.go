@@ -6,16 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	api2 "github.com/kaytu-io/kaytu-util/pkg/api"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
-	"github.com/labstack/echo/v4"
-	_ "github.com/labstack/echo/v4"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
@@ -65,7 +63,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	credential.DELETE("/:credentialId", httpserver.AuthorizeHandler(h.DeleteCredential, api3.EditorRole))
 	credential.POST("/:credentialId/disable", httpserver.AuthorizeHandler(h.DisableCredential, api3.EditorRole))
 	credential.POST("/:credentialId/enable", httpserver.AuthorizeHandler(h.EnableCredential, api3.EditorRole))
-	credential.GET("/:credentialId", httpserver.AuthorizeHandler(h.GetCredential, api2.Role(api3.ViewerRole)))
+	credential.GET("/:credentialId", httpserver.AuthorizeHandler(h.GetCredential, api3.ViewerRole))
 	credential.POST("/:credentialId/autoonboard", httpserver.AuthorizeHandler(h.AutoOnboardCredential, api3.EditorRole))
 	credential.GET("/:credentialId/healthcheck", httpserver.AuthorizeHandler(h.GetCredentialHealth, api3.EditorRole))
 
@@ -836,8 +834,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 //	@Summary		Onboard all available connections for a credential
 //	@Description	Onboard all available connections for a credential
 //	@Tags			onboard
-//	@Produce		json
-//	@Success		200	{object}	[]api.Source
+//	@Produce		jsonSuccess		200	{object}	[]api.Source
 //	@Router			/onboard/api/v1/credential/{credentialId}/autoonboard
 func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	credId, err := uuid.Parse(ctx.Param(paramCredentialId))

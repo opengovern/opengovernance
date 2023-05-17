@@ -8,12 +8,6 @@ import (
 
 var Delete = &cobra.Command{
 	Use: "delete",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return cmd.Help()
-		}
-		return nil
-	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	},

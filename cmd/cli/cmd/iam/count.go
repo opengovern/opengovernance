@@ -8,12 +8,6 @@ import (
 
 var Count = &cobra.Command{
 	Use: "count",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return cmd.Help()
-		}
-		return nil
-	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	},

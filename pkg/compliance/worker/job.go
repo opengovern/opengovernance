@@ -3,8 +3,8 @@ package worker
 import (
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"os/exec"
 	"time"
 

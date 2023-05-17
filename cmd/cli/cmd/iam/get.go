@@ -12,12 +12,6 @@ import (
 
 var Get = &cobra.Command{
 	Use: "get",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return cmd.Help()
-		}
-		return nil
-	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	},
@@ -31,7 +25,6 @@ var pageSizeGet string
 var pageNumberGet string
 var credentialIdGet string
 var connectorNameGet string
-var connectorsCatalogGet string
 var metricsCatalogGet string
 var categoryCatalogGet string
 var stateCatalogGet string
@@ -43,8 +36,6 @@ var allAvailableCredentialGet string
 var displayCredentialGet string
 var enableCredentialGet string
 var typeProviderGet string
-var disableSourceGet string
-var enableSourceGet string
 var healthSourceGet string
 var credentialSourceGet string
 var sourceIds []string
@@ -318,9 +309,14 @@ var GetSourceCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			//TODO implement ListSourcesByCredentials
-			fmt.Println("Please enter what you want to get from the sources.")
-			return cmd.Help()
+			response, err := apis.OnboardGetListOfSourcesByFilters(cnf.DefaultWorkspace, cnf.AccessToken, connectorTypeGet, pageSizeGet, pageNumberGet)
+			if err != nil {
+				return err
+			}
+			err = cli.PrintOutputForTypeArray(response, outputTypeGet)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	},
@@ -334,36 +330,36 @@ func init() {
 	Get.AddCommand(CredentialGetCmd)
 	Get.AddCommand(GetSourceCmd)
 	//get source flag :
-	GetSourceCmd.Flags().StringSliceVar(&sourceIds, "ids", []string{}, "it is use for specifying the source ids.")
-	GetSourceCmd.Flags().StringVar(&sourceIdGet, "id", "", "it is use for specifying the source id.")
-	GetSourceCmd.Flags().StringVar(&healthSourceGet, "health", "", "it is use for check health source.")
-	GetSourceCmd.Flags().StringVar(&credentialSourceGet, "credential", "", "it is use for get credential source.")
-	GetSourceCmd.Flags().StringVar(&connectorTypeGet, "connector", "", "it is use for filter by connectorGet type [AWS or Azure].")
-	GetSourceCmd.Flags().StringVar(&outputTypeGet, "output-type", "table", "it is specifying the output type [table , json][optional]")
+	GetSourceCmd.Flags().StringSliceVar(&sourceIds, "ids", []string{}, "It is used to specifying the source ids.")
+	GetSourceCmd.Flags().StringVar(&sourceIdGet, "id", "", "It is used to specifying the source id.")
+	GetSourceCmd.Flags().StringVar(&healthSourceGet, "health", "", "It is used to check health source.")
+	GetSourceCmd.Flags().StringVar(&credentialSourceGet, "credential", "", "It is used to get credential source.")
+	GetSourceCmd.Flags().StringVar(&connectorTypeGet, "connector", "", "It is used to filter by connectorGet type [AWS or Azure].")
+	GetSourceCmd.Flags().StringVar(&outputTypeGet, "output-type", "table", "Specifies the output type [table , json][optional].")
+	GetSourceCmd.Flags().StringVar(&connectorTypeGet, "connector", "", "It is used to filter by connectorGet type [AWS or Azure][mandatory].")
+	GetSourceCmd.Flags().StringVar(&pageSizeGet, "page-size", "", "It is used to filter based on page size, default value is 50.")
+	GetSourceCmd.Flags().StringVar(&pageNumberGet, "page-number", "", "Used to filter by page number, default value is 1")
 
 	// provider flag :
-	ProvidersCmd.Flags().StringVar(&outputTypeGet, "output-type", "table", "it is specifying the output type [table , json][optional]")
-	ProvidersCmd.Flags().StringVar(&typeProviderGet, "type", "", "it is specifying the type for provider.")
+	ProvidersCmd.Flags().StringVar(&outputTypeGet, "output-type", "table", "Specifies the output type[table , json][optional]")
+	ProvidersCmd.Flags().StringVar(&typeProviderGet, "type", "", "Specifies the type for provider.")
 	//credential flag :
-	CredentialGetCmd.Flags().StringVar(&outputTypeGet, "output-type", "table", "it is specifying the output type [table , json][optional]")
-	CredentialGetCmd.Flags().StringVar(&credentialIdGet, "id", "", "it is use for get credential ")
-	CredentialGetCmd.Flags().StringVar(&allAvailableCredentialGet, "all-available", "", "it is return all available credential ")
-	CredentialGetCmd.Flags().StringVar(&displayCredentialGet, "display", "", "it will display the credential ")
-	CredentialGetCmd.Flags().StringVar(&enableCredentialGet, "enable", "", "it will enable the credential ")
-	CredentialGetCmd.Flags().StringVar(&healthCredentialGet, "health", "", "Get live credential health status")
-	CredentialGetCmd.Flags().StringVar(&connectorTypeGet, "connector", "", "it is use for filter by connectorGet type [AWS or Azure].")
-	CredentialGetCmd.Flags().StringVar(&pageSizeGet, "page-size", "", "it is use for filter by page size,default value is 50 .")
-	CredentialGetCmd.Flags().StringVar(&pageNumberGet, "page-number", "", "it is use for filter by pageNumber , default value is 1.")
-
+	CredentialGetCmd.Flags().StringVar(&outputTypeGet, "output-type", "table", "Specifies the output type [table , json][optional]")
+	CredentialGetCmd.Flags().StringVar(&credentialIdGet, "id", "", "Used for get a credential by source id.")
+	CredentialGetCmd.Flags().StringVar(&allAvailableCredentialGet, "all-available", "", "Used to get all available credential. ")
+	CredentialGetCmd.Flags().StringVar(&healthCredentialGet, "health", "", "Get live credential health status.")
+	CredentialGetCmd.Flags().StringVar(&connectorTypeGet, "connector", "", "Used to filter by connector type [AWS or Azure][mandatory].")
+	CredentialGetCmd.Flags().StringVar(&pageSizeGet, "page-size", "", "Specifies page size for using in filter based on page size, default value is 50.")
+	CredentialGetCmd.Flags().StringVar(&pageNumberGet, "page-number", "", "Specifies page number for using in filter base on page number, default value is 1.")
 	//catalog flag :
-	CatalogGetCmd.Flags().StringVar(&outputTypeGet, "output-type", "table", "it is specifying the output type [table , json][optional]")
-	CatalogGetCmd.Flags().StringVar(&metricsCatalogGet, "metrics", "", "it is specifying the output catalog [metrics , connectors][mandatory]")
-	CatalogGetCmd.Flags().StringVar(&categoryCatalogGet, "category", "", "it is specifying the category filter [optional]")
-	CatalogGetCmd.Flags().StringVar(&stateCatalogGet, "state", "", "it is specifying the state filter [optional]")
-	CatalogGetCmd.Flags().StringVar(&miniConnectionCatalogGet, "miniConnection", "", "it is specifying the minimum connection filter [optional]")
-	CatalogGetCmd.Flags().StringVar(&idCatalogGet, "id", "", "it is specifying the id filter [optional]")
+	CatalogGetCmd.Flags().StringVar(&outputTypeGet, "output-type", "table", "Specifies the output type[table , json][optional].")
+	CatalogGetCmd.Flags().StringVar(&metricsCatalogGet, "metrics", "", "Specifies the output catalog[metrics , connectors][mandatory].")
+	CatalogGetCmd.Flags().StringVar(&categoryCatalogGet, "category", "", "Specifies the category filter[optional].")
+	CatalogGetCmd.Flags().StringVar(&stateCatalogGet, "state", "", "Specifies the state filter[optional].")
+	CatalogGetCmd.Flags().StringVar(&miniConnectionCatalogGet, "miniConnection", "", "Specifies the minimum connection filter[optional].")
+	CatalogGetCmd.Flags().StringVar(&idCatalogGet, "id", "", "Specifies the id filter [optional]")
 	//connectorGet flag :
-	ConnectorGetCmd.Flags().StringVar(&connectorNameGet, "name", "", "it is specifying the connectorGet name [mandatory].")
-	ConnectorGetCmd.Flags().StringVar(&outputTypeGet, "output-type", "table", "it is specifying the output type [table , json][optional]")
+	ConnectorGetCmd.Flags().StringVar(&connectorNameGet, "name", "", "Specifying the connectorGet name [mandatory].")
+	ConnectorGetCmd.Flags().StringVar(&outputTypeGet, "output-type", "table", "Specifies the output type[table , json][optional]")
 
 }

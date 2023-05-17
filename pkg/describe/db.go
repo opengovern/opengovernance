@@ -302,6 +302,30 @@ func (db Database) FetchRandomCreatedDescribeResourceJobs(parentIdExceptionList 
 	return &job, nil
 }
 
+func (db Database) ListRandomCreatedDescribeResourceJobs(limit int) ([]DescribeResourceJob, error) {
+	var job []DescribeResourceJob
+	tx := db.orm.Where("status = ?", api.DescribeResourceJobCreated).Limit(limit).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
+func (db Database) CountQueuedDescribeResourceJobs() (int64, error) {
+	var count int64
+	tx := db.orm.Model(&DescribeResourceJob{}).Where("status = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued).Count(&count)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, tx.Error
+	}
+	return count, nil
+}
+
 func (db Database) RetryRateLimitedJobs() error {
 	tx := db.orm.Raw(
 		`
@@ -425,6 +449,7 @@ func (db Database) GetOldCompletedSourceJob(sourceID uuid.UUID, nDaysBefore int)
 
 type DescribedSourceJobDescribeResourceJobStatus struct {
 	DescribeSourceJobID       uint                          `gorm:"column:id"`
+	DescribeSourceStatus      api.DescribeSourceJobStatus   `gorm:"column:dsstatus"`
 	DescribeResourceJobStatus api.DescribeResourceJobStatus `gorm:"column:status"`
 	DescribeResourceJobCount  int                           `gorm:"column:count"`
 }
@@ -436,7 +461,7 @@ func (db Database) QueryInProgressDescribedSourceJobGroupByDescribeResourceJobSt
 
 	tx := db.orm.
 		Model(&DescribeSourceJob{}).
-		Select("describe_source_jobs.id, describe_resource_jobs.status, COUNT(*)").
+		Select("describe_source_jobs.id, describe_source_jobs.status as dsstatus, describe_resource_jobs.status, COUNT(*)").
 		Joins("JOIN describe_resource_jobs ON describe_source_jobs.id = describe_resource_jobs.parent_job_id").
 		Where("describe_source_jobs.status IN ?", []string{string(api.DescribeSourceJobCreated), string(api.DescribeSourceJobInProgress)}).
 		Group("describe_source_jobs.id").
@@ -586,7 +611,16 @@ func (db Database) UpdateDescribeResourceJobsTimedOut(describeIntervalHours int6
 		Model(&DescribeResourceJob{}).
 		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
 		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
-		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job didn't get a chance to run"})
+		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	tx = db.orm.
+		Model(&DescribeResourceJob{}).
+		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
+		Where("status IN ?", []string{string(api.DescribeResourceJobCreated)}).
+		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted"})
 	if tx.Error != nil {
 		return tx.Error
 	}

@@ -3,7 +3,7 @@ package describe
 import (
 	"context"
 	"errors"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"time"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"

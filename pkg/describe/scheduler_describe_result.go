@@ -44,7 +44,6 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			s.logger.Info("Processing JobResult for Job",
 				zap.Uint("jobId", result.JobID),
 				zap.String("status", string(result.Status)),
-				//zap.Strings("resourceIDs", result.DescribedResourceIDs),
 			)
 
 			if err := s.cleanupOldResources(result); err != nil {
@@ -172,6 +171,7 @@ func (s *Scheduler) RunDescribeJobCompletionUpdater() {
 		}
 
 		jobIDToStatus := make(map[uint]map[api.DescribeResourceJobStatus]int)
+		jobStatus := make(map[uint]api.DescribeSourceJobStatus)
 		for _, v := range results {
 			if _, ok := jobIDToStatus[v.DescribeSourceJobID]; !ok {
 				jobIDToStatus[v.DescribeSourceJobID] = map[api.DescribeResourceJobStatus]int{
@@ -183,6 +183,7 @@ func (s *Scheduler) RunDescribeJobCompletionUpdater() {
 				}
 			}
 
+			jobStatus[v.DescribeSourceJobID] = v.DescribeSourceStatus
 			jobIDToStatus[v.DescribeSourceJobID][v.DescribeResourceJobStatus] = v.DescribeResourceJobCount
 		}
 
@@ -191,6 +192,16 @@ func (s *Scheduler) RunDescribeJobCompletionUpdater() {
 			if status[api.DescribeResourceJobCreated] > 0 ||
 				status[api.DescribeResourceJobQueued] > 0 ||
 				status[api.DescribeResourceJobInProgress] > 0 {
+				if jobStatus[id] == api.DescribeSourceJobCreated {
+					err := s.db.UpdateDescribeSourceJob(id, api.DescribeSourceJobInProgress)
+					if err != nil {
+						s.logger.Error("Failed to update DescribeSourceJob status\n",
+							zap.Uint("jobId", id),
+							zap.String("status", string(api.DescribeSourceJobInProgress)),
+							zap.Error(err),
+						)
+					}
+				}
 				continue
 			}
 

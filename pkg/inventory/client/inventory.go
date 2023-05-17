@@ -2,7 +2,7 @@ package client
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"net/http"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"

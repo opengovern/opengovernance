@@ -5,10 +5,10 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/httpserver"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"net"
 	"net/http"
 	"strconv"
@@ -17,7 +17,7 @@ import (
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/gogo/googleapis/google/rpc"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/proto/src/golang"
+	"github.com/kaytu-io/kaytu-util/proto/src/golang"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -165,6 +165,8 @@ type Scheduler struct {
 
 	cloudNativeAPIBaseURL string
 	cloudNativeAPIAuthKey string
+
+	WorkspaceName string
 }
 
 func initRabbitQueue(queueName string) (queue.Interface, error) {
@@ -426,6 +428,14 @@ func InitializeScheduler(
 	describeServer := NewDescribeServer(s.db, s.rdb, kafkaProducer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.logger)
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
 
+	workspace, err := s.workspaceClient.GetByID(&httpclient.Context{
+		UserRole: api2.EditorRole,
+	}, CurrentWorkspaceID)
+	if err != nil {
+		return nil, err
+	}
+	s.WorkspaceName = workspace.Name
+
 	return s, nil
 }
 
@@ -477,6 +487,9 @@ func (s *Scheduler) Run() error {
 	// describe
 	EnsureRunGoroutin(func() {
 		s.RunDescribeJobScheduler()
+	})
+	EnsureRunGoroutin(func() {
+		s.RunDescribeResourceJobs()
 	})
 	EnsureRunGoroutin(func() {
 		s.RunDescribeJobCompletionUpdater()
@@ -1614,7 +1627,7 @@ func newKafkaProducer(brokers []string) (sarama.SyncProducer, error) {
 	cfg.Producer.Retry.Max = 3
 	cfg.Producer.RequiredAcks = sarama.WaitForAll
 	cfg.Producer.Return.Successes = true
-	cfg.Producer.Partitioner = sarama.NewRoundRobinPartitioner
+	cfg.Producer.Partitioner = sarama.NewRandomPartitioner
 	cfg.Version = sarama.V2_1_0_0
 
 	producer, err := sarama.NewSyncProducer(strings.Split(KafkaService, ","), cfg)

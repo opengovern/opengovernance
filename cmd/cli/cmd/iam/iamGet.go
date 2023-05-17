@@ -18,12 +18,6 @@ var outputTypeIamGet string
 
 var IamGet = &cobra.Command{
 	Use: "iam",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return cmd.Help()
-		}
-		return nil
-	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	},
