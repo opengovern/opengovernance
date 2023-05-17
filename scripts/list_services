@@ -10,6 +10,11 @@ if [[ $MOD_CHANGE != "0" ]]; then
   exit 0
 fi
 
+DOCS_CHANGE=$(echo "$GIT_CHANGE" | grep "pkg/docs" | wc -l)
+if [[ $DOCS_CHANGE != "0" ]]; then
+  echo "redoc"
+fi
+
 SERVICES=""
 while read -r SVC; do
 	cd cmd/$SVC
