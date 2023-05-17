@@ -32,7 +32,7 @@ func (s *Server) newKubeClient() (client.Client, error) {
 	return kubeClient, nil
 }
 
-func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) error {
+func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace, dockerRegistryConfig string) error {
 	id := workspace.ID
 
 	helmRelease := helmv2.HelmRelease{
@@ -73,6 +73,11 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) er
       "name": "` + workspace.Name + `"
     },
     "domain": "` + workspace.URI + `"
+  },
+  "kaytu": {
+    "docker": {
+      "config": "` + dockerRegistryConfig + `"
+    }
   }
 }
 `),

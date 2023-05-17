@@ -56,14 +56,15 @@ var (
 )
 
 type Server struct {
-	e               *echo.Echo
-	cfg             *Config
-	db              *Database
-	authClient      authclient.AuthServiceClient
-	pipedriveClient pipedrive.PipedriveServiceClient
-	kubeClient      k8sclient.Client // the kubernetes client
-	rdb             *redis.Client
-	cache           *cache.Cache
+	e                    *echo.Echo
+	cfg                  *Config
+	db                   *Database
+	authClient           authclient.AuthServiceClient
+	pipedriveClient      pipedrive.PipedriveServiceClient
+	kubeClient           k8sclient.Client // the kubernetes client
+	rdb                  *redis.Client
+	cache                *cache.Cache
+	dockerRegistryConfig string
 }
 
 func NewServer(cfg *Config) (*Server, error) {
@@ -112,6 +113,18 @@ func NewServer(cfg *Config) (*Server, error) {
 		Redis:      s.rdb,
 		LocalCache: cache.NewTinyLFU(2000, 1*time.Minute),
 	})
+
+	secretKey := types.NamespacedName{
+		Name:      "registry",
+		Namespace: s.cfg.KeibiOctopusNamespace,
+	}
+	var registrySecret corev1.Secret
+	err = s.kubeClient.Get(context.Background(), secretKey, &registrySecret)
+	if err != nil {
+		return nil, err
+	}
+	s.dockerRegistryConfig = string(registrySecret.Data[".dockerconfigjson"])
+
 	return s, nil
 }
 
@@ -353,7 +366,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		}
 		if helmRelease == nil {
 			s.e.Logger.Infof("create helm release %s with status %s", workspace.ID, workspace.Status)
-			if err := s.createHelmRelease(ctx, workspace); err != nil {
+			if err := s.createHelmRelease(ctx, workspace, s.dockerRegistryConfig); err != nil {
 				return fmt.Errorf("create helm release: %w", err)
 			}
 			// update the workspace status next loop
