@@ -12,7 +12,6 @@ import (
 
 var (
 	RedisAddress = os.Getenv("REDIS_ADDRESS")
-	CacheAddress = os.Getenv("CACHE_ADDRESS")
 
 	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
 	ElasticSearchUsername = os.Getenv("ES_USERNAME")
@@ -71,7 +70,6 @@ func start(ctx context.Context) error {
 		SchedulerBaseUrl, OnboardBaseUrl, ComplianceBaseUrl,
 		logger,
 		RedisAddress,
-		CacheAddress,
 		S3Endpoint, S3AccessKey, S3AccessSecret, S3Region, S3Bucket,
 	)
 	if err != nil {

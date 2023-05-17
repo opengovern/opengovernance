@@ -144,7 +144,6 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 }
 
 func (s Scheduler) RunDescribeResourceJobs() {
-
 	for {
 		if err := s.RunDescribeResourceJobCycle(); err != nil {
 			time.Sleep(5 * time.Second)

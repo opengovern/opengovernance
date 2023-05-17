@@ -37,7 +37,6 @@ type HttpHandler struct {
 	onboardClient    onboardClient.OnboardServiceClient
 	complianceClient complianceClient.ComplianceServiceClient
 	rdb              *redis.Client
-	rcache           *redis.Client
 	cache            *cache.Cache
 	s3Downloader     *s3manager.Downloader
 	s3Bucket         string
@@ -51,7 +50,6 @@ func InitializeHttpHandler(
 	schedulerBaseUrl string, onboardBaseUrl string, complianceBaseUrl string,
 	logger *zap.Logger,
 	redisAddress string,
-	cacheAddress string,
 	s3Endpoint, s3AccessKey, s3AccessSecret, s3Region, s3Bucket string,
 ) (h *HttpHandler, err error) {
 
@@ -135,13 +133,8 @@ func InitializeHttpHandler(
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
-	h.rcache = redis.NewClient(&redis.Options{
-		Addr:     cacheAddress,
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
 	h.cache = cache.New(&cache.Options{
-		Redis:      h.rcache,
+		Redis:      h.rdb,
 		LocalCache: cache.NewTinyLFU(100000, 5*time.Minute),
 	})
 	h.onboardClient = onboardClient.NewOnboardServiceClient(onboardBaseUrl, h.cache)
