@@ -128,7 +128,6 @@ require (
 	github.com/projectcontour/contour v1.22.0
 	github.com/sony/sonyflake v1.1.0
 	github.com/turbot/steampipe-plugin-sdk/v4 v4.1.13
-	github.com/vmware-tanzu/velero v1.9.1
 	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230513131002-0e16b2f60580
 	gorm.io/datatypes v1.1.0
 )
