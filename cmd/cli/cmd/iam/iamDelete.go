@@ -1,10 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	apis "gitlab.com/keibiengine/keibi-engine/pkg/cli"
-	"log"
 )
 
 var workspacesNameForDelete string
@@ -39,8 +39,7 @@ var DeleteUserAccess = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("user-id").Changed {
 		} else {
-			fmt.Println("please enter the userId flag .")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the userId flag. ")
 		}
 		return nil
 	},
@@ -64,8 +63,7 @@ var DeleteUserInvite = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("user-id").Changed {
 		} else {
-			fmt.Println("please enter the userId flag .")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the userId flag. ")
 		}
 		return nil
 	},
@@ -90,8 +88,7 @@ var DeleteKey = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("key-id").Changed {
 		} else {
-			fmt.Println("please enter the keyId flag .")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the keyId flag. ")
 		}
 		return nil
 	},

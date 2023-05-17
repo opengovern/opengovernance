@@ -1,11 +1,11 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	apies "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	apis "gitlab.com/keibiengine/keibi-engine/pkg/cli"
-	"log"
 )
 
 var IamUpdate = &cobra.Command{
@@ -20,13 +20,11 @@ var UpdateUser = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("user-id").Changed {
 		} else {
-			fmt.Println("please enter the userId flag .")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the userId flag. ")
 		}
 		if cmd.Flags().Lookup("role").Changed {
 		} else {
-			fmt.Println("please enter the role flag .")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the role flag. ")
 		}
 		return nil
 	},
@@ -51,13 +49,11 @@ var StateWorkspaceKey = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("state").Changed {
 		} else {
-			fmt.Println("please enter the state flag .")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the state flag. ")
 		}
 		if cmd.Flags().Lookup("id").Changed {
 		} else {
-			fmt.Println("please enter the id flag .")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the id flag. ")
 		}
 		return nil
 	},
@@ -92,13 +88,11 @@ var UpdateKeyRole = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("user-id").Changed {
 		} else {
-			fmt.Println("please enter the userId flag .")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the userId flag. ")
 		}
 		if cmd.Flags().Lookup("role").Changed {
 		} else {
-			fmt.Println("please enter the role flag .")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the role flag. ")
 		}
 		return nil
 	},

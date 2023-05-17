@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
@@ -8,12 +9,10 @@ import (
 
 // workspacesCmd represents the workspaces command
 var workspacesCmd = &cobra.Command{
-	Use:   "workspaces",
-	Short: "A brief description of your command",
+	Use: "workspaces",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
-			fmt.Println("please enter right flag .")
-			return cmd.Help()
+			return errors.New("please enter right flag .")
 		}
 		return nil
 	},

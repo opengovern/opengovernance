@@ -1,10 +1,9 @@
 package cmd
 
 import (
-	"fmt"
+	"errors"
 	"github.com/spf13/cobra"
 	apis "gitlab.com/keibiengine/keibi-engine/pkg/cli"
-	"log"
 )
 
 var KeyID string
@@ -29,8 +28,7 @@ var userDetails = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("user-id").Changed {
 		} else {
-			fmt.Println("please enter the userId flag .")
-			return cmd.Help()
+			return errors.New("please enter the userId flag. ")
 		}
 		return nil
 	},
@@ -58,18 +56,15 @@ var Users = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("email").Changed {
 		} else {
-			fmt.Println("please enter the email flag .")
-			return cmd.Help()
+			return errors.New("please enter the email flag. ")
 		}
 		if cmd.Flags().Lookup("email-verified").Changed {
 		} else {
-			fmt.Println("please enter the email-verified flag .")
-			return cmd.Help()
+			return errors.New("please enter the email-verified flag. ")
 		}
 		if cmd.Flags().Lookup("role-name").Changed {
 		} else {
-			fmt.Println("please enter the role-name flag .")
-			return cmd.Help()
+			return errors.New("please enter the role-name flag. ")
 		}
 		return nil
 	},
@@ -97,8 +92,7 @@ var roleDetails = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("role").Changed {
 		} else {
-			fmt.Println("please enter the role flag .")
-			return cmd.Help()
+			return errors.New("please enter the role flag. ")
 		}
 		return nil
 	},
@@ -127,8 +121,7 @@ var listRoleUsers = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("role").Changed {
 		} else {
-			fmt.Println("please enter the role flag ")
-			return cmd.Help()
+			return errors.New("please enter the role flag. ")
 		}
 		return nil
 	},
@@ -156,8 +149,7 @@ var listRoleKeys = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("role").Changed {
 		} else {
-			fmt.Println("please enter the role flag ")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the role flag ")
 		}
 		return nil
 	},
@@ -227,8 +219,7 @@ var KeyDetailsCmd = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("key-id").Changed {
 		} else {
-			fmt.Println("please enter the key-id flag .")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the key-id flag. ")
 		}
 		return nil
 	},

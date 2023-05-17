@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"fmt"
+	"errors"
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
 )
@@ -14,7 +14,6 @@ var sourceTypeCredential string
 var outputTypeCreate string
 
 // aws variables:
-var workspaceNameAWS string
 var nameAWS string
 var emailAWS string
 var descriptionAWS string
@@ -26,7 +25,6 @@ var outputTypeAWS string
 
 // azure variables :
 var outputTypeAzure string
-var workspaceNameAzure string
 var nameAzure string
 var descriptionAzure string
 var clientIdAzure string
@@ -50,18 +48,15 @@ var credentialCreateCmd = cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("config").Changed {
 		} else {
-			fmt.Println("Please enter the config flag. ")
-			return cmd.Help()
+			return errors.New("Please enter the config flag. ")
 		}
 		if cmd.Flags().Lookup("name").Changed {
 		} else {
-			fmt.Println("Please enter the name flag.")
-			return cmd.Help()
+			return errors.New("Please enter the name flag. ")
 		}
 		if cmd.Flags().Lookup("source-type").Changed {
 		} else {
-			fmt.Println("Please enter the source-type flag.")
-			return cmd.Help()
+			return errors.New("Please enter the source-type flag. ")
 		}
 		return nil
 	},
@@ -88,38 +83,31 @@ var AwsCmd = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("name").Changed {
 		} else {
-			fmt.Println("Please enter the name flag.")
-			return cmd.Help()
+			return errors.New("Please enter the name flag. ")
 		}
 		if cmd.Flags().Lookup("email").Changed {
 		} else {
-			fmt.Println("Please enter the email flag.")
-			return cmd.Help()
+			return errors.New("Please enter the email flag. ")
 		}
 		if cmd.Flags().Lookup("description").Changed {
 		} else {
-			fmt.Println("Please enter the description flag.")
-			return cmd.Help()
+			return errors.New("Please enter the description flag. ")
 		}
 		if cmd.Flags().Lookup("access-id").Changed {
 		} else {
-			fmt.Println("Please enter the access-id flag.")
-			return cmd.Help()
+			return errors.New("Please enter the access-id flag. ")
 		}
 		if cmd.Flags().Lookup("access-key").Changed {
 		} else {
-			fmt.Println("Please enter the access-key flag.")
-			return cmd.Help()
+			return errors.New("Please enter the access-key flag. ")
 		}
 		if cmd.Flags().Lookup("regions").Changed {
 		} else {
-			fmt.Println("Please enter the regions flag.")
-			return cmd.Help()
+			return errors.New("Please enter the regions flag. ")
 		}
 		if cmd.Flags().Lookup("secret-key").Changed {
 		} else {
-			fmt.Println("Please enter the secret-key flag.")
-			return cmd.Help()
+			return errors.New("Please enter the secret-key flag. ")
 		}
 		return nil
 	},
@@ -147,43 +135,31 @@ var AzureCmd = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("name").Changed {
 		} else {
-			fmt.Println("Please enter the name flag.")
-			return cmd.Help()
+			return errors.New("Please enter the name flag. ")
 		}
 		if cmd.Flags().Lookup("description").Changed {
 		} else {
-			fmt.Println("Please enter the description flag.")
-			return cmd.Help()
+			return errors.New("Please enter the description flag. ")
 		}
 		if cmd.Flags().Lookup("client-secret").Changed {
 		} else {
-			fmt.Println("Please enter the client-secret flag.")
-			return cmd.Help()
+			return errors.New("Please enter the client-secret flag. ")
 		}
 		if cmd.Flags().Lookup("client-id").Changed {
 		} else {
-			fmt.Println("Please enter the client-id flag.")
-			return cmd.Help()
-		}
-		if cmd.Flags().Lookup("secret-id").Changed {
-		} else {
-			fmt.Println("Please enter the secret-id flag.")
-			return cmd.Help()
+			return errors.New("Please enter the client-id flag. ")
 		}
 		if cmd.Flags().Lookup("subscription-id").Changed {
 		} else {
-			fmt.Println("Please enter the subscription-id flag.")
-			return cmd.Help()
+			return errors.New("Please enter the subscription-id flag. ")
 		}
 		if cmd.Flags().Lookup("object-id").Changed {
 		} else {
-			fmt.Println("Please enter the object-id flag.")
-			return cmd.Help()
+			return errors.New("Please enter the object-id flag. ")
 		}
 		if cmd.Flags().Lookup("tenant-id").Changed {
 		} else {
-			fmt.Println("Please enter the tenant-id flag.")
-			return cmd.Help()
+			return errors.New("Please enter the tenant-id flag. ")
 		}
 		return nil
 	},

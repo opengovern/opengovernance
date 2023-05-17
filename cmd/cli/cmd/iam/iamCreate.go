@@ -1,10 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	apis "gitlab.com/keibiengine/keibi-engine/pkg/cli"
-	"log"
 )
 
 var workspacesNameCreate string
@@ -27,13 +27,11 @@ var CreateUser = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("role").Changed {
 		} else {
-			fmt.Println("please enter the role flag .")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the role flag. ")
 		}
 		if cmd.Flags().Lookup("email").Changed {
 		} else {
-			fmt.Println("please enter the email flag .")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the email flag. ")
 		}
 		return nil
 	},
@@ -58,13 +56,11 @@ var CreateKeyCmd = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Lookup("role-name").Changed {
 		} else {
-			fmt.Println("please enter the roleName flag .")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the roleName flag. ")
 		}
 		if cmd.Flags().Lookup("key-name").Changed {
 		} else {
-			fmt.Println("please enter the keyName flag .")
-			log.Fatalln(cmd.Help())
+			return errors.New("please enter the keyName flag. ")
 		}
 		return nil
 	},
@@ -90,10 +86,12 @@ var CreateKeyCmd = &cobra.Command{
 func init() {
 	IamCreate.AddCommand(CreateKeyCmd)
 	IamCreate.AddCommand(CreateUser)
+
 	//flags create user :
 	CreateUser.Flags().StringVar(&workspacesNameCreate, "workspace-name", "", "specifying the workspaces name [mandatory] .")
 	CreateUser.Flags().StringVar(&email, "email", "", "specifying the user email [mandatory]")
 	CreateUser.Flags().StringVar(&roleForUser, "role", "", "specifying the user role[mandatory] ")
+
 	//flags create keys :
 	CreateKeyCmd.Flags().StringVar(&workspacesNameCreate, "workspace-name", "", "specifying the workspace name [mandatory].")
 	CreateKeyCmd.Flags().StringVar(&roleName, "role-name", "", "specifying the role name [mandatory].")

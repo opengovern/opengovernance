@@ -7,8 +7,7 @@ import (
 
 // logoutCmd represents the logout command
 var logoutCmd = &cobra.Command{
-	Use:   "logout",
-	Short: "Logout from kaytu",
+	Use: "logout",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := cli.RemoveConfig()
 		if err != nil {
