@@ -37,8 +37,10 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
+	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
+	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -3112,30 +3114,31 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 
 	var cells map[string]*proto.Column
 	pluginProvider := steampipe.ExtractPlugin(req.ResourceType)
-	pluginTableName := steampipe.ExtractTableName(req.ResourceType)
 	if pluginProvider == steampipe.SteampipePluginAWS {
-		desc, err := steampipe.ConvertToDescription(req.ResourceType, source)
+		pluginTableName := awsSteampipe.ExtractTableName(req.ResourceType)
+		desc, err := steampipe.ConvertToDescription(req.ResourceType, source, awsSteampipe.AWSDescriptionMap)
 		if err != nil {
 			return err
 		}
 
-		cells, err = steampipe.AWSDescriptionToRecord(desc, pluginTableName)
+		cells, err = awsSteampipe.AWSDescriptionToRecord(desc, pluginTableName)
 		if err != nil {
 			return err
 		}
 	} else if pluginProvider == steampipe.SteampipePluginAzure || pluginProvider == steampipe.SteampipePluginAzureAD {
-		desc, err := steampipe.ConvertToDescription(req.ResourceType, source)
+		pluginTableName := azureSteampipe.ExtractTableName(req.ResourceType)
+		desc, err := steampipe.ConvertToDescription(req.ResourceType, source, azureSteampipe.AzureDescriptionMap)
 		if err != nil {
 			return err
 		}
 
 		if pluginProvider == steampipe.SteampipePluginAzure {
-			cells, err = steampipe.AzureDescriptionToRecord(desc, pluginTableName)
+			cells, err = azureSteampipe.AzureDescriptionToRecord(desc, pluginTableName)
 			if err != nil {
 				return err
 			}
 		} else {
-			cells, err = steampipe.AzureADDescriptionToRecord(desc, pluginTableName)
+			cells, err = azureSteampipe.AzureADDescriptionToRecord(desc, pluginTableName)
 			if err != nil {
 				return err
 			}
@@ -4755,7 +4758,13 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 			LogoURI:           resourceTypeNode.LogoURI,
 		}
 
-		table := steampipe.ExtractTableName(resourceTypeNode.ResourceType)
+		var table string
+		switch connector {
+		case source.CloudAWS:
+			table = awsSteampipe.ExtractTableName(resourceTypeNode.ResourceType)
+		case source.CloudAzure:
+			table = azureSteampipe.ExtractTableName(resourceTypeNode.ResourceType)
+		}
 		insightTableCount := 0
 		if table != "" {
 			insightList, err := h.complianceClient.GetInsights(httpclient.FromEchoContext(ctx), resourceTypeNode.Connector)
@@ -4806,7 +4815,13 @@ func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 		LogoURI:           resourceTypeNode.LogoURI,
 	}
 
-	table := steampipe.ExtractTableName(resourceTypeNode.ResourceType)
+	var table string
+	switch resourceTypeNode.Connector {
+	case source.CloudAWS:
+		table = awsSteampipe.ExtractTableName(resourceTypeNode.ResourceType)
+	case source.CloudAzure:
+		table = azureSteampipe.ExtractTableName(resourceTypeNode.ResourceType)
+	}
 	if table != "" {
 		insightTables := make([]uint, 0)
 		insightList, err := h.complianceClient.GetInsights(httpclient.FromEchoContext(ctx), resourceTypeNode.Connector)
@@ -4825,11 +4840,11 @@ func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 
 		switch resourceTypeNode.Connector {
 		case source.CloudAWS:
-			result.Attributes, _ = steampipe.AWSCells(table)
+			result.Attributes, _ = steampipe.Cells(h.awsPlg, table)
 		case source.CloudAzure:
-			result.Attributes, err = steampipe.AzureCells(table)
+			result.Attributes, err = steampipe.Cells(h.azurePlg, table)
 			if err != nil {
-				result.Attributes, _ = steampipe.AzureADCells(table)
+				result.Attributes, _ = steampipe.Cells(h.azureADPlg, table)
 			}
 		}
 	}

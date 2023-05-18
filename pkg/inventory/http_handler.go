@@ -2,8 +2,11 @@ package inventory
 
 import (
 	"fmt"
+	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
+	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/neo4j"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -17,8 +20,8 @@ import (
 
 	"github.com/go-redis/redis/v8"
 
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	describeClient "gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
-	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/pkg/keibi-es-sdk"
 	keibiazure "github.com/kaytu-io/kaytu-azure-describer/pkg/keibi-es-sdk"
@@ -40,6 +43,8 @@ type HttpHandler struct {
 	cache            *cache.Cache
 	s3Downloader     *s3manager.Downloader
 	s3Bucket         string
+
+	awsPlg, azurePlg, azureADPlg *plugin.Plugin
 }
 
 func InitializeHttpHandler(
@@ -160,5 +165,8 @@ func InitializeHttpHandler(
 	h.s3Downloader = s3manager.NewDownloader(sess)
 	h.s3Bucket = s3Bucket
 
+	h.awsPlg = awsSteampipe.Plugin()
+	h.azurePlg = azureSteampipe.Plugin()
+	h.azureADPlg = azureSteampipe.ADPlugin()
 	return h, nil
 }
