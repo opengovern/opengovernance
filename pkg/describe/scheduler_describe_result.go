@@ -80,8 +80,54 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 	}
 }
 
+func (s *Scheduler) RunDescribeJobOldResultDeletionConsumer() error {
+	s.logger.Info("Consuming messages from the JobResults queue")
+
+	msgs, err := s.kafkaConsumer.ConsumePartition(s.kafkaDeletionTopic, 0, sarama.OffsetNewest)
+	if err != nil {
+		return err
+	}
+	defer msgs.Close()
+
+	for {
+		select {
+		case msg, ok := <-msgs.Messages():
+			if !ok {
+				return fmt.Errorf("tasks channel is closed")
+			}
+			if msg == nil {
+				continue
+			}
+			var index string
+			for _, header := range msg.Headers {
+				if string(header.Key) == kafka.EsIndexHeader {
+					index = string(header.Value)
+					break
+				}
+			}
+			if index == "" {
+				s.logger.Error("failed to get index from message headers")
+				continue
+			}
+			idsJson := msg.Value
+			var ids []string
+			if err := json.Unmarshal(idsJson, &ids); err != nil {
+				s.logger.Error("failed to unmarshal ids from message", zap.Error(err))
+				continue
+			}
+			err = es.DeleteByIds(s.es, index, ids)
+			if err != nil {
+				s.logger.Error("failed to delete ids", zap.Error(err))
+				continue
+			}
+		}
+	}
+}
+
 func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 	var kafkaMsgs []*sarama.ProducerMessage
+	var indexKeys []string
+	var summeryKeys []string
 	var searchAfter []interface{}
 
 	for {
@@ -116,6 +162,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				}
 				keys, idx := resource.KeysAndIndex()
 				key := kafka.HashOf(keys...)
+				indexKeys = append(indexKeys, key)
 				kafkaMsgs = append(kafkaMsgs, &sarama.ProducerMessage{
 					Topic: s.kafkaDeletionTopic,
 					Key:   sarama.StringEncoder(key),
@@ -135,6 +182,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				}
 				keys, idx = lookupResource.KeysAndIndex()
 				key = kafka.HashOf(keys...)
+				summeryKeys = append(summeryKeys, key)
 				kafkaMsgs = append(kafkaMsgs, &sarama.ProducerMessage{
 					Topic: s.kafkaDeletionTopic,
 					Key:   sarama.StringEncoder(key),
@@ -150,15 +198,56 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 		}
 	}
 
-	if err := s.kafkaProducer.SendMessages(kafkaMsgs); err != nil {
-		if errs, ok := err.(sarama.ProducerErrors); ok {
-			for _, e := range errs {
-				s.logger.Error("Falied calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
-			}
-		}
-
+	jsonIndexKeys, err := json.Marshal(indexKeys)
+	if err != nil {
 		return err
 	}
+	jsonSummeryKeys, err := json.Marshal(summeryKeys)
+	if err != nil {
+		return err
+	}
+
+	if err := s.kafkaProducer.SendMessages([]*sarama.ProducerMessage{
+		{
+			Topic: s.kafkaDeletionTopic,
+			Key:   sarama.StringEncoder(kafka.HashOf(append(indexKeys)...)),
+			Headers: []sarama.RecordHeader{
+				{
+					Key:   []byte(kafka.EsIndexHeader),
+					Value: []byte(es.ResourceTypeToESIndex(res.DescribeJob.ResourceType)),
+				},
+			},
+			Value: sarama.ByteEncoder(jsonIndexKeys),
+		},
+		{
+			Topic: s.kafkaDeletionTopic,
+			Key:   sarama.StringEncoder(kafka.HashOf(append(summeryKeys)...)),
+			Headers: []sarama.RecordHeader{
+				{
+					Key:   []byte(kafka.EsIndexHeader),
+					Value: []byte(es.InventorySummaryIndex),
+				},
+			},
+			Value: sarama.ByteEncoder(jsonSummeryKeys),
+		},
+	}); err != nil {
+		if errs, ok := err.(sarama.ProducerErrors); ok {
+			for _, e := range errs {
+				s.logger.Error("Falied calling SendMessages for delete index", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
+			}
+		}
+		return err
+	}
+
+	//if err := s.kafkaProducer.SendMessages(kafkaMsgs); err != nil {
+	//	if errs, ok := err.(sarama.ProducerErrors); ok {
+	//		for _, e := range errs {
+	//			s.logger.Error("Falied calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
+	//		}
+	//	}
+	//
+	//	return err
+	//}
 	return nil
 }
 
