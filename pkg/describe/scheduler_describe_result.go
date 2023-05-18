@@ -82,7 +82,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 }
 
 func (s *Scheduler) RunDescribeJobOldResultDeletionConsumer() error {
-	s.logger.Info("Consuming messages from the JobResults queue")
+	s.logger.Info("Consuming messages from the DescribeJobOldResultDeletion queue")
 
 	msgs, err := s.kafkaConsumer.ConsumePartition(s.kafkaDeletionTopic, 0, sarama.OffsetNewest)
 	if err != nil {

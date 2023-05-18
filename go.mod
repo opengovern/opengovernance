@@ -120,7 +120,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230513131051-487f90781041
 	github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230513092309-666e3325e35e
-	github.com/kaytu-io/kaytu-util v0.0.0-20230518160825-16d30d0a4c39
+	github.com/kaytu-io/kaytu-util v0.0.0-20230518173720-476629b0545d
 	github.com/microsoft/kiota-abstractions-go v0.9.1
 	github.com/microsoft/kiota-authentication-azure-go v0.4.1
 	github.com/microsoftgraph/msgraph-sdk-go v0.37.0
