@@ -164,3 +164,7 @@ func (s *Database) Count(query string) (*Result, error) {
 		Data:    result,
 	}, nil
 }
+
+func (s *Database) Conn() *pgxpool.Pool {
+	return s.conn
+}

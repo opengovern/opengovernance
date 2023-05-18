@@ -222,6 +222,7 @@ deploy-all: # This job runs in the deploy stage.
     - podman build -f  docker/ComplianceServiceDockerfile . -t registry.digitalocean.com/keibi/compliance-service:$SVER_VERSION
     - podman build -f  docker/DescribeSchedulerDockerfile . -t registry.digitalocean.com/keibi/describe-scheduler:$SVER_VERSION
     - podman build -f  docker/HopperDockerfile . -t registry.digitalocean.com/keibi/hopper:$SVER_VERSION
+    - podman build -f  docker/ReporterDockerfile . -t registry.digitalocean.com/keibi/reporter:$SVER_VERSION
     - podman build -f  docker/InsightWorkerDockerfile . -t registry.digitalocean.com/keibi/insight-worker:$SVER_VERSION
     - podman build -f  docker/InventoryServiceDockerfile . -t registry.digitalocean.com/keibi/inventory-service:$SVER_VERSION
     - podman build -f  docker/MetadataServiceDockerfile . -t registry.digitalocean.com/keibi/metadata-service:$SVER_VERSION
@@ -238,6 +239,7 @@ deploy-all: # This job runs in the deploy stage.
     - podman push registry.digitalocean.com/keibi/compliance-service:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/describe-scheduler:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/hopper:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/reporter:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/insight-worker:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/inventory-service:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/metadata-service:$SVER_VERSION

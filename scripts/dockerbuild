@@ -29,6 +29,10 @@ if [[ $SERVICES == *"hopper"* ]]; then
     podman build -f  docker/HopperDockerfile . -t registry.digitalocean.com/keibi/hopper:$SVER_VERSION
     podman push registry.digitalocean.com/keibi/hopper:$SVER_VERSION
 fi
+if [[ $SERVICES == *"reporter"* ]]; then
+    podman build -f  docker/ReporterDockerfile . -t registry.digitalocean.com/keibi/reporter:$SVER_VERSION
+    podman push registry.digitalocean.com/keibi/reporter:$SVER_VERSION
+fi
 if [[ $SERVICES == *"insight-worker"* ]]; then
     podman build -f  docker/InsightWorkerDockerfile . -t registry.digitalocean.com/keibi/insight-worker:$SVER_VERSION
     podman push registry.digitalocean.com/keibi/insight-worker:$SVER_VERSION
