@@ -117,7 +117,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				keys, idx := resource.KeysAndIndex()
 				key := kafka.HashOf(keys...)
 				kafkaMsgs = append(kafkaMsgs, &sarama.ProducerMessage{
-					Topic: s.kafkaResourcesTopic,
+					Topic: s.kafkaDeletionTopic,
 					Key:   sarama.StringEncoder(key),
 					Headers: []sarama.RecordHeader{
 						{
@@ -136,7 +136,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				keys, idx = lookupResource.KeysAndIndex()
 				key = kafka.HashOf(keys...)
 				kafkaMsgs = append(kafkaMsgs, &sarama.ProducerMessage{
-					Topic: s.kafkaResourcesTopic,
+					Topic: s.kafkaDeletionTopic,
 					Key:   sarama.StringEncoder(key),
 					Headers: []sarama.RecordHeader{
 						{

@@ -5,15 +5,16 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/gogo/googleapis/google/rpc"
@@ -158,6 +159,7 @@ type Scheduler struct {
 	rdb                 *redis.Client
 	kafkaProducer       sarama.SyncProducer
 	kafkaResourcesTopic string
+	kafkaDeletionTopic  string
 
 	describeEndpoint string
 	keyARN           string
@@ -365,6 +367,7 @@ func InitializeScheduler(
 	}
 	s.kafkaProducer = kafkaProducer
 	s.kafkaResourcesTopic = KafkaResourcesTopic
+	s.kafkaDeletionTopic = KafkaDeletionTopic
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
 
