@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
@@ -8,30 +9,20 @@ import (
 
 // workspacesCmd represents the workspaces command
 var workspacesCmd = &cobra.Command{
-	Use:   "workspaces",
-	Short: "A brief description of your command",
+	Use: "workspaces",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().ParseErrorsWhitelist.UnknownFlags {
-			fmt.Println("please enter right flag .")
-			return cmd.Help()
+			return errors.New("please enter right flag .")
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		accessToken, err := cli.GetConfig()
+		cnf, err := cli.GetConfig(cmd, false)
 		if err != nil {
 			return fmt.Errorf("[workspaces] : %v", err)
 		}
-		checkEXP, err := cli.CheckExpirationTime(accessToken)
-		if err != nil {
-			return err
-		}
-		if checkEXP == true {
-			fmt.Println("your access token was expire please login again ")
-			return nil
-		}
 
-		response, err := cli.RequestWorkspaces(accessToken)
+		response, err := cli.RequestWorkspaces(cnf.AccessToken)
 		if err != nil {
 			return fmt.Errorf("[workspaces] : %v", err)
 		}
@@ -43,9 +34,9 @@ var workspacesCmd = &cobra.Command{
 		return nil
 	},
 }
-var outputTypeWorkspaces = "table"
+var outputTypeWorkspaces string
 
 func init() {
 	rootCmd.AddCommand(workspacesCmd)
-	workspacesCmd.Flags().StringVar(&outputTypeWorkspaces, "output", "", "specifying output type [json, table]")
+	workspacesCmd.Flags().StringVar(&outputTypeWorkspaces, "output", "table", "specifying output type [json, table]")
 }

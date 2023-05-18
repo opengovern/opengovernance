@@ -31,12 +31,13 @@ type RequestAccessToken struct {
 	ClientId   string `json:"client_id"`
 }
 type Config struct {
-	AccessToken string `json:"accessToken"`
+	AccessToken      string `json:"access-token"`
+	DefaultWorkspace string `json:"default_workspace"`
 }
 type ResponseAbout struct {
 	Sub           string `json:"sub"`
 	Email         string `json:"email"`
-	EmailVerified bool   `json:"emailVerified"`
+	EmailVerified bool   `json:"email-verified"`
 }
 type RequestGetIamUsers struct {
 	Email         string   `json:"email,omitempty"`
@@ -80,4 +81,9 @@ type requestCreateConnectionCredentials struct {
 	Config     string `json:"config"`
 	Name       string `json:"name"`
 	SourceType string `json:"source_Type"`
+}
+type requestEditeCredentialById struct {
+	Name      string `json:"name"`
+	Config    string `json:"config"`
+	Connector string `json:"connector"`
 }
