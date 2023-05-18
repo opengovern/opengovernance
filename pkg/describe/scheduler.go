@@ -5,15 +5,16 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/gogo/googleapis/google/rpc"
@@ -157,7 +158,9 @@ type Scheduler struct {
 	es                  keibi.Client
 	rdb                 *redis.Client
 	kafkaProducer       sarama.SyncProducer
+	kafkaConsumer       sarama.Consumer
 	kafkaResourcesTopic string
+	kafkaDeletionTopic  string
 
 	describeEndpoint string
 	keyARN           string
@@ -363,8 +366,14 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
+	kafkaConsumer, err := newKafkaConsumer(strings.Split(KafkaService, ","))
+	if err != nil {
+		return nil, err
+	}
 	s.kafkaProducer = kafkaProducer
+	s.kafkaConsumer = kafkaConsumer
 	s.kafkaResourcesTopic = KafkaResourcesTopic
+	s.kafkaDeletionTopic = KafkaDeletionTopic
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
 
@@ -496,6 +505,9 @@ func (s *Scheduler) Run() error {
 	})
 	EnsureRunGoroutin(func() {
 		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
+	})
+	EnsureRunGoroutin(func() {
+		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobOldResultDeletionConsumer()))
 	})
 
 	// inventory summarizer
@@ -1630,12 +1642,25 @@ func newKafkaProducer(brokers []string) (sarama.SyncProducer, error) {
 	cfg.Producer.Partitioner = sarama.NewRandomPartitioner
 	cfg.Version = sarama.V2_1_0_0
 
-	producer, err := sarama.NewSyncProducer(strings.Split(KafkaService, ","), cfg)
+	producer, err := sarama.NewSyncProducer(brokers, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return producer, nil
+}
+
+func newKafkaConsumer(brokers []string) (sarama.Consumer, error) {
+	cfg := sarama.NewConfig()
+	cfg.Consumer.Fetch.Max = 1024 * 100 // 1MiB
+	cfg.Version = sarama.V2_1_0_0
+
+	consumer, err := sarama.NewConsumer(brokers, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return consumer, nil
 }
 
 func newKafkaClient(brokers []string) (sarama.Client, error) {

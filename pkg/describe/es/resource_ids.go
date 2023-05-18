@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"strings"
+
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )
 
 type ResourceIdentifierFetchResponse struct {
@@ -71,4 +72,29 @@ func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, r
 	}
 
 	return &response, nil
+}
+
+func DeleteByIds(client keibi.Client, index string, ids []string) (*keibi.DeleteByQueryResponse, error) {
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("no ids to delete")
+	}
+
+	root := map[string]interface{}{
+		"query": map[string]interface{}{
+			"terms": map[string][]string{
+				"_id": ids,
+			},
+		},
+	}
+
+	queryBytes, err := json.Marshal(root)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := keibi.DeleteByQuery(context.TODO(), client.ES(), []string{index}, string(queryBytes))
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
 }
