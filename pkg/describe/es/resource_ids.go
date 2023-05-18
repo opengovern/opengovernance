@@ -74,9 +74,9 @@ func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, r
 	return &response, nil
 }
 
-func DeleteByIds(client keibi.Client, index string, ids []string) error {
+func DeleteByIds(client keibi.Client, index string, ids []string) (*keibi.DeleteByQueryResponse, error) {
 	if len(ids) == 0 {
-		return nil
+		return nil, fmt.Errorf("no ids to delete")
 	}
 
 	root := map[string]interface{}{
@@ -89,12 +89,12 @@ func DeleteByIds(client keibi.Client, index string, ids []string) error {
 
 	queryBytes, err := json.Marshal(root)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = keibi.DeleteByQuery(context.TODO(), client.ES(), []string{index}, string(queryBytes))
+	res, err := keibi.DeleteByQuery(context.TODO(), client.ES(), []string{index}, string(queryBytes))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return &res, nil
 }

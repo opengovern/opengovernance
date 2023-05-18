@@ -115,11 +115,12 @@ func (s *Scheduler) RunDescribeJobOldResultDeletionConsumer() error {
 				s.logger.Error("failed to unmarshal ids from message", zap.Error(err))
 				continue
 			}
-			err = es.DeleteByIds(s.es, index, ids)
+			res, err := es.DeleteByIds(s.es, index, ids)
 			if err != nil {
 				s.logger.Error("failed to delete ids", zap.Error(err))
 				continue
 			}
+			s.logger.Info("deleted ids", zap.Any("count", res.Deleted))
 		}
 	}
 }
