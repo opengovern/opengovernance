@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
@@ -215,7 +216,7 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 			TriggerType:   enums.DescribeTriggerType(req.DescribeJob.TriggerType),
 			RetryCounter:  uint(req.DescribeJob.RetryCounter),
 		},
-		DescribedResourceIDs: nil, // req.DescribedResourceIds,
+		DescribedResourceIDs: nil,
 	})
 	return &golang.ResponseOK{}, err
 }

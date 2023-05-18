@@ -3,8 +3,9 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"time"
+
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
@@ -109,7 +110,9 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				fmt.Println("deleting", res.DescribeJob.ResourceType, esResourceID, "does not exists in new described", len(res.DescribedResourceIDs))
 				OldResourcesDeletedCount.WithLabelValues(string(res.DescribeJob.SourceType)).Inc()
 				resource := es.Resource{
-					ID: esResourceID,
+					ID:           esResourceID,
+					ResourceType: res.DescribeJob.ResourceType,
+					SourceType:   res.DescribeJob.SourceType,
 				}
 				keys, idx := resource.KeysAndIndex()
 				key := kafka.HashOf(keys...)
