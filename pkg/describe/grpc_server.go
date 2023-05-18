@@ -203,6 +203,7 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 		ParentJobID: uint(req.ParentJobId),
 		Status:      api.DescribeResourceJobStatus(req.Status),
 		Error:       req.Error,
+		ErrorCode:   req.ErrorCode,
 		DescribeJob: DescribeJob{
 			JobID:         uint(req.DescribeJob.JobId),
 			ScheduleJobID: uint(req.DescribeJob.ScheduleJobId),

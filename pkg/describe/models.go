@@ -83,6 +83,7 @@ type DescribeResourceJob struct {
 	ResourceType           string
 	Status                 api.DescribeResourceJobStatus
 	FailureMessage         string // Should be NULLSTRING
+	ErrorCode              string // Should be NULLSTRING
 	DescribedResourceCount int64
 }
 

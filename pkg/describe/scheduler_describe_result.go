@@ -57,7 +57,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				continue
 			}
 
-			if err := s.db.UpdateDescribeResourceJobStatus(result.JobID, result.Status, result.Error, int64(len(result.DescribedResourceIDs))); err != nil {
+			if err := s.db.UpdateDescribeResourceJobStatus(result.JobID, result.Status, result.Error, result.ErrorCode, int64(len(result.DescribedResourceIDs))); err != nil {
 				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 				s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
 				err = msg.Nack(false, true)

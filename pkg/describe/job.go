@@ -107,6 +107,7 @@ type DescribeJobResult struct {
 	Error                string
 	DescribeJob          DescribeJob
 	DescribedResourceIDs []string
+	ErrorCode            string
 }
 
 // Do will perform the job which includes the following tasks:

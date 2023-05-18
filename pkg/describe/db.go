@@ -569,11 +569,11 @@ func (db Database) GetCloudNativeDescribeSourceJobBySourceJobID(jobID uint) (*Cl
 
 // UpdateDescribeResourceJobStatus updates the status of the DescribeResourceJob to the provided status.
 // If the status if 'FAILED', msg could be used to indicate the failure reason
-func (db Database) UpdateDescribeResourceJobStatus(id uint, status api.DescribeResourceJobStatus, msg string, resourceCount int64) error {
+func (db Database) UpdateDescribeResourceJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount int64) error {
 	tx := db.orm.
 		Model(&DescribeResourceJob{}).
 		Where("id = ?", id).
-		Updates(DescribeResourceJob{Status: status, FailureMessage: msg, DescribedResourceCount: resourceCount})
+		Updates(DescribeResourceJob{Status: status, FailureMessage: msg, ErrorCode: errCode, DescribedResourceCount: resourceCount})
 	if tx.Error != nil {
 		return tx.Error
 	}
