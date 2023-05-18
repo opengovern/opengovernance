@@ -23,38 +23,38 @@ type ResourceIdentifierFetchHit struct {
 	Type    string         `json:"_type"`
 	Version int64          `json:"_version,omitempty"`
 	Source  LookupResource `json:"_source"`
-	Sort    []interface{}  `json:"sort"`
+	Sort    []any          `json:"sort"`
 }
 
-func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, resourceType string, searchAfter []interface{}, size int) (*ResourceIdentifierFetchResponse, error) {
+func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, resourceType string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
 	terms := map[string][]string{
 		"source_id":     {sourceID},
 		"resource_type": {strings.ToLower(resourceType)},
 	}
 
-	root := map[string]interface{}{}
+	root := map[string]any{}
 	if searchAfter != nil {
 		root["search_after"] = searchAfter
 	}
 	root["size"] = size
 
-	root["sort"] = []map[string]interface{}{
+	root["sort"] = []map[string]any{
 		{
 			"resource_id": "desc",
 		},
 	}
 
-	boolQuery := make(map[string]interface{})
-	var filters []map[string]interface{}
+	boolQuery := make(map[string]any)
+	var filters []map[string]any
 	for k, vs := range terms {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{
 				k: vs,
 			},
 		})
 	}
 	boolQuery["filter"] = filters
-	root["query"] = map[string]interface{}{
+	root["query"] = map[string]any{
 		"bool": boolQuery,
 	}
 
@@ -79,7 +79,7 @@ func DeleteByIds(client keibi.Client, index string, ids []string) (*keibi.Delete
 		return nil, fmt.Errorf("no ids to delete")
 	}
 
-	root := map[string]interface{}{
+	query := map[string]interface{}{
 		"query": map[string]interface{}{
 			"terms": map[string][]string{
 				"_id": ids,
@@ -87,12 +87,10 @@ func DeleteByIds(client keibi.Client, index string, ids []string) (*keibi.Delete
 		},
 	}
 
-	queryBytes, err := json.Marshal(root)
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := keibi.DeleteByQuery(context.TODO(), client.ES(), []string{index}, string(queryBytes))
+	res, err := keibi.DeleteByQuery(context.TODO(), client.ES(), []string{index}, query,
+		client.ES().DeleteByQuery.WithRefresh(true),
+		client.ES().DeleteByQuery.WithConflicts("proceed"),
+	)
 	if err != nil {
 		return nil, err
 	}
