@@ -9,6 +9,7 @@ func ReporterCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config := JobConfig{}
+			
 			config2.ReadFromEnv(&config, nil)
 
 			j, err := New(config)
