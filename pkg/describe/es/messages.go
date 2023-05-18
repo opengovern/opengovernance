@@ -117,7 +117,7 @@ func (r LookupResource) KeysAndIndex() ([]string, string) {
 	return []string{
 		r.ResourceID,
 		string(r.SourceType),
-		r.ResourceType,
+		strings.ToLower(r.ResourceType),
 	}, InventorySummaryIndex
 }
 

@@ -506,9 +506,6 @@ func (s *Scheduler) Run() error {
 	EnsureRunGoroutin(func() {
 		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
 	})
-	EnsureRunGoroutin(func() {
-		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobOldResultDeletionConsumer()))
-	})
 
 	// inventory summarizer
 	EnsureRunGoroutin(func() {
