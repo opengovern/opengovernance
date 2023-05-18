@@ -1333,10 +1333,8 @@ github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230513131051-487f90781041 h1:xm
 github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230513131051-487f90781041/go.mod h1:ZUrTcDv65uokRiqXLoLSy7u77961WiiERWah1kWiAOM=
 github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230513092309-666e3325e35e h1:cbYkldo7A2/c4KMuSk5AKDFhS0MJ5qTKug6LtsyvCAU=
 github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230513092309-666e3325e35e/go.mod h1:11Sd4DjPQXcnGT9PiwKn/MweIvRt9JK2PTX8ZMX378U=
-github.com/kaytu-io/kaytu-util v0.0.0-20230513085647-7cc62974cfef h1:ox4edOIquwg6RR/2V96l1WMdOAFUXkXpudfmAXYZ5rQ=
-github.com/kaytu-io/kaytu-util v0.0.0-20230513085647-7cc62974cfef/go.mod h1:/bxvJuGyuXIQWH/Vb/ccsk5R1PObXt51eDdaZz4xKVE=
-github.com/kaytu-io/kaytu-util v0.0.0-20230518081927-21fb9cba89c8 h1:IX7zC6WiQ8/B09J/Y73kaRhYA7HtqeLBqcZUM1nRKTg=
-github.com/kaytu-io/kaytu-util v0.0.0-20230518081927-21fb9cba89c8/go.mod h1:/bxvJuGyuXIQWH/Vb/ccsk5R1PObXt51eDdaZz4xKVE=
+github.com/kaytu-io/kaytu-util v0.0.0-20230518154310-e01010932622 h1:9E9utzUVvS3yUZZbdNMH26adSpodW5lgi71YZuF+RVU=
+github.com/kaytu-io/kaytu-util v0.0.0-20230518154310-e01010932622/go.mod h1:/bxvJuGyuXIQWH/Vb/ccsk5R1PObXt51eDdaZz4xKVE=
 github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=
 github.com/kevinburke/ssh_config v1.2.0/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
