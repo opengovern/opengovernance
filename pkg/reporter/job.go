@@ -169,6 +169,7 @@ func (j *Job) RandomResourceType() string {
 
 func (j *Job) BuildListQuery(accountID, resourceType string) string {
 	var tableName string
+	
 	switch steampipe.ExtractPlugin(resourceType) {
 	case steampipe.SteampipePluginAWS:
 		tableName = awsSteampipe.ExtractTableName(resourceType)
@@ -180,6 +181,7 @@ func (j *Job) BuildListQuery(accountID, resourceType string) string {
 
 func (j *Job) BuildGetQuery(accountID, resourceType string, keyFields []string) string {
 	var tableName string
+
 	switch steampipe.ExtractPlugin(resourceType) {
 	case steampipe.SteampipePluginAWS:
 		tableName = awsSteampipe.ExtractTableName(resourceType)
