@@ -3,6 +3,7 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
@@ -199,42 +200,50 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 		}
 	}
 
-	jsonIndexKeys, err := json.Marshal(indexKeys)
-	if err != nil {
-		return err
-	}
-	jsonSummeryKeys, err := json.Marshal(summeryKeys)
-	if err != nil {
-		return err
-	}
-
-	if err := s.kafkaProducer.SendMessages([]*sarama.ProducerMessage{
-		{
+	var totalMessages []*sarama.ProducerMessage
+	for i := 0; i < len(indexKeys); i += 1000 {
+		batchMassages := indexKeys[i:int(math.Min(float64(i+1000), float64(len(indexKeys))))]
+		jsonBatchMassages, err := json.Marshal(batchMassages)
+		if err != nil {
+			s.logger.Error("failed to marshal indexKeys batchMassages", zap.Error(err))
+			return err
+		}
+		totalMessages = append(totalMessages, &sarama.ProducerMessage{
 			Topic: s.kafkaDeletionTopic,
-			Key:   sarama.StringEncoder(kafka.HashOf(append(indexKeys)...)),
+			Key:   sarama.StringEncoder(kafka.HashOf(batchMassages...)),
 			Headers: []sarama.RecordHeader{
 				{
 					Key:   []byte(kafka.EsIndexHeader),
 					Value: []byte(es.ResourceTypeToESIndex(res.DescribeJob.ResourceType)),
 				},
 			},
-			Value: sarama.ByteEncoder(jsonIndexKeys),
-		},
-		{
+			Value: sarama.ByteEncoder(jsonBatchMassages),
+		})
+	}
+	for i := 0; i < len(summeryKeys); i += 1000 {
+		batchMassages := summeryKeys[i:int(math.Min(float64(i+1000), float64(len(summeryKeys))))]
+		jsonBatchMassages, err := json.Marshal(batchMassages)
+		if err != nil {
+			s.logger.Error("failed to marshal indexKeys batchMassages", zap.Error(err))
+			return err
+		}
+		totalMessages = append(totalMessages, &sarama.ProducerMessage{
 			Topic: s.kafkaDeletionTopic,
-			Key:   sarama.StringEncoder(kafka.HashOf(append(summeryKeys)...)),
+			Key:   sarama.StringEncoder(kafka.HashOf(batchMassages...)),
 			Headers: []sarama.RecordHeader{
 				{
 					Key:   []byte(kafka.EsIndexHeader),
 					Value: []byte(es.InventorySummaryIndex),
 				},
 			},
-			Value: sarama.ByteEncoder(jsonSummeryKeys),
-		},
-	}); err != nil {
+			Value: sarama.ByteEncoder(jsonBatchMassages),
+		})
+	}
+
+	if err := s.kafkaProducer.SendMessages(totalMessages); err != nil {
 		if errs, ok := err.(sarama.ProducerErrors); ok {
 			for _, e := range errs {
-				s.logger.Error("Falied calling SendMessages for delete index", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
+				s.logger.Error("Falied calling SendMessages for delete index", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\n", e.Msg.Key, e.Msg.Topic, e.Error())))
 			}
 		}
 		return err
