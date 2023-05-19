@@ -1,12 +1,10 @@
 package describe
 
 import (
-	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -17,15 +15,10 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
-	"github.com/gogo/googleapis/google/rpc"
 	"github.com/kaytu-io/kaytu-util/proto/src/golang"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/checkup"
@@ -188,56 +181,6 @@ func initRabbitQueue(queueName string) (queue.Interface, error) {
 	}
 
 	return insightQueue, nil
-}
-
-func (s *Scheduler) checkGRPCAuth(ctx context.Context) error {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return status.Errorf(codes.Unauthenticated, "missing metadata")
-	}
-
-	mdHeaders := make(map[string]string)
-	for k, v := range md {
-		if len(v) > 0 {
-			mdHeaders[k] = v[0]
-		}
-	}
-
-	s.logger.Debug("checkGRPCAuth", zap.Any("mdHeaders", mdHeaders))
-
-	result, err := s.authGrpcClient.Check(ctx, &envoyauth.CheckRequest{
-		Attributes: &envoyauth.AttributeContext{
-			Request: &envoyauth.AttributeContext_Request{
-				Http: &envoyauth.AttributeContext_HttpRequest{
-					Headers: mdHeaders,
-				},
-			},
-		},
-	})
-
-	if err != nil {
-		return status.Errorf(codes.Unauthenticated, "authentication failed: %v", err)
-	}
-
-	if result.GetStatus() == nil || result.GetStatus().GetCode() != int32(rpc.OK) {
-		return status.Errorf(codes.Unauthenticated, http.StatusText(http.StatusUnauthorized))
-	}
-
-	return nil
-}
-
-func (s *Scheduler) grpcUnaryAuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	if err := s.checkGRPCAuth(ctx); err != nil {
-		return nil, err
-	}
-	return handler(ctx, req)
-}
-
-func (s *Scheduler) grpcStreamAuthInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	if err := s.checkGRPCAuth(ss.Context()); err != nil {
-		return err
-	}
-	return handler(srv, ss)
 }
 
 func InitializeScheduler(
@@ -424,13 +367,12 @@ func InitializeScheduler(
 		DB:       0,  // use default DB
 	})
 
+	describeServer := NewDescribeServer(s.db, s.rdb, kafkaProducer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.authGrpcClient, s.logger)
 	s.grpcServer = grpc.NewServer(
 		grpc.MaxRecvMsgSize(128*1024*1024),
-		grpc.UnaryInterceptor(s.grpcUnaryAuthInterceptor),
-		grpc.StreamInterceptor(s.grpcStreamAuthInterceptor),
+		grpc.UnaryInterceptor(describeServer.grpcUnaryAuthInterceptor),
+		grpc.StreamInterceptor(describeServer.grpcStreamAuthInterceptor),
 	)
-
-	describeServer := NewDescribeServer(s.db, s.rdb, kafkaProducer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.logger)
 	golang.RegisterDescribeServiceServer(s.grpcServer, describeServer)
 
 	workspace, err := s.workspaceClient.GetByID(&httpclient.Context{
