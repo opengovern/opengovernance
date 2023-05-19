@@ -442,6 +442,7 @@ func InitializeScheduler(
 	s.WorkspaceName = workspace.Name
 
 	s.DoDeleteOldResources, _ = strconv.ParseBool(DoDeleteOldResources)
+	describeServer.DoProcessReceivedMessages, _ = strconv.ParseBool(DoProcessReceivedMsgs)
 
 	return s, nil
 }

@@ -22,24 +22,26 @@ import (
 )
 
 type GRPCDescribeServer struct {
-	db                     Database
-	rdb                    *redis.Client
-	producer               sarama.SyncProducer
-	topic                  string
-	logger                 *zap.Logger
-	describeJobResultQueue queue.Interface
+	db                        Database
+	rdb                       *redis.Client
+	producer                  sarama.SyncProducer
+	topic                     string
+	logger                    *zap.Logger
+	describeJobResultQueue    queue.Interface
+	DoProcessReceivedMessages bool
 
 	golang.DescribeServiceServer
 }
 
 func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProducer, topic string, describeJobResultQueue queue.Interface, logger *zap.Logger) *GRPCDescribeServer {
 	return &GRPCDescribeServer{
-		db:                     db,
-		rdb:                    rdb,
-		producer:               producer,
-		topic:                  topic,
-		describeJobResultQueue: describeJobResultQueue,
-		logger:                 logger,
+		db:                        db,
+		rdb:                       rdb,
+		producer:                  producer,
+		topic:                     topic,
+		describeJobResultQueue:    describeJobResultQueue,
+		logger:                    logger,
+		DoProcessReceivedMessages: true,
 	}
 }
 
@@ -71,6 +73,10 @@ func (s *GRPCDescribeServer) SetInProgress(ctx context.Context, req *golang.SetI
 }
 
 func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources *golang.AWSResources) (*golang.ResponseOK, error) {
+	if !s.DoProcessReceivedMessages {
+		return &golang.ResponseOK{}, nil
+	}
+
 	startTime := time.Now().UnixMilli()
 	defer func() {
 		ResourceBatchProcessLatency.WithLabelValues("aws").Observe(float64(time.Now().UnixMilli() - startTime))
