@@ -1,2 +1,3 @@
 FROM docker.io/golang:alpine
-RUN apk --no-cache add make git bash
+RUN apk update && apk upgrade
+RUN apk --no-cache add make git bash musl-dev gcc build-base util-linux-dev
