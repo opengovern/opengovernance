@@ -232,7 +232,7 @@ deploy-all: # This job runs in the deploy stage.
     - podman build -f  docker/SwaggerUIDockerfile . -t registry.digitalocean.com/keibi/swagger-ui:$SVER_VERSION
     - podman build -f  docker/WorkspaceServiceDockerfile . -t registry.digitalocean.com/keibi/workspace-service:$SVER_VERSION
     - podman build -f  docker/RedocDockerfile . -t registry.digitalocean.com/keibi/redoc:$SVER_VERSION
-    - podman build -f  docker/CICDDockerfile . -t registry.digitalocean.com/keibi/cicd:$SVER_VERSION
+    - podman build -f  docker/CICDDockerfile . -t registry.digitalocean.com/keibi/cicd:$SVER_VERSION -t registry.digitalocean.com/keibi/cicd:latest
     - podman push registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/auth-service:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/checkup-worker:$SVER_VERSION
@@ -251,4 +251,5 @@ deploy-all: # This job runs in the deploy stage.
     - podman push registry.digitalocean.com/keibi/workspace-service:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/redoc:$SVER_VERSION
     - podman push registry.digitalocean.com/keibi/cicd:$SVER_VERSION
+    - podman push registry.digitalocean.com/keibi/cicd:latest
   when: manual
