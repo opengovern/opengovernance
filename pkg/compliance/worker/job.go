@@ -3,10 +3,12 @@ package worker
 import (
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"os/exec"
 	"time"
+
+	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 
@@ -20,7 +22,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"go.uber.org/zap"
-	"gopkg.in/Shopify/sarama.v1"
 )
 
 type Job struct {
@@ -47,7 +48,7 @@ func (j *Job) Do(
 	complianceClient client.ComplianceServiceClient,
 	onboardClient client2.OnboardServiceClient,
 	elasticSearchConfig config.ElasticSearch,
-	kfkProducer sarama.SyncProducer,
+	kfkProducer *confluence_kafka.Producer,
 	kfkTopic string,
 	logger *zap.Logger,
 ) JobResult {
@@ -121,7 +122,7 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 }
 
 func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient client2.OnboardServiceClient,
-	elasticSearchConfig config.ElasticSearch, kfkProducer sarama.SyncProducer, kfkTopic string, logger *zap.Logger) error {
+	elasticSearchConfig config.ElasticSearch, kfkProducer *confluence_kafka.Producer, kfkTopic string, logger *zap.Logger) error {
 
 	ctx := &httpclient.Context{
 		UserRole: api2.AdminRole,
@@ -187,7 +188,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	for _, finding := range findingsFiltered {
 		docs = append(docs, finding)
 	}
-	return kafka.DoSend(kfkProducer, kfkTopic, 0, docs, logger)
+	return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger)
 }
 
 func (j *Job) FilterFindings(esClient keibi.Client, findings []es.Finding) ([]es.Finding, error) {

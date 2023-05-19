@@ -11,7 +11,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"go.uber.org/zap"
-	"gopkg.in/Shopify/sarama.v1"
 )
 
 func (s *Scheduler) RunDescribeJobResultsConsumer() error {
@@ -84,9 +83,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 }
 
 func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
-	var kafkaMsgs []*sarama.ProducerMessage
 	var searchAfter []interface{}
-
 	for {
 		esResp, err := es.GetResourceIDsForAccountResourceTypeFromES(s.es, res.DescribeJob.SourceID, res.DescribeJob.ResourceType, searchAfter, 1000)
 		if err != nil {
@@ -119,17 +116,10 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				}
 				keys, idx := resource.KeysAndIndex()
 				key := kafka.HashOf(keys...)
-				kafkaMsgs = append(kafkaMsgs, &sarama.ProducerMessage{
-					Topic: s.kafkaDeletionTopic,
-					Key:   sarama.StringEncoder(key),
-					Headers: []sarama.RecordHeader{
-						{
-							Key:   []byte(kafka.EsIndexHeader),
-							Value: []byte(idx),
-						},
-					},
-					Value: nil,
-				})
+				err = s.kafkaProducer.Produce(kafka.Msg(key, nil, idx), nil)
+				if err != nil {
+					return err
+				}
 
 				lookupResource := es.LookupResource{
 					ResourceID:   esResourceID,
@@ -138,29 +128,22 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				}
 				keys, idx = lookupResource.KeysAndIndex()
 				key = kafka.HashOf(keys...)
-				kafkaMsgs = append(kafkaMsgs, &sarama.ProducerMessage{
-					Topic: s.kafkaDeletionTopic,
-					Key:   sarama.StringEncoder(key),
-					Headers: []sarama.RecordHeader{
-						{
-							Key:   []byte(kafka.EsIndexHeader),
-							Value: []byte(idx),
-						},
-					},
-					Value: nil,
-				})
+				err = s.kafkaProducer.Produce(kafka.Msg(key, nil, idx), nil)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
 
-	if err := s.kafkaProducer.SendMessages(kafkaMsgs); err != nil {
-		if errs, ok := err.(sarama.ProducerErrors); ok {
-			for _, e := range errs {
-				s.logger.Error("Falied calling SendMessages", zap.Error(fmt.Errorf("Failed to persist resource[%s] in kafka topic[%s]: %s\nMessage: %v\n", e.Msg.Key, e.Msg.Topic, e.Error(), e.Msg)))
-			}
+	for r := 0; r < 10; r++ {
+		if s.kafkaProducer.Flush(6000) == 0 {
+			break
+		} else if r == 9 {
+			err := fmt.Errorf("failed to flush messages to kafka topic[%s]", s.kafkaDeletionTopic)
+			s.logger.Error("Failed calling Flush", zap.Error(err))
+			return err
 		}
-
-		return err
 	}
 	return nil
 }

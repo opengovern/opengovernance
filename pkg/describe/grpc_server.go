@@ -8,16 +8,12 @@ import (
 	"strings"
 	"time"
 
+	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	"github.com/go-redis/redis/v8"
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
-
-	"github.com/go-redis/redis/v8"
 	"github.com/kaytu-io/kaytu-util/proto/src/golang"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
@@ -25,7 +21,10 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"go.uber.org/zap"
-	"gopkg.in/Shopify/sarama.v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type AuthTokenCacheEntry struct {
@@ -36,7 +35,7 @@ type AuthTokenCacheEntry struct {
 type GRPCDescribeServer struct {
 	db                        Database
 	rdb                       *redis.Client
-	producer                  sarama.SyncProducer
+	producer                  *confluence_kafka.Producer
 	topic                     string
 	logger                    *zap.Logger
 	describeJobResultQueue    queue.Interface
@@ -46,7 +45,7 @@ type GRPCDescribeServer struct {
 	golang.DescribeServiceServer
 }
 
-func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProducer, topic string, describeJobResultQueue queue.Interface, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger) *GRPCDescribeServer {
+func NewDescribeServer(db Database, rdb *redis.Client, producer *confluence_kafka.Producer, topic string, describeJobResultQueue queue.Interface, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger) *GRPCDescribeServer {
 	return &GRPCDescribeServer{
 		db:                        db,
 		rdb:                       rdb,
@@ -171,7 +170,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 	if !s.DoProcessReceivedMessages {
 		return &golang.ResponseOK{}, nil
 	}
-	if err := kafka.DoSend(s.producer, s.topic, 0, msgs, s.logger); err != nil {
+	if err := kafka.DoSend(s.producer, s.topic, -1, msgs, s.logger); err != nil {
 		StreamFailureCount.WithLabelValues("aws").Inc()
 		return nil, fmt.Errorf("send to kafka: %w", err)
 	}
@@ -232,7 +231,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		ResourcesDescribedCount.WithLabelValues("azure", "successful").Inc()
 	}
 
-	if err := kafka.DoSend(s.producer, s.topic, 1, msgs, s.logger); err != nil {
+	if err := kafka.DoSend(s.producer, s.topic, -1, msgs, s.logger); err != nil {
 		StreamFailureCount.WithLabelValues("azure").Inc()
 		return nil, fmt.Errorf("send to kafka: %w", err)
 	}

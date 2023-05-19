@@ -2,9 +2,11 @@ package summarizer
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"strconv"
 	"time"
+
+	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/compliancebuilder"
 
@@ -18,7 +20,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
-	"gopkg.in/Shopify/sarama.v1"
 )
 
 var DoComplianceSummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -56,7 +57,7 @@ type ComplianceJobResult struct {
 	JobType JobType
 }
 
-func (j ComplianceJob) Do(client keibi.Client, producer sarama.SyncProducer, topic string, logger *zap.Logger) (r ComplianceJobResult) {
+func (j ComplianceJob) Do(client keibi.Client, producer *confluence_kafka.Producer, topic string, logger *zap.Logger) (r ComplianceJobResult) {
 	logger.Info("Starting summarizing", zap.Int("jobID", int(j.JobID)))
 	startTime := time.Now().Unix()
 	defer func() {
@@ -142,7 +143,7 @@ func (j ComplianceJob) Do(client keibi.Client, producer sarama.SyncProducer, top
 	logger.Info("cleanup done")
 
 	if len(msgs) > 0 {
-		err := kafka.DoSend(producer, topic, 0, msgs, logger)
+		err := kafka.DoSend(producer, topic, -1, msgs, logger)
 		if err != nil {
 			fail(fmt.Errorf("Failed to send to kafka: %v ", err))
 		}

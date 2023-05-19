@@ -3,6 +3,9 @@ package summarizer
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
+	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
@@ -12,7 +15,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"
-	"gopkg.in/Shopify/sarama.v1"
 )
 
 type JobType string
@@ -27,7 +29,7 @@ type Worker struct {
 	id             string
 	jobQueue       queue.Interface
 	jobResultQueue queue.Interface
-	kfkProducer    sarama.SyncProducer
+	kfkProducer    *confluence_kafka.Producer
 	kfkTopic       string
 	logger         *zap.Logger
 	es             keibi.Client
@@ -232,18 +234,12 @@ func (w *Worker) Stop() {
 	}
 }
 
-func newKafkaProducer(brokers []string) (sarama.SyncProducer, error) {
-	cfg := sarama.NewConfig()
-	cfg.Producer.Retry.Max = 3
-	cfg.Producer.RequiredAcks = sarama.WaitForAll
-	cfg.Producer.Return.Successes = true
-	cfg.Producer.MaxMessageBytes = 15728640
-	cfg.Version = sarama.V2_1_0_0
-
-	producer, err := sarama.NewSyncProducer(brokers, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return producer, nil
+func newKafkaProducer(brokers []string) (*confluence_kafka.Producer, error) {
+	return confluence_kafka.NewProducer(&confluence_kafka.ConfigMap{
+		"bootstrap.servers":            strings.Join(brokers, ","),
+		"linger.ms":                    100,
+		"compression.type":             "lz4",
+		"message.timeout.ms":           10000,
+		"queue.buffering.max.messages": 100000,
+	})
 }
