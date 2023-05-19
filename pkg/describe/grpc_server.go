@@ -4,20 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
-	"google.golang.org/grpc/metadata"
-
 	"github.com/go-redis/redis/v8"
 	"github.com/kaytu-io/kaytu-util/proto/src/golang"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"go.uber.org/zap"
@@ -47,21 +44,21 @@ func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProdu
 }
 
 func (s *GRPCDescribeServer) UpdateInProgress(ctx context.Context) error {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if ok && md.Get("resource-job-id") != nil {
-		resourceJobIdStr := md.Get("resource-job-id")[0]
-		resourceJobId, err := strconv.ParseUint(resourceJobIdStr, 10, 64)
-		if err != nil {
-			StreamFailureCount.WithLabelValues("aws").Inc()
-			s.logger.Error("failed to parse resource job id:", zap.Error(err))
-			return fmt.Errorf("failed to parse resource job id: %v", err)
-		}
-		err = s.db.UpdateDescribeResourceJobToInProgress(uint(resourceJobId)) //TODO this is called too much
-		if err != nil {
-			StreamFailureCount.WithLabelValues("aws").Inc()
-			s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
-		}
-	}
+	//md, ok := metadata.FromIncomingContext(ctx)
+	//if ok && md.Get("resource-job-id") != nil {
+	//	resourceJobIdStr := md.Get("resource-job-id")[0]
+	//	resourceJobId, err := strconv.ParseUint(resourceJobIdStr, 10, 64)
+	//	if err != nil {
+	//		StreamFailureCount.WithLabelValues("aws").Inc()
+	//		s.logger.Error("failed to parse resource job id:", zap.Error(err))
+	//		return fmt.Errorf("failed to parse resource job id: %v", err)
+	//	}
+	//	err = s.db.UpdateDescribeResourceJobToInProgress(uint(resourceJobId)) //TODO this is called too much
+	//	if err != nil {
+	//		StreamFailureCount.WithLabelValues("aws").Inc()
+	//		s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
+	//	}
+	//}
 	return nil
 }
 
