@@ -158,7 +158,6 @@ type Scheduler struct {
 	es                  keibi.Client
 	rdb                 *redis.Client
 	kafkaProducer       sarama.SyncProducer
-	kafkaConsumer       sarama.Consumer
 	kafkaResourcesTopic string
 	kafkaDeletionTopic  string
 
@@ -366,12 +365,7 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
-	kafkaConsumer, err := newKafkaConsumer(strings.Split(KafkaService, ","))
-	if err != nil {
-		return nil, err
-	}
 	s.kafkaProducer = kafkaProducer
-	s.kafkaConsumer = kafkaConsumer
 	s.kafkaResourcesTopic = KafkaResourcesTopic
 	s.kafkaDeletionTopic = KafkaDeletionTopic
 
