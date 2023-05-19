@@ -43,8 +43,6 @@ type GRPCDescribeServer struct {
 	DoProcessReceivedMessages bool
 	authGrpcClient            envoyauth.AuthorizationClient
 
-	authTokenCache map[string]AuthTokenCacheEntry
-
 	golang.DescribeServiceServer
 }
 
@@ -58,7 +56,6 @@ func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProdu
 		logger:                    logger,
 		DoProcessReceivedMessages: true,
 		authGrpcClient:            authGrpcClient,
-		authTokenCache:            make(map[string]AuthTokenCacheEntry),
 	}
 }
 
@@ -72,17 +69,6 @@ func (s *GRPCDescribeServer) checkGRPCAuth(ctx context.Context) error {
 	for k, v := range md {
 		if len(v) > 0 {
 			mdHeaders[k] = v[0]
-		}
-	}
-
-	s.logger.Debug("checkGRPCAuth", zap.Any("mdHeaders", mdHeaders))
-
-	authHeader, ok := mdHeaders["Authorization"]
-	if ok {
-		if entry, ok := s.authTokenCache[authHeader]; ok {
-			if entry.ExpiresAt.After(time.Now()) {
-				return nil
-			}
 		}
 	}
 
@@ -102,13 +88,6 @@ func (s *GRPCDescribeServer) checkGRPCAuth(ctx context.Context) error {
 
 	if result.GetStatus() == nil || result.GetStatus().GetCode() != int32(rpc.OK) {
 		return status.Errorf(codes.Unauthenticated, http.StatusText(http.StatusUnauthorized))
-	}
-
-	if authHeader != "" {
-		s.authTokenCache[authHeader] = AuthTokenCacheEntry{
-			AuthToken: authHeader,
-			ExpiresAt: time.Now().Add(time.Minute),
-		}
 	}
 
 	return nil
