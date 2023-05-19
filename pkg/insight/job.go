@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"strconv"
 	"strings"
 	"time"
+
+	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/managedgrafana"
@@ -26,7 +28,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 	"go.uber.org/zap"
-	"gopkg.in/Shopify/sarama.v1"
 )
 
 var DoInsightJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -70,7 +71,7 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardClient client.OnboardServiceClient, producer sarama.SyncProducer, uploader *s3manager.Uploader, bucket, topic string, logger *zap.Logger) (r JobResult) {
+func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardClient client.OnboardServiceClient, producer *confluence_kafka.Producer, uploader *s3manager.Uploader, bucket, topic string, logger *zap.Logger) (r JobResult) {
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
@@ -263,7 +264,7 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 						S3Location:          result.Location,
 					})
 				}
-				if err := kafka.DoSend(producer, topic, 0, resources, logger); err != nil {
+				if err := kafka.DoSend(producer, topic, -1, resources, logger); err != nil {
 					fail(fmt.Errorf("send to kafka: %w", err))
 				}
 			} else {

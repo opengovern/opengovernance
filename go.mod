@@ -57,7 +57,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.16.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sns v1.17.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.19.10 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssm v1.30.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssm v1.36.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.19.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/wafregional v1.12.18 // indirect
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.22.9 // indirect
@@ -66,7 +66,7 @@ require (
 	github.com/brpaz/echozap v1.1.3
 	github.com/coreos/go-oidc/v3 v3.1.0
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
-	github.com/envoyproxy/go-control-plane v0.10.3-0.20220715065308-8bcd7ee0191a
+	github.com/envoyproxy/go-control-plane v0.10.3
 	github.com/fluxcd/helm-controller/api v0.21.0
 	github.com/fluxcd/pkg/apis/meta v0.13.0
 	github.com/globocom/echo-prometheus v0.1.2 // indirect
@@ -84,7 +84,7 @@ require (
 	github.com/sendgrid/sendgrid-go v3.12.0+incompatible // indirect
 	github.com/spf13/cobra v1.7.0
 	github.com/streadway/amqp v1.0.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/swaggo/echo-swagger v1.3.0
 	github.com/swaggo/swag v1.8.0
 	github.com/turbot/go-kit v0.4.0
@@ -92,9 +92,9 @@ require (
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230513092024-06d62c29480c
 	go.uber.org/zap v1.24.0
 	golang.org/x/text v0.8.0 // indirect
-	google.golang.org/genproto v0.0.0-20221202195650-67e5cbc046fd
-	google.golang.org/grpc v1.50.1
-	gopkg.in/Shopify/sarama.v1 v1.20.1
+	google.golang.org/genproto v0.0.0-20230331144136-dcfb400f0633
+	google.golang.org/grpc v1.54.0
+	gopkg.in/Shopify/sarama.v1 v1.20.1 // indirect
 	gopkg.in/go-playground/validator.v9 v9.31.0
 	gorm.io/driver/postgres v1.5.0 // indirect
 	gorm.io/gorm v1.25.1
@@ -111,6 +111,7 @@ require (
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0
+	github.com/confluentinc/confluent-kafka-go/v2 v2.1.1
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.5
@@ -120,7 +121,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230513131051-487f90781041
 	github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230513092309-666e3325e35e
-	github.com/kaytu-io/kaytu-util v0.0.0-20230519125756-a1f1850bdbf3
+	github.com/kaytu-io/kaytu-util v0.0.0-20230519191737-b68de1bc820b
 	github.com/microsoft/kiota-abstractions-go v0.9.1
 	github.com/microsoft/kiota-authentication-azure-go v0.4.1
 	github.com/microsoftgraph/msgraph-sdk-go v0.37.0
@@ -253,16 +254,16 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cjlapao/common-go v0.0.25 // indirect
 	github.com/cloudflare/circl v1.1.0 // indirect
-	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc // indirect
+	github.com/cncf/xds/go v0.0.0-20230105202645-06c439db220b // indirect
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/docker/cli v20.10.17+incompatible // indirect
-	github.com/docker/docker v20.10.7+incompatible // indirect
+	github.com/docker/docker v20.10.17+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/docker/go-units v0.4.0 // indirect
+	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
@@ -270,11 +271,11 @@ require (
 	github.com/eko/gocache/v3 v3.1.1 // indirect
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/envoyproxy/protoc-gen-validate v0.6.7 // indirect
+	github.com/envoyproxy/protoc-gen-validate v0.9.1 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/fluxcd/pkg/apis/kustomize v0.3.3 // indirect
-	github.com/fsnotify/fsnotify v1.5.1 // indirect
+	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gertd/go-pluralize v0.2.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
@@ -297,7 +298,7 @@ require (
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-plugin v1.4.4 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.0 // indirect
@@ -324,7 +325,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
-	github.com/klauspost/compress v1.13.6 // indirect
+	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -399,10 +400,10 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
-	golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf // indirect
+	golang.org/x/exp v0.0.0-20220827204233-334a2380cb91 // indirect
 	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/oauth2 v0.5.0 // indirect
+	golang.org/x/oauth2 v0.6.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/term v0.6.0 // indirect
@@ -411,6 +412,7 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
+	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect

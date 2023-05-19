@@ -3,8 +3,10 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"strings"
+
+	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
@@ -16,7 +18,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/push"
 
 	"go.uber.org/zap"
-	"gopkg.in/Shopify/sarama.v1"
 )
 
 type Worker struct {
@@ -24,7 +25,7 @@ type Worker struct {
 	jobQueue         queue.Interface
 	jobResultQueue   queue.Interface
 	config           WorkerConfig
-	kfkProducer      sarama.SyncProducer
+	kfkProducer      *confluence_kafka.Producer
 	kfkTopic         string
 	logger           *zap.Logger
 	pusher           *push.Pusher
@@ -172,17 +173,13 @@ func (w *Worker) Stop() {
 		w.jobResultQueue = nil
 	}
 }
-func newKafkaProducer(kafkaServers []string) (sarama.SyncProducer, error) {
-	cfg := sarama.NewConfig()
-	cfg.Producer.Retry.Max = 3
-	cfg.Producer.RequiredAcks = sarama.WaitForAll
-	cfg.Producer.Return.Successes = true
-	cfg.Version = sarama.V2_1_0_0
-
-	producer, err := sarama.NewSyncProducer(kafkaServers, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return producer, nil
+func newKafkaProducer(kafkaServers []string) (*confluence_kafka.Producer, error) {
+	return confluence_kafka.NewProducer(&confluence_kafka.ConfigMap{
+		"bootstrap.servers": strings.Join(kafkaServers, ","),
+		"acks":              "all",
+		"retries":           3,
+		"linger.ms":         1,
+		"batch.size":        1000000,
+		"compression.type":  "lz4",
+	})
 }

@@ -9,24 +9,23 @@ import (
 	"strings"
 	"time"
 
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"github.com/kaytu-io/kaytu-util/proto/src/golang"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
-	"github.com/kaytu-io/kaytu-util/proto/src/golang"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/checkup"
 	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
-	"gopkg.in/Shopify/sarama.v1"
 	"gorm.io/gorm"
 
 	"github.com/go-redis/redis/v8"
@@ -150,7 +149,7 @@ type Scheduler struct {
 	authGrpcClient      envoyauth.AuthorizationClient
 	es                  keibi.Client
 	rdb                 *redis.Client
-	kafkaProducer       sarama.SyncProducer
+	kafkaProducer       *confluence_kafka.Producer
 	kafkaResourcesTopic string
 	kafkaDeletionTopic  string
 
@@ -1576,47 +1575,12 @@ func newCheckupJob() CheckupJob {
 	}
 }
 
-func newKafkaProducer(brokers []string) (sarama.SyncProducer, error) {
-	cfg := sarama.NewConfig()
-	cfg.Producer.Retry.Max = 3
-	cfg.Producer.RequiredAcks = sarama.WaitForAll
-	cfg.Producer.Return.Successes = true
-	cfg.Producer.Partitioner = sarama.NewRandomPartitioner
-	cfg.Version = sarama.V2_1_0_0
-
-	producer, err := sarama.NewSyncProducer(brokers, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return producer, nil
-}
-
-func newKafkaConsumer(brokers []string) (sarama.Consumer, error) {
-	cfg := sarama.NewConfig()
-	cfg.Consumer.Fetch.Max = 1024 * 100 // 1MiB
-	cfg.Version = sarama.V2_1_0_0
-
-	consumer, err := sarama.NewConsumer(brokers, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return consumer, nil
-}
-
-func newKafkaClient(brokers []string) (sarama.Client, error) {
-	cfg := sarama.NewConfig()
-	cfg.Producer.Retry.Max = 3
-	cfg.Producer.RequiredAcks = sarama.WaitForAll
-	cfg.Producer.Return.Successes = true
-	cfg.Version = sarama.V2_1_0_0
-	cfg.Producer.MaxMessageBytes = 1024 * 1024 * 100 // 10MiB
-
-	client, err := sarama.NewClient(brokers, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return client, nil
+func newKafkaProducer(brokers []string) (*confluence_kafka.Producer, error) {
+	return confluence_kafka.NewProducer(&confluence_kafka.ConfigMap{
+		"bootstrap.servers":            strings.Join(brokers, ","),
+		"linger.ms":                    100,
+		"compression.type":             "lz4",
+		"message.timeout.ms":           10000,
+		"queue.buffering.max.messages": 100000,
+	})
 }
