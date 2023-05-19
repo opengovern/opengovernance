@@ -67,6 +67,7 @@ var (
 	DescribeDeliverEndpoint = os.Getenv("DESCRIBE_DELIVER_ENDPOINT")
 
 	DoDeleteOldResources  = os.Getenv("DO_DELETE_OLD_RESOURCES")
+	DisableScheduling     = os.Getenv("DISABLE_SCHEDULING")
 	DoProcessReceivedMsgs = os.Getenv("DO_PROCESS_RECEIVED_MSGS")
 )
 

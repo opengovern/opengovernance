@@ -164,6 +164,7 @@ type Scheduler struct {
 	WorkspaceName string
 
 	DoDeleteOldResources bool
+	DisableScheduling    bool
 }
 
 func initRabbitQueue(queueName string) (queue.Interface, error) {
@@ -384,6 +385,7 @@ func InitializeScheduler(
 	s.WorkspaceName = workspace.Name
 
 	s.DoDeleteOldResources, _ = strconv.ParseBool(DoDeleteOldResources)
+	s.DisableScheduling, _ = strconv.ParseBool(DisableScheduling)
 	describeServer.DoProcessReceivedMessages, _ = strconv.ParseBool(DoProcessReceivedMsgs)
 
 	return s, nil
@@ -434,59 +436,61 @@ func (s *Scheduler) Run() error {
 		}
 	}
 
-	// describe
-	EnsureRunGoroutin(func() {
-		s.RunDescribeJobScheduler()
-	})
-	EnsureRunGoroutin(func() {
-		s.RunDescribeResourceJobs()
-	})
-	EnsureRunGoroutin(func() {
-		s.RunDescribeJobCompletionUpdater()
-	})
-	EnsureRunGoroutin(func() {
-		s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
-	})
+	if !s.DisableScheduling {
+		// describe
+		EnsureRunGoroutin(func() {
+			s.RunDescribeJobScheduler()
+		})
+		EnsureRunGoroutin(func() {
+			s.RunDescribeResourceJobs()
+		})
+		EnsureRunGoroutin(func() {
+			s.RunDescribeJobCompletionUpdater()
+		})
+		EnsureRunGoroutin(func() {
+			s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
+		})
 
-	// inventory summarizer
-	EnsureRunGoroutin(func() {
-		s.RunMustSummerizeJobScheduler()
-	})
-	//
+		// inventory summarizer
+		EnsureRunGoroutin(func() {
+			s.RunMustSummerizeJobScheduler()
+		})
+		//
 
-	// compliance
-	EnsureRunGoroutin(func() {
-		s.RunComplianceJobScheduler()
-	})
-	//
+		// compliance
+		EnsureRunGoroutin(func() {
+			s.RunComplianceJobScheduler()
+		})
+		//
 
-	//EnsureRunGoroutin(func() {
-	//	s.RunScheduleJobCompletionUpdater()
-	//})
-	//EnsureRunGoroutin(func() {
-	//	s.RunInsightJobScheduler()
-	//})
-	EnsureRunGoroutin(func() {
-		s.RunCheckupJobScheduler()
-	})
-	EnsureRunGoroutin(func() {
-		s.RunDeletedSourceCleanup()
-	})
-	EnsureRunGoroutin(func() {
-		s.logger.Fatal("SourceEvents consumer exited", zap.Error(s.RunSourceEventsConsumer()))
-	})
-	EnsureRunGoroutin(func() {
-		s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
-	})
-	//EnsureRunGoroutin(func() {
-	//	s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
-	//})
-	EnsureRunGoroutin(func() {
-		s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
-	})
-	EnsureRunGoroutin(func() {
-		s.logger.Fatal("SummarizerJobResult consumer exited", zap.Error(s.RunSummarizerJobResultsConsumer()))
-	})
+		//EnsureRunGoroutin(func() {
+		//	s.RunScheduleJobCompletionUpdater()
+		//})
+		//EnsureRunGoroutin(func() {
+		//	s.RunInsightJobScheduler()
+		//})
+		EnsureRunGoroutin(func() {
+			s.RunCheckupJobScheduler()
+		})
+		EnsureRunGoroutin(func() {
+			s.RunDeletedSourceCleanup()
+		})
+		EnsureRunGoroutin(func() {
+			s.logger.Fatal("SourceEvents consumer exited", zap.Error(s.RunSourceEventsConsumer()))
+		})
+		EnsureRunGoroutin(func() {
+			s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
+		})
+		//EnsureRunGoroutin(func() {
+		//	s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
+		//})
+		EnsureRunGoroutin(func() {
+			s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
+		})
+		EnsureRunGoroutin(func() {
+			s.logger.Fatal("SummarizerJobResult consumer exited", zap.Error(s.RunSummarizerJobResultsConsumer()))
+		})
+	}
 
 	lis, err := net.Listen("tcp", GRPCServerAddress)
 	if err != nil {
