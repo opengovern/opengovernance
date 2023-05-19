@@ -65,6 +65,8 @@ var (
 	KeyARN                  = os.Getenv("KMS_KEY_ARN")
 	KeyRegion               = os.Getenv("KMS_KEY_REGION")
 	DescribeDeliverEndpoint = os.Getenv("DESCRIBE_DELIVER_ENDPOINT")
+
+	DoDeleteOldResources = os.Getenv("DO_DELETE_OLD_RESOURCES")
 )
 
 func SchedulerCommand() *cobra.Command {

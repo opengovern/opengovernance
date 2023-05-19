@@ -169,6 +169,8 @@ type Scheduler struct {
 	cloudNativeAPIAuthKey string
 
 	WorkspaceName string
+
+	DoDeleteOldResources bool
 }
 
 func initRabbitQueue(queueName string) (queue.Interface, error) {
@@ -438,6 +440,8 @@ func InitializeScheduler(
 		return nil, err
 	}
 	s.WorkspaceName = workspace.Name
+
+	s.DoDeleteOldResources, _ = strconv.ParseBool(DoDeleteOldResources)
 
 	return s, nil
 }
