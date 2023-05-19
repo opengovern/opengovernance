@@ -1,0 +1,2 @@
+FROM docker.io/golang:alpine
+RUN apk --no-cache add make git
