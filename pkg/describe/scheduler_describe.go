@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -26,7 +25,7 @@ import (
 const (
 	MaxTriggerPerAccountPerMinute = 60
 	MaxQueued                     = 10000
-	MaxConcurrentCall             = 1500
+	MaxConcurrentCall             = 500
 )
 
 type CloudNativeCall struct {
@@ -76,7 +75,6 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 	parentMap := map[uint]*DescribeSourceJob{}
 	srcMap := map[uint]*Source{}
 
-	wp := concurrency.NewWorkPool(MaxConcurrentCall)
 	jobCount := 0
 	for _, dr := range drs {
 		ignore := false
@@ -125,21 +123,16 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 			ds:  ds,
 			src: src,
 		}
-		wp.AddJob(func() (interface{}, error) {
-			err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, c.src, s.WorkspaceName)
-			if err != nil {
-				s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dr.ID))
-				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-				return nil, err
-			}
-			DescribeResourceJobsCount.WithLabelValues("successful").Inc()
-			return nil, nil
-		})
+		err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, c.src, s.WorkspaceName)
+		if err != nil {
+			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dr.ID))
+			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+			continue
+		}
+		DescribeResourceJobsCount.WithLabelValues("successful").Inc()
 		jobCount++
 	}
 
-	s.logger.Info("running jobs on workpool", zap.Int("length", jobCount))
-	wp.Run()
 	return nil
 }
 
