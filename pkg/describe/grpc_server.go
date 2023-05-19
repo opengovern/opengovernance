@@ -73,9 +73,6 @@ func (s *GRPCDescribeServer) SetInProgress(ctx context.Context, req *golang.SetI
 }
 
 func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources *golang.AWSResources) (*golang.ResponseOK, error) {
-	if !s.DoProcessReceivedMessages {
-		return &golang.ResponseOK{}, nil
-	}
 
 	startTime := time.Now().UnixMilli()
 	defer func() {
@@ -134,6 +131,9 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 		ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
 	}
 
+	if !s.DoProcessReceivedMessages {
+		return &golang.ResponseOK{}, nil
+	}
 	if err := kafka.DoSend(s.producer, s.topic, 0, msgs, s.logger); err != nil {
 		StreamFailureCount.WithLabelValues("aws").Inc()
 		return nil, fmt.Errorf("send to kafka: %w", err)
