@@ -62,6 +62,14 @@ func (s *GRPCDescribeServer) UpdateInProgress(ctx context.Context) error {
 	return nil
 }
 
+func (s *GRPCDescribeServer) SetInProgress(ctx context.Context, req *golang.SetInProgressRequest) (*golang.ResponseOK, error) {
+	err := s.db.UpdateDescribeResourceJobToInProgress(uint(req.JobId)) //TODO this is called too much
+	if err != nil {
+		return nil, err
+	}
+	return &golang.ResponseOK{}, nil
+}
+
 func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources *golang.AWSResources) (*golang.ResponseOK, error) {
 	startTime := time.Now().UnixMilli()
 	defer func() {
