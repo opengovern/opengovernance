@@ -4,11 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
+	"github.com/gogo/googleapis/google/rpc"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/kaytu-io/kaytu-util/proto/src/golang"
@@ -21,6 +28,11 @@ import (
 	"gopkg.in/Shopify/sarama.v1"
 )
 
+type AuthTokenCacheEntry struct {
+	AuthToken string
+	ExpiresAt time.Time
+}
+
 type GRPCDescribeServer struct {
 	db                        Database
 	rdb                       *redis.Client
@@ -29,11 +41,14 @@ type GRPCDescribeServer struct {
 	logger                    *zap.Logger
 	describeJobResultQueue    queue.Interface
 	DoProcessReceivedMessages bool
+	authGrpcClient            envoyauth.AuthorizationClient
+
+	authTokenCache map[string]AuthTokenCacheEntry
 
 	golang.DescribeServiceServer
 }
 
-func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProducer, topic string, describeJobResultQueue queue.Interface, logger *zap.Logger) *GRPCDescribeServer {
+func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProducer, topic string, describeJobResultQueue queue.Interface, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger) *GRPCDescribeServer {
 	return &GRPCDescribeServer{
 		db:                        db,
 		rdb:                       rdb,
@@ -42,26 +57,75 @@ func NewDescribeServer(db Database, rdb *redis.Client, producer sarama.SyncProdu
 		describeJobResultQueue:    describeJobResultQueue,
 		logger:                    logger,
 		DoProcessReceivedMessages: true,
+		authGrpcClient:            authGrpcClient,
+		authTokenCache:            make(map[string]AuthTokenCacheEntry),
 	}
 }
 
-func (s *GRPCDescribeServer) UpdateInProgress(ctx context.Context) error {
-	//md, ok := metadata.FromIncomingContext(ctx)
-	//if ok && md.Get("resource-job-id") != nil {
-	//	resourceJobIdStr := md.Get("resource-job-id")[0]
-	//	resourceJobId, err := strconv.ParseUint(resourceJobIdStr, 10, 64)
-	//	if err != nil {
-	//		StreamFailureCount.WithLabelValues("aws").Inc()
-	//		s.logger.Error("failed to parse resource job id:", zap.Error(err))
-	//		return fmt.Errorf("failed to parse resource job id: %v", err)
-	//	}
-	//	err = s.db.UpdateDescribeResourceJobToInProgress(uint(resourceJobId)) //TODO this is called too much
-	//	if err != nil {
-	//		StreamFailureCount.WithLabelValues("aws").Inc()
-	//		s.logger.Error("failed to update describe resource job status", zap.Error(err), zap.Uint("jobID", uint(resourceJobId)))
-	//	}
-	//}
+func (s *GRPCDescribeServer) checkGRPCAuth(ctx context.Context) error {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return status.Errorf(codes.Unauthenticated, "missing metadata")
+	}
+
+	mdHeaders := make(map[string]string)
+	for k, v := range md {
+		if len(v) > 0 {
+			mdHeaders[k] = v[0]
+		}
+	}
+
+	s.logger.Debug("checkGRPCAuth", zap.Any("mdHeaders", mdHeaders))
+
+	authHeader, ok := mdHeaders["Authorization"]
+	if ok {
+		if entry, ok := s.authTokenCache[authHeader]; ok {
+			if entry.ExpiresAt.After(time.Now()) {
+				return nil
+			}
+		}
+	}
+
+	result, err := s.authGrpcClient.Check(ctx, &envoyauth.CheckRequest{
+		Attributes: &envoyauth.AttributeContext{
+			Request: &envoyauth.AttributeContext_Request{
+				Http: &envoyauth.AttributeContext_HttpRequest{
+					Headers: mdHeaders,
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		return status.Errorf(codes.Unauthenticated, "authentication failed: %v", err)
+	}
+
+	if result.GetStatus() == nil || result.GetStatus().GetCode() != int32(rpc.OK) {
+		return status.Errorf(codes.Unauthenticated, http.StatusText(http.StatusUnauthorized))
+	}
+
+	if authHeader != "" {
+		s.authTokenCache[authHeader] = AuthTokenCacheEntry{
+			AuthToken: authHeader,
+			ExpiresAt: time.Now().Add(time.Minute),
+		}
+	}
+
 	return nil
+}
+
+func (s *GRPCDescribeServer) grpcUnaryAuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	if err := s.checkGRPCAuth(ctx); err != nil {
+		return nil, err
+	}
+	return handler(ctx, req)
+}
+
+func (s *GRPCDescribeServer) grpcStreamAuthInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	if err := s.checkGRPCAuth(ss.Context()); err != nil {
+		return err
+	}
+	return handler(srv, ss)
 }
 
 func (s *GRPCDescribeServer) SetInProgress(ctx context.Context, req *golang.SetInProgressRequest) (*golang.ResponseOK, error) {
@@ -73,16 +137,10 @@ func (s *GRPCDescribeServer) SetInProgress(ctx context.Context, req *golang.SetI
 }
 
 func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources *golang.AWSResources) (*golang.ResponseOK, error) {
-
 	startTime := time.Now().UnixMilli()
 	defer func() {
 		ResourceBatchProcessLatency.WithLabelValues("aws").Observe(float64(time.Now().UnixMilli() - startTime))
 	}()
-
-	//TODO-Saleh expensive operation on psql
-	if err := s.UpdateInProgress(ctx); err != nil {
-		return nil, err
-	}
 
 	var msgs []kafka.Doc
 	for _, resource := range resources.GetResources() {
@@ -147,10 +205,6 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		ResourceBatchProcessLatency.WithLabelValues("azure").Observe(float64(time.Now().UnixMilli() - startTime))
 	}()
 
-	//TODO-Saleh expensive operation on psql
-	if err := s.UpdateInProgress(ctx); err != nil {
-		return nil, err
-	}
 	var msgs []kafka.Doc
 	for _, resource := range resources.GetResources() {
 		var description any
