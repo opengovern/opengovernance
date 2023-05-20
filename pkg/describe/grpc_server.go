@@ -27,11 +27,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type AuthTokenCacheEntry struct {
-	AuthToken string
-	ExpiresAt time.Time
-}
-
 type GRPCDescribeServer struct {
 	db                        Database
 	rdb                       *redis.Client
