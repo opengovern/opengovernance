@@ -86,8 +86,8 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 
 func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 	var searchAfter []interface{}
-	deliverChan := make(chan confluence_kafka.Event)
-	errChan := make(chan error)
+	deliverChan := make(chan confluence_kafka.Event, 1000)
+	errChan := make(chan error, 1000)
 	wg := &sync.WaitGroup{}
 	go func() {
 		for {
