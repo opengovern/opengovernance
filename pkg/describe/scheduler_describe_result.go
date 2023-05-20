@@ -92,7 +92,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 	go func() {
 		for {
 			e, isOpen := <-deliverChan
-			if !isOpen {
+			if !isOpen || e == nil {
 				return
 			}
 			switch e.(type) {
@@ -104,8 +104,8 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				} else {
 					s.logger.Debug("Delivered message to topic", zap.String("topic", *m.TopicPartition.Topic))
 				}
+				wg.Done()
 			}
-			wg.Done()
 		}
 	}()
 
