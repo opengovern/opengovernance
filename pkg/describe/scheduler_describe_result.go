@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -86,29 +85,6 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 
 func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 	var searchAfter []interface{}
-	deliverChan := make(chan confluence_kafka.Event, 1000)
-	errChan := make(chan error, 1000)
-	wg := &sync.WaitGroup{}
-	go func() {
-		for {
-			e, isOpen := <-deliverChan
-			if !isOpen || e == nil {
-				close(errChan)
-				return
-			}
-			switch e.(type) {
-			case *confluence_kafka.Message:
-				m := e.(*confluence_kafka.Message)
-				if m.TopicPartition.Error != nil {
-					s.logger.Error("Delivery failed", zap.Error(m.TopicPartition.Error))
-					errChan <- m.TopicPartition.Error
-				} else {
-					s.logger.Debug("Delivered message to topic", zap.String("topic", *m.TopicPartition.Topic))
-				}
-				wg.Done()
-			}
-		}
-	}()
 
 	for {
 		esResp, err := es.GetResourceIDsForAccountResourceTypeFromES(s.es, res.DescribeJob.SourceID, res.DescribeJob.ResourceType, searchAfter, 1000)
@@ -119,7 +95,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 		if len(esResp.Hits.Hits) == 0 {
 			break
 		}
-
+		var msgs []*confluence_kafka.Message
 		for _, hit := range esResp.Hits.Hits {
 			searchAfter = hit.Sort
 			esResourceID := hit.Source.ResourceID
@@ -142,16 +118,8 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				}
 				keys, idx := resource.KeysAndIndex()
 				key := kafka.HashOf(keys...)
-				msg := kafka.Msg(key, nil, idx)
-				msg.TopicPartition = confluence_kafka.TopicPartition{
-					Topic:     &s.kafkaDeletionTopic,
-					Partition: confluence_kafka.PartitionAny,
-				}
-				err = s.kafkaProducer.Produce(msg, deliverChan)
-				if err != nil {
-					return err
-				}
-				wg.Add(1)
+				msg := kafka.Msg(key, nil, idx, s.kafkaResourcesTopic, confluence_kafka.PartitionAny)
+				msgs = append(msgs, msg)
 
 				lookupResource := es.LookupResource{
 					ResourceID:   esResourceID,
@@ -160,30 +128,19 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				}
 				keys, idx = lookupResource.KeysAndIndex()
 				key = kafka.HashOf(keys...)
-				msg = kafka.Msg(key, nil, idx)
-				msg.TopicPartition = confluence_kafka.TopicPartition{
-					Topic:     &s.kafkaDeletionTopic,
-					Partition: confluence_kafka.PartitionAny,
-				}
-				err = s.kafkaProducer.Produce(msg, deliverChan)
+				msg = kafka.Msg(key, nil, idx, s.kafkaResourcesTopic, confluence_kafka.PartitionAny)
+				msgs = append(msgs, msg)
 				if err != nil {
 					return err
 				}
-				wg.Add(1)
 			}
 		}
+		err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs)
+		if err != nil {
+			s.logger.Error("failed to send delete message to kafka", zap.Error(err))
+			return err
+		}
 	}
-
-	close(deliverChan)
-	wg.Wait()
-	errList := make([]error, 0)
-	for err := range errChan {
-		errList = append(errList, err)
-	}
-	if len(errList) > 0 {
-		return fmt.Errorf("failed to persist %d resources in kafka topic[%s]: %v", len(errList), s.kafkaDeletionTopic, errList)
-	}
-	close(errChan)
 
 	return nil
 }
