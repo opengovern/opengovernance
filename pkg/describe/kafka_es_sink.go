@@ -30,9 +30,9 @@ func NewKafkaEsSink(logger *zap.Logger, kafkaConsumer *confluent_kafka.Consumer,
 		logger:        logger,
 		kafkaConsumer: kafkaConsumer,
 		esClient:      esClient,
-		commitChan:    make(chan *confluent_kafka.Message),
-		esSinkChan:    make(chan *confluent_kafka.Message),
-		esSinkBuffer:  make([]*confluent_kafka.Message, 0, 100),
+		commitChan:    make(chan *confluent_kafka.Message, 1000),
+		esSinkChan:    make(chan *confluent_kafka.Message, 1000),
+		esSinkBuffer:  make([]*confluent_kafka.Message, 0, 1000),
 	}
 }
 
@@ -109,7 +109,7 @@ func (s *KafkaEsSink) flushESSinkBuffer() {
 		s.commitChan <- resourceEvent
 	}
 
-	s.esSinkBuffer = make([]*confluent_kafka.Message, 0, 100)
+	s.esSinkBuffer = make([]*confluent_kafka.Message, 0, 1000)
 }
 
 func newEsResourceFromKafkaMessage(msg *confluent_kafka.Message) (*esResource, error) {
