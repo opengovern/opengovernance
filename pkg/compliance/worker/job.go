@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"time"
 
-	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
@@ -48,7 +48,7 @@ func (j *Job) Do(
 	complianceClient client.ComplianceServiceClient,
 	onboardClient client2.OnboardServiceClient,
 	elasticSearchConfig config.ElasticSearch,
-	kfkProducer *confluence_kafka.Producer,
+	kfkProducer *confluent_kafka.Producer,
 	kfkTopic string,
 	logger *zap.Logger,
 ) JobResult {
@@ -122,7 +122,7 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 }
 
 func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient client2.OnboardServiceClient,
-	elasticSearchConfig config.ElasticSearch, kfkProducer *confluence_kafka.Producer, kfkTopic string, logger *zap.Logger) error {
+	elasticSearchConfig config.ElasticSearch, kfkProducer *confluent_kafka.Producer, kfkTopic string, logger *zap.Logger) error {
 
 	ctx := &httpclient.Context{
 		UserRole: api2.AdminRole,

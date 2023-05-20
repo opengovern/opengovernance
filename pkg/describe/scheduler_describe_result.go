@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
@@ -95,7 +95,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 		if len(esResp.Hits.Hits) == 0 {
 			break
 		}
-		var msgs []*confluence_kafka.Message
+		var msgs []*confluent_kafka.Message
 		for _, hit := range esResp.Hits.Hits {
 			searchAfter = hit.Sort
 			esResourceID := hit.Source.ResourceID
@@ -118,7 +118,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				}
 				keys, idx := resource.KeysAndIndex()
 				key := kafka.HashOf(keys...)
-				msg := kafka.Msg(key, nil, idx, s.kafkaResourcesTopic, confluence_kafka.PartitionAny)
+				msg := kafka.Msg(key, nil, idx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
 				msgs = append(msgs, msg)
 
 				lookupResource := es.LookupResource{
@@ -128,7 +128,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				}
 				keys, idx = lookupResource.KeysAndIndex()
 				key = kafka.HashOf(keys...)
-				msg = kafka.Msg(key, nil, idx, s.kafkaResourcesTopic, confluence_kafka.PartitionAny)
+				msg = kafka.Msg(key, nil, idx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
 				msgs = append(msgs, msg)
 				if err != nil {
 					return err

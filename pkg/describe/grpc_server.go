@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/go-redis/redis/v8"
 	"github.com/gogo/googleapis/google/rpc"
@@ -30,7 +30,7 @@ import (
 type GRPCDescribeServer struct {
 	db                        Database
 	rdb                       *redis.Client
-	producer                  *confluence_kafka.Producer
+	producer                  *confluent_kafka.Producer
 	topic                     string
 	logger                    *zap.Logger
 	describeJobResultQueue    queue.Interface
@@ -40,7 +40,7 @@ type GRPCDescribeServer struct {
 	golang.DescribeServiceServer
 }
 
-func NewDescribeServer(db Database, rdb *redis.Client, producer *confluence_kafka.Producer, topic string, describeJobResultQueue queue.Interface, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger) *GRPCDescribeServer {
+func NewDescribeServer(db Database, rdb *redis.Client, producer *confluent_kafka.Producer, topic string, describeJobResultQueue queue.Interface, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger) *GRPCDescribeServer {
 	return &GRPCDescribeServer{
 		db:                        db,
 		rdb:                       rdb,

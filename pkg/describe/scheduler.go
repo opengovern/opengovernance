@@ -19,7 +19,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/checkup"
 	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
@@ -149,7 +149,8 @@ type Scheduler struct {
 	authGrpcClient      envoyauth.AuthorizationClient
 	es                  keibi.Client
 	rdb                 *redis.Client
-	kafkaProducer       *confluence_kafka.Producer
+	kafkaProducer       *confluent_kafka.Producer
+	kafkaESSink         *KafkaEsSink
 	kafkaResourcesTopic string
 	kafkaDeletionTopic  string
 
@@ -306,13 +307,31 @@ func InitializeScheduler(
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
 	s.db = Database{orm: orm}
 
+	defaultAccountID := "default"
+	s.es, err = keibi.NewClient(keibi.ClientConfig{
+		Addresses: []string{ElasticSearchAddress},
+		Username:  &ElasticSearchUsername,
+		Password:  &ElasticSearchPassword,
+		AccountID: &defaultAccountID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	s.kafkaResourcesTopic = KafkaResourcesTopic
+	s.kafkaDeletionTopic = KafkaDeletionTopic
+
 	kafkaProducer, err := newKafkaProducer(strings.Split(KafkaService, ","))
 	if err != nil {
 		return nil, err
 	}
 	s.kafkaProducer = kafkaProducer
-	s.kafkaResourcesTopic = KafkaResourcesTopic
-	s.kafkaDeletionTopic = KafkaDeletionTopic
+
+	kafkaResourceSinkConsumer, err := newKafkaConsumer(strings.Split(KafkaService, ","), s.kafkaResourcesTopic)
+	if err != nil {
+		return nil, err
+	}
+	s.kafkaESSink = NewKafkaEsSink(s.logger, kafkaResourceSinkConsumer, s.es)
 
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
 
@@ -354,13 +373,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 	s.authGrpcClient = envoyauth.NewAuthorizationClient(authGRPCConn)
-	defaultAccountID := "default"
-	s.es, err = keibi.NewClient(keibi.ClientConfig{
-		Addresses: []string{ElasticSearchAddress},
-		Username:  &ElasticSearchUsername,
-		Password:  &ElasticSearchPassword,
-		AccountID: &defaultAccountID,
-	})
+
 	s.rdb = redis.NewClient(&redis.Options{
 		Addr:     RedisAddress,
 		Password: "", // no password set
@@ -489,18 +502,19 @@ func (s *Scheduler) Run() error {
 		EnsureRunGoroutin(func() {
 			s.logger.Fatal("SummarizerJobResult consumer exited", zap.Error(s.RunSummarizerJobResultsConsumer()))
 		})
-	}
-
-	lis, err := net.Listen("tcp", GRPCServerAddress)
-	if err != nil {
-		s.logger.Fatal("failed to listen on grpc port", zap.Error(err))
-	}
-	go func() {
-		err := s.grpcServer.Serve(lis)
+	} else {
+		lis, err := net.Listen("tcp", GRPCServerAddress)
 		if err != nil {
-			s.logger.Fatal("failed to serve grpc server", zap.Error(err))
+			s.logger.Fatal("failed to listen on grpc port", zap.Error(err))
 		}
-	}()
+		go func() {
+			err := s.grpcServer.Serve(lis)
+			if err != nil {
+				s.logger.Fatal("failed to serve grpc server", zap.Error(err))
+			}
+		}()
+		s.kafkaESSink.Run()
+	}
 
 	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
 }
@@ -1575,12 +1589,29 @@ func newCheckupJob() CheckupJob {
 	}
 }
 
-func newKafkaProducer(brokers []string) (*confluence_kafka.Producer, error) {
-	return confluence_kafka.NewProducer(&confluence_kafka.ConfigMap{
+func newKafkaProducer(brokers []string) (*confluent_kafka.Producer, error) {
+	return confluent_kafka.NewProducer(&confluent_kafka.ConfigMap{
 		"bootstrap.servers":            strings.Join(brokers, ","),
 		"linger.ms":                    100,
 		"compression.type":             "lz4",
 		"message.timeout.ms":           10000,
 		"queue.buffering.max.messages": 100000,
 	})
+}
+
+func newKafkaConsumer(brokers []string, topic string) (*confluent_kafka.Consumer, error) {
+	consumer, err := confluent_kafka.NewConsumer(&confluent_kafka.ConfigMap{
+		"bootstrap.servers":  strings.Join(brokers, ","),
+		"group.id":           "describe-receiver",
+		"auto.offset.reset":  "earliest",
+		"enable.auto.commit": false,
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = consumer.Subscribe(topic, nil)
+	if err != nil {
+		return nil, err
+	}
+	return consumer, nil
 }

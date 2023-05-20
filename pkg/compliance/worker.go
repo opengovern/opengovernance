@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
@@ -25,7 +25,7 @@ type Worker struct {
 	jobQueue         queue.Interface
 	jobResultQueue   queue.Interface
 	config           WorkerConfig
-	kfkProducer      *confluence_kafka.Producer
+	kfkProducer      *confluent_kafka.Producer
 	kfkTopic         string
 	logger           *zap.Logger
 	pusher           *push.Pusher
@@ -173,8 +173,8 @@ func (w *Worker) Stop() {
 		w.jobResultQueue = nil
 	}
 }
-func newKafkaProducer(kafkaServers []string) (*confluence_kafka.Producer, error) {
-	return confluence_kafka.NewProducer(&confluence_kafka.ConfigMap{
+func newKafkaProducer(kafkaServers []string) (*confluent_kafka.Producer, error) {
+	return confluent_kafka.NewProducer(&confluent_kafka.ConfigMap{
 		"bootstrap.servers": strings.Join(kafkaServers, ","),
 		"acks":              "all",
 		"retries":           3,

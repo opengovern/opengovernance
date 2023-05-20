@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -23,7 +23,7 @@ type Worker struct {
 	id             string
 	jobQueue       queue.Interface
 	jobResultQueue queue.Interface
-	kfkProducer    *confluence_kafka.Producer
+	kfkProducer    *confluent_kafka.Producer
 	kfkTopic       string
 	s3Bucket       string
 	logger         *zap.Logger
@@ -211,8 +211,8 @@ func (w *Worker) Stop() {
 	}
 }
 
-func newKafkaProducer(brokers []string) (*confluence_kafka.Producer, error) {
-	return confluence_kafka.NewProducer(&confluence_kafka.ConfigMap{
+func newKafkaProducer(brokers []string) (*confluent_kafka.Producer, error) {
+	return confluent_kafka.NewProducer(&confluent_kafka.ConfigMap{
 		"bootstrap.servers":            strings.Join(brokers, ","),
 		"linger.ms":                    100,
 		"compression.type":             "lz4",
