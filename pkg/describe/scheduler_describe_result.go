@@ -90,9 +90,13 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 	errChan := make(chan error)
 	wg := &sync.WaitGroup{}
 	go func() {
-		for e := range deliverChan {
+		for {
+			e, isOpen := <-deliverChan
+			if !isOpen {
+				return
+			}
 			switch e.(type) {
-			case *confluence_kafka.Error:
+			case *confluence_kafka.Message:
 				m := e.(*confluence_kafka.Message)
 				if m.TopicPartition.Error != nil {
 					s.logger.Error("Delivery failed", zap.Error(m.TopicPartition.Error))
