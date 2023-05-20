@@ -6,12 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"github.com/labstack/echo/v4"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -54,6 +55,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	sourceApiGroup.POST("/:sourceId/disable", httpserver.AuthorizeHandler(h.DisableSource, api3.EditorRole))
 	sourceApiGroup.POST("/:sourceId/enable", httpserver.AuthorizeHandler(h.EnableSource, api3.EditorRole))
 	sourceApiGroup.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, api3.EditorRole))
+	sourceApiGroup.GET("/:accountId", httpserver.AuthorizeHandler(h.GetSourcesByAccount, api3.ViewerRole))
 
 	credential := v1.Group("/credential")
 	credential.POST("", httpserver.AuthorizeHandler(h.PostCredentials, api3.EditorRole))
@@ -2005,6 +2007,53 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 		})
 	}
 	return ctx.JSON(http.StatusOK, res)
+}
+
+// GetSourcesByAccount godoc
+//
+//	@Summary		Returns source by account id
+//	@Description	Returning account source either AWS / Azure.
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200			{object}	api.Source
+//	@Param			account_id	path		integer	true	"SourceID"
+//	@Router			/onboard/api/v1/source/{accountId} [get]
+func (h HttpHandler) GetSourcesByAccount(ctx echo.Context) error {
+	accId := ctx.Param("accountId")
+
+	src, err := h.db.GetSourceBySourceID(accId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
+		}
+		return err
+	}
+
+	metadata := make(map[string]any)
+	if src.Metadata.String() != "" {
+		err := json.Unmarshal(src.Metadata, &metadata)
+		if err != nil {
+			return err
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, &api.Source{
+		ID:                   src.ID,
+		ConnectionID:         src.SourceId,
+		ConnectionName:       src.Name,
+		Email:                src.Email,
+		Type:                 src.Type,
+		Description:          src.Description,
+		CredentialID:         src.CredentialID.String(),
+		CredentialName:       src.Credential.Name,
+		OnboardDate:          src.CreatedAt,
+		LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
+		AssetDiscoveryMethod: src.AssetDiscoveryMethod,
+		HealthState:          src.HealthState,
+		LastHealthCheckTime:  src.LastHealthCheckTime,
+		HealthReason:         src.HealthReason,
+		Metadata:             metadata,
+	})
 }
 
 // CountSources godoc
