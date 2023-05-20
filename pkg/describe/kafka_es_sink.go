@@ -66,6 +66,9 @@ func (s *KafkaEsSink) runKafkaRead() {
 	for {
 		ev, err := s.kafkaConsumer.ReadMessage(time.Millisecond * 100)
 		if err != nil {
+			if err.Error() == confluent_kafka.ErrTimedOut.String() {
+				continue
+			}
 			s.logger.Error("Failed to read kafka message", zap.Error(err))
 			continue
 		}
