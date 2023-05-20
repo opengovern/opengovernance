@@ -68,6 +68,7 @@ func (s *KafkaEsSink) runKafkaRead() {
 		if ev == nil {
 			continue
 		}
+
 		switch e := ev.(type) {
 		case *confluent_kafka.Message:
 			s.esSinkChan <- e
