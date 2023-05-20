@@ -93,6 +93,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 		for {
 			e, isOpen := <-deliverChan
 			if !isOpen || e == nil {
+				close(errChan)
 				return
 			}
 			switch e.(type) {
@@ -173,8 +174,8 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 		}
 	}
 
-	wg.Wait()
 	close(deliverChan)
+	wg.Wait()
 	errList := make([]error, 0)
 	for err := range errChan {
 		errList = append(errList, err)
