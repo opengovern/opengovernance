@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
@@ -59,7 +59,7 @@ type ResourceJobResult struct {
 	JobType JobType
 }
 
-func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database, producer *confluence_kafka.Producer, topic string, logger *zap.Logger) (r ResourceJobResult) {
+func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database, producer *confluent_kafka.Producer, topic string, logger *zap.Logger) (r ResourceJobResult) {
 	logger.Info("Starting must summarizing", zap.Int("jobID", int(j.JobID)))
 	startTime := time.Now().Unix()
 	defer func() {

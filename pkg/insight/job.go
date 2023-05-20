@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	confluence_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
@@ -71,7 +71,7 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardClient client.OnboardServiceClient, producer *confluence_kafka.Producer, uploader *s3manager.Uploader, bucket, topic string, logger *zap.Logger) (r JobResult) {
+func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardClient client.OnboardServiceClient, producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket, topic string, logger *zap.Logger) (r JobResult) {
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
