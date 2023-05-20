@@ -1605,6 +1605,8 @@ func newKafkaConsumer(brokers []string, topic string) (*confluent_kafka.Consumer
 		"group.id":           "describe-receiver",
 		"auto.offset.reset":  "earliest",
 		"enable.auto.commit": false,
+		"fetch.min.bytes":    10000000,
+		"fetch.max.wait.ms":  5000,
 	})
 	if err != nil {
 		return nil, err
