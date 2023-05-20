@@ -64,19 +64,15 @@ func (s *KafkaEsSink) runElasticSearchSink() {
 
 func (s *KafkaEsSink) runKafkaRead() {
 	for {
-		ev := s.kafkaConsumer.Poll(100)
+		ev, err := s.kafkaConsumer.ReadMessage(time.Millisecond * 100)
+		if err != nil {
+			s.logger.Error("Failed to read kafka message", zap.Error(err))
+			continue
+		}
 		if ev == nil {
 			continue
 		}
-
-		switch e := ev.(type) {
-		case *confluent_kafka.Message:
-			s.esSinkChan <- e
-		case confluent_kafka.Error:
-			s.logger.Error("Consumer Kafka error", zap.Error(e))
-		default:
-			s.logger.Info("Ignored kafka event from topic", zap.Any("event", e))
-		}
+		s.esSinkChan <- ev
 	}
 }
 
