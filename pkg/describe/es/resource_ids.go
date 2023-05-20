@@ -40,7 +40,7 @@ func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, r
 
 	root["sort"] = []map[string]any{
 		{
-			"resource_id": "desc",
+			"_id": "desc",
 		},
 	}
 
