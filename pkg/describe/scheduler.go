@@ -225,8 +225,14 @@ func InitializeScheduler(
 	}
 
 	s = &Scheduler{
-		id:             id,
-		deletedSources: make(chan string, ConcurrentDeletedSources),
+		id:                  id,
+		deletedSources:      make(chan string, ConcurrentDeletedSources),
+		OperationMode:       OperationMode(OperationModeConfig),
+		describeEndpoint:    DescribeDeliverEndpoint,
+		keyARN:              KeyARN,
+		keyRegion:           KeyRegion,
+		kafkaResourcesTopic: KafkaResourcesTopic,
+		kafkaDeletionTopic:  KafkaDeletionTopic,
 	}
 	defer func() {
 		if err != nil && s != nil {
@@ -241,9 +247,6 @@ func InitializeScheduler(
 
 	s.logger.Info("Initializing the scheduler")
 
-	s.describeEndpoint = DescribeDeliverEndpoint
-	s.keyARN = KeyARN
-	s.keyRegion = KeyRegion
 	s.describeJobResultQueue, err = initRabbitQueue(describeJobResultQueueName)
 	if err != nil {
 		return nil, err
@@ -326,9 +329,6 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	s.kafkaResourcesTopic = KafkaResourcesTopic
-	s.kafkaDeletionTopic = KafkaDeletionTopic
-
 	kafkaProducer, err := newKafkaProducer(strings.Split(KafkaService, ","))
 	if err != nil {
 		return nil, err
@@ -405,7 +405,6 @@ func InitializeScheduler(
 	s.WorkspaceName = workspace.Name
 
 	s.DoDeleteOldResources, _ = strconv.ParseBool(DoDeleteOldResources)
-	s.OperationMode = OperationMode(OperationModeConfig)
 	describeServer.DoProcessReceivedMessages, _ = strconv.ParseBool(DoProcessReceivedMsgs)
 
 	return s, nil
@@ -476,6 +475,10 @@ func (s *Scheduler) Run() error {
 		})
 		//
 
+		EnsureRunGoroutin(func() {
+			s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
+		})
+
 		// compliance
 		EnsureRunGoroutin(func() {
 			s.RunComplianceJobScheduler()
@@ -511,9 +514,6 @@ func (s *Scheduler) Run() error {
 		})
 	case OperationModeReceiver:
 		s.logger.Info("starting receiver")
-		EnsureRunGoroutin(func() {
-			s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
-		})
 		lis, err := net.Listen("tcp", GRPCServerAddress)
 		if err != nil {
 			s.logger.Fatal("failed to listen on grpc port", zap.Error(err))
