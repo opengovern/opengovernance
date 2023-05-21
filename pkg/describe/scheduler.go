@@ -98,6 +98,14 @@ var ComplianceSourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help: "Count of describe source jobs in scheduler service",
 }, []string{"status"})
 
+type OperationMode string
+
+const (
+	OperationModeScheduler OperationMode = "scheduler"
+	OperationModeReceiver  OperationMode = "receiver"
+	OperationModeKafkaSink OperationMode = "kafka-sink"
+)
+
 type Scheduler struct {
 	id         string
 	db         Database
@@ -164,7 +172,7 @@ type Scheduler struct {
 	WorkspaceName string
 
 	DoDeleteOldResources bool
-	DisableScheduling    bool
+	OperationMode        OperationMode
 }
 
 func initRabbitQueue(queueName string) (queue.Interface, error) {
@@ -397,7 +405,7 @@ func InitializeScheduler(
 	s.WorkspaceName = workspace.Name
 
 	s.DoDeleteOldResources, _ = strconv.ParseBool(DoDeleteOldResources)
-	s.DisableScheduling, _ = strconv.ParseBool(DisableScheduling)
+	s.OperationMode = OperationMode(OperationModeConfig)
 	describeServer.DoProcessReceivedMessages, _ = strconv.ParseBool(DoProcessReceivedMsgs)
 
 	return s, nil
@@ -448,7 +456,9 @@ func (s *Scheduler) Run() error {
 		}
 	}
 
-	if !s.DisableScheduling {
+	switch s.OperationMode {
+	case OperationModeScheduler:
+		s.logger.Info("starting scheduler")
 		// describe
 		EnsureRunGoroutin(func() {
 			s.RunDescribeJobScheduler()
@@ -458,9 +468,6 @@ func (s *Scheduler) Run() error {
 		})
 		EnsureRunGoroutin(func() {
 			s.RunDescribeJobCompletionUpdater()
-		})
-		EnsureRunGoroutin(func() {
-			s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
 		})
 
 		// inventory summarizer
@@ -502,7 +509,11 @@ func (s *Scheduler) Run() error {
 		EnsureRunGoroutin(func() {
 			s.logger.Fatal("SummarizerJobResult consumer exited", zap.Error(s.RunSummarizerJobResultsConsumer()))
 		})
-	} else {
+	case OperationModeReceiver:
+		s.logger.Info("starting receiver")
+		EnsureRunGoroutin(func() {
+			s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
+		})
 		lis, err := net.Listen("tcp", GRPCServerAddress)
 		if err != nil {
 			s.logger.Fatal("failed to listen on grpc port", zap.Error(err))
@@ -513,6 +524,8 @@ func (s *Scheduler) Run() error {
 				s.logger.Fatal("failed to serve grpc server", zap.Error(err))
 			}
 		}()
+	case OperationModeKafkaSink:
+		s.logger.Info("starting kafka sink")
 		s.kafkaESSink.Run()
 	}
 
