@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
 	"io"
 	"math/rand"
 	"net/http"
@@ -23,9 +24,8 @@ import (
 )
 
 const (
-	MaxTriggerPerAccountPerMinute = 60
-	MaxQueued                     = 10000
-	MaxConcurrentCall             = 500
+	MaxQueued         = 5000
+	MaxConcurrentCall = 100
 )
 
 type CloudNativeCall struct {
@@ -70,24 +70,13 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 	}
 	s.logger.Info("preparing resource jobs to run", zap.Int("length", len(drs)))
 
-	var parentIdExceptionList []uint
-	accountTriggerCount := map[string]int{}
 	parentMap := map[uint]*DescribeSourceJob{}
 	srcMap := map[uint]*Source{}
 
 	jobCount := 0
+
+	wp := concurrency.NewWorkPool(len(drs))
 	for _, dr := range drs {
-		ignore := false
-		for _, ex := range parentIdExceptionList {
-			if dr.ParentJobID == ex {
-				ignore = true
-			}
-		}
-
-		if ignore {
-			continue
-		}
-
 		var ds *DescribeSourceJob
 		var src *Source
 		if v, ok := parentMap[dr.ParentJobID]; ok {
@@ -112,26 +101,26 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 			parentMap[dr.ParentJobID] = ds
 		}
 
-		if accountTriggerCount[ds.SourceID.String()] > MaxTriggerPerAccountPerMinute {
-			parentIdExceptionList = append(parentIdExceptionList, dr.ParentJobID)
-			continue
-		}
-		accountTriggerCount[ds.SourceID.String()]++
-
 		c := CloudNativeCall{
 			dr:  dr,
 			ds:  ds,
 			src: src,
 		}
-		err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, c.src, s.WorkspaceName)
-		if err != nil {
-			s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dr.ID))
-			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-			continue
-		}
-		DescribeResourceJobsCount.WithLabelValues("successful").Inc()
+
+		wp.AddJob(func() (interface{}, error) {
+			err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, c.src, s.WorkspaceName)
+			if err != nil {
+				s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dr.ID))
+				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+				return nil, err
+			}
+			DescribeResourceJobsCount.WithLabelValues("successful").Inc()
+			return nil, nil
+		})
+
 		jobCount++
 	}
+	wp.Run()
 
 	return nil
 }
