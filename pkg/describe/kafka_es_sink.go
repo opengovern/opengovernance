@@ -2,6 +2,7 @@ package describe
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"time"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
