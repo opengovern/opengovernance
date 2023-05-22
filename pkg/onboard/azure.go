@@ -35,7 +35,7 @@ func discoverAzureSubscriptions(ctx context.Context, authConfig azure.AuthConfig
 		return nil, err
 	}
 	//
-	subs := make([]azureSubscription, 0) // don't convert to var so the returned list won't be nil
+	subs := make([]azureSubscription, 0)
 	for it.NotDone() {
 		v := it.Value()
 		if v.State != subscription.Enabled {
