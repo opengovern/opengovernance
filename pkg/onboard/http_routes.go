@@ -869,6 +869,10 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 			ClientID:     azureCnf.ClientID,
 			ClientSecret: azureCnf.ClientSecret,
 		})
+		if err != nil {
+			h.logger.Error("failed to discover subscriptions", zap.Error(err))
+			return err
+		}
 		h.logger.Info("discovered subscriptions", zap.Int("count", len(subs)))
 
 		existingConnections, err := h.db.GetSourcesByCredentialID(credential.ID.String())
