@@ -73,7 +73,7 @@ func (j *Job) Run() error {
 		}
 	}()
 
-	j.logger.Info("Starting")
+	j.logger.Info("Starting job")
 	accountID, err := j.RandomAccount()
 	if err != nil {
 		j.logger.Error("Failed to get account", zap.Error(err))
