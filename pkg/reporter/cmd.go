@@ -16,7 +16,7 @@ func ReporterCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			
+
 			return j.Run()
 		},
 	}
