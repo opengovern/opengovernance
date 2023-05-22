@@ -41,6 +41,7 @@ func discoverAzureSubscriptions(ctx context.Context, authConfig azure.AuthConfig
 		if v.State != subscription.Enabled {
 			continue
 		}
+		fmt.Printf("Adding subscription %s\n to discovered list", *v.SubscriptionID)
 		subs = append(subs, azureSubscription{SubscriptionID: *v.SubscriptionID, SubModel: v})
 
 		if it.NotDone() {
