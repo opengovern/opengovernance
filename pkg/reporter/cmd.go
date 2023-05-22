@@ -12,9 +12,15 @@ func ReporterCommand() *cobra.Command {
 			config2.ReadFromEnv(&config, nil)
 			j, err := New(config)
 			if err != nil {
-				return err
+				panic(err)
 			}
-			return j.Run()
+
+			err = j.Run()
+			if err != nil {
+				panic(err)
+			}
+
+			return nil
 		},
 	}
 
