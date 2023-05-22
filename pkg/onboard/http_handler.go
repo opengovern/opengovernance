@@ -3,6 +3,7 @@ package onboard
 import (
 	"context"
 	"fmt"
+
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
@@ -21,6 +22,7 @@ type HttpHandler struct {
 	inventoryClient       inventory.InventoryServiceClient
 	validator             *validator.Validate
 	keyARN                string
+	logger                *zap.Logger
 }
 
 func InitializeHttpHandler(
@@ -41,7 +43,7 @@ func InitializeHttpHandler(
 	inventoryBaseURL string,
 ) (*HttpHandler, error) {
 
-	fmt.Println("Initializing http handler")
+	logger.Info("Initializing http handler")
 
 	// setup source events queue
 	qCfg := queue.Config{}
@@ -57,7 +59,7 @@ func InitializeHttpHandler(
 		return nil, err
 	}
 
-	fmt.Println("Connected to the source queue: ", sourceEventsQueueName)
+	logger.Info("Connected to the source queue", zap.String("name", sourceEventsQueueName))
 
 	cfg := postgres.Config{
 		Host:    postgresHost,
@@ -71,7 +73,7 @@ func InitializeHttpHandler(
 	if err != nil {
 		return nil, fmt.Errorf("new postgres client: %w", err)
 	}
-	fmt.Println("Connected to the postgres database: ", postgresDb)
+	logger.Info("Connected to the postgres database", zap.String("database", postgresDb))
 
 	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), KMSAccessKey, KMSSecretKey, KMSAccountRegion)
 	if err != nil {
@@ -83,11 +85,12 @@ func InitializeHttpHandler(
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Initialized postgres database: ", postgresDb)
+	logger.Info("Initialized postgres database: ", zap.String("database", postgresDb))
 
 	inventoryClient := inventory.NewInventoryServiceClient(inventoryBaseURL)
 
 	return &HttpHandler{
+		logger:                logger,
 		kms:                   kms,
 		db:                    db,
 		sourceEventsQueue:     sourceEventsQueue,

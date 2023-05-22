@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"go.uber.org/zap"
 
 	"github.com/labstack/echo/v4"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -868,6 +869,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 			ClientID:     azureCnf.ClientID,
 			ClientSecret: azureCnf.ClientSecret,
 		})
+		h.logger.Info("discovered subscriptions", zap.Int("count", len(subs)))
 
 		existingConnections, err := h.db.GetSourcesByCredentialID(credential.ID.String())
 		if err != nil {
@@ -878,12 +880,17 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 		for _, conn := range existingConnections {
 			existingConnectionSubIDs = append(existingConnectionSubIDs, conn.SourceId)
 		}
-
+		subsToOnboard := make([]azureSubscription, 0)
 		for _, sub := range subs {
-			if utils.Includes(existingConnectionSubIDs, sub.SubscriptionID) {
-				continue
+			if !utils.Includes(existingConnectionSubIDs, sub.SubscriptionID) {
+				subsToOnboard = append(subsToOnboard, sub)
 			}
+		}
 
+		h.logger.Info("onboarding subscriptions", zap.Int("count", len(subsToOnboard)))
+
+		for _, sub := range subsToOnboard {
+			h.logger.Info("onboarding subscription", zap.String("subscriptionId", sub.SubscriptionID))
 			count, err := h.db.CountSources()
 			if err != nil {
 				return err
