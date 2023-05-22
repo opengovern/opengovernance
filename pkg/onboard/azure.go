@@ -27,23 +27,22 @@ func discoverAzureSubscriptions(ctx context.Context, authConfig azure.AuthConfig
 
 	client := subscription.NewSubscriptionsClient()
 	client.Authorizer = authorizer
-
 	authorizer.WithAuthorization()
 
-	it, err := client.ListComplete(ctx)
+	it, err := client.List(ctx)
 	if err != nil {
 		return nil, err
 	}
-	//
 	subs := make([]azureSubscription, 0)
 	for it.NotDone() {
-		v := it.Value()
-		if v.State != subscription.Enabled {
-			continue
+		for _, v := range it.Values() {
+			if v.State != subscription.Enabled {
+				fmt.Printf("Skipping subscription %s because it is not enabled, its state is: %s\n", *v.SubscriptionID, v.State)
+				continue
+			}
+			fmt.Printf("Adding subscription %s to discovered list\n", *v.SubscriptionID)
+			subs = append(subs, azureSubscription{SubscriptionID: *v.SubscriptionID, SubModel: v})
 		}
-		fmt.Printf("Adding subscription %s\n to discovered list", *v.SubscriptionID)
-		subs = append(subs, azureSubscription{SubscriptionID: *v.SubscriptionID, SubModel: v})
-
 		if it.NotDone() {
 			err := it.NextWithContext(ctx)
 			if err != nil {
