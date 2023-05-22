@@ -861,6 +861,9 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 			return err
 		}
 		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
 
 		subs, err := discoverAzureSubscriptions(ctx.Request().Context(), keibiazure.AuthConfig{
 			TenantID:     azureCnf.TenantID,
@@ -911,9 +914,11 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 				ClientSecret: azureCnf.ClientSecret,
 			}, sub.SubscriptionID, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
 			if err != nil {
+				h.logger.Warn("failed to check role", zap.Error(err))
 				continue
 			}
 			if !isAttached {
+				h.logger.Warn("role not attached", zap.String("subscriptionId", sub.SubscriptionID))
 				continue
 			}
 
