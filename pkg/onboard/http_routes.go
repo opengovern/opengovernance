@@ -1580,6 +1580,9 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 
 		if err == nil && isAttached {
 			azSub, err := currentAzureSubscription(ctx.Request().Context(), src.SourceId, authCnf)
+			if err != nil {
+				return err
+			}
 			metadata := NewAzureConnectionMetadata(*azSub)
 			jsonMetadata, err := json.Marshal(metadata)
 			if err != nil {
