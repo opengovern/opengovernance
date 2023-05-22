@@ -67,12 +67,18 @@ func New(config JobConfig) (*Job, error) {
 }
 
 func (j *Job) Run() error {
+	j.logger.Info("Starting")
 	accountID, err := j.RandomAccount()
 	if err != nil {
 		return err
 	}
 	resourceType := j.RandomResourceType()
 	listQuery := j.BuildListQuery(accountID, resourceType)
+
+	j.logger.Debug("query steampipe",
+		zap.String("accountID", accountID),
+		zap.String("resourceType", resourceType),
+		zap.String("query", listQuery))
 
 	steampipeRows, err := j.steampipe.Conn().Query(context.Background(), listQuery)
 	if err != nil {
@@ -169,7 +175,7 @@ func (j *Job) RandomResourceType() string {
 
 func (j *Job) BuildListQuery(accountID, resourceType string) string {
 	var tableName string
-	
+
 	switch steampipe.ExtractPlugin(resourceType) {
 	case steampipe.SteampipePluginAWS:
 		tableName = awsSteampipe.ExtractTableName(resourceType)
