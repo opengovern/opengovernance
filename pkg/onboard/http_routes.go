@@ -864,7 +864,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
-
+		h.logger.Info("discovering subscriptions", zap.String("credentialId", credential.ID.String()))
 		subs, err := discoverAzureSubscriptions(ctx.Request().Context(), keibiazure.AuthConfig{
 			TenantID:     azureCnf.TenantID,
 			ObjectID:     azureCnf.ObjectID,
