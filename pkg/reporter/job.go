@@ -67,12 +67,26 @@ func New(config JobConfig) (*Job, error) {
 }
 
 func (j *Job) Run() error {
+	defer func() {
+		if r := recover(); r != nil {
+			j.logger.Error("panic", zap.Error(fmt.Errorf("%v", r)))
+		}
+	}()
+
 	j.logger.Info("Starting")
 	accountID, err := j.RandomAccount()
 	if err != nil {
+		j.logger.Error("Failed to get account", zap.Error(err))
 		return err
 	}
+	j.logger.Debug("got the account",
+		zap.String("accountID", accountID))
+
 	resourceType := j.RandomResourceType()
+
+	j.logger.Debug("got the resource type",
+		zap.String("resourceType", resourceType))
+
 	listQuery := j.BuildListQuery(accountID, resourceType)
 
 	j.logger.Debug("query steampipe",
