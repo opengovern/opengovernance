@@ -3,6 +3,7 @@ package reporter
 import (
 	"context"
 	"fmt"
+	"github.com/go-co-op/gocron"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
@@ -14,6 +15,7 @@ import (
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"go.uber.org/zap"
 	"math/rand"
+	"time"
 )
 
 type JobConfig struct {
@@ -52,7 +54,7 @@ func New(config JobConfig) (*Job, error) {
 		return nil, err
 	}
 
-	logger, err := zap.NewProduction()
+	logger, err := zap.NewDevelopment()
 	if err != nil {
 		return nil, err
 	}
@@ -66,10 +68,22 @@ func New(config JobConfig) (*Job, error) {
 	}, nil
 }
 
-func (j *Job) Run() error {
+func (j *Job) Run() {
+	s := gocron.NewScheduler(time.UTC)
+
+	_, err := s.Every(5).Minutes().Do(func() {
+		if err := j.RunJob(); err != nil {
+			j.logger.Error("failed to run job", zap.Error(err))
+		}
+	})
+	if err != nil {
+		j.logger.Error("failed to setup job", zap.Error(err))
+	}
+}
+
+func (j *Job) RunJob() error {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("panic", r)
 			j.logger.Error("panic", zap.Error(fmt.Errorf("%v", r)))
 		}
 	}()
@@ -77,18 +91,9 @@ func (j *Job) Run() error {
 	j.logger.Info("Starting job")
 	accountID, err := j.RandomAccount()
 	if err != nil {
-		j.logger.Error("Failed to get account", zap.Error(err))
-		fmt.Println("err", err)
 		return err
 	}
-	j.logger.Info("got the account",
-		zap.String("accountID", accountID))
-
 	resourceType := j.RandomResourceType()
-
-	j.logger.Info("got the resource type",
-		zap.String("resourceType", resourceType))
-
 	listQuery := j.BuildListQuery(accountID, resourceType)
 
 	j.logger.Info("query steampipe",
@@ -106,6 +111,9 @@ func (j *Job) Run() error {
 	keyFields := []string{"arn"}
 
 	getQuery := j.BuildGetQuery(accountID, resourceType, keyFields)
+	j.logger.Info("query steampipe",
+		zap.String("getQuery", getQuery))
+
 	for steampipeRows.Next() {
 		steampipeRow, err := steampipeRows.Values()
 		if err != nil {
@@ -166,25 +174,21 @@ func (j *Job) Run() error {
 		}
 	}
 
+	j.logger.Info("Done")
+
 	return nil
 }
 
 func (j *Job) RandomAccount() (string, error) {
-	j.logger.Info("getting list of sources")
 	srcs, err := j.onboardClient.ListSources(&httpclient.Context{
 		UserRole: api.AdminRole,
 	}, nil)
-	j.logger.Info("checking for error")
 	if err != nil {
 		return "", err
 	}
 
-	j.logger.Info("picking random index")
 	idx := rand.Intn(len(srcs))
-	j.logger.Info("picking account")
-	v := srcs[idx].ID.String()
-	j.logger.Info("account found")
-	return v, nil
+	return srcs[idx].ID.String(), nil
 }
 
 func (j *Job) RandomResourceType() string {

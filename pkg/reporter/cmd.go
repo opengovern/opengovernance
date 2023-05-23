@@ -15,11 +15,7 @@ func ReporterCommand() *cobra.Command {
 				panic(err)
 			}
 
-			err = j.Run()
-			if err != nil {
-				panic(err)
-			}
-
+			j.Run()
 			return nil
 		},
 	}
