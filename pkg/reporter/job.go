@@ -168,14 +168,18 @@ func (j *Job) Run() error {
 }
 
 func (j *Job) RandomAccount() (string, error) {
+	j.logger.Info("getting list of sources")
 	srcs, err := j.onboardClient.ListSources(&httpclient.Context{
 		UserRole: api.AdminRole,
 	}, nil)
+	j.logger.Info("checking for error")
 	if err != nil {
 		return "", err
 	}
 
+	j.logger.Info("picking random index")
 	idx := rand.Intn(len(srcs))
+	j.logger.Info("picking account")
 	return srcs[idx].ID.String(), nil
 }
 
