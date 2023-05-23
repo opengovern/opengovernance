@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"net/http"
 	"strconv"
 	"time"
+
+	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 
@@ -609,6 +610,17 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 	}
 	//TODO
 	// which schedule job best fits for this ?
+
+	job := ScheduleJob{
+		Model:          gorm.Model{},
+		Status:         summarizerapi.SummarizerJobInProgress,
+		FailureMessage: "",
+	}
+	err := h.DB.AddScheduleJob(&job)
+	if err != nil {
+		errMsg := fmt.Sprintf("error adding schedule job: %v", err)
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
+	}
 
 	scheduleJob, err := h.DB.FetchLastScheduleJob()
 	if err != nil {
