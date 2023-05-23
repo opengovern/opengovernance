@@ -15,6 +15,7 @@ import (
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"go.uber.org/zap"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -109,8 +110,6 @@ func (j *Job) RunJob() error {
 	keyFields := []string{"arn"}
 
 	getQuery := j.BuildGetQuery(account.ConnectionID, resourceType, keyFields)
-	j.logger.Info("query steampipe",
-		zap.String("getQuery", getQuery))
 
 	rowCount := 0
 	for steampipeRows.Next() {
@@ -130,6 +129,8 @@ func (j *Job) RunJob() error {
 			keyValues = append(keyValues, steampipeRecord[f])
 		}
 
+		j.logger.Info("query steampipe",
+			zap.String("getQuery", getQuery), zap.String("keyValues", fmt.Sprintf("%v", keyValues)))
 		esRows, err := j.esSteampipe.Conn().Query(context.Background(), getQuery, keyValues...)
 		if err != nil {
 			return err
@@ -203,12 +204,16 @@ func (j *Job) BuildListQuery(account *api2.Source, resourceType string) string {
 	var tableName string
 
 	columnName := ""
+	if strings.HasPrefix(strings.ToLower(resourceType), "aws") {
+		columnName = "account_id"
+	} else {
+		columnName = "subscription_id"
+	}
+
 	switch steampipe.ExtractPlugin(resourceType) {
 	case steampipe.SteampipePluginAWS:
-		columnName = "account_id"
 		tableName = awsSteampipe.ExtractTableName(resourceType)
 	case steampipe.SteampipePluginAzure, steampipe.SteampipePluginAzureAD:
-		columnName = "subscription_id"
 		tableName = azureSteampipe.ExtractTableName(resourceType)
 	}
 	return fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s'", tableName, columnName, account.ConnectionID)
@@ -218,12 +223,16 @@ func (j *Job) BuildGetQuery(accountID, resourceType string, keyFields []string) 
 	var tableName string
 
 	columnName := ""
+	if strings.HasPrefix(strings.ToLower(resourceType), "aws") {
+		columnName = "account_id"
+	} else {
+		columnName = "subscription_id"
+	}
+
 	switch steampipe.ExtractPlugin(resourceType) {
 	case steampipe.SteampipePluginAWS:
-		columnName = "account_id"
 		tableName = awsSteampipe.ExtractTableName(resourceType)
 	case steampipe.SteampipePluginAzure, steampipe.SteampipePluginAzureAD:
-		columnName = "subscription_id"
 		tableName = azureSteampipe.ExtractTableName(resourceType)
 	}
 
