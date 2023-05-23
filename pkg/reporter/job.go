@@ -3,7 +3,6 @@ package reporter
 import (
 	"context"
 	"fmt"
-	"github.com/go-co-op/gocron"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
@@ -69,20 +68,14 @@ func New(config JobConfig) (*Job, error) {
 }
 
 func (j *Job) Run() {
-	s := gocron.NewScheduler(time.UTC)
-
-	c := make(chan interface{})
-	_, err := s.Every(5).Minutes().Do(func() {
+	fmt.Println("starting scheduling")
+	for {
 		fmt.Println("starting job")
 		if err := j.RunJob(); err != nil {
 			j.logger.Error("failed to run job", zap.Error(err))
 		}
-	})
-	if err != nil {
-		j.logger.Error("failed to setup job", zap.Error(err))
-		return
+		time.Sleep(5 * time.Minute)
 	}
-	_ = <-c
 }
 
 func (j *Job) RunJob() error {
