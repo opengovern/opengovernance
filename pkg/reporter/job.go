@@ -71,6 +71,7 @@ func New(config JobConfig) (*Job, error) {
 func (j *Job) Run() {
 	s := gocron.NewScheduler(time.UTC)
 
+	c := make(chan interface{})
 	_, err := s.Every(5).Minutes().Do(func() {
 		if err := j.RunJob(); err != nil {
 			j.logger.Error("failed to run job", zap.Error(err))
@@ -79,6 +80,7 @@ func (j *Job) Run() {
 	if err != nil {
 		j.logger.Error("failed to setup job", zap.Error(err))
 	}
+	_ = <-c
 }
 
 func (j *Job) RunJob() error {
