@@ -41,8 +41,8 @@ func PopulateDatabase(dbc *gorm.DB, compliancePath, queryPath string) error {
 	for _, obj := range p.queries {
 		obj.Policies = nil
 		err := dbc.Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "id"}},                                                                                                   // key colume
-			DoUpdates: clause.AssignmentColumns([]string{"query_to_execute", "connector", "list_of_tables", "engine", "engine_version", "updated_at"}), // column needed to be updated
+			Columns:   []clause.Column{{Name: "id"}},                                                                                 // key colume
+			DoUpdates: clause.AssignmentColumns([]string{"query_to_execute", "connector", "list_of_tables", "engine", "updated_at"}), // column needed to be updated
 		}).Create(&obj).Error
 		if err != nil {
 			return err
