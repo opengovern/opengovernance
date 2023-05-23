@@ -69,6 +69,7 @@ func New(config JobConfig) (*Job, error) {
 func (j *Job) Run() error {
 	defer func() {
 		if r := recover(); r != nil {
+			fmt.Println("panic", r)
 			j.logger.Error("panic", zap.Error(fmt.Errorf("%v", r)))
 		}
 	}()
@@ -77,19 +78,20 @@ func (j *Job) Run() error {
 	accountID, err := j.RandomAccount()
 	if err != nil {
 		j.logger.Error("Failed to get account", zap.Error(err))
+		fmt.Println("err", err)
 		return err
 	}
-	j.logger.Debug("got the account",
+	j.logger.Info("got the account",
 		zap.String("accountID", accountID))
 
 	resourceType := j.RandomResourceType()
 
-	j.logger.Debug("got the resource type",
+	j.logger.Info("got the resource type",
 		zap.String("resourceType", resourceType))
 
 	listQuery := j.BuildListQuery(accountID, resourceType)
 
-	j.logger.Debug("query steampipe",
+	j.logger.Info("query steampipe",
 		zap.String("accountID", accountID),
 		zap.String("resourceType", resourceType),
 		zap.String("query", listQuery))
@@ -180,7 +182,9 @@ func (j *Job) RandomAccount() (string, error) {
 	j.logger.Info("picking random index")
 	idx := rand.Intn(len(srcs))
 	j.logger.Info("picking account")
-	return srcs[idx].ID.String(), nil
+	v := srcs[idx].ID.String()
+	j.logger.Info("account found")
+	return v, nil
 }
 
 func (j *Job) RandomResourceType() string {
