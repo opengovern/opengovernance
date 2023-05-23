@@ -73,7 +73,7 @@ func (j *Job) Run() {
 
 	c := make(chan interface{})
 	_, err := s.Every(5).Minutes().Do(func() {
-
+		fmt.Println("starting job")
 		if err := j.RunJob(); err != nil {
 			j.logger.Error("failed to run job", zap.Error(err))
 		}
