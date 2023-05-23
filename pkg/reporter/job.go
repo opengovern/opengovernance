@@ -11,6 +11,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	api2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"go.uber.org/zap"
 	"math/rand"
@@ -86,15 +87,15 @@ func (j *Job) RunJob() error {
 	}()
 
 	j.logger.Info("Starting job")
-	accountID, err := j.RandomAccount()
+	account, err := j.RandomAccount()
 	if err != nil {
 		return err
 	}
 	resourceType := j.RandomResourceType()
-	listQuery := j.BuildListQuery(accountID, resourceType)
+	listQuery := j.BuildListQuery(account, resourceType)
 
 	j.logger.Info("query steampipe",
-		zap.String("accountID", accountID),
+		zap.String("accountID", account.ConnectionID),
 		zap.String("resourceType", resourceType),
 		zap.String("query", listQuery))
 
@@ -107,7 +108,7 @@ func (j *Job) RunJob() error {
 	//TODO-Saleh
 	keyFields := []string{"arn"}
 
-	getQuery := j.BuildGetQuery(accountID, resourceType, keyFields)
+	getQuery := j.BuildGetQuery(account.ConnectionID, resourceType, keyFields)
 	j.logger.Info("query steampipe",
 		zap.String("getQuery", getQuery))
 
@@ -154,7 +155,7 @@ func (j *Job) RunJob() error {
 
 				if v != v2 {
 					j.logger.Error("inconsistency in data",
-						zap.String("accountID", accountID),
+						zap.String("accountID", account.ConnectionID),
 						zap.String("resourceType", resourceType),
 						zap.String("steampipeARN", fmt.Sprintf("%v", steampipeRecord["arn"])),
 						zap.String("esARN", fmt.Sprintf("%v", esRecord["arn"])),
@@ -166,7 +167,7 @@ func (j *Job) RunJob() error {
 
 		if !found {
 			j.logger.Error("record not found",
-				zap.String("accountID", accountID),
+				zap.String("accountID", account.ConnectionID),
 				zap.String("resourceType", resourceType),
 				zap.String("steampipeARN", fmt.Sprintf("%v", steampipeRecord["arn"])),
 			)
@@ -178,16 +179,16 @@ func (j *Job) RunJob() error {
 	return nil
 }
 
-func (j *Job) RandomAccount() (string, error) {
+func (j *Job) RandomAccount() (*api2.Source, error) {
 	srcs, err := j.onboardClient.ListSources(&httpclient.Context{
 		UserRole: api.AdminRole,
 	}, nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	idx := rand.Intn(len(srcs))
-	return srcs[idx].ID.String(), nil
+	return &srcs[idx], nil
 }
 
 func (j *Job) RandomResourceType() string {
@@ -198,25 +199,31 @@ func (j *Job) RandomResourceType() string {
 	return resourceTypes[idx]
 }
 
-func (j *Job) BuildListQuery(accountID, resourceType string) string {
+func (j *Job) BuildListQuery(account *api2.Source, resourceType string) string {
 	var tableName string
 
+	columnName := ""
 	switch steampipe.ExtractPlugin(resourceType) {
 	case steampipe.SteampipePluginAWS:
+		columnName = "account_id"
 		tableName = awsSteampipe.ExtractTableName(resourceType)
 	case steampipe.SteampipePluginAzure, steampipe.SteampipePluginAzureAD:
+		columnName = "subscription_id"
 		tableName = azureSteampipe.ExtractTableName(resourceType)
 	}
-	return fmt.Sprintf("SELECT * FROM %s WHERE account_id = '%s'", tableName, accountID)
+	return fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s'", tableName, columnName, account.ConnectionID)
 }
 
 func (j *Job) BuildGetQuery(accountID, resourceType string, keyFields []string) string {
 	var tableName string
 
+	columnName := ""
 	switch steampipe.ExtractPlugin(resourceType) {
 	case steampipe.SteampipePluginAWS:
+		columnName = "account_id"
 		tableName = awsSteampipe.ExtractTableName(resourceType)
 	case steampipe.SteampipePluginAzure, steampipe.SteampipePluginAzureAD:
+		columnName = "subscription_id"
 		tableName = azureSteampipe.ExtractTableName(resourceType)
 	}
 
@@ -224,5 +231,5 @@ func (j *Job) BuildGetQuery(accountID, resourceType string, keyFields []string) 
 	for _, f := range keyFields {
 		q += fmt.Sprintf(" AND %s = ?", f)
 	}
-	return fmt.Sprintf("SELECT * FROM %s WHERE account_id = '%s' %s", tableName, accountID, q)
+	return fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s' %s", tableName, columnName, accountID, q)
 }
