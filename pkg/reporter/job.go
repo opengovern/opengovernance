@@ -228,8 +228,10 @@ func (j *Job) BuildGetQuery(accountID, resourceType string, keyFields []string) 
 	}
 
 	var q string
+	c := 1
 	for _, f := range keyFields {
-		q += fmt.Sprintf(" AND %s = ?", f)
+		q += fmt.Sprintf(" AND %s = $%d", f, c)
+		c++
 	}
 	return fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s' %s", tableName, columnName, accountID, q)
 }
