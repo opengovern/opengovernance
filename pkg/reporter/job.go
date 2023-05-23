@@ -79,6 +79,7 @@ func (j *Job) Run() {
 	})
 	if err != nil {
 		j.logger.Error("failed to setup job", zap.Error(err))
+		return
 	}
 	_ = <-c
 }
