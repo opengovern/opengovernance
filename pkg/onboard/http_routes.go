@@ -56,7 +56,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	sourceApiGroup.POST("/:sourceId/disable", httpserver.AuthorizeHandler(h.DisableSource, api3.EditorRole))
 	sourceApiGroup.POST("/:sourceId/enable", httpserver.AuthorizeHandler(h.EnableSource, api3.EditorRole))
 	sourceApiGroup.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, api3.EditorRole))
-	sourceApiGroup.GET("/:accountId", httpserver.AuthorizeHandler(h.GetSourcesByAccount, api3.ViewerRole))
+	sourceApiGroup.GET("/account/:accountId", httpserver.AuthorizeHandler(h.GetSourcesByAccount, api3.ViewerRole))
 
 	credential := v1.Group("/credential")
 	credential.POST("", httpserver.AuthorizeHandler(h.PostCredentials, api3.EditorRole))
@@ -2036,7 +2036,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 //	@Produce		json
 //	@Success		200			{object}	api.Source
 //	@Param			account_id	path		integer	true	"SourceID"
-//	@Router			/onboard/api/v1/source/{accountId} [get]
+//	@Router			/onboard/api/v1/source/account/{accountId} [get]
 func (h HttpHandler) GetSourcesByAccount(ctx echo.Context) error {
 	accId := ctx.Param("accountId")
 
