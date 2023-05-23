@@ -111,7 +111,9 @@ func (j *Job) RunJob() error {
 	j.logger.Info("query steampipe",
 		zap.String("getQuery", getQuery))
 
+	rowCount := 0
 	for steampipeRows.Next() {
+		rowCount++
 		steampipeRow, err := steampipeRows.Values()
 		if err != nil {
 			return err
@@ -171,7 +173,7 @@ func (j *Job) RunJob() error {
 		}
 	}
 
-	j.logger.Info("Done")
+	j.logger.Info("Done", zap.Int("rowCount", rowCount))
 
 	return nil
 }
