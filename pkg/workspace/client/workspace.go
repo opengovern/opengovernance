@@ -2,8 +2,9 @@ package client
 
 import (
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"net/http"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 )
@@ -46,7 +47,6 @@ func (s *workspaceClient) GetLimitsByID(ctx *httpclient.Context, workspaceID str
 
 func (s *workspaceClient) GetByID(ctx *httpclient.Context, workspaceID string) (api.Workspace, error) {
 	url := fmt.Sprintf("%s/api/v1/workspaces/byid/%s", s.baseURL, workspaceID)
-
 	var response api.Workspace
 	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return api.Workspace{}, err
