@@ -326,6 +326,18 @@ func (db Database) CountQueuedDescribeResourceJobs() (int64, error) {
 	return count, nil
 }
 
+func (db Database) CountQueuedInProgressDescribeResourceJobsByParentID(id uint) (int64, error) {
+	var count int64
+	tx := db.orm.Model(&DescribeResourceJob{}).Where("status IN (?, ?) AND parent_job_id = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress, id).Count(&count)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, tx.Error
+	}
+	return count, nil
+}
+
 func (db Database) RetryRateLimitedJobs() error {
 	tx := db.orm.Raw(
 		`
