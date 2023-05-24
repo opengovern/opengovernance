@@ -3,10 +3,10 @@ package inventory
 import (
 	"context"
 
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
@@ -248,14 +248,6 @@ func GetServiceNameListFromFilters(filters []Filter) []string {
 		res = append(res, k)
 	}
 	return res
-}
-
-func GetMetricResourceTypeSummaryIndexByResourceType(metrics []MetricResourceTypeSummary) map[string]MetricResourceTypeSummary {
-	metricIndex := map[string]MetricResourceTypeSummary{}
-	for _, metric := range metrics {
-		metricIndex[metric.ResourceType] = metric
-	}
-	return metricIndex
 }
 
 func GetCategoryNodeResourceCountInfo(categoryNode *CategoryNode, metrics map[string]int, filterCacheMap map[string]api.Filter) api.CategoryNode {

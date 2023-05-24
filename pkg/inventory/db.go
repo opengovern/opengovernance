@@ -18,8 +18,9 @@ func NewDatabase(orm *gorm.DB) Database {
 
 func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
+		&ResourceType{},
+		&Service{},
 		&SmartQuery{},
-		&Category{},
 		&Metric{},
 	)
 	if err != nil {
@@ -134,64 +135,11 @@ func (db Database) GetQuery(id string) (SmartQuery, error) {
 	return s, nil
 }
 
-func (db Database) ListCategories() ([]Category, error) {
-	var s []Category
-	tx := db.orm.Find(&s)
-
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return s, nil
-}
-
-func (db Database) GetSubCategories(category string) ([]Category, error) {
-	var s []Category
-	tx := db.orm.Where("name = ?", category).Find(&s)
-
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return s, nil
-}
-
-func (db Database) GetCategories(category, subCategory string) ([]Category, error) {
-	var s []Category
-	tx := db.orm.
-		Where("name = ?", category).
-		Where("sub_category = ?", subCategory).
-		Find(&s)
-
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return s, nil
-}
-
 func (db Database) CreateOrUpdateMetric(metric Metric) error {
 	return db.orm.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "source_id"}, {Name: "resource_type"}},
 		DoUpdates: clause.AssignmentColumns([]string{"schedule_job_id", "count", "last_day_count", "last_week_count", "last_quarter_count", "last_year_count"}),
 	}).Create(metric).Error
-}
-
-func (db Database) FetchConnectionMetricResourceTypeSummery(sourceID string, resourceTypes []string) ([]MetricResourceTypeSummary, error) {
-	var s []MetricResourceTypeSummary
-	tx := db.orm.
-		Model(&Metric{}).
-		Select("resource_type, sum(count) as count, sum(last_day_count) as last_day_count, sum(last_week_count) as last_week_count, sum(last_quarter_count) as last_quarter_count, sum(last_year_count) as last_year_count").
-		Where("source_id = ?", sourceID).
-		Where("resource_type in ?", resourceTypes).
-		Group("resource_type").
-		Find(&s)
-
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return s, nil
 }
 
 func (db Database) FetchConnectionMetrics(sourceID string, resourceTypes []string) ([]Metric, error) {
@@ -211,23 +159,6 @@ func (db Database) FetchConnectionAllMetrics(sourceID string) ([]Metric, error) 
 	return metrics, tx.Error
 }
 
-func (db Database) FetchProviderMetricResourceTypeSummery(provider source.Type, resourceTypes []string) ([]MetricResourceTypeSummary, error) {
-	var s []MetricResourceTypeSummary
-	tx := db.orm.
-		Model(&Metric{}).
-		Select("resource_type, sum(count) as count, sum(last_day_count) as last_day_count, sum(last_week_count) as last_week_count, sum(last_quarter_count) as last_quarter_count, sum(last_year_count) as last_year_count").
-		Where("provider = ?", provider).
-		Where("resource_type in ?", resourceTypes).
-		Group("resource_type").
-		Find(&s)
-
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return s, nil
-}
-
 func (db Database) FetchProviderAllMetrics(provider source.Type) ([]Metric, error) {
 	var metrics []Metric
 	tx := db.orm.Model(Metric{}).
@@ -243,22 +174,6 @@ func (db Database) FetchProviderMetrics(provider source.Type, resourceTypes []st
 		Where("resource_type in ?", resourceTypes).
 		Find(&metrics)
 	return metrics, tx.Error
-}
-
-func (db Database) FetchMetricResourceTypeSummery(resourceTypes []string) ([]MetricResourceTypeSummary, error) {
-	var s []MetricResourceTypeSummary
-	tx := db.orm.
-		Model(&Metric{}).
-		Select("resource_type, sum(count) as count, sum(last_day_count) as last_day_count, sum(last_week_count) as last_week_count, sum(last_quarter_count) as last_quarter_count, sum(last_year_count) as last_year_count").
-		Where("resource_type in ?", resourceTypes).
-		Group("resource_type").
-		Find(&s)
-
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return s, nil
 }
 
 func (db Database) FetchMetrics(resourceTypes []string) ([]Metric, error) {
