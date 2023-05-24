@@ -74,7 +74,6 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 
 	parentMap := map[uint]*DescribeSourceJob{}
 	srcMap := map[uint]*Source{}
-	sourceCount := map[uint]int64{}
 
 	jobCount := 0
 
@@ -100,22 +99,9 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				return err
 			}
 
-			count, err := s.db.CountQueuedInProgressDescribeResourceJobsByParentID(dr.ParentJobID)
-			if err != nil {
-				s.logger.Error("failed to get count of jobs", zap.String("spot", "CountQueuedDescribeResourceJobsByParentID"), zap.Error(err), zap.Uint("jobID", dr.ID))
-				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-				return err
-			}
-
-			sourceCount[dr.ParentJobID] = count
 			srcMap[dr.ParentJobID] = src
 			parentMap[dr.ParentJobID] = ds
 		}
-
-		if sourceCount[dr.ParentJobID] > MaxAccountConcurrentQueued {
-			continue
-		}
-		sourceCount[dr.ParentJobID]++
 
 		c := CloudNativeCall{
 			dr:  dr,
