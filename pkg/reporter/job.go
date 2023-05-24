@@ -9,6 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"go.uber.org/zap"
 	"math/rand"
 	"strings"
@@ -88,7 +89,7 @@ func (j *Job) RunJob() error {
 	if err != nil {
 		return err
 	}
-	tableName := j.RandomTableName()
+	tableName := j.RandomTableName(account.Type)
 	listQuery := j.BuildListQuery(account, tableName)
 
 	j.logger.Info("query steampipe",
@@ -188,8 +189,13 @@ func (j *Job) RandomAccount() (*api2.Source, error) {
 	return &srcs[idx], nil
 }
 
-func (j *Job) RandomTableName() string {
-	return "aws_ec2_instance"
+func (j *Job) RandomTableName(sourceType source.Type) string {
+	switch sourceType {
+	case source.CloudAWS:
+		return "aws_ec2_instance"
+	case source.CloudAzure:
+		return "microsoft_network_virtualnetworks_subnets"
+	}
 	//var resourceTypes []string
 	//resourceTypes = append(resourceTypes, aws.ListResourceTypes()...)
 	//resourceTypes = append(resourceTypes, azure.ListResourceTypes()...)
