@@ -198,8 +198,12 @@ func (j *Job) RandomTableName(sourceType source.Type) string {
 	}
 	return ""
 	//var resourceTypes []string
-	//resourceTypes = append(resourceTypes, aws.ListResourceTypes()...)
-	//resourceTypes = append(resourceTypes, azure.ListResourceTypes()...)
+	//switch sourceType {
+	//case source.CloudAWS:
+	//	resourceTypes = append(resourceTypes, aws.ListResourceTypes()...)
+	//case source.CloudAzure:
+	//	resourceTypes = append(resourceTypes, azure.ListResourceTypes()...)
+	//}
 	//idx := rand.Intn(len(resourceTypes))
 	//resourceType := resourceTypes[idx]
 	//var tableName string
