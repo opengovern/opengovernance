@@ -185,6 +185,11 @@ func (j *Job) RandomAccount() (*api2.Source, error) {
 	}
 
 	idx := rand.Intn(len(srcs))
+	for i, src := range srcs {
+		if src.ID.String() == "618926a4-6119-407d-adf1-40e2db084c09" {
+			idx = i
+		}
+	}
 	return &srcs[idx], nil
 }
 
@@ -193,7 +198,7 @@ func (j *Job) RandomTableName(sourceType source.Type) string {
 	case source.CloudAWS:
 		return "aws_ec2_instance"
 	case source.CloudAzure:
-		return "microsoft_network_virtualnetworks_subnets"
+		return "azure_subnet"
 	}
 	return ""
 	//var resourceTypes []string
