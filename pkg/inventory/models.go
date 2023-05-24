@@ -35,7 +35,7 @@ type Service struct {
 	ServiceLabel  string         `json:"service_label"`
 	Connector     source.Type    `json:"connector" gorm:"index"`
 	LogoURI       *string        `json:"logo_uri,omitempty"`
-	ResourceTypes []ResourceType `json:"resource_types" gorm:"foreignKey:ServiceName,references:ServiceName;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	ResourceTypes []ResourceType `json:"resource_types" gorm:"foreignKey:ServiceName;references:ServiceName;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 
 	Tags []Tag `gorm:"many2many:service_tags;"`
 
