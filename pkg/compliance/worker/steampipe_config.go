@@ -26,6 +26,11 @@ func (j *Job) PopulateSteampipeConfig(elasticSearchConfig config.ElasticSearch) 
 		if err != nil {
 			return err
 		}
+
+		err = PopulateEnv(elasticSearchConfig, accountID)
+		if err != nil {
+			return err
+		}
 	case source.CloudAzure:
 		creds, err := AzureSubscriptionConfigFromMap(cfg)
 		if err != nil {
@@ -42,8 +47,33 @@ func (j *Job) PopulateSteampipeConfig(elasticSearchConfig config.ElasticSearch) 
 		if err != nil {
 			return err
 		}
+
+		err = PopulateEnv(elasticSearchConfig, accountID)
+		if err != nil {
+			return err
+		}
 	default:
 		return errors.New("error: invalid source type")
+	}
+	return nil
+}
+
+func PopulateEnv(config config.ElasticSearch, accountID string) error {
+	err := os.Setenv("STEAMPIPE_ACCOUNT_ID", accountID)
+	if err != nil {
+		return err
+	}
+	err = os.Setenv("ES_ADDRESS", config.Address)
+	if err != nil {
+		return err
+	}
+	err = os.Setenv("ES_USERNAME", config.Username)
+	if err != nil {
+		return err
+	}
+	err = os.Setenv("ES_PASSWORD", config.Password)
+	if err != nil {
+		return err
 	}
 	return nil
 }
