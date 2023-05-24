@@ -10,19 +10,19 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
-func (j *Job) PopulateSteampipeConfig(elasticSearchConfig config.ElasticSearch) error {
+func (j *Job) PopulateSteampipeConfig(elasticSearchConfig config.ElasticSearch, AccountID string) error {
 	cfg := map[string]interface{}{}
 
 	var accountID string
 	switch j.Connector {
 	case source.CloudAWS:
-		creds, err := AWSAccountConfigFromMap(cfg)
-		if err != nil {
-			return err
-		}
-		accountID = creds.AccountID
+		// creds, err := AWSAccountConfigFromMap(cfg)
+		// if err != nil {
+		// 	return err
+		// }
+		//accountID = creds.AccountID
 
-		err = BuildSpecFile("aws", elasticSearchConfig, accountID)
+		err := BuildSpecFile("aws", elasticSearchConfig, accountID)
 		if err != nil {
 			return err
 		}
