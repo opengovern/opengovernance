@@ -12,7 +12,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"go.uber.org/zap"
 	"math/rand"
-	"strings"
 	"time"
 )
 
@@ -106,7 +105,7 @@ func (j *Job) RunJob() error {
 	//TODO-Saleh
 	keyFields := []string{"arn"}
 
-	getQuery := j.BuildGetQuery(account.ConnectionID, tableName, keyFields)
+	getQuery := j.BuildGetQuery(account, tableName, keyFields)
 
 	rowCount := 0
 	for steampipeRows.Next() {
@@ -221,28 +220,15 @@ func (j *Job) RandomTableName(sourceType source.Type) string {
 }
 
 func (j *Job) BuildListQuery(account *api2.Source, tableName string) string {
-	columnName := ""
-	if strings.HasPrefix(strings.ToLower(tableName), "aws") {
-		columnName = "account_id"
-	} else {
-		columnName = "subscription_id"
-	}
-	return fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s'", tableName, columnName, account.ConnectionID)
+	return fmt.Sprintf("SELECT * FROM %s WHERE keibi_account_id = '%s'", tableName, account.ID.String())
 }
 
-func (j *Job) BuildGetQuery(accountID, tableName string, keyFields []string) string {
-	columnName := ""
-	if strings.HasPrefix(strings.ToLower(tableName), "aws") {
-		columnName = "account_id"
-	} else {
-		columnName = "subscription_id"
-	}
-
+func (j *Job) BuildGetQuery(account *api2.Source, tableName string, keyFields []string) string {
 	var q string
 	c := 1
 	for _, f := range keyFields {
 		q += fmt.Sprintf(" AND %s = $%d", f, c)
 		c++
 	}
-	return fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s' %s", tableName, columnName, accountID, q)
+	return fmt.Sprintf("SELECT * FROM %s WHERE keibi_account_id = '%s' %s", tableName, account.ID.String(), q)
 }
