@@ -196,6 +196,7 @@ func (j *Job) RandomTableName(sourceType source.Type) string {
 	case source.CloudAzure:
 		return "microsoft_network_virtualnetworks_subnets"
 	}
+	return ""
 	//var resourceTypes []string
 	//resourceTypes = append(resourceTypes, aws.ListResourceTypes()...)
 	//resourceTypes = append(resourceTypes, azure.ListResourceTypes()...)
