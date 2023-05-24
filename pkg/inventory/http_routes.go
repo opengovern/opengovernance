@@ -7,9 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	keibiaws "github.com/kaytu-io/kaytu-aws-describer/pkg/keibi-es-sdk"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"io"
 	"math"
 	"mime"
@@ -18,6 +15,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	keibiaws "github.com/kaytu-io/kaytu-aws-describer/pkg/keibi-es-sdk"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"gorm.io/gorm"
 
@@ -115,8 +116,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/insights/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, api3.ViewerRole))
 	v2.GET("/insights/peer/:insightPeerGroupId", httpserver.AuthorizeHandler(h.GetInsightPeerGroup, api3.ViewerRole))
 	v2.GET("/insights/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
-
-	v1.GET("/provider/:provider/summary", httpserver.AuthorizeHandler(h.GetProviderSummary, api3.ViewerRole))
 
 	metadata := v2.Group("/metadata")
 
@@ -2232,44 +2231,6 @@ func (h *HttpHandler) ListCategories(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, cloudservice.ListCategories())
 }
 
-// ListCategoriesV2 godoc
-//
-//	@Summary	Return list of categories
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Success	200	{object}	[]string
-//	@Router		/inventory/api/v2/categories [get]
-func (h *HttpHandler) ListCategoriesV2(ctx echo.Context) error {
-	cats, err := h.db.ListCategories()
-	if err != nil {
-		return err
-	}
-
-	cmap := map[string][]string{}
-	for _, c := range cats {
-		exists := false
-		for _, s := range cmap[c.Name] {
-			if s == c.SubCategory {
-				exists = true
-			}
-		}
-		if exists {
-			continue
-		}
-		cmap[c.Name] = append(cmap[c.Name], c.SubCategory)
-	}
-	var resp []api.Category
-	for k, v := range cmap {
-		resp = append(resp, api.Category{
-			Name:        k,
-			SubCategory: v,
-		})
-	}
-	return ctx.JSON(http.StatusOK, resp)
-}
-
 // GetAccountsResourceCount godoc
 //
 //	@Summary	Returns resource count of accounts
@@ -3563,58 +3524,6 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, value)
-}
-
-// GetProviderSummary godoc
-//
-//	@Summary	Get provider summary
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json,text/csv
-//	@Success	200	{object}	api.ConnectionSummaryResponse
-//	@Router		/inventory/api/v1/provider/{provider}/summary [get]
-func (h *HttpHandler) GetProviderSummary(ctx echo.Context) error {
-	provider, _ := source.ParseType(ctx.Param("provider"))
-
-	metrics, err := h.db.FetchProviderAllMetrics(provider)
-	if err != nil {
-		return err
-	}
-
-	cats, err := h.db.ListCategories()
-	if err != nil {
-		return err
-	}
-
-	resp := api.ConnectionSummaryResponse{
-		Categories:    map[string]api.ConnectionSummaryCategory{},
-		CloudServices: map[string]int{},
-		ResourceTypes: map[string]int{},
-	}
-	for _, m := range metrics {
-		cloudService := cloudservice.ServiceNameByResourceType(m.ResourceType)
-		resp.ResourceTypes[m.ResourceType] += m.Count
-		resp.CloudServices[cloudService] += m.Count
-		for _, c := range cats {
-			if c.CloudService == cloudService {
-				v, ok := resp.Categories[c.Name]
-				if !ok {
-					v = api.ConnectionSummaryCategory{
-						ResourceCount: 0,
-						SubCategories: map[string]int{},
-					}
-				}
-
-				v.ResourceCount += m.Count
-				v.SubCategories[c.SubCategory] += m.Count
-
-				resp.Categories[c.Name] = v
-			}
-		}
-	}
-
-	return ctx.JSON(http.StatusOK, resp)
 }
 
 // GetResourcesFilters godoc

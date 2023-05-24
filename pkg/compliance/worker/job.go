@@ -11,7 +11,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
@@ -137,29 +136,33 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return errors.New("connection not healthy")
 	}
 
-	defaultAccountID := "default"
+	//defaultAccountID := "default"
 	esk, err := keibi.NewClient(keibi.ClientConfig{
 		Addresses: []string{elasticSearchConfig.Address},
 		Username:  &elasticSearchConfig.Username,
 		Password:  &elasticSearchConfig.Password,
-		AccountID: &defaultAccountID,
+		AccountID: &src.ConnectionID,
 	})
 	if err != nil {
 		return err
 	}
 
-	err = j.PopulateSteampipeConfig(elasticSearchConfig)
+	err = j.PopulateSteampipeConfig(elasticSearchConfig, src.ConnectionID)
 	if err != nil {
 		return err
 	}
 
 	cmd := exec.Command("steampipe", "service", "stop")
-	_ = cmd.Run()
-
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
 		"9193", "--database-password", "abcd")
-	_ = cmd.Run()
-
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
 	time.Sleep(5 * time.Second)
 
 	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
