@@ -3,10 +3,6 @@ package reporter
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
-	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
-	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/config"
@@ -92,12 +88,12 @@ func (j *Job) RunJob() error {
 	if err != nil {
 		return err
 	}
-	resourceType := j.RandomResourceType()
-	listQuery := j.BuildListQuery(account, resourceType)
+	tableName := j.RandomTableName()
+	listQuery := j.BuildListQuery(account, tableName)
 
 	j.logger.Info("query steampipe",
 		zap.String("accountID", account.ConnectionID),
-		zap.String("resourceType", resourceType),
+		zap.String("tableName", tableName),
 		zap.String("query", listQuery))
 
 	steampipeRows, err := j.steampipe.Conn().Query(context.Background(), listQuery)
@@ -109,7 +105,7 @@ func (j *Job) RunJob() error {
 	//TODO-Saleh
 	keyFields := []string{"arn"}
 
-	getQuery := j.BuildGetQuery(account.ConnectionID, resourceType, keyFields)
+	getQuery := j.BuildGetQuery(account.ConnectionID, tableName, keyFields)
 
 	rowCount := 0
 	for steampipeRows.Next() {
@@ -157,7 +153,7 @@ func (j *Job) RunJob() error {
 				if v != v2 {
 					j.logger.Error("inconsistency in data",
 						zap.String("accountID", account.ConnectionID),
-						zap.String("resourceType", resourceType),
+						zap.String("tableName", tableName),
 						zap.String("steampipeARN", fmt.Sprintf("%v", steampipeRecord["arn"])),
 						zap.String("esARN", fmt.Sprintf("%v", esRecord["arn"])),
 						zap.String("conflictColumn", k),
@@ -169,7 +165,7 @@ func (j *Job) RunJob() error {
 		if !found {
 			j.logger.Error("record not found",
 				zap.String("accountID", account.ConnectionID),
-				zap.String("resourceType", resourceType),
+				zap.String("tableName", tableName),
 				zap.String("steampipeARN", fmt.Sprintf("%v", steampipeRecord["arn"])),
 			)
 		}
@@ -192,48 +188,43 @@ func (j *Job) RandomAccount() (*api2.Source, error) {
 	return &srcs[idx], nil
 }
 
-func (j *Job) RandomResourceType() string {
-	var resourceTypes []string
-	resourceTypes = append(resourceTypes, aws.ListResourceTypes()...)
-	resourceTypes = append(resourceTypes, azure.ListResourceTypes()...)
-	idx := rand.Intn(len(resourceTypes))
-	return resourceTypes[idx]
+func (j *Job) RandomTableName() string {
+	return "aws_ec2_instance"
+	//var resourceTypes []string
+	//resourceTypes = append(resourceTypes, aws.ListResourceTypes()...)
+	//resourceTypes = append(resourceTypes, azure.ListResourceTypes()...)
+	//idx := rand.Intn(len(resourceTypes))
+	//resourceType := resourceTypes[idx]
+	//var tableName string
+	//switch steampipe.ExtractPlugin(resourceType) {
+	//case steampipe.SteampipePluginAWS:
+	//	tableName = awsSteampipe.ExtractTableName(resourceType)
+	//case steampipe.SteampipePluginAzure, steampipe.SteampipePluginAzureAD:
+	//	tableName = azureSteampipe.ExtractTableName(resourceType)
+	//}
+	//
+	//if tableName == "" {
+	//	return j.RandomTableName()
+	//}
+	//return tableName
 }
 
-func (j *Job) BuildListQuery(account *api2.Source, resourceType string) string {
-	var tableName string
-
+func (j *Job) BuildListQuery(account *api2.Source, tableName string) string {
 	columnName := ""
-	if strings.HasPrefix(strings.ToLower(resourceType), "aws") {
+	if strings.HasPrefix(strings.ToLower(tableName), "aws") {
 		columnName = "account_id"
 	} else {
 		columnName = "subscription_id"
-	}
-
-	switch steampipe.ExtractPlugin(resourceType) {
-	case steampipe.SteampipePluginAWS:
-		tableName = awsSteampipe.ExtractTableName(resourceType)
-	case steampipe.SteampipePluginAzure, steampipe.SteampipePluginAzureAD:
-		tableName = azureSteampipe.ExtractTableName(resourceType)
 	}
 	return fmt.Sprintf("SELECT * FROM %s WHERE %s = '%s'", tableName, columnName, account.ConnectionID)
 }
 
-func (j *Job) BuildGetQuery(accountID, resourceType string, keyFields []string) string {
-	var tableName string
-
+func (j *Job) BuildGetQuery(accountID, tableName string, keyFields []string) string {
 	columnName := ""
-	if strings.HasPrefix(strings.ToLower(resourceType), "aws") {
+	if strings.HasPrefix(strings.ToLower(tableName), "aws") {
 		columnName = "account_id"
 	} else {
 		columnName = "subscription_id"
-	}
-
-	switch steampipe.ExtractPlugin(resourceType) {
-	case steampipe.SteampipePluginAWS:
-		tableName = awsSteampipe.ExtractTableName(resourceType)
-	case steampipe.SteampipePluginAzure, steampipe.SteampipePluginAzureAD:
-		tableName = azureSteampipe.ExtractTableName(resourceType)
 	}
 
 	var q string
