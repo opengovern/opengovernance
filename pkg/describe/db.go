@@ -883,6 +883,20 @@ func (db Database) FetchLastInsightJob() (*InsightJob, error) {
 	return &job, nil
 }
 
+func (db Database) GetLastInsightJob(insightID uint, sourceID string) (*InsightJob, error) {
+	var job InsightJob
+	tx := db.orm.Model(&InsightJob{}).
+		Where("source_id = ? AND insight_id = ?", insightID, sourceID).
+		Order("created_at DESC").First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &job, nil
+}
+
 func (db Database) ListInsightJobs() ([]InsightJob, error) {
 	var job []InsightJob
 	tx := db.orm.Model(&InsightJob{}).Find(&job)

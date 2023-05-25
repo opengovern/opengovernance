@@ -20,7 +20,6 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/google/uuid"
 	"gitlab.com/keibiengine/keibi-engine/pkg/checkup"
 	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
@@ -34,9 +33,6 @@ import (
 	metadataClient "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	workspaceClient "gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight"
-	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
@@ -1030,17 +1026,6 @@ func isPublishingBlocked(logger *zap.Logger, queue queue.Interface) bool {
 	return false
 }
 
-func (s Scheduler) RunInsightJobScheduler() {
-	s.logger.Info("Scheduling insight jobs on a timer")
-
-	t := time.NewTicker(JobSchedulingInterval)
-	defer t.Stop()
-
-	for ; ; <-t.C {
-		s.scheduleInsightJob(false)
-	}
-}
-
 func (s Scheduler) RunCheckupJobScheduler() {
 	s.logger.Info("Scheduling insight jobs on a timer")
 
@@ -1050,121 +1035,6 @@ func (s Scheduler) RunCheckupJobScheduler() {
 	for ; ; <-t.C {
 		s.scheduleCheckupJob()
 	}
-}
-
-func (s Scheduler) scheduleInsightJob(forceCreate bool) {
-	insightJob, err := s.db.FetchLastInsightJob()
-	if err != nil {
-		s.logger.Error("Failed to find the last job to check for InsightJob", zap.Error(err))
-		InsightJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
-	if forceCreate || insightJob == nil ||
-		insightJob.CreatedAt.Add(time.Duration(s.insightIntervalHours)*time.Hour).Before(time.Now()) {
-		if isPublishingBlocked(s.logger, s.insightJobQueue) {
-			s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
-			InsightJobsCount.WithLabelValues("failure").Inc()
-			return
-		}
-
-		s.logger.Info("Workspace is due for a insight. Creating a job now")
-		ctx := &httpclient.Context{
-			UserRole: api2.ViewerRole,
-		}
-		insights, err := s.complianceClient.GetInsights(ctx, source.Nil)
-		if err != nil {
-			s.logger.Error("Failed to fetch list of insights", zap.Error(err))
-			InsightJobsCount.WithLabelValues("failure").Inc()
-			return
-		}
-
-		srcs, err := s.db.ListSources()
-		if err != nil {
-			s.logger.Error("Failed to fetch list of sources", zap.Error(err))
-			InsightJobsCount.WithLabelValues("failure").Inc()
-			return
-		}
-
-		scheduleUUID, err := uuid.NewUUID()
-		if err != nil {
-			s.logger.Error("Failed to fetch list of sources", zap.Error(err))
-			InsightJobsCount.WithLabelValues("failure").Inc()
-			return
-		}
-
-		for _, ins := range insights {
-			for _, src := range srcs {
-				srcType, _ := source.ParseType(string(src.Type))
-				if ins.Connector != source.Nil && srcType != ins.Connector {
-					continue
-				}
-				job := newInsightJob(ins, string(src.Type), src.ID.String(), src.AccountID, scheduleUUID.String())
-				err = s.db.AddInsightJob(&job)
-				if err != nil {
-					InsightJobsCount.WithLabelValues("failure").Inc()
-					s.logger.Error("Failed to create InsightJob",
-						zap.Uint("jobId", job.ID),
-						zap.Error(err),
-					)
-					continue
-				}
-
-				err = enqueueInsightJobs(s.db, s.insightJobQueue, job, ins)
-				if err != nil {
-					InsightJobsCount.WithLabelValues("failure").Inc()
-					s.logger.Error("Failed to enqueue InsightJob",
-						zap.Uint("jobId", job.ID),
-						zap.Error(err),
-					)
-					job.Status = insightapi.InsightJobFailed
-					job.FailureMessage = "Failed to enqueue InsightJob"
-					err = s.db.UpdateInsightJobStatus(job)
-					if err != nil {
-						s.logger.Error("Failed to update InsightJob status",
-							zap.Uint("jobId", job.ID),
-							zap.Error(err),
-						)
-					}
-					continue
-				}
-			}
-
-			// add a job for all sources
-			id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
-			job := newInsightJob(ins, string(ins.Connector), id, id, scheduleUUID.String())
-			err = s.db.AddInsightJob(&job)
-			if err != nil {
-				InsightJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("Failed to create InsightJob",
-					zap.Uint("jobId", job.ID),
-					zap.Error(err),
-				)
-				continue
-			}
-
-			err = enqueueInsightJobs(s.db, s.insightJobQueue, job, ins)
-			if err != nil {
-				InsightJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("Failed to enqueue InsightJob",
-					zap.Uint("jobId", job.ID),
-					zap.Error(err),
-				)
-				job.Status = insightapi.InsightJobFailed
-				job.FailureMessage = "Failed to enqueue InsightJob"
-				err = s.db.UpdateInsightJobStatus(job)
-				if err != nil {
-					s.logger.Error("Failed to update InsightJob status",
-						zap.Uint("jobId", job.ID),
-						zap.Error(err),
-					)
-				}
-				continue
-			}
-
-		}
-	}
-	InsightJobsCount.WithLabelValues("successful").Inc()
 }
 
 func (s Scheduler) scheduleCheckupJob() {
@@ -1302,72 +1172,6 @@ func enqueueComplianceSummarizerJobs(db Database, q queue.Interface, job Summari
 	return nil
 }
 
-func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob, ins complianceapi.Insight) error {
-	var lastDayJobID, lastWeekJobID, lastMonthJobID, lastQuarterJobID, lastYearJobID uint
-
-	lastDay, err := db.GetOldCompletedInsightJob(job.InsightID, 1)
-	if err != nil {
-		return err
-	}
-	if lastDay != nil {
-		lastDayJobID = lastDay.ID
-	}
-
-	lastWeek, err := db.GetOldCompletedInsightJob(job.InsightID, 7)
-	if err != nil {
-		return err
-	}
-	if lastWeek != nil {
-		lastWeekJobID = lastWeek.ID
-	}
-
-	lastMonth, err := db.GetOldCompletedInsightJob(job.InsightID, 30)
-	if err != nil {
-		return err
-	}
-	if lastMonth != nil {
-		lastMonthJobID = lastMonth.ID
-	}
-
-	lastQuarter, err := db.GetOldCompletedInsightJob(job.InsightID, 93)
-	if err != nil {
-		return err
-	}
-	if lastQuarter != nil {
-		lastQuarterJobID = lastQuarter.ID
-	}
-
-	lastYear, err := db.GetOldCompletedInsightJob(job.InsightID, 428)
-	if err != nil {
-		return err
-	}
-	if lastYear != nil {
-		lastYearJobID = lastYear.ID
-	}
-
-	if err := q.Publish(insight.Job{
-		JobID:            job.ID,
-		QueryID:          job.InsightID,
-		SourceID:         job.SourceID,
-		ScheduleJobUUID:  job.ScheduleUUID,
-		AccountID:        job.AccountID,
-		SourceType:       ins.Connector,
-		Internal:         ins.Internal,
-		Query:            ins.Query.QueryToExecute,
-		Description:      ins.Description,
-		Category:         ins.Category,
-		ExecutedAt:       job.CreatedAt.UnixMilli(),
-		LastDayJobID:     lastDayJobID,
-		LastWeekJobID:    lastWeekJobID,
-		LastMonthJobID:   lastMonthJobID,
-		LastQuarterJobID: lastQuarterJobID,
-		LastYearJobID:    lastYearJobID,
-	}); err != nil {
-		return err
-	}
-	return nil
-}
-
 func enqueueCheckupJobs(_ Database, q queue.Interface, job CheckupJob) error {
 	if err := q.Publish(checkup.Job{
 		JobID:      job.ID,
@@ -1376,65 +1180,6 @@ func enqueueCheckupJobs(_ Database, q queue.Interface, job CheckupJob) error {
 		return err
 	}
 	return nil
-}
-
-// RunInsightJobResultsConsumer consumes messages from the insightJobResultQueue queue.
-// It will update the status of the jobs in the database based on the message.
-// It will also update the jobs status that are not completed in certain time to FAILED
-func (s *Scheduler) RunInsightJobResultsConsumer() error {
-	s.logger.Info("Consuming messages from the InsightJobResultQueue queue")
-
-	msgs, err := s.insightJobResultQueue.Consume()
-	if err != nil {
-		return err
-	}
-
-	t := time.NewTicker(JobTimeoutCheckInterval)
-	defer t.Stop()
-
-	for {
-		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				return fmt.Errorf("tasks channel is closed")
-			}
-
-			var result insight.JobResult
-			if err := json.Unmarshal(msg.Body, &result); err != nil {
-				s.logger.Error("Failed to unmarshal InsightJobResult results", zap.Error(err))
-				err = msg.Nack(false, false)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
-				}
-				continue
-			}
-
-			s.logger.Info("Processing InsightJobResult for Job",
-				zap.Uint("jobId", result.JobID),
-				zap.String("status", string(result.Status)),
-			)
-			err := s.db.UpdateInsightJob(result.JobID, result.Status, result.Error)
-			if err != nil {
-				s.logger.Error("Failed to update the status of InsightJob",
-					zap.Uint("jobId", result.JobID),
-					zap.Error(err))
-				err = msg.Nack(false, true)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
-				}
-				continue
-			}
-
-			if err := msg.Ack(false); err != nil {
-				s.logger.Error("Failed acking message", zap.Error(err))
-			}
-		case <-t.C:
-			err := s.db.UpdateInsightJobsTimedOut(s.insightIntervalHours)
-			if err != nil {
-				s.logger.Error("Failed to update timed out InsightJob", zap.Error(err))
-			}
-		}
-	}
 }
 
 // RunCheckupJobResultsConsumer consumes messages from the checkupJobResultQueue queue.
@@ -1580,19 +1325,6 @@ func (s *Scheduler) RunSummarizerJobResultsConsumer() error {
 				s.logger.Error("Failed to update timed out SummarizerJob", zap.Error(err))
 			}
 		}
-	}
-}
-
-func newInsightJob(insight complianceapi.Insight, sourceType, sourceId, accountId string, scheduleUUID string) InsightJob {
-	srcType, _ := source.ParseType(sourceType)
-	return InsightJob{
-		InsightID:      insight.ID,
-		SourceID:       sourceId,
-		AccountID:      accountId,
-		ScheduleUUID:   scheduleUUID,
-		SourceType:     srcType,
-		Status:         insightapi.InsightJobInProgress,
-		FailureMessage: "",
 	}
 }
 
