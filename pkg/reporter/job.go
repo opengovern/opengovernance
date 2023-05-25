@@ -86,6 +86,7 @@ func New(config JobConfig) (*Job, error) {
 	}
 
 	onboard := onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL, nil)
+
 	return &Job{
 		steampipe:     s1,
 		esSteampipe:   s2,
