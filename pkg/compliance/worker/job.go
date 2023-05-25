@@ -76,6 +76,8 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 		return nil, err
 	}
 
+	fmt.Println("++++++ Running Benchmark: %w", benchmarkID)
+
 	var findings []es.Finding
 	for _, childBenchmarkID := range benchmark.Children {
 		f, err := j.RunBenchmark(childBenchmarkID, complianceClient, steampipeConn, connector)
@@ -87,11 +89,12 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 	}
 
 	for _, policyID := range benchmark.Policies {
+		fmt.Println("++++++ Running Policy: %w", policyID)
 		policy, err := complianceClient.GetPolicy(ctx, policyID)
 		if err != nil {
 			return nil, err
 		}
-
+		fmt.Println("++++++ Policy Query: %w", policy.QueryID)
 		if policy.QueryID == nil {
 			continue
 		}
@@ -110,10 +113,14 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 			return nil, err
 		}
 
+		fmt.Println("++++++ Query Executed: %w", res)
+
 		f, err := j.ExtractFindings(benchmark, policy, query, res)
 		if err != nil {
 			return nil, err
 		}
+
+		fmt.Println("++++++ Query Findings: %w", f)
 
 		findings = append(findings, f...)
 	}
@@ -147,22 +154,32 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return err
 	}
 
+	fmt.Println("+++++ New elasticSearch Client created")
+
 	err = j.PopulateSteampipeConfig(elasticSearchConfig, src.ConnectionID)
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("+++++ Steampipe config populated")
 
 	cmd := exec.Command("steampipe", "service", "stop")
 	err = cmd.Run()
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("+++++ Steampipe service stoped")
+
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
 		"9193", "--database-password", "abcd")
 	err = cmd.Run()
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("+++++ Steampipe service started")
+
 	time.Sleep(5 * time.Second)
 
 	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
@@ -175,6 +192,8 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("+++++ Steampipe database created")
 
 	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Type)
 	if err != nil {
