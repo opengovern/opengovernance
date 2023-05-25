@@ -2,6 +2,8 @@ package reporter
 
 import (
 	"context"
+	_ "embed"
+	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
@@ -16,8 +18,23 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"go.uber.org/zap"
 	"math/rand"
+	"strings"
 	"time"
 )
+
+//go:embed queries-aws.json
+var awsQueriesStr string
+var awsQueries []Query
+
+//go:embed queries-azure.json
+var azureQueriesStr string
+var azureQueries []Query
+
+type Query struct {
+	ListQuery string   `json:"list"`
+	GetQuery  string   `json:"get"`
+	KeyFields []string `json:"keyFields"`
+}
 
 type JobConfig struct {
 	Steampipe   config.Postgres
@@ -33,6 +50,14 @@ type Job struct {
 }
 
 func New(config JobConfig) (*Job, error) {
+	if err := json.Unmarshal([]byte(awsQueriesStr), &awsQueries); err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal([]byte(azureQueriesStr), &azureQueries); err != nil {
+		return nil, err
+	}
+
 	s1, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: config.Steampipe.Host,
 		Port: config.Steampipe.Port,
@@ -92,21 +117,18 @@ func (j *Job) RunJob() error {
 	if err != nil {
 		return err
 	}
-	tableName := j.RandomTableName(account.Type)
-	listQuery := j.BuildListQuery(account, tableName)
 
+	query := j.RandomQuery(account.Type)
 	j.logger.Info("query steampipe",
 		zap.String("accountID", account.ConnectionID),
-		zap.String("tableName", tableName),
-		zap.String("query", listQuery))
+		zap.String("query", query.ListQuery))
 
+	listQuery := strings.ReplaceAll(query.ListQuery, "%ACCOUNT_ID%", account.ID.String())
 	steampipeRows, err := j.steampipe.Conn().Query(context.Background(), listQuery)
 	if err != nil {
 		return err
 	}
 	defer steampipeRows.Close()
-
-	//TODO-Saleh
 
 	rowCount := 0
 	for steampipeRows.Next() {
@@ -116,31 +138,15 @@ func (j *Job) RunJob() error {
 			return err
 		}
 
-		keyFields := []string{}
 		steampipeRecord := map[string]interface{}{}
 		for idx, field := range steampipeRows.FieldDescriptions() {
-			if string(field.Name) == "arn" {
-				keyFields = append(keyFields, "arn")
-			}
-			if string(field.Name) == "akas" {
-				keyFields = append(keyFields, "akas")
-			}
-			if string(field.Name) == "id" {
-				keyFields = append(keyFields, "id")
-			}
-			if string(field.Name) == "name" {
-				keyFields = append(keyFields, "name")
-			}
-			if string(field.Name) == "title" {
-				keyFields = append(keyFields, "title")
-			}
 			steampipeRecord[string(field.Name)] = steampipeRow[idx]
 		}
 
-		getQuery := j.BuildGetQuery(account, tableName, keyFields)
+		getQuery := strings.ReplaceAll(query.GetQuery, "%ACCOUNT_ID%", account.ID.String())
 
 		var keyValues []interface{}
-		for _, f := range keyFields {
+		for _, f := range query.KeyFields {
 			keyValues = append(keyValues, steampipeRecord[f])
 		}
 
@@ -172,7 +178,6 @@ func (j *Job) RunJob() error {
 				if v != v2 {
 					j.logger.Error("inconsistency in data",
 						zap.String("accountID", account.ConnectionID),
-						zap.String("tableName", tableName),
 						zap.String("steampipeARN", fmt.Sprintf("%v", steampipeRecord["arn"])),
 						zap.String("esARN", fmt.Sprintf("%v", esRecord["arn"])),
 						zap.String("conflictColumn", k),
@@ -184,7 +189,6 @@ func (j *Job) RunJob() error {
 		if !found {
 			j.logger.Error("record not found",
 				zap.String("accountID", account.ConnectionID),
-				zap.String("tableName", tableName),
 				zap.String("steampipeARN", fmt.Sprintf("%v", steampipeRecord["arn"])),
 			)
 		}
@@ -205,6 +209,18 @@ func (j *Job) RandomAccount() (*api2.Source, error) {
 
 	idx := rand.Intn(len(srcs))
 	return &srcs[idx], nil
+}
+
+func (j *Job) RandomQuery(sourceType source.Type) *Query {
+	switch sourceType {
+	case source.CloudAWS:
+		idx := rand.Intn(len(awsQueries))
+		return &awsQueries[idx]
+	case source.CloudAzure:
+		idx := rand.Intn(len(azureQueries))
+		return &azureQueries[idx]
+	}
+	return nil
 }
 
 func (j *Job) RandomTableName(sourceType source.Type) string {
