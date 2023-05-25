@@ -484,9 +484,14 @@ func (s *Scheduler) Run() error {
 		//EnsureRunGoroutin(func() {
 		//	s.RunScheduleJobCompletionUpdater()
 		//})
+
 		EnsureRunGoroutin(func() {
 			s.RunInsightJobScheduler()
 		})
+		EnsureRunGoroutin(func() {
+			s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
+		})
+
 		EnsureRunGoroutin(func() {
 			s.RunCheckupJobScheduler()
 		})
@@ -499,9 +504,6 @@ func (s *Scheduler) Run() error {
 		EnsureRunGoroutin(func() {
 			s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
 		})
-		//EnsureRunGoroutin(func() {
-		//	s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
-		//})
 		EnsureRunGoroutin(func() {
 			s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
 		})
