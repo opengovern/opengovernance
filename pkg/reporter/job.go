@@ -107,9 +107,6 @@ func (j *Job) RunJob() error {
 	defer steampipeRows.Close()
 
 	//TODO-Saleh
-	keyFields := []string{"akas"}
-
-	getQuery := j.BuildGetQuery(account, tableName, keyFields)
 
 	rowCount := 0
 	for steampipeRows.Next() {
@@ -119,10 +116,28 @@ func (j *Job) RunJob() error {
 			return err
 		}
 
+		keyFields := []string{}
 		steampipeRecord := map[string]interface{}{}
 		for idx, field := range steampipeRows.FieldDescriptions() {
+			if string(field.Name) == "arn" {
+				keyFields = append(keyFields, "arn")
+			}
+			if string(field.Name) == "akas" {
+				keyFields = append(keyFields, "akas")
+			}
+			if string(field.Name) == "id" {
+				keyFields = append(keyFields, "id")
+			}
+			if string(field.Name) == "name" {
+				keyFields = append(keyFields, "name")
+			}
+			if string(field.Name) == "title" {
+				keyFields = append(keyFields, "title")
+			}
 			steampipeRecord[string(field.Name)] = steampipeRow[idx]
 		}
+
+		getQuery := j.BuildGetQuery(account, tableName, keyFields)
 
 		var keyValues []interface{}
 		for _, f := range keyFields {
