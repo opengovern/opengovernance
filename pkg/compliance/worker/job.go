@@ -76,7 +76,7 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 		return nil, err
 	}
 
-	fmt.Println("++++++ Running Benchmark: %w", benchmarkID)
+	fmt.Println("+++++++++ Running Benchmark:", benchmarkID)
 
 	var findings []es.Finding
 	for _, childBenchmarkID := range benchmark.Children {
@@ -89,12 +89,11 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 	}
 
 	for _, policyID := range benchmark.Policies {
-		fmt.Println("++++++ Running Policy: %w", policyID)
+		fmt.Println("+++++++++++ Running Policy:", policyID)
 		policy, err := complianceClient.GetPolicy(ctx, policyID)
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("++++++ Policy Query: %w", policy.QueryID)
 		if policy.QueryID == nil {
 			continue
 		}
@@ -103,6 +102,7 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println("+++++++++++ Policy Query:", query.QueryToExecute)
 
 		if query.Connector != string(connector) {
 			return nil, errors.New("connector doesn't match")
@@ -113,14 +113,14 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 			return nil, err
 		}
 
-		fmt.Println("++++++ Query Executed: %w", res)
+		fmt.Println("+++++++++++ Query Executed:", res)
 
 		f, err := j.ExtractFindings(benchmark, policy, query, res)
 		if err != nil {
 			return nil, err
 		}
 
-		fmt.Println("++++++ Query Findings: %w", f)
+		fmt.Println("+++++++++++ Query Findings:", f)
 
 		findings = append(findings, f...)
 	}
@@ -161,7 +161,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return err
 	}
 
-	fmt.Println("+++++ Steampipe config populated")
+	fmt.Println("+++++ Steampipe config populated:", elasticSearchConfig, "connectionID:", src.ConnectionID)
 
 	cmd := exec.Command("steampipe", "service", "stop")
 	err = cmd.Run()
