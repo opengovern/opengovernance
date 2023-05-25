@@ -107,7 +107,7 @@ func (j *Job) RunJob() error {
 	defer steampipeRows.Close()
 
 	//TODO-Saleh
-	keyFields := []string{"arn"}
+	keyFields := []string{"akas"}
 
 	getQuery := j.BuildGetQuery(account, tableName, keyFields)
 
