@@ -2,6 +2,6 @@
   {
     "keyFields": ["arn"],
     "list": "SELECT * FROM aws_ec2_instance WHERE keibi_account_id = '%ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_ec2_instance WHERE keibi_account_id = '%ACCOUNT_ID%' AND arn = ?"
+    "get": "SELECT * FROM aws_ec2_instance WHERE keibi_account_id = '%ACCOUNT_ID%' AND arn = $1"
   }
 ]
