@@ -3,6 +3,7 @@ package worker
 import (
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 
@@ -170,6 +171,13 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	}
 
 	fmt.Println("+++++ Steampipe service stoped")
+
+	time.Sleep(5 * time.Second)
+
+	fmt.Println("STEAMPIPE_ACCOUNT_ID:", os.Getenv("STEAMPIPE_ACCOUNT_ID"))
+	fmt.Println("ES_ADDRESS:", os.Getenv("ES_ADDRESS"))
+	fmt.Println("ES_USERNAME:", os.Getenv("ES_USERNAME"))
+	fmt.Println("ES_PASSWORD:", os.Getenv("ES_PASSWORD"))
 
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
 		"9193", "--database-password", "abcd")

@@ -2,6 +2,7 @@ package worker
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -16,13 +17,13 @@ func (j *Job) PopulateSteampipeConfig(elasticSearchConfig config.ElasticSearch, 
 	var accountID string
 	switch j.Connector {
 	case source.CloudAWS:
-		// creds, err := AWSAccountConfigFromMap(cfg)
-		// if err != nil {
-		// 	return err
-		// }
-		//accountID = creds.AccountID
+		creds, err := AWSAccountConfigFromMap(cfg)
+		if err != nil {
+			return err
+		}
+		fmt.Println(creds.AccountID)
 
-		err := BuildSpecFile("aws", elasticSearchConfig, accountID)
+		err = BuildSpecFile("aws", elasticSearchConfig, accountID)
 		if err != nil {
 			return err
 		}
