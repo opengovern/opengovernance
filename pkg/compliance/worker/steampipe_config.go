@@ -37,7 +37,8 @@ func (j *Job) PopulateSteampipeConfig(elasticSearchConfig config.ElasticSearch, 
 		if err != nil {
 			return err
 		}
-		accountID = creds.SubscriptionID
+
+		fmt.Println(creds.SubscriptionID)
 
 		err = BuildSpecFile("azure", elasticSearchConfig, accountID)
 		if err != nil {
