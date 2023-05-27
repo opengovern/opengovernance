@@ -22,7 +22,7 @@ package inventory
 //
 //	es2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
 //
-//	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+//	"github.com/kaytu-io/kaytu-util/pkg/source"
 //
 //	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 //

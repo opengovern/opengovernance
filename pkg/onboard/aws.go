@@ -12,7 +12,7 @@ import (
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 var PermissionError = errors.New("PermissionError")

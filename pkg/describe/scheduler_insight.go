@@ -2,16 +2,16 @@ package describe
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight"
 	"strings"
 	"time"
+
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/insight"
 
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 

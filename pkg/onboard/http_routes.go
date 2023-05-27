@@ -17,7 +17,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/aws"

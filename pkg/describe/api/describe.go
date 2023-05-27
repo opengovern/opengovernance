@@ -1,6 +1,6 @@
 package api
 
-import "gitlab.com/keibiengine/keibi-engine/pkg/source"
+import "github.com/kaytu-io/kaytu-util/pkg/source"
 
 type DescribeSingleResourceRequest struct {
 	Provider         source.Type `json:"provider"`

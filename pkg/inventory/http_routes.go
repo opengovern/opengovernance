@@ -36,7 +36,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
@@ -3188,15 +3188,8 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 
 	var result []api.SmartQueryItem
 	for _, item := range queries {
-		tags := map[string]string{}
 		category := ""
 
-		for _, tag := range item.Tags {
-			tags[tag.Key] = tag.Value
-			if strings.ToLower(tag.Key) == "category" {
-				category = tag.Value
-			}
-		}
 		result = append(result, api.SmartQueryItem{
 			ID:          item.Model.ID,
 			Provider:    item.Provider,
@@ -3204,7 +3197,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 			Category:    category,
 			Description: item.Description,
 			Query:       item.Query,
-			Tags:        tags,
+			Tags:        nil,
 		})
 	}
 	return ctx.JSON(200, result)

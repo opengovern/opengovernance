@@ -15,7 +15,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 	"math/rand"
 	"strings"

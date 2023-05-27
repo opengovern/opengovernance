@@ -10,7 +10,7 @@ import (
 
 	"github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 )
 

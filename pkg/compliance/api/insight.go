@@ -1,7 +1,7 @@
 package api
 
 import (
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 type InsightTag struct {

@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 type InventoryServiceClient interface {

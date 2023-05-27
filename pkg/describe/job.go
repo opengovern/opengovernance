@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
