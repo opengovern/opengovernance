@@ -1,6 +1,8 @@
 package inventory
 
 import (
+	"strings"
+
 	"github.com/jackc/pgx/v4"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
@@ -36,8 +38,9 @@ func (db Database) Initialize() error {
 		err = db.orm.Clauses(clause.OnConflict{
 			DoNothing: true,
 		}).Create(&Service{
-			ServiceName: resourceType.ServiceName,
-			Connector:   source.CloudAWS,
+			ServiceName:  strings.ToLower(resourceType.ServiceName),
+			ServiceLabel: resourceType.ServiceName,
+			Connector:    source.CloudAWS,
 		}).Error
 		if err != nil {
 			return err
@@ -48,7 +51,7 @@ func (db Database) Initialize() error {
 			Connector:     source.CloudAWS,
 			ResourceType:  resourceType.ResourceName,
 			ResourceLabel: resourceType.ResourceLabel,
-			ServiceName:   resourceType.ServiceName,
+			ServiceName:   strings.ToLower(resourceType.ServiceName),
 		}).Error
 		if err != nil {
 			return err
@@ -59,8 +62,9 @@ func (db Database) Initialize() error {
 		err = db.orm.Clauses(clause.OnConflict{
 			DoNothing: true,
 		}).Create(&Service{
-			ServiceName: resourceType.ServiceName,
-			Connector:   source.CloudAzure,
+			ServiceName:  strings.ToLower(resourceType.ServiceName),
+			ServiceLabel: resourceType.ServiceName,
+			Connector:    source.CloudAzure,
 		}).Error
 		if err != nil {
 			return err
@@ -71,7 +75,7 @@ func (db Database) Initialize() error {
 			Connector:     source.CloudAzure,
 			ResourceType:  resourceType.ResourceName,
 			ResourceLabel: resourceType.ResourceLabel,
-			ServiceName:   resourceType.ServiceName,
+			ServiceName:   strings.ToLower(resourceType.ServiceName),
 		}).Error
 		if err != nil {
 			return err
