@@ -24,6 +24,8 @@ func (db Database) Initialize() error {
 		&ResourceType{},
 		&SmartQuery{},
 		&Metric{},
+		&ResourceTypeTag{},
+		&ServiceTag{},
 	)
 	if err != nil {
 		return err
