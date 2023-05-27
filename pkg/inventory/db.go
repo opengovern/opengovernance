@@ -20,8 +20,8 @@ func NewDatabase(orm *gorm.DB) Database {
 
 func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
-		&ResourceType{},
 		&Service{},
+		&ResourceType{},
 		&SmartQuery{},
 		&Metric{},
 	)
