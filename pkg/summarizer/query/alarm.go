@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"

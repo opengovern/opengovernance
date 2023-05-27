@@ -34,7 +34,7 @@ import (
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	workspaceClient "gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 

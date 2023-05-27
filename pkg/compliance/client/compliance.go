@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	compliance "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 )
 
 type ComplianceServiceClient interface {

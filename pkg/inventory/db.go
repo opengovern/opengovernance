@@ -2,8 +2,10 @@ package inventory
 
 import (
 	"github.com/jackc/pgx/v4"
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-azure-describer/azure"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -25,6 +27,53 @@ func (db Database) Initialize() error {
 	)
 	if err != nil {
 		return err
+	}
+
+	awsResourceTypes := aws.GetResourceTypesMap()
+	for _, resourceType := range awsResourceTypes {
+		err = db.orm.Clauses(clause.OnConflict{
+			DoNothing: true,
+		}).Create(&Service{
+			ServiceName: resourceType.ServiceName,
+			Connector:   source.CloudAWS,
+		}).Error
+		if err != nil {
+			return err
+		}
+		err = db.orm.Clauses(clause.OnConflict{
+			DoNothing: true,
+		}).Create(&ResourceType{
+			Connector:     source.CloudAWS,
+			ResourceType:  resourceType.ResourceName,
+			ResourceLabel: resourceType.ResourceLabel,
+			ServiceName:   resourceType.ServiceName,
+		}).Error
+		if err != nil {
+			return err
+		}
+	}
+	azureResourceTypes := azure.GetResourceTypesMap()
+	for _, resourceType := range azureResourceTypes {
+		err = db.orm.Clauses(clause.OnConflict{
+			DoNothing: true,
+		}).Create(&Service{
+			ServiceName: resourceType.ServiceName,
+			Connector:   source.CloudAzure,
+		}).Error
+		if err != nil {
+			return err
+		}
+		err = db.orm.Clauses(clause.OnConflict{
+			DoNothing: true,
+		}).Create(&ResourceType{
+			Connector:     source.CloudAzure,
+			ResourceType:  resourceType.ResourceName,
+			ResourceLabel: resourceType.ResourceLabel,
+			ServiceName:   resourceType.ServiceName,
+		}).Error
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -64,9 +113,6 @@ func (db Database) GetQueriesWithFilters(search *string, labels []string, provid
 		Joins("LEFT JOIN smartquery_tags on smart_queries.id = smart_query_id " +
 			"LEFT JOIN tags on smartquery_tags.tag_id = tags.id ")
 
-	if len(labels) != 0 {
-		m = m.Where("tags.value in ?", labels)
-	}
 	if search != nil {
 		m = m.Where("title like ?", "%"+*search+"%")
 	}
@@ -81,9 +127,7 @@ func (db Database) GetQueriesWithFilters(search *string, labels []string, provid
 
 	v := map[uint]SmartQuery{}
 	for _, item := range s {
-		if c, ok := v[item.ID]; ok {
-			c.Tags = append(c.Tags, item.Tags...)
-		} else {
+		if _, ok := v[item.ID]; !ok {
 			v[item.ID] = item
 		}
 	}

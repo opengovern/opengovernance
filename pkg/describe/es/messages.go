@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	"github.com/google/uuid"
 )

@@ -13,7 +13,7 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"

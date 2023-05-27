@@ -11,7 +11,7 @@ import (
 	authentication "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 type azureSubscription struct {

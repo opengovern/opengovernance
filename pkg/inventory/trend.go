@@ -3,7 +3,7 @@ package inventory
 import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 func ExtractTrend(client keibi.Client, provider source.Type, sourceID *string, fromTime, toTime int64) (map[int64]int, error) {

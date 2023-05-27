@@ -11,7 +11,7 @@ import (
 	awsModel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	azureModel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/helpers"
 )
 

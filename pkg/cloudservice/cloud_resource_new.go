@@ -1,6 +1,6 @@
 package cloudservice
 
-import "gitlab.com/keibiengine/keibi-engine/pkg/source"
+import "github.com/kaytu-io/kaytu-util/pkg/source"
 
 type CloudResource struct {
 	Cloud                     source.Type

@@ -7,7 +7,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 
 	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"

@@ -3,7 +3,7 @@ package es
 import (
 	"fmt"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 )

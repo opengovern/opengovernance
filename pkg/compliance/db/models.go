@@ -7,7 +7,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	"gorm.io/gorm"
 )

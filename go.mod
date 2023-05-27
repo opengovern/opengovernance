@@ -111,7 +111,6 @@ require (
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0
 	github.com/confluentinc/confluent-kafka-go/v2 v2.1.1
-	github.com/go-co-op/gocron v1.27.1
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/go-redis/cache/v8 v8.4.3
 	github.com/go-redis/redis/v8 v8.11.5
@@ -122,6 +121,7 @@ require (
 	github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230513131051-487f90781041
 	github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230513092309-666e3325e35e
 	github.com/kaytu-io/kaytu-util v0.0.0-20230523183329-2e817a251443
+	github.com/lib/pq v1.10.2
 	github.com/microsoft/kiota-abstractions-go v0.9.1
 	github.com/microsoft/kiota-authentication-azure-go v0.4.1
 	github.com/microsoftgraph/msgraph-sdk-go v0.37.0
@@ -356,7 +356,6 @@ require (
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/sethvargo/go-retry v0.1.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect

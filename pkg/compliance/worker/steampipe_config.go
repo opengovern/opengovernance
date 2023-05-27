@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/config"
-	"gitlab.com/keibiengine/keibi-engine/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 func (j *Job) PopulateSteampipeConfig(elasticSearchConfig config.ElasticSearch, AccountID string) error {
