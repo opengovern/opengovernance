@@ -57,7 +57,8 @@ func (t Tag) GetValue() []string {
 
 type ResourceTypeTag struct {
 	Tag
-	ResourceType string `gorm:"primaryKey"`
+	ResourceType       string       `gorm:"primaryKey"`
+	ResourceTypeObject ResourceType `gorm:"foreignKey:ResourceType;references:ResourceType;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 func (t ResourceTypeTag) GetKey() string {
@@ -70,7 +71,8 @@ func (t ResourceTypeTag) GetValue() []string {
 
 type ServiceTag struct {
 	Tag
-	ServiceName string `gorm:"primaryKey"`
+	ServiceName string  `gorm:"primaryKey"`
+	Service     Service `gorm:"foreignKey:ServiceName;references:ServiceName;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 func (t ServiceTag) GetKey() string {
