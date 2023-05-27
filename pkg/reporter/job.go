@@ -152,7 +152,10 @@ func (j *Job) RunJob() error {
 		}
 
 		j.logger.Info("query steampipe",
-			zap.String("getQuery", getQuery), zap.String("keyValues", fmt.Sprintf("%v", keyValues)))
+			zap.String("getQuery", getQuery),
+			zap.String("keyValues", fmt.Sprintf("%v", keyValues)),
+			zap.String("record", fmt.Sprintf("%v", steampipeRecord)),
+		)
 		esRows, err := j.esSteampipe.Conn().Query(context.Background(), getQuery, keyValues...)
 		if err != nil {
 			return err
