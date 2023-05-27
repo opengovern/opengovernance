@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
+	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"strings"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
@@ -14,9 +17,8 @@ import (
 
 	awsmodel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
-	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
+	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 )
 
 type ResourceObj struct {
@@ -77,7 +79,12 @@ func QueryResourcesWithSteampipeColumns(
 		var response ResourceQueryResponse
 		indexName := types.ResourceTypeToESIndex(resourceType)
 
-		sourceType := steampipe.SourceTypeByResourceType(resourceType)
+		var sourceType source.Type
+		if strings.HasPrefix(strings.ToLower(resourceType), "aws") {
+			sourceType = source.CloudAWS
+		} else if strings.HasPrefix(strings.ToLower(resourceType), "microsoft") {
+			sourceType = source.CloudAzure
+		}
 
 		terms := make(map[string][]string)
 		if !FilterIsEmpty(req.Filters.Location) {
@@ -118,7 +125,6 @@ func QueryResourcesWithSteampipeColumns(
 		result.TotalCount += response.Hits.Total.Value
 
 		pluginProvider := steampipe.ExtractPlugin(resourceType)
-		pluginTableName := steampipe.ExtractTableName(resourceType)
 		for _, hit := range response.Hits.Hits {
 			if pluginProvider == steampipe.SteampipePluginAWS {
 				b, err := json.Marshal(hit.Source.Metadata)
@@ -142,12 +148,13 @@ func QueryResourcesWithSteampipeColumns(
 					Attributes:           make(map[string]string),
 				}
 
-				desc, err := steampipe.ConvertToDescription(resourceType, hit.Source)
+				desc, err := steampipe.ConvertToDescription(resourceType, hit.Source, awsSteampipe.AWSDescriptionMap)
 				if err != nil {
 					return nil, err
 				}
 
-				cells, err := steampipe.AWSDescriptionToRecord(desc, pluginTableName)
+				pluginTableName := awsSteampipe.ExtractTableName(resourceType)
+				cells, err := awsSteampipe.AWSDescriptionToRecord(desc, pluginTableName)
 				if err != nil {
 					return nil, err
 				}
@@ -184,14 +191,15 @@ func QueryResourcesWithSteampipeColumns(
 					Attributes:           make(map[string]string),
 				}
 
-				desc, err := steampipe.ConvertToDescription(resourceType, hit.Source)
+				desc, err := steampipe.ConvertToDescription(resourceType, hit.Source, azureSteampipe.AzureDescriptionMap)
 				if err != nil {
 					return nil, err
 				}
+				pluginTableName := azureSteampipe.ExtractTableName(resourceType)
 
 				var cells map[string]*proto.Column
 				if pluginProvider == steampipe.SteampipePluginAzure {
-					cells, err = steampipe.AzureDescriptionToRecord(desc, pluginTableName)
+					cells, err = azureSteampipe.AzureDescriptionToRecord(desc, pluginTableName)
 					if err != nil {
 						return nil, err
 					}
@@ -199,7 +207,7 @@ func QueryResourcesWithSteampipeColumns(
 						resource.Attributes[colName] = cell.String()
 					}
 				} else {
-					cells, err = steampipe.AzureADDescriptionToRecord(desc, pluginTableName)
+					cells, err = azureSteampipe.AzureADDescriptionToRecord(desc, pluginTableName)
 					if err != nil {
 						return nil, err
 					}

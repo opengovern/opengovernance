@@ -3,6 +3,7 @@ package insight
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"strings"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -15,7 +16,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
-	"gitlab.com/keibiengine/keibi-engine/pkg/steampipe"
 	"go.uber.org/zap"
 )
 
