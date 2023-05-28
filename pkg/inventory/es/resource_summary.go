@@ -1233,7 +1233,7 @@ type FetchResourceTypeCountAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchResourceTypeCountAtTime(client keibi.Client, provider source.Type, sourceIDs []string, t time.Time, resourceTypes []string, size int) (map[string]int, error) {
+func FetchResourceTypeCountAtTime(client keibi.Client, providers []source.Type, sourceIDs []string, t time.Time, resourceTypes []string, size int) (map[string]int, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 
@@ -1252,9 +1252,13 @@ func FetchResourceTypeCountAtTime(client keibi.Client, provider source.Type, sou
 		})
 	}
 
-	if !provider.IsNull() {
+	if len(providers) > 0 {
+		providerStrings := make([]string, 0, len(providers))
+		for _, provider := range providers {
+			providerStrings = append(providerStrings, provider.String())
+		}
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {provider.String()}},
+			"terms": map[string][]string{"source_type": providerStrings},
 		})
 	}
 

@@ -3,8 +3,8 @@ package api
 import (
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )
@@ -439,6 +439,76 @@ type RegionsByResourceCountResponse struct {
 	Regions    []LocationResponse `json:"regions"`
 }
 
+type MetricsResponse struct {
+	MetricsName      string `json:"metricsName"`
+	Value            int    `json:"value"`
+	LastDayValue     *int   `json:"lastDayValue"`
+	LastWeekValue    *int   `json:"lastWeekValue"`
+	LastQuarterValue *int   `json:"lastQuarterValue"`
+	LastYearValue    *int   `json:"lastYearValue"`
+}
+
+type ServiceDistributionItem struct {
+	ServiceName  string         `json:"serviceName"`  // Service name
+	Distribution map[string]int `json:"distribution"` // Distribution name
+}
+
+type Category struct {
+	Name        string   `json:"name"`        // Category Name
+	SubCategory []string `json:"subCategory"` // List of sub categories
+}
+
+type ConnectionSummaryCategory struct {
+	ResourceCount int            `json:"resourceCount"`
+	SubCategories map[string]int `json:"subCategories"`
+}
+
+type CategoriesMetrics struct {
+	Categories map[string]CategoryMetric `json:"categories"`
+}
+
+type CategoryMetric struct {
+	ResourceCount    int  `json:"resourceCount"`
+	LastDayValue     *int `json:"lastDayValue"`
+	LastWeekValue    *int `json:"lastWeekValue"`
+	LastQuarterValue *int `json:"lastQuarterValue"`
+	LastYearValue    *int `json:"lastYearValue"`
+
+	SubCategories map[string]HistoryCount `json:"subCategories"`
+}
+
+type HistoryCount struct {
+	Count            int  `json:"count"`
+	LastDayValue     *int `json:"lastDayValue"`
+	LastWeekValue    *int `json:"lastWeekValue"`
+	LastQuarterValue *int `json:"lastQuarterValue"`
+	LastYearValue    *int `json:"lastYearValue"`
+}
+
+type ConnectionSummaryResponse struct {
+	Categories    map[string]ConnectionSummaryCategory `json:"categories"`    // Categories with their Summary
+	CloudServices map[string]int                       `json:"cloudServices"` // Services as Key, Number of them as Value
+	ResourceTypes map[string]int                       `json:"resourceTypes"` // Resource types as Key, Number of them as Value
+}
+
+type ListServiceSummariesResponse struct {
+	TotalCount int              `json:"totalCount"` // Number of services
+	Services   []ServiceSummary `json:"services"`   // A list of service summeries
+}
+
+type ServiceSummary struct {
+	Connector     source.Type             `json:"connector"`               // Cloud provider
+	ServiceLabel  string                  `json:"serviceLabel"`            // Service Label
+	ServiceName   string                  `json:"serviceName"`             // Service Name
+	ResourceCount *int                    `json:"resourceCount,omitempty"` // Number of Resources
+	Cost          map[string]CostWithUnit `json:"cost,omitempty"`          // Costs (Unit as Key, CostWithUnit as Value)
+}
+
+type ListResourceTypesResponse struct {
+	TotalCount    int                       `json:"totalCount" example:"1"` // Number of resource types
+	ResourceTypes []FilterCloudResourceType `json:"resourceTypes"`          // A list of resource types
+}
+
 type FilterType string
 
 const (
@@ -528,74 +598,4 @@ type CategoryNode struct {
 	CostChange          map[string]float64      `json:"costChange,omitempty"`
 	Subcategories       []CategoryNode          `json:"subcategories,omitempty"` // Subcategories sorted by ResourceCount [resources/category, ]
 	Filters             []Filter                `json:"filters,omitempty"`       // List of Filters associated with this Category
-}
-
-type MetricsResponse struct {
-	MetricsName      string `json:"metricsName"`
-	Value            int    `json:"value"`
-	LastDayValue     *int   `json:"lastDayValue"`
-	LastWeekValue    *int   `json:"lastWeekValue"`
-	LastQuarterValue *int   `json:"lastQuarterValue"`
-	LastYearValue    *int   `json:"lastYearValue"`
-}
-
-type ServiceDistributionItem struct {
-	ServiceName  string         `json:"serviceName"`  // Service name
-	Distribution map[string]int `json:"distribution"` // Distribution name
-}
-
-type Category struct {
-	Name        string   `json:"name"`        // Category Name
-	SubCategory []string `json:"subCategory"` // List of sub categories
-}
-
-type ConnectionSummaryCategory struct {
-	ResourceCount int            `json:"resourceCount"`
-	SubCategories map[string]int `json:"subCategories"`
-}
-
-type CategoriesMetrics struct {
-	Categories map[string]CategoryMetric `json:"categories"`
-}
-
-type CategoryMetric struct {
-	ResourceCount    int  `json:"resourceCount"`
-	LastDayValue     *int `json:"lastDayValue"`
-	LastWeekValue    *int `json:"lastWeekValue"`
-	LastQuarterValue *int `json:"lastQuarterValue"`
-	LastYearValue    *int `json:"lastYearValue"`
-
-	SubCategories map[string]HistoryCount `json:"subCategories"`
-}
-
-type HistoryCount struct {
-	Count            int  `json:"count"`
-	LastDayValue     *int `json:"lastDayValue"`
-	LastWeekValue    *int `json:"lastWeekValue"`
-	LastQuarterValue *int `json:"lastQuarterValue"`
-	LastYearValue    *int `json:"lastYearValue"`
-}
-
-type ConnectionSummaryResponse struct {
-	Categories    map[string]ConnectionSummaryCategory `json:"categories"`    // Categories with their Summary
-	CloudServices map[string]int                       `json:"cloudServices"` // Services as Key, Number of them as Value
-	ResourceTypes map[string]int                       `json:"resourceTypes"` // Resource types as Key, Number of them as Value
-}
-
-type ListServiceSummariesResponse struct {
-	TotalCount int              `json:"totalCount"` // Number of services
-	Services   []ServiceSummary `json:"services"`   // A list of service summeries
-}
-
-type ServiceSummary struct {
-	Connector     source.Type             `json:"connector"`               // Cloud provider
-	ServiceLabel  string                  `json:"serviceLabel"`            // Service Label
-	ServiceName   string                  `json:"serviceName"`             // Service Name
-	ResourceCount *int                    `json:"resourceCount,omitempty"` // Number of Resources
-	Cost          map[string]CostWithUnit `json:"cost,omitempty"`          // Costs (Unit as Key, CostWithUnit as Value)
-}
-
-type ListResourceTypesResponse struct {
-	TotalCount    int                       `json:"totalCount" example:"1"` // Number of resource types
-	ResourceTypes []FilterCloudResourceType `json:"resourceTypes"`          // A list of resource types
 }
