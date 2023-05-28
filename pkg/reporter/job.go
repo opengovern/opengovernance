@@ -120,10 +120,6 @@ func (j *Job) RunJob() error {
 	}
 
 	query := j.RandomQuery(account.Type)
-	j.logger.Info("query steampipe",
-		zap.String("accountID", account.ConnectionID),
-		zap.String("query", query.ListQuery))
-
 	listQuery := strings.ReplaceAll(query.ListQuery, "%ACCOUNT_ID%", account.ID.String())
 	steampipeRows, err := j.steampipe.Conn().Query(context.Background(), listQuery)
 	if err != nil {
@@ -151,11 +147,6 @@ func (j *Job) RunJob() error {
 			keyValues = append(keyValues, steampipeRecord[f])
 		}
 
-		j.logger.Info("query steampipe",
-			zap.String("getQuery", getQuery),
-			zap.String("keyValues", fmt.Sprintf("%v", keyValues)),
-			zap.String("record", fmt.Sprintf("%v", steampipeRecord)),
-		)
 		esRows, err := j.esSteampipe.Conn().Query(context.Background(), getQuery, keyValues...)
 		if err != nil {
 			return err
