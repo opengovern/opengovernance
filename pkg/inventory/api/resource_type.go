@@ -17,3 +17,10 @@ type ListResourceTypeMetricsResponse struct {
 	TotalResourceTypes int            `json:"total_resource_types"`
 	ResourceTypes      []ResourceType `json:"resource_types"`
 }
+
+type ListResourceTypeCompositionResponse struct {
+	TotalCount      int            `json:"total_count"`
+	TotalValueCount int            `json:"total_value_count"`
+	TopValues       map[string]int `json:"top_values"`
+	Others          int            `json:"others"`
+}

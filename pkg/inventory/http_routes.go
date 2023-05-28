@@ -78,6 +78,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	resourcesV2.GET("/tag", httpserver.AuthorizeHandler(h.GetResourceTypeTags, api3.ViewerRole))
 	resourcesV2.GET("/tag/:key", httpserver.AuthorizeHandler(h.GetResourceTypeTag, api3.ViewerRole))
 	resourcesV2.GET("/metric", httpserver.AuthorizeHandler(h.ListResourceTypeMetrics, api3.ViewerRole))
+	resourcesV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListResourceTypeComposition, api3.ViewerRole))
 
 	v2.GET("/resources/category", httpserver.AuthorizeHandler(h.GetCategoryNodeResourceCount, api3.ViewerRole))
 	v2.GET("/cost/category", httpserver.AuthorizeHandler(h.GetCategoryNodeCost, api3.ViewerRole))
@@ -1064,6 +1065,7 @@ func (h *HttpHandler) GetResourceTypeTags(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	tags = trimPrivateTags(tags)
 	return ctx.JSON(http.StatusOK, tags)
 }
 
@@ -1079,8 +1081,8 @@ func (h *HttpHandler) GetResourceTypeTags(ctx echo.Context) error {
 //	@Router		/inventory/api/v2/resources/tag/{key} [get]
 func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
 	tagKey := ctx.Param("key")
-	if tagKey == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "tag key is required")
+	if tagKey == "" || strings.HasPrefix(tagKey, KaytuPrivateTagPrefix) {
+		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
 
 	tags, err := h.db.GetResourceTypeTagPossibleValues(tagKey)
@@ -1104,7 +1106,7 @@ func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
 //	@Param		sortBy			query		string		false	"Sort by field - default is count"	Enums(name,count)
 //	@Param		pageSize		query		int			false	"page size - default is 20"
 //	@Param		pageNumber		query		int			false	"page number - default is 1"
-//	@Success	200				{object}	[]api.Filter
+//	@Success	200				{object}	api.ListResourceTypeMetricsResponse
 //	@Router		/inventory/api/v2/metrics/resources/metric [get]
 func (h *HttpHandler) ListResourceTypeMetrics(ctx echo.Context) error {
 	var err error
@@ -1154,7 +1156,7 @@ func (h *HttpHandler) ListResourceTypeMetrics(ctx echo.Context) error {
 			ResourceType:  resourceType.ResourceType,
 			ResourceLabel: resourceType.ResourceLabel,
 			ServiceName:   resourceType.ServiceName,
-			Tags:          resourceType.GetTagsMap(),
+			Tags:          trimPrivateTags(resourceType.GetTagsMap()),
 			LogoURI:       resourceType.LogoURI,
 			Count:         nil,
 		}
@@ -1187,6 +1189,98 @@ func (h *HttpHandler) ListResourceTypeMetrics(ctx echo.Context) error {
 		ResourceTypes:      internal.Paginate(pageNumber, pageSize, apiResourceTypes),
 	}
 	return ctx.JSON(http.StatusOK, result)
+}
+
+// ListResourceTypeComposition godoc
+//
+//	@Summary	Return tag values with most resources for the given key
+//	@Security	BearerToken
+//	@Tags		inventory
+//	@Accept		json
+//	@Produce	json
+//	@Param		top				query		int			true	"How many top values to return default is 5"
+//	@Param		connector		query		source.Type	false	"Connector types to filter by"
+//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param		time			query		string		false	"timestamp for resource count in epoch seconds"
+//	@Success	200				{object}	api.ListResourceTypeCompositionResponse
+//	@Router		/inventory/api/v2/metrics/resources/composition/{key} [get]
+func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
+	var err error
+	tagKey := ctx.Param("key")
+	if tagKey == "" || strings.HasPrefix(tagKey, KaytuPrivateTagPrefix) {
+		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
+	}
+	topStr := ctx.QueryParam("top")
+	top := int64(5)
+	if topStr != "" {
+		top, err = strconv.ParseInt(topStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid top value")
+		}
+
+	}
+	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	timeStr := ctx.QueryParam("time")
+	timeAt := time.Now().Unix()
+	if timeStr != "" {
+		timeAt, err = strconv.ParseInt(timeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+	}
+
+	resourceTypes, err := h.db.ListResourceTypeFilteredResourceTypes(map[string][]string{tagKey: nil}, nil, connectorTypes)
+	if err != nil {
+		return err
+	}
+	resourceTypeStrings := make([]string, 0, len(resourceTypes))
+	for _, resourceType := range resourceTypes {
+		resourceTypeStrings = append(resourceTypeStrings, resourceType.ResourceType)
+	}
+	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+
+	valueCountMap := make(map[string]int)
+	totalCount := 0
+	for _, resourceType := range resourceTypes {
+		for _, tagValue := range resourceType.GetTagsMap()[tagKey] {
+			valueCountMap[tagValue] += metricIndexed[resourceType.ResourceType]
+			totalCount += metricIndexed[resourceType.ResourceType]
+			break
+		}
+	}
+
+	type strIntPair struct {
+		str     string
+		integer int
+	}
+	valueCountPairs := make([]strIntPair, 0, len(valueCountMap))
+	for value, count := range valueCountMap {
+		valueCountPairs = append(valueCountPairs, strIntPair{str: value, integer: count})
+	}
+	sort.Slice(valueCountPairs, func(i, j int) bool {
+		return valueCountPairs[i].integer > valueCountPairs[j].integer
+	})
+
+	apiResult := api.ListResourceTypeCompositionResponse{
+		TotalCount:      totalCount,
+		TotalValueCount: len(valueCountMap),
+		TopValues:       make(map[string]int),
+		Others:          0,
+	}
+
+	for i, pair := range valueCountPairs {
+		if i < int(top) {
+			apiResult.TopValues[pair.str] = pair.integer
+		} else {
+			apiResult.Others += pair.integer
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, apiResult)
 }
 
 func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, depth int, category string, sourceIDs []string, provider source.Type, t int64, importanceArray []string, nodeCacheMap map[string]api.CategoryNode, usePrimary bool) (*api.CategoryNode, error) {
