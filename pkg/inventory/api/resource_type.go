@@ -1,6 +1,10 @@
 package api
 
-import "github.com/kaytu-io/kaytu-util/pkg/source"
+import (
+	"time"
+
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+)
 
 type ResourceType struct {
 	Connector     source.Type         `json:"connector"`
@@ -23,4 +27,9 @@ type ListResourceTypeCompositionResponse struct {
 	TotalValueCount int            `json:"total_value_count"`
 	TopValues       map[string]int `json:"top_values"`
 	Others          int            `json:"others"`
+}
+
+type ResourceTypeTrendDatapoint struct {
+	Count int       `json:"count"`
+	Date  time.Time `json:"date"`
 }
