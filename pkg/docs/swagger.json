@@ -3560,6 +3560,83 @@
                 }
             }
         },
+        "/inventory/api/v2/metrics/resources/trend": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Returns list of resource counts over the course of the specified time frame based on the given input filters",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key-Value tags in key=value format to filter by",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Service names to filter by",
+                        "name": "servicename",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for start in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for end in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "maximum number of datapoints to return, default is 30",
+                        "name": "datapointCount",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeTrendDatapoint"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/resources/category": {
             "get": {
                 "security": [
@@ -8836,6 +8913,17 @@
                 },
                 "service_name": {
                     "description": "Platform Patern Service name",
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeTrendDatapoint": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "date": {
                     "type": "string"
                 }
             }

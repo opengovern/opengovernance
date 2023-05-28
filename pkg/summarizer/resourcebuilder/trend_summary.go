@@ -1,10 +1,12 @@
 package resourcebuilder
 
 import (
+	"time"
+
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 )
 
@@ -36,7 +38,7 @@ func (b *trendSummaryBuilder) Process(resource describe.LookupResource) {
 			SourceID:       resource.SourceID,
 			SourceType:     resource.SourceType,
 			SourceJobID:    resource.SourceJobID,
-			DescribedAt:    resource.CreatedAt,
+			DescribedAt:    time.Now().UnixMilli(),
 			ReportType:     es.TrendConnectionSummary,
 			ResourceCount:  0,
 		}
@@ -50,7 +52,7 @@ func (b *trendSummaryBuilder) Process(resource describe.LookupResource) {
 			SummarizeJobID: b.summarizerJobID,
 			ScheduleJobID:  resource.ScheduleJobID,
 			SourceType:     resource.SourceType,
-			DescribedAt:    resource.CreatedAt,
+			DescribedAt:    time.Now().UnixMilli(),
 			ReportType:     es.TrendProviderSummary,
 			ResourceCount:  0,
 		}
@@ -67,7 +69,7 @@ func (b *trendSummaryBuilder) Process(resource describe.LookupResource) {
 			SourceID:       resource.SourceID,
 			SourceType:     resource.SourceType,
 			SourceJobID:    resource.SourceJobID,
-			DescribedAt:    resource.CreatedAt,
+			DescribedAt:    time.Now().UnixMilli(),
 			ResourceType:   resource.ResourceType,
 			ResourceCount:  0,
 			ReportType:     es.ResourceTypeTrendConnectionSummary,
@@ -83,7 +85,7 @@ func (b *trendSummaryBuilder) Process(resource describe.LookupResource) {
 			SummarizeJobID: b.summarizerJobID,
 			ScheduleJobID:  resource.ScheduleJobID,
 			SourceType:     resource.SourceType,
-			DescribedAt:    resource.CreatedAt,
+			DescribedAt:    time.Now().UnixMilli(),
 			ResourceType:   resource.ResourceType,
 			ResourceCount:  0,
 			ReportType:     es.ResourceTypeTrendProviderSummary,

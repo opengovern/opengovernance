@@ -685,7 +685,7 @@ type ConnectionTrendSummaryQueryHit struct {
 	Sort    []interface{}                     `json:"sort"`
 }
 
-func FetchConnectionTrendSummaryPage(client keibi.Client, sourceID *string, createdAtFrom, createdAtTo int64,
+func FetchConnectionTrendSummaryPage(client keibi.Client, connectionIDs []string, createdAtFrom, createdAtTo int64,
 	sort []map[string]interface{}, size int) ([]summarizer.ConnectionTrendSummary, error) {
 	var hits []summarizer.ConnectionTrendSummary
 	res := make(map[string]interface{})
@@ -695,9 +695,9 @@ func FetchConnectionTrendSummaryPage(client keibi.Client, sourceID *string, crea
 		"terms": map[string][]string{"report_type": {string(summarizer.TrendConnectionSummary)}},
 	})
 
-	if sourceID != nil {
+	if connectionIDs != nil {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_id": {*sourceID}},
+			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
 	filters = append(filters, map[string]interface{}{
@@ -757,7 +757,7 @@ type ConnectionResourceTypeTrendSummaryQueryHit struct {
 	Sort    []interface{}                                 `json:"sort"`
 }
 
-func FetchConnectionResourceTypeTrendSummaryPage(client keibi.Client, sourceIDs []string, resourceTypes []string, createdAtFrom, createdAtTo int64,
+func FetchConnectionResourceTypeTrendSummaryPage(client keibi.Client, sourceIDs []string, resourceTypes []string, createdAtFrom, createdAtTo time.Time,
 	sort []map[string]interface{}, size int) ([]summarizer.ConnectionResourceTypeTrendSummary, error) {
 	var hits []summarizer.ConnectionResourceTypeTrendSummary
 	res := make(map[string]interface{})
@@ -780,8 +780,8 @@ func FetchConnectionResourceTypeTrendSummaryPage(client keibi.Client, sourceIDs 
 	filters = append(filters, map[string]interface{}{
 		"range": map[string]interface{}{
 			"described_at": map[string]string{
-				"gte": strconv.FormatInt(createdAtFrom, 10),
-				"lte": strconv.FormatInt(createdAtTo, 10),
+				"gte": strconv.FormatInt(createdAtFrom.UnixMilli(), 10),
+				"lte": strconv.FormatInt(createdAtTo.UnixMilli(), 10),
 			},
 		},
 	})
@@ -834,7 +834,7 @@ type ProviderTrendSummaryQueryHit struct {
 	Sort    []interface{}                   `json:"sort"`
 }
 
-func FetchProviderTrendSummaryPage(client keibi.Client, provider source.Type, createdAtFrom, createdAtTo int64,
+func FetchProviderTrendSummaryPage(client keibi.Client, connectors []source.Type, createdAtFrom, createdAtTo int64,
 	sort []map[string]interface{}, size int) ([]summarizer.ProviderTrendSummary, error) {
 	var hits []summarizer.ProviderTrendSummary
 	res := make(map[string]interface{})
@@ -844,9 +844,13 @@ func FetchProviderTrendSummaryPage(client keibi.Client, provider source.Type, cr
 		"terms": map[string][]string{"report_type": {string(summarizer.TrendProviderSummary)}},
 	})
 
-	if !provider.IsNull() {
+	if len(connectors) > 0 {
+		connectorsStr := make([]string, 0, len(connectors))
+		for _, connector := range connectors {
+			connectorsStr = append(connectorsStr, string(connector))
+		}
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {provider.String()}},
+			"terms": map[string][]string{"source_type": connectorsStr},
 		})
 	}
 	filters = append(filters, map[string]interface{}{
@@ -906,7 +910,7 @@ type ProviderResourceTypeTrendSummaryQueryHit struct {
 	Sort    []interface{}                               `json:"sort"`
 }
 
-func FetchProviderResourceTypeTrendSummaryPage(client keibi.Client, provider source.Type, resourceTypes []string, createdAtFrom, createdAtTo int64,
+func FetchProviderResourceTypeTrendSummaryPage(client keibi.Client, connectors []source.Type, resourceTypes []string, createdAtFrom, createdAtTo time.Time,
 	sort []map[string]interface{}, size int) ([]summarizer.ProviderResourceTypeTrendSummary, error) {
 	var hits []summarizer.ProviderResourceTypeTrendSummary
 	res := make(map[string]interface{})
@@ -921,16 +925,20 @@ func FetchProviderResourceTypeTrendSummaryPage(client keibi.Client, provider sou
 		"terms": map[string][]string{"resource_type": resourceTypes},
 	})
 
-	if !provider.IsNull() {
+	if len(connectors) > 0 {
+		connectorsStr := make([]string, 0, len(connectors))
+		for _, connector := range connectors {
+			connectorsStr = append(connectorsStr, string(connector))
+		}
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {provider.String()}},
+			"terms": map[string][]string{"source_type": connectorsStr},
 		})
 	}
 	filters = append(filters, map[string]interface{}{
 		"range": map[string]interface{}{
 			"described_at": map[string]string{
-				"gte": strconv.FormatInt(createdAtFrom, 10),
-				"lte": strconv.FormatInt(createdAtTo, 10),
+				"gte": strconv.FormatInt(createdAtFrom.UnixMilli(), 10),
+				"lte": strconv.FormatInt(createdAtTo.UnixMilli(), 10),
 			},
 		},
 	})
