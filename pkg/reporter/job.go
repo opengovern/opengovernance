@@ -9,15 +9,16 @@ import (
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 	"math/rand"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -179,6 +180,10 @@ func (j *Job) RunJob() error {
 			for k, v := range steampipeRecord {
 				v2 := esRecord[k]
 
+				j.logger.Info("comparing",
+					zap.String("v", fmt.Sprintf("%v", v)), zap.String("vt", reflect.TypeOf(v).Name()),
+					zap.String("v2", fmt.Sprintf("%v", v2)), zap.String("v2t", reflect.TypeOf(v2).Name()),
+				)
 				if v != v2 {
 					j.logger.Error("inconsistency in data",
 						zap.String("accountID", account.ConnectionID),
