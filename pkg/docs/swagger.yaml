@@ -4553,61 +4553,6 @@ paths:
       summary: Returns resource count of accounts
       tags:
       - benchmarks
-  /inventory/api/v2/cost/category:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Category id - defaults to default template category
-        in: query
-        name: category
-        type: string
-      - description: Depth of rendering subcategories
-        in: query
-        name: depth
-        required: true
-        type: integer
-      - description: Provider
-        in: query
-        name: provider
-        type: string
-      - description: SourceID
-        in: query
-        items:
-          type: string
-        name: sourceId
-        type: array
-      - description: timestamp for start of cost window in epoch seconds
-        in: query
-        name: startTime
-        type: string
-      - description: timestamp for end of cost window in epoch seconds
-        in: query
-        name: endTime
-        type: string
-      - description: time window either this or start & end time must be provided
-        enum:
-        - 1d
-        - 1w
-        - 1m
-        - 3m
-        - 1y
-        in: query
-        name: timeWindow
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode'
-      security:
-      - BearerToken: []
-      summary: Return category cost info by provided category id, info includes category
-        name, subcategories names and ids and their accumulated cost
-      tags:
-      - inventory
   /inventory/api/v2/cost/composition:
     get:
       consumes:
@@ -4656,6 +4601,108 @@ paths:
       - BearerToken: []
       summary: Return category info by provided category id, info includes category
         name, subcategories names and ids and number of resources
+      tags:
+      - inventory
+  /inventory/api/v2/costs/metric:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Key-Value tags in key=value format to filter by
+        in: query
+        name: tag
+        type: string
+      - description: Connector type to filter by
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
+      - description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: timestamp for start of cost aggregation in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      - description: timestamp for end of cost aggregation in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: Sort by field - default is cost
+        enum:
+        - name
+        - cost
+        in: query
+        name: sortBy
+        type: string
+      - description: page size - default is 20
+        in: query
+        name: pageSize
+        type: integer
+      - description: page number - default is 1
+        in: query
+        name: pageNumber
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse'
+      summary: Returns list of resource types with metrics of each type based on the
+        given input filters
+      tags:
+      - inventory
+  /inventory/api/v2/costs/tag:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                type: string
+              type: array
+            type: object
+      security:
+      - BearerToken: []
+      summary: Return list of the keys with possible values for filtering services
+      tags:
+      - inventory
+  /inventory/api/v2/costs/tag/{key}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tag key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      security:
+      - BearerToken: []
+      summary: Return list of the possible values for filtering services with specified
+        key
       tags:
       - inventory
   /inventory/api/v2/insights:
