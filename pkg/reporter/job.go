@@ -18,6 +18,7 @@ import (
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"go.uber.org/zap"
 	"math/rand"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -58,12 +59,45 @@ func New(config JobConfig) (*Job, error) {
 		return nil, err
 	}
 
+	installCmd := exec.Command("steampipe", "plugin", "install", "steampipe")
+	err := installCmd.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	installCmd = exec.Command("steampipe", "plugin", "install", "aws")
+	err = installCmd.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	installCmd = exec.Command("steampipe", "plugin", "install", "azure")
+	err = installCmd.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	installCmd = exec.Command("steampipe", "plugin", "install", "azuread")
+	err = installCmd.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	cmdSteampipe := exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
+		"9193", "--database-password", "abcd")
+	err = cmdSteampipe.Run()
+	if err != nil {
+		return nil, err
+	}
+	time.Sleep(5 * time.Second)
+	fmt.Println("Steampipe service started")
+
 	s1, err := steampipe.NewSteampipeDatabase(steampipe.Option{
-		Host: config.Steampipe.Host,
-		Port: config.Steampipe.Port,
-		User: config.Steampipe.Username,
-		Pass: config.Steampipe.Password,
-		Db:   config.Steampipe.DB,
+		Host: "localhost",
+		Port: "9193",
+		User: "steampipe",
+		Pass: "abcd",
+		Db:   "steampipe",
 	})
 	if err != nil {
 		return nil, err
