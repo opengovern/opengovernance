@@ -1108,7 +1108,7 @@ func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
 //	@Param		pageSize		query		int			false	"page size - default is 20"
 //	@Param		pageNumber		query		int			false	"page number - default is 1"
 //	@Success	200				{object}	api.ListResourceTypeMetricsResponse
-//	@Router		/inventory/api/v2/metrics/resources/metric [get]
+//	@Router		/inventory/api/v2/resources/metric [get]
 func (h *HttpHandler) ListResourceTypeMetrics(ctx echo.Context) error {
 	var err error
 	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])
@@ -1204,7 +1204,7 @@ func (h *HttpHandler) ListResourceTypeMetrics(ctx echo.Context) error {
 //	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
 //	@Param		time			query		string		false	"timestamp for resource count in epoch seconds"
 //	@Success	200				{object}	api.ListResourceTypeCompositionResponse
-//	@Router		/inventory/api/v2/metrics/resources/composition/{key} [get]
+//	@Router		/inventory/api/v2/resources/composition/{key} [get]
 func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 	var err error
 	tagKey := ctx.Param("key")
@@ -1298,7 +1298,7 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 //	@Param		endTime			query		string		false	"timestamp for end in epoch seconds"
 //	@Param		datapointCount	query		string		false	"maximum number of datapoints to return, default is 30"
 //	@Success	200				{object}	[]api.ResourceTypeTrendDatapoint
-//	@Router		/inventory/api/v2/metrics/resources/trend [get]
+//	@Router		/inventory/api/v2/resources/trend [get]
 func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 	var err error
 	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])

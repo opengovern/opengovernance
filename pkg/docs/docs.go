@@ -3415,68 +3415,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v2/metrics/resources/composition/{key}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return tag values with most resources for the given key",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "How many top values to return default is 5",
-                        "name": "top",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
-                        "description": "Connector types to filter by",
-                        "name": "connector",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "Connection IDs to filter by",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for resource count in epoch seconds",
-                        "name": "time",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeCompositionResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/inventory/api/v2/metrics/resources/metric": {
             "get": {
                 "consumes": [
@@ -3560,83 +3498,6 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {}
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v2/metrics/resources/trend": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Returns list of resource counts over the course of the specified time frame based on the given input filters",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Key-Value tags in key=value format to filter by",
-                        "name": "tag",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Service names to filter by",
-                        "name": "servicename",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "Connection IDs to filter by",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for start in epoch seconds",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for end in epoch seconds",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "maximum number of datapoints to return, default is 30",
-                        "name": "datapointCount",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeTrendDatapoint"
-                            }
                         }
                     }
                 }
@@ -3793,6 +3654,152 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/resources/composition/{key}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return tag values with most resources for the given key",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "How many top values to return default is 5",
+                        "name": "top",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Connector types to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for resource count in epoch seconds",
+                        "name": "time",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeCompositionResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/resources/metric": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Returns list of resource types with metrics of each type based on the given input filters",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key-Value tags in key=value format to filter by",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Service names to filter by",
+                        "name": "servicename",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for resource count in epoch seconds",
+                        "name": "time",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "name",
+                            "count"
+                        ],
+                        "type": "string",
+                        "description": "Sort by field - default is count",
+                        "name": "sortBy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size - default is 20",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number - default is 1",
+                        "name": "pageNumber",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/resources/tag": {
             "get": {
                 "security": [
@@ -3867,11 +3874,6 @@ const docTemplate = `{
         },
         "/inventory/api/v2/resources/trend": {
             "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -3879,46 +3881,58 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "benchmarks"
+                    "inventory"
                 ],
-                "summary": "Returns trend of resource growth for specific account",
+                "summary": "Returns list of resource counts over the course of the specified time frame based on the given input filters",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "SourceID",
-                        "name": "sourceId",
+                        "description": "Key-Value tags in key=value format to filter by",
+                        "name": "tag",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
+                        "description": "Service names to filter by",
+                        "name": "servicename",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "start time for chart in epoch seconds",
+                        "description": "timestamp for start in epoch seconds",
                         "name": "startTime",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "end time for chart in epoch seconds",
-                        "name": "endTime",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Category(Template) ID defaults to default template",
-                        "name": "category",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "Number of data points to return",
-                        "name": "dataPointCount",
+                        "type": "string",
+                        "description": "timestamp for end in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "maximum number of datapoints to return, default is 30",
+                        "name": "datapointCount",
                         "in": "query"
                     }
                 ],
@@ -3928,7 +3942,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceGrowthTrendResponse"
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeTrendDatapoint"
                             }
                         }
                     }
