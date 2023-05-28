@@ -918,7 +918,7 @@ func (db Database) FetchLastInsightJob() (*InsightJob, error) {
 func (db Database) GetLastInsightJob(insightID uint, sourceID string) (*InsightJob, error) {
 	var job InsightJob
 	tx := db.orm.Model(&InsightJob{}).
-		Where("source_id = ? AND insight_id = ?", insightID, sourceID).
+		Where("source_id = ? AND insight_id = ?", sourceID, insightID).
 		Order("created_at DESC").First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {

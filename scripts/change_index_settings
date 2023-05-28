@@ -1,0 +1,5 @@
+#!/bin/bash
+
+ESPASS=""
+
+curl -k https://localhost:9200/_cat/indices -uelastic:$ESPASS | awk '{print $3}' | grep -E "aws_|microsoft_" | xargs -I{} -P2 curl -k -XPUT https://localhost:9200/{}/_settings -uelastic:$ESPASS -H 'Content-type: application/json' -d '{"index":{"refresh_interval":-1}}'
