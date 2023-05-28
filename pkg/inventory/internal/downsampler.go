@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"time"
+
 	"github.com/haoel/downsampling/core"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
@@ -70,4 +72,34 @@ func DownSampleTrendDataPoints(trendDataPoints []api.TrendDataPoint, maxDataPoin
 	}
 	downSampledResourceCounts := core.LTTB(trendDataPointsToPoints(trendDataPoints), maxDataPoints)
 	return pointsToTrendDataPoints(downSampledResourceCounts)
+}
+
+func resourceTypeTrendDataPointsToPoints(trendDataPoints []api.ResourceTypeTrendDatapoint) []core.Point {
+	points := make([]core.Point, len(trendDataPoints))
+	for i, trendDataPoint := range trendDataPoints {
+		points[i] = core.Point{
+			X: float64(trendDataPoint.Date.UnixMilli()),
+			Y: float64(trendDataPoint.Count),
+		}
+	}
+	return points
+}
+
+func pointsToResourceTypeTrendDataPoints(points []core.Point) []api.ResourceTypeTrendDatapoint {
+	trendDataPoints := make([]api.ResourceTypeTrendDatapoint, len(points))
+	for i, point := range points {
+		trendDataPoints[i] = api.ResourceTypeTrendDatapoint{
+			Date:  time.UnixMilli(int64(point.X)),
+			Count: int(point.Y),
+		}
+	}
+	return trendDataPoints
+}
+
+func DownSampleResourceTypeTrendDatapoints(trendDataPoints []api.ResourceTypeTrendDatapoint, maxDataPoints int) []api.ResourceTypeTrendDatapoint {
+	if len(trendDataPoints) <= maxDataPoints {
+		return trendDataPoints
+	}
+	downSampledResourceCounts := core.LTTB(resourceTypeTrendDataPointsToPoints(trendDataPoints), maxDataPoints)
+	return pointsToResourceTypeTrendDataPoints(downSampledResourceCounts)
 }

@@ -2054,6 +2054,13 @@ definitions:
         description: Platform Patern Service name
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeTrendDatapoint:
+    properties:
+      count:
+        type: integer
+      date:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryRequest:
     properties:
       page:
@@ -5125,46 +5132,6 @@ paths:
         name, subcategories names and ids and number of resources
       tags:
       - inventory
-  /inventory/api/v2/metrics/resources/composition/{key}:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: How many top values to return default is 5
-        in: query
-        name: top
-        required: true
-        type: integer
-      - description: Connector types to filter by
-        enum:
-        - ""
-        - AWS
-        - Azure
-        in: query
-        name: connector
-        type: string
-      - description: Connection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - description: timestamp for resource count in epoch seconds
-        in: query
-        name: time
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeCompositionResponse'
-      security:
-      - BearerToken: []
-      summary: Return tag values with most resources for the given key
-      tags:
-      - inventory
   /inventory/api/v2/metrics/resources/metric:
     get:
       consumes:
@@ -5332,6 +5299,103 @@ paths:
         name, subcategories names and ids and number of resources
       tags:
       - inventory
+  /inventory/api/v2/resources/composition/{key}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: How many top values to return default is 5
+        in: query
+        name: top
+        required: true
+        type: integer
+      - description: Connector types to filter by
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
+      - description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: timestamp for resource count in epoch seconds
+        in: query
+        name: time
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeCompositionResponse'
+      security:
+      - BearerToken: []
+      summary: Return tag values with most resources for the given key
+      tags:
+      - inventory
+  /inventory/api/v2/resources/metric:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Key-Value tags in key=value format to filter by
+        in: query
+        name: tag
+        type: string
+      - description: Service names to filter by
+        in: query
+        name: servicename
+        type: string
+      - description: Connector type to filter by
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
+      - description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: timestamp for resource count in epoch seconds
+        in: query
+        name: time
+        type: string
+      - description: Sort by field - default is count
+        enum:
+        - name
+        - count
+        in: query
+        name: sortBy
+        type: string
+      - description: page size - default is 20
+        in: query
+        name: pageSize
+        type: integer
+      - description: page number - default is 1
+        in: query
+        name: pageNumber
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse'
+      summary: Returns list of resource types with metrics of each type based on the
+        given input filters
+      tags:
+      - inventory
   /inventory/api/v2/resources/tag:
     get:
       consumes:
@@ -5383,32 +5447,40 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: SourceID
+      - description: Key-Value tags in key=value format to filter by
         in: query
-        name: sourceId
+        name: tag
         type: string
-      - description: Provider
+      - description: Service names to filter by
         in: query
-        name: provider
+        name: servicename
         type: string
-      - description: start time for chart in epoch seconds
+      - description: Connector type to filter by
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
+      - description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: timestamp for start in epoch seconds
         in: query
         name: startTime
-        required: true
         type: string
-      - description: end time for chart in epoch seconds
+      - description: timestamp for end in epoch seconds
         in: query
         name: endTime
-        required: true
         type: string
-      - description: Category(Template) ID defaults to default template
+      - description: maximum number of datapoints to return, default is 30
         in: query
-        name: category
+        name: datapointCount
         type: string
-      - description: Number of data points to return
-        in: query
-        name: dataPointCount
-        type: integer
       produces:
       - application/json
       responses:
@@ -5416,13 +5488,12 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceGrowthTrendResponse'
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeTrendDatapoint'
             type: array
-      security:
-      - BearerToken: []
-      summary: Returns trend of resource growth for specific account
+      summary: Returns list of resource counts over the course of the specified time
+        frame based on the given input filters
       tags:
-      - benchmarks
+      - inventory
   /inventory/api/v2/resources/type:
     get:
       consumes:

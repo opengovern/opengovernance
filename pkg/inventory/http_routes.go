@@ -79,6 +79,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	resourcesV2.GET("/tag/:key", httpserver.AuthorizeHandler(h.GetResourceTypeTag, api3.ViewerRole))
 	resourcesV2.GET("/metric", httpserver.AuthorizeHandler(h.ListResourceTypeMetrics, api3.ViewerRole))
 	resourcesV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListResourceTypeComposition, api3.ViewerRole))
+	resourcesV2.GET("/trend", httpserver.AuthorizeHandler(h.ListResourceTypeTrend, api3.ViewerRole))
 
 	v2.GET("/resources/category", httpserver.AuthorizeHandler(h.GetCategoryNodeResourceCount, api3.ViewerRole))
 	v2.GET("/cost/category", httpserver.AuthorizeHandler(h.GetCategoryNodeCost, api3.ViewerRole))
@@ -178,7 +179,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 		},
 	}
 	if sourceID != "" {
-		hits, err := es.FetchConnectionTrendSummaryPage(h.client, &sourceID, fromTime, toTime, sortMap, EsFetchPageSize)
+		hits, err := es.FetchConnectionTrendSummaryPage(h.client, []string{sourceID}, fromTime, toTime, sortMap, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -186,7 +187,7 @@ func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
 			datapoints[hit.DescribedAt] += hit.ResourceCount
 		}
 	} else {
-		hits, err := es.FetchProviderTrendSummaryPage(h.client, provider, fromTime, toTime, sortMap, EsFetchPageSize)
+		hits, err := es.FetchProviderTrendSummaryPage(h.client, []source.Type{provider}, fromTime, toTime, sortMap, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -298,7 +299,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 	trends := map[string]api.CategoryResourceTrend{}
 	mainCategoryTrendsMap := map[int64]api.TrendDataPoint{}
 	if sourceIDs != nil {
-		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, sourceIDs, resourceTypes, time.Unix(startTime, 0).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
+		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, sourceIDs, resourceTypes, time.Unix(startTime, 0), time.Unix(endTime, 0), sortMap, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -333,7 +334,7 @@ func (h *HttpHandler) GetResourceGrowthTrendV2(ctx echo.Context) error {
 			}
 		}
 	} else {
-		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, provider, resourceTypes, time.Unix(startTime, 0).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
+		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, []source.Type{provider}, resourceTypes, time.Unix(startTime, 0), time.Unix(endTime, 0), sortMap, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1107,7 +1108,7 @@ func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
 //	@Param		pageSize		query		int			false	"page size - default is 20"
 //	@Param		pageNumber		query		int			false	"page number - default is 1"
 //	@Success	200				{object}	api.ListResourceTypeMetricsResponse
-//	@Router		/inventory/api/v2/metrics/resources/metric [get]
+//	@Router		/inventory/api/v2/resources/metric [get]
 func (h *HttpHandler) ListResourceTypeMetrics(ctx echo.Context) error {
 	var err error
 	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])
@@ -1203,7 +1204,7 @@ func (h *HttpHandler) ListResourceTypeMetrics(ctx echo.Context) error {
 //	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
 //	@Param		time			query		string		false	"timestamp for resource count in epoch seconds"
 //	@Success	200				{object}	api.ListResourceTypeCompositionResponse
-//	@Router		/inventory/api/v2/metrics/resources/composition/{key} [get]
+//	@Router		/inventory/api/v2/resources/composition/{key} [get]
 func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 	var err error
 	tagKey := ctx.Param("key")
@@ -1281,6 +1282,109 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, apiResult)
+}
+
+// ListResourceTypeTrend godoc
+//
+//	@Summary	Returns list of resource counts over the course of the specified time frame based on the given input filters
+//	@Tags		inventory
+//	@Accept		json
+//	@Produce	json
+//	@Param		tag				query		string		false	"Key-Value tags in key=value format to filter by"
+//	@Param		servicename		query		string		false	"Service names to filter by"
+//	@Param		connector		query		source.Type	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param		startTime		query		string		false	"timestamp for start in epoch seconds"
+//	@Param		endTime			query		string		false	"timestamp for end in epoch seconds"
+//	@Param		datapointCount	query		string		false	"maximum number of datapoints to return, default is 30"
+//	@Success	200				{object}	[]api.ResourceTypeTrendDatapoint
+//	@Router		/inventory/api/v2/resources/trend [get]
+func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
+	var err error
+	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])
+	serviceNames := ctx.QueryParams()["servicename"]
+	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectionIDs := ctx.QueryParams()["connectionId"]
+
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now().Unix()
+	if endTimeStr != "" {
+		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := time.Unix(endTime, 0).Add(-1 * 30 * 24 * time.Hour).Unix()
+	if startTimeStr != "" {
+		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+	}
+
+	datapointCountStr := ctx.QueryParam("datapointCount")
+	datapointCount := 30
+	if datapointCountStr != "" {
+		datapointCount, err = strconv.Atoi(datapointCountStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
+		}
+	}
+
+	resourceTypes, err := h.db.ListResourceTypeFilteredResourceTypes(tagMap, serviceNames, connectorTypes)
+	if err != nil {
+		return err
+	}
+	resourceTypeStrings := make([]string, 0, len(resourceTypes))
+	for _, resourceType := range resourceTypes {
+		resourceTypeStrings = append(resourceTypeStrings, resourceType.ResourceType)
+	}
+
+	type countTimePair struct {
+		count int
+		time  time.Time
+	}
+
+	summarizeJobIDCountMap := make(map[uint]countTimePair)
+	if len(connectionIDs) != 0 {
+		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, connectionIDs, resourceTypeStrings, time.Unix(startTime, 0), time.Unix(endTime, 0), []map[string]any{{"described_at": "asc"}}, EsFetchPageSize)
+		if err != nil {
+			return err
+		}
+		for _, hit := range hits {
+			if v, ok := summarizeJobIDCountMap[hit.SummarizeJobID]; !ok {
+				summarizeJobIDCountMap[hit.SummarizeJobID] = countTimePair{count: hit.ResourceCount, time: time.UnixMilli(hit.DescribedAt)}
+			} else {
+				v.count += hit.ResourceCount
+				summarizeJobIDCountMap[hit.SummarizeJobID] = v
+			}
+		}
+	} else {
+		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, connectorTypes, resourceTypeStrings, time.Unix(startTime, 0), time.Unix(endTime, 0), []map[string]any{{"described_at": "asc"}}, EsFetchPageSize)
+		if err != nil {
+			return err
+		}
+		for _, hit := range hits {
+			if v, ok := summarizeJobIDCountMap[hit.SummarizeJobID]; !ok {
+				summarizeJobIDCountMap[hit.SummarizeJobID] = countTimePair{count: hit.ResourceCount, time: time.UnixMilli(hit.DescribedAt)}
+			} else {
+				v.count += hit.ResourceCount
+				summarizeJobIDCountMap[hit.SummarizeJobID] = v
+			}
+		}
+	}
+
+	apiDatapoints := make([]api.ResourceTypeTrendDatapoint, 0, len(summarizeJobIDCountMap))
+	for _, v := range summarizeJobIDCountMap {
+		apiDatapoints = append(apiDatapoints, api.ResourceTypeTrendDatapoint{Count: v.count, Date: v.time})
+	}
+	sort.Slice(apiDatapoints, func(i, j int) bool {
+		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
+	})
+	apiDatapoints = internal.DownSampleResourceTypeTrendDatapoints(apiDatapoints, datapointCount)
+
+	return ctx.JSON(http.StatusOK, apiDatapoints)
 }
 
 func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, depth int, category string, sourceIDs []string, provider source.Type, t int64, importanceArray []string, nodeCacheMap map[string]api.CategoryNode, usePrimary bool) (*api.CategoryNode, error) {
@@ -2823,7 +2927,7 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 		},
 	}
 	if sourceIDs != nil && len(sourceIDs) != 0 {
-		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, sourceIDs, resourceTypeFilters, time.Unix(endTime, 0).AddDate(0, 0, -1).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
+		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, sourceIDs, resourceTypeFilters, time.Unix(endTime, 0).AddDate(0, 0, -1), time.Unix(endTime, 0), sortMap, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -2833,7 +2937,7 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 			}
 		}
 	} else {
-		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, provider, resourceTypeFilters, time.Unix(endTime, 0).AddDate(0, 0, -7).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
+		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, []source.Type{provider}, resourceTypeFilters, time.Unix(endTime, 0).AddDate(0, 0, -7), time.Unix(endTime, 0), sortMap, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -3046,7 +3150,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 		},
 	}
 	if sourceIDs != nil && len(sourceIDs) != 0 {
-		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, sourceIDs, resourceTypeFilters, time.Unix(endTime, 0).AddDate(0, 0, -1).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
+		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, sourceIDs, resourceTypeFilters, time.Unix(endTime, 0).AddDate(0, 0, -1), time.Unix(endTime, 0), sortMap, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -3056,7 +3160,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 			}
 		}
 	} else {
-		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, provider, resourceTypeFilters, time.Unix(endTime, 0).AddDate(0, 0, -7).UnixMilli(), time.Unix(endTime, 0).UnixMilli(), sortMap, EsFetchPageSize)
+		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, []source.Type{provider}, resourceTypeFilters, time.Unix(endTime, 0).AddDate(0, 0, -7), time.Unix(endTime, 0), sortMap, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
