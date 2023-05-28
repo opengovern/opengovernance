@@ -35,8 +35,8 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
 
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
@@ -49,7 +49,6 @@ import (
 )
 
 const EsFetchPageSize = 10000
-const ApiDefaultPageSize = int64(20)
 const DefaultCurrency = "USD"
 const InventorySummaryIndex = "inventory_summary"
 
@@ -74,9 +73,11 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/regions", httpserver.AuthorizeHandler(h.GetRegionsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByResourceCount, api3.ViewerRole))
-	v2.GET("/resources/categories", httpserver.AuthorizeHandler(h.GetCategoriesV2, api3.ViewerRole))
-	v2.GET("/resources/rootTemplates", httpserver.AuthorizeHandler(h.GetRootTemplates, api3.ViewerRole))
-	v2.GET("/resources/rootCloudProviders", httpserver.AuthorizeHandler(h.GetRootCloudProviders, api3.ViewerRole))
+
+	resourcesV2 := v2.Group("/resources")
+	resourcesV2.GET("/tag", httpserver.AuthorizeHandler(h.GetResourceTypeTags, api3.ViewerRole))
+	resourcesV2.GET("/tag/:key", httpserver.AuthorizeHandler(h.GetResourceTypeTag, api3.ViewerRole))
+	resourcesV2.GET("/metric", httpserver.AuthorizeHandler(h.ListResourceTypeMetrics, api3.ViewerRole))
 
 	v2.GET("/resources/category", httpserver.AuthorizeHandler(h.GetCategoryNodeResourceCount, api3.ViewerRole))
 	v2.GET("/cost/category", httpserver.AuthorizeHandler(h.GetCategoryNodeCost, api3.ViewerRole))
@@ -86,6 +87,10 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/cost/trend", httpserver.AuthorizeHandler(h.GetCostGrowthTrendV2, api3.ViewerRole))
 	v2.GET("/resources/type", httpserver.AuthorizeHandler(h.ListResourceTypes, api3.ViewerRole))
 	v2.GET("/resources/type/:resourceName", httpserver.AuthorizeHandler(h.GetResourceType, api3.ViewerRole))
+	v2.GET("/metrics/resources/metric", httpserver.AuthorizeHandler(h.GetMetricsResourceCount, api3.ViewerRole))
+	v2.GET("/metrics/cost/metric", httpserver.AuthorizeHandler(h.GetMetricsCost, api3.ViewerRole))
+	v2.GET("/metrics/resources/composition", httpserver.AuthorizeHandler(h.GetMetricsResourceCountComposition, api3.ViewerRole))
+	v2.GET("/metrics/cost/composition", httpserver.AuthorizeHandler(h.GetMetricsCostComposition, api3.ViewerRole))
 
 	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, api3.ViewerRole))
 	v2.GET("/connections/summary", httpserver.AuthorizeHandler(h.ListConnectionsSummary, api3.ViewerRole))
@@ -105,12 +110,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/query/:queryId", httpserver.AuthorizeHandler(h.RunQuery, api3.EditorRole))
 
 	v1.GET("/categories", httpserver.AuthorizeHandler(h.ListCategories, api3.ViewerRole))
-	v2.GET("/categories", httpserver.AuthorizeHandler(h.GetCategoriesV2, api3.ViewerRole))
-
-	v2.GET("/metrics/resources/metric", httpserver.AuthorizeHandler(h.GetMetricsResourceCount, api3.ViewerRole))
-	v2.GET("/metrics/cost/metric", httpserver.AuthorizeHandler(h.GetMetricsCost, api3.ViewerRole))
-	v2.GET("/metrics/resources/composition", httpserver.AuthorizeHandler(h.GetMetricsResourceCountComposition, api3.ViewerRole))
-	v2.GET("/metrics/cost/composition", httpserver.AuthorizeHandler(h.GetMetricsCostComposition, api3.ViewerRole))
 
 	v2.GET("/insights", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
 	v2.GET("/insights/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, api3.ViewerRole))
@@ -964,21 +963,9 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 	if len(sourceIDs) == 0 {
 		sourceIDs = nil
 	}
-	pageSizeStr := ctx.QueryParam("pageSize")
-	pageSize := ApiDefaultPageSize
-	if pageSizeStr != "" {
-		pageSize, err = strconv.ParseInt(pageSizeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "pageSize is not a valid integer")
-		}
-	}
-	pageNumberStr := ctx.QueryParam("pageNumber")
-	pageNumber := int64(1)
-	if pageNumberStr != "" {
-		pageNumber, err = strconv.ParseInt(pageNumberStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "pageNumber is not a valid integer")
-		}
+	pageNumber, pageSize, err := internal.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	locationDistribution := map[string]int{}
@@ -1063,48 +1050,143 @@ func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-// GetCategoriesV2 godoc
+// GetResourceTypeTags godoc
 //
-//	@Summary	Return list of the subcategories of the specified category
+//	@Summary	Return list of the keys with possible values for filtering resources types
 //	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
-//	@Param		category	query		string	false	"Category ID - defaults to default template category"
-//	@Success	200			{object}	[]api.CategoryNode
-//	@Router		/inventory/api/v2/resources/categories [get]
-//	@Router		/inventory/api/v2/categories	[get]
-func (h *HttpHandler) GetCategoriesV2(ctx echo.Context) error {
-	category := ctx.QueryParam("category")
-	var (
-		categoryNode *CategoryNode
-		err          error
-	)
-	if category == "" {
-		categoryNode, err = h.graphDb.GetCategoryRootSubcategoriesByName(ctx.Request().Context(), RootTypeTemplateRoot, DefaultTemplateRootName)
-		if err != nil {
-			return err
-		}
-	} else {
-		categoryNode, err = h.graphDb.GetSubcategories(ctx.Request().Context(), category)
-		if err != nil {
-			return err
-		}
+//	@Success	200	{object}	map[string][]string
+//	@Router		/inventory/api/v2/resources/tag [get]
+func (h *HttpHandler) GetResourceTypeTags(ctx echo.Context) error {
+	tags, err := h.db.ListResourceTypeTagsKeysWithPossibleValues()
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, tags)
+}
+
+// GetResourceTypeTag godoc
+//
+//	@Summary	Return list of the possible values for filtering resources types with specified key
+//	@Security	BearerToken
+//	@Tags		inventory
+//	@Accept		json
+//	@Produce	json
+//	@Param		key	path		string	true	"Tag key"
+//	@Success	200	{object}	[]string
+//	@Router		/inventory/api/v2/resources/tag/{key} [get]
+func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
+	tagKey := ctx.Param("key")
+	if tagKey == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "tag key is required")
 	}
 
-	res := api.CategoryNode{
-		CategoryID:    categoryNode.ElementID,
-		CategoryName:  categoryNode.Name,
-		Subcategories: make([]api.CategoryNode, 0, len(categoryNode.Subcategories)),
+	tags, err := h.db.GetResourceTypeTagPossibleValues(tagKey)
+	if err != nil {
+		return err
 	}
-	for _, subcategory := range categoryNode.Subcategories {
-		res.Subcategories = append(res.Subcategories, api.CategoryNode{
-			CategoryID:   subcategory.ElementID,
-			CategoryName: subcategory.Name,
+	return ctx.JSON(http.StatusOK, tags)
+}
+
+// ListResourceTypeMetrics godoc
+//
+//	@Summary	Returns list of resource types with metrics of each type based on the given input filters
+//	@Tags		inventory
+//	@Accept		json
+//	@Produce	json
+//	@Param		tag				query		string		false	"Key-Value tags in key=value format to filter by"
+//	@Param		servicename		query		string		false	"Service names to filter by"
+//	@Param		connector		query		source.Type	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param		time			query		string		false	"timestamp for resource count in epoch seconds"
+//	@Param		sortBy			query		string		false	"Sort by field - default is count"	Enums(name,count)
+//	@Param		pageSize		query		int			false	"page size - default is 20"
+//	@Param		pageNumber		query		int			false	"page number - default is 1"
+//	@Success	200				{object}	[]api.Filter
+//	@Router		/inventory/api/v2/metrics/resources/metric [get]
+func (h *HttpHandler) ListResourceTypeMetrics(ctx echo.Context) error {
+	var err error
+	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])
+	serviceNames := ctx.QueryParams()["servicename"]
+	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	timeStr := ctx.QueryParam("time")
+	timeAt := time.Now().Unix()
+	if timeStr != "" {
+		timeAt, err = strconv.ParseInt(timeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+	}
+	pageNumber, pageSize, err := internal.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+	sortBy := strings.ToLower(ctx.QueryParam("sortBy"))
+	if sortBy == "" {
+		sortBy = "count"
+	}
+	if sortBy != "name" && sortBy != "count" {
+		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
+	}
+
+	resourceTypes, err := h.db.ListResourceTypeFilteredResourceTypes(tagMap, serviceNames, connectorTypes)
+	if err != nil {
+		return err
+	}
+	resourceTypeStrings := make([]string, 0, len(resourceTypes))
+	for _, resourceType := range resourceTypes {
+		resourceTypeStrings = append(resourceTypeStrings, resourceType.ResourceType)
+	}
+
+	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+
+	apiResourceTypes := make([]api.ResourceType, 0, len(resourceTypes))
+	totalCount := 0
+	for _, resourceType := range resourceTypes {
+		rt := api.ResourceType{
+			Connector:     resourceType.Connector,
+			ResourceType:  resourceType.ResourceType,
+			ResourceLabel: resourceType.ResourceLabel,
+			ServiceName:   resourceType.ServiceName,
+			Tags:          resourceType.GetTagsMap(),
+			LogoURI:       resourceType.LogoURI,
+			Count:         nil,
+		}
+		if count, ok := metricIndexed[resourceType.ResourceType]; ok {
+			rt.Count = &count
+			totalCount += count
+		}
+		apiResourceTypes = append(apiResourceTypes, rt)
+	}
+	switch sortBy {
+	case "name":
+		sort.Slice(apiResourceTypes, func(i, j int) bool {
+			return apiResourceTypes[i].ResourceType < apiResourceTypes[j].ResourceType
+		})
+	case "count":
+		sort.Slice(apiResourceTypes, func(i, j int) bool {
+			if apiResourceTypes[i].Count == nil {
+				return false
+			}
+			if apiResourceTypes[j].Count == nil {
+				return true
+			}
+			return *apiResourceTypes[i].Count > *apiResourceTypes[j].Count
 		})
 	}
 
-	return ctx.JSON(http.StatusOK, res)
+	result := api.ListResourceTypeMetricsResponse{
+		TotalCount:         totalCount,
+		TotalResourceTypes: len(apiResourceTypes),
+		ResourceTypes:      internal.Paginate(pageNumber, pageSize, apiResourceTypes),
+	}
+	return ctx.JSON(http.StatusOK, result)
 }
 
 func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, depth int, category string, sourceIDs []string, provider source.Type, t int64, importanceArray []string, nodeCacheMap map[string]api.CategoryNode, usePrimary bool) (*api.CategoryNode, error) {
@@ -1134,7 +1216,7 @@ func (h *HttpHandler) GetCategoryNodeResourceCountHelper(ctx context.Context, de
 
 	resourceTypes := GetResourceTypeListFromFilters(rootNode.SubTreeFilters, provider)
 
-	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, provider, sourceIDs, time.Unix(t, 0), resourceTypes, EsFetchPageSize)
+	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, []source.Type{provider}, sourceIDs, time.Unix(t, 0), resourceTypes, EsFetchPageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -1181,7 +1263,7 @@ func (h *HttpHandler) GetMetricsResourceCountHelper(ctx context.Context, categor
 	}
 
 	resourceTypes := GetResourceTypeListFromFilters(filters, provider)
-	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, provider, sourceIDs, time.Unix(t, 0), resourceTypes, EsFetchPageSize)
+	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, []source.Type{provider}, sourceIDs, time.Unix(t, 0), resourceTypes, EsFetchPageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -1337,21 +1419,9 @@ func (h *HttpHandler) ListResourceTypes(ctx echo.Context) error {
 			return ctx.JSON(http.StatusBadRequest, "minResourceCount is not a valid integer")
 		}
 	}
-	pageSizeStr := ctx.QueryParam("pageSize")
-	pageSize := ApiDefaultPageSize
-	if pageSizeStr != "" {
-		pageSize, err = strconv.ParseInt(pageSizeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "pageSize is not a valid integer")
-		}
-	}
-	pageNumberStr := ctx.QueryParam("pageNumber")
-	pageNumber := int64(1)
-	if pageNumberStr != "" {
-		pageNumber, err = strconv.ParseInt(pageNumberStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "pageNumber is not a valid integer")
-		}
+	pageNumber, pageSize, err := internal.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	var resourceTypeNodes []*FilterCloudResourceTypeNode
@@ -1369,7 +1439,7 @@ func (h *HttpHandler) ListResourceTypes(ctx echo.Context) error {
 		}
 	}
 
-	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, connector, sourceIDs, time.Now(), resourceTypeList, EsFetchPageSize)
+	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, []source.Type{connector}, sourceIDs, time.Now(), resourceTypeList, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -1430,7 +1500,7 @@ func (h *HttpHandler) GetResourceType(ctx echo.Context) error {
 		return err
 	}
 
-	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, connector, sourceIDs, time.Now(), []string{resourceTypeFilter.ResourceType}, EsFetchPageSize)
+	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, []source.Type{connector}, sourceIDs, time.Now(), []string{resourceTypeFilter.ResourceType}, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -2144,80 +2214,6 @@ func (h *HttpHandler) GetMetricsCostComposition(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, resultAsArr)
 }
 
-// GetRootTemplates godoc
-//
-//	@Summary	Return root templates' info, info includes template name, template id, subcategories names and ids and number of resources
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		provider	query		string		false	"Provider"
-//	@Param		sourceId	query		[]string	false	"SourceID"
-//	@Param		importance	query		string		false	"Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)"
-//	@Param		time		query		string		false	"timestamp for resource count in epoch seconds"
-//	@Success	200			{object}	[]api.CategoryNode
-//	@Router		/inventory/api/v2/resources/rootTemplates [get]
-func (h *HttpHandler) GetRootTemplates(ctx echo.Context) error {
-	return GetCategoryRoots(ctx, h, RootTypeTemplateRoot)
-}
-
-// GetRootCloudProviders godoc
-//
-//	@Summary	Return root providers' info, info includes category name, category id, subcategories names and ids and number of resources
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		provider	query		string		false	"Provider"
-//	@Param		sourceId	query		[]string	false	"SourceID"
-//	@Param		time		query		string		false	"timestamp for resource count in epoch seconds"
-//	@Success	200			{object}	[]api.CategoryNode
-//	@Router		/inventory/api/v2/resources/rootCloudProviders [get]
-func (h *HttpHandler) GetRootCloudProviders(ctx echo.Context) error {
-	return GetCategoryRoots(ctx, h, RootTypeConnectorRoot)
-}
-
-func GetCategoryRoots(ctx echo.Context, h *HttpHandler, rootType CategoryRootType) error {
-	var (
-		err error
-	)
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	sourceIDs := ctx.QueryParams()["sourceId"]
-	if len(sourceIDs) == 0 {
-		sourceIDs = nil
-	}
-
-	timeStr := ctx.QueryParam("time")
-	timeVal := time.Now().Unix()
-	if timeStr != "" {
-		timeVal, err = strconv.ParseInt(timeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-	}
-
-	templateRoots, err := h.graphDb.GetCategoryRoots(ctx.Request().Context(), rootType)
-	if err != nil {
-		return err
-	}
-
-	filters := make([]Filter, 0)
-	for _, templateRoot := range templateRoots {
-		filters = append(filters, templateRoot.SubTreeFilters...)
-	}
-	resourceTypes := GetResourceTypeListFromFilters(filters, provider)
-
-	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, provider, sourceIDs, time.Unix(timeVal, 0), resourceTypes, EsFetchPageSize)
-
-	results := make([]api.CategoryNode, 0, len(templateRoots))
-	cacheMap := map[string]api.Filter{}
-	for _, templateRoot := range templateRoots {
-		results = append(results, GetCategoryNodeResourceCountInfo(templateRoot, metricIndexed, cacheMap))
-	}
-
-	return ctx.JSON(http.StatusOK, results)
-}
-
 // ListCategories godoc
 //
 //	@Summary	Return list of categories
@@ -2317,22 +2313,11 @@ func (h *HttpHandler) ListConnectionsSummary(ctx echo.Context) error {
 		sourceIdPtr = &sourceId
 	}
 
-	pageSizeStr := ctx.QueryParam("pageSize")
-	pageSize := ApiDefaultPageSize
-	if pageSizeStr != "" {
-		pageSize, err = strconv.ParseInt(pageSizeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "pageSize is not a valid integer")
-		}
+	pageNumber, pageSize, err := internal.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
-	pageNumberStr := ctx.QueryParam("pageNumber")
-	pageNumber := int64(1)
-	if pageNumberStr != "" {
-		pageNumber, err = strconv.ParseInt(pageNumberStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "pageNumber is not a valid integer")
-		}
-	}
+
 	sortBy := ctx.QueryParam("sortBy")
 	if sortBy == "" {
 		sortBy = "cost"
@@ -2677,21 +2662,9 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 		}
 	}
 
-	pageSizeStr := ctx.QueryParam("pageSize")
-	pageSize := ApiDefaultPageSize
-	if pageSizeStr != "" {
-		pageSize, err = strconv.ParseInt(pageSizeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "pageSize is not a valid integer")
-		}
-	}
-	pageNumberStr := ctx.QueryParam("pageNumber")
-	pageNumber := int64(1)
-	if pageNumberStr != "" {
-		pageNumber, err = strconv.ParseInt(pageNumberStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "pageNumber is not a valid integer")
-		}
+	pageNumber, pageSize, err := internal.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 	sortBy := ctx.QueryParam("sortBy")
 	if sortBy == "" {
@@ -2908,8 +2881,8 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 //	@Param			endTime		query	string		true	"end time for cost calculation and time resource count in epoch seconds"
 //	@Param			serviceName	path	string		true	"service name"
 
-// @Success	200	{object}	api.ListServiceSummariesResponse
-// @Router		/inventory/api/v2/services/summary/{serviceName} [get]
+//	@Success	200	{object}	api.ListServiceSummariesResponse
+//	@Router		/inventory/api/v2/services/summary/{serviceName} [get]
 func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	serviceName := ctx.Param("serviceName")
 	if serviceName == "" {

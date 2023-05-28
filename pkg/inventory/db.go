@@ -7,6 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/lib/pq"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -238,4 +239,54 @@ func (db Database) ListMetrics() ([]Metric, error) {
 	var metrics []Metric
 	tx := db.orm.Model(Metric{}).Find(&metrics)
 	return metrics, tx.Error
+}
+
+func (db Database) ListResourceTypeTagsKeysWithPossibleValues() (map[string][]string, error) {
+	var tags []ResourceTypeTag
+	tx := db.orm.Model(ResourceTypeTag{}).Find(&tags)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	tagLikes := make([]TagLike, 0, len(tags))
+	for _, tag := range tags {
+		tagLikes = append(tagLikes, tag)
+	}
+	result := getTagsMap(tagLikes)
+	return result, nil
+}
+
+func (db Database) GetResourceTypeTagPossibleValues(key string) ([]string, error) {
+	var tags []ResourceTypeTag
+	tx := db.orm.Model(ResourceTypeTag{}).Where("key = ?", key).Find(&tags)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	tagLikes := make([]TagLike, 0, len(tags))
+	for _, tag := range tags {
+		tagLikes = append(tagLikes, tag)
+	}
+	result := getTagsMap(tagLikes)
+	return result[key], nil
+}
+
+func (db Database) ListResourceTypeFilteredResourceTypes(tags map[string][]string, serviceNames []string, connectorTypes []source.Type) ([]ResourceType, error) {
+	var resourceTypes []ResourceType
+	query := db.orm.Model(ResourceType{}).Preload(clause.Associations)
+	if len(tags) != 0 {
+		query = query.Joins("JOIN resource_type_tags AS tags ON tags.resource_type = resource_types.resource_type")
+		for key, values := range tags {
+			query = query.Where("tags.key = ? AND tags.value @> ?", key, pq.StringArray(values))
+		}
+	}
+	if len(serviceNames) != 0 {
+		query = query.Where("service_name IN ?", serviceNames)
+	}
+	if len(connectorTypes) != 0 {
+		query = query.Where("connector IN ?", connectorTypes)
+	}
+	tx := query.Find(&resourceTypes)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return resourceTypes, nil
 }
