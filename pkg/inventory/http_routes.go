@@ -953,7 +953,7 @@ func (h *HttpHandler) ListResourceTypeMetrics(ctx echo.Context) error {
 			LogoURI:       resourceType.LogoURI,
 			Count:         nil,
 		}
-		if count, ok := metricIndexed[resourceType.ResourceType]; ok {
+		if count, ok := metricIndexed[strings.ToLower(resourceType.ResourceType)]; ok {
 			rt.Count = &count
 			totalCount += count
 		}
@@ -1040,8 +1040,8 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 	totalCount := 0
 	for _, resourceType := range resourceTypes {
 		for _, tagValue := range resourceType.GetTagsMap()[tagKey] {
-			valueCountMap[tagValue] += metricIndexed[resourceType.ResourceType]
-			totalCount += metricIndexed[resourceType.ResourceType]
+			valueCountMap[tagValue] += metricIndexed[strings.ToLower(resourceType.ResourceType)]
+			totalCount += metricIndexed[strings.ToLower(resourceType.ResourceType)]
 			break
 		}
 	}
@@ -1116,9 +1116,9 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 	}
 
 	datapointCountStr := ctx.QueryParam("datapointCount")
-	datapointCount := 30
+	datapointCount := int64(30)
 	if datapointCountStr != "" {
-		datapointCount, err = strconv.Atoi(datapointCountStr)
+		datapointCount, err = strconv.ParseInt(datapointCountStr, 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
 		}
@@ -1174,7 +1174,7 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 	sort.Slice(apiDatapoints, func(i, j int) bool {
 		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
 	})
-	apiDatapoints = internal.DownSampleResourceTypeTrendDatapoints(apiDatapoints, datapointCount)
+	apiDatapoints = internal.DownSampleResourceTypeTrendDatapoints(apiDatapoints, int(datapointCount))
 
 	return ctx.JSON(http.StatusOK, apiDatapoints)
 }
@@ -2317,8 +2317,8 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 //	@Param			endTime		query	string		true	"end time for cost calculation and time resource count in epoch seconds"
 //	@Param			serviceName	path	string		true	"service name"
 
-//	@Success	200	{object}	api.ListServiceSummariesResponse
-//	@Router		/inventory/api/v2/services/summary/{serviceName} [get]
+// @Success	200	{object}	api.ListServiceSummariesResponse
+// @Router		/inventory/api/v2/services/summary/{serviceName} [get]
 func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	serviceName := ctx.Param("serviceName")
 	if serviceName == "" {
