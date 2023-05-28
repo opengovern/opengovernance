@@ -1594,34 +1594,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v1/provider/{provider}/summary": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json",
-                    "text/csv"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Get provider summary",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/inventory/api/v1/query": {
             "get": {
                 "security": [
@@ -2496,36 +2468,6 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceDistributionItem"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v2/categories": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return list of categories",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
                             }
                         }
                     }
@@ -3473,6 +3415,68 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/metrics/resources/composition/{key}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return tag values with most resources for the given key",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "How many top values to return default is 5",
+                        "name": "top",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Connector types to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for resource count in epoch seconds",
+                        "name": "time",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeCompositionResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/metrics/resources/metric": {
             "get": {
                 "consumes": [
@@ -3556,44 +3560,6 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {}
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v2/resources/categories": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return list of the subcategories of the specified category",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Category ID - defaults to default template category",
-                        "name": "category",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode"
-                            }
                         }
                     }
                 }
@@ -3750,7 +3716,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v2/resources/rootCloudProviders": {
+        "/inventory/api/v2/resources/tag": {
             "get": {
                 "security": [
                     {
@@ -3766,44 +3732,24 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Return root providers' info, info includes category name, category id, subcategories names and ids and number of resources",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for resource count in epoch seconds",
-                        "name": "time",
-                        "in": "query"
-                    }
-                ],
+                "summary": "Return list of the keys with possible values for filtering resources types",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
                             }
                         }
                     }
                 }
             }
         },
-        "/inventory/api/v2/resources/rootTemplates": {
+        "/inventory/api/v2/resources/tag/{key}": {
             "get": {
                 "security": [
                     {
@@ -3819,34 +3765,14 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Return root templates' info, info includes template name, template id, subcategories names and ids and number of resources",
+                "summary": "Return list of the possible values for filtering resources types with specified key",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter filters by importance if they have it (array format is supported with , separator | 'all' is also supported)",
-                        "name": "importance",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for resource count in epoch seconds",
-                        "name": "time",
-                        "in": "query"
+                        "description": "Tag key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -3855,7 +3781,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode"
+                                "type": "string"
                             }
                         }
                     }
@@ -4683,6 +4609,35 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ProviderType"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/source/account/{accountId}": {
+            "get": {
+                "description": "Returning account source either AWS / Azure.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Returns source by account id",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "SourceID",
+                        "name": "account_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source"
                         }
                     }
                 }
@@ -5700,64 +5655,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/workspace/api/v1/workspace/{workspace_id}/backup": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "lists backup of workspace",
-                "responses": {}
-            },
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "perform backup of workspace",
-                "responses": {}
-            }
-        },
-        "/workspace/api/v1/workspace/{workspace_id}/backup/restores": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "lists restore of workspace",
-                "responses": {}
-            }
-        },
-        "/workspace/api/v1/workspace/{workspace_id}/backup/{backup_name}/restore": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "perform restore of backup of workspace",
-                "responses": {}
-            }
-        },
         "/workspace/api/v1/workspace/{workspace_id}/name": {
             "post": {
                 "consumes": [
@@ -6004,6 +5901,9 @@ const docTemplate = `{
         "aws.Resources": {
             "type": "object",
             "properties": {
+                "errorCode": {
+                    "type": "string"
+                },
                 "errors": {
                     "type": "object",
                     "additionalProperties": {
@@ -6116,7 +6016,7 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse": {
             "type": "object",
             "properties": {
-                "acrive": {
+                "active": {
                     "type": "boolean"
                 },
                 "createdAt": {
@@ -7924,46 +7824,6 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryCategory": {
-            "type": "object",
-            "properties": {
-                "resourceCount": {
-                    "type": "integer"
-                },
-                "subCategories": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryResponse": {
-            "type": "object",
-            "properties": {
-                "categories": {
-                    "description": "Categories with their Summary",
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryCategory"
-                    }
-                },
-                "cloudServices": {
-                    "description": "Services as Key, Number of them as Value",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                },
-                "resourceTypes": {
-                    "description": "Resource types as Key, Number of them as Value",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata": {
             "type": "object",
             "properties": {
@@ -8571,6 +8431,43 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeCompositionResponse": {
+            "type": "object",
+            "properties": {
+                "others": {
+                    "type": "integer"
+                },
+                "top_values": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "total_value_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse": {
+            "type": "object",
+            "properties": {
+                "resource_types": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "total_resource_types": {
+                    "type": "integer"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypesResponse": {
             "type": "object",
             "properties": {
@@ -8844,6 +8741,38 @@ const docTemplate = `{
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SortFieldType"
                         }
                     ]
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType": {
+            "type": "object",
+            "properties": {
+                "connector": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "logo_uri": {
+                    "type": "string"
+                },
+                "resource_name": {
+                    "type": "string"
+                },
+                "resource_type": {
+                    "type": "string"
+                },
+                "service_name": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },

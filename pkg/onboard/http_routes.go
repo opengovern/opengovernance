@@ -15,9 +15,9 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -837,8 +837,9 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 //	@Summary		Onboard all available connections for a credential
 //	@Description	Onboard all available connections for a credential
 //	@Tags			onboard
-//	@Produce		jsonSuccess		200	{object}	[]api.Source
-//	@Router			/onboard/api/v1/credential/{credentialId}/autoonboard
+//	@Produce		json
+//	@Success		200	{object}	[]api.Source
+//	@Router			/onboard/api/v1/credential/{credentialId}/autoonboard [post]
 func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
 	if err != nil {

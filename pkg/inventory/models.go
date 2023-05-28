@@ -1,11 +1,17 @@
 package inventory
 
 import (
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/lib/pq"
 	"gorm.io/gorm"
+)
+
+const (
+	KaytuPrivateTagPrefix = "x-kaytu-"
 )
 
 type TagLike interface {
@@ -36,9 +42,21 @@ func getTagsMap(tags []TagLike) map[string][]string {
 		for val := range v {
 			result[k] = append(result[k], val)
 		}
+		sort.Slice(result[k], func(i, j int) bool {
+			return result[k][i] < result[k][j]
+		})
 	}
 
 	return result
+}
+
+func trimPrivateTags(tags map[string][]string) map[string][]string {
+	for k := range tags {
+		if strings.HasPrefix(k, KaytuPrivateTagPrefix) {
+			delete(tags, k)
+		}
+	}
+	return tags
 }
 
 type Tag struct {
@@ -100,7 +118,7 @@ type ResourceType struct {
 	LogoURI       *string     `json:"logo_uri,omitempty"`
 
 	Tags    []ResourceTypeTag   `gorm:"foreignKey:ResourceType;references:ResourceType;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	TagsMap map[string][]string `gorm:"-:all"`
+	tagsMap map[string][]string `gorm:"-:all"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -108,14 +126,14 @@ type ResourceType struct {
 }
 
 func (r ResourceType) GetTagsMap() map[string][]string {
-	if r.TagsMap == nil {
+	if r.tagsMap == nil {
 		tagLikeArr := make([]TagLike, 0, len(r.Tags))
 		for _, tag := range r.Tags {
 			tagLikeArr = append(tagLikeArr, tag)
 		}
-		r.TagsMap = getTagsMap(tagLikeArr)
+		r.tagsMap = getTagsMap(tagLikeArr)
 	}
-	return r.TagsMap
+	return r.tagsMap
 }
 
 type Service struct {
@@ -126,7 +144,7 @@ type Service struct {
 	ResourceTypes []ResourceType `json:"resource_types" gorm:"foreignKey:ServiceName;references:ServiceName;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 
 	Tags    []ServiceTag        `gorm:"foreignKey:ServiceName;references:ServiceName;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	TagsMap map[string][]string `gorm:"-:all"`
+	tagsMap map[string][]string `gorm:"-:all"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -134,14 +152,14 @@ type Service struct {
 }
 
 func (s Service) GetTagsMap() map[string][]string {
-	if s.TagsMap == nil {
+	if s.tagsMap == nil {
 		tagLikeArr := make([]TagLike, 0, len(s.Tags))
 		for _, tag := range s.Tags {
 			tagLikeArr = append(tagLikeArr, tag)
 		}
-		s.TagsMap = getTagsMap(tagLikeArr)
+		s.tagsMap = getTagsMap(tagLikeArr)
 	}
-	return s.TagsMap
+	return s.tagsMap
 }
 
 type Category struct {
