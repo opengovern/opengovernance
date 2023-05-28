@@ -335,8 +335,9 @@ FROM
 WHERE 
 	status = ? AND 
 	NOT(error_code IN ('AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND 
-	retry_count < 3 AND
+	(retry_count < 3 OR retry_count IS NULL) AND
 	(select count(*) from describe_resource_jobs where parent_job_id = dr.parent_job_id AND status IN (?, ?)) = 0
+	LIMIT 10
 `, api.DescribeResourceJobFailed, api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
