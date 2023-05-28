@@ -10,8 +10,8 @@ import (
 
 	awsModel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	azureModel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/helpers"
 )
 
@@ -74,11 +74,18 @@ func (c CostResourceType) GetProviderReportType() ProviderReportType {
 }
 
 func (c CostResourceType) GetCostAndUnitFromResource(costDescription map[string]any) (float64, string) {
+	var err error
 	switch c {
 	case CostResourceTypeAWSCostExplorerServiceCostMonthly, CostResourceTypeAWSCostExplorerAccountCostMonthly, CostResourceTypeAWSCostExplorerServiceCostDaily, CostResourceTypeAWSCostExplorerAccountCostDaily:
-		costFloat, err := strconv.ParseFloat(costDescription["AmortizedCostAmount"].(string), 64)
-		if err != nil {
-			return 0, ""
+		var costFloat float64
+		switch costDescription["AmortizedCostAmount"].(type) {
+		case string:
+			costFloat, err = strconv.ParseFloat(costDescription["AmortizedCostAmount"].(string), 64)
+			if err != nil {
+				return 0, ""
+			}
+		case float64:
+			costFloat = costDescription["AmortizedCostAmount"].(float64)
 		}
 		costUnit, ok := costDescription["AmortizedCostUnit"]
 		if !ok {
@@ -86,9 +93,15 @@ func (c CostResourceType) GetCostAndUnitFromResource(costDescription map[string]
 		}
 		return costFloat, costUnit.(string)
 	case CostResourceTypeAzureCostManagementCostByResourceType, CostResourceTypeAzureCostManagementCostBySubscription:
-		costFloat, err := strconv.ParseFloat(costDescription["Cost"].(string), 64)
-		if err != nil {
-			return 0, ""
+		var costFloat float64
+		switch costDescription["Cost"].(type) {
+		case string:
+			costFloat, err = strconv.ParseFloat(costDescription["Cost"].(string), 64)
+			if err != nil {
+				return 0, ""
+			}
+		case float64:
+			costFloat = costDescription["Cost"].(float64)
 		}
 		costUnit, ok := costDescription["Currency"]
 		if !ok {
