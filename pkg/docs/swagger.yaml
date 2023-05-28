@@ -29,71 +29,11 @@ x-tagGroups:
   - name: workspace
     tags:
     - workspace
-x-tagGroups:
-  - name: auth
-    tags:
-    - users
-    - roles
-    - keys
-  - name: compliance
-    tags:
-    - compliance
-    - benchmarks_assignemnt
-  - name: inventory
-    tags:
-    - insights
-    - benchmarks
-    - inventory
-    - cost
-    - location
-    - smart_query
-    - resource
-    - metadata
-  - name: onboard
-    tags:
-    - onboard
-  - name: schedule
-    tags:
-    - describe
-    - schedule
-    - jobs
-  - name: workspace
-    tags:
-    - workspace
-x-tagGroups:
-  - name: auth
-    tags:
-    - users
-    - roles
-    - keys
-  - name: compliance
-    tags:
-    - compliance
-    - benchmarks_assignemnt
-  - name: inventory
-    tags:
-    - insights
-    - benchmarks
-    - inventory
-    - cost
-    - location
-    - smart_query
-    - resource
-    - metadata
-  - name: onboard
-    tags:
-    - onboard
-  - name: schedule
-    tags:
-    - describe
-    - schedule
-    - jobs
-  - name: workspace
-    tags:
-    - workspace
 definitions:
   aws.Resources:
     properties:
+      errorCode:
+        type: string
       errors:
         additionalProperties:
           type: string
@@ -172,7 +112,7 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse:
     properties:
-      acrive:
+      active:
         type: boolean
       createdAt:
         type: string
@@ -1408,33 +1348,6 @@ definitions:
         description: Source Id
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryCategory:
-    properties:
-      resourceCount:
-        type: integer
-      subCategories:
-        additionalProperties:
-          type: integer
-        type: object
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryResponse:
-    properties:
-      categories:
-        additionalProperties:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryCategory'
-        description: Categories with their Summary
-        type: object
-      cloudServices:
-        additionalProperties:
-          type: integer
-        description: Services as Key, Number of them as Value
-        type: object
-      resourceTypes:
-        additionalProperties:
-          type: integer
-        description: Resource types as Key, Number of them as Value
-        type: object
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata:
     properties:
       connector:
@@ -1844,6 +1757,30 @@ definitions:
         description: Specifies the Title
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeCompositionResponse:
+    properties:
+      others:
+        type: integer
+      top_values:
+        additionalProperties:
+          type: integer
+        type: object
+      total_count:
+        type: integer
+      total_value_count:
+        type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse:
+    properties:
+      resource_types:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
+        type: array
+      total_count:
+        type: integer
+      total_resource_types:
+        type: integer
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypesResponse:
     properties:
       resourceTypes:
@@ -2049,6 +1986,27 @@ definitions:
         - resourceGroup
         - location
         - connectionID
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType:
+    properties:
+      connector:
+        $ref: '#/definitions/source.Type'
+      count:
+        type: integer
+      logo_uri:
+        type: string
+      resource_name:
+        type: string
+      resource_type:
+        type: string
+      service_name:
+        type: string
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeFull:
     properties:
@@ -3962,23 +3920,6 @@ paths:
       summary: Get locations
       tags:
       - location
-  /inventory/api/v1/provider/{provider}/summary:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      - text/csv
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionSummaryResponse'
-      security:
-      - BearerToken: []
-      summary: Get provider summary
-      tags:
-      - inventory
   /inventory/api/v1/query:
     get:
       description: Listing smart queries by specified filters
@@ -4564,24 +4505,6 @@ paths:
       summary: Returns distribution of services for specific account
       tags:
       - benchmarks
-  /inventory/api/v2/categories:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              type: string
-            type: array
-      security:
-      - BearerToken: []
-      summary: Return list of categories
-      tags:
-      - inventory
   /inventory/api/v2/connections/summary:
     get:
       consumes:
@@ -5202,6 +5125,46 @@ paths:
         name, subcategories names and ids and number of resources
       tags:
       - inventory
+  /inventory/api/v2/metrics/resources/composition/{key}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: How many top values to return default is 5
+        in: query
+        name: top
+        required: true
+        type: integer
+      - description: Connector types to filter by
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
+      - description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: timestamp for resource count in epoch seconds
+        in: query
+        name: time
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeCompositionResponse'
+      security:
+      - BearerToken: []
+      summary: Return tag values with most resources for the given key
+      tags:
+      - inventory
   /inventory/api/v2/metrics/resources/metric:
     get:
       consumes:
@@ -5263,29 +5226,6 @@ paths:
             type: array
       summary: Return category info by provided category id, info includes category
         name, subcategories names and ids and number of resources
-      tags:
-      - inventory
-  /inventory/api/v2/resources/categories:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Category ID - defaults to default template category
-        in: query
-        name: category
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Return list of the subcategories of the specified category
       tags:
       - inventory
   /inventory/api/v2/resources/category:
@@ -5392,63 +5332,36 @@ paths:
         name, subcategories names and ids and number of resources
       tags:
       - inventory
-  /inventory/api/v2/resources/rootCloudProviders:
+  /inventory/api/v2/resources/tag:
     get:
       consumes:
       - application/json
-      parameters:
-      - description: Provider
-        in: query
-        name: provider
-        type: string
-      - description: SourceID
-        in: query
-        items:
-          type: string
-        name: sourceId
-        type: array
-      - description: timestamp for resource count in epoch seconds
-        in: query
-        name: time
-        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode'
-            type: array
+            additionalProperties:
+              items:
+                type: string
+              type: array
+            type: object
       security:
       - BearerToken: []
-      summary: Return root providers' info, info includes category name, category
-        id, subcategories names and ids and number of resources
+      summary: Return list of the keys with possible values for filtering resources
+        types
       tags:
       - inventory
-  /inventory/api/v2/resources/rootTemplates:
+  /inventory/api/v2/resources/tag/{key}:
     get:
       consumes:
       - application/json
       parameters:
-      - description: Provider
-        in: query
-        name: provider
-        type: string
-      - description: SourceID
-        in: query
-        items:
-          type: string
-        name: sourceId
-        type: array
-      - description: Filter filters by importance if they have it (array format is
-          supported with , separator | 'all' is also supported)
-        in: query
-        name: importance
-        type: string
-      - description: timestamp for resource count in epoch seconds
-        in: query
-        name: time
+      - description: Tag key
+        in: path
+        name: key
+        required: true
         type: string
       produces:
       - application/json
@@ -5457,12 +5370,12 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode'
+              type: string
             type: array
       security:
       - BearerToken: []
-      summary: Return root templates' info, info includes template name, template
-        id, subcategories names and ids and number of resources
+      summary: Return list of the possible values for filtering resources types with
+        specified key
       tags:
       - inventory
   /inventory/api/v2/resources/trend:
@@ -6122,6 +6035,25 @@ paths:
       summary: Get live source health status
       tags:
       - onboard
+  /onboard/api/v1/source/account/{accountId}:
+    get:
+      description: Returning account source either AWS / Azure.
+      parameters:
+      - description: SourceID
+        in: path
+        name: account_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+      summary: Returns source by account id
+      tags:
+      - onboard
   /onboard/api/v1/source/aws:
     post:
       description: Creating AWS source
@@ -6675,45 +6607,6 @@ paths:
         "200":
           description: OK
       summary: Suspend workspace
-      tags:
-      - workspace
-  /workspace/api/v1/workspace/{workspace_id}/backup:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses: {}
-      summary: lists backup of workspace
-      tags:
-      - workspace
-    post:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses: {}
-      summary: perform backup of workspace
-      tags:
-      - workspace
-  /workspace/api/v1/workspace/{workspace_id}/backup/{backup_name}/restore:
-    post:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses: {}
-      summary: perform restore of backup of workspace
-      tags:
-      - workspace
-  /workspace/api/v1/workspace/{workspace_id}/backup/restores:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses: {}
-      summary: lists restore of workspace
       tags:
       - workspace
   /workspace/api/v1/workspace/{workspace_id}/name:
