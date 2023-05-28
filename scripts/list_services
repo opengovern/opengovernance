@@ -4,6 +4,10 @@
 
 #GIT_CHANGE=$(git status -s | awk '{print $2}')
 if [[ ! -z $SERVICE_LIST ]]; then
+  if [[ "$SERVICE_LIST" == "all" ]]; then
+    ls cmd/
+    exit 0
+  fi
   echo "$SERVICE_LIST"
   exit 0
 fi
