@@ -372,37 +372,6 @@ func (db Database) CountQueuedInProgressDescribeResourceJobsByParentID(id uint) 
 	return count, nil
 }
 
-func (db Database) RetryRateLimitedJobs() error {
-	tx := db.orm.Raw(
-		`
-UPDATE describe_resource_jobs SET status = 'CREATED' WHERE id = ( 
-	SELECT 
-		id 
-	FROM 
-		describe_resource_jobs d  
-	WHERE 
-		status = 'FAILED' AND 
-		created_at > now() - interval '2 hours' AND 
-		updated_at < now() - interval '5 minutes' AND
-		(failure_message like '%Rate exceeded%' OR failure_message like '%TooManyRequestsException%') AND 
-		(
-			SELECT 
-				count(*) 
-			FROM 
-				describe_resource_jobs 
-			WHERE 
-				parent_job_id = d.parent_job_id AND 
-				status in ('CREATED', 'QUEUED', 'IN_PROGRESS')
-		) = 0 
-	ORDER BY updated_at ASC
-	LIMIT 1
-);`)
-	if tx.Error != nil {
-		return tx.Error
-	}
-	return nil
-}
-
 func (db Database) ListCreatedDescribeSourceJobs() ([]DescribeSourceJob, error) {
 	var jobs []DescribeSourceJob
 	tx := db.orm.Where("status in (?)", api.DescribeSourceJobCreated).Find(&jobs)

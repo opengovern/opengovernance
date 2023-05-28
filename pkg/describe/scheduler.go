@@ -39,7 +39,6 @@ import (
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 
 	complianceworker "gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"go.uber.org/zap"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -454,7 +453,7 @@ func (s *Scheduler) Run() error {
 	switch s.OperationMode {
 	case OperationModeScheduler:
 		s.logger.Info("starting scheduler")
-		// describe
+		// --------- describe
 		EnsureRunGoroutin(func() {
 			s.RunDescribeJobScheduler()
 		})
@@ -464,33 +463,41 @@ func (s *Scheduler) Run() error {
 		EnsureRunGoroutin(func() {
 			s.RunDescribeJobCompletionUpdater()
 		})
-
-		// inventory summarizer
-		EnsureRunGoroutin(func() {
-			s.RunMustSummerizeJobScheduler()
-		})
-		//
-
 		EnsureRunGoroutin(func() {
 			s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
 		})
+		// ---------
 
-		// compliance
+		// --------- inventory summarizer
+		EnsureRunGoroutin(func() {
+			s.RunMustSummerizeJobScheduler()
+		})
+		EnsureRunGoroutin(func() {
+			s.logger.Fatal("SummarizerJobResult consumer exited", zap.Error(s.RunSummarizerJobResultsConsumer()))
+		})
+		// ---------
+
+		// --------- compliance
 		EnsureRunGoroutin(func() {
 			s.RunComplianceJobScheduler()
 		})
-		//
+		EnsureRunGoroutin(func() {
+			s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
+		})
+		// ---------
 
-		//EnsureRunGoroutin(func() {
-		//	s.RunScheduleJobCompletionUpdater()
-		//})
-
+		// --------- insights
 		EnsureRunGoroutin(func() {
 			s.RunInsightJobScheduler()
 		})
 		EnsureRunGoroutin(func() {
 			s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunInsightJobResultsConsumer()))
 		})
+		// ---------
+
+		//EnsureRunGoroutin(func() {
+		//	s.RunScheduleJobCompletionUpdater()
+		//})
 
 		EnsureRunGoroutin(func() {
 			s.RunCheckupJobScheduler()
@@ -502,13 +509,7 @@ func (s *Scheduler) Run() error {
 			s.logger.Fatal("SourceEvents consumer exited", zap.Error(s.RunSourceEventsConsumer()))
 		})
 		EnsureRunGoroutin(func() {
-			s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
-		})
-		EnsureRunGoroutin(func() {
 			s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
-		})
-		EnsureRunGoroutin(func() {
-			s.logger.Fatal("SummarizerJobResult consumer exited", zap.Error(s.RunSummarizerJobResultsConsumer()))
 		})
 	case OperationModeReceiver:
 		s.logger.Info("starting receiver")
@@ -530,192 +531,193 @@ func (s *Scheduler) Run() error {
 	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
 }
 
-func (s *Scheduler) RunScheduleJobCompletionUpdater() {
-	defer func() {
-		if r := recover(); r != nil {
-			err := fmt.Errorf("paniced during RunScheduleJobCompletionUpdater: %v", r)
-			s.logger.Error("Paniced, retry", zap.Error(err))
-			go s.RunScheduleJobCompletionUpdater()
-		}
-	}()
-
-	t := time.NewTicker(JobCompletionInterval)
-	defer t.Stop()
-
-	for ; ; <-t.C {
-		scheduleJob, err := s.db.FetchLastScheduleJob()
-		if err != nil {
-			s.logger.Error("Failed to find ScheduleJobs", zap.Error(err))
-			continue
-		}
-
-		if scheduleJob == nil || scheduleJob.Status != summarizerapi.SummarizerJobInProgress {
-			continue
-		}
-
-		djs, err := s.db.QueryDescribeSourceJobsForScheduleJob(scheduleJob)
-		if err != nil {
-			s.logger.Error("Failed to find list of describe source jobs", zap.Error(err))
-			continue
-		}
-
-		inProgress := false
-		if djs != nil {
-			for _, j := range djs {
-				if j.Status == api.DescribeSourceJobCreated || j.Status == api.DescribeSourceJobInProgress {
-					inProgress = true
-				}
-			}
-		}
-
-		if inProgress {
-			continue
-		}
-
-		srcs, err := s.db.ListSources()
-		if err != nil {
-			s.logger.Error("Failed to find list of sources", zap.Error(err))
-			continue
-		}
-
-		sourceIDs := make([]string, 0, len(srcs))
-		for _, src := range srcs {
-			sourceIDs = append(sourceIDs, src.ID.String())
-		}
-		onboardSources, err := s.onboardClient.GetSources(&httpclient.Context{
-			UserRole: api2.ViewerRole,
-		}, sourceIDs)
-		if err != nil {
-			s.logger.Error("Failed to get onboard sources",
-				zap.Strings("sourceIDs", sourceIDs),
-				zap.Error(err),
-			)
-			return
-		}
-		var filteredSources []Source
-		for _, src := range srcs {
-			for _, onboardSrc := range onboardSources {
-				if src.ID.String() == onboardSrc.ID.String() {
-					healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
-						UserRole: api2.EditorRole,
-					}, onboardSrc.ID.String())
-					if err != nil {
-						s.logger.Error("Failed to get source healthcheck",
-							zap.String("sourceID", onboardSrc.ID.String()),
-							zap.Error(err),
-						)
-						continue
-					}
-					if healthCheckedSrc.AssetDiscoveryMethod == source.AssetDiscoveryMethodTypeScheduled &&
-						healthCheckedSrc.HealthState != source.HealthStatusUnhealthy {
-						filteredSources = append(filteredSources, src)
-					}
-					break
-				}
-			}
-		}
-		srcs = filteredSources
-
-		inProgress = false
-		for _, src := range srcs {
-			found := false
-			for _, j := range djs {
-				if src.ID == j.SourceID {
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				inProgress = true
-				break
-			}
-		}
-
-		if inProgress {
-			continue
-		}
-
-		j, err := s.db.GetSummarizerJobByScheduleID(scheduleJob.ID, summarizer.JobType_ResourceMustSummarizer)
-		if err != nil {
-			s.logger.Error("Failed to fetch SummarizerJob", zap.Error(err))
-			continue
-		}
-
-		if j == nil {
-			err = s.scheduleMustSummarizerJob(&scheduleJob.ID)
-			if err != nil {
-				s.logger.Error("Failed to enqueue summarizer job\n",
-					zap.Uint("jobId", scheduleJob.ID),
-					zap.Error(err),
-				)
-			}
-			continue
-		}
-
-		if j.Status == summarizerapi.SummarizerJobInProgress {
-			continue
-		}
-
-		cjobs, err := s.db.GetComplianceReportJobsByScheduleID(scheduleJob.ID)
-		if err != nil {
-			s.logger.Error("Failed to get ComplianceJobs", zap.Error(err))
-			continue
-		}
-
-		if cjobs == nil || len(cjobs) == 0 {
-			createdJobCount, err := s.RunComplianceReport(scheduleJob)
-			if err != nil {
-				s.logger.Error("Failed to enqueue compliance job\n",
-					zap.Uint("jobId", scheduleJob.ID),
-					zap.Error(err),
-				)
-			}
-
-			if createdJobCount > 0 {
-				continue
-			}
-		}
-
-		inProgress = false
-		for _, j := range cjobs {
-			if j.Status == complianceapi.ComplianceReportJobCreated ||
-				j.Status == complianceapi.ComplianceReportJobInProgress {
-				inProgress = true
-			}
-		}
-
-		if inProgress {
-			continue
-		}
-
-		j, err = s.db.GetSummarizerJobByScheduleID(scheduleJob.ID, summarizer.JobType_ComplianceSummarizer)
-		if err != nil {
-			s.logger.Error("Failed to fetch SummarizerJob", zap.Error(err))
-			continue
-		}
-
-		if j == nil {
-			err = s.scheduleComplianceSummarizerJob(scheduleJob.ID)
-			if err != nil {
-				s.logger.Error("Failed to enqueue summarizer job\n",
-					zap.Uint("jobId", scheduleJob.ID),
-					zap.Error(err),
-				)
-			}
-		}
-
-		if j.Status == summarizerapi.SummarizerJobInProgress {
-			continue
-		}
-
-		err = s.db.UpdateScheduleJobStatus(scheduleJob.ID, summarizerapi.SummarizerJobSucceeded)
-		if err != nil {
-			s.logger.Error("Failed to update ScheduleJob's status", zap.Error(err))
-			continue
-		}
-	}
-}
+//
+//func (s *Scheduler) RunScheduleJobCompletionUpdater() {
+//	defer func() {
+//		if r := recover(); r != nil {
+//			err := fmt.Errorf("paniced during RunScheduleJobCompletionUpdater: %v", r)
+//			s.logger.Error("Paniced, retry", zap.Error(err))
+//			go s.RunScheduleJobCompletionUpdater()
+//		}
+//	}()
+//
+//	t := time.NewTicker(JobCompletionInterval)
+//	defer t.Stop()
+//
+//	for ; ; <-t.C {
+//		scheduleJob, err := s.db.FetchLastScheduleJob()
+//		if err != nil {
+//			s.logger.Error("Failed to find ScheduleJobs", zap.Error(err))
+//			continue
+//		}
+//
+//		if scheduleJob == nil || scheduleJob.Status != summarizerapi.SummarizerJobInProgress {
+//			continue
+//		}
+//
+//		djs, err := s.db.QueryDescribeSourceJobsForScheduleJob(scheduleJob)
+//		if err != nil {
+//			s.logger.Error("Failed to find list of describe source jobs", zap.Error(err))
+//			continue
+//		}
+//
+//		inProgress := false
+//		if djs != nil {
+//			for _, j := range djs {
+//				if j.Status == api.DescribeSourceJobCreated || j.Status == api.DescribeSourceJobInProgress {
+//					inProgress = true
+//				}
+//			}
+//		}
+//
+//		if inProgress {
+//			continue
+//		}
+//
+//		srcs, err := s.db.ListSources()
+//		if err != nil {
+//			s.logger.Error("Failed to find list of sources", zap.Error(err))
+//			continue
+//		}
+//
+//		sourceIDs := make([]string, 0, len(srcs))
+//		for _, src := range srcs {
+//			sourceIDs = append(sourceIDs, src.ID.String())
+//		}
+//		onboardSources, err := s.onboardClient.GetSources(&httpclient.Context{
+//			UserRole: api2.ViewerRole,
+//		}, sourceIDs)
+//		if err != nil {
+//			s.logger.Error("Failed to get onboard sources",
+//				zap.Strings("sourceIDs", sourceIDs),
+//				zap.Error(err),
+//			)
+//			return
+//		}
+//		var filteredSources []Source
+//		for _, src := range srcs {
+//			for _, onboardSrc := range onboardSources {
+//				if src.ID.String() == onboardSrc.ID.String() {
+//					healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
+//						UserRole: api2.EditorRole,
+//					}, onboardSrc.ID.String())
+//					if err != nil {
+//						s.logger.Error("Failed to get source healthcheck",
+//							zap.String("sourceID", onboardSrc.ID.String()),
+//							zap.Error(err),
+//						)
+//						continue
+//					}
+//					if healthCheckedSrc.AssetDiscoveryMethod == source.AssetDiscoveryMethodTypeScheduled &&
+//						healthCheckedSrc.HealthState != source.HealthStatusUnhealthy {
+//						filteredSources = append(filteredSources, src)
+//					}
+//					break
+//				}
+//			}
+//		}
+//		srcs = filteredSources
+//
+//		inProgress = false
+//		for _, src := range srcs {
+//			found := false
+//			for _, j := range djs {
+//				if src.ID == j.SourceID {
+//					found = true
+//					break
+//				}
+//			}
+//
+//			if !found {
+//				inProgress = true
+//				break
+//			}
+//		}
+//
+//		if inProgress {
+//			continue
+//		}
+//
+//		j, err := s.db.GetSummarizerJobByScheduleID(scheduleJob.ID, summarizer.JobType_ResourceMustSummarizer)
+//		if err != nil {
+//			s.logger.Error("Failed to fetch SummarizerJob", zap.Error(err))
+//			continue
+//		}
+//
+//		if j == nil {
+//			err = s.scheduleMustSummarizerJob(&scheduleJob.ID)
+//			if err != nil {
+//				s.logger.Error("Failed to enqueue summarizer job\n",
+//					zap.Uint("jobId", scheduleJob.ID),
+//					zap.Error(err),
+//				)
+//			}
+//			continue
+//		}
+//
+//		if j.Status == summarizerapi.SummarizerJobInProgress {
+//			continue
+//		}
+//
+//		cjobs, err := s.db.GetComplianceReportJobsByScheduleID(scheduleJob.ID)
+//		if err != nil {
+//			s.logger.Error("Failed to get ComplianceJobs", zap.Error(err))
+//			continue
+//		}
+//
+//		if cjobs == nil || len(cjobs) == 0 {
+//			createdJobCount, err := s.RunComplianceReport(scheduleJob)
+//			if err != nil {
+//				s.logger.Error("Failed to enqueue compliance job\n",
+//					zap.Uint("jobId", scheduleJob.ID),
+//					zap.Error(err),
+//				)
+//			}
+//
+//			if createdJobCount > 0 {
+//				continue
+//			}
+//		}
+//
+//		inProgress = false
+//		for _, j := range cjobs {
+//			if j.Status == complianceapi.ComplianceReportJobCreated ||
+//				j.Status == complianceapi.ComplianceReportJobInProgress {
+//				inProgress = true
+//			}
+//		}
+//
+//		if inProgress {
+//			continue
+//		}
+//
+//		j, err = s.db.GetSummarizerJobByScheduleID(scheduleJob.ID, summarizer.JobType_ComplianceSummarizer)
+//		if err != nil {
+//			s.logger.Error("Failed to fetch SummarizerJob", zap.Error(err))
+//			continue
+//		}
+//
+//		if j == nil {
+//			err = s.scheduleComplianceSummarizerJob(scheduleJob.ID)
+//			if err != nil {
+//				s.logger.Error("Failed to enqueue summarizer job\n",
+//					zap.Uint("jobId", scheduleJob.ID),
+//					zap.Error(err),
+//				)
+//			}
+//		}
+//
+//		if j.Status == summarizerapi.SummarizerJobInProgress {
+//			continue
+//		}
+//
+//		err = s.db.UpdateScheduleJobStatus(scheduleJob.ID, summarizerapi.SummarizerJobSucceeded)
+//		if err != nil {
+//			s.logger.Error("Failed to update ScheduleJob's status", zap.Error(err))
+//			continue
+//		}
+//	}
+//}
 
 func (s *Scheduler) RunComplianceReportCleanupJobScheduler() {
 	s.logger.Info("Running compliance report cleanup job scheduler")
@@ -1238,93 +1240,6 @@ func (s *Scheduler) RunCheckupJobResultsConsumer() error {
 			err := s.db.UpdateCheckupJobsTimedOut(s.checkupIntervalHours)
 			if err != nil {
 				s.logger.Error("Failed to update timed out CheckupJob", zap.Error(err))
-			}
-		}
-	}
-}
-
-// RunSummarizerJobResultsConsumer consumes messages from the summarizerJobResultQueue queue.
-// It will update the status of the jobs in the database based on the message.
-// It will also update the jobs status that are not completed in certain time to FAILED
-func (s *Scheduler) RunSummarizerJobResultsConsumer() error {
-	s.logger.Info("Consuming messages from the summarizerJobResultQueue queue")
-
-	msgs, err := s.summarizerJobResultQueue.Consume()
-	if err != nil {
-		return err
-	}
-
-	t := time.NewTicker(JobTimeoutCheckInterval)
-	defer t.Stop()
-
-	for {
-		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				return fmt.Errorf("tasks channel is closed")
-			}
-
-			var result summarizer.ResourceJobResult
-			if err := json.Unmarshal(msg.Body, &result); err != nil {
-				s.logger.Error("Failed to unmarshal SummarizerJobResult results", zap.Error(err))
-				err = msg.Nack(false, false)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
-				}
-				continue
-			}
-
-			if result.JobType == "" || result.JobType == summarizer.JobType_ResourceSummarizer || result.JobType == summarizer.JobType_ResourceMustSummarizer {
-				s.logger.Info("Processing SummarizerJobResult for Job",
-					zap.Uint("jobId", result.JobID),
-					zap.String("status", string(result.Status)),
-				)
-				err := s.db.UpdateSummarizerJob(result.JobID, result.Status, result.Error)
-				if err != nil {
-					s.logger.Error("Failed to update the status of SummarizerJob",
-						zap.Uint("jobId", result.JobID),
-						zap.Error(err))
-					err = msg.Nack(false, true)
-					if err != nil {
-						s.logger.Error("Failed nacking message", zap.Error(err))
-					}
-					continue
-				}
-			} else {
-				var result summarizer.ComplianceJobResult
-				if err := json.Unmarshal(msg.Body, &result); err != nil {
-					s.logger.Error("Failed to unmarshal SummarizerJobResult results", zap.Error(err))
-					err = msg.Nack(false, false)
-					if err != nil {
-						s.logger.Error("Failed nacking message", zap.Error(err))
-					}
-					continue
-				}
-
-				s.logger.Info("Processing SummarizerJobResult for Job",
-					zap.Uint("jobId", result.JobID),
-					zap.String("status", string(result.Status)),
-				)
-				err := s.db.UpdateSummarizerJob(result.JobID, result.Status, result.Error)
-				if err != nil {
-					s.logger.Error("Failed to update the status of SummarizerJob",
-						zap.Uint("jobId", result.JobID),
-						zap.Error(err))
-					err = msg.Nack(false, true)
-					if err != nil {
-						s.logger.Error("Failed nacking message", zap.Error(err))
-					}
-					continue
-				}
-			}
-
-			if err := msg.Ack(false); err != nil {
-				s.logger.Error("Failed acking message", zap.Error(err))
-			}
-		case <-t.C:
-			err := s.db.UpdateSummarizerJobsTimedOut(s.summarizerIntervalHours)
-			if err != nil {
-				s.logger.Error("Failed to update timed out SummarizerJob", zap.Error(err))
 			}
 		}
 	}

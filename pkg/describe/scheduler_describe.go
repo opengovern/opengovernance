@@ -169,13 +169,6 @@ func (s Scheduler) scheduleDescribeJob() {
 		}
 	}
 
-	err = s.db.RetryRateLimitedJobs()
-	if err != nil {
-		s.logger.Error("failed to update database", zap.String("spot", "RetryRateLimitedJobs"), zap.Error(err))
-		DescribeJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
 	DescribeJobsCount.WithLabelValues("successful").Inc()
 }
 
