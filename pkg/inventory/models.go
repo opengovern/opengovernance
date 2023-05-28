@@ -12,6 +12,7 @@ import (
 
 const (
 	KaytuPrivateTagPrefix = "x-kaytu-"
+	KaytuServiceCostTag   = KaytuPrivateTagPrefix + "cost-service-map"
 )
 
 type TagLike interface {
