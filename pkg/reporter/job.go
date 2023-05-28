@@ -181,6 +181,7 @@ func (j *Job) RunJob() error {
 				v2 := esRecord[k]
 
 				j.logger.Info("comparing",
+					zap.String("key", k),
 					zap.String("v", fmt.Sprintf("%v", v)), zap.String("vt", reflect.TypeOf(v).Name()),
 					zap.String("v2", fmt.Sprintf("%v", v2)), zap.String("v2t", reflect.TypeOf(v2).Name()),
 				)
