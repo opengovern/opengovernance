@@ -192,8 +192,8 @@ func (j *Job) RunJob() error {
 				if string(j1) == string(j2) {
 					j.logger.Error("inconsistency in data",
 						zap.String("accountID", account.ConnectionID),
-						zap.String("steampipeARN", fmt.Sprintf("%v", steampipeRecord[k])),
-						zap.String("esARN", fmt.Sprintf("%v", esRecord[k])),
+						zap.String("steampipe", string(j1)),
+						zap.String("es", string(j2)),
 						zap.String("conflictColumn", k),
 					)
 				}
