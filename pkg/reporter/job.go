@@ -18,7 +18,6 @@ import (
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"go.uber.org/zap"
 	"math/rand"
-	"reflect"
 	"strings"
 	"time"
 )
@@ -180,16 +179,21 @@ func (j *Job) RunJob() error {
 			for k, v := range steampipeRecord {
 				v2 := esRecord[k]
 
-				j.logger.Info("comparing",
-					zap.String("key", k),
-					zap.String("v", fmt.Sprintf("%v", v)), zap.String("vt", reflect.TypeOf(v).Name()),
-					zap.String("v2", fmt.Sprintf("%v", v2)), zap.String("v2t", reflect.TypeOf(v2).Name()),
-				)
-				if v != v2 {
+				j1, err := json.Marshal(v)
+				if err != nil {
+					return err
+				}
+
+				j2, err := json.Marshal(v2)
+				if err != nil {
+					return err
+				}
+
+				if string(j1) == string(j2) {
 					j.logger.Error("inconsistency in data",
 						zap.String("accountID", account.ConnectionID),
-						zap.String("steampipeARN", fmt.Sprintf("%v", steampipeRecord["arn"])),
-						zap.String("esARN", fmt.Sprintf("%v", esRecord["arn"])),
+						zap.String("steampipeARN", fmt.Sprintf("%v", steampipeRecord[k])),
+						zap.String("esARN", fmt.Sprintf("%v", esRecord[k])),
 						zap.String("conflictColumn", k),
 					)
 				}
