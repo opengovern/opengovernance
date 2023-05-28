@@ -275,7 +275,11 @@ func (db Database) ListResourceTypeFilteredResourceTypes(tags map[string][]strin
 	if len(tags) != 0 {
 		query = query.Joins("JOIN resource_type_tags AS tags ON tags.resource_type = resource_types.resource_type")
 		for key, values := range tags {
-			query = query.Where("tags.key = ? AND tags.value @> ?", key, pq.StringArray(values))
+			if len(values) != 0 {
+				query = query.Where("tags.key = ? AND tags.value @> ?", key, pq.StringArray(values))
+			} else {
+				query = query.Where("tags.key = ?", key)
+			}
 		}
 	}
 	if len(serviceNames) != 0 {
