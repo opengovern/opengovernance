@@ -38,18 +38,22 @@ jobs:
         echo -e "machine github.com login api password ${{ secrets.GITHUBCI_TOKEN }}" >> ~/.netrc
         make build         
 
-#    - name: Set up Docker Buildx
-#      uses: docker/setup-buildx-action@v2
-#
-#    # https://github.com/docker/login-action
-#    - name: Log into registry ${{ env.REGISTRY }}
-#      if: github.event_name != 'pull_request'
-#      uses: docker/login-action@v2
-#      with:
-#        registry: ${{ env.REGISTRY }}
-#        username: ${{ secrets.DO_API_TOKEN }}
-#        password: ${{ secrets.DO_API_TOKEN }}
-#
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    # https://github.com/docker/login-action
+    - name: Log into registry ${{ env.REGISTRY }}
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.DO_API_TOKEN }}
+        password: ${{ secrets.DO_API_TOKEN }}
+
+    - name: Build
+      run: |
+        ./scripts/dockerbuild         
+
 #    # Extract metadata (tags, labels) for Docker
 #    # https://github.com/docker/metadata-action
 #    - name: Extract Docker metadata

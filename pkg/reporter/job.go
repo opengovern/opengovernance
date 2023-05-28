@@ -189,7 +189,7 @@ func (j *Job) RunJob() error {
 					return err
 				}
 
-				if string(j1) == string(j2) {
+				if string(j1) != string(j2) {
 					j.logger.Error("inconsistency in data",
 						zap.String("accountID", account.ConnectionID),
 						zap.String("steampipe", string(j1)),
