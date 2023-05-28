@@ -154,7 +154,7 @@ func (j *Job) RunJob() error {
 	}
 
 	query := j.RandomQuery(account.Type)
-	listQuery := strings.ReplaceAll(query.ListQuery, "%ACCOUNT_ID%", account.ID.String())
+	listQuery := strings.ReplaceAll(query.ListQuery, "%ACCOUNT_ID%", account.ConnectionID)
 	steampipeRows, err := j.steampipe.Conn().Query(context.Background(), listQuery)
 	if err != nil {
 		return err
@@ -174,7 +174,7 @@ func (j *Job) RunJob() error {
 			steampipeRecord[string(field.Name)] = steampipeRow[idx]
 		}
 
-		getQuery := strings.ReplaceAll(query.GetQuery, "%ACCOUNT_ID%", account.ID.String())
+		getQuery := strings.ReplaceAll(query.GetQuery, "%ACCOUNT_ID%", account.ConnectionID)
 
 		var keyValues []interface{}
 		for _, f := range query.KeyFields {

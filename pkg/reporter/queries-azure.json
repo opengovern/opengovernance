@@ -1,7 +1,7 @@
 [
   {
     "keyFields": ["id"],
-    "list": "SELECT * FROM azure_network_interface WHERE keibi_account_id = '%ACCOUNT_ID%'",
-    "get": "SELECT * FROM azure_network_interface WHERE keibi_account_id = '%ACCOUNT_ID%' AND id = $1"
+    "list": "SELECT * FROM azure_network_interface WHERE account_id = '%ACCOUNT_ID%'",
+    "get": "SELECT * FROM azure_network_interface WHERE account_id = '%ACCOUNT_ID%' AND id = $1"
   }
 ]
