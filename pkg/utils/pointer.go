@@ -1,6 +1,6 @@
 package utils
 
-func PAdd[T int | int64 | int32](a, b *T) *T {
+func PAdd[T int | int64 | int32 | float64](a, b *T) *T {
 	if a == nil && b == nil {
 		return nil
 	} else if a == nil {

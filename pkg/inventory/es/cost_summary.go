@@ -37,7 +37,7 @@ type FetchCostByServicesQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchCostByServicesBetween(client keibi.Client, sourceID *string, provider *source.Type, services []string, before time.Time, after time.Time, size int) (map[string]summarizer.ServiceCostSummary, error) {
+func FetchCostByServicesBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, before time.Time, after time.Time, size int) (map[string]summarizer.ServiceCostSummary, error) {
 	before = before.Truncate(24 * time.Hour)
 	after = after.Truncate(24 * time.Hour)
 
@@ -60,14 +60,18 @@ func FetchCostByServicesBetween(client keibi.Client, sourceID *string, provider 
 		},
 	})
 
-	if sourceID != nil && *sourceID != "" {
+	if len(connectionIDs) > 0 {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_id": {*sourceID}},
+			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
-	if provider != nil && !provider.IsNull() {
+	if len(connectors) > 0 {
+		connectorsStr := make([]string, 0, len(connectors))
+		for _, connector := range connectors {
+			connectorsStr = append(connectorsStr, string(connector))
+		}
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {(*provider).String()}},
+			"terms": map[string][]string{"source_type": connectorsStr},
 		})
 	}
 
@@ -115,22 +119,6 @@ func FetchCostByServicesBetween(client keibi.Client, sourceID *string, provider 
 	for _, bucket := range response.Aggregation.ServiceGroup.Buckets {
 		for _, hit := range bucket.EndTimeAggregation.Hits.Hits {
 			hits[hit.Source.ServiceName] = hit.Source
-		}
-	}
-
-	for _, hit := range hits {
-		switch strings.ToLower(hit.ResourceType) {
-		case "aws::costexplorer::byservicemonthly":
-			hitCostStr, err := json.Marshal(hit.Cost)
-			if err != nil {
-				return nil, err
-			}
-			var hitCost model.CostExplorerByServiceMonthlyDescription
-			err = json.Unmarshal(hitCostStr, &hitCost)
-			if err != nil {
-				return nil, err
-			}
-			hit.Cost = hitCost
 		}
 	}
 
@@ -356,7 +344,7 @@ func FetchCostByAccountsBetween(client keibi.Client, sourceID *string, provider 
 	return hits, nil
 }
 
-func FetchDailyCostHistoryByServicesBetween(client keibi.Client, sourceIDs []string, provider *source.Type, services []string, before time.Time, after time.Time, size int) (map[string][]summarizer.ServiceCostSummary, error) {
+func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, before time.Time, after time.Time, size int) (map[string][]summarizer.ServiceCostSummary, error) {
 	before = before.Truncate(24 * time.Hour)
 	after = after.Truncate(24 * time.Hour)
 
@@ -385,14 +373,18 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, sourceIDs []str
 		},
 	})
 
-	if sourceIDs != nil && len(sourceIDs) != 0 {
+	if len(connectionIDs) > 0 {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_id": sourceIDs},
+			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
-	if provider != nil && !provider.IsNull() {
+	if len(connectors) > 0 {
+		connectorsStr := make([]string, 0, len(connectors))
+		for _, connector := range connectors {
+			connectorsStr = append(connectorsStr, connector.String())
+		}
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {(*provider).String()}},
+			"terms": map[string][]string{"source_type": connectorsStr},
 		})
 	}
 

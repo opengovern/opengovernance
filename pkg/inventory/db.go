@@ -269,7 +269,7 @@ func (db Database) GetResourceTypeTagPossibleValues(key string) ([]string, error
 	return result[key], nil
 }
 
-func (db Database) ListResourceTypeFilteredResourceTypes(tags map[string][]string, serviceNames []string, connectorTypes []source.Type) ([]ResourceType, error) {
+func (db Database) ListFilteredResourceTypes(tags map[string][]string, serviceNames []string, connectorTypes []source.Type) ([]ResourceType, error) {
 	var resourceTypes []ResourceType
 	query := db.orm.Model(ResourceType{}).Preload(clause.Associations)
 	if len(tags) != 0 {
@@ -293,4 +293,41 @@ func (db Database) ListResourceTypeFilteredResourceTypes(tags map[string][]strin
 		return nil, tx.Error
 	}
 	return resourceTypes, nil
+}
+
+func (db Database) ListServiceTagsKeysWithPossibleValues() (map[string][]string, error) {
+	var tags []ServiceTag
+	tx := db.orm.Model(ServiceTag{}).Find(&tags)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	tagLikes := make([]TagLike, 0, len(tags))
+	for _, tag := range tags {
+		tagLikes = append(tagLikes, tag)
+	}
+	result := getTagsMap(tagLikes)
+	return result, nil
+}
+
+func (db Database) ListFilteredServices(tags map[string][]string, connectorTypes []source.Type) ([]Service, error) {
+	var services []Service
+	query := db.orm.Model(Service{}).Preload(clause.Associations)
+	if len(tags) != 0 {
+		query = query.Joins("JOIN service_tags AS tags ON tags.service_name = services.service_name")
+		for key, values := range tags {
+			if len(values) != 0 {
+				query = query.Where("tags.key = ? AND tags.value @> ?", key, pq.StringArray(values))
+			} else {
+				query = query.Where("tags.key = ?", key)
+			}
+		}
+	}
+	if len(connectorTypes) != 0 {
+		query = query.Where("connector IN ?", connectorTypes)
+	}
+	tx := query.Find(&services)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return services, nil
 }
