@@ -85,7 +85,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2.GET("/cost/category", httpserver.AuthorizeHandler(h.GetCategoryNodeCost, api3.ViewerRole))
 	v2.GET("/resources/composition", httpserver.AuthorizeHandler(h.GetCategoryNodeResourceCountComposition, api3.ViewerRole))
 	v2.GET("/cost/composition", httpserver.AuthorizeHandler(h.GetCategoryNodeCostComposition, api3.ViewerRole))
-	v2.GET("/resources/trend", httpserver.AuthorizeHandler(h.GetResourceGrowthTrendV2, api3.ViewerRole))
 	v2.GET("/cost/trend", httpserver.AuthorizeHandler(h.GetCostGrowthTrendV2, api3.ViewerRole))
 	v2.GET("/resources/type", httpserver.AuthorizeHandler(h.ListResourceTypes, api3.ViewerRole))
 	v2.GET("/resources/type/:resourceName", httpserver.AuthorizeHandler(h.GetResourceType, api3.ViewerRole))
@@ -3079,8 +3078,8 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 //	@Param			endTime		query	string		true	"end time for cost calculation and time resource count in epoch seconds"
 //	@Param			serviceName	path	string		true	"service name"
 
-//	@Success	200	{object}	api.ListServiceSummariesResponse
-//	@Router		/inventory/api/v2/services/summary/{serviceName} [get]
+// @Success	200	{object}	api.ListServiceSummariesResponse
+// @Router		/inventory/api/v2/services/summary/{serviceName} [get]
 func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	serviceName := ctx.Param("serviceName")
 	if serviceName == "" {
