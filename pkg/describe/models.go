@@ -6,8 +6,8 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 
-	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 
 	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
@@ -82,6 +82,7 @@ type DescribeResourceJob struct {
 	ParentJobID            uint
 	ResourceType           string
 	Status                 api.DescribeResourceJobStatus
+	RetryCount             int
 	FailureMessage         string // Should be NULLSTRING
 	ErrorCode              string // Should be NULLSTRING
 	DescribedResourceCount int64

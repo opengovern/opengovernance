@@ -16,10 +16,10 @@ import (
 
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 )
 
@@ -68,7 +68,19 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 	}
 
 	if len(drs) == 0 {
-		return errors.New("no job to run")
+		if count == 0 {
+			drs, err = s.db.GetFailedDescribeResourceJobs()
+			if err != nil {
+				s.logger.Error("failed to fetch failed describe resource jobs", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
+				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+				return err
+			}
+			if len(drs) == 0 {
+				return errors.New("no job to run")
+			}
+		} else {
+			return errors.New("queue is not empty to look for retries")
+		}
 	}
 	s.logger.Info("preparing resource jobs to run", zap.Int("length", len(drs)))
 
@@ -312,8 +324,8 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *Des
 		zap.String("resourceType", dr.ResourceType),
 	)
 
-	if err := s.db.UpdateDescribeResourceJobStatus(dr.ID, api.DescribeResourceJobQueued, "", "", 0); err != nil {
-		s.logger.Error("failed to update DescribeResourceJob",
+	if err := s.db.QueueDescribeResourceJob(dr.ID); err != nil {
+		s.logger.Error("failed to QueueDescribeResourceJob",
 			zap.Uint("sourceJobID", ds.ID),
 			zap.Uint("jobID", dr.ID),
 			zap.String("connectionID", ds.SourceID.String()),

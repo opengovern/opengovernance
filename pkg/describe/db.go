@@ -324,6 +324,28 @@ LIMIT 500
 	return job, nil
 }
 
+func (db Database) GetFailedDescribeResourceJobs() ([]DescribeResourceJob, error) {
+	var job []DescribeResourceJob
+
+	tx := db.orm.Raw(`
+SELECT 
+	* 
+FROM 
+	describe_resource_jobs dr 
+WHERE 
+	status = ? AND 
+	retry_count < 3 AND
+	(select count(*) from describe_resource_jobs where parent_job_id = dr.parent_job_id AND status IN (?, ?)) = 0
+`, api.DescribeResourceJobFailed, api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
 func (db Database) CountQueuedDescribeResourceJobs() (int64, error) {
 	var count int64
 	tx := db.orm.Model(&DescribeResourceJob{}).Where("status = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued).Count(&count)
@@ -596,6 +618,15 @@ func (db Database) UpdateDescribeResourceJobStatus(id uint, status api.DescribeR
 		Model(&DescribeResourceJob{}).
 		Where("id = ?", id).
 		Updates(DescribeResourceJob{Status: status, FailureMessage: msg, ErrorCode: errCode, DescribedResourceCount: resourceCount})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) QueueDescribeResourceJob(id uint) error {
+	tx := db.orm.Exec("update describe_resource_jobs set status = ?, retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
 	if tx.Error != nil {
 		return tx.Error
 	}
