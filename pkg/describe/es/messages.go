@@ -80,6 +80,10 @@ func (r Resource) KeysAndIndex() ([]string, string) {
 	}, ResourceTypeToESIndex(r.ResourceType)
 }
 
+type Tag struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
 type LookupResource struct {
 	// ResourceID is the globally unique ID of the resource.
 	ResourceID string `json:"resource_id"`
@@ -110,7 +114,7 @@ type LookupResource struct {
 	// IsCommon
 	IsCommon bool `json:"is_common"`
 	// Tags
-	Tags map[string]string `json:"tags"`
+	Tags []Tag `json:"tags"`
 }
 
 func (r LookupResource) KeysAndIndex() ([]string, string) {

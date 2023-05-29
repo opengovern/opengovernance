@@ -140,6 +140,14 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			Description:   description,
 			Metadata:      resource.Metadata,
 		}
+
+		var tags []es.Tag
+		for k, v := range resource.Tags {
+			tags = append(tags, es.Tag{
+				Key:   k,
+				Value: v,
+			})
+		}
 		lookupResource := es.LookupResource{
 			ResourceID:    resource.UniqueId,
 			Name:          resource.Name,
@@ -155,7 +163,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			ScheduleJobID: uint(resource.Job.ScheduleJobId),
 			CreatedAt:     resource.Job.DescribedAt,
 			IsCommon:      cloudservice.IsCommonByResourceType(resource.Job.ResourceType),
-			Tags:          resource.Tags,
+			Tags:          tags,
 		}
 		msgs = append(msgs, kafkaResource)
 		msgs = append(msgs, lookupResource)
@@ -208,7 +216,14 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		keys, _ := kafkaResource.KeysAndIndex()
 		id := kafka.HashOf(keys...)
 		s.logger.Warn(fmt.Sprintf("sending resource id=%s : %s", id, string(kmsg)))
-		
+
+		var tags []es.Tag
+		for k, v := range resource.Tags {
+			tags = append(tags, es.Tag{
+				Key:   k,
+				Value: v,
+			})
+		}
 		lookupResource := es.LookupResource{
 			ResourceID:    resource.UniqueId,
 			Name:          resource.Name,
@@ -224,7 +239,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 			ScheduleJobID: uint(resource.Job.ScheduleJobId),
 			CreatedAt:     resource.Job.DescribedAt,
 			IsCommon:      cloudservice.IsCommonByResourceType(resource.Job.ResourceType),
-			Tags:          resource.Tags,
+			Tags:          tags,
 		}
 		kmsg, _ = json.Marshal(lookupResource)
 		keys, _ = lookupResource.KeysAndIndex()
