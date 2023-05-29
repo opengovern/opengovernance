@@ -5,10 +5,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
-	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
-	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -153,6 +149,41 @@ func (j *Job) RunJob() error {
 		return err
 	}
 
+	err = j.PopulateSteampipe(account)
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command("steampipe", "service", "stop")
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+	time.Sleep(5 * time.Second)
+	fmt.Println("+++++ Steampipe service stoped")
+
+	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
+		"9193", "--database-password", "abcd")
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+	time.Sleep(5 * time.Second)
+	fmt.Println("+++++ Steampipe service started")
+
+	s1, err := steampipe.NewSteampipeDatabase(steampipe.Option{
+		Host: "localhost",
+		Port: "9193",
+		User: "steampipe",
+		Pass: "abcd",
+		Db:   "steampipe",
+	})
+	if err != nil {
+		return err
+	}
+	j.steampipe = s1
+	fmt.Println("+++++ Connected to steampipe")
+
 	query := j.RandomQuery(account.Type)
 	listQuery := strings.ReplaceAll(query.ListQuery, "%ACCOUNT_ID%", account.ConnectionID)
 	steampipeRows, err := j.steampipe.Conn().Query(context.Background(), listQuery)
@@ -262,40 +293,7 @@ func (j *Job) RandomQuery(sourceType source.Type) *Query {
 	return nil
 }
 
-func (j *Job) RandomTableName(sourceType source.Type) string {
-	var resourceTypes []string
-	switch sourceType {
-	case source.CloudAWS:
-		resourceTypes = append(resourceTypes, aws.ListResourceTypes()...)
-	case source.CloudAzure:
-		resourceTypes = append(resourceTypes, azure.ListResourceTypes()...)
-	}
-	idx := rand.Intn(len(resourceTypes))
-	resourceType := resourceTypes[idx]
-	var tableName string
-	switch steampipe.ExtractPlugin(resourceType) {
-	case steampipe.SteampipePluginAWS:
-		tableName = awsSteampipe.ExtractTableName(resourceType)
-	case steampipe.SteampipePluginAzure, steampipe.SteampipePluginAzureAD:
-		tableName = azureSteampipe.ExtractTableName(resourceType)
-	}
-
-	if tableName == "" {
-		return j.RandomTableName(sourceType)
-	}
-	return tableName
-}
-
-func (j *Job) BuildListQuery(account *api2.Source, tableName string) string {
-	return fmt.Sprintf("SELECT * FROM %s WHERE keibi_account_id = '%s'", tableName, account.ID.String())
-}
-
-func (j *Job) BuildGetQuery(account *api2.Source, tableName string, keyFields []string) string {
-	var q string
-	c := 1
-	for _, f := range keyFields {
-		q += fmt.Sprintf(" AND %s = $%d", f, c)
-		c++
-	}
-	return fmt.Sprintf("SELECT * FROM %s WHERE keibi_account_id = '%s' %s", tableName, account.ID.String(), q)
+func (j *Job) PopulateSteampipe(account *api2.Source) error {
+	//TODO-Saleh change steampipe credentials for this account
+	return nil
 }

@@ -14,12 +14,12 @@ import (
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/proto/src/golang"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -204,6 +204,8 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 			ScheduleJobID: uint(resource.Job.ScheduleJobId),
 			CreatedAt:     resource.Job.DescribedAt,
 		}
+		kmsg, _ := json.Marshal(kafkaResource)
+		s.logger.Debug(fmt.Sprintf("sending resource: %s", string(kmsg)))
 		lookupResource := es.LookupResource{
 			ResourceID:    resource.UniqueId,
 			Name:          resource.Name,
