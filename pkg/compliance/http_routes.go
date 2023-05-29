@@ -3,11 +3,12 @@ package compliance
 import (
 	"errors"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"net/http"
 	"strconv"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 
@@ -16,9 +17,9 @@ import (
 	es2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
 
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gorm.io/gorm"
 
 	"github.com/labstack/echo/v4"
@@ -653,7 +654,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 
 	var resp []api.BenchmarkAssignedSource
 	for _, connector := range apiBenchmark.Connectors {
-		connections, err := h.onboardClient.ListSources(hctx, &connector)
+		connections, err := h.onboardClient.ListSources(hctx, []source.Type{connector})
 		if err != nil {
 			return err
 		}
