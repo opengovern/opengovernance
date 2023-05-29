@@ -591,8 +591,8 @@ func (h HttpServer) TriggerComplianceSummarizerJob(ctx echo.Context) error {
 //	@Summary	Triggers a benchmark evaluation job to run immediately
 //	@Tags		describe
 //	@Produce	json
-//	@Success	200
 //	@Param		request	body	api.TriggerBenchmarkEvaluationRequest	true	"Request Body"
+//	@Success	200		{object}	[]describe.ComplianceReportJob
 //	@Router		/schedule/api/v1/compliance/trigger [put]
 func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 	var req api.TriggerBenchmarkEvaluationRequest
@@ -626,7 +626,7 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-
+	var complianceJobs []ComplianceReportJob
 	for _, connectionID := range connectionIDs {
 		src, err := h.DB.GetSourceByID(connectionID)
 		if err != nil {
@@ -650,9 +650,10 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
+		complianceJobs = append(complianceJobs, crj)
 	}
 
-	return ctx.NoContent(http.StatusOK)
+	return ctx.JSON(http.StatusOK, complianceJobs)
 }
 
 // HandleListBenchmarkEvaluations godoc
