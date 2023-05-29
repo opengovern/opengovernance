@@ -19,6 +19,12 @@ type Postgres struct {
 	SSLMode  string
 }
 
+type KMS struct {
+	AccessKey string
+	SecretKey string
+	Region    string
+}
+
 type KeibiService struct {
 	BaseURL string
 }

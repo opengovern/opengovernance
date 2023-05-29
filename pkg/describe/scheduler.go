@@ -168,6 +168,7 @@ type Scheduler struct {
 
 	DoDeleteOldResources bool
 	OperationMode        OperationMode
+	MaxConcurrentCall    int64
 }
 
 func initRabbitQueue(queueName string) (queue.Interface, error) {
@@ -401,6 +402,10 @@ func InitializeScheduler(
 
 	s.DoDeleteOldResources, _ = strconv.ParseBool(DoDeleteOldResources)
 	describeServer.DoProcessReceivedMessages, _ = strconv.ParseBool(DoProcessReceivedMsgs)
+	s.MaxConcurrentCall, _ = strconv.ParseInt(MaxConcurrentCall, 10, 64)
+	if s.MaxConcurrentCall <= 0 {
+		s.MaxConcurrentCall = 500
+	}
 
 	return s, nil
 }

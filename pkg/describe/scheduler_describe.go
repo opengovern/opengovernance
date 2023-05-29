@@ -25,7 +25,6 @@ import (
 
 const (
 	MaxQueued                       = 5000
-	MaxConcurrentCall               = 500
 	MaxAccountConcurrentQueued      = 10
 	MaxResourceTypeConcurrentQueued = 50
 )
@@ -60,7 +59,7 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 		return errors.New("queue is full")
 	}
 
-	drs, err := s.db.ListRandomCreatedDescribeResourceJobs(MaxConcurrentCall)
+	drs, err := s.db.ListRandomCreatedDescribeResourceJobs(int(s.MaxConcurrentCall))
 	if err != nil {
 		s.logger.Error("failed to fetch describe resource jobs", zap.String("spot", "ListRandomCreatedDescribeResourceJobs"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure").Inc()

@@ -69,6 +69,8 @@ var (
 	DoDeleteOldResources  = os.Getenv("DO_DELETE_OLD_RESOURCES")
 	OperationModeConfig   = os.Getenv("OPERATION_MODE_CONFIG")
 	DoProcessReceivedMsgs = os.Getenv("DO_PROCESS_RECEIVED_MSGS")
+
+	MaxConcurrentCall = os.Getenv("MAX_CONCURRENT_CALL")
 )
 
 func SchedulerCommand() *cobra.Command {

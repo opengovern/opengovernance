@@ -302,6 +302,8 @@ func (j *Job) RandomQuery(sourceType source.Type) *Query {
 }
 
 func (j *Job) PopulateSteampipe(account *api2.Source) error {
+
+	//j.kmsVault.Decrypt()
 	//TODO-Saleh change steampipe credentials for this account
 	return nil
 }
