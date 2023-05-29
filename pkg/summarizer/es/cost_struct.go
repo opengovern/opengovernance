@@ -268,18 +268,19 @@ type CostSummary interface {
 }
 
 type ServiceCostSummary struct {
-	SummarizeJobID uint               `json:"summarize_job_id"`
-	ServiceName    string             `json:"service_name"`
-	ScheduleJobID  uint               `json:"schedule_job_id"`
-	SourceID       string             `json:"source_id"`
-	SourceType     source.Type        `json:"source_type"`
-	SourceJobID    uint               `json:"source_job_id"`
-	ResourceType   string             `json:"resource_type"`
-	Cost           any                `json:"cost"`
-	PeriodStart    int64              `json:"period_start"`
-	PeriodEnd      int64              `json:"period_end"`
-	ReportType     ProviderReportType `json:"report_type"`
-	Region         *string            `json:"region,omitempty"`
+	SummarizeJobTime int64              `json:"summarize_job_time"`
+	SummarizeJobID   uint               `json:"summarize_job_id"`
+	ServiceName      string             `json:"service_name"`
+	ScheduleJobID    uint               `json:"schedule_job_id"`
+	SourceID         string             `json:"source_id"`
+	SourceType       source.Type        `json:"source_type"`
+	SourceJobID      uint               `json:"source_job_id"`
+	ResourceType     string             `json:"resource_type"`
+	Cost             any                `json:"cost"`
+	PeriodStart      int64              `json:"period_start"`
+	PeriodEnd        int64              `json:"period_end"`
+	ReportType       ProviderReportType `json:"report_type"`
+	Region           *string            `json:"region,omitempty"`
 }
 
 func (c ServiceCostSummary) GetCostAndUnit() (float64, string) {
@@ -309,17 +310,18 @@ func (c ServiceCostSummary) KeysAndIndex() ([]string, string) {
 }
 
 type ConnectionCostSummary struct {
-	SummarizeJobID uint                 `json:"summarize_job_id"`
-	AccountID      string               `json:"account_id"`
-	ScheduleJobID  uint                 `json:"schedule_job_id"`
-	SourceID       string               `json:"source_id"`
-	SourceType     source.Type          `json:"source_type"`
-	SourceJobID    uint                 `json:"source_job_id"`
-	ResourceType   string               `json:"resource_type"`
-	Cost           any                  `json:"cost"`
-	PeriodStart    int64                `json:"period_start"`
-	PeriodEnd      int64                `json:"period_end"`
-	ReportType     ConnectionReportType `json:"report_type"`
+	SummarizeJobTime int64                `json:"summarize_job_time"`
+	SummarizeJobID   uint                 `json:"summarize_job_id"`
+	AccountID        string               `json:"account_id"`
+	ScheduleJobID    uint                 `json:"schedule_job_id"`
+	SourceID         string               `json:"source_id"`
+	SourceType       source.Type          `json:"source_type"`
+	SourceJobID      uint                 `json:"source_job_id"`
+	ResourceType     string               `json:"resource_type"`
+	Cost             any                  `json:"cost"`
+	PeriodStart      int64                `json:"period_start"`
+	PeriodEnd        int64                `json:"period_end"`
+	ReportType       ConnectionReportType `json:"report_type"`
 }
 
 func (c ConnectionCostSummary) GetCostAndUnit() (float64, string) {

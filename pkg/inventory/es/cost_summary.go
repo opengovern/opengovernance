@@ -204,24 +204,6 @@ func FetchCostHistoryByServicesBetween(client keibi.Client, sourceID *string, pr
 		}
 	}
 
-	for _, hitArr := range hits {
-		for _, hit := range hitArr {
-			switch strings.ToLower(hit.ResourceType) {
-			case "aws::costexplorer::byservicemonthly":
-				hitCostStr, err := json.Marshal(hit.Cost)
-				if err != nil {
-					return nil, err
-				}
-				var hitCost model.CostExplorerByServiceMonthlyDescription
-				err = json.Unmarshal(hitCostStr, &hitCost)
-				if err != nil {
-					return nil, err
-				}
-				hit.Cost = hitCost
-			}
-		}
-	}
-
 	return hits, nil
 }
 
@@ -414,24 +396,6 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs [
 			}
 		} else {
 			hits[hit.Source.ServiceName] = append(v, hit.Source)
-		}
-	}
-
-	for _, hitArr := range hits {
-		for _, hit := range hitArr {
-			switch strings.ToLower(hit.ResourceType) {
-			case "aws::costexplorer::byservicedaily":
-				hitCostStr, err := json.Marshal(hit.Cost)
-				if err != nil {
-					return nil, err
-				}
-				var hitCost model.CostExplorerByServiceDailyDescription
-				err = json.Unmarshal(hitCostStr, &hitCost)
-				if err != nil {
-					return nil, err
-				}
-				hit.Cost = hitCost
-			}
 		}
 	}
 
