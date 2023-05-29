@@ -1242,48 +1242,6 @@ definitions:
         description: Resource Type Name
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode:
-    properties:
-      categoryID:
-        type: string
-      categoryName:
-        description: Name of the Category
-        type: string
-      cost:
-        additionalProperties:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit'
-        description: The aggregation of all the services costs
-        type: object
-      costChange:
-        additionalProperties:
-          type: number
-        type: object
-      filters:
-        description: List of Filters associated with this Category
-        items: {}
-        type: array
-      resourceCount:
-        description: Number of Resources of the category
-        type: integer
-      resourceCountChange:
-        type: number
-      subcategories:
-        description: Subcategories sorted by ResourceCount [resources/category, ]
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode'
-        type: array
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryResourceTrend:
-    properties:
-      name:
-        description: Category Name
-        type: string
-      trend:
-        description: Trends (Time Series)
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint'
-        type: array
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Connection:
     properties:
       connectionID:
@@ -1373,6 +1331,13 @@ definitions:
         type: array
       services_count:
         type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostTrendDatapoint:
+    properties:
+      count:
+        type: number
+      date:
+        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit:
     properties:
@@ -1744,6 +1709,30 @@ definitions:
       total_resource_types:
         type: integer
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceCostCompositionResponse:
+    properties:
+      others:
+        type: number
+      top_values:
+        additionalProperties:
+          type: number
+        type: object
+      total_count:
+        type: number
+      total_value_count:
+        type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse:
+    properties:
+      services:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service'
+        type: array
+      total_cost:
+        type: number
+      total_services:
+        type: integer
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse:
     properties:
       services:
@@ -1902,22 +1891,6 @@ definitions:
           [])
         type: object
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceGrowthTrendResponse:
-    properties:
-      Subcategories:
-        description: List of sub-categories Cost Trends (Time Series)
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryResourceTrend'
-        type: array
-      categoryName:
-        description: Category Name
-        type: string
-      trend:
-        description: Main Category Cost Trend (Time Series)
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint'
-        type: array
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceSortItem:
     properties:
       direction:
@@ -2045,6 +2018,25 @@ definitions:
       title:
         description: Query Title
         type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service:
+    properties:
+      connector:
+        $ref: '#/definitions/source.Type'
+      count:
+        type: number
+      logo_uri:
+        type: string
+      service_label:
+        type: string
+      service_name:
+        type: string
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceDistributionItem:
     properties:
@@ -3770,24 +3762,6 @@ paths:
       summary: Returns resource count of accounts
       tags:
       - benchmarks
-  /inventory/api/v1/categories:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              type: string
-            type: array
-      security:
-      - BearerToken: []
-      summary: Return list of categories
-      tags:
-      - inventory
   /inventory/api/v1/cost/top/accounts:
     get:
       consumes:
@@ -4553,158 +4527,6 @@ paths:
       summary: Returns resource count of accounts
       tags:
       - benchmarks
-  /inventory/api/v2/cost/composition:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Category ID - defaults to default template category
-        in: query
-        name: category
-        type: string
-      - description: How many top categories to return
-        in: query
-        name: top
-        required: true
-        type: integer
-      - description: Provider
-        in: query
-        name: provider
-        type: string
-      - description: SourceID
-        in: query
-        items:
-          type: string
-        name: sourceId
-        type: array
-      - description: timestamp for start of cost window in epoch seconds
-        in: query
-        name: startTime
-        type: string
-      - description: timestamp for end of cost window in epoch seconds
-        in: query
-        name: endTime
-        type: string
-      - description: Unit of cost to filter by
-        in: query
-        name: costUnit
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode'
-      security:
-      - BearerToken: []
-      summary: Return category info by provided category id, info includes category
-        name, subcategories names and ids and number of resources
-      tags:
-      - inventory
-  /inventory/api/v2/costs/metric:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Key-Value tags in key=value format to filter by
-        in: query
-        name: tag
-        type: string
-      - description: Connector type to filter by
-        enum:
-        - ""
-        - AWS
-        - Azure
-        in: query
-        name: connector
-        type: string
-      - description: Connection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - description: timestamp for start of cost aggregation in epoch seconds
-        in: query
-        name: startTime
-        type: string
-      - description: timestamp for end of cost aggregation in epoch seconds
-        in: query
-        name: endTime
-        type: string
-      - description: Sort by field - default is cost
-        enum:
-        - name
-        - cost
-        in: query
-        name: sortBy
-        type: string
-      - description: page size - default is 20
-        in: query
-        name: pageSize
-        type: integer
-      - description: page number - default is 1
-        in: query
-        name: pageNumber
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse'
-      summary: Returns list of resource types with metrics of each type based on the
-        given input filters
-      tags:
-      - inventory
-  /inventory/api/v2/costs/tag:
-    get:
-      consumes:
-      - application/json
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              items:
-                type: string
-              type: array
-            type: object
-      security:
-      - BearerToken: []
-      summary: Return list of the keys with possible values for filtering services
-      tags:
-      - inventory
-  /inventory/api/v2/costs/tag/{key}:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Tag key
-        in: path
-        name: key
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              type: string
-            type: array
-      security:
-      - BearerToken: []
-      summary: Return list of the possible values for filtering services with specified
-        key
-      tags:
-      - inventory
   /inventory/api/v2/insights:
     get:
       description: List all insights
@@ -4982,107 +4804,6 @@ paths:
       summary: Get Cloud Service Details
       tags:
       - metadata
-  /inventory/api/v2/metrics/cost/composition:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Category ID - defaults to default template category
-        in: query
-        name: category
-        type: string
-      - description: How many top categories to return
-        in: query
-        name: top
-        required: true
-        type: integer
-      - description: Provider
-        in: query
-        name: provider
-        type: string
-      - description: SourceID
-        in: query
-        items:
-          type: string
-        name: sourceId
-        type: array
-      - description: timestamp for start of cost window in epoch seconds
-        in: query
-        name: startTime
-        type: string
-      - description: timestamp for end of cost window in epoch seconds
-        in: query
-        name: endTime
-        type: string
-      - description: Unit of cost to filter by
-        in: query
-        name: costUnit
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items: {}
-            type: array
-      security:
-      - BearerToken: []
-      summary: Return category info by provided category id, info includes category
-        name, subcategories names and ids and number of resources
-      tags:
-      - inventory
-  /inventory/api/v2/metrics/cost/metric:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Category id - defaults to default template category
-        in: query
-        name: category
-        type: string
-      - description: Provider
-        in: query
-        name: provider
-        type: string
-      - description: SourceID
-        in: query
-        items:
-          type: string
-        name: sourceId
-        type: array
-      - description: timestamp for start of cost window in epoch seconds
-        in: query
-        name: startTime
-        type: string
-      - description: timestamp for end of cost window in epoch seconds
-        in: query
-        name: endTime
-        type: string
-      - description: time window either this or start & end time must be provided
-        enum:
-        - 1d
-        - 1w
-        - 1m
-        - 3m
-        - 1y
-        in: query
-        name: timeWindow
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items: {}
-            type: array
-      security:
-      - BearerToken: []
-      summary: Return category cost info by provided category id, info includes category
-        name, subcategories names and ids and their accumulated cost
-      tags:
-      - inventory
   /inventory/api/v2/resources/composition/{key}:
     get:
       consumes:
@@ -5278,6 +4999,155 @@ paths:
         frame based on the given input filters
       tags:
       - inventory
+  /inventory/api/v2/services/composition/{key}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: How many top values to return default is 5
+        in: query
+        name: top
+        required: true
+        type: integer
+      - description: Connector type to filter by
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
+      - description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: timestamp for start of cost aggregation in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      - description: timestamp for end of cost aggregation in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceCostCompositionResponse'
+      security:
+      - BearerToken: []
+      summary: Return tag values with most cost for the given key
+      tags:
+      - inventory
+  /inventory/api/v2/services/cost/trend:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Key-Value tags in key=value format to filter by
+        in: query
+        name: tag
+        type: string
+      - description: Connector type to filter by
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
+      - description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: timestamp for start in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      - description: timestamp for end in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: maximum number of datapoints to return, default is 30
+        in: query
+        name: datapointCount
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostTrendDatapoint'
+            type: array
+      summary: Returns list of costs over the course of the specified time frame based
+        on the given input filters
+      tags:
+      - inventory
+  /inventory/api/v2/services/metric:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Key-Value tags in key=value format to filter by
+        in: query
+        name: tag
+        type: string
+      - description: Connector type to filter by
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        type: string
+      - description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: timestamp for start of cost aggregation in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      - description: timestamp for end of cost aggregation in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: Sort by field - default is cost
+        enum:
+        - name
+        - cost
+        in: query
+        name: sortBy
+        type: string
+      - description: page size - default is 20
+        in: query
+        name: pageSize
+        type: integer
+      - description: page number - default is 1
+        in: query
+        name: pageNumber
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse'
+      summary: Returns list of resource types with metrics of each type based on the
+        given input filters
+      tags:
+      - inventory
   /inventory/api/v2/services/summary:
     get:
       consumes:
@@ -5351,6 +5221,51 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse'
+  /inventory/api/v2/services/tag:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                type: string
+              type: array
+            type: object
+      security:
+      - BearerToken: []
+      summary: Return list of the keys with possible values for filtering services
+      tags:
+      - inventory
+  /inventory/api/v2/services/tag/{key}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tag key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      security:
+      - BearerToken: []
+      summary: Return list of the possible values for filtering services with specified
+        key
+      tags:
+      - inventory
   /metadata/api/v1/metadata:
     post:
       description: Sets the config metadata for the given key
