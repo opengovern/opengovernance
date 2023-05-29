@@ -19,6 +19,7 @@ import (
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -363,7 +364,7 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 //	@Success	200			{object}	[]api.TopAccountResponse
 //	@Router		/inventory/api/v1/resources/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	providers := source.ParseTypes(ctx.QueryParams()["provider"])
 	count := EsFetchPageSize
 	countStr := ctx.QueryParam("count")
 	if len(countStr) > 0 {
@@ -377,7 +378,7 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 	var hits []summarizer.ConnectionResourcesSummary
 
 	srt := []map[string]interface{}{{"resource_count": "desc"}}
-	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, provider, nil, srt, count)
+	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, providers, nil, srt, count)
 	var res []api.TopAccountResponse
 	for _, v := range hits {
 		res = append(res, api.TopAccountResponse{
@@ -421,7 +422,7 @@ func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
 //	@Success	200			{object}	[]api.TopAccountResponse
 //	@Router		/inventory/api/v1/resources/top/growing/accounts [get]
 func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Context) error {
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	providers := source.ParseTypes(ctx.QueryParams()["provider"])
 
 	timeWindow := ctx.QueryParam("timeWindow")
 	switch timeWindow {
@@ -435,7 +436,7 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	summaryList, err := es.FetchConnectionResourcesSummaryPage(h.client, provider, nil, nil, EsFetchPageSize)
+	summaryList, err := es.FetchConnectionResourcesSummaryPage(h.client, providers, nil, nil, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -1438,7 +1439,7 @@ func (h *HttpHandler) ListServiceCostTrend(ctx echo.Context) error {
 //	@Success	200			{object}	[]api.ConnectionResourceCountResponse
 //	@Router		/inventory/api/v1/accounts/resource/count [get]
 func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	connectors := source.ParseTypes(ctx.QueryParams()["provider"])
 	sourceId := ctx.QueryParam("sourceId")
 	var sourceIdPtr *string
 	if sourceId != "" {
@@ -1450,13 +1451,15 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	var err error
 	var allSources []api2.Source
 	if sourceId == "" {
-		allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), provider.AsPtr())
+		allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), connectors)
 	} else {
 		allSources, err = h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), []string{sourceId})
 	}
 	if err != nil {
 		return err
 	}
+
+	h.logger.Info("got sources", zap.Int("sources", len(allSources)))
 
 	for _, src := range allSources {
 		res[src.ID.String()] = api.ConnectionResourceCountResponse{
@@ -1469,7 +1472,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 		}
 	}
 
-	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, provider, sourceIdPtr, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, connectors, sourceIdPtr, nil, EsFetchPageSize)
 	for _, hit := range hits {
 		if v, ok := res[hit.SourceID]; ok {
 			v.ResourceCount += hit.ResourceCount
@@ -1543,11 +1546,7 @@ func (h *HttpHandler) ListConnectionsSummary(ctx echo.Context) error {
 
 	var allSources []api2.Source
 	if len(connectionIDs) == 0 {
-		if len(connectors) == 1 {
-			allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), connectors[0].AsPtr())
-		} else {
-			allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
-		}
+		allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), connectors)
 	} else {
 		allSources, err = h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), connectionIDs)
 	}

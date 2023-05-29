@@ -99,6 +99,18 @@ func (db Database) GetSourcesOfType(rType source.Type) ([]Source, error) {
 	return s, nil
 }
 
+// GetSourcesOfTypes gets list of sources with matching types
+func (db Database) GetSourcesOfTypes(rTypes []source.Type) ([]Source, error) {
+	var s []Source
+	tx := db.orm.Preload(clause.Associations).Find(&s, "type IN ?", rTypes)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
 // CountSourcesOfType gets count of sources with matching type
 func (db Database) CountSourcesOfType(rType source.Type) (int64, error) {
 	var c int64

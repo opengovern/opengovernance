@@ -2,12 +2,13 @@ package inventory
 
 import (
 	"fmt"
+	"time"
+
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/neo4j"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -43,6 +44,8 @@ type HttpHandler struct {
 	cache            *cache.Cache
 	s3Downloader     *s3manager.Downloader
 	s3Bucket         string
+
+	logger *zap.Logger
 
 	awsPlg, azurePlg, azureADPlg *plugin.Plugin
 }
@@ -164,6 +167,8 @@ func InitializeHttpHandler(
 	sess := session.Must(session.NewSession(awsConfig))
 	h.s3Downloader = s3manager.NewDownloader(sess)
 	h.s3Bucket = s3Bucket
+
+	h.logger = logger
 
 	h.awsPlg = awsSteampipe.Plugin()
 	h.azurePlg = azureSteampipe.Plugin()
