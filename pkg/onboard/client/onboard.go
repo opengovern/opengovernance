@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 
 type OnboardServiceClient interface {
 	GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error)
+	GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredential, *api.AzureCredential, error)
 	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Source, error)
 	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Source, error)
 	CountSources(ctx *httpclient.Context, provider source.Type) (int64, error)
@@ -59,6 +61,50 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 		})
 	}
 	return &source, nil
+}
+
+func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredential, *api.AzureCredential, error) {
+	url := fmt.Sprintf("%s/api/v1/source/%s/credentials/full", s.baseURL, sourceID)
+
+	var awsCred api.AWSCredential
+	var azureCred api.AzureCredential
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, nil, fmt.Errorf("new request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	for k, v := range ctx.ToHeaders() {
+		req.Header.Add(k, v)
+	}
+	t := http.DefaultTransport.(*http.Transport)
+	t.MaxIdleConns = 100
+	t.MaxConnsPerHost = 100
+	t.MaxIdleConnsPerHost = 100
+	client := http.Client{
+		Timeout:   15 * time.Second,
+		Transport: t,
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, nil, fmt.Errorf("do request: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		d, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return nil, nil, fmt.Errorf("read body: %w", err)
+		}
+		return nil, nil, fmt.Errorf("http status: %d: %s", res.StatusCode, d)
+	}
+	if err := json.NewDecoder(res.Body).Decode(&awsCred); err == nil {
+		return &awsCred, nil, nil
+	}
+	if err := json.NewDecoder(res.Body).Decode(&azureCred); err == nil {
+		return nil, &azureCred, nil
+	}
+	return nil, nil, err
 }
 
 func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) ([]api.Source, error) {

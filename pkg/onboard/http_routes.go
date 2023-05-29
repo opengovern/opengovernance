@@ -52,6 +52,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	sourceApiGroup.GET("/:sourceId", httpserver.AuthorizeHandler(h.GetSource, api3.ViewerRole))
 	sourceApiGroup.GET("/:sourceId/healthcheck", httpserver.AuthorizeHandler(h.GetSourceHealth, api3.EditorRole))
 	sourceApiGroup.GET("/:sourceId/credentials", httpserver.AuthorizeHandler(h.GetSourceCred, api3.ViewerRole))
+	sourceApiGroup.GET("/:sourceId/credentials/full", httpserver.AuthorizeHandler(h.GetSourceFullCred, api3.KeibiAdminRole))
 	sourceApiGroup.PUT("/:sourceId/credentials", httpserver.AuthorizeHandler(h.PutSourceCred, api3.EditorRole))
 	sourceApiGroup.POST("/:sourceId/disable", httpserver.AuthorizeHandler(h.DisableSource, api3.EditorRole))
 	sourceApiGroup.POST("/:sourceId/enable", httpserver.AuthorizeHandler(h.EnableSource, api3.EditorRole))
@@ -1497,6 +1498,47 @@ func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 		return ctx.JSON(http.StatusOK, api.AzureCredential{
 			ClientID: azureCnf.ClientID,
 			TenantID: azureCnf.TenantID,
+		})
+	default:
+		return errors.New("invalid provider")
+	}
+}
+
+func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
+	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
+	}
+
+	src, err := h.db.GetSource(sourceUUID)
+	if err != nil {
+		return err
+	}
+
+	cnf, err := h.kms.Decrypt(src.Credential.Secret, h.keyARN)
+	if err != nil {
+		return err
+	}
+
+	switch src.Type {
+	case source.CloudAWS:
+		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, api.AWSCredential{
+			AccessKey: awsCnf.AccessKey,
+			SecretKey: awsCnf.SecretKey,
+		})
+	case source.CloudAzure:
+		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, api.AzureCredential{
+			ClientID:     azureCnf.ClientID,
+			TenantID:     azureCnf.TenantID,
+			ClientSecret: azureCnf.ClientSecret,
 		})
 	default:
 		return errors.New("invalid provider")
