@@ -11,7 +11,7 @@ import (
 
 const DefaultPageSize = int64(20)
 
-func Paginate[T api.ServiceSummary | api.Connection | api.LocationResponse | api.FilterCloudResourceType | api.ResourceType | api.Service](page, size int64, arr []T) []T {
+func Paginate[T any](page, size int64, arr []T) []T {
 	if page < 1 {
 		page = 1
 	}

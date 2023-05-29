@@ -7,13 +7,14 @@ import (
 )
 
 type ResourceType struct {
-	Connector     source.Type         `json:"connector"`
-	ResourceType  string              `json:"resource_type"`
-	ResourceLabel string              `json:"resource_name"`
-	ServiceName   string              `json:"service_name"`
-	Tags          map[string][]string `json:"tags,omitempty"`
-	LogoURI       *string             `json:"logo_uri,omitempty"`
-	Count         *int                `json:"count,omitempty"`
+	Connector          source.Type         `json:"connector"`
+	ResourceType       string              `json:"resource_type"`
+	ResourceLabel      string              `json:"resource_name"`
+	ServiceName        string              `json:"service_name"`
+	Tags               map[string][]string `json:"tags,omitempty"`
+	LogoURI            *string             `json:"logo_uri,omitempty"`
+	Count              *int                `json:"count,omitempty"`
+	CountChangePercent *float64            `json:"count_change_percent,omitempty"`
 }
 
 type ListResourceTypeMetricsResponse struct {

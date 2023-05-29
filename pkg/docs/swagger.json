@@ -2470,12 +2470,9 @@
                         "required": true
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "SourceID",
-                        "name": "sourceId",
+                        "type": "string",
+                        "description": "Connection IDs",
+                        "name": "connectionId",
                         "in": "query"
                     },
                     {
@@ -3110,7 +3107,13 @@
                     {
                         "type": "string",
                         "description": "timestamp for resource count in epoch seconds",
-                        "name": "time",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for resource count change comparison in epoch seconds",
+                        "name": "startTime",
                         "in": "query"
                     },
                     {
@@ -3538,24 +3541,21 @@
                 "summary": "Get Cloud Services Summary",
                 "parameters": [
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "filter: SourceIDs",
-                        "name": "sourceId",
+                        "type": "string",
+                        "description": "filter: Connection ID",
+                        "name": "connectionId",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "filter: Provider",
-                        "name": "provider",
+                        "description": "filter: Connector",
+                        "name": "connector",
                         "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "filter: Category for the services",
-                        "name": "category",
+                        "name": "tag",
                         "in": "query"
                     },
                     {
@@ -3614,11 +3614,52 @@
         },
         "/inventory/api/v2/services/summary/{serviceName}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get Cloud Service Summary for the specified service name. Including connector, the resource counts and the cost.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks"
+                ],
+                "summary": "Get Cloud Service Summary",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter: SourceIDs",
+                        "name": "connectorId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter: Provider",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "start time for cost calculation in epoch seconds",
+                        "name": "startTime",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "end time for cost calculation and time resource count in epoch seconds",
+                        "name": "endTime",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary"
                         }
                     }
                 }
@@ -4771,7 +4812,13 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/describe.ComplianceReportJob"
+                            }
+                        }
                     }
                 }
             }
@@ -7413,19 +7460,6 @@
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit": {
-            "type": "object",
-            "properties": {
-                "cost": {
-                    "description": "Value",
-                    "type": "number"
-                },
-                "unit": {
-                    "description": "Currency",
-                    "type": "string"
-                }
-            }
-        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.DirectionType": {
             "type": "string",
             "enum": [
@@ -8243,6 +8277,9 @@
                 "count": {
                     "type": "integer"
                 },
+                "count_change_percent": {
+                    "type": "number"
+                },
                 "logo_uri": {
                     "type": "string"
                 },
@@ -8401,6 +8438,9 @@
                 "count": {
                     "type": "number"
                 },
+                "count_change_percent": {
+                    "type": "number"
+                },
                 "logo_uri": {
                     "type": "string"
                 },
@@ -8498,11 +8538,8 @@
                     ]
                 },
                 "cost": {
-                    "description": "Costs (Unit as Key, CostWithUnit as Value)",
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit"
-                    }
+                    "description": "Cost",
+                    "type": "number"
                 },
                 "resourceCount": {
                     "description": "Number of Resources",

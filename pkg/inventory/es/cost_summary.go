@@ -416,7 +416,7 @@ type FetchCostHistoryByAccountsQueryResponse struct {
 	} `json:"hits"`
 }
 
-func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, sourceID *string, provider *source.Type, before time.Time, after time.Time, size int) (map[string][]summarizer.ConnectionCostSummary, error) {
+func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, connectors []source.Type, connectionIDs []string, before time.Time, after time.Time, size int) (map[string][]summarizer.ConnectionCostSummary, error) {
 	before = before.Truncate(24 * time.Hour)
 	after = after.Truncate(24 * time.Hour)
 
@@ -442,14 +442,18 @@ func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, sourceID *strin
 		},
 	})
 
-	if sourceID != nil && *sourceID != "" {
+	if len(connectionIDs) > 0 {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_id": {*sourceID}},
+			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
-	if provider != nil && !provider.IsNull() {
+	if len(connectors) > 0 {
+		connectorsStr := make([]string, 0, len(connectors))
+		for _, connector := range connectors {
+			connectorsStr = append(connectorsStr, connector.String())
+		}
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {(*provider).String()}},
+			"terms": map[string][]string{"source_type": connectorsStr},
 		})
 	}
 
