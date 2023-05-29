@@ -28,7 +28,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	api2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
+	apiOnboard "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 
 	insight "gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
@@ -1449,7 +1449,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	res := map[string]api.ConnectionResourceCountResponse{}
 
 	var err error
-	var allSources []api2.Source
+	var allSources []apiOnboard.Source
 	if sourceId == "" {
 		allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), connectors)
 	} else {
@@ -1458,8 +1458,6 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-
-	h.logger.Info("got sources", zap.Int("sources", len(allSources)))
 
 	for _, src := range allSources {
 		res[src.ID.String()] = api.ConnectionResourceCountResponse{
@@ -1544,7 +1542,7 @@ func (h *HttpHandler) ListConnectionsSummary(ctx echo.Context) error {
 
 	res := map[string]api.Connection{}
 
-	var allSources []api2.Source
+	var allSources []apiOnboard.Source
 	if len(connectionIDs) == 0 {
 		allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), connectors)
 	} else {
@@ -1553,6 +1551,8 @@ func (h *HttpHandler) ListConnectionsSummary(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	h.logger.Info("got sources", zap.Int("sources", len(allSources)))
 
 	unhealthyCount := 0
 	disabledCount := 0
@@ -1579,7 +1579,7 @@ func (h *HttpHandler) ListConnectionsSummary(ctx echo.Context) error {
 		if src.HealthState == source.HealthStatusUnhealthy {
 			unhealthyCount++
 		}
-		if src.LifecycleState == api2.ConnectionLifecycleStateDisabled {
+		if src.LifecycleState == apiOnboard.ConnectionLifecycleStateDisabled {
 			disabledCount++
 		}
 	}
