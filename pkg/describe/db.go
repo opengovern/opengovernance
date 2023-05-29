@@ -313,7 +313,7 @@ FROM
 WHERE 
 	status = ? AND 
 	(select count(*) from describe_resource_jobs where parent_job_id = dr.parent_job_id AND status IN (?, ?)) <= 10
-LIMIT 500
+LIMIT 100
 `, api.DescribeResourceJobCreated, api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
