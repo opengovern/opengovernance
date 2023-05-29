@@ -662,7 +662,7 @@ func FetchConnectionLocationsSummaryPage(client keibi.Client, provider source.Ty
 
 	query := string(b)
 
-	fmt.Printf("query= %s, index= %s", query, summarizer.ConnectionSummaryIndex)
+	fmt.Printf("query= %s, index= %s\n", query, summarizer.ConnectionSummaryIndex)
 
 	var response ConnectionLocationsSummaryQueryResponse
 	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)

@@ -19,7 +19,6 @@ import (
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/pkg/keibi-es-sdk"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -848,7 +847,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	result := api.ListResourceTypeMetricsResponse{
 		TotalCount:         totalCount,
 		TotalResourceTypes: len(apiResourceTypes),
-		ResourceTypes:      internal.Paginate(pageNumber, pageSize, apiResourceTypes),
+		ResourceTypes:      utils.Paginate(pageNumber, pageSize, apiResourceTypes),
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -1207,7 +1206,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 	result := api.ListServiceMetricsResponse{
 		TotalCost:     totalCost,
 		TotalServices: len(apiServices),
-		Services:      internal.Paginate(pageNumber, pageSize, apiServices),
+		Services:      utils.Paginate(pageNumber, pageSize, apiServices),
 	}
 	return ctx.JSON(http.StatusOK, result)
 }
@@ -1552,8 +1551,6 @@ func (h *HttpHandler) ListConnectionsSummary(ctx echo.Context) error {
 		return err
 	}
 
-	h.logger.Info("got sources", zap.Int("sources", len(allSources)))
-
 	unhealthyCount := 0
 	disabledCount := 0
 	for _, src := range allSources {
@@ -1617,15 +1614,13 @@ func (h *HttpHandler) ListConnectionsSummary(ctx echo.Context) error {
 	totalCost := make(map[string]float64)
 	var connectionSummaries []api.Connection
 	for _, v := range res {
-		if v.ResourceCount > 0 {
-			connectionSummaries = append(connectionSummaries, v)
-			if v.Cost != nil {
-				for k, v := range v.Cost {
-					if _, ok := totalCost[k]; !ok {
-						totalCost[k] = 0
-					}
-					totalCost[k] += v
+		connectionSummaries = append(connectionSummaries, v)
+		if v.Cost != nil {
+			for k, v := range v.Cost {
+				if _, ok := totalCost[k]; !ok {
+					totalCost[k] = 0
 				}
+				totalCost[k] += v
 			}
 		}
 	}
@@ -1980,7 +1975,7 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 
 	res := api.ListServiceSummariesResponse{
 		TotalCount: len(serviceSummaries),
-		Services:   internal.Paginate(pageNumber, pageSize, serviceSummaries),
+		Services:   utils.Paginate(pageNumber, pageSize, serviceSummaries),
 	}
 
 	return ctx.JSON(http.StatusOK, res)
