@@ -205,7 +205,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 			CreatedAt:     resource.Job.DescribedAt,
 		}
 		kmsg, _ := json.Marshal(kafkaResource)
-		s.logger.Debug(fmt.Sprintf("sending resource: %s", string(kmsg)))
+		s.logger.Warn(fmt.Sprintf("sending resource: %s", string(kmsg)))
 		lookupResource := es.LookupResource{
 			ResourceID:    resource.UniqueId,
 			Name:          resource.Name,
