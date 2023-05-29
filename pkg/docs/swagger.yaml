@@ -1339,15 +1339,6 @@ definitions:
       date:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit:
-    properties:
-      cost:
-        description: Value
-        type: number
-      unit:
-        description: Currency
-        type: string
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.DirectionType:
     enum:
     - asc
@@ -1917,6 +1908,8 @@ definitions:
         $ref: '#/definitions/source.Type'
       count:
         type: integer
+      count_change_percent:
+        type: number
       logo_uri:
         type: string
       resource_name:
@@ -2025,6 +2018,8 @@ definitions:
         $ref: '#/definitions/source.Type'
       count:
         type: number
+      count_change_percent:
+        type: number
       logo_uri:
         type: string
       service_label:
@@ -2089,10 +2084,8 @@ definitions:
         - $ref: '#/definitions/source.Type'
         description: Cloud provider
       cost:
-        additionalProperties:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit'
-        description: Costs (Unit as Key, CostWithUnit as Value)
-        type: object
+        description: Cost
+        type: number
       resourceCount:
         description: Number of Resources
         type: integer
@@ -4451,12 +4444,10 @@ paths:
         name: connector
         required: true
         type: string
-      - description: SourceID
+      - description: Connection IDs
         in: query
-        items:
-          type: string
-        name: sourceId
-        type: array
+        name: connectionId
+        type: string
       - description: Source Healthstate
         enum:
         - healthy
@@ -4873,7 +4864,11 @@ paths:
         type: array
       - description: timestamp for resource count in epoch seconds
         in: query
-        name: time
+        name: endTime
+        type: string
+      - description: timestamp for resource count change comparison in epoch seconds
+        in: query
+        name: startTime
         type: string
       - description: Sort by field - default is count
         enum:
@@ -5156,19 +5151,17 @@ paths:
         the API filters and a list of services with more details. Including connector,
         the resource counts and the cost.
       parameters:
-      - description: 'filter: SourceIDs'
+      - description: 'filter: Connection ID'
         in: query
-        items:
-          type: string
-        name: sourceId
-        type: array
-      - description: 'filter: Provider'
+        name: connectionId
+        type: string
+      - description: 'filter: Connector'
         in: query
-        name: provider
+        name: connector
         type: string
       - description: 'filter: Category for the services'
         in: query
-        name: category
+        name: tag
         type: string
       - description: start time for cost calculation in epoch seconds
         in: query
@@ -5216,11 +5209,40 @@ paths:
       - benchmarks
   /inventory/api/v2/services/summary/{serviceName}:
     get:
+      description: Get Cloud Service Summary for the specified service name. Including
+        connector, the resource counts and the cost.
+      parameters:
+      - description: 'filter: SourceIDs'
+        in: query
+        name: connectorId
+        type: string
+      - description: 'filter: Provider'
+        in: query
+        name: connector
+        type: string
+      - description: start time for cost calculation in epoch seconds
+        in: query
+        name: startTime
+        required: true
+        type: string
+      - description: end time for cost calculation and time resource count in epoch
+          seconds
+        in: query
+        name: endTime
+        required: true
+        type: string
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse'
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary'
+      security:
+      - BearerToken: []
+      summary: Get Cloud Service Summary
+      tags:
+      - benchmarks
   /inventory/api/v2/services/tag:
     get:
       consumes:
@@ -5975,6 +5997,10 @@ paths:
       responses:
         "200":
           description: OK
+          schema:
+            items:
+              $ref: '#/definitions/describe.ComplianceReportJob'
+            type: array
       summary: Triggers a benchmark evaluation job to run immediately
       tags:
       - describe

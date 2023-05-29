@@ -262,7 +262,7 @@ type FetchConnectionResourcesCountAtResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionResourcesCountAtTime(client keibi.Client, provider source.Type, sourceID *string, t time.Time, sort []map[string]interface{}, size int) ([]summarizer.ConnectionResourcesSummary, error) {
+func FetchConnectionResourcesCountAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, t time.Time, sort []map[string]interface{}, size int) ([]summarizer.ConnectionResourcesSummary, error) {
 	var hits []summarizer.ConnectionResourcesSummary
 	res := make(map[string]interface{})
 	var filters []interface{}
@@ -281,15 +281,19 @@ func FetchConnectionResourcesCountAtTime(client keibi.Client, provider source.Ty
 		},
 	})
 
-	if !provider.IsNull() {
+	if len(connectors) > 0 {
+		connectorsStr := make([]string, 0, len(connectors))
+		for _, c := range connectors {
+			connectorsStr = append(connectorsStr, c.String())
+		}
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {provider.String()}},
+			"terms": map[string][]string{"source_type": connectorsStr},
 		})
 	}
 
-	if sourceID != nil {
+	if connectionIDs != nil {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_id": {*sourceID}},
+			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
 
