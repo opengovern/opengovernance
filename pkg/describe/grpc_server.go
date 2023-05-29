@@ -140,6 +140,10 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			Description:   description,
 			Metadata:      resource.Metadata,
 		}
+		kmsg, _ := json.Marshal(kafkaResource)
+		keys, _ := kafkaResource.KeysAndIndex()
+		id := kafka.HashOf(keys...)
+		s.logger.Warn(fmt.Sprintf("sending resource id=%s : %s", id, string(kmsg)))
 
 		var tags []es.Tag
 		for k, v := range resource.Tags {
@@ -165,6 +169,11 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			IsCommon:      cloudservice.IsCommonByResourceType(resource.Job.ResourceType),
 			Tags:          tags,
 		}
+		kmsg, _ = json.Marshal(lookupResource)
+		keys, _ = lookupResource.KeysAndIndex()
+		id = kafka.HashOf(keys...)
+		s.logger.Warn(fmt.Sprintf("sending lookup id=%s : %s", id, string(kmsg)))
+
 		msgs = append(msgs, kafkaResource)
 		msgs = append(msgs, lookupResource)
 		ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
@@ -44,6 +45,7 @@ type Job struct {
 	esSteampipe   *steampipe.Database
 	onboardClient onboardClient.OnboardServiceClient
 	logger        *zap.Logger
+	kmsVault      *vault.KMSVaultSourceConfig
 }
 
 func New(config JobConfig) (*Job, error) {
@@ -117,11 +119,17 @@ func New(config JobConfig) (*Job, error) {
 
 	onboard := onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL, nil)
 
+	kmsVault, err := vault.NewKMSVaultSourceConfig(context.Background(), "", "", "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize KMS vault: %w", err)
+	}
+
 	return &Job{
 		steampipe:     s1,
 		esSteampipe:   s2,
 		onboardClient: onboard,
 		logger:        logger,
+		kmsVault:      kmsVault,
 	}, nil
 }
 
