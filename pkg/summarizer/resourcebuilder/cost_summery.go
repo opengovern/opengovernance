@@ -2,8 +2,9 @@ package resourcebuilder
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"time"
+
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	awsModel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
@@ -56,6 +57,7 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 	case *es.ServiceCostSummary:
 		serviceCostSummary := costSummary.(*es.ServiceCostSummary)
 		serviceCostSummary.SummarizeJobID = b.summarizerJobID
+		serviceCostSummary.SummarizeJobTime = time.Now().Unix()
 		serviceCostSummary.ScheduleJobID = resource.ScheduleJobID
 		serviceCostSummary.SourceType = resource.SourceType
 		serviceCostSummary.SourceID = resource.SourceID
@@ -67,6 +69,7 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 	case *es.ConnectionCostSummary:
 		connectionCostSummary := costSummary.(*es.ConnectionCostSummary)
 		connectionCostSummary.SummarizeJobID = b.summarizerJobID
+		connectionCostSummary.SummarizeJobTime = time.Now().Unix()
 		connectionCostSummary.ScheduleJobID = resource.ScheduleJobID
 		connectionCostSummary.SourceType = resource.SourceType
 		connectionCostSummary.SourceID = resource.SourceID
@@ -145,15 +148,16 @@ func (b *costSummaryBuilder) Build() []kafka.Doc {
 
 	for _, v := range ebsCostsRegionMap {
 		docs = append(docs, es.ServiceCostSummary{
-			SummarizeJobID: v.Base.SummarizeJobID,
-			ServiceName:    v.Base.ServiceName,
-			ScheduleJobID:  v.Base.ScheduleJobID,
-			SourceID:       v.Base.SourceID,
-			SourceType:     v.Base.SourceType,
-			SourceJobID:    v.Base.SourceJobID,
-			ResourceType:   v.Base.ResourceType,
-			ReportType:     v.Base.ReportType,
-			Region:         v.Base.Region,
+			SummarizeJobTime: v.Base.SummarizeJobTime,
+			SummarizeJobID:   v.Base.SummarizeJobID,
+			ServiceName:      v.Base.ServiceName,
+			ScheduleJobID:    v.Base.ScheduleJobID,
+			SourceID:         v.Base.SourceID,
+			SourceType:       v.Base.SourceType,
+			SourceJobID:      v.Base.SourceJobID,
+			ResourceType:     v.Base.ResourceType,
+			ReportType:       v.Base.ReportType,
+			Region:           v.Base.Region,
 
 			Cost:        v.Desc,
 			PeriodStart: nowTime,

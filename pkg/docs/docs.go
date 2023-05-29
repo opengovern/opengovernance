@@ -1423,36 +1423,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v1/categories": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return list of categories",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/inventory/api/v1/cost/top/accounts": {
             "get": {
                 "security": [
@@ -2611,238 +2581,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v2/cost/composition": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return category info by provided category id, info includes category name, subcategories names and ids and number of resources",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Category ID - defaults to default template category",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "How many top categories to return",
-                        "name": "top",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for start of cost window in epoch seconds",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for end of cost window in epoch seconds",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Unit of cost to filter by",
-                        "name": "costUnit",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode"
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v2/costs/metric": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Returns list of resource types with metrics of each type based on the given input filters",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Key-Value tags in key=value format to filter by",
-                        "name": "tag",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "Connection IDs to filter by",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for start of cost aggregation in epoch seconds",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for end of cost aggregation in epoch seconds",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "name",
-                            "cost"
-                        ],
-                        "type": "string",
-                        "description": "Sort by field - default is cost",
-                        "name": "sortBy",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page size - default is 20",
-                        "name": "pageSize",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page number - default is 1",
-                        "name": "pageNumber",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v2/costs/tag": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return list of the keys with possible values for filtering services",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "array",
-                                "items": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v2/costs/tag/{key}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return list of the possible values for filtering services with specified key",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Tag key",
-                        "name": "key",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/inventory/api/v2/insights": {
             "get": {
                 "security": [
@@ -3267,158 +3005,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v2/metrics/cost/composition": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return category info by provided category id, info includes category name, subcategories names and ids and number of resources",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Category ID - defaults to default template category",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "How many top categories to return",
-                        "name": "top",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for start of cost window in epoch seconds",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for end of cost window in epoch seconds",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Unit of cost to filter by",
-                        "name": "costUnit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {}
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v2/metrics/cost/metric": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return category cost info by provided category id, info includes category name, subcategories names and ids and their accumulated cost",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Category id - defaults to default template category",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for start of cost window in epoch seconds",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for end of cost window in epoch seconds",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "1d",
-                            "1w",
-                            "1m",
-                            "3m",
-                            "1y"
-                        ],
-                        "type": "string",
-                        "description": "time window either this or start \u0026 end time must be provided",
-                        "name": "timeWindow",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {}
-                        }
-                    }
-                }
-            }
-        },
         "/inventory/api/v2/resources/composition/{key}": {
             "get": {
                 "security": [
@@ -3714,6 +3300,229 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/services/composition/{key}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return tag values with most cost for the given key",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "How many top values to return default is 5",
+                        "name": "top",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for start of cost aggregation in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for end of cost aggregation in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceCostCompositionResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/services/cost/trend": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Returns list of costs over the course of the specified time frame based on the given input filters",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key-Value tags in key=value format to filter by",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for start in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for end in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "maximum number of datapoints to return, default is 30",
+                        "name": "datapointCount",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostTrendDatapoint"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/services/metric": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Returns list of resource types with metrics of each type based on the given input filters",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key-Value tags in key=value format to filter by",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for start of cost aggregation in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for end of cost aggregation in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "name",
+                            "cost"
+                        ],
+                        "type": "string",
+                        "description": "Sort by field - default is cost",
+                        "name": "sortBy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size - default is 20",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number - default is 1",
+                        "name": "pageNumber",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/services/summary": {
             "get": {
                 "security": [
@@ -3815,6 +3624,78 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/services/tag": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return list of the keys with possible values for filtering services",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/services/tag/{key}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Return list of the possible values for filtering services with specified key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tag key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -7389,66 +7270,6 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode": {
-            "type": "object",
-            "properties": {
-                "categoryID": {
-                    "type": "string"
-                },
-                "categoryName": {
-                    "description": "Name of the Category",
-                    "type": "string"
-                },
-                "cost": {
-                    "description": "The aggregation of all the services costs",
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostWithUnit"
-                    }
-                },
-                "costChange": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "number"
-                    }
-                },
-                "filters": {
-                    "description": "List of Filters associated with this Category",
-                    "type": "array",
-                    "items": {}
-                },
-                "resourceCount": {
-                    "description": "Number of Resources of the category",
-                    "type": "integer"
-                },
-                "resourceCountChange": {
-                    "type": "number"
-                },
-                "subcategories": {
-                    "description": "Subcategories sorted by ResourceCount [resources/category, ]",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryNode"
-                    }
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryResourceTrend": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "description": "Category Name",
-                    "type": "string"
-                },
-                "trend": {
-                    "description": "Trends (Time Series)",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint"
-                    }
-                }
-            }
-        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Connection": {
             "type": "object",
             "properties": {
@@ -7583,6 +7404,17 @@ const docTemplate = `{
                 },
                 "services_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostTrendDatapoint": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "number"
+                },
+                "date": {
+                    "type": "string"
                 }
             }
         },
@@ -8134,6 +7966,43 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceCostCompositionResponse": {
+            "type": "object",
+            "properties": {
+                "others": {
+                    "type": "number"
+                },
+                "top_values": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
+                },
+                "total_count": {
+                    "type": "number"
+                },
+                "total_value_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse": {
+            "type": "object",
+            "properties": {
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service"
+                    }
+                },
+                "total_cost": {
+                    "type": "number"
+                },
+                "total_services": {
+                    "type": "integer"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse": {
             "type": "object",
             "properties": {
@@ -8338,29 +8207,6 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceGrowthTrendResponse": {
-            "type": "object",
-            "properties": {
-                "Subcategories": {
-                    "description": "List of sub-categories Cost Trends (Time Series)",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CategoryResourceTrend"
-                    }
-                },
-                "categoryName": {
-                    "description": "Category Name",
-                    "type": "string"
-                },
-                "trend": {
-                    "description": "Main Category Cost Trend (Time Series)",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint"
-                    }
-                }
-            }
-        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceSortItem": {
             "type": "object",
             "properties": {
@@ -8548,6 +8394,35 @@ const docTemplate = `{
                 "title": {
                     "description": "Query Title",
                     "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service": {
+            "type": "object",
+            "properties": {
+                "connector": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "count": {
+                    "type": "number"
+                },
+                "logo_uri": {
+                    "type": "string"
+                },
+                "service_label": {
+                    "type": "string"
+                },
+                "service_name": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },
