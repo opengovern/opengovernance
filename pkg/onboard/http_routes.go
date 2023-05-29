@@ -1915,20 +1915,16 @@ func (h HttpHandler) EnableSource(ctx echo.Context) error {
 //	@Success		200			{object}	api.GetSourcesResponse
 //	@Router			/onboard/api/v1/sources [get]
 func (h HttpHandler) ListSources(ctx echo.Context) error {
-	sType := ctx.QueryParam("connector")
+	var err error
+	sType := ctx.QueryParams()["connector"]
 	var sources []Source
-	if sType != "" {
-		st, err := source.ParseType(sType)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid source type: %s", sType))
-		}
-
-		sources, err = h.db.GetSourcesOfType(st)
+	if len(sType) > 0 {
+		st := source.ParseTypes(sType)
+		sources, err = h.db.GetSourcesOfTypes(st)
 		if err != nil {
 			return err
 		}
 	} else {
-		var err error
 		sources, err = h.db.ListSources()
 		if err != nil {
 			return err
