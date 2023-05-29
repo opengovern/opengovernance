@@ -331,3 +331,12 @@ func (db Database) ListFilteredServices(tags map[string][]string, connectorTypes
 	}
 	return services, nil
 }
+
+func (db Database) GetService(serviceName string) (*Service, error) {
+	var service Service
+	tx := db.orm.Model(Service{}).Preload(clause.Associations).Where("service_name = ?", serviceName).First(&service)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &service, nil
+}

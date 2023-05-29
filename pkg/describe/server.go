@@ -591,7 +591,7 @@ func (h HttpServer) TriggerComplianceSummarizerJob(ctx echo.Context) error {
 //	@Summary	Triggers a benchmark evaluation job to run immediately
 //	@Tags		describe
 //	@Produce	json
-//	@Param		request	body	api.TriggerBenchmarkEvaluationRequest	true	"Request Body"
+//	@Param		request	body		api.TriggerBenchmarkEvaluationRequest	true	"Request Body"
 //	@Success	200		{object}	[]describe.ComplianceReportJob
 //	@Router		/schedule/api/v1/compliance/trigger [put]
 func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {

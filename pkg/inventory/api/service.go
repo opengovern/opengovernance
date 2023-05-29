@@ -7,12 +7,13 @@ import (
 )
 
 type Service struct {
-	Connector    source.Type         `json:"connector"`
-	ServiceName  string              `json:"service_name"`
-	ServiceLabel string              `json:"service_label"`
-	Tags         map[string][]string `json:"tags,omitempty"`
-	LogoURI      *string             `json:"logo_uri,omitempty"`
-	Cost         *float64            `json:"count,omitempty"`
+	Connector         source.Type         `json:"connector"`
+	ServiceName       string              `json:"service_name"`
+	ServiceLabel      string              `json:"service_label"`
+	Tags              map[string][]string `json:"tags,omitempty"`
+	LogoURI           *string             `json:"logo_uri,omitempty"`
+	Cost              *float64            `json:"count,omitempty"`
+	CostChangePercent *float64            `json:"count_change_percent,omitempty"`
 }
 
 type ListServiceMetricsResponse struct {

@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"net/http"
 	"time"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
@@ -19,7 +20,7 @@ import (
 type OnboardServiceClient interface {
 	GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error)
 	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Source, error)
-	ListSources(ctx *httpclient.Context, t *source.Type) ([]api.Source, error)
+	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Source, error)
 	CountSources(ctx *httpclient.Context, provider source.Type) (int64, error)
 	GetSourceHealthcheck(ctx *httpclient.Context, sourceID string) (*api.Source, error)
 }
@@ -103,10 +104,15 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 	return res, nil
 }
 
-func (s *onboardClient) ListSources(ctx *httpclient.Context, t *source.Type) ([]api.Source, error) {
+func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Source, error) {
 	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
-	if t != nil {
-		url += "?connector=" + string(*t)
+	for i, v := range t {
+		if i == 0 {
+			url += "?"
+		} else {
+			url += "&"
+		}
+		url += "connector=" + string(v)
 	}
 
 	var response []api.Source
