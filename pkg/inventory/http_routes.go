@@ -818,6 +818,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 				continue
 			}
 			apiResourceType.CountChangePercent = utils.GetPointer(float64((float64(*apiResourceType.Count) - float64(*oldApiResourceType.Count)) / float64(*apiResourceType.Count)))
+			apiResourceTypesMap[oldApiResourceType.ResourceType] = apiResourceType
 		}
 	}
 
