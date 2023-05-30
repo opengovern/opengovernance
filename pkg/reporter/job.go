@@ -13,8 +13,11 @@ import (
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"go.uber.org/zap"
+	"io/ioutil"
 	"math/rand"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -301,6 +304,34 @@ func (j *Job) RandomQuery(sourceType source.Type) *Query {
 }
 
 func (j *Job) PopulateSteampipe(account *api2.Source, cred *api2.AWSCredential, azureCred *api2.AzureCredential) error {
-	//TODO-Saleh change steampipe credentials for this account
-	return nil
+	var plugin, content string
+	if cred != nil {
+		os.Setenv("AWS_ACCESS_KEY_ID", cred.AccessKey)
+		os.Setenv("AWS_SECRET_ACCESS_KEY", cred.SecretKey)
+		plugin = "aws"
+		content = `connection "aws" {
+		plugin  = "aws"
+		regions = ["*"]
+}`
+	}
+
+	if azureCred != nil {
+		os.Setenv("AZURE_TENANT_ID", azureCred.TenantID)
+		os.Setenv("AZURE_CLIENT_ID", azureCred.ClientID)
+		os.Setenv("AZURE_CLIENT_SECRET", azureCred.ClientSecret)
+		os.Setenv("AZURE_SUBSCRIPTION_ID", account.ConnectionID)
+		plugin = "azure"
+		content = `connection "azure" {
+  plugin = "azure"
+}`
+	}
+
+	dirname, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	filePath := dirname + "/.steampipe/config/" + plugin + ".spc"
+	os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
+	return ioutil.WriteFile(filePath, []byte(content), os.ModePerm)
 }
