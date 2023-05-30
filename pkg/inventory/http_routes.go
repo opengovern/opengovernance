@@ -1168,14 +1168,16 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 		return err
 	}
 
-	endTimeHits, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, connectorTypes, costFilterNames, time.Unix(endTime, 0), EsFetchPageSize)
+	endTimeHitsRaw, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, connectorTypes, costFilterNames, time.Unix(endTime, 0), EsFetchPageSize)
 	if err != nil {
 		return err
 	}
-	startTimeHits, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, connectorTypes, costFilterNames, time.Unix(startTime, 0), EsFetchPageSize)
+	endTimeHits := internal.AggregateServiceCosts(endTimeHitsRaw)
+	startTimeHitsRaw, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, connectorTypes, costFilterNames, time.Unix(startTime, 0), EsFetchPageSize)
 	if err != nil {
 		return err
 	}
+	startTimeHits := internal.AggregateServiceCosts(startTimeHitsRaw)
 
 	type serviceCosts struct {
 		totalCost float64
