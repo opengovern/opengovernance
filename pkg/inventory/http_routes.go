@@ -598,9 +598,10 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 
 	var response []api.LocationResponse
 	for region, count := range locationDistribution {
+		cnt := count
 		response = append(response, api.LocationResponse{
 			Location:      region,
-			ResourceCount: &count,
+			ResourceCount: &cnt,
 		})
 	}
 	sort.Slice(response, func(i, j int) bool {
@@ -1203,12 +1204,10 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 					defaultCost := costWithUnit[DefaultCurrency]
 					serviceCost.totalCost += defaultCost.Cost
 					if startTimeHit, ok := startTimeHits[costFilterName]; ok {
-						c := startTimeHit[DefaultCurrency].Cost
-						serviceCost.startCost += c
+						serviceCost.startCost += startTimeHit[DefaultCurrency].Cost
 					}
 					if endTimeHit, ok := endTimeHits[costFilterName]; ok {
-						c := endTimeHit[DefaultCurrency].Cost
-						serviceCost.endCost += c
+						serviceCost.endCost += endTimeHit[DefaultCurrency].Cost
 					}
 					totalCost += defaultCost.Cost
 				}

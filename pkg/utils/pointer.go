@@ -14,7 +14,8 @@ func PAdd[T int | int64 | int32 | float64](a, b *T) *T {
 }
 
 func GetPointer[T int | int64 | int32 | string | float64](a T) *T {
-	return &a
+	v := a
+	return &v
 }
 
 func GetPointerOrNil[T int | int64 | int32 | string](a T) *T {
