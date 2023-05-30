@@ -154,11 +154,9 @@ func (s *HttpServerSuite) TestCreateStack() []string {
 			TestId: 1,
 			Request: api.CreateStackRequest{
 				Statefile: "terraform.tfstate",
-				Tags: []api.StackTag{
-					{
-						Key:   "Key1",
-						Value: []string{"value1", "value2"},
-					},
+				Tags: map[string][]string{
+					"key1": {"value1", "value2"},
+					"key2": {"value3", "value4"},
 				},
 			},
 			Result: http.StatusOK,
@@ -334,13 +332,6 @@ func (s *HttpServerSuite) TestTriggerBenchmark() {
 				if err != nil {
 					t.Fatalf("Database error: %v", err)
 				}
-				var tags []api.StackTag
-				for _, t := range stackRecord.Tags {
-					tags = append(tags, api.StackTag{
-						Key:   t.Key,
-						Value: t.Value,
-					})
-				}
 
 				var evaluations []api.StackEvaluation
 				for _, e := range stackRecord.Evaluations {
@@ -356,7 +347,7 @@ func (s *HttpServerSuite) TestTriggerBenchmark() {
 					CreatedAt:   stackRecord.CreatedAt,
 					UpdatedAt:   stackRecord.UpdatedAt,
 					Resources:   []string(stackRecord.Resources),
-					Tags:        tags,
+					Tags:        trimPrivateTags(stackRecord.GetTagsMap()),
 					Evaluations: evaluations,
 				}
 				fmt.Println(stack)

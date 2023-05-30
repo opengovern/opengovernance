@@ -1239,12 +1239,23 @@ func (db Database) GetStack(stackID string) (Stack, error) {
 	return s, nil
 }
 
-func (db Database) ListStacks() ([]Stack, error) {
+func (db Database) ListStacks(tags map[string][]string) ([]Stack, error) {
 	var s []Stack
-	tx := db.orm.Model(&Stack{}).
+	query := db.orm.Model(&Stack{}).
 		Preload("Tags").
-		Preload("Evaluations").
-		Find(&s)
+		Preload("Evaluations")
+	if len(tags) != 0 {
+		query = query.Joins("JOIN stack_tags AS tags ON tags.stack_id = stacks.stack_id")
+		for key, values := range tags {
+			if len(values) != 0 {
+				query = query.Where("tags.key = ? AND tags.value @> ?", key, pq.StringArray(values))
+			} else {
+				query = query.Where("tags.key = ?", key)
+			}
+		}
+	}
+
+	tx := query.Find(&s)
 
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
