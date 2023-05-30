@@ -193,8 +193,9 @@ func (j *Job) RunJob() error {
 	}
 	j.steampipe = s1
 	fmt.Println("+++++ Connected to steampipe")
-
 	query := j.RandomQuery(account.Type)
+
+	j.logger.Info("running query", zap.String("account", account.ConnectionID), zap.String("query", query.ListQuery))
 	listQuery := strings.ReplaceAll(query.ListQuery, "%ACCOUNT_ID%", account.ConnectionID)
 	steampipeRows, err := j.steampipe.Conn().Query(context.Background(), listQuery)
 	if err != nil {
