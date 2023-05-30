@@ -411,9 +411,7 @@ type FetchDailyCostHistoryByServicesAtTimeResponse struct {
 					Buckets []struct {
 						Key  string `json:"key"`
 						Hits struct {
-							Hits []struct {
-								Source summarizer.ServiceCostSummary `json:"_source"`
-							} `json:"hits"`
+							Hits []summarizer.ServiceCostSummary `json:"hits"`
 						} `json:"hits"`
 					} `json:"buckets"`
 				} `json:"service_name_group"`
@@ -422,7 +420,7 @@ type FetchDailyCostHistoryByServicesAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchDailyCostHistoryByServicesAtTime(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, at time.Time, size int) (map[string]summarizer.ServiceCostSummary, error) {
+func FetchDailyCostHistoryByServicesAtTime(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, at time.Time, size int) (map[string][]summarizer.ServiceCostSummary, error) {
 	var filters []any
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummaryDaily)}},
@@ -477,7 +475,7 @@ func FetchDailyCostHistoryByServicesAtTime(client keibi.Client, connectionIDs []
 					"aggs": map[string]any{
 						"hits": map[string]any{
 							"top_hits": map[string]any{
-								"size": 1,
+								"size": size,
 								"sort": map[string]string{
 									"period_end": "desc",
 								},
@@ -501,11 +499,11 @@ func FetchDailyCostHistoryByServicesAtTime(client keibi.Client, connectionIDs []
 		return nil, err
 	}
 
-	result := make(map[string]summarizer.ServiceCostSummary)
+	result := make(map[string][]summarizer.ServiceCostSummary)
 	for _, bucket := range response.Aggregations.SummarizeJobIDGroup.Buckets {
 		for _, serviceBucket := range bucket.ServiceNameGroup.Buckets {
 			for _, hit := range serviceBucket.Hits.Hits {
-				result[serviceBucket.Key] = hit.Source
+				result[serviceBucket.Key] = append(result[serviceBucket.Key], hit)
 			}
 		}
 	}
