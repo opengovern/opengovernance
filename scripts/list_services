@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#set -x 
+set -x
 
 #GIT_CHANGE=$(git status -s | awk '{print $2}')
 if [[ ! -z $SERVICE_LIST ]]; then
