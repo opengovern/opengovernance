@@ -1,39 +1,6 @@
-x-tagGroups:
-  - name: auth
-    tags:
-    - users
-    - roles
-    - keys
-  - name: compliance
-    tags:
-    - compliance
-    - benchmarks_assignemnt
-  - name: inventory
-    tags:
-    - insights
-    - benchmarks
-    - inventory
-    - cost
-    - location
-    - smart_query
-    - resource
-    - metadata
-  - name: onboard
-    tags:
-    - onboard
-  - name: schedule
-    tags:
-    - describe
-    - schedule
-    - jobs
-  - name: workspace
-    tags:
-    - workspace
 definitions:
   aws.Resources:
     properties:
-      errorCode:
-        type: string
       errors:
         additionalProperties:
           type: string
@@ -1043,6 +1010,19 @@ definitions:
       stateActive:
         type: boolean
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.CreateStackRequest:
+    properties:
+      resources:
+        items:
+          type: string
+        type: array
+      statefile:
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackTag'
+        type: array
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource:
     properties:
       failureMessage:
@@ -1106,6 +1086,17 @@ definitions:
     - DescribeSourceJobInProgress
     - DescribeSourceJobCompletedWithFailure
     - DescribeSourceJobCompleted
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.EvaluateStack:
+    properties:
+      benchmarks:
+        items:
+          type: string
+        type: array
+      stackId:
+        type: string
+    required:
+    - benchmarks
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest:
     properties:
       benchmarkID:
@@ -1138,6 +1129,45 @@ definitions:
         type: string
       type:
         $ref: '#/definitions/source.Type'
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack:
+    properties:
+      createdAt:
+        type: string
+      evaluations:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackEvaluation'
+        type: array
+      resources:
+        items:
+          type: string
+        type: array
+      stackID:
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackTag'
+        type: array
+      updatedAt:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackEvaluation:
+    properties:
+      benchmarkID:
+        type: string
+      createdAt:
+        type: string
+      jobID:
+        type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackTag:
+    properties:
+      key:
+        type: string
+      value:
+        items:
+          type: string
+        type: array
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest:
     properties:
@@ -3735,7 +3765,8 @@ paths:
         name: provider
         required: true
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4112,7 +4143,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4195,7 +4227,8 @@ paths:
         in: query
         name: provider
         type: string
-      - description: SourceId
+      - collectionFormat: csv
+        description: SourceId
         in: query
         items:
           type: string
@@ -4306,7 +4339,8 @@ paths:
         in: query
         name: provider
         type: string
-      - description: SourceId
+      - collectionFormat: csv
+        description: SourceId
         in: query
         items:
           type: string
@@ -4404,7 +4438,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4530,7 +4565,8 @@ paths:
         in: query
         name: connector
         type: string
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -4557,7 +4593,8 @@ paths:
     get:
       description: Get an insight by id
       parameters:
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -4617,7 +4654,8 @@ paths:
     get:
       description: Get an insight peer by id
       parameters:
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -4813,7 +4851,8 @@ paths:
         in: query
         name: connector
         type: string
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4856,7 +4895,8 @@ paths:
         in: query
         name: connector
         type: string
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4963,7 +5003,8 @@ paths:
         in: query
         name: connector
         type: string
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5012,7 +5053,8 @@ paths:
         in: query
         name: connector
         type: string
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5055,7 +5097,8 @@ paths:
         in: query
         name: connector
         type: string
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5103,7 +5146,8 @@ paths:
         in: query
         name: connector
         type: string
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -6208,6 +6252,171 @@ paths:
       summary: Run describe jobs
       tags:
       - schedule
+  /schedule/api/v1/stack/create:
+    put:
+      consumes:
+      - application/json
+      description: Temporary API for building a stack by giving a terraform statefile
+        directory
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.CreateStackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack'
+      security:
+      - BearerToken: []
+      summary: Build a stack
+      tags:
+      - stack
+  /schedule/api/v1/stacks:
+    get:
+      consumes:
+      - application/json
+      description: Get list of stacks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List Stack
+      tags:
+      - stack
+  /schedule/api/v1/stacks/{stackId}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a stack by ID
+      parameters:
+      - description: StackID
+        in: path
+        name: stackId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Delete a Stack
+      tags:
+      - stack
+    get:
+      consumes:
+      - application/json
+      description: Get a stack details by ID
+      parameters:
+      - description: StackID
+        in: path
+        name: stackId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack'
+      security:
+      - BearerToken: []
+      summary: Get a Stack
+      tags:
+      - stack
+  /schedule/api/v1/stacks/{stackId}/insights:
+    get:
+      consumes:
+      - application/json
+      description: Get a benchmark result by jobId
+      parameters:
+      - description: unix seconds for the time to get the insight result for
+        in: query
+        name: time
+        type: integer
+      - description: StackID
+        in: path
+        name: stackId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightPeerGroup'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get Insights Result
+      tags:
+      - stack
+  /schedule/api/v1/stacks/benchmark/{jobId}:
+    get:
+      consumes:
+      - application/json
+      description: Get a benchmark result by jobId
+      parameters:
+      - description: JobID
+        in: path
+        name: jobId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_es.Finding'
+      security:
+      - BearerToken: []
+      summary: Get Benchmark Result
+      tags:
+      - stack
+  /schedule/api/v1/stacks/benchmark/trigger:
+    post:
+      consumes:
+      - application/json
+      description: Trigger defined benchmarks for a stack
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.EvaluateStack'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/describe.ComplianceReportJob'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Trigger benchmarks
+      tags:
+      - stack
   /schedule/api/v1/summarize/jobs/pending:
     get:
       produces:

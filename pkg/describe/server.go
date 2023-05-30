@@ -23,6 +23,7 @@ import (
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
+	inventoryapi "gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 	"gorm.io/gorm"
 
@@ -1085,7 +1086,7 @@ func (h HttpServer) GetBenchmarkResult(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			time	query		int		false	"unix seconds for the time to get the insight result for"
 //	@Param			stackId	path		string	true	"StackID"
-//	@Success		200		{object}	[]api.InsightPeerGroup
+//	@Success		200		{object}	[]inventoryapi.InsightPeerGroup
 //	@Router			/schedule/api/v1/stacks/{stackId}/insights [get]
 func (h HttpServer) GetInsights(ctx echo.Context) error {
 	stackId := ctx.Param("stackId")
@@ -1113,7 +1114,8 @@ func (h HttpServer) GetInsights(ctx echo.Context) error {
 		return err
 	}
 	inventoryClient := inventory.NewInventoryServiceClient(h.Address + "/inventory")
-	result, err := inventoryClient.ListInsights(httpclient.FromEchoContext(ctx), conns, timeStr)
+	var result []inventoryapi.InsightPeerGroup
+	result, err = inventoryClient.ListInsights(httpclient.FromEchoContext(ctx), conns, timeStr)
 	if err != nil {
 		return err
 	}
