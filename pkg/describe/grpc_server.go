@@ -140,6 +140,14 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			Description:   description,
 			Metadata:      resource.Metadata,
 		}
+		kmsg, _ := json.Marshal(kafkaResource)
+		if len(kmsg) >= 32766 {
+			// it's gonna hit error in kafka connect
+			s.logger.Warn("too large message",
+				zap.String("resource_type", resource.Job.ResourceType),
+				zap.String("json", string(kmsg)),
+			)
+		}
 		//kmsg, _ := json.Marshal(kafkaResource)
 		//keys, _ := kafkaResource.KeysAndIndex()
 		//id := kafka.HashOf(keys...)
@@ -168,6 +176,14 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			CreatedAt:     resource.Job.DescribedAt,
 			IsCommon:      cloudservice.IsCommonByResourceType(resource.Job.ResourceType),
 			Tags:          tags,
+		}
+		kmsg, _ = json.Marshal(lookupResource)
+		if len(kmsg) >= 32766 {
+			// it's gonna hit error in kafka connect
+			s.logger.Warn("too large message",
+				zap.String("resource_type", resource.Job.ResourceType),
+				zap.String("json", string(kmsg)),
+			)
 		}
 		//kmsg, _ = json.Marshal(lookupResource)
 		//keys, _ = lookupResource.KeysAndIndex()
@@ -221,7 +237,14 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 			ScheduleJobID: uint(resource.Job.ScheduleJobId),
 			CreatedAt:     resource.Job.DescribedAt,
 		}
-		//kmsg, _ := json.Marshal(kafkaResource)
+		kmsg, _ := json.Marshal(kafkaResource)
+		if len(kmsg) >= 32766 {
+			// it's gonna hit error in kafka connect
+			s.logger.Warn("too large message",
+				zap.String("resource_type", resource.Job.ResourceType),
+				zap.String("json", string(kmsg)),
+			)
+		}
 		//keys, _ := kafkaResource.KeysAndIndex()
 		//id := kafka.HashOf(keys...)
 		//s.logger.Warn(fmt.Sprintf("sending resource id=%s : %s", id, string(kmsg)))
@@ -250,7 +273,14 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 			IsCommon:      cloudservice.IsCommonByResourceType(resource.Job.ResourceType),
 			Tags:          tags,
 		}
-		//kmsg, _ = json.Marshal(lookupResource)
+		kmsg, _ = json.Marshal(lookupResource)
+		if len(kmsg) >= 32766 {
+			// it's gonna hit error in kafka connect
+			s.logger.Warn("too large message",
+				zap.String("resource_type", resource.Job.ResourceType),
+				zap.String("json", string(kmsg)),
+			)
+		}
 		//keys, _ = lookupResource.KeysAndIndex()
 		//id = kafka.HashOf(keys...)
 		//s.logger.Warn(fmt.Sprintf("sending lookup id=%s : %s", id, string(kmsg)))
