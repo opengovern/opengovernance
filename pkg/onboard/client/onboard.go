@@ -25,6 +25,7 @@ type OnboardServiceClient interface {
 	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Source, error)
 	CountSources(ctx *httpclient.Context, provider source.Type) (int64, error)
 	GetSourceHealthcheck(ctx *httpclient.Context, sourceID string) (*api.Source, error)
+	GetSourcesByAccount(ctx *httpclient.Context, accountID string) (api.Source, error)
 }
 
 type onboardClient struct {
@@ -214,4 +215,14 @@ func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, sourceID s
 		})
 	}
 	return &source, nil
+}
+
+func (s *onboardClient) GetSourcesByAccount(ctx *httpclient.Context, accountID string) (api.Source, error) {
+	url := fmt.Sprintf("%s/api/v1/source/account/%s", s.baseURL, accountID)
+
+	var source api.Source
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+		return api.Source{}, err
+	}
+	return source, nil
 }

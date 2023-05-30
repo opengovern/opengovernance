@@ -11,6 +11,7 @@ import (
 
 	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/lib/pq"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
@@ -30,6 +31,8 @@ import (
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/internal"
+	inventory "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 )
 
 type HttpServer struct {
@@ -83,6 +86,14 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/benchmark/evaluations", httpserver.AuthorizeHandler(h.HandleListBenchmarkEvaluations, api3.ViewerRole))
 
 	v1.POST("/describe/resource", httpserver.AuthorizeHandler(h.DescribeSingleResource, api3.AdminRole))
+
+	v1.POST("/stacks/benchmark/trigger", httpserver.AuthorizeHandler(h.TriggerStackBenchmark, api3.AdminRole))
+	v1.GET("/stacks", httpserver.AuthorizeHandler(h.ListStack, api3.ViewerRole))
+	v1.GET("/stacks/:stackId", httpserver.AuthorizeHandler(h.GetStack, api3.ViewerRole))
+	v1.POST("/stacks/build", httpserver.AuthorizeHandler(h.CreateStack, api3.AdminRole))
+	v1.DELETE("/stacks/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, api3.AdminRole))
+	v1.GET("/stacks/benchmark/:jobId", httpserver.AuthorizeHandler(h.GetBenchmarkResult, api3.ViewerRole))
+	v1.GET("/stacks/:stackId/insights", httpserver.AuthorizeHandler(h.GetInsights, api3.ViewerRole))
 }
 
 // HandleListSources godoc
@@ -742,8 +753,8 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		api.CreateStackRequest	true	"Request Body"
-//	@Success		200
-//	@Router			/stack/api/v1/stacks/build [put]
+//	@Success		200		{object}	api.Stack
+//	@Router			/schedule/api/v1/stack/create [put]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
 	var req api.CreateStackRequest
 	bindValidate(ctx, &req)
@@ -781,15 +792,15 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		return err
 	}
 
-	var tags []StackTag
+	var tags []api.StackTag
 	for _, t := range stackRecord.Tags {
-		tags = append(tags, StackTag{
+		tags = append(tags, api.StackTag{
 			Key:   t.Key,
 			Value: t.Value,
 		})
 	}
 
-	stack := Stack{
+	stack := api.Stack{
 		StackID:   stackRecord.StackID,
 		CreatedAt: stackRecord.CreatedAt,
 		UpdatedAt: stackRecord.UpdatedAt,
@@ -807,33 +818,33 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			stackId		path		string		true	"StackID"
-//	@Success		200				{object}	Stack
-//	@Router			/stack/api/v1/stacks/{stackId} [get]
+//	@Param			stackId	path		string	true	"StackID"
+//	@Success		200		{object}	api.Stack
+//	@Router			/schedule/api/v1/stacks/{stackId} [get]
 func (h HttpServer) GetStack(ctx echo.Context) error {
 	stackId := ctx.Param("stackId")
 	stackRecord, err := h.DB.GetStack(stackId)
 	if err != nil {
 		return err
 	}
-	var tags []StackTag
+	var tags []api.StackTag
 	for _, t := range stackRecord.Tags {
-		tags = append(tags, StackTag{
+		tags = append(tags, api.StackTag{
 			Key:   t.Key,
 			Value: t.Value,
 		})
 	}
 
-	var evaluations []StackEvaluation
+	var evaluations []api.StackEvaluation
 	for _, e := range stackRecord.Evaluations {
-		evaluations = append(evaluations, StackEvaluation{
+		evaluations = append(evaluations, api.StackEvaluation{
 			BenchmarkID: e.BenchmarkID,
 			JobID:       e.JobID,
 			CreatedAt:   e.CreatedAt,
 		})
 	}
 
-	stack := Stack{
+	stack := api.Stack{
 		StackID:     stackRecord.StackID,
 		CreatedAt:   stackRecord.CreatedAt,
 		UpdatedAt:   stackRecord.UpdatedAt,
@@ -852,23 +863,23 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Success		200				{object}	[]Stack
-//	@Router			/stack/api/v1/stacks [get]
+//	@Success		200	{object}	[]api.Stack
+//	@Router			/schedule/api/v1/stacks [get]
 func (h HttpServer) ListStack(ctx echo.Context) error {
 	stacksRecord, err := h.DB.ListStacks()
 	if err != nil {
 		return err
 	}
-	var stacks []Stack
+	var stacks []api.Stack
 	for _, sr := range stacksRecord {
-		var tags []StackTag
+		var tags []api.StackTag
 		for _, t := range sr.Tags {
-			tags = append(tags, StackTag{
+			tags = append(tags, api.StackTag{
 				Key:   t.Key,
 				Value: t.Value,
 			})
 		}
-		stack := Stack{
+		stack := api.Stack{
 			StackID:   sr.StackID,
 			CreatedAt: sr.CreatedAt,
 			UpdatedAt: sr.UpdatedAt,
@@ -888,9 +899,9 @@ func (h HttpServer) ListStack(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			stackId		path		string		true	"StackID"
+//	@Param			stackId	path	string	true	"StackID"
 //	@Success		200
-//	@Router			/stack/api/v1/stacks/{stackId} [delete]
+//	@Router			/schedule/api/v1/stacks/{stackId} [delete]
 func (h HttpServer) DeleteStack(ctx echo.Context) error {
 	stackId := ctx.Param("stackId")
 	err := h.DB.DeleteStack(stackId)
@@ -912,10 +923,10 @@ func (h HttpServer) DeleteStack(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		api.TriggerBenchmarkRequest	true	"Request Body"
-//	@Success		200
-//	@Router			/stack/api/v1/stacks/benchmark/trigger [post]
-func (h HttpServer) TriggerBenchmark(ctx echo.Context) error {
+//	@Param			request	body		api.EvaluateStack	true	"Request Body"
+//	@Success		200		{object}	[]ComplianceReportJob
+//	@Router			/schedule/api/v1/stacks/benchmark/trigger [post]
+func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 	var req api.EvaluateStack
 	bindValidate(ctx, &req)
 
@@ -926,14 +937,14 @@ func (h HttpServer) TriggerBenchmark(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	var tags []StackTag
+	var tags []api.StackTag
 	for _, t := range stackRecord.Tags {
-		tags = append(tags, StackTag{
+		tags = append(tags, api.StackTag{
 			Key:   t.Key,
 			Value: t.Value,
 		})
 	}
-	stack := Stack{
+	stack := api.Stack{
 		StackID:   stackRecord.StackID,
 		CreatedAt: stackRecord.CreatedAt,
 		UpdatedAt: stackRecord.UpdatedAt,
@@ -944,30 +955,67 @@ func (h HttpServer) TriggerBenchmark(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	conns, err := internal.GetConnections(accs)
+	var connectionIDs []string
+	for _, acc := range accs {
+		source, err := h.Scheduler.onboardClient.GetSourcesByAccount(httpclient.FromEchoContext(ctx), acc)
+		if err != nil {
+			return err
+		}
+		connectionIDs = append(connectionIDs, source.ID.String())
+	}
+	job := ScheduleJob{
+		Model:          gorm.Model{},
+		Status:         summarizerapi.SummarizerJobInProgress,
+		FailureMessage: "",
+	}
+	err = h.DB.AddScheduleJob(&job)
+	if err != nil {
+		errMsg := fmt.Sprintf("error adding schedule job: %v", err)
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
+	}
+
+	scheduleJob, err := h.DB.FetchLastScheduleJob()
 	if err != nil {
 		return err
 	}
-	for _, b := range req.Benchmarks {
-		for _, c := range conns {
-			jobs, err := internal.TriggerBenchmark(c, b, []string{})
+	var complianceJobs []ComplianceReportJob
+	for _, benchmarkID := range req.Benchmarks {
+		for _, connectionID := range connectionIDs {
+			src, err := h.DB.GetSourceByID(connectionID)
 			if err != nil {
 				return err
 			}
-			for _, job := range jobs {
-				evaluation := StackEvaluation{
-					BenchmarkID: b,
-					StackID:     stack.StackID,
-					JobID:       job.ID,
-				}
-				err := h.DB.AddEvaluation(&evaluation)
-				if err != nil {
-					return err
-				}
+
+			crj := newComplianceReportJob(connectionID, source.Type(src.Type), benchmarkID, scheduleJob.ID)
+
+			err = h.DB.CreateComplianceReportJob(&crj)
+			if err != nil {
+				return err
 			}
+
+			if src == nil {
+				return errors.New("failed to find connection")
+			}
+
+			enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, *src, &crj, scheduleJob)
+
+			err = h.DB.UpdateSourceReportGenerated(connectionID, h.Scheduler.complianceIntervalHours)
+			if err != nil {
+				return err
+			}
+			evaluation := StackEvaluation{
+				BenchmarkID: benchmarkID,
+				StackID:     stack.StackID,
+				JobID:       job.ID,
+			}
+			err = h.DB.AddEvaluation(&evaluation)
+			if err != nil {
+				return err
+			}
+			complianceJobs = append(complianceJobs, crj)
 		}
 	}
-	return ctx.NoContent(http.StatusOK)
+	return ctx.JSON(http.StatusOK, complianceJobs)
 }
 
 // GetBenchmarkResult godoc
@@ -978,9 +1026,9 @@ func (h HttpServer) TriggerBenchmark(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			jobId		path		string		true	"JobID"
-//	@Success		200				{object}	Stack
-//	@Router			/stack/api/v1/stacks/benchmark/{jobId} [get]
+//	@Param			jobId	path		string	true	"JobID"
+//	@Success		200		{object}	es.Finding
+//	@Router			/schedule/api/v1/stacks/benchmark/{jobId} [get]
 func (h HttpServer) GetBenchmarkResult(ctx echo.Context) error {
 	jobIdstring := ctx.Param("jobId")
 	jobId, err := strconv.ParseUint(jobIdstring, 10, 32)
@@ -1002,11 +1050,18 @@ func (h HttpServer) GetBenchmarkResult(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	conns, err := internal.GetConnections(accs)
+	var conns []string
+	for _, acc := range accs {
+		source, err := h.Scheduler.onboardClient.GetSourcesByAccount(httpclient.FromEchoContext(ctx), acc)
+		if err != nil {
+			return err
+		}
+		conns = append(conns, source.ID.String())
+	}
 	if err != nil {
 		return err
 	}
-	findings, err := internal.GetFindings(conns, []string{evaluation.BenchmarkID}, []string(stackRecord.Resources))
+	findings, err := h.Scheduler.complianceClient.GetFindings(httpclient.FromEchoContext(ctx), conns, evaluation.BenchmarkID, []string(stackRecord.Resources))
 	if err != nil {
 		return err
 	}
@@ -1028,10 +1083,10 @@ func (h HttpServer) GetBenchmarkResult(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			time		query		int			false	"unix seconds for the time to get the insight result for"
-//	@Param			stackId		path		string		true	"StackID"
-//	@Success		200				{object}	[]api1.InsightPeerGroup
-//	@Router			/stack/api/v1/stacks/{stackId}/insights [get]
+//	@Param			time	query		int		false	"unix seconds for the time to get the insight result for"
+//	@Param			stackId	path		string	true	"StackID"
+//	@Success		200		{object}	[]api.InsightPeerGroup
+//	@Router			/schedule/api/v1/stacks/{stackId}/insights [get]
 func (h HttpServer) GetInsights(ctx echo.Context) error {
 	stackId := ctx.Param("stackId")
 	timeStr := ctx.QueryParam("time")
@@ -1046,11 +1101,19 @@ func (h HttpServer) GetInsights(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	conns, err := internal.GetConnections(accs)
+	var conns []string
+	for _, acc := range accs {
+		source, err := h.Scheduler.onboardClient.GetSourcesByAccount(httpclient.FromEchoContext(ctx), acc)
+		if err != nil {
+			return err
+		}
+		conns = append(conns, source.ID.String())
+	}
 	if err != nil {
 		return err
 	}
-	result, err := internal.GetInsights(conns, timeStr)
+	inventoryClient := inventory.NewInventoryServiceClient(h.Address + "/inventory")
+	result, err := inventoryClient.ListInsights(httpclient.FromEchoContext(ctx), conns, timeStr)
 	if err != nil {
 		return err
 	}
