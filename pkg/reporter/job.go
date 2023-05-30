@@ -324,21 +324,26 @@ func (j *Job) PopulateSteampipe(account *api2.Source, cred *api2.AWSCredential, 
 		os.Setenv("AWS_ACCESS_KEY_ID", cred.AccessKey)
 		os.Setenv("AWS_SECRET_ACCESS_KEY", cred.SecretKey)
 		plugin = "aws"
-		content = `connection "aws" {
-		plugin  = "aws"
-		regions = ["*"]
-}`
+		content = `
+connection "aws" {
+  plugin  = "aws"
+  regions = ["*"]
+}
+`
 	}
 
 	if azureCred != nil {
-		os.Setenv("AZURE_TENANT_ID", azureCred.TenantID)
-		os.Setenv("AZURE_CLIENT_ID", azureCred.ClientID)
-		os.Setenv("AZURE_CLIENT_SECRET", azureCred.ClientSecret)
-		os.Setenv("AZURE_SUBSCRIPTION_ID", account.ConnectionID)
 		plugin = "azure"
-		content = `connection "azure" {
+		content = fmt.Sprintf(`
+connection "azure" {
   plugin = "azure"
-}`
+  tenant_id       = "%s"
+  subscription_id = "%s"
+  client_id       = "%s"
+  client_secret   = "%s"
+}
+`,
+			azureCred.TenantID, account.ConnectionID, azureCred.ClientID, azureCred.ClientSecret)
 	}
 
 	dirname, err := os.UserHomeDir()
