@@ -7,6 +7,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/lib/pq"
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 
@@ -111,4 +112,44 @@ type CheckupJob struct {
 	gorm.Model
 	Status         checkupapi.CheckupJobStatus
 	FailureMessage string
+}
+
+type Stack struct {
+	StackID   string         `gorm:"primarykey"`
+	Resources pq.StringArray `gorm:"type:text[]"`
+
+	Evaluations []*StackEvaluation  `gorm:"foreignKey:StackID;references:StackID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Tags        []*StackTag         `gorm:"foreignKey:StackID;references:StackID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	TagsMap     map[string][]string `gorm:"-:all"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+type StackTag struct {
+	Key     string         `gorm:"primaryKey;index:idx_key;index:idx_key_value"`
+	Value   pq.StringArray `gorm:"type:text[];index:idx_key_value"`
+	StackID string         `gorm:"primaryKey"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+type StackEvaluation struct {
+	BenchmarkID string
+	StackID     string
+	JobID       uint `gorm:"primaryKey"`
+
+	CreatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (t StackTag) GetKey() string {
+	return t.Key
+}
+
+func (t StackTag) GetValue() []string {
+	return t.Value
 }

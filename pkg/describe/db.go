@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/lib/pq"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 
@@ -29,7 +30,7 @@ type Database struct {
 
 func (db Database) Initialize() error {
 	return db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &CloudNativeDescribeSourceJob{}, &DescribeResourceJob{},
-		&ComplianceReportJob{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &ScheduleJob{},
+		&ComplianceReportJob{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &ScheduleJob{}, &Stack{}, &StackTag{}, &StackEvaluation{},
 	)
 }
 
@@ -1211,4 +1212,79 @@ func (db Database) GetLatestSuccessfulDescribeJobIDsPerResourcePerAccount() (map
 	}
 
 	return resMap, nil
+}
+
+// ===========================================STACK===============================================
+
+func (db Database) AddStack(record *Stack) error {
+	return db.orm.Model(&Stack{}).
+		Create(record).Error
+}
+
+func (db Database) GetStack(stackID string) (Stack, error) {
+	var s Stack
+	tx := db.orm.Model(&Stack{}).
+		Where("stack_id = ?", stackID).
+		Preload("Tags").
+		Preload("Evaluations").
+		First(&s)
+
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return Stack{}, nil
+		}
+		return Stack{}, tx.Error
+	}
+
+	return s, nil
+}
+
+func (db Database) ListStacks() ([]Stack, error) {
+	var s []Stack
+	tx := db.orm.Model(&Stack{}).
+		Preload("Tags").
+		Preload("Evaluations").
+		Find(&s)
+
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
+func (db Database) DeleteStack(stackID string) error {
+	return db.orm.Model(&Stack{}).
+		Where("stack_id = ?", stackID).
+		Delete(&Stack{}).Error
+}
+
+func (db Database) UpdateStackResources(stackID string, resources pq.StringArray) error {
+	tx := db.orm.Model(&Stack{}).
+		Where("stack_id = ?", stackID).
+		Update("resources", resources)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) AddEvaluation(record *StackEvaluation) error {
+	return db.orm.Model(&StackEvaluation{}).
+		Create(record).Error
+}
+
+func (db Database) GetEvaluation(jobId uint) (StackEvaluation, error) {
+	var result StackEvaluation
+	tx := db.orm.Model(&StackEvaluation{}).
+		Where("job_id = ?", jobId).
+		First(&result)
+	if tx.Error != nil {
+		return StackEvaluation{}, tx.Error
+	}
+
+	return result, nil
 }
