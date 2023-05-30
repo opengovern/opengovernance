@@ -817,7 +817,11 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 				apiResourceType.CountChangePercent = utils.GetPointer(float64(1))
 				continue
 			}
-			apiResourceType.CountChangePercent = utils.GetPointer(float64((float64(*apiResourceType.Count) - float64(*oldApiResourceType.Count)) / float64(*apiResourceType.Count)))
+			if *oldApiResourceType.Count == 0 {
+				apiResourceType.CountChangePercent = nil
+				continue
+			}
+			apiResourceType.CountChangePercent = utils.GetPointer(float64((float64(*apiResourceType.Count) - float64(*oldApiResourceType.Count)) / float64(*oldApiResourceType.Count)))
 			apiResourceTypesMap[oldApiResourceType.ResourceType] = apiResourceType
 		}
 	}
@@ -1164,6 +1168,21 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 		return err
 	}
 
+	endTimeHits, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, connectorTypes, costFilterNames, time.Unix(endTime, 0), EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+	startTimeHits, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, connectorTypes, costFilterNames, time.Unix(startTime, 0), EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+
+	type serviceCosts struct {
+		totalCost float64
+		startCost float64
+		endCost   float64
+	}
+
 	apiServices := make([]api.Service, 0, len(services))
 	totalCost := float64(0)
 	for _, service := range services {
@@ -1175,14 +1194,29 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 			LogoURI:      service.LogoURI,
 			Cost:         nil,
 		}
+		serviceCost := serviceCosts{}
 		if v, ok := service.GetTagsMap()[KaytuServiceCostTag]; ok {
 			for _, costFilterName := range v {
 				if costWithUnit, ok := aggregatedCostHits[costFilterName]; ok {
 					defaultCost := costWithUnit[DefaultCurrency]
-					srv.Cost = utils.PAdd(srv.Cost, &defaultCost.Cost)
+					serviceCost.totalCost += defaultCost.Cost
+					if startTimeHit, ok := startTimeHits[costFilterName]; ok {
+						c, _ := startTimeHit.GetCostAndUnit()
+						serviceCost.startCost += c
+					}
+					if endTimeHit, ok := endTimeHits[costFilterName]; ok {
+						c, _ := endTimeHit.GetCostAndUnit()
+						serviceCost.endCost += c
+					}
 					totalCost += defaultCost.Cost
 				}
 			}
+		}
+		srv.Cost = &serviceCost.totalCost
+		if serviceCost.startCost != 0 {
+			srv.CostChangePercent = utils.GetPointer((serviceCost.endCost - serviceCost.startCost) / serviceCost.startCost)
+		} else {
+			srv.CostChangePercent = nil
 		}
 		apiServices = append(apiServices, srv)
 	}
