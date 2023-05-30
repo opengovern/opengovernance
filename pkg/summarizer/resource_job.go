@@ -25,6 +25,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const MaxKafkaSendBatchSize = 10000
+
 var DoResourceSummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "keibi",
 	Subsystem: "summarizer_worker",
@@ -95,7 +97,6 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 		}
 	}
 
-	var msgs []kafka.Doc
 	builders := []resourcebuilder.Builder{
 		resourcebuilder.NewResourceSummaryBuilder(client, j.JobID),
 		resourcebuilder.NewTrendSummaryBuilder(client, j.JobID),
@@ -134,6 +135,8 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 		}
 	}
 	logger.Info("history populated")
+
+	var msgs []kafka.Doc
 	for _, b := range builders {
 		msgs = append(msgs, b.Build()...)
 	}
@@ -147,9 +150,15 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 	logger.Info("cleanup done")
 
 	if len(msgs) > 0 {
-		err := kafka.DoSend(producer, topic, -1, msgs, logger)
-		if err != nil {
-			fail(fmt.Errorf("Failed to send to kafka: %v ", err))
+		for i := 0; i < len(msgs); i += MaxKafkaSendBatchSize {
+			end := i + MaxKafkaSendBatchSize
+			if end > len(msgs) {
+				end = len(msgs)
+			}
+			err := kafka.DoSend(producer, topic, -1, msgs[i:end], logger)
+			if err != nil {
+				fail(fmt.Errorf("Failed to send to kafka: %v ", err))
+			}
 		}
 		logger.Info("sent to kafka")
 	}
