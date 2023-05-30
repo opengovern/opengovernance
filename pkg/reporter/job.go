@@ -37,16 +37,18 @@ type Query struct {
 }
 
 type JobConfig struct {
-	Steampipe   config.Postgres
-	SteampipeES config.Postgres
-	Onboard     config.KeibiService
+	Steampipe       config.Postgres
+	SteampipeES     config.Postgres
+	Onboard         config.KeibiService
+	ScheduleMinutes int
 }
 
 type Job struct {
-	steampipe     *steampipe.Database
-	esSteampipe   *steampipe.Database
-	onboardClient onboardClient.OnboardServiceClient
-	logger        *zap.Logger
+	steampipe       *steampipe.Database
+	esSteampipe     *steampipe.Database
+	onboardClient   onboardClient.OnboardServiceClient
+	logger          *zap.Logger
+	ScheduleMinutes int
 }
 
 func New(config JobConfig) (*Job, error) {
@@ -127,11 +129,16 @@ func New(config JobConfig) (*Job, error) {
 
 	onboard := onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL, nil)
 
+	if config.ScheduleMinutes <= 0 {
+		config.ScheduleMinutes = 5
+	}
+
 	return &Job{
-		steampipe:     s1,
-		esSteampipe:   s2,
-		onboardClient: onboard,
-		logger:        logger,
+		steampipe:       s1,
+		esSteampipe:     s2,
+		onboardClient:   onboard,
+		logger:          logger,
+		ScheduleMinutes: config.ScheduleMinutes,
 	}, nil
 }
 
@@ -142,7 +149,7 @@ func (j *Job) Run() {
 		if err := j.RunJob(); err != nil {
 			j.logger.Error("failed to run job", zap.Error(err))
 		}
-		time.Sleep(5 * time.Minute)
+		time.Sleep(time.Duration(j.ScheduleMinutes) * time.Minute)
 	}
 }
 
