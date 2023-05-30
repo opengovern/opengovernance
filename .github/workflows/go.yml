@@ -45,6 +45,7 @@ jobs:
       env: # Or as an environment variable
         CI_ACCESS_TOKEN: ${{ secrets.CI_ACCESS_TOKEN }}
         GITHUBCI_TOKEN: ${{ secrets.GITHUBCI_TOKEN }}
+        SERVICE_LIST: all
       run: |
         echo -e "machine gitlab.com login gitlab-ci-token password ${{ secrets.CI_ACCESS_TOKEN }}" > ~/.netrc
         echo -e "machine github.com login api password ${{ secrets.GITHUBCI_TOKEN }}" >> ~/.netrc

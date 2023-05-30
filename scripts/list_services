@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 #GIT_CHANGE=$(git status -s | awk '{print $2}')
 if [[ ! -z $SERVICE_LIST ]]; then
   if [[ "$SERVICE_LIST" == "all" ]]; then
