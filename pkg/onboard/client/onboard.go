@@ -104,10 +104,10 @@ func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID stri
 		return nil, nil, err
 	}
 
-	if err := json.Unmarshal(body, &awsCred); err == nil {
+	if err = json.Unmarshal(body, &awsCred); err == nil {
 		return &awsCred, nil, nil
 	}
-	if err := json.Unmarshal(body, &azureCred); err == nil {
+	if err = json.Unmarshal(body, &azureCred); err == nil {
 		return nil, &azureCred, nil
 	}
 	return nil, nil, err
