@@ -12,6 +12,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 )
 
 type FetchCostByServicesQueryResponse struct {
@@ -42,17 +43,17 @@ func FetchCostByServicesBetween(client keibi.Client, connectionIDs []string, con
 	after = after.Truncate(24 * time.Hour)
 
 	hits := make(map[string]summarizer.ServiceCostSummary)
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummaryMonthly)}},
 	})
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"service_name": services},
 	})
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
 			"period_end": map[string]string{
 				"gte": strconv.FormatInt(after.Unix(), 10),
 				"lte": strconv.FormatInt(before.Unix(), 10),
@@ -61,7 +62,7 @@ func FetchCostByServicesBetween(client keibi.Client, connectionIDs []string, con
 	})
 
 	if len(connectionIDs) > 0 {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
@@ -70,29 +71,29 @@ func FetchCostByServicesBetween(client keibi.Client, connectionIDs []string, con
 		for _, connector := range connectors {
 			connectorsStr = append(connectorsStr, string(connector))
 		}
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": connectorsStr},
 		})
 	}
 
 	res["size"] = size
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
-	res["aggs"] = map[string]interface{}{
-		"service_grouping": map[string]interface{}{
-			"terms": map[string]interface{}{
+	res["aggs"] = map[string]any{
+		"service_grouping": map[string]any{
+			"terms": map[string]any{
 				"field": "service_name",
 			},
-			"aggs": map[string]interface{}{
-				"period_end_max": map[string]interface{}{
-					"top_hits": map[string]interface{}{
+			"aggs": map[string]any{
+				"period_end_max": map[string]any{
+					"top_hits": map[string]any{
 						"size": 1,
-						"sort": []map[string]interface{}{
+						"sort": []map[string]any{
 							{
-								"period_end": map[string]interface{}{
+								"period_end": map[string]any{
 									"order": "desc",
 								},
 							},
@@ -144,17 +145,17 @@ func FetchCostHistoryByServicesBetween(client keibi.Client, sourceID *string, pr
 	after = after.Truncate(24 * time.Hour)
 
 	hits := make(map[string][]summarizer.ServiceCostSummary)
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummaryMonthly)}},
 	})
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"service_name": services},
 	})
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
 			"period_end": map[string]string{
 				"gte": strconv.FormatInt(after.Unix(), 10),
 				"lte": strconv.FormatInt(before.Unix(), 10),
@@ -163,19 +164,19 @@ func FetchCostHistoryByServicesBetween(client keibi.Client, sourceID *string, pr
 	})
 
 	if sourceID != nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": {*sourceID}},
 		})
 	}
 	if provider != nil && !provider.IsNull() {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": {(*provider).String()}},
 		})
 	}
 
 	res["size"] = size
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -235,14 +236,14 @@ func FetchCostByAccountsBetween(client keibi.Client, sourceID *string, provider 
 	after = after.Truncate(24 * time.Hour)
 
 	hits := make(map[string]summarizer.ConnectionCostSummary)
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.CostConnectionSummaryMonthly)}},
 	})
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
 			"period_end": map[string]string{
 				"gte": strconv.FormatInt(after.Unix(), 10),
 				"lte": strconv.FormatInt(before.Unix(), 10),
@@ -251,30 +252,30 @@ func FetchCostByAccountsBetween(client keibi.Client, sourceID *string, provider 
 	})
 
 	if sourceID != nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": {*sourceID}},
 		})
 	}
 	if provider != nil && !provider.IsNull() {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": {(*provider).String()}},
 		})
 	}
 
 	res["size"] = size
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
-	res["aggs"] = map[string]interface{}{
-		"source_id_grouping": map[string]interface{}{
+	res["aggs"] = map[string]any{
+		"source_id_grouping": map[string]any{
 			"terms": map[string]string{
 				"field": "source_id",
 			},
-			"aggs": map[string]interface{}{
-				"period_end_max": map[string]interface{}{
-					"top_hits": map[string]interface{}{
+			"aggs": map[string]any{
+				"period_end_max": map[string]any{
+					"top_hits": map[string]any{
 						"size": 1,
 						"sort": []map[string]string{
 							{
@@ -331,24 +332,24 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs [
 	after = after.Truncate(24 * time.Hour)
 
 	hits := make(map[string][]summarizer.ServiceCostSummary)
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummaryDaily)}},
 	})
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"service_name": services},
 	})
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
 			"period_end": map[string]string{
 				"lte": strconv.FormatInt(before.Unix(), 10),
 			},
 		},
 	})
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
 			"period_start": map[string]string{
 				"gte": strconv.FormatInt(after.Unix(), 10),
 			},
@@ -356,7 +357,7 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs [
 	})
 
 	if len(connectionIDs) > 0 {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
@@ -365,14 +366,14 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs [
 		for _, connector := range connectors {
 			connectorsStr = append(connectorsStr, connector.String())
 		}
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": connectorsStr},
 		})
 	}
 
 	res["size"] = size
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -402,6 +403,116 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs [
 	return hits, nil
 }
 
+type FetchDailyCostHistoryByServicesAtTimeResponse struct {
+	Aggregations struct {
+		SummarizeJobIDGroup struct {
+			Buckets []struct {
+				ServiceNameGroup struct {
+					Buckets []struct {
+						Key  string `json:"key"`
+						Hits struct {
+							Hits []struct {
+								Source summarizer.ServiceCostSummary `json:"_source"`
+							} `json:"hits"`
+						} `json:"hits"`
+					} `json:"buckets"`
+				} `json:"service_name_group"`
+			} `json:"buckets"`
+		} `json:"summarize_job_id_group"`
+	} `json:"aggregations"`
+}
+
+func FetchDailyCostHistoryByServicesAtTime(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, at time.Time, size int) (map[string]summarizer.ServiceCostSummary, error) {
+	var filters []any
+	filters = append(filters, map[string]any{
+		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummaryDaily)}},
+	})
+	filters = append(filters, map[string]any{
+		"terms": map[string][]string{"service_name": utils.ToLowerStringSlice(services)},
+	})
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_end": map[string]string{
+				"lte": strconv.FormatInt(at.Unix(), 10),
+			},
+		},
+	})
+	if len(connectionIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"source_id": connectionIDs},
+		})
+	}
+	if len(connectors) > 0 {
+		connectorsStr := make([]string, 0, len(connectors))
+		for _, connector := range connectors {
+			connectorsStr = append(connectorsStr, connector.String())
+		}
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"source_type": connectorsStr},
+		})
+	}
+
+	res := make(map[string]any)
+	res["size"] = 0
+	res["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	res["aggs"] = map[string]any{
+		"summarize_job_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "summarize_job_id",
+				"size":  1,
+				"order": map[string]string{
+					"_term": "desc",
+				},
+			},
+			"aggs": map[string]any{
+				"service_name_group": map[string]any{
+					"terms": map[string]any{
+						"field": "service_name",
+						"size":  size,
+					},
+					"aggs": map[string]any{
+						"hits": map[string]any{
+							"top_hits": map[string]any{
+								"size": 1,
+								"sort": map[string]string{
+									"period_end": "desc",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	query, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("query=%s index=%s\n", query, summarizer.CostSummeryIndex)
+	var response FetchDailyCostHistoryByServicesAtTimeResponse
+	err = client.Search(context.Background(), summarizer.CostSummeryIndex, string(query), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]summarizer.ServiceCostSummary)
+	for _, bucket := range response.Aggregations.SummarizeJobIDGroup.Buckets {
+		for _, serviceBucket := range bucket.ServiceNameGroup.Buckets {
+			for _, hit := range serviceBucket.Hits.Hits {
+				result[serviceBucket.Key] = hit.Source
+			}
+		}
+	}
+
+	return result, nil
+}
+
 type FetchCostHistoryByAccountsQueryResponse struct {
 	Hits struct {
 		Total keibi.SearchTotal `json:"total"`
@@ -421,21 +532,21 @@ func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, connectors []so
 	after = after.Truncate(24 * time.Hour)
 
 	hits := make(map[string][]summarizer.ConnectionCostSummary)
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.CostConnectionSummaryDaily)}},
 	})
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
 			"period_end": map[string]string{
 				"lte": strconv.FormatInt(before.Unix(), 10),
 			},
 		},
 	})
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
 			"period_start": map[string]string{
 				"gte": strconv.FormatInt(after.Unix(), 10),
 			},
@@ -443,7 +554,7 @@ func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, connectors []so
 	})
 
 	if len(connectionIDs) > 0 {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
@@ -452,14 +563,14 @@ func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, connectors []so
 		for _, connector := range connectors {
 			connectorsStr = append(connectorsStr, connector.String())
 		}
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": connectorsStr},
 		})
 	}
 
 	res["size"] = size
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}

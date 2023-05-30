@@ -12,8 +12,8 @@ type Service struct {
 	ServiceLabel      string              `json:"service_label"`
 	Tags              map[string][]string `json:"tags,omitempty"`
 	LogoURI           *string             `json:"logo_uri,omitempty"`
-	Cost              *float64            `json:"count,omitempty"`
-	CostChangePercent *float64            `json:"count_change_percent,omitempty"`
+	Cost              *float64            `json:"cost,omitempty"`
+	CostChangePercent *float64            `json:"cost_change_percent,omitempty"`
 }
 
 type ListServiceMetricsResponse struct {
