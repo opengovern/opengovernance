@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 )
 
@@ -41,10 +42,6 @@ func (b *locationSummaryBuilder) Process(resource describe.LookupResource) {
 		}
 	}
 
-	v := b.connectionSummary[resource.SourceID]
-	v.LocationDistribution[resource.Location]++
-	b.connectionSummary[resource.SourceID] = v
-
 	if _, ok := b.providerSummary[resource.SourceType]; !ok {
 		b.providerSummary[resource.SourceType] = es.ProviderLocationSummary{
 			SummarizeJobID:       b.summarizerJobID,
@@ -55,6 +52,13 @@ func (b *locationSummaryBuilder) Process(resource describe.LookupResource) {
 		}
 	}
 
+	if resource.Location == "" {
+		fmt.Printf("resource from account %s of type %s has no location ignoring it in location summary\n", resource.SourceID, resource.SourceType)
+		return
+	}
+	v := b.connectionSummary[resource.SourceID]
+	v.LocationDistribution[resource.Location]++
+	b.connectionSummary[resource.SourceID] = v
 	v2 := b.providerSummary[resource.SourceType]
 	v2.LocationDistribution[resource.Location]++
 	b.providerSummary[resource.SourceType] = v2
