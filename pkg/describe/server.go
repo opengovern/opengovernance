@@ -776,10 +776,10 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "No resource provided")
 	}
 	var recordTags []*StackTag
-	for _, t := range req.Tags {
+	for key, value := range req.Tags {
 		recordTags = append(recordTags, &StackTag{
-			Key:   t.Key,
-			Value: t.Value,
+			Key:   key,
+			Value: pq.StringArray(value),
 		})
 	}
 	id := "stack-" + uuid.New().String()
@@ -793,20 +793,12 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		return err
 	}
 
-	var tags []api.StackTag
-	for _, t := range stackRecord.Tags {
-		tags = append(tags, api.StackTag{
-			Key:   t.Key,
-			Value: t.Value,
-		})
-	}
-
 	stack := api.Stack{
 		StackID:   stackRecord.StackID,
 		CreatedAt: stackRecord.CreatedAt,
 		UpdatedAt: stackRecord.UpdatedAt,
 		Resources: []string(stackRecord.Resources),
-		Tags:      tags,
+		Tags:      trimPrivateTags(stackRecord.GetTagsMap()),
 	}
 	return ctx.JSON(http.StatusOK, stack)
 }
@@ -828,13 +820,6 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	var tags []api.StackTag
-	for _, t := range stackRecord.Tags {
-		tags = append(tags, api.StackTag{
-			Key:   t.Key,
-			Value: t.Value,
-		})
-	}
 
 	var evaluations []api.StackEvaluation
 	for _, e := range stackRecord.Evaluations {
@@ -850,7 +835,7 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 		CreatedAt:   stackRecord.CreatedAt,
 		UpdatedAt:   stackRecord.UpdatedAt,
 		Resources:   []string(stackRecord.Resources),
-		Tags:        tags,
+		Tags:        trimPrivateTags(stackRecord.GetTagsMap()),
 		Evaluations: evaluations,
 	}
 	return ctx.JSON(http.StatusOK, stack)
@@ -873,19 +858,13 @@ func (h HttpServer) ListStack(ctx echo.Context) error {
 	}
 	var stacks []api.Stack
 	for _, sr := range stacksRecord {
-		var tags []api.StackTag
-		for _, t := range sr.Tags {
-			tags = append(tags, api.StackTag{
-				Key:   t.Key,
-				Value: t.Value,
-			})
-		}
+
 		stack := api.Stack{
 			StackID:   sr.StackID,
 			CreatedAt: sr.CreatedAt,
 			UpdatedAt: sr.UpdatedAt,
 			Resources: []string(sr.Resources),
-			Tags:      tags,
+			Tags:      trimPrivateTags(sr.GetTagsMap()),
 		}
 		stacks = append(stacks, stack)
 	}
@@ -938,19 +917,13 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	var tags []api.StackTag
-	for _, t := range stackRecord.Tags {
-		tags = append(tags, api.StackTag{
-			Key:   t.Key,
-			Value: t.Value,
-		})
-	}
+
 	stack := api.Stack{
 		StackID:   stackRecord.StackID,
 		CreatedAt: stackRecord.CreatedAt,
 		UpdatedAt: stackRecord.UpdatedAt,
 		Resources: []string(stackRecord.Resources),
-		Tags:      tags,
+		Tags:      trimPrivateTags(stackRecord.GetTagsMap()),
 	}
 	accs, err := internal.ParseAccountsFromArns(stack.Resources)
 	if err != nil {

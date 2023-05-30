@@ -8,14 +8,9 @@ type EvaluateStack struct {
 }
 
 type CreateStackRequest struct {
-	Statefile string     `json:"statefile"`
-	Resources []string   `json:"resources"`
-	Tags      []StackTag `json:"tags"`
-}
-
-type StackTag struct {
-	Key   string   `json:"key"`
-	Value []string `json:"value"`
+	Statefile string              `json:"statefile"`
+	Resources []string            `json:"resources"`
+	Tags      map[string][]string `json:"tags"`
 }
 
 type UpdateStackResourcesRequest struct {
@@ -28,7 +23,7 @@ type Stack struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	Resources   []string
-	Tags        []StackTag
+	Tags        map[string][]string
 	Evaluations []StackEvaluation
 }
 
