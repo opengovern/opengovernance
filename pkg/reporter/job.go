@@ -13,7 +13,6 @@ import (
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"go.uber.org/zap"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -319,22 +318,28 @@ func (j *Job) RandomQuery(sourceType source.Type) *Query {
 }
 
 func (j *Job) PopulateSteampipe(account *api2.Source, cred *api2.AWSCredential, azureCred *api2.AzureCredential) error {
-	var plugin, content string
+	dirname, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	filePath := dirname + "/.steampipe/config/steampipe.spc"
+	os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
+
 	if cred != nil {
 		os.Setenv("AWS_ACCESS_KEY_ID", cred.AccessKey)
 		os.Setenv("AWS_SECRET_ACCESS_KEY", cred.SecretKey)
-		plugin = "aws"
-		content = `
+		content := `
 connection "aws" {
   plugin  = "aws"
   regions = ["*"]
 }
 `
+		filePath = dirname + "/.steampipe/config/aws.spc"
+		return os.WriteFile(filePath, []byte(content), os.ModePerm)
 	}
 
 	if azureCred != nil {
-		plugin = "azure"
-		content = fmt.Sprintf(`
+		content := fmt.Sprintf(`
 connection "azure" {
   plugin = "azure"
   tenant_id       = "%s"
@@ -344,14 +349,24 @@ connection "azure" {
 }
 `,
 			azureCred.TenantID, account.ConnectionID, azureCred.ClientID, azureCred.ClientSecret)
+		filePath = dirname + "/.steampipe/config/azure.spc"
+		err = os.WriteFile(filePath, []byte(content), os.ModePerm)
+		if err != nil {
+			return err
+		}
+
+		content = fmt.Sprintf(`
+connection "azuread" {
+  plugin = "azuread"
+  tenant_id       = "%s"
+  client_id       = "%s"
+  client_secret   = "%s"
+}
+`,
+			azureCred.TenantID, azureCred.ClientID, azureCred.ClientSecret)
+		filePath = dirname + "/.steampipe/config/azuread.spc"
+		return os.WriteFile(filePath, []byte(content), os.ModePerm)
 	}
 
-	dirname, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
-
-	filePath := dirname + "/.steampipe/config/" + plugin + ".spc"
-	os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
-	return ioutil.WriteFile(filePath, []byte(content), os.ModePerm)
+	return nil
 }

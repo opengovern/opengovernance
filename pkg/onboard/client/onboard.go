@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -98,10 +99,15 @@ func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID stri
 		}
 		return nil, nil, fmt.Errorf("http status: %d: %s", res.StatusCode, d)
 	}
-	if err := json.NewDecoder(res.Body).Decode(&awsCred); err == nil {
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if err := json.Unmarshal(body, &awsCred); err == nil {
 		return &awsCred, nil, nil
 	}
-	if err := json.NewDecoder(res.Body).Decode(&azureCred); err == nil {
+	if err := json.Unmarshal(body, &azureCred); err == nil {
 		return nil, &azureCred, nil
 	}
 	return nil, nil, err
