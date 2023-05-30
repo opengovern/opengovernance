@@ -1203,11 +1203,11 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 					defaultCost := costWithUnit[DefaultCurrency]
 					serviceCost.totalCost += defaultCost.Cost
 					if startTimeHit, ok := startTimeHits[costFilterName]; ok {
-						c, _ := startTimeHit.GetCostAndUnit()
+						c := startTimeHit[DefaultCurrency].Cost
 						serviceCost.startCost += c
 					}
 					if endTimeHit, ok := endTimeHits[costFilterName]; ok {
-						c, _ := endTimeHit.GetCostAndUnit()
+						c := endTimeHit[DefaultCurrency].Cost
 						serviceCost.endCost += c
 					}
 					totalCost += defaultCost.Cost
