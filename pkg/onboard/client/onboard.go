@@ -104,6 +104,7 @@ func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID stri
 		return nil, nil, err
 	}
 
+	fmt.Printf("body: %s\n", string(body))
 	if err = json.Unmarshal(body, &awsCred); err == nil {
 		return &awsCred, nil, nil
 	}

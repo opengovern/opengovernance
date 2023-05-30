@@ -172,6 +172,7 @@ func (j *Job) RunJob() error {
 		return err
 	}
 
+	fmt.Printf("account: %v, aws: %v, azure: %v\n", account, awsCred, azureCred)
 	err = j.PopulateSteampipe(account, awsCred, azureCred)
 	if err != nil {
 		return err
