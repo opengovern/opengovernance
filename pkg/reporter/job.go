@@ -272,6 +272,13 @@ func (j *Job) RunJob() error {
 				sj1 := strings.ToLower(string(j1))
 				sj2 := strings.ToLower(string(j2))
 
+				if sj1 == "null" {
+					sj1 = "{}"
+				}
+				if sj2 == "null" {
+					sj2 = "{}"
+				}
+
 				if sj1 != sj2 {
 					if k != "etag" {
 						j.logger.Error("inconsistency in data",
