@@ -198,8 +198,8 @@ type InsightHistoryResultQueryResponse struct {
 				Key                  int64 `json:"key"`
 				ExecutedAtRangeGroup struct {
 					Buckets []struct {
-						From          int64 `json:"from"`
-						To            int64 `json:"to"`
+						From          float64 `json:"from"`
+						To            float64 `json:"to"`
 						SourceIDGroup struct {
 							Buckets []struct {
 								Key         string `json:"key"`
