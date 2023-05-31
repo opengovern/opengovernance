@@ -29,9 +29,7 @@ type InsightResult struct {
 
 type Insight struct {
 	ID          uint                `json:"id"`
-	PeerGroupId *uint               `json:"peerGroupId"`
 	Query       Query               `json:"query"`
-	Category    string              `json:"category"`
 	Connector   source.Type         `json:"connector"`
 	ShortTitle  string              `json:"shortTitle"`
 	LongTitle   string              `json:"longTitle"`

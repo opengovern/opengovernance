@@ -228,6 +228,7 @@ type Insight struct {
 	gorm.Model
 	QueryID     string
 	Query       Query `gorm:"foreignKey:QueryID;references:ID;constraint:OnDelete:CASCADE;"`
+	Connector   source.Type
 	ShortTitle  string
 	LongTitle   string
 	Description string
@@ -255,7 +256,6 @@ func (i Insight) GetTagsMap() map[string][]string {
 func (i Insight) ToApi() api.Insight {
 	ia := api.Insight{
 		ID:          i.ID,
-		PeerGroupId: i.PeerGroupId,
 		Query:       i.Query.ToApi(),
 		Connector:   i.Connector,
 		ShortTitle:  i.ShortTitle,
