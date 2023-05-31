@@ -33,6 +33,8 @@ x-tagGroups:
 definitions:
   aws.Resources:
     properties:
+      errorCode:
+        type: string
       errors:
         additionalProperties:
           type: string
@@ -797,8 +799,6 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight:
     properties:
-      category:
-        type: string
       connector:
         $ref: '#/definitions/source.Type'
       description:
@@ -810,68 +810,80 @@ definitions:
       internal:
         type: boolean
       labels:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTag'
-        type: array
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
       links:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightLink'
+          type: string
         type: array
       logoURL:
         type: string
       longTitle:
         type: string
-      peerGroupId:
-        type: integer
       query:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query'
+      result:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightResult'
+        type: array
       shortTitle:
         type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightLink:
-    properties:
-      id:
+      totalResultValue:
         type: integer
-      linkText:
-        type: string
-      linkURI:
-        type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightPeerGroup:
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightConnection:
     properties:
-      category:
+      connection_id:
         type: string
-      description:
-        type: string
-      id:
-        type: integer
-      insights:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
-        type: array
-      labels:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTag'
-        type: array
-      links:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightLink'
-        type: array
-      logoURL:
-        type: string
-      longTitle:
-        type: string
-      shortTitle:
+      original_id:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTag:
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightDetail:
     properties:
-      id:
+      headers:
+        items:
+          type: string
+        type: array
+      rows:
+        items:
+          items: {}
+          type: array
+        type: array
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightResult:
+    properties:
+      connectionID:
+        description: Connection ID
+        type: string
+      connections:
+        description: Connections
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightConnection'
+        type: array
+      details:
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightDetail'
+        description: Insight Details
+      executedAt:
+        description: Time of Execution
+        type: string
+      insightID:
+        description: Insight ID
         type: integer
-      key:
-        type: string
-      value:
-        type: string
+      jobID:
+        description: Job ID
+        type: integer
+      locations:
+        description: Locations
+        items:
+          type: string
+        type: array
+      result:
+        description: Result
+        type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page:
     properties:
@@ -1211,6 +1223,100 @@ definitions:
           type: string
         type: array
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightConnection:
+    properties:
+      connection_id:
+        type: string
+      original_id:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource:
+    properties:
+      account_id:
+        description: AccountID
+        type: string
+      description:
+        description: Description
+        type: string
+      executed_at:
+        description: ExecutedAt is when the query is executed
+        type: integer
+      included_connections:
+        description: IncludedConnections list of the connections ids of the resources
+          included in this insight
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightConnection'
+        type: array
+      internal:
+        description: Internal hidden to user
+        type: boolean
+      job_id:
+        description: JobID is the ID of the job which produced this resource
+        type: integer
+      last_day_value:
+        description: LastDayValue result of the same query last day
+        type: integer
+      last_month_value:
+        description: LastMonthValue result of the same query last week
+        type: integer
+      last_quarter_value:
+        description: LastQuarterValue result of the same query last quarter
+        type: integer
+      last_week_value:
+        description: LastWeekValue result of the same query last week
+        type: integer
+      last_year_value:
+        description: LastYearValue result of the same query last year
+        type: integer
+      locations:
+        description: Locations list of the locations of the resources included in
+          this insight
+        items:
+          type: string
+        type: array
+      provider:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Provider
+      query:
+        description: Query
+        type: string
+      query_id:
+        description: QueryID is the ID of steampipe query which has been executed
+        type: integer
+      resource_type:
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResourceType'
+        description: ResourceType shows which collection of docs this resource belongs
+          to
+      result:
+        description: Result of query
+        type: integer
+      s3_location:
+        type: string
+      schedule_uuid:
+        description: ScheduleUUID
+        type: string
+      smart_query_id:
+        description: SmartQueryID is the ID of smart query id which is connected to
+          this insight
+        type: integer
+      source_id:
+        description: SourceID
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResourceType:
+    enum:
+    - history
+    - last
+    - provider_history
+    - provider_last
+    type: string
+    x-enum-varnames:
+    - InsightResourceHistory
+    - InsightResourceLast
+    - InsightResourceProviderHistory
+    - InsightResourceProviderLast
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AWSResource:
     properties:
       attributes:
@@ -1534,169 +1640,6 @@ definitions:
         description: Number of returned resources
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight:
-    properties:
-      category:
-        description: Category
-        type: string
-      description:
-        description: Description
-        type: string
-      enabled:
-        description: Enabled
-        type: boolean
-      executedAt:
-        description: Time of Execution
-        type: string
-      id:
-        description: Insight Id
-        type: integer
-      labels:
-        description: List of insight tags
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightTag'
-        type: array
-      links:
-        description: List of links
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink'
-        type: array
-      listInsightResultType:
-        allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType'
-        description: PeerGroup or Insight
-      logoURL:
-        description: Logo URL
-        type: string
-      longTitle:
-        description: Long Title
-        type: string
-      provider:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        description: Provider
-      query:
-        allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Query'
-        description: Query
-      results:
-        allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult'
-        description: Insight Results and Details
-      shortTitle:
-        description: Short Title
-        type: string
-      totalResults:
-        description: Total Results
-        type: integer
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection:
-    properties:
-      connection_id:
-        type: string
-      original_id:
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail:
-    properties:
-      headers:
-        items:
-          type: string
-        type: array
-      rows:
-        items:
-          items: {}
-          type: array
-        type: array
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink:
-    properties:
-      id:
-        type: integer
-      text:
-        type: string
-      uri:
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightPeerGroup:
-    properties:
-      category:
-        type: string
-      description:
-        type: string
-      id:
-        type: integer
-      insights:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight'
-        type: array
-      labels:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightTag'
-        type: array
-      links:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink'
-        type: array
-      listInsightResultType:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType'
-      logoURL:
-        type: string
-      longTitle:
-        type: string
-      shortTitle:
-        type: string
-      totalResults:
-        type: integer
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult:
-    properties:
-      connections:
-        description: Connections
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection'
-        type: array
-      details:
-        allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail'
-        description: Insight Details
-      executedAt:
-        description: Time of Execution
-        type: string
-      insightID:
-        description: Insight ID
-        type: integer
-      jobID:
-        description: Job ID
-        type: integer
-      locations:
-        description: Locations
-        items:
-          type: string
-        type: array
-      result:
-        description: Result
-        type: integer
-      sourceID:
-        description: Source ID
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse:
-    properties:
-      trend:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint'
-        type: array
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightTag:
-    properties:
-      id:
-        type: integer
-      key:
-        type: string
-      value:
-        type: string
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListConnectionsResponse:
     properties:
       connections:
@@ -1714,14 +1657,6 @@ definitions:
       totalUnhealthyCount:
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType:
-    enum:
-    - peerGroup
-    - insight
-    type: string
-    x-enum-varnames:
-    - ListInsightResultTypePeerGroup
-    - ListInsightResultTypeInsight
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest:
     properties:
       labels:
@@ -1817,23 +1752,6 @@ definitions:
         type: integer
       size:
         type: integer
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Query:
-    properties:
-      connector:
-        type: string
-      createdAt:
-        type: string
-      engine:
-        type: string
-      id:
-        type: string
-      listOfTables:
-        type: string
-      queryToExecute:
-        type: string
-      updatedAt:
-        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceFilters:
     description: if you provide two values for same filter OR operation would be used
@@ -2077,9 +1995,9 @@ definitions:
     properties:
       connector:
         $ref: '#/definitions/source.Type'
-      count:
+      cost:
         type: number
-      count_change_percent:
+      cost_change_percent:
         type: number
       logo_uri:
         type: string
@@ -3700,16 +3618,32 @@ paths:
       - compliance
   /compliance/api/v1/insight:
     get:
-      description: Listing insights
+      description: Listing insight with result
       parameters:
-      - description: filter by connector
-        enum:
-        - ""
-        - AWS
-        - Azure
+      - description: Key-Value tags in key=value format to filter by
         in: query
-        name: connector
+        name: tag
         type: string
+      - description: filter insights by connector
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - description: filter the result by source id
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: unix seconds for the time to get the insight result for
+        in: query
+        name: time
+        type: integer
       produces:
       - application/json
       responses:
@@ -3719,7 +3653,7 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
             type: array
-      summary: List insights
+      summary: List insight with result
       tags:
       - insights
   /compliance/api/v1/insight/{insightId}:
@@ -3735,18 +3669,20 @@ paths:
       summary: Get insight by id
       tags:
       - insights
-  /compliance/api/v1/insight/peer:
+  /compliance/api/v1/metadata/insight:
     get:
-      description: Listing insights
+      description: Listing insight metadata
       parameters:
       - description: filter by connector
-        enum:
-        - ""
-        - AWS
-        - Azure
         in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
         name: connector
-        type: string
+        type: array
       produces:
       - application/json
       responses:
@@ -3754,22 +3690,9 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightPeerGroup'
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
             type: array
-      summary: List insights
-      tags:
-      - insights
-  /compliance/api/v1/insight/peer/{peerGroupId}:
-    get:
-      description: Get insight by id
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightPeerGroup'
-      summary: Get insight by id
+      summary: List insight metadata
       tags:
       - insights
   /compliance/api/v1/queries/{query_id}:
@@ -3796,8 +3719,7 @@ paths:
         name: provider
         required: true
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4174,8 +4096,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4258,8 +4179,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceId
+      - description: SourceId
         in: query
         items:
           type: string
@@ -4370,8 +4290,7 @@ paths:
         in: query
         name: provider
         type: string
-      - collectionFormat: csv
-        description: SourceId
+      - description: SourceId
         in: query
         items:
           type: string
@@ -4469,8 +4388,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4586,22 +4504,31 @@ paths:
       - benchmarks
   /inventory/api/v2/insights:
     get:
-      description: List all insights
+      description: List all insight results for the given insightIds - this mostly
+        for internal usage, use compliance api for full api
       parameters:
       - description: filter insights by connector
-        enum:
-        - ""
-        - AWS
-        - Azure
         in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
         name: connector
-        type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+        type: array
+      - description: filter the result by source id
         in: query
         items:
           type: string
-        name: sourceId
+        name: connectionId
+        type: array
+      - description: filter the result by insight id
+        in: query
+        items:
+          type: string
+        name: insightId
+        required: true
         type: array
       - description: unix seconds for the time to get the insight result for
         in: query
@@ -4613,23 +4540,24 @@ paths:
         "200":
           description: OK
           schema:
-            items: {}
-            type: array
+            additionalProperties:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource'
+            type: object
       security:
       - BearerToken: []
-      summary: List insights
+      summary: List insight results
       tags:
       - insight
   /inventory/api/v2/insights/{insightId}:
     get:
-      description: Get an insight by id
+      description: Get insight results for the given insightIds - this mostly for
+        internal usage, use compliance api for full api
       parameters:
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
-        name: sourceId
+        name: connectionId
         type: array
       - description: unix seconds for the time to get the insight result for
         in: query
@@ -4641,20 +4569,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight'
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource'
       security:
       - BearerToken: []
-      summary: Get insight
+      summary: Get insight result by id
       tags:
       - insight
   /inventory/api/v2/insights/{insightId}/trend:
     get:
-      description: Get an insight trend by id
+      description: Get an insight trend data by id and time window - this mostly for
+        internal usage, use compliance api for full api
       parameters:
       - description: filter the result by source id
         in: query
-        name: sourceId
-        type: string
+        items:
+          type: string
+        name: connectionId
+        type: array
       - description: unix seconds for the start of the time window to get the insight
           trend for
         in: query
@@ -4665,9 +4596,10 @@ paths:
         in: query
         name: endTime
         type: integer
-      - description: Number of data points to return
+      - description: number of datapoints to return - defaults to number of days between
+          start and end time
         in: query
-        name: dataPointCount
+        name: datapointCount
         type: integer
       produces:
       - application/json
@@ -4675,37 +4607,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse'
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource'
+            type: array
       security:
       - BearerToken: []
-      summary: Get insight trend
-      tags:
-      - insight
-  /inventory/api/v2/insights/peer/{insightPeerGroupId}:
-    get:
-      description: Get an insight peer by id
-      parameters:
-      - collectionFormat: csv
-        description: filter the result by source id
-        in: query
-        items:
-          type: string
-        name: sourceId
-        type: array
-      - description: unix seconds for the time to get the insight result for
-        in: query
-        name: time
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightPeerGroup'
-      security:
-      - BearerToken: []
-      summary: Get insight peer
+      summary: Get insight trend data
       tags:
       - insight
   /inventory/api/v2/metadata/connectors:
@@ -4875,15 +4782,16 @@ paths:
         required: true
         type: integer
       - description: Connector types to filter by
-        enum:
-        - ""
-        - AWS
-        - Azure
         in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
         name: connector
-        type: string
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+        type: array
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4912,22 +4820,27 @@ paths:
       parameters:
       - description: Key-Value tags in key=value format to filter by
         in: query
+        items:
+          type: string
         name: tag
-        type: string
+        type: array
       - description: Service names to filter by
         in: query
+        items:
+          type: string
         name: servicename
-        type: string
+        type: array
       - description: Connector type to filter by
-        enum:
-        - ""
-        - AWS
-        - Azure
         in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
         name: connector
-        type: string
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+        type: array
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5020,22 +4933,27 @@ paths:
       parameters:
       - description: Key-Value tags in key=value format to filter by
         in: query
+        items:
+          type: string
         name: tag
-        type: string
+        type: array
       - description: Service names to filter by
         in: query
+        items:
+          type: string
         name: servicename
-        type: string
+        type: array
       - description: Connector type to filter by
-        enum:
-        - ""
-        - AWS
-        - Azure
         in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
         name: connector
-        type: string
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+        type: array
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5077,15 +4995,16 @@ paths:
         required: true
         type: integer
       - description: Connector type to filter by
-        enum:
-        - ""
-        - AWS
-        - Azure
         in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
         name: connector
-        type: string
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+        type: array
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5121,15 +5040,16 @@ paths:
         name: tag
         type: string
       - description: Connector type to filter by
-        enum:
-        - ""
-        - AWS
-        - Azure
         in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
         name: connector
-        type: string
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+        type: array
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5167,18 +5087,21 @@ paths:
       parameters:
       - description: Key-Value tags in key=value format to filter by
         in: query
+        items:
+          type: string
         name: tag
-        type: string
+        type: array
       - description: Connector type to filter by
-        enum:
-        - ""
-        - AWS
-        - Azure
         in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
         name: connector
-        type: string
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+        type: array
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -6318,8 +6241,7 @@ paths:
         in: query
         name: tag
         type: string
-      - collectionFormat: csv
-        description: Account IDs to filter by
+      - description: Account IDs to filter by
         in: query
         items:
           type: string
@@ -6404,7 +6326,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightPeerGroup'
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
             type: array
       security:
       - BearerToken: []

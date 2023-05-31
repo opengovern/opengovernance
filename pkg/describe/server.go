@@ -1053,7 +1053,7 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			time	query		int		false	"unix seconds for the time to get the insight result for"
 //	@Param			stackId	path		string	true	"StackID"
-//	@Success		200		{object}	[]inventoryapi.InsightPeerGroup
+//	@Success		200		{object}	[]complianceapi.Insight
 //	@Router			/schedule/api/v1/stacks/{stackId}/insights [get]
 func (h HttpServer) GetInsights(ctx echo.Context) error {
 	stackId := ctx.Param("stackId")
