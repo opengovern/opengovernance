@@ -57,7 +57,6 @@ type Job struct {
 	Internal         bool
 	Query            string
 	Description      string
-	Category         string
 	ExecutedAt       int64
 	LastDayJobID     uint
 	LastWeekJobID    uint
@@ -250,7 +249,6 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 						SourceID:            j.SourceID,
 						AccountID:           j.AccountID,
 						Provider:            j.SourceType,
-						Category:            j.Category,
 						ExecutedAt:          time.Now().UnixMilli(),
 						ScheduleUUID:        j.ScheduleJobUUID,
 						Result:              count,
