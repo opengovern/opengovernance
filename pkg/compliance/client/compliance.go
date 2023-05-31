@@ -1,9 +1,11 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"net/http"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -19,6 +21,7 @@ type ComplianceServiceClient interface {
 	GetInsightById(ctx *httpclient.Context, id uint) (*compliance.Insight, error)
 	GetInsightPeerGroups(ctx *httpclient.Context, connector source.Type) ([]compliance.InsightPeerGroup, error)
 	GetInsightPeerGroupById(ctx *httpclient.Context, id uint) (*compliance.InsightPeerGroup, error)
+	GetFindings(ctx *httpclient.Context, sourceIDs []string, benchmarkID string, resourceIDs []string) (compliance.GetFindingsResponse, error)
 }
 
 type complianceClient struct {
@@ -113,4 +116,38 @@ func (s *complianceClient) GetInsightPeerGroupById(ctx *httpclient.Context, id u
 		return nil, err
 	}
 	return &insightPeerGroup, nil
+}
+
+func (s *complianceClient) GetFindings(ctx *httpclient.Context, sourceIDs []string, benchmarkID string, resourceIDs []string) (compliance.GetFindingsResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/findings", s.baseURL)
+
+	req := compliance.GetFindingsRequest{
+		Filters: compliance.FindingFilters{
+			ConnectionID: sourceIDs,
+			BenchmarkID:  []string{benchmarkID},
+			ResourceID:   resourceIDs,
+		},
+		Sorts: []compliance.FindingSortItem{
+			{
+				Field:     "status",
+				Direction: "desc",
+			},
+		},
+		Page: compliance.Page{
+			No:   1,
+			Size: 100,
+		},
+	}
+
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return compliance.GetFindingsResponse{}, err
+	}
+
+	var response compliance.GetFindingsResponse
+	if err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+		return compliance.GetFindingsResponse{}, err
+	}
+
+	return response, nil
 }

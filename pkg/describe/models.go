@@ -2,11 +2,14 @@ package describe
 
 import (
 	"database/sql"
+	"sort"
+	"strings"
 	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/lib/pq"
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 
@@ -19,6 +22,20 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gorm.io/gorm"
 )
+
+const (
+	KaytuPrivateTagPrefix = "x-kaytu-"
+	KaytuServiceCostTag   = KaytuPrivateTagPrefix + "cost-service-map"
+)
+
+func trimPrivateTags(tags map[string][]string) map[string][]string {
+	for k := range tags {
+		if strings.HasPrefix(k, KaytuPrivateTagPrefix) {
+			delete(tags, k)
+		}
+	}
+	return tags
+}
 
 type Source struct {
 	ID                     uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
@@ -111,4 +128,92 @@ type CheckupJob struct {
 	gorm.Model
 	Status         checkupapi.CheckupJobStatus
 	FailureMessage string
+}
+
+type Stack struct {
+	StackID    string         `gorm:"primarykey"`
+	Resources  pq.StringArray `gorm:"type:text[]"`
+	AccountIDs pq.StringArray `gorm:"type:text[]"`
+
+	Evaluations []*StackEvaluation  `gorm:"foreignKey:StackID;references:StackID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Tags        []*StackTag         `gorm:"foreignKey:StackID;references:StackID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	tagsMap     map[string][]string `gorm:"-:all"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+type StackTag struct {
+	Key     string         `gorm:"primaryKey;index:idx_key;index:idx_key_value"`
+	Value   pq.StringArray `gorm:"type:text[];index:idx_key_value"`
+	StackID string         `gorm:"primaryKey"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+type StackEvaluation struct {
+	BenchmarkID string
+	StackID     string
+	JobID       uint `gorm:"primaryKey"`
+
+	CreatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+type TagLike interface {
+	GetKey() string
+	GetValue() []string
+}
+
+func getTagsMap(tags []TagLike) map[string][]string {
+	tagsMapToMap := make(map[string]map[string]bool)
+	for _, tag := range tags {
+		if v, ok := tagsMapToMap[tag.GetKey()]; !ok {
+			uniqueMap := make(map[string]bool)
+			for _, val := range tag.GetValue() {
+				uniqueMap[val] = true
+			}
+			tagsMapToMap[tag.GetKey()] = uniqueMap
+
+		} else {
+			for _, val := range tag.GetValue() {
+				v[val] = true
+			}
+			tagsMapToMap[tag.GetKey()] = v
+		}
+	}
+
+	result := make(map[string][]string)
+	for k, v := range tagsMapToMap {
+		for val := range v {
+			result[k] = append(result[k], val)
+		}
+		sort.Slice(result[k], func(i, j int) bool {
+			return result[k][i] < result[k][j]
+		})
+	}
+
+	return result
+}
+
+func (t StackTag) GetKey() string {
+	return t.Key
+}
+
+func (t StackTag) GetValue() []string {
+	return t.Value
+}
+
+func (r Stack) GetTagsMap() map[string][]string {
+	if r.tagsMap == nil {
+		tagLikeArr := make([]TagLike, 0, len(r.Tags))
+		for _, tag := range r.Tags {
+			tagLikeArr = append(tagLikeArr, tag)
+		}
+		r.tagsMap = getTagsMap(tagLikeArr)
+	}
+	return r.tagsMap
 }

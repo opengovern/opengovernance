@@ -26,6 +26,7 @@ x-tagGroups:
     - describe
     - schedule
     - jobs
+    - stack
   - name: workspace
     tags:
     - workspace
