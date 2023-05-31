@@ -25,6 +25,7 @@ type Stack struct {
 	Resources   []string
 	Tags        map[string][]string
 	Evaluations []StackEvaluation
+	AccountIDs  []string
 }
 
 type StackEvaluation struct {

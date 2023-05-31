@@ -131,8 +131,9 @@ type CheckupJob struct {
 }
 
 type Stack struct {
-	StackID   string         `gorm:"primarykey"`
-	Resources pq.StringArray `gorm:"type:text[]"`
+	StackID    string         `gorm:"primarykey"`
+	Resources  pq.StringArray `gorm:"type:text[]"`
+	AccountIDs pq.StringArray `gorm:"type:text[]"`
 
 	Evaluations []*StackEvaluation  `gorm:"foreignKey:StackID;references:StackID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Tags        []*StackTag         `gorm:"foreignKey:StackID;references:StackID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`

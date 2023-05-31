@@ -1239,11 +1239,12 @@ func (db Database) GetStack(stackID string) (Stack, error) {
 	return s, nil
 }
 
-func (db Database) ListStacks(tags map[string][]string) ([]Stack, error) {
+func (db Database) ListStacks(tags map[string][]string, accountIds []string) ([]Stack, error) {
 	var s []Stack
 	query := db.orm.Model(&Stack{}).
 		Preload("Tags").
-		Preload("Evaluations")
+		Preload("Evaluations").
+		Where("account_ids <@ ?", accountIds)
 	if len(tags) != 0 {
 		query = query.Joins("JOIN stack_tags AS tags ON tags.stack_id = stacks.stack_id")
 		for key, values := range tags {

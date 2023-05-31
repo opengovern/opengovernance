@@ -93,7 +93,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/stacks/:stackId", httpserver.AuthorizeHandler(h.GetStack, api3.ViewerRole))
 	v1.POST("/stacks/build", httpserver.AuthorizeHandler(h.CreateStack, api3.AdminRole))
 	v1.DELETE("/stacks/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, api3.AdminRole))
-	v1.GET("/stacks/benchmark/:jobId", httpserver.AuthorizeHandler(h.GetBenchmarkResult, api3.ViewerRole))
+	v1.GET("/stacks/findings/:jobId", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
 	v1.GET("/stacks/:stackId/insights", httpserver.AuthorizeHandler(h.GetInsights, api3.ViewerRole))
 }
 
@@ -782,23 +782,29 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 			Value: pq.StringArray(value),
 		})
 	}
+	accs, err := internal.ParseAccountsFromArns(resources)
+	if err != nil {
+		return err
+	}
 	id := "stack-" + uuid.New().String()
 	stackRecord := Stack{
-		StackID:   id,
-		Resources: pq.StringArray(resources),
-		Tags:      recordTags,
+		StackID:    id,
+		Resources:  pq.StringArray(resources),
+		Tags:       recordTags,
+		AccountIDs: accs,
 	}
-	err := h.DB.AddStack(&stackRecord)
+	err = h.DB.AddStack(&stackRecord)
 	if err != nil {
 		return err
 	}
 
 	stack := api.Stack{
-		StackID:   stackRecord.StackID,
-		CreatedAt: stackRecord.CreatedAt,
-		UpdatedAt: stackRecord.UpdatedAt,
-		Resources: []string(stackRecord.Resources),
-		Tags:      trimPrivateTags(stackRecord.GetTagsMap()),
+		StackID:    stackRecord.StackID,
+		CreatedAt:  stackRecord.CreatedAt,
+		UpdatedAt:  stackRecord.UpdatedAt,
+		Resources:  []string(stackRecord.Resources),
+		Tags:       trimPrivateTags(stackRecord.GetTagsMap()),
+		AccountIDs: accs,
 	}
 	return ctx.JSON(http.StatusOK, stack)
 }
@@ -837,6 +843,7 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 		Resources:   []string(stackRecord.Resources),
 		Tags:        trimPrivateTags(stackRecord.GetTagsMap()),
 		Evaluations: evaluations,
+		AccountIDs:  stackRecord.AccountIDs,
 	}
 	return ctx.JSON(http.StatusOK, stack)
 }
@@ -850,11 +857,13 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			tag				query		string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			accounIds		query		[]string	false 	"Account IDs to filter by"
 //	@Success		200	{object}	[]api.Stack
 //	@Router			/schedule/api/v1/stacks [get]
 func (h HttpServer) ListStack(ctx echo.Context) error {
 	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])
-	stacksRecord, err := h.DB.ListStacks(tagMap)
+	accountIds := ctx.QueryParams()["accounIds"]
+	stacksRecord, err := h.DB.ListStacks(tagMap, accountIds)
 	if err != nil {
 		return err
 	}
@@ -919,20 +928,8 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-
-	stack := api.Stack{
-		StackID:   stackRecord.StackID,
-		CreatedAt: stackRecord.CreatedAt,
-		UpdatedAt: stackRecord.UpdatedAt,
-		Resources: []string(stackRecord.Resources),
-		Tags:      trimPrivateTags(stackRecord.GetTagsMap()),
-	}
-	accs, err := internal.ParseAccountsFromArns(stack.Resources)
-	if err != nil {
-		return err
-	}
 	var connectionIDs []string
-	for _, acc := range accs {
+	for _, acc := range []string(stackRecord.AccountIDs) {
 		source, err := h.Scheduler.onboardClient.GetSourcesByAccount(httpclient.FromEchoContext(ctx), acc)
 		if err != nil {
 			return err
@@ -981,7 +978,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 			}
 			evaluation := StackEvaluation{
 				BenchmarkID: benchmarkID,
-				StackID:     stack.StackID,
+				StackID:     stackRecord.StackID,
 				JobID:       job.ID,
 			}
 			err = h.DB.AddEvaluation(&evaluation)
@@ -1004,8 +1001,8 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			jobId	path		string	true	"JobID"
 //	@Success		200		{object}	es.Finding
-//	@Router			/schedule/api/v1/stacks/benchmark/{jobId} [get]
-func (h HttpServer) GetBenchmarkResult(ctx echo.Context) error {
+//	@Router			/schedule/api/v1/stacks/findings/{jobId} [get]
+func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	jobIdstring := ctx.Param("jobId")
 	jobId, err := strconv.ParseUint(jobIdstring, 10, 32)
 	if err != nil {
@@ -1022,12 +1019,8 @@ func (h HttpServer) GetBenchmarkResult(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	accs, err := internal.ParseAccountsFromArns([]string(stackRecord.Resources))
-	if err != nil {
-		return err
-	}
 	var conns []string
-	for _, acc := range accs {
+	for _, acc := range []string(stackRecord.AccountIDs) {
 		source, err := h.Scheduler.onboardClient.GetSourcesByAccount(httpclient.FromEchoContext(ctx), acc)
 		if err != nil {
 			return err
@@ -1073,12 +1066,8 @@ func (h HttpServer) GetInsights(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	accs, err := internal.ParseAccountsFromArns([]string(stackRecord.Resources))
-	if err != nil {
-		return err
-	}
 	var conns []string
-	for _, acc := range accs {
+	for _, acc := range []string(stackRecord.AccountIDs) {
 		source, err := h.Scheduler.onboardClient.GetSourcesByAccount(httpclient.FromEchoContext(ctx), acc)
 		if err != nil {
 			return err
