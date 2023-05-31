@@ -279,7 +279,7 @@ func (s *HttpServerSuite) TestGetStack() {
 	}
 }
 
-func (s *HttpServerSuite) TestTriggerBenchmark() {
+func (s *HttpServerSuite) TestTriggerStackBenchmark() {
 	ids := s.TestCreateStack()
 	var benchmarkTestCase []struct {
 		request api.EvaluateStack
@@ -416,6 +416,42 @@ func (s *HttpServerSuite) TestDeleteStack() {
 				t.Fatalf("Database error: %v", err)
 			}
 			s.Equal(Stack{}, stack)
+		})
+	}
+}
+
+func (s *HttpServerSuite) TestTriggerEvaluation() {
+	connectionId := "d1f101e3-b5b9-4110-9220-ca9e7deb6e71"
+	benchmarkTestCase := []struct {
+		request api.TriggerBenchmarkEvaluationRequest
+	}{
+		{
+			request: api.TriggerBenchmarkEvaluationRequest{
+				BenchmarkID:  "aws_nist_800_53_rev_5",
+				ConnectionID: &connectionId,
+			},
+		},
+	}
+
+	for i, tc := range benchmarkTestCase {
+		s.T().Run(fmt.Sprintf("triggerBenchmark-%d", i), func(t *testing.T) {
+			requestBody, err := json.Marshal(tc.request)
+			if err != nil {
+				t.Fatalf("Marshal request: %v", err)
+			}
+			r := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(requestBody))
+			r.Header.Set("Content-Type", "application/json; charset=utf8")
+			w := httptest.NewRecorder()
+
+			c := echo.New().NewContext(r, w)
+			c.SetPath("/benchmark/evaluation/trigger")
+
+			err = s.handler.TriggerBenchmarkEvaluation(c)
+			var response []ComplianceReportJob
+			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+				t.Fatalf("json decode: %v", err)
+			}
+			fmt.Println(response)
 		})
 	}
 }

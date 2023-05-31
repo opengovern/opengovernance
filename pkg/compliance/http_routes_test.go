@@ -5,11 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"io"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"gorm.io/gorm"
+
+	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/ory/dockertest/v3"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/suite"
@@ -27,12 +33,49 @@ type HttpServerSuite struct {
 func (s *HttpServerSuite) SetupSuite() {
 	require := s.Require()
 
-	orm := dockertest.StartupPostgreSQL(s.T())
+	t := s.T()
+	pool, err := dockertest.NewPool("")
+	s.NoError(err, "pool constructed")
+	err = pool.Client.Ping()
+	s.NoError(err, "pinged pool")
+	user, pass := "postgres", "123456"
+	resource, err := pool.Run(user, "14.2-alpine", []string{fmt.Sprintf("POSTGRES_PASSWORD=%s", pass)})
+	s.NoError(err, "status postgres")
+	t.Cleanup(func() {
+		err := pool.Purge(resource)
+		s.NoError(err, "purge resource %s", resource)
+	})
+	time.Sleep(5 * time.Second)
+
+	var adb *gorm.DB
+	// exponential backoff-retry, because the application in the container might not be ready to accept connections yet
+	err = pool.Retry(func() error {
+		cfg := &postgres.Config{
+			Host:   idocker.GetDockerHost(),
+			Port:   resource.GetPort("5432/tcp"),
+			User:   user,
+			Passwd: pass,
+			DB:     "postgres",
+		}
+
+		logger, err := zap.NewProduction()
+		s.NoError(err, "new zap logger")
+
+		adb, err = postgres.NewClient(cfg, logger)
+		s.NoError(err, "new postgres client")
+
+		d, err := adb.DB()
+		if err != nil {
+			return err
+		}
+
+		return d.Ping()
+	})
 	s.handler = &HttpHandler{
-		db: db.Database{Orm: orm},
+		db: db.Database{Orm: adb},
 	}
 
-	err := s.handler.db.Initialize()
+	err = s.handler.db.Initialize()
 	require.NoError(err, "db initialize")
 
 	logger, err := zap.NewProduction()
