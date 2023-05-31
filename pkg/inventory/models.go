@@ -1,106 +1,21 @@
 package inventory
 
 import (
-	"sort"
-	"strings"
 	"time"
 
+	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
-const (
-	KaytuPrivateTagPrefix = "x-kaytu-"
-	KaytuServiceCostTag   = KaytuPrivateTagPrefix + "cost-service-map"
-)
-
-type TagLike interface {
-	GetKey() string
-	GetValue() []string
-}
-
-func getTagsMap(tags []TagLike) map[string][]string {
-	tagsMapToMap := make(map[string]map[string]bool)
-	for _, tag := range tags {
-		if v, ok := tagsMapToMap[tag.GetKey()]; !ok {
-			uniqueMap := make(map[string]bool)
-			for _, val := range tag.GetValue() {
-				uniqueMap[val] = true
-			}
-			tagsMapToMap[tag.GetKey()] = uniqueMap
-
-		} else {
-			for _, val := range tag.GetValue() {
-				v[val] = true
-			}
-			tagsMapToMap[tag.GetKey()] = v
-		}
-	}
-
-	result := make(map[string][]string)
-	for k, v := range tagsMapToMap {
-		for val := range v {
-			result[k] = append(result[k], val)
-		}
-		sort.Slice(result[k], func(i, j int) bool {
-			return result[k][i] < result[k][j]
-		})
-	}
-
-	return result
-}
-
-func trimPrivateTags(tags map[string][]string) map[string][]string {
-	for k := range tags {
-		if strings.HasPrefix(k, KaytuPrivateTagPrefix) {
-			delete(tags, k)
-		}
-	}
-	return tags
-}
-
-type Tag struct {
-	Key   string         `gorm:"primaryKey;index:idx_key;index:idx_key_value"`
-	Value pq.StringArray `gorm:"type:text[];index:idx_key_value"`
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
-}
-
-func (t Tag) GetKey() string {
-	return t.Key
-}
-
-func (t Tag) GetValue() []string {
-	return t.Value
-}
-
 type ResourceTypeTag struct {
-	Tag
+	model.Tag
 	ResourceType string `gorm:"primaryKey"`
 }
 
-func (t ResourceTypeTag) GetKey() string {
-	return t.Tag.Key
-}
-
-func (t ResourceTypeTag) GetValue() []string {
-	return t.Tag.Value
-}
-
 type ServiceTag struct {
-	Tag
+	model.Tag
 	ServiceName string `gorm:"primaryKey"`
-}
-
-func (t ServiceTag) GetKey() string {
-	return t.Tag.Key
-}
-
-func (t ServiceTag) GetValue() []string {
-	return t.Tag.Value
 }
 
 type SmartQuery struct {
@@ -128,11 +43,11 @@ type ResourceType struct {
 
 func (r ResourceType) GetTagsMap() map[string][]string {
 	if r.tagsMap == nil {
-		tagLikeArr := make([]TagLike, 0, len(r.Tags))
+		tagLikeArr := make([]model.TagLike, 0, len(r.Tags))
 		for _, tag := range r.Tags {
 			tagLikeArr = append(tagLikeArr, tag)
 		}
-		r.tagsMap = getTagsMap(tagLikeArr)
+		r.tagsMap = model.GetTagsMap(tagLikeArr)
 	}
 	return r.tagsMap
 }
@@ -154,11 +69,11 @@ type Service struct {
 
 func (s Service) GetTagsMap() map[string][]string {
 	if s.tagsMap == nil {
-		tagLikeArr := make([]TagLike, 0, len(s.Tags))
+		tagLikeArr := make([]model.TagLike, 0, len(s.Tags))
 		for _, tag := range s.Tags {
 			tagLikeArr = append(tagLikeArr, tag)
 		}
-		s.tagsMap = getTagsMap(tagLikeArr)
+		s.tagsMap = model.GetTagsMap(tagLikeArr)
 	}
 	return s.tagsMap
 }

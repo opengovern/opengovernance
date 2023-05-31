@@ -120,7 +120,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/kaytu-io/kaytu-aws-describer v0.0.0-20230513131051-487f90781041
 	github.com/kaytu-io/kaytu-azure-describer v0.0.0-20230513092309-666e3325e35e
-	github.com/kaytu-io/kaytu-util v0.0.0-20230528094221-720d5359cfa7
+	github.com/kaytu-io/kaytu-util v0.0.0-20230531101752-9cefc945d500
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/lib/pq v1.10.3
 	github.com/microsoft/kiota-abstractions-go v0.9.1
@@ -452,5 +452,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
-
-replace github.com/manicminer/hamilton => github.com/manicminer/hamilton v0.41.1
