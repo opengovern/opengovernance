@@ -286,7 +286,7 @@ func (j *Job) RunJob() error {
 							zap.String("steampipe", string(j1)),
 							zap.String("es", string(j2)),
 							zap.String("conflictColumn", k),
-							zap.String("keyCOlumns", fmt.Sprintf("%v", keyValues)),
+							zap.String("keyColumns", fmt.Sprintf("%v", keyValues)),
 						)
 					}
 				}
@@ -296,7 +296,7 @@ func (j *Job) RunJob() error {
 		if !found {
 			j.logger.Error("record not found",
 				zap.String("accountID", account.ConnectionID),
-				zap.String("steampipeARN", fmt.Sprintf("%v", steampipeRecord["arn"])),
+				zap.String("keyColumns", fmt.Sprintf("%v", keyValues)),
 			)
 		}
 	}
