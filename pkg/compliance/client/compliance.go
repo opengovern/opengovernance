@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
@@ -19,6 +20,7 @@ type ComplianceServiceClient interface {
 	GetQuery(ctx *httpclient.Context, queryID string) (*compliance.Query, error)
 	ListInsightsMetadata(ctx *httpclient.Context, connectors []source.Type) ([]compliance.Insight, error)
 	GetInsightMetadataById(ctx *httpclient.Context, id uint) (*compliance.Insight, error)
+	ListInsights(ctx *httpclient.Context, tags map[string][]string, connectors []source.Type, connectionIDs []string, timeAt *time.Time) ([]compliance.Insight, error)
 	GetFindings(ctx *httpclient.Context, sourceIDs []string, benchmarkID string, resourceIDs []string) (compliance.GetFindingsResponse, error)
 }
 
@@ -100,6 +102,59 @@ func (s *complianceClient) GetInsightMetadataById(ctx *httpclient.Context, id ui
 		return nil, err
 	}
 	return &insight, nil
+}
+
+func (s *complianceClient) ListInsights(ctx *httpclient.Context, tags map[string][]string, connectors []source.Type, connectionIDs []string, timeAt *time.Time) ([]compliance.Insight, error) {
+	url := fmt.Sprintf("%s/api/v1/insight", s.baseURL)
+	firstParamAttached := false
+	if len(connectors) > 0 {
+		for _, connector := range connectors {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("connector=%s", connector)
+		}
+	}
+	if len(connectionIDs) > 0 {
+		for _, connectionID := range connectionIDs {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("connection=%s", connectionID)
+		}
+	}
+	for tag, values := range tags {
+		for _, value := range values {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("tag=%s=%s", tag, value)
+		}
+	}
+	if timeAt != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("time=%d", timeAt.Unix())
+	}
+
+	var insights []compliance.Insight
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insights); err != nil {
+		return nil, err
+	}
+	return insights, nil
 }
 
 func (s *complianceClient) GetFindings(ctx *httpclient.Context, sourceIDs []string, benchmarkID string, resourceIDs []string) (compliance.GetFindingsResponse, error) {

@@ -150,7 +150,6 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob, ins comp
 		Internal:         ins.Internal,
 		Query:            ins.Query.QueryToExecute,
 		Description:      ins.Description,
-		Category:         ins.Category,
 		ExecutedAt:       job.CreatedAt.UnixMilli(),
 		LastDayJobID:     lastDayJobID,
 		LastWeekJobID:    lastWeekJobID,

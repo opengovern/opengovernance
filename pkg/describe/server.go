@@ -11,6 +11,7 @@ import (
 
 	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/lib/pq"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
@@ -23,7 +24,6 @@ import (
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
-	inventoryapi "gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 	"gorm.io/gorm"
 
@@ -33,7 +33,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/internal"
-	inventory "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 )
 
 type HttpServer struct {
@@ -1059,6 +1058,15 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 func (h HttpServer) GetInsights(ctx echo.Context) error {
 	stackId := ctx.Param("stackId")
 	timeStr := ctx.QueryParam("time")
+	var timeAt *time.Time
+	if timeStr != "" {
+		t, err := strconv.ParseInt(timeStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		tm := time.Unix(t, 0)
+		timeAt = &tm
+	}
 	stackRecord, err := h.DB.GetStack(stackId)
 	if err != nil {
 		return err
@@ -1077,9 +1085,9 @@ func (h HttpServer) GetInsights(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	inventoryClient := inventory.NewInventoryServiceClient(h.Address + "/inventory")
-	var result []inventoryapi.InsightPeerGroup
-	result, err = inventoryClient.ListInsights(httpclient.FromEchoContext(ctx), conns, timeStr)
+	inventoryClient := client.NewComplianceClient(h.Address + "/compliance") //TODO arta: this is wrong check other clients
+	var result []complianceapi.Insight
+	result, err = inventoryClient.ListInsights(httpclient.FromEchoContext(ctx), nil, nil, conns, timeAt)
 	if err != nil {
 		return err
 	}
