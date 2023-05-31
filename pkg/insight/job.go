@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"

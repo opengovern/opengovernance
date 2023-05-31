@@ -17,10 +17,8 @@ type ComplianceServiceClient interface {
 	GetBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.Benchmark, error)
 	GetPolicy(ctx *httpclient.Context, policyID string) (*compliance.Policy, error)
 	GetQuery(ctx *httpclient.Context, queryID string) (*compliance.Query, error)
-	GetInsights(ctx *httpclient.Context, connector source.Type) ([]compliance.Insight, error)
-	GetInsightById(ctx *httpclient.Context, id uint) (*compliance.Insight, error)
-	GetInsightPeerGroups(ctx *httpclient.Context, connector source.Type) ([]compliance.InsightPeerGroup, error)
-	GetInsightPeerGroupById(ctx *httpclient.Context, id uint) (*compliance.InsightPeerGroup, error)
+	ListInsightsMetadata(ctx *httpclient.Context, connectors []source.Type) ([]compliance.Insight, error)
+	GetInsightMetadataById(ctx *httpclient.Context, id uint) (*compliance.Insight, error)
 	GetFindings(ctx *httpclient.Context, sourceIDs []string, benchmarkID string, resourceIDs []string) (compliance.GetFindingsResponse, error)
 }
 
@@ -72,10 +70,19 @@ func (s *complianceClient) GetQuery(ctx *httpclient.Context, queryID string) (*c
 	return &response, nil
 }
 
-func (s *complianceClient) GetInsights(ctx *httpclient.Context, connector source.Type) ([]compliance.Insight, error) {
-	url := fmt.Sprintf("%s/api/v1/insight", s.baseURL)
-	if connector != source.Nil {
-		url = fmt.Sprintf("%s?connector=%s", url, connector)
+func (s *complianceClient) ListInsightsMetadata(ctx *httpclient.Context, connectors []source.Type) ([]compliance.Insight, error) {
+	url := fmt.Sprintf("%s/api/v1/metadata/insight", s.baseURL)
+	firstParamAttached := false
+	if len(connectors) > 0 {
+		for _, connector := range connectors {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("connector=%s", connector)
+		}
 	}
 
 	var insights []compliance.Insight
@@ -85,37 +92,14 @@ func (s *complianceClient) GetInsights(ctx *httpclient.Context, connector source
 	return insights, nil
 }
 
-func (s *complianceClient) GetInsightById(ctx *httpclient.Context, id uint) (*compliance.Insight, error) {
-	url := fmt.Sprintf("%s/api/v1/insight/%d", s.baseURL, id)
+func (s *complianceClient) GetInsightMetadataById(ctx *httpclient.Context, id uint) (*compliance.Insight, error) {
+	url := fmt.Sprintf("%s/api/v1/metadata/insight/%d", s.baseURL, id)
 
 	var insight compliance.Insight
 	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insight); err != nil {
 		return nil, err
 	}
 	return &insight, nil
-}
-
-func (s *complianceClient) GetInsightPeerGroups(ctx *httpclient.Context, connector source.Type) ([]compliance.InsightPeerGroup, error) {
-	url := fmt.Sprintf("%s/api/v1/insight/peer", s.baseURL)
-	if connector != source.Nil {
-		url = fmt.Sprintf("%s?connector=%s", url, connector)
-	}
-
-	var insightPeerGroups []compliance.InsightPeerGroup
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insightPeerGroups); err != nil {
-		return nil, err
-	}
-	return insightPeerGroups, nil
-}
-
-func (s *complianceClient) GetInsightPeerGroupById(ctx *httpclient.Context, id uint) (*compliance.InsightPeerGroup, error) {
-	url := fmt.Sprintf("%s/api/v1/insight/peer/%d", s.baseURL, id)
-
-	var insightPeerGroup compliance.InsightPeerGroup
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insightPeerGroup); err != nil {
-		return nil, err
-	}
-	return &insightPeerGroup, nil
 }
 
 func (s *complianceClient) GetFindings(ctx *httpclient.Context, sourceIDs []string, benchmarkID string, resourceIDs []string) (compliance.GetFindingsResponse, error) {

@@ -37,7 +37,7 @@ func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 		return
 	}
 
-	insights, err := s.complianceClient.GetInsights(&httpclient.Context{UserRole: api2.ViewerRole}, source.Nil)
+	insights, err := s.complianceClient.ListInsightsMetadata(&httpclient.Context{UserRole: api2.ViewerRole}, nil)
 	if err != nil {
 		s.logger.Error("Failed to fetch list of insights", zap.Error(err))
 		InsightJobsCount.WithLabelValues("failure").Inc()

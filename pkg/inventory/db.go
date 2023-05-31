@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
+	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/lib/pq"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
@@ -247,11 +248,11 @@ func (db Database) ListResourceTypeTagsKeysWithPossibleValues() (map[string][]st
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	tagLikes := make([]TagLike, 0, len(tags))
+	tagLikes := make([]model.TagLike, 0, len(tags))
 	for _, tag := range tags {
 		tagLikes = append(tagLikes, tag)
 	}
-	result := getTagsMap(tagLikes)
+	result := model.GetTagsMap(tagLikes)
 	return result, nil
 }
 
@@ -261,11 +262,11 @@ func (db Database) GetResourceTypeTagPossibleValues(key string) ([]string, error
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	tagLikes := make([]TagLike, 0, len(tags))
+	tagLikes := make([]model.TagLike, 0, len(tags))
 	for _, tag := range tags {
 		tagLikes = append(tagLikes, tag)
 	}
-	result := getTagsMap(tagLikes)
+	result := model.GetTagsMap(tagLikes)
 	return result[key], nil
 }
 
@@ -301,11 +302,11 @@ func (db Database) ListServiceTagsKeysWithPossibleValues() (map[string][]string,
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	tagLikes := make([]TagLike, 0, len(tags))
+	tagLikes := make([]model.TagLike, 0, len(tags))
 	for _, tag := range tags {
 		tagLikes = append(tagLikes, tag)
 	}
-	result := getTagsMap(tagLikes)
+	result := model.GetTagsMap(tagLikes)
 	return result, nil
 }
 
