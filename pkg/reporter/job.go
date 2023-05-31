@@ -172,7 +172,6 @@ func (j *Job) RunJob() error {
 		return err
 	}
 
-	fmt.Printf("account: %v, aws: %v, azure: %v\n", account, awsCred, azureCred)
 	err = j.PopulateSteampipe(account, awsCred, azureCred)
 	if err != nil {
 		return err
@@ -274,13 +273,15 @@ func (j *Job) RunJob() error {
 				sj2 := strings.ToLower(string(j2))
 
 				if sj1 != sj2 {
-					j.logger.Error("inconsistency in data",
-						zap.String("accountID", account.ConnectionID),
-						zap.String("steampipe", string(j1)),
-						zap.String("es", string(j2)),
-						zap.String("conflictColumn", k),
-						zap.String("keyCOlumns", fmt.Sprintf("%v", keyValues)),
-					)
+					if k != "etag" {
+						j.logger.Error("inconsistency in data",
+							zap.String("accountID", account.ConnectionID),
+							zap.String("steampipe", string(j1)),
+							zap.String("es", string(j2)),
+							zap.String("conflictColumn", k),
+							zap.String("keyCOlumns", fmt.Sprintf("%v", keyValues)),
+						)
+					}
 				}
 			}
 		}
