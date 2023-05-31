@@ -226,10 +226,8 @@ type BenchmarkPolicies struct {
 
 type Insight struct {
 	gorm.Model
-	PeerGroupId *uint
 	QueryID     string
 	Query       Query `gorm:"foreignKey:QueryID;references:ID;constraint:OnDelete:CASCADE;"`
-	Connector   source.Type
 	ShortTitle  string
 	LongTitle   string
 	Description string
