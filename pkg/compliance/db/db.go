@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -17,10 +18,8 @@ func (db Database) Initialize() error {
 		&Query{},
 		&PolicyTag{},
 		&BenchmarkTag{},
-		&InsightTag{},
-		&InsightLink{},
-		&InsightPeerGroup{},
 		&Insight{},
+		&InsightTag{},
 		&Policy{},
 		&Benchmark{},
 		&BenchmarkAssignment{},
@@ -269,38 +268,28 @@ func (db Database) GetInsight(id uint) (*Insight, error) {
 	return &res, nil
 }
 
-func (db Database) ListInsightsWithFilters(connector source.Type, enabled *bool) ([]Insight, error) {
+func (db Database) ListInsightsWithFilters(connectors []source.Type, enabled *bool, tags map[string][]string) ([]Insight, error) {
 	var s []Insight
 	m := db.Orm.Model(&Insight{}).Preload(clause.Associations)
-	if connector != source.Nil {
-		m = m.Where("connector = ?", connector)
+	if len(connectors) > 0 {
+		m = m.Where("source_type IN ?", connectors)
 	}
 	if enabled != nil {
 		m = m.Where("enabled = ?", *enabled)
+	}
+	if len(tags) > 0 {
+		m = m.Joins("JOIN insight_tags AS tags ON tags.insight_id = insights.id")
+		for key, values := range tags {
+			if len(values) != 0 {
+				m = m.Where("tags.key = ? AND tags.value @> ?", key, pq.StringArray(values))
+			} else {
+				m = m.Where("tags.key = ?", key)
+			}
+		}
 	}
 	tx := m.Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 	return s, nil
-}
-
-func (db Database) ListInsightsPeerGroups() ([]InsightPeerGroup, error) {
-	var s []InsightPeerGroup
-	tx := db.Orm.Model(&InsightPeerGroup{}).Preload(clause.Associations).Find(&s)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-	return s, nil
-}
-
-func (db Database) GetInsightsPeerGroup(id uint) (*InsightPeerGroup, error) {
-	var res InsightPeerGroup
-	tx := db.Orm.Model(&InsightPeerGroup{}).Preload(clause.Associations).
-		Where("id = ?", id).
-		First(&res)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-	return &res, nil
 }

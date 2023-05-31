@@ -43,8 +43,6 @@ type InsightResource struct {
 	AccountID string `json:"account_id"`
 	// Provider
 	Provider source.Type `json:"provider"`
-	// Category
-	Category string `json:"category"`
 	// ExecutedAt is when the query is executed
 	ExecutedAt int64 `json:"executed_at"`
 	// ScheduleUUID

@@ -3,8 +3,9 @@ package client
 import (
 	"fmt"
 	"net/http"
-	"strings"
+	"time"
 
+	insight "gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -14,7 +15,9 @@ import (
 type InventoryServiceClient interface {
 	CountResources(ctx *httpclient.Context) (int64, error)
 	GetAccountsResourceCount(ctx *httpclient.Context, provider source.Type, sourceId *string) ([]api.ConnectionResourceCountResponse, error)
-	ListInsights(ctx *httpclient.Context, sourceIDs []string, time string) ([]api.InsightPeerGroup, error)
+	ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error)
+	GetInsightResult(ctx *httpclient.Context, connectionIds []string, insightId uint, timeAt *time.Time) ([]insight.InsightResource, error)
+	GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, timeStart, timeEnd *time.Time) (map[int][]insight.InsightResource, error)
 }
 
 type inventoryClient struct {
@@ -48,11 +51,126 @@ func (s *inventoryClient) GetAccountsResourceCount(ctx *httpclient.Context, prov
 	return response, nil
 }
 
-func (s *inventoryClient) ListInsights(ctx *httpclient.Context, sourceIDs []string, time string) ([]api.InsightPeerGroup, error) {
-	url := fmt.Sprintf("%s/api/v2/insights?sourceId=%s&time=%s", s.baseURL, strings.Join(sourceIDs, ","), time)
-	var res []api.InsightPeerGroup
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
+func (s *inventoryClient) ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error) {
+	url := fmt.Sprintf("%s/api/v2/insights", s.baseURL)
+	firstParamAttached := false
+	if len(connectors) > 0 {
+		for _, connector := range connectors {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("connector=%s", connector.String())
+		}
+	}
+	if len(connectionIds) > 0 {
+		for _, connectionId := range connectionIds {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("connectionId=%s", connectionId)
+		}
+	}
+	if len(insightIds) > 0 {
+		for _, insightId := range insightIds {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("insightId=%d", insightId)
+		}
+	}
+	if timeAt != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("time=%d", timeAt.Unix())
+	}
+
+	var response map[uint][]insight.InsightResource
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return nil, err
 	}
-	return res, nil
+	return response, nil
+}
+
+func (s *inventoryClient) GetInsightResult(ctx *httpclient.Context, connectionIds []string, insightId uint, timeAt *time.Time) ([]insight.InsightResource, error) {
+	url := fmt.Sprintf("%s/api/v2/insights/%d", s.baseURL, insightId)
+	firstParamAttached := false
+	if len(connectionIds) > 0 {
+		for _, connectionId := range connectionIds {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("connectionId=%s", connectionId)
+		}
+	}
+	if timeAt != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("time=%d", timeAt.Unix())
+	}
+
+	var response []insight.InsightResource
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, timeStart, timeEnd *time.Time) (map[int][]insight.InsightResource, error) {
+	url := fmt.Sprintf("%s/api/v2/insights/%d/trend", s.baseURL, insightId)
+	firstParamAttached := false
+	if len(connectionIds) > 0 {
+		for _, connectionId := range connectionIds {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("connectionId=%s", connectionId)
+		}
+	}
+	if timeStart != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("timeStart=%d", timeStart.Unix())
+	}
+	if timeEnd != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("timeEnd=%d", timeEnd.Unix())
+	}
+
+	var response map[int][]insight.InsightResource
+	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		return nil, err
+	}
+	return response, nil
 }

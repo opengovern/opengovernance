@@ -1238,24 +1238,48 @@
         },
         "/compliance/api/v1/insight": {
             "get": {
-                "description": "Listing insights",
+                "description": "Listing insight with result",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "insights"
                 ],
-                "summary": "List insights",
+                "summary": "List insight with result",
                 "parameters": [
                     {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
                         "type": "string",
-                        "description": "filter by connector",
+                        "description": "Key-Value tags in key=value format to filter by",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "description": "filter insights by connector",
                         "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter the result by source id",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the time to get the insight result for",
+                        "name": "time",
                         "in": "query"
                     }
                 ],
@@ -1267,62 +1291,6 @@
                             "items": {
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
                             }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/insight/peer": {
-            "get": {
-                "description": "Listing insights",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "List insights",
-                "parameters": [
-                    {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
-                        "description": "filter by connector",
-                        "name": "connector",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightPeerGroup"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/insight/peer/{peerGroupId}": {
-            "get": {
-                "description": "Get insight by id",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insights"
-                ],
-                "summary": "Get insight by id",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightPeerGroup"
                         }
                     }
                 }
@@ -1343,6 +1311,45 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/metadata/insight": {
+            "get": {
+                "description": "Listing insight metadata",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "List insight metadata",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "description": "filter by connector",
+                        "name": "connector",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
+                            }
                         }
                     }
                 }
@@ -1400,7 +1407,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -1967,7 +1973,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query",
@@ -2093,7 +2098,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceId",
                         "name": "sourceId",
                         "in": "query"
@@ -2265,7 +2269,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceId",
                         "name": "sourceId",
                         "in": "query"
@@ -2417,7 +2420,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query",
@@ -2585,22 +2587,25 @@
                         "BearerToken": []
                     }
                 ],
-                "description": "List all insights",
+                "description": "List all insight results for the given insightIds - this mostly for internal usage, use compliance api for full api",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "insight"
                 ],
-                "summary": "List insights",
+                "summary": "List insight results",
                 "parameters": [
                     {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
                         "description": "filter insights by connector",
                         "name": "connector",
                         "in": "query"
@@ -2610,54 +2615,19 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
-                        "name": "sourceId",
+                        "name": "connectionId",
                         "in": "query"
                     },
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the time to get the insight result for",
-                        "name": "time",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {}
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v2/insights/peer/{insightPeerGroupId}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Get an insight peer by id",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "insight"
-                ],
-                "summary": "Get insight peer",
-                "parameters": [
                     {
                         "type": "array",
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
-                        "description": "filter the result by source id",
-                        "name": "sourceId",
-                        "in": "query"
+                        "description": "filter the result by insight id",
+                        "name": "insightId",
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
@@ -2670,7 +2640,10 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightPeerGroup"
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource"
+                            }
                         }
                     }
                 }
@@ -2683,23 +2656,22 @@
                         "BearerToken": []
                     }
                 ],
-                "description": "Get an insight by id",
+                "description": "Get insight results for the given insightIds - this mostly for internal usage, use compliance api for full api",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "insight"
                 ],
-                "summary": "Get insight",
+                "summary": "Get insight result by id",
                 "parameters": [
                     {
                         "type": "array",
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
-                        "name": "sourceId",
+                        "name": "connectionId",
                         "in": "query"
                     },
                     {
@@ -2713,7 +2685,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource"
                         }
                     }
                 }
@@ -2726,19 +2698,22 @@
                         "BearerToken": []
                     }
                 ],
-                "description": "Get an insight trend by id",
+                "description": "Get an insight trend data by id and time window - this mostly for internal usage, use compliance api for full api",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "insight"
                 ],
-                "summary": "Get insight trend",
+                "summary": "Get insight trend data",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "filter the result by source id",
-                        "name": "sourceId",
+                        "name": "connectionId",
                         "in": "query"
                     },
                     {
@@ -2755,8 +2730,8 @@
                     },
                     {
                         "type": "integer",
-                        "description": "Number of data points to return",
-                        "name": "dataPointCount",
+                        "description": "number of datapoints to return - defaults to number of days between start and end time",
+                        "name": "datapointCount",
                         "in": "query"
                     }
                 ],
@@ -2764,7 +2739,10 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource"
+                            }
                         }
                     }
                 }
@@ -3031,12 +3009,15 @@
                         "required": true
                     },
                     {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
                         "description": "Connector types to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3046,7 +3027,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3082,24 +3062,33 @@
                 "summary": "Returns list of resource types with metrics of each type based on the given input filters",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "Service names to filter by",
                         "name": "servicename",
                         "in": "query"
                     },
                     {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3109,7 +3098,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3245,24 +3233,33 @@
                 "summary": "Returns list of resource counts over the course of the specified time frame based on the given input filters",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "Service names to filter by",
                         "name": "servicename",
                         "in": "query"
                     },
                     {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3272,7 +3269,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3335,12 +3331,15 @@
                         "required": true
                     },
                     {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3350,7 +3349,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3398,12 +3396,15 @@
                         "in": "query"
                     },
                     {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3413,7 +3414,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3464,18 +3464,24 @@
                 "summary": "Returns list of resource types with metrics of each type based on the given input filters",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
                     },
                     {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3485,7 +3491,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -5218,7 +5223,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Account IDs to filter by",
                         "name": "accounIds",
                         "in": "query"
@@ -5424,7 +5428,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightPeerGroup"
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
                             }
                         }
                     }
@@ -5842,6 +5846,9 @@
         "aws.Resources": {
             "type": "object",
             "properties": {
+                "errorCode": {
+                    "type": "string"
+                },
                 "errors": {
                     "type": "object",
                     "additionalProperties": {
@@ -6961,9 +6968,6 @@
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight": {
             "type": "object",
             "properties": {
-                "category": {
-                    "type": "string"
-                },
                 "connector": {
                     "$ref": "#/definitions/source.Type"
                 },
@@ -6980,15 +6984,18 @@
                     "type": "boolean"
                 },
                 "labels": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTag"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     }
                 },
                 "links": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightLink"
+                        "type": "string"
                     }
                 },
                 "logoURL": {
@@ -6996,84 +7003,97 @@
                 },
                 "longTitle": {
                     "type": "string"
-                },
-                "peerGroupId": {
-                    "type": "integer"
                 },
                 "query": {
                     "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query"
                 },
-                "shortTitle": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightLink": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "linkText": {
-                    "type": "string"
-                },
-                "linkURI": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightPeerGroup": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "insights": {
+                "result": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightResult"
                     }
-                },
-                "labels": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTag"
-                    }
-                },
-                "links": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightLink"
-                    }
-                },
-                "logoURL": {
-                    "type": "string"
-                },
-                "longTitle": {
-                    "type": "string"
                 },
                 "shortTitle": {
                     "type": "string"
+                },
+                "totalResultValue": {
+                    "type": "integer"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTag": {
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightConnection": {
             "type": "object",
             "properties": {
-                "id": {
+                "connection_id": {
+                    "type": "string"
+                },
+                "original_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightDetail": {
+            "type": "object",
+            "properties": {
+                "headers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {}
+                    }
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightResult": {
+            "type": "object",
+            "properties": {
+                "connectionID": {
+                    "description": "Connection ID",
+                    "type": "string"
+                },
+                "connections": {
+                    "description": "Connections",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightConnection"
+                    }
+                },
+                "details": {
+                    "description": "Insight Details",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightDetail"
+                        }
+                    ]
+                },
+                "executedAt": {
+                    "description": "Time of Execution",
+                    "type": "string"
+                },
+                "insightID": {
+                    "description": "Insight ID",
                     "type": "integer"
                 },
-                "key": {
-                    "type": "string"
+                "jobID": {
+                    "description": "Job ID",
+                    "type": "integer"
                 },
-                "value": {
-                    "type": "string"
+                "locations": {
+                    "description": "Locations",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "result": {
+                    "description": "Result",
+                    "type": "integer"
                 }
             }
         },
@@ -7567,6 +7587,134 @@
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightConnection": {
+            "type": "object",
+            "properties": {
+                "connection_id": {
+                    "type": "string"
+                },
+                "original_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "description": "AccountID",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Description",
+                    "type": "string"
+                },
+                "executed_at": {
+                    "description": "ExecutedAt is when the query is executed",
+                    "type": "integer"
+                },
+                "included_connections": {
+                    "description": "IncludedConnections list of the connections ids of the resources included in this insight",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightConnection"
+                    }
+                },
+                "internal": {
+                    "description": "Internal hidden to user",
+                    "type": "boolean"
+                },
+                "job_id": {
+                    "description": "JobID is the ID of the job which produced this resource",
+                    "type": "integer"
+                },
+                "last_day_value": {
+                    "description": "LastDayValue result of the same query last day",
+                    "type": "integer"
+                },
+                "last_month_value": {
+                    "description": "LastMonthValue result of the same query last week",
+                    "type": "integer"
+                },
+                "last_quarter_value": {
+                    "description": "LastQuarterValue result of the same query last quarter",
+                    "type": "integer"
+                },
+                "last_week_value": {
+                    "description": "LastWeekValue result of the same query last week",
+                    "type": "integer"
+                },
+                "last_year_value": {
+                    "description": "LastYearValue result of the same query last year",
+                    "type": "integer"
+                },
+                "locations": {
+                    "description": "Locations list of the locations of the resources included in this insight",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "provider": {
+                    "description": "Provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ]
+                },
+                "query": {
+                    "description": "Query",
+                    "type": "string"
+                },
+                "query_id": {
+                    "description": "QueryID is the ID of steampipe query which has been executed",
+                    "type": "integer"
+                },
+                "resource_type": {
+                    "description": "ResourceType shows which collection of docs this resource belongs to",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResourceType"
+                        }
+                    ]
+                },
+                "result": {
+                    "description": "Result of query",
+                    "type": "integer"
+                },
+                "s3_location": {
+                    "type": "string"
+                },
+                "schedule_uuid": {
+                    "description": "ScheduleUUID",
+                    "type": "string"
+                },
+                "smart_query_id": {
+                    "description": "SmartQueryID is the ID of smart query id which is connected to this insight",
+                    "type": "integer"
+                },
+                "source_id": {
+                    "description": "SourceID",
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResourceType": {
+            "type": "string",
+            "enum": [
+                "history",
+                "last",
+                "provider_history",
+                "provider_last"
+            ],
+            "x-enum-varnames": [
+                "InsightResourceHistory",
+                "InsightResourceLast",
+                "InsightResourceProviderHistory",
+                "InsightResourceProviderLast"
+            ]
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AWSResource": {
             "type": "object",
             "properties": {
@@ -8036,255 +8184,6 @@
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "description": "Category",
-                    "type": "string"
-                },
-                "description": {
-                    "description": "Description",
-                    "type": "string"
-                },
-                "enabled": {
-                    "description": "Enabled",
-                    "type": "boolean"
-                },
-                "executedAt": {
-                    "description": "Time of Execution",
-                    "type": "string"
-                },
-                "id": {
-                    "description": "Insight Id",
-                    "type": "integer"
-                },
-                "labels": {
-                    "description": "List of insight tags",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightTag"
-                    }
-                },
-                "links": {
-                    "description": "List of links",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink"
-                    }
-                },
-                "listInsightResultType": {
-                    "description": "PeerGroup or Insight",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType"
-                        }
-                    ]
-                },
-                "logoURL": {
-                    "description": "Logo URL",
-                    "type": "string"
-                },
-                "longTitle": {
-                    "description": "Long Title",
-                    "type": "string"
-                },
-                "provider": {
-                    "description": "Provider",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ]
-                },
-                "query": {
-                    "description": "Query",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Query"
-                        }
-                    ]
-                },
-                "results": {
-                    "description": "Insight Results and Details",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult"
-                        }
-                    ]
-                },
-                "shortTitle": {
-                    "description": "Short Title",
-                    "type": "string"
-                },
-                "totalResults": {
-                    "description": "Total Results",
-                    "type": "integer"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection": {
-            "type": "object",
-            "properties": {
-                "connection_id": {
-                    "type": "string"
-                },
-                "original_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail": {
-            "type": "object",
-            "properties": {
-                "headers": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "rows": {
-                    "type": "array",
-                    "items": {
-                        "type": "array",
-                        "items": {}
-                    }
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "text": {
-                    "type": "string"
-                },
-                "uri": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightPeerGroup": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "insights": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Insight"
-                    }
-                },
-                "labels": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightTag"
-                    }
-                },
-                "links": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightLink"
-                    }
-                },
-                "listInsightResultType": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType"
-                },
-                "logoURL": {
-                    "type": "string"
-                },
-                "longTitle": {
-                    "type": "string"
-                },
-                "shortTitle": {
-                    "type": "string"
-                },
-                "totalResults": {
-                    "type": "integer"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResult": {
-            "type": "object",
-            "properties": {
-                "connections": {
-                    "description": "Connections",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightConnection"
-                    }
-                },
-                "details": {
-                    "description": "Insight Details",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightDetail"
-                        }
-                    ]
-                },
-                "executedAt": {
-                    "description": "Time of Execution",
-                    "type": "string"
-                },
-                "insightID": {
-                    "description": "Insight ID",
-                    "type": "integer"
-                },
-                "jobID": {
-                    "description": "Job ID",
-                    "type": "integer"
-                },
-                "locations": {
-                    "description": "Locations",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "result": {
-                    "description": "Result",
-                    "type": "integer"
-                },
-                "sourceID": {
-                    "description": "Source ID",
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightResultTrendResponse": {
-            "type": "object",
-            "properties": {
-                "trend": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint"
-                    }
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.InsightTag": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "key": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListConnectionsResponse": {
             "type": "object",
             "properties": {
@@ -8310,17 +8209,6 @@
                     "type": "integer"
                 }
             }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListInsightResultType": {
-            "type": "string",
-            "enum": [
-                "peerGroup",
-                "insight"
-            ],
-            "x-enum-varnames": [
-                "ListInsightResultTypePeerGroup",
-                "ListInsightResultTypeInsight"
-            ]
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest": {
             "type": "object",
@@ -8466,32 +8354,6 @@
                 },
                 "size": {
                     "type": "integer"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Query": {
-            "type": "object",
-            "properties": {
-                "connector": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "engine": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "listOfTables": {
-                    "type": "string"
-                },
-                "queryToExecute": {
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
                 }
             }
         },
@@ -8823,10 +8685,10 @@
                 "connector": {
                     "$ref": "#/definitions/source.Type"
                 },
-                "count": {
+                "cost": {
                     "type": "number"
                 },
-                "count_change_percent": {
+                "cost_change_percent": {
                     "type": "number"
                 },
                 "logo_uri": {

@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"mime"
 	"net/http"
 	"sort"
@@ -17,12 +16,11 @@ import (
 	"time"
 
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gorm.io/gorm"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/internal"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
@@ -103,10 +101,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/query/:queryId", httpserver.AuthorizeHandler(h.RunQuery, api3.EditorRole))
 
 	insightsV2 := v2.Group("/insights")
-	insightsV2.GET("", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
-	insightsV2.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, api3.ViewerRole))
-	insightsV2.GET("/peer/:insightPeerGroupId", httpserver.AuthorizeHandler(h.GetInsightPeerGroup, api3.ViewerRole))
-	insightsV2.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
+	insightsV2.GET("", httpserver.AuthorizeHandler(h.ListInsightResults, api3.ViewerRole))
+	insightsV2.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrendResults, api3.ViewerRole))
+	insightsV2.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsightResult, api3.ViewerRole))
 
 	metadata := v2.Group("/metadata")
 	metadata.GET("/connectors", httpserver.AuthorizeHandler(h.ListConnectorMetadata, api3.ViewerRole))
@@ -681,7 +678,7 @@ func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	tags = trimPrivateTags(tags)
+	tags = model.TrimPrivateTags(tags)
 	return ctx.JSON(http.StatusOK, tags)
 }
 
@@ -697,7 +694,7 @@ func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 //	@Router		/inventory/api/v2/resources/tag/{key} [get]
 func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
 	tagKey := ctx.Param("key")
-	if tagKey == "" || strings.HasPrefix(tagKey, KaytuPrivateTagPrefix) {
+	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
 		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
 
@@ -731,7 +728,7 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 			ResourceType:  resourceType.ResourceType,
 			ResourceLabel: resourceType.ResourceLabel,
 			ServiceName:   resourceType.ServiceName,
-			Tags:          trimPrivateTags(resourceType.GetTagsMap()),
+			Tags:          model.TrimPrivateTags(resourceType.GetTagsMap()),
 			LogoURI:       resourceType.LogoURI,
 			Count:         nil,
 		}
@@ -751,20 +748,20 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
-//	@Param		tag				query		string		false	"Key-Value tags in key=value format to filter by"
-//	@Param		servicename		query		string		false	"Service names to filter by"
-//	@Param		connector		query		source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		endTime			query		string		false	"timestamp for resource count in epoch seconds"
-//	@Param		startTime		query		string		false	"timestamp for resource count change comparison in epoch seconds"
-//	@Param		sortBy			query		string		false	"Sort by field - default is count"	Enums(name,count)
-//	@Param		pageSize		query		int			false	"page size - default is 20"
-//	@Param		pageNumber		query		int			false	"page number - default is 1"
+//	@Param		tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param		servicename		query		[]string		false	"Service names to filter by"
+//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param		endTime			query		string			false	"timestamp for resource count in epoch seconds"
+//	@Param		startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
+//	@Param		sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count)
+//	@Param		pageSize		query		int				false	"page size - default is 20"
+//	@Param		pageNumber		query		int				false	"page number - default is 1"
 //	@Success	200				{object}	api.ListResourceTypeMetricsResponse
 //	@Router		/inventory/api/v2/resources/metric [get]
 func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	var err error
-	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])
+	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
 	serviceNames := ctx.QueryParams()["servicename"]
 	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["connectionId"]
@@ -865,16 +862,16 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
-//	@Param		top				query		int			true	"How many top values to return default is 5"
-//	@Param		connector		query		source.Type	false	"Connector types to filter by"
-//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		time			query		string		false	"timestamp for resource count in epoch seconds"
+//	@Param		top				query		int				true	"How many top values to return default is 5"
+//	@Param		connector		query		[]source.Type	false	"Connector types to filter by"
+//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param		time			query		string			false	"timestamp for resource count in epoch seconds"
 //	@Success	200				{object}	api.ListResourceTypeCompositionResponse
 //	@Router		/inventory/api/v2/resources/composition/{key} [get]
 func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 	var err error
 	tagKey := ctx.Param("key")
-	if tagKey == "" || strings.HasPrefix(tagKey, KaytuPrivateTagPrefix) {
+	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
 		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
 	topStr := ctx.QueryParam("top")
@@ -956,18 +953,18 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
-//	@Param		tag				query		string		false	"Key-Value tags in key=value format to filter by"
-//	@Param		servicename		query		string		false	"Service names to filter by"
-//	@Param		connector		query		source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		startTime		query		string		false	"timestamp for start in epoch seconds"
-//	@Param		endTime			query		string		false	"timestamp for end in epoch seconds"
-//	@Param		datapointCount	query		string		false	"maximum number of datapoints to return, default is 30"
+//	@Param		tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param		servicename		query		[]string		false	"Service names to filter by"
+//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param		startTime		query		string			false	"timestamp for start in epoch seconds"
+//	@Param		endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param		datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
 //	@Success	200				{object}	[]api.ResourceTypeTrendDatapoint
 //	@Router		/inventory/api/v2/resources/trend [get]
 func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 	var err error
-	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])
+	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
 	serviceNames := ctx.QueryParams()["servicename"]
 	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["connectionId"]
@@ -1067,7 +1064,7 @@ func (h *HttpHandler) ListServiceTags(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	tags = trimPrivateTags(tags)
+	tags = model.TrimPrivateTags(tags)
 	return ctx.JSON(http.StatusOK, tags)
 }
 
@@ -1083,7 +1080,7 @@ func (h *HttpHandler) ListServiceTags(ctx echo.Context) error {
 //	@Router		/inventory/api/v2/services/tag/{key} [get]
 func (h *HttpHandler) GetServiceTag(ctx echo.Context) error {
 	tagKey := ctx.Param("key")
-	if tagKey == "" || strings.HasPrefix(tagKey, KaytuPrivateTagPrefix) {
+	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
 		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
 
@@ -1100,19 +1097,19 @@ func (h *HttpHandler) GetServiceTag(ctx echo.Context) error {
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
-//	@Param		tag				query		string		false	"Key-Value tags in key=value format to filter by"
-//	@Param		connector		query		source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		startTime		query		string		false	"timestamp for start of cost aggregation in epoch seconds"
-//	@Param		endTime			query		string		false	"timestamp for end of cost aggregation in epoch seconds"
-//	@Param		sortBy			query		string		false	"Sort by field - default is cost"	Enums(name,cost)
-//	@Param		pageSize		query		int			false	"page size - default is 20"
-//	@Param		pageNumber		query		int			false	"page number - default is 1"
+//	@Param		tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param		startTime		query		string			false	"timestamp for start of cost aggregation in epoch seconds"
+//	@Param		endTime			query		string			false	"timestamp for end of cost aggregation in epoch seconds"
+//	@Param		sortBy			query		string			false	"Sort by field - default is cost"	Enums(name,cost)
+//	@Param		pageSize		query		int				false	"page size - default is 20"
+//	@Param		pageNumber		query		int				false	"page number - default is 1"
 //	@Success	200				{object}	api.ListServiceMetricsResponse
 //	@Router		/inventory/api/v2/services/metric [get]
 func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 	var err error
-	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])
+	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
 	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["connectionId"]
 	endTimeStr := ctx.QueryParam("endTime")
@@ -1149,7 +1146,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 	}
 	costFilterNamesMap := make(map[string]bool)
 	for _, service := range services {
-		if v, ok := service.GetTagsMap()[KaytuServiceCostTag]; ok {
+		if v, ok := service.GetTagsMap()[model.KaytuServiceCostTag]; ok {
 			for _, costFilterName := range v {
 				costFilterNamesMap[costFilterName] = true
 			}
@@ -1193,12 +1190,12 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 			Connector:    service.Connector,
 			ServiceName:  service.ServiceName,
 			ServiceLabel: service.ServiceLabel,
-			Tags:         trimPrivateTags(service.GetTagsMap()),
+			Tags:         model.TrimPrivateTags(service.GetTagsMap()),
 			LogoURI:      service.LogoURI,
 			Cost:         nil,
 		}
 		serviceCost := serviceCosts{}
-		if v, ok := service.GetTagsMap()[KaytuServiceCostTag]; ok {
+		if v, ok := service.GetTagsMap()[model.KaytuServiceCostTag]; ok {
 			for _, costFilterName := range v {
 				if costWithUnit, ok := aggregatedCostHits[costFilterName]; ok {
 					defaultCost := costWithUnit[DefaultCurrency]
@@ -1253,17 +1250,17 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
-//	@Param		top				query		int			true	"How many top values to return default is 5"
-//	@Param		connector		query		source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		startTime		query		string		false	"timestamp for start of cost aggregation in epoch seconds"
-//	@Param		endTime			query		string		false	"timestamp for end of cost aggregation in epoch seconds"
+//	@Param		top				query		int				true	"How many top values to return default is 5"
+//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param		startTime		query		string			false	"timestamp for start of cost aggregation in epoch seconds"
+//	@Param		endTime			query		string			false	"timestamp for end of cost aggregation in epoch seconds"
 //	@Success	200				{object}	api.ListServiceCostCompositionResponse
 //	@Router		/inventory/api/v2/services/composition/{key} [get]
 func (h *HttpHandler) ListServiceComposition(ctx echo.Context) error {
 	var err error
 	tagKey := ctx.Param("key")
-	if tagKey == "" || strings.HasPrefix(tagKey, KaytuPrivateTagPrefix) {
+	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
 		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
 	topStr := ctx.QueryParam("top")
@@ -1300,7 +1297,7 @@ func (h *HttpHandler) ListServiceComposition(ctx echo.Context) error {
 	}
 	costFilterNamesMap := make(map[string]bool)
 	for _, service := range services {
-		if v, ok := service.GetTagsMap()[KaytuServiceCostTag]; ok {
+		if v, ok := service.GetTagsMap()[model.KaytuServiceCostTag]; ok {
 			for _, costFilterName := range v {
 				costFilterNamesMap[costFilterName] = true
 			}
@@ -1324,7 +1321,7 @@ func (h *HttpHandler) ListServiceComposition(ctx echo.Context) error {
 	totalCount := float64(0)
 	for _, service := range services {
 		for _, tagValue := range service.GetTagsMap()[tagKey] {
-			for _, costFilterName := range service.GetTagsMap()[KaytuServiceCostTag] {
+			for _, costFilterName := range service.GetTagsMap()[model.KaytuServiceCostTag] {
 				valueCostMap[tagValue] += aggregatedCostHits[costFilterName][DefaultCurrency].Cost
 				totalCount += aggregatedCostHits[costFilterName][DefaultCurrency].Cost
 			}
@@ -1368,17 +1365,17 @@ func (h *HttpHandler) ListServiceComposition(ctx echo.Context) error {
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
-//	@Param		tag				query		string		false	"Key-Value tags in key=value format to filter by"
-//	@Param		connector		query		source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		startTime		query		string		false	"timestamp for start in epoch seconds"
-//	@Param		endTime			query		string		false	"timestamp for end in epoch seconds"
-//	@Param		datapointCount	query		string		false	"maximum number of datapoints to return, default is 30"
+//	@Param		tag				query		string			false	"Key-Value tags in key=value format to filter by"
+//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param		startTime		query		string			false	"timestamp for start in epoch seconds"
+//	@Param		endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param		datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
 //	@Success	200				{object}	[]api.CostTrendDatapoint
 //	@Router		/inventory/api/v2/services/cost/trend [get]
 func (h *HttpHandler) ListServiceCostTrend(ctx echo.Context) error {
 	var err error
-	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])
+	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
 	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["connectionId"]
 
@@ -1414,7 +1411,7 @@ func (h *HttpHandler) ListServiceCostTrend(ctx echo.Context) error {
 	}
 	costFilterNamesMap := make(map[string]bool)
 	for _, service := range services {
-		if v, ok := service.GetTagsMap()[KaytuServiceCostTag]; ok {
+		if v, ok := service.GetTagsMap()[model.KaytuServiceCostTag]; ok {
 			for _, costFilterName := range v {
 				costFilterNamesMap[costFilterName] = true
 			}
@@ -1865,7 +1862,7 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 //	@Router			/inventory/api/v2/services/summary [get]
 func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 	var err error
-	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])
+	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
 
 	connectionIDs := ctx.QueryParams()["connectionId"]
 	if len(connectionIDs) == 0 {
@@ -1917,7 +1914,7 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 	}
 
 	for _, service := range services {
-		for _, costFilterName := range service.GetTagsMap()[KaytuServiceCostTag] {
+		for _, costFilterName := range service.GetTagsMap()[model.KaytuServiceCostTag] {
 			costFilterMap[costFilterName] = 0
 		}
 		for _, resourceType := range service.ResourceTypes {
@@ -1953,7 +1950,7 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 			ResourceCount: nil,
 			Cost:          nil,
 		}
-		for _, costFilterName := range service.GetTagsMap()[KaytuServiceCostTag] {
+		for _, costFilterName := range service.GetTagsMap()[model.KaytuServiceCostTag] {
 			if cost, ok := costs[costFilterName]; ok {
 				serviceSummary.Cost = utils.PAdd(serviceSummary.Cost, utils.GetPointer(cost[DefaultCurrency].Cost))
 			}
@@ -2067,7 +2064,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 		return err
 	}
 
-	for _, costFilterName := range service.GetTagsMap()[KaytuServiceCostTag] {
+	for _, costFilterName := range service.GetTagsMap()[model.KaytuServiceCostTag] {
 		costFilterMap[costFilterName] = 0
 	}
 	for _, resourceType := range service.ResourceTypes {
@@ -2100,7 +2097,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 		ResourceCount: nil,
 		Cost:          nil,
 	}
-	for _, costFilterName := range service.GetTagsMap()[KaytuServiceCostTag] {
+	for _, costFilterName := range service.GetTagsMap()[model.KaytuServiceCostTag] {
 		if cost, ok := costs[costFilterName]; ok {
 			serviceSummary.Cost = utils.PAdd(serviceSummary.Cost, utils.GetPointer(cost[DefaultCurrency].Cost))
 		}
@@ -2931,499 +2928,118 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 	}
 }
 
-// ListInsights godoc
+// ListInsightResults godoc
 //
-//	@Summary		List insights
-//	@Description	List all insights
+//	@Summary		List insight results
+//	@Description	List all insight results for the given insightIds - this mostly for internal usage, use compliance api for full api
 //	@Security		BearerToken
 //	@Tags			insight
 //	@Produce		json
-//	@Param			connector	query		source.Type	false	"filter insights by connector"
-//	@Param			sourceId	query		[]string	false	"filter the result by source id"
-//	@Param			time		query		int			false	"unix seconds for the time to get the insight result for"
-//	@Success		200			{object}	[]api.ListInsightResult
+//	@Param			connector		query		[]source.Type	false	"filter insights by connector"
+//	@Param			connectionId	query		[]string		false	"filter the result by source id"
+//	@Param			insightId		query		[]string		true	"filter the result by insight id"
+//	@Param			time			query		int				false	"unix seconds for the time to get the insight result for"
+//	@Success		200				{object}	map[uint]insight.InsightResource
 //	@Router			/inventory/api/v2/insights [get]
-func (h *HttpHandler) ListInsights(ctx echo.Context) error {
-	connector, _ := source.ParseType(ctx.QueryParam("connector"))
-	var resultTime *time.Time
-	if timeStr := ctx.QueryParam("time"); timeStr != "" {
-		timeInt, err := strconv.ParseInt(timeStr, 10, 64)
+func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
+	var err error
+	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	timeStr := ctx.QueryParam("time")
+	timeAt := time.Now().Unix()
+	if timeStr != "" {
+		timeAt, err = strconv.ParseInt(timeStr, 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
-		t := time.Unix(timeInt, 0)
-		resultTime = &t
 	}
-	sourceIDs := ctx.QueryParams()["sourceId"]
-	if len(sourceIDs) == 0 {
-		sourceIDs = nil
-	}
+	connectionIDs := ctx.QueryParams()["connectionId"]
 
-	insightList, err := h.complianceClient.GetInsights(httpclient.FromEchoContext(ctx), connector)
-	if err != nil {
-		return err
+	insightIdListStr := ctx.QueryParams()["insightId"]
+	if len(insightIdListStr) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "insight id is required")
 	}
-
-	insightPeerGroupList, err := h.complianceClient.GetInsightPeerGroups(httpclient.FromEchoContext(ctx), connector)
-	if err != nil {
-		return err
-	}
-
-	insightIdList := make([]uint, 0, len(insightList))
-	insightResultMap := make(map[uint]*api.Insight)
-	for _, insightRow := range insightList {
-		insightIdList = append(insightIdList, insightRow.ID)
-		tags := make([]api.InsightTag, 0, len(insightRow.Tags))
-		for _, tag := range insightRow.Tags {
-			tags = append(tags, api.InsightTag{
-				ID:    tag.ID,
-				Key:   tag.Key,
-				Value: tag.Value,
-			})
+	insightIdList := make([]uint, 0, len(insightIdListStr))
+	for _, idStr := range insightIdListStr {
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid insight id")
 		}
-		links := make([]api.InsightLink, 0, len(insightRow.Links))
-		for _, link := range insightRow.Links {
-			links = append(links, api.InsightLink{
-				ID:   link.ID,
-				Text: link.Text,
-				URI:  link.URI,
-			})
-		}
-		insightResultMap[insightRow.ID] = &api.Insight{
-			ID: insightRow.ID,
-			Query: api.Query{
-				ID:             insightRow.Query.ID,
-				QueryToExecute: insightRow.Query.QueryToExecute,
-				Connector:      insightRow.Query.Connector,
-				ListOfTables:   insightRow.Query.ListOfTables,
-				Engine:         insightRow.Query.Engine,
-				CreatedAt:      insightRow.Query.CreatedAt,
-				UpdatedAt:      insightRow.Query.UpdatedAt,
-			},
-			Category:              insightRow.Category,
-			Provider:              insightRow.Connector,
-			ShortTitle:            insightRow.ShortTitle,
-			LongTitle:             insightRow.LongTitle,
-			Description:           insightRow.Description,
-			LogoURL:               insightRow.LogoURL,
-			Labels:                tags,
-			Links:                 links,
-			Enabled:               insightRow.Enabled,
-			TotalResults:          0,
-			ListInsightResultType: api.ListInsightResultTypeInsight,
-		}
+		insightIdList = append(insightIdList, uint(id))
 	}
 
-	var insightValues map[uint]insight.InsightResource
-	if resultTime != nil {
-		insightValues, err = es.FetchInsightValueAtTime(h.client, *resultTime, connector, sourceIDs, insightIdList, true)
+	var insightValues map[uint][]insight.InsightResource
+	if timeStr != "" {
+		insightValues, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), connectors, connectionIDs, insightIdList, true)
 	} else {
-		insightValues, err = es.FetchInsightValueAtTime(h.client, time.Now(), connector, sourceIDs, insightIdList, false)
+		insightValues, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), connectors, connectionIDs, insightIdList, false)
 	}
 	if err != nil {
 		return err
 	}
 
-	for insightId, insightResult := range insightValues {
-		if v, ok := insightResultMap[insightId]; ok {
-			v.TotalResults += insightResult.Result
-			if insightResult.ExecutedAt != 0 {
-				exAt := time.UnixMilli(insightResult.ExecutedAt)
-				v.ExecutedAt = &exAt
-			}
-		}
-	}
-
-	result := make([]api.ListInsightResult, 0)
-	usedInPeerGroup := make(map[uint]bool)
-	for _, insightPeerGroup := range insightPeerGroupList {
-		tags := make([]api.InsightTag, 0, len(insightPeerGroup.Tags))
-		for _, tag := range insightPeerGroup.Tags {
-			tags = append(tags, api.InsightTag{
-				ID:    tag.ID,
-				Key:   tag.Key,
-				Value: tag.Value,
-			})
-		}
-		links := make([]api.InsightLink, 0, len(insightPeerGroup.Links))
-		for _, link := range insightPeerGroup.Links {
-			links = append(links, api.InsightLink{
-				ID:   link.ID,
-				Text: link.Text,
-				URI:  link.URI,
-			})
-		}
-		peerGroup := &api.InsightPeerGroup{
-			ID:                    insightPeerGroup.ID,
-			Category:              insightPeerGroup.Category,
-			Insights:              make([]api.Insight, 0, len(insightPeerGroup.Insights)),
-			ShortTitle:            insightPeerGroup.ShortTitle,
-			LongTitle:             insightPeerGroup.LongTitle,
-			Description:           insightPeerGroup.Description,
-			LogoURL:               insightPeerGroup.LogoURL,
-			Labels:                tags,
-			Links:                 links,
-			TotalResults:          0,
-			ListInsightResultType: api.ListInsightResultTypePeerGroup,
-		}
-		for _, apiInsight := range insightPeerGroup.Insights {
-			if v, ok := insightResultMap[apiInsight.ID]; ok {
-				peerGroup.Insights = append(peerGroup.Insights, *v)
-				peerGroup.TotalResults += v.TotalResults
-				usedInPeerGroup[apiInsight.ID] = true
-			}
-		}
-		result = append(result, peerGroup)
-	}
-
-	for _, v := range insightResultMap {
-		if _, ok := usedInPeerGroup[v.ID]; ok {
-			continue
-		}
-		result = append(result, v)
-	}
-
-	sort.Slice(result, func(i, j int) bool {
-		if result[i].GetType() == result[j].GetType() {
-			return result[i].GetID() < result[j].GetID()
-		} else if result[i].GetType() == api.ListInsightResultTypePeerGroup {
-			return true
-		} else if result[j].GetType() == api.ListInsightResultTypePeerGroup {
-			return false
-		} else {
-			return result[i].GetID() < result[j].GetID()
-		}
-	})
-
-	return ctx.JSON(http.StatusOK, result)
+	return ctx.JSON(http.StatusOK, insightValues)
 }
 
-// GetInsight godoc
+// GetInsightResult godoc
 //
-//	@Summary		Get insight
-//	@Description	Get an insight by id
+//	@Summary		Get insight result by id
+//	@Description	Get insight results for the given insightIds - this mostly for internal usage, use compliance api for full api
 //	@Security		BearerToken
 //	@Tags			insight
 //	@Produce		json
-//	@Param			sourceId	query		[]string	false	"filter the result by source id"
-//	@Param			time		query		int			false	"unix seconds for the time to get the insight result for"
-//	@Success		200			{object}	api.Insight
+//	@Param			connectionId	query		[]string	false	"filter the result by source id"
+//	@Param			time			query		int			false	"unix seconds for the time to get the insight result for"
+//	@Success		200				{object}	insight.InsightResource
 //	@Router			/inventory/api/v2/insights/{insightId} [get]
-func (h *HttpHandler) GetInsight(ctx echo.Context) error {
+func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight id")
 	}
-	var resultTime *time.Time
-	if timeStr := ctx.QueryParam("time"); timeStr != "" {
-		timeInt, err := strconv.ParseInt(timeStr, 10, 64)
+	timeStr := ctx.QueryParam("time")
+	timeAt := time.Now().Unix()
+	if timeStr != "" {
+		timeAt, err = strconv.ParseInt(timeStr, 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
-		t := time.Unix(timeInt, 0)
-		resultTime = &t
 	}
-	sourceIDs := ctx.QueryParams()["sourceId"]
-	if len(sourceIDs) == 0 {
-		sourceIDs = nil
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) == 0 {
+		connectionIDs = nil
 	}
 
-	insightRow, err := h.complianceClient.GetInsightById(httpclient.FromEchoContext(ctx), uint(insightId))
-	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "not found") {
-			return echo.NewHTTPError(http.StatusNotFound, "insight not found")
-		}
-		return err
-	}
-
-	tags := make([]api.InsightTag, 0, len(insightRow.Tags))
-	for _, tag := range insightRow.Tags {
-		tags = append(tags, api.InsightTag{
-			ID:    tag.ID,
-			Key:   tag.Key,
-			Value: tag.Value,
-		})
-	}
-	links := make([]api.InsightLink, 0, len(insightRow.Links))
-	for _, link := range insightRow.Links {
-		links = append(links, api.InsightLink{
-			ID:   link.ID,
-			Text: link.Text,
-			URI:  link.URI,
-		})
-	}
-	result := api.Insight{
-		ID: insightRow.ID,
-		Query: api.Query{
-			ID:             insightRow.Query.ID,
-			QueryToExecute: insightRow.Query.QueryToExecute,
-			Connector:      insightRow.Query.Connector,
-			ListOfTables:   insightRow.Query.ListOfTables,
-			Engine:         insightRow.Query.Engine,
-			CreatedAt:      insightRow.Query.CreatedAt,
-			UpdatedAt:      insightRow.Query.UpdatedAt,
-		},
-		Category:              insightRow.Category,
-		Provider:              insightRow.Connector,
-		ShortTitle:            insightRow.ShortTitle,
-		LongTitle:             insightRow.LongTitle,
-		Description:           insightRow.Description,
-		LogoURL:               insightRow.LogoURL,
-		Labels:                tags,
-		Links:                 links,
-		Enabled:               insightRow.Enabled,
-		TotalResults:          0,
-		Results:               nil,
-		ListInsightResultType: api.ListInsightResultTypeInsight,
-	}
-
-	var insightResults map[uint]insight.InsightResource
-	if resultTime != nil {
-		insightResults, err = es.FetchInsightValueAtTime(h.client, *resultTime, source.Nil, sourceIDs, []uint{uint(insightId)}, true)
+	var insightResults map[uint][]insight.InsightResource
+	if timeStr != "" {
+		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), nil, connectionIDs, []uint{uint(insightId)}, true)
 	} else {
-		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Now(), source.Nil, sourceIDs, []uint{uint(insightId)}, false)
+		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), nil, connectionIDs, []uint{uint(insightId)}, false)
 	}
 	if err != nil {
 		return err
 	}
 
 	if insightResult, ok := insightResults[uint(insightId)]; ok {
-		result.TotalResults = insightResult.Result
-		exAt := time.UnixMilli(insightResult.ExecutedAt)
-		result.ExecutedAt = &exAt
-
-		bucket, key, err := utils.ParseHTTPSubpathS3URIToBucketAndKey(insightResult.S3Location)
-		objectBuffer := aws.NewWriteAtBuffer(make([]byte, 0, 1024*1024))
-		_, err = h.s3Downloader.Download(objectBuffer, &s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String(key),
-		})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-
-		var results steampipe.Result
-		err = json.Unmarshal(objectBuffer.Bytes(), &results)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-
-		connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
-		for _, connection := range insightResult.IncludedConnections {
-			connections = append(connections, api.InsightConnection{
-				ConnectionID: connection.ConnectionID,
-				OriginalID:   connection.OriginalID,
-			})
-		}
-
-		result.Results = &api.InsightResult{
-			JobID:       insightResult.JobID,
-			InsightID:   insightResult.QueryID,
-			SourceID:    insightResult.SourceID,
-			ExecutedAt:  time.UnixMilli(insightResult.ExecutedAt),
-			Locations:   insightResult.Locations,
-			Connections: connections,
-			Result:      insightResult.Result,
-			Details: &api.InsightDetail{
-				Headers: results.Headers,
-				Rows:    results.Data,
-			},
-		}
-	}
-
-	return ctx.JSON(http.StatusOK, result)
-}
-
-// GetInsightPeerGroup godoc
-//
-//	@Summary		Get insight peer
-//	@Description	Get an insight peer by id
-//	@Security		BearerToken
-//	@Tags			insight
-//	@Produce		json
-//	@Param			sourceId	query		[]string	false	"filter the result by source id"
-//	@Param			time		query		int			false	"unix seconds for the time to get the insight result for"
-//	@Success		200			{object}	api.InsightPeerGroup
-//	@Router			/inventory/api/v2/insights/peer/{insightPeerGroupId} [get]
-func (h *HttpHandler) GetInsightPeerGroup(ctx echo.Context) error {
-	insightPeerGroupId, err := strconv.ParseUint(ctx.Param("insightPeerGroupId"), 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight peer group id")
-	}
-	var resultTime *time.Time
-	if timeStr := ctx.QueryParam("time"); timeStr != "" {
-		timeInt, err := strconv.ParseInt(timeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-		t := time.Unix(timeInt, 0)
-		resultTime = &t
-	}
-	sourceIDs := ctx.QueryParams()["sourceId"]
-	if len(sourceIDs) == 0 {
-		sourceIDs = nil
-	}
-
-	insightPeerGroup, err := h.complianceClient.GetInsightPeerGroupById(httpclient.FromEchoContext(ctx), uint(insightPeerGroupId))
-	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "not found") {
-			return echo.NewHTTPError(http.StatusNotFound, "insight peer group not found")
-		}
-		return err
-	}
-
-	tags := make([]api.InsightTag, 0, len(insightPeerGroup.Tags))
-	for _, tag := range insightPeerGroup.Tags {
-		tags = append(tags, api.InsightTag{
-			ID:    tag.ID,
-			Key:   tag.Key,
-			Value: tag.Value,
-		})
-	}
-	links := make([]api.InsightLink, 0, len(insightPeerGroup.Links))
-	for _, link := range insightPeerGroup.Links {
-		links = append(links, api.InsightLink{
-			ID:   link.ID,
-			Text: link.Text,
-			URI:  link.URI,
-		})
-	}
-	insights := make([]api.Insight, 0, len(insightPeerGroup.Insights))
-	insightIds := make([]uint, 0, len(insightPeerGroup.Insights))
-	for _, insightRow := range insightPeerGroup.Insights {
-		tags := make([]api.InsightTag, 0, len(insightRow.Tags))
-		for _, tag := range insightRow.Tags {
-			tags = append(tags, api.InsightTag{
-				ID:    tag.ID,
-				Key:   tag.Key,
-				Value: tag.Value,
-			})
-		}
-		links := make([]api.InsightLink, 0, len(insightRow.Links))
-		for _, link := range insightRow.Links {
-			links = append(links, api.InsightLink{
-				ID:   link.ID,
-				Text: link.Text,
-				URI:  link.URI,
-			})
-		}
-		insightIds = append(insightIds, insightRow.ID)
-		insights = append(insights, api.Insight{
-			ID: insightRow.ID,
-			Query: api.Query{
-				ID:             insightRow.Query.ID,
-				QueryToExecute: insightRow.Query.QueryToExecute,
-				Connector:      insightRow.Query.Connector,
-				ListOfTables:   insightRow.Query.ListOfTables,
-				Engine:         insightRow.Query.Engine,
-				CreatedAt:      insightRow.Query.CreatedAt,
-				UpdatedAt:      insightRow.Query.UpdatedAt,
-			},
-			Category:              insightRow.Category,
-			Provider:              insightRow.Connector,
-			ShortTitle:            insightRow.ShortTitle,
-			LongTitle:             insightRow.LongTitle,
-			Description:           insightRow.Description,
-			LogoURL:               insightRow.LogoURL,
-			Labels:                tags,
-			Links:                 links,
-			Enabled:               insightRow.Enabled,
-			ExecutedAt:            nil,
-			TotalResults:          0,
-			Results:               nil,
-			ListInsightResultType: api.ListInsightResultTypeInsight,
-		})
-	}
-
-	result := api.InsightPeerGroup{
-		ID:                    insightPeerGroup.ID,
-		Category:              insightPeerGroup.Category,
-		Insights:              nil,
-		ShortTitle:            insightPeerGroup.ShortTitle,
-		LongTitle:             insightPeerGroup.LongTitle,
-		Description:           insightPeerGroup.Description,
-		LogoURL:               insightPeerGroup.LogoURL,
-		Labels:                tags,
-		Links:                 links,
-		TotalResults:          0,
-		ListInsightResultType: api.ListInsightResultTypePeerGroup,
-	}
-
-	var insightResults map[uint]insight.InsightResource
-	if resultTime != nil {
-		insightResults, err = es.FetchInsightValueAtTime(h.client, *resultTime, source.Nil, sourceIDs, insightIds, true)
+		return ctx.JSON(http.StatusOK, insightResult)
 	} else {
-		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Now(), source.Nil, sourceIDs, insightIds, false)
+		return echo.NewHTTPError(http.StatusNotFound, "insight not found")
 	}
-	if err != nil {
-		return err
-	}
-
-	for i, insightRow := range insights {
-		if insightResult, ok := insightResults[insightRow.ID]; ok {
-			result.TotalResults = insightResult.Result
-			exAt := time.UnixMilli(insightResult.ExecutedAt)
-			insights[i].ExecutedAt = &exAt
-
-			bucket, key, err := utils.ParseHTTPSubpathS3URIToBucketAndKey(insightResult.S3Location)
-			objectBuffer := aws.NewWriteAtBuffer(make([]byte, 0, 1024*1024))
-			_, err = h.s3Downloader.Download(objectBuffer, &s3.GetObjectInput{
-				Bucket: aws.String(bucket),
-				Key:    aws.String(key),
-			})
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-			}
-
-			var results steampipe.Result
-			err = json.Unmarshal(objectBuffer.Bytes(), &results)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-			}
-
-			connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
-			for _, connection := range insightResult.IncludedConnections {
-				connections = append(connections, api.InsightConnection{
-					ConnectionID: connection.ConnectionID,
-					OriginalID:   connection.OriginalID,
-				})
-			}
-
-			insights[i].Results = &api.InsightResult{
-				JobID:       insightResult.JobID,
-				InsightID:   insightResult.QueryID,
-				SourceID:    insightResult.SourceID,
-				ExecutedAt:  time.UnixMilli(insightResult.ExecutedAt),
-				Locations:   insightResult.Locations,
-				Connections: connections,
-				Result:      insightResult.Result,
-				Details: &api.InsightDetail{
-					Headers: results.Headers,
-					Rows:    results.Data,
-				},
-			}
-			result.TotalResults += insightResult.Result
-		}
-	}
-	result.Insights = insights
-
-	return ctx.JSON(http.StatusOK, result)
 }
 
-// GetInsightTrend godoc
+// GetInsightTrendResults godoc
 //
-//	@Summary		Get insight trend
-//	@Description	Get an insight trend by id
+//	@Summary		Get insight trend data
+//	@Description	Get an insight trend data by id and time window - this mostly for internal usage, use compliance api for full api
 //	@Security		BearerToken
 //	@Tags			insight
 //	@Produce		json
-//	@Param			sourceId		query		string	false	"filter the result by source id"
-//	@Param			startTime		query		int		false	"unix seconds for the start of the time window to get the insight trend for"
-//	@Param			endTime			query		int		false	"unix seconds for the end of the time window to get the insight trend for"
-//	@Param			dataPointCount	query		int		false	"Number of data points to return"
-//	@Success		200				{object}	api.InsightResultTrendResponse
+//	@Param			connectionId	query		[]string	false	"filter the result by source id"
+//	@Param			startTime		query		int			false	"unix seconds for the start of the time window to get the insight trend for"
+//	@Param			endTime			query		int			false	"unix seconds for the end of the time window to get the insight trend for"
+//	@Param			datapointCount	query		int			false	"number of datapoints to return - defaults to number of days between start and end time"
+//	@Success		200				{object}	[]insight.InsightResource
 //	@Router			/inventory/api/v2/insights/{insightId}/trend [get]
-func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
+func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight id")
@@ -3446,53 +3062,27 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	} else {
 		startTime = endTime.Add(-time.Hour * 24 * 30)
 	}
-	// default to distance between start and end time in days or 30, whichever is smaller
-	dataPointCount := int(math.Min(math.Ceil(endTime.Sub(startTime).Hours()/24), 30))
-	if dataPointCountStr := ctx.QueryParam("dataPointCount"); dataPointCountStr != "" {
-		dataPointCountInt, err := strconv.ParseInt(dataPointCountStr, 10, 64)
+
+	connectionIDs := ctx.QueryParams()["connectionId"]
+
+	dataPointCount := int(endTime.Sub(startTime).Hours() / 24)
+	if countStr := ctx.QueryParam("datapointCount"); countStr != "" {
+		count, err := strconv.ParseInt(countStr, 10, 64)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid dataPointCount")
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapoint count")
 		}
-		dataPointCount = int(dataPointCountInt)
+		dataPointCount = int(count)
 	}
 
-	sourceIDs := ctx.QueryParams()["sourceId"]
-	if len(sourceIDs) == 0 {
-		sourceIDs = nil
-	}
-
-	_, err = h.complianceClient.GetInsightById(httpclient.FromEchoContext(ctx), uint(insightId))
-	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "not found") {
-			return echo.NewHTTPError(http.StatusNotFound, "insight not found")
-		}
-		return err
-	}
-
-	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(h.client, startTime, endTime, source.Nil, sourceIDs, []uint{uint(insightId)})
+	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(h.client, startTime, endTime, dataPointCount, nil, connectionIDs, []uint{uint(insightId)})
 	if err != nil {
 		return err
 	}
-
-	result := api.InsightResultTrendResponse{
-		Trend: make([]api.TrendDataPoint, 0),
+	if insightResult, ok := insightResults[uint(insightId)]; ok {
+		return ctx.JSON(http.StatusOK, insightResult)
+	} else {
+		return echo.NewHTTPError(http.StatusNotFound, "insight not found")
 	}
-
-	if values, ok := insightResults[uint(insightId)]; ok {
-		for _, value := range values {
-			result.Trend = append(result.Trend, api.TrendDataPoint{
-				Timestamp: value.ExecutedAt / 1000, /* convert to seconds */
-				Value:     value.Result,
-			})
-		}
-	}
-
-	result.Trend = internal.DownSampleTrendDataPoints(result.Trend, dataPointCount)
-	sort.SliceStable(result.Trend, func(i, j int) bool {
-		return result.Trend[i].Timestamp < result.Trend[j].Timestamp
-	})
-
-	return ctx.JSON(http.StatusOK, result)
 }
 
 // ListConnectorMetadata godoc
@@ -3757,7 +3347,7 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 		}
 		insightTableCount := 0
 		if table != "" {
-			insightList, err := h.complianceClient.GetInsights(httpclient.FromEchoContext(ctx), resourceTypeNode.Connector)
+			insightList, err := h.complianceClient.ListInsightsMetadata(httpclient.FromEchoContext(ctx), []source.Type{resourceTypeNode.Connector})
 			if err != nil {
 				return err
 			}
@@ -3814,7 +3404,7 @@ func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 	}
 	if table != "" {
 		insightTables := make([]uint, 0)
-		insightList, err := h.complianceClient.GetInsights(httpclient.FromEchoContext(ctx), resourceTypeNode.Connector)
+		insightList, err := h.complianceClient.ListInsightsMetadata(httpclient.FromEchoContext(ctx), []source.Type{resourceTypeNode.Connector})
 		if err != nil {
 			return err
 		}
