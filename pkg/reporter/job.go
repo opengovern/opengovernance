@@ -276,6 +276,7 @@ func (j *Job) RunJob() error {
 						zap.String("steampipe", string(j1)),
 						zap.String("es", string(j2)),
 						zap.String("conflictColumn", k),
+						zap.String("keyCOlumns", fmt.Sprintf("%v", keyValues)),
 					)
 				}
 			}
