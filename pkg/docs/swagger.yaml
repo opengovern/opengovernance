@@ -1,3 +1,35 @@
+x-tagGroups:
+  - name: auth
+    tags:
+    - users
+    - roles
+    - keys
+  - name: compliance
+    tags:
+    - compliance
+    - benchmarks_assignemnt
+  - name: inventory
+    tags:
+    - insights
+    - benchmarks
+    - inventory
+    - cost
+    - location
+    - smart_query
+    - resource
+    - metadata
+  - name: onboard
+    tags:
+    - onboard
+  - name: schedule
+    tags:
+    - describe
+    - schedule
+    - jobs
+    - stack
+  - name: workspace
+    tags:
+    - workspace
 definitions:
   aws.Resources:
     properties:
@@ -1019,9 +1051,11 @@ definitions:
       statefile:
         type: string
       tags:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackTag'
-        type: array
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource:
     properties:
@@ -1132,6 +1166,10 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack:
     properties:
+      accountIDs:
+        items:
+          type: string
+        type: array
       createdAt:
         type: string
       evaluations:
@@ -1145,9 +1183,11 @@ definitions:
       stackID:
         type: string
       tags:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackTag'
-        type: array
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
       updatedAt:
         type: string
     type: object
@@ -1159,15 +1199,6 @@ definitions:
         type: string
       jobID:
         type: integer
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackTag:
-    properties:
-      key:
-        type: string
-      value:
-        items:
-          type: string
-        type: array
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest:
     properties:
@@ -6282,6 +6313,18 @@ paths:
       consumes:
       - application/json
       description: Get list of stacks
+      parameters:
+      - description: Key-Value tags in key=value format to filter by
+        in: query
+        name: tag
+        type: string
+      - collectionFormat: csv
+        description: Account IDs to filter by
+        in: query
+        items:
+          type: string
+        name: accounIds
+        type: array
       produces:
       - application/json
       responses:
@@ -6368,29 +6411,6 @@ paths:
       summary: Get Insights Result
       tags:
       - stack
-  /schedule/api/v1/stacks/benchmark/{jobId}:
-    get:
-      consumes:
-      - application/json
-      description: Get a benchmark result by jobId
-      parameters:
-      - description: JobID
-        in: path
-        name: jobId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_es.Finding'
-      security:
-      - BearerToken: []
-      summary: Get Benchmark Result
-      tags:
-      - stack
   /schedule/api/v1/stacks/benchmark/trigger:
     post:
       consumes:
@@ -6415,6 +6435,29 @@ paths:
       security:
       - BearerToken: []
       summary: Trigger benchmarks
+      tags:
+      - stack
+  /schedule/api/v1/stacks/findings/{jobId}:
+    get:
+      consumes:
+      - application/json
+      description: Get a benchmark result by jobId
+      parameters:
+      - description: JobID
+        in: path
+        name: jobId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_es.Finding'
+      security:
+      - BearerToken: []
+      summary: Get Benchmark Result
       tags:
       - stack
   /schedule/api/v1/summarize/jobs/pending:

@@ -5212,6 +5212,24 @@ const docTemplate = `{
                     "stack"
                 ],
                 "summary": "List Stack",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key-Value tags in key=value format to filter by",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Account IDs to filter by",
+                        "name": "accounIds",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -5267,7 +5285,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v1/stacks/benchmark/{jobId}": {
+        "/schedule/api/v1/stacks/findings/{jobId}": {
             "get": {
                 "security": [
                     {
@@ -7317,9 +7335,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "tags": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackTag"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     }
                 }
             }
@@ -7483,6 +7504,12 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack": {
             "type": "object",
             "properties": {
+                "accountIDs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "createdAt": {
                     "type": "string"
                 },
@@ -7502,9 +7529,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "tags": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackTag"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     }
                 },
                 "updatedAt": {
@@ -7523,20 +7553,6 @@ const docTemplate = `{
                 },
                 "jobID": {
                     "type": "integer"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackTag": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
