@@ -2937,7 +2937,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"filter insights by connector"
 //	@Param			connectionId	query		[]string		false	"filter the result by source id"
-//	@Param 			insightId 		query 		[]string 		true	"filter the result by insight id"
+//	@Param			insightId		query		[]string		true	"filter the result by insight id"
 //	@Param			time			query		int				false	"unix seconds for the time to get the insight result for"
 //	@Success		200				{object}	map[uint]insight.InsightResource
 //	@Router			/inventory/api/v2/insights [get]
@@ -2955,6 +2955,9 @@ func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 	connectionIDs := ctx.QueryParams()["connectionId"]
 
 	insightIdListStr := ctx.QueryParams()["insightId"]
+	if len(insightIdListStr) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "insight id is required")
+	}
 	insightIdList := make([]uint, 0, len(insightIdListStr))
 	for _, idStr := range insightIdListStr {
 		id, err := strconv.ParseUint(idStr, 10, 32)
@@ -3031,8 +3034,9 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 //	@Tags			insight
 //	@Produce		json
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
-//	@Param			startTime		query		int		false	"unix seconds for the start of the time window to get the insight trend for"
-//	@Param			endTime			query		int		false	"unix seconds for the end of the time window to get the insight trend for"
+//	@Param			startTime		query		int			false	"unix seconds for the start of the time window to get the insight trend for"
+//	@Param			endTime			query		int			false	"unix seconds for the end of the time window to get the insight trend for"
+//	@Param			datapointCount	query		int			false	"number of datapoints to return - defaults to number of days between start and end time"
 //	@Success		200				{object}	[]insight.InsightResource
 //	@Router			/inventory/api/v2/insights/{insightId}/trend [get]
 func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
@@ -3061,7 +3065,16 @@ func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 
 	connectionIDs := ctx.QueryParams()["connectionId"]
 
-	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(h.client, startTime, endTime, 0, nil, connectionIDs, []uint{uint(insightId)})
+	dataPointCount := int(endTime.Sub(startTime).Hours() / 24)
+	if countStr := ctx.QueryParam("datapointCount"); countStr != "" {
+		count, err := strconv.ParseInt(countStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapoint count")
+		}
+		dataPointCount = int(count)
+	}
+
+	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(h.client, startTime, endTime, dataPointCount, nil, connectionIDs, []uint{uint(insightId)})
 	if err != nil {
 		return err
 	}

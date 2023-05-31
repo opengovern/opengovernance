@@ -958,7 +958,7 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 //	@Param			connector		query		[]source.Type	false	"filter insights by connector"
 //	@Param			connectionId	query		[]string		false	"filter the result by source id"
 //	@Param			time			query		int				false	"unix seconds for the time to get the insight result for"
-//	@Success		200			{object}	[]api.Insight
+//	@Success		200				{object}	[]api.Insight
 //	@Router			/compliance/api/v1/insight [get]
 func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
