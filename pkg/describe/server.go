@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
 
 	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
+	"github.com/lib/pq"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
@@ -18,7 +21,9 @@ import (
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
+	inventoryapi "gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 	"gorm.io/gorm"
 
@@ -27,6 +32,8 @@ import (
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/describe/internal"
+	inventory "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
 )
 
 type HttpServer struct {
@@ -80,6 +87,14 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/benchmark/evaluations", httpserver.AuthorizeHandler(h.HandleListBenchmarkEvaluations, api3.ViewerRole))
 
 	v1.POST("/describe/resource", httpserver.AuthorizeHandler(h.DescribeSingleResource, api3.AdminRole))
+
+	v1.POST("/stacks/benchmark/trigger", httpserver.AuthorizeHandler(h.TriggerStackBenchmark, api3.AdminRole))
+	v1.GET("/stacks", httpserver.AuthorizeHandler(h.ListStack, api3.ViewerRole))
+	v1.GET("/stacks/:stackId", httpserver.AuthorizeHandler(h.GetStack, api3.ViewerRole))
+	v1.POST("/stacks/build", httpserver.AuthorizeHandler(h.CreateStack, api3.AdminRole))
+	v1.DELETE("/stacks/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, api3.AdminRole))
+	v1.GET("/stacks/findings/:jobId", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
+	v1.GET("/stacks/:stackId/insights", httpserver.AuthorizeHandler(h.GetInsights, api3.ViewerRole))
 }
 
 // HandleListSources godoc
@@ -728,4 +743,345 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	}
 
 	return nil
+}
+
+// BuildStackFromStatefile godoc
+//
+//	@Summary		Build a stack
+//	@Description	Temporary API for building a stack by giving a terraform statefile directory
+//	@Security		BearerToken
+//	@Tags			stack
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		api.CreateStackRequest	true	"Request Body"
+//	@Success		200		{object}	api.Stack
+//	@Router			/schedule/api/v1/stack/create [put]
+func (h HttpServer) CreateStack(ctx echo.Context) error {
+	var req api.CreateStackRequest
+	bindValidate(ctx, &req)
+	resources := req.Resources
+	if req.Statefile != "" {
+		data, err := ioutil.ReadFile(req.Statefile)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		arns, err := internal.GetArns(string(data))
+		if err != nil {
+			return err
+		}
+		resources = append(resources, arns...)
+	}
+	if len(resources) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "No resource provided")
+	}
+	var recordTags []*StackTag
+	for key, value := range req.Tags {
+		recordTags = append(recordTags, &StackTag{
+			Key:   key,
+			Value: pq.StringArray(value),
+		})
+	}
+	accs, err := internal.ParseAccountsFromArns(resources)
+	if err != nil {
+		return err
+	}
+	id := "stack-" + uuid.New().String()
+	stackRecord := Stack{
+		StackID:    id,
+		Resources:  pq.StringArray(resources),
+		Tags:       recordTags,
+		AccountIDs: accs,
+	}
+	err = h.DB.AddStack(&stackRecord)
+	if err != nil {
+		return err
+	}
+
+	stack := api.Stack{
+		StackID:    stackRecord.StackID,
+		CreatedAt:  stackRecord.CreatedAt,
+		UpdatedAt:  stackRecord.UpdatedAt,
+		Resources:  []string(stackRecord.Resources),
+		Tags:       trimPrivateTags(stackRecord.GetTagsMap()),
+		AccountIDs: accs,
+	}
+	return ctx.JSON(http.StatusOK, stack)
+}
+
+// GetStack godoc
+//
+//	@Summary		Get a Stack
+//	@Description	Get a stack details by ID
+//	@Security		BearerToken
+//	@Tags			stack
+//	@Accept			json
+//	@Produce		json
+//	@Param			stackId	path		string	true	"StackID"
+//	@Success		200		{object}	api.Stack
+//	@Router			/schedule/api/v1/stacks/{stackId} [get]
+func (h HttpServer) GetStack(ctx echo.Context) error {
+	stackId := ctx.Param("stackId")
+	stackRecord, err := h.DB.GetStack(stackId)
+	if err != nil {
+		return err
+	}
+
+	var evaluations []api.StackEvaluation
+	for _, e := range stackRecord.Evaluations {
+		evaluations = append(evaluations, api.StackEvaluation{
+			BenchmarkID: e.BenchmarkID,
+			JobID:       e.JobID,
+			CreatedAt:   e.CreatedAt,
+		})
+	}
+
+	stack := api.Stack{
+		StackID:     stackRecord.StackID,
+		CreatedAt:   stackRecord.CreatedAt,
+		UpdatedAt:   stackRecord.UpdatedAt,
+		Resources:   []string(stackRecord.Resources),
+		Tags:        trimPrivateTags(stackRecord.GetTagsMap()),
+		Evaluations: evaluations,
+		AccountIDs:  stackRecord.AccountIDs,
+	}
+	return ctx.JSON(http.StatusOK, stack)
+}
+
+// ListStack godoc
+//
+//	@Summary		List Stack
+//	@Description	Get list of stacks
+//	@Security		BearerToken
+//	@Tags			stack
+//	@Accept			json
+//	@Produce		json
+//	@Param			tag			query		string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			accounIds	query		[]string	false	"Account IDs to filter by"
+//	@Success		200			{object}	[]api.Stack
+//	@Router			/schedule/api/v1/stacks [get]
+func (h HttpServer) ListStack(ctx echo.Context) error {
+	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])
+	accountIds := ctx.QueryParams()["accounIds"]
+	stacksRecord, err := h.DB.ListStacks(tagMap, accountIds)
+	if err != nil {
+		return err
+	}
+	var stacks []api.Stack
+	for _, sr := range stacksRecord {
+
+		stack := api.Stack{
+			StackID:   sr.StackID,
+			CreatedAt: sr.CreatedAt,
+			UpdatedAt: sr.UpdatedAt,
+			Resources: []string(sr.Resources),
+			Tags:      trimPrivateTags(sr.GetTagsMap()),
+		}
+		stacks = append(stacks, stack)
+	}
+	return ctx.JSON(http.StatusOK, stacks)
+}
+
+// DeleteStack godoc
+//
+//	@Summary		Delete a Stack
+//	@Description	Delete a stack by ID
+//	@Security		BearerToken
+//	@Tags			stack
+//	@Accept			json
+//	@Produce		json
+//	@Param			stackId	path	string	true	"StackID"
+//	@Success		200
+//	@Router			/schedule/api/v1/stacks/{stackId} [delete]
+func (h HttpServer) DeleteStack(ctx echo.Context) error {
+	stackId := ctx.Param("stackId")
+	err := h.DB.DeleteStack(stackId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
+		} else {
+			return err
+		}
+	}
+	return ctx.NoContent(http.StatusOK)
+}
+
+// TriggerBenchmark godoc
+//
+//	@Summary		Trigger benchmarks
+//	@Description	Trigger defined benchmarks for a stack
+//	@Security		BearerToken
+//	@Tags			stack
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		api.EvaluateStack	true	"Request Body"
+//	@Success		200		{object}	[]ComplianceReportJob
+//	@Router			/schedule/api/v1/stacks/benchmark/trigger [post]
+func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
+	var req api.EvaluateStack
+	bindValidate(ctx, &req)
+
+	stackRecord, err := h.DB.GetStack(req.StackID)
+	if err != nil {
+		return err
+	}
+	if stackRecord.StackID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
+	}
+	var connectionIDs []string
+	for _, acc := range []string(stackRecord.AccountIDs) {
+		source, err := h.Scheduler.onboardClient.GetSourcesByAccount(httpclient.FromEchoContext(ctx), acc)
+		if err != nil {
+			return err
+		}
+		connectionIDs = append(connectionIDs, source.ID.String())
+	}
+	job := ScheduleJob{
+		Model:          gorm.Model{},
+		Status:         summarizerapi.SummarizerJobInProgress,
+		FailureMessage: "",
+	}
+	err = h.DB.AddScheduleJob(&job)
+	if err != nil {
+		errMsg := fmt.Sprintf("error adding schedule job: %v", err)
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
+	}
+
+	scheduleJob, err := h.DB.FetchLastScheduleJob()
+	if err != nil {
+		return err
+	}
+	var complianceJobs []ComplianceReportJob
+	for _, benchmarkID := range req.Benchmarks {
+		for _, connectionID := range connectionIDs {
+			src, err := h.DB.GetSourceByID(connectionID)
+			if err != nil {
+				return err
+			}
+
+			crj := newComplianceReportJob(connectionID, source.Type(src.Type), benchmarkID, scheduleJob.ID)
+
+			err = h.DB.CreateComplianceReportJob(&crj)
+			if err != nil {
+				return err
+			}
+
+			if src == nil {
+				return errors.New("failed to find connection")
+			}
+
+			enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, *src, &crj, scheduleJob)
+
+			err = h.DB.UpdateSourceReportGenerated(connectionID, h.Scheduler.complianceIntervalHours)
+			if err != nil {
+				return err
+			}
+			evaluation := StackEvaluation{
+				BenchmarkID: benchmarkID,
+				StackID:     stackRecord.StackID,
+				JobID:       job.ID,
+			}
+			err = h.DB.AddEvaluation(&evaluation)
+			if err != nil {
+				return err
+			}
+			complianceJobs = append(complianceJobs, crj)
+		}
+	}
+	return ctx.JSON(http.StatusOK, complianceJobs)
+}
+
+// GetBenchmarkResult godoc
+//
+//	@Summary		Get Benchmark Result
+//	@Description	Get a benchmark result by jobId
+//	@Security		BearerToken
+//	@Tags			stack
+//	@Accept			json
+//	@Produce		json
+//	@Param			jobId	path		string	true	"JobID"
+//	@Success		200		{object}	es.Finding
+//	@Router			/schedule/api/v1/stacks/findings/{jobId} [get]
+func (h HttpServer) GetStackFindings(ctx echo.Context) error {
+	jobIdstring := ctx.Param("jobId")
+	jobId, err := strconv.ParseUint(jobIdstring, 10, 32)
+	if err != nil {
+		return err
+	}
+	evaluation, err := h.DB.GetEvaluation(uint(jobId))
+	if err != nil {
+		return err
+	}
+	stackRecord, err := h.DB.GetStack(evaluation.StackID)
+	if err != nil {
+		return err
+	}
+	if stackRecord.StackID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
+	}
+	var conns []string
+	for _, acc := range []string(stackRecord.AccountIDs) {
+		source, err := h.Scheduler.onboardClient.GetSourcesByAccount(httpclient.FromEchoContext(ctx), acc)
+		if err != nil {
+			return err
+		}
+		conns = append(conns, source.ID.String())
+	}
+	if err != nil {
+		return err
+	}
+	findings, err := h.Scheduler.complianceClient.GetFindings(httpclient.FromEchoContext(ctx), conns, evaluation.BenchmarkID, []string(stackRecord.Resources))
+	if err != nil {
+		return err
+	}
+	var result es.Finding
+	for _, f := range findings.Findings {
+		if f.ComplianceJobID == evaluation.JobID {
+			result = f
+			break
+		}
+	}
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetInsights godoc
+//
+//	@Summary		Get Insights Result
+//	@Description	Get a benchmark result by jobId
+//	@Security		BearerToken
+//	@Tags			stack
+//	@Accept			json
+//	@Produce		json
+//	@Param			time	query		int		false	"unix seconds for the time to get the insight result for"
+//	@Param			stackId	path		string	true	"StackID"
+//	@Success		200		{object}	[]inventoryapi.InsightPeerGroup
+//	@Router			/schedule/api/v1/stacks/{stackId}/insights [get]
+func (h HttpServer) GetInsights(ctx echo.Context) error {
+	stackId := ctx.Param("stackId")
+	timeStr := ctx.QueryParam("time")
+	stackRecord, err := h.DB.GetStack(stackId)
+	if err != nil {
+		return err
+	}
+	if stackRecord.StackID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
+	}
+	var conns []string
+	for _, acc := range []string(stackRecord.AccountIDs) {
+		source, err := h.Scheduler.onboardClient.GetSourcesByAccount(httpclient.FromEchoContext(ctx), acc)
+		if err != nil {
+			return err
+		}
+		conns = append(conns, source.ID.String())
+	}
+	if err != nil {
+		return err
+	}
+	inventoryClient := inventory.NewInventoryServiceClient(h.Address + "/inventory")
+	var result []inventoryapi.InsightPeerGroup
+	result, err = inventoryClient.ListInsights(httpclient.FromEchoContext(ctx), conns, timeStr)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, result)
 }
