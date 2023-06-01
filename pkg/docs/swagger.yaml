@@ -3658,7 +3658,18 @@ paths:
       - insights
   /compliance/api/v1/insight/{insightId}:
     get:
-      description: Get insight by id
+      description: Get insight with result
+      parameters:
+      - description: filter the result by source id
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: unix seconds for the time to get the insight result for
+        in: query
+        name: time
+        type: integer
       produces:
       - application/json
       responses:
@@ -3666,7 +3677,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
-      summary: Get insight by id
+      summary: Get insight with result
       tags:
       - insights
   /compliance/api/v1/metadata/insight:
