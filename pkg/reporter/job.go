@@ -281,10 +281,10 @@ func (j *Job) RunJob() error {
 
 				if sj1 != sj2 {
 					if k != "etag" && k != "tags" {
-						j.logger.Error("inconsistency in data",
+						j.logger.Warn("inconsistency in data",
 							zap.String("accountID", account.ConnectionID),
-							zap.String("steampipe", string(j1)),
-							zap.String("es", string(j2)),
+							zap.String("steampipe", sj1),
+							zap.String("es", sj2),
 							zap.String("conflictColumn", k),
 							zap.String("keyColumns", fmt.Sprintf("%v", keyValues)),
 						)
@@ -294,7 +294,7 @@ func (j *Job) RunJob() error {
 		}
 
 		if !found {
-			j.logger.Error("record not found",
+			j.logger.Warn("record not found",
 				zap.String("accountID", account.ConnectionID),
 				zap.String("keyColumns", fmt.Sprintf("%v", keyValues)),
 			)
@@ -339,9 +339,23 @@ func (j *Job) PopulateSteampipe(account *api2.Source, cred *api2.AWSCredential, 
 	os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
 
 	if cred != nil {
-		os.Setenv("AWS_ACCESS_KEY_ID", cred.AccessKey)
-		os.Setenv("AWS_SECRET_ACCESS_KEY", cred.SecretKey)
-		content := `
+		credFilePath := dirname + "/.aws/credentials"
+		os.MkdirAll(filepath.Dir(credFilePath), os.ModePerm)
+
+		content := fmt.Sprintf(`
+[default]
+aws_access_key_id = %s
+aws_secret_access_key = %s
+`,
+			cred.AccessKey, cred.SecretKey)
+		err = os.WriteFile(credFilePath, []byte(content), os.ModePerm)
+		if err != nil {
+			return err
+		}
+
+		//os.Setenv("AWS_ACCESS_KEY_ID", cred.AccessKey)
+		//os.Setenv("AWS_SECRET_ACCESS_KEY", cred.SecretKey)
+		content = `
 connection "aws" {
   plugin  = "aws"
   regions = ["*"]
