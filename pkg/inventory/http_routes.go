@@ -541,9 +541,10 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 
 	var response []api.LocationResponse
 	for region, count := range locationDistribution {
+		cnt := count
 		response = append(response, api.LocationResponse{
 			Location:      region,
-			ResourceCount: &count,
+			ResourceCount: &cnt,
 		})
 	}
 	sort.Slice(response, func(i, j int) bool {

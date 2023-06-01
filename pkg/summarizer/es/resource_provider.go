@@ -150,7 +150,7 @@ func (r ProviderResourceTypeSummary) KeysAndIndex() ([]string, string) {
 
 type ProviderLocationSummary struct {
 	SummarizeJobID       uint               `json:"summarize_job_id"`
-	ScheduleJobID        uint               `json:"schedule_job_id"`
+	SummarizedAt         int64              `json:"summarized_at"`
 	SourceType           source.Type        `json:"source_type"`
 	LocationDistribution map[string]int     `json:"location_distribution"`
 	ReportType           ProviderReportType `json:"report_type"`
