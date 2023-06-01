@@ -31,7 +31,7 @@ type HttpHandler struct {
 
 func InitializeHttpHandler(
 	conf ServerConfig,
-	s3Region, s3AccessKey, s3AccessSecret, s3Bucket string,
+	s3Region, s3AccessKey, s3AccessSecret string,
 	logger *zap.Logger) (h *HttpHandler, err error) {
 	h = &HttpHandler{}
 

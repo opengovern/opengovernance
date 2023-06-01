@@ -18,7 +18,6 @@ var (
 	S3AccessKey    = os.Getenv("S3_ACCESS_KEY")
 	S3AccessSecret = os.Getenv("S3_ACCESS_SECRET")
 	S3Region       = os.Getenv("S3_REGION")
-	S3Bucket       = os.Getenv("S3_BUCKET")
 )
 
 const (
@@ -109,7 +108,7 @@ func startHttpServer(ctx context.Context) error {
 	}
 
 	handler, err := InitializeHttpHandler(conf,
-		S3AccessKey, S3AccessSecret, S3Region, S3Bucket,
+		S3Region, S3AccessKey, S3AccessSecret,
 		logger)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)
