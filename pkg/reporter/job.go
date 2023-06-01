@@ -144,7 +144,7 @@ func New(config JobConfig) (*Job, error) {
 func (j *Job) Run() {
 	fmt.Println("starting scheduling")
 	for {
-		fmt.Println("starting job")
+		//fmt.Println("starting job")
 		if err := j.RunJob(); err != nil {
 			j.logger.Error("failed to run job", zap.Error(err))
 		}
@@ -159,7 +159,7 @@ func (j *Job) RunJob() error {
 		}
 	}()
 
-	j.logger.Info("Starting job")
+	//j.logger.Info("Starting job")
 	account, err := j.RandomAccount()
 	if err != nil {
 		return err
@@ -183,7 +183,7 @@ func (j *Job) RunJob() error {
 		return err
 	}
 	time.Sleep(5 * time.Second)
-	fmt.Println("+++++ Steampipe service stoped")
+	//fmt.Println("+++++ Steampipe service stoped")
 
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
 		"9193", "--database-password", "abcd")
@@ -192,7 +192,7 @@ func (j *Job) RunJob() error {
 		return err
 	}
 	time.Sleep(5 * time.Second)
-	fmt.Println("+++++ Steampipe service started")
+	//fmt.Println("+++++ Steampipe service started")
 
 	s1, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: "localhost",
@@ -205,7 +205,7 @@ func (j *Job) RunJob() error {
 		return err
 	}
 	j.steampipe = s1
-	fmt.Println("+++++ Connected to steampipe")
+	//fmt.Println("+++++ Connected to steampipe")
 	query := j.RandomQuery(account.Type)
 
 	j.logger.Info("running query", zap.String("account", account.ConnectionID), zap.String("query", query.ListQuery))
@@ -280,7 +280,7 @@ func (j *Job) RunJob() error {
 				}
 
 				if sj1 != sj2 {
-					if k != "etag" {
+					if k != "etag" && k != "tags" {
 						j.logger.Error("inconsistency in data",
 							zap.String("accountID", account.ConnectionID),
 							zap.String("steampipe", string(j1)),
