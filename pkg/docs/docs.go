@@ -1303,14 +1303,31 @@ const docTemplate = `{
         },
         "/compliance/api/v1/insight/{insightId}": {
             "get": {
-                "description": "Get insight by id",
+                "description": "Get insight with result",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "insights"
                 ],
-                "summary": "Get insight by id",
+                "summary": "Get insight with result",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter the result by source id",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the time to get the insight result for",
+                        "name": "time",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
