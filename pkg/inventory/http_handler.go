@@ -10,10 +10,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/go-redis/cache/v8"
 
 	complianceClient "gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
@@ -42,8 +38,6 @@ type HttpHandler struct {
 	complianceClient complianceClient.ComplianceServiceClient
 	rdb              *redis.Client
 	cache            *cache.Cache
-	s3Downloader     *s3manager.Downloader
-	s3Bucket         string
 
 	logger *zap.Logger
 
@@ -58,7 +52,6 @@ func InitializeHttpHandler(
 	schedulerBaseUrl string, onboardBaseUrl string, complianceBaseUrl string,
 	logger *zap.Logger,
 	redisAddress string,
-	s3Endpoint, s3AccessKey, s3AccessSecret, s3Region, s3Bucket string,
 ) (h *HttpHandler, err error) {
 
 	h = &HttpHandler{}
@@ -147,26 +140,6 @@ func InitializeHttpHandler(
 	})
 	h.onboardClient = onboardClient.NewOnboardServiceClient(onboardBaseUrl, h.cache)
 	h.complianceClient = complianceClient.NewComplianceClient(complianceBaseUrl)
-
-	if s3Region == "" {
-		s3Region = "us-west-2"
-	}
-	var awsConfig *aws.Config
-	if s3AccessKey == "" || s3AccessSecret == "" {
-		//load default credentials
-		awsConfig = &aws.Config{
-			Region: aws.String(s3Region),
-		}
-	} else {
-		awsConfig = &aws.Config{
-			Endpoint:    aws.String(s3Endpoint),
-			Region:      aws.String(s3Region),
-			Credentials: credentials.NewStaticCredentials(s3AccessKey, s3AccessSecret, ""),
-		}
-	}
-	sess := session.Must(session.NewSession(awsConfig))
-	h.s3Downloader = s3manager.NewDownloader(sess)
-	h.s3Bucket = s3Bucket
 
 	h.logger = logger
 

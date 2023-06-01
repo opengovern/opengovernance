@@ -53,6 +53,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v1.GET("/insight", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
 	v1.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
+	v1.GET("/insight/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, api3.ViewerRole))
 
 	v1.GET("/benchmarks/summary", httpserver.AuthorizeHandler(h.GetBenchmarksSummary, api3.ViewerRole))
 	v1.GET("/benchmark/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
@@ -1027,8 +1028,8 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 
 // GetInsight godoc
 //
-//	@Summary		Get insight with result
-//	@Description	Get insight with result
+//	@Summary		Get insight with result by id
+//	@Description	Get insight with result by id
 //	@Tags			insights
 //	@Produce		json
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
@@ -1107,4 +1108,76 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(200, apiRes)
+}
+
+// GetInsightTrend godoc
+//
+//	@Summary		Get insight trend with result by id
+//	@Description	Get insight trend with result by id
+//	@Tags			insights
+//	@Produce		json
+//	@Param			connectionId	query		[]string	false	"filter the result by source id"
+//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
+//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
+//	@Param			datapointCount	query		int			false	"number of datapoints to return"
+//	@Success		200				{object}	[]api.InsightTrendDatapoint
+//	@Router			/compliance/api/v1/insight/{insightId}/trend [get]
+func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
+	insightIdStr := ctx.Param("insightId")
+	insightId, err := strconv.ParseUint(insightIdStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	var startTime *time.Time
+	if ctx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		tt := time.Unix(t, 0)
+		startTime = &tt
+	}
+	var endTime *time.Time
+	if ctx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		tt := time.Unix(t, 0)
+		endTime = &tt
+	}
+	var datapointCount *int
+	if ctx.QueryParam("datapointCount") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("datapointCount"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
+		}
+		tt := int(t)
+		datapointCount = &tt
+	}
+
+	insightRow, err := h.db.GetInsight(uint(insightId))
+	if err != nil {
+		return err
+	}
+
+	timeAtToInsightResults, err := h.inventoryClient.GetInsightTrendResults(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, startTime, endTime, datapointCount)
+	if err != nil {
+		return err
+	}
+
+	result := make([]api.InsightTrendDatapoint, 0, len(timeAtToInsightResults))
+	for timeAt, insightResults := range timeAtToInsightResults {
+		datapoint := api.InsightTrendDatapoint{
+			Timestamp: timeAt,
+			Value:     0,
+		}
+		for _, insightResult := range insightResults {
+			datapoint.Value += int(insightResult.Result)
+		}
+		result = append(result, datapoint)
+	}
+
+	return ctx.JSON(200, result)
 }
