@@ -1,13 +1,18 @@
 package compliance
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
@@ -47,7 +52,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	metadata.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsightMetadata, api3.ViewerRole))
 
 	v1.GET("/insight", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
-	//v1.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
+	v1.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
+	v1.GET("/insight/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, api3.ViewerRole))
 
 	v1.GET("/benchmarks/summary", httpserver.AuthorizeHandler(h.GetBenchmarksSummary, api3.ViewerRole))
 	v1.GET("/benchmark/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
@@ -924,8 +930,8 @@ func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
 
 // GetInsightMetadata godoc
 //
-//	@Summary		Get insight by id
-//	@Description	Get insight by id
+//	@Summary		Get insight metadata by id
+//	@Description	Get insight metadata by id
 //	@Tags			insights
 //	@Produce		json
 //	@Success		200	{object}	api.Insight
@@ -1017,5 +1023,161 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		}
 		result = append(result, apiRes)
 	}
+	return ctx.JSON(200, result)
+}
+
+// GetInsight godoc
+//
+//	@Summary		Get insight with result by id
+//	@Description	Get insight with result by id
+//	@Tags			insights
+//	@Produce		json
+//	@Param			connectionId	query		[]string	false	"filter the result by source id"
+//	@Param			time			query		int			false	"unix seconds for the time to get the insight result for"
+//	@Success		200				{object}	api.Insight
+//	@Router			/compliance/api/v1/insight/{insightId} [get]
+func (h *HttpHandler) GetInsight(ctx echo.Context) error {
+	insightIdStr := ctx.Param("insightId")
+	insightId, err := strconv.ParseUint(insightIdStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	var timeAt *time.Time
+	if ctx.QueryParam("time") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("time"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		tt := time.Unix(t, 0)
+		timeAt = &tt
+	}
+
+	insightRow, err := h.db.GetInsight(uint(insightId))
+	if err != nil {
+		return err
+	}
+
+	insightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, timeAt)
+	if err != nil {
+		return err
+	}
+
+	apiRes := insightRow.ToApi()
+	for _, insightResult := range insightResults {
+		connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
+		for _, connection := range insightResult.IncludedConnections {
+			connections = append(connections, api.InsightConnection{
+				ConnectionID: connection.ConnectionID,
+				OriginalID:   connection.OriginalID,
+			})
+		}
+
+		bucket, key, err := utils.ParseHTTPSubpathS3URIToBucketAndKey(insightResult.S3Location)
+		getObjectOutput, err := h.s3Client.GetObject(ctx.Request().Context(), &s3.GetObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(key),
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		objectBuffer, err := io.ReadAll(getObjectOutput.Body)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		var steampipeResults steampipe.Result
+		err = json.Unmarshal(objectBuffer, &steampipeResults)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		apiRes.Results = append(apiRes.Results, api.InsightResult{
+			JobID:        insightResult.JobID,
+			InsightID:    insightRow.ID,
+			ConnectionID: insightResult.SourceID,
+			ExecutedAt:   time.UnixMilli(insightResult.ExecutedAt),
+			Result:       insightResult.Result,
+			Locations:    insightResult.Locations,
+			Connections:  connections,
+			Details: &api.InsightDetail{
+				Headers: steampipeResults.Headers,
+				Rows:    steampipeResults.Data,
+			},
+		})
+		apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, &insightResult.Result)
+	}
+
+	return ctx.JSON(200, apiRes)
+}
+
+// GetInsightTrend godoc
+//
+//	@Summary		Get insight trend with result by id
+//	@Description	Get insight trend with result by id
+//	@Tags			insights
+//	@Produce		json
+//	@Param			connectionId	query		[]string	false	"filter the result by source id"
+//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
+//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
+//	@Param			datapointCount	query		int			false	"number of datapoints to return"
+//	@Success		200				{object}	[]api.InsightTrendDatapoint
+//	@Router			/compliance/api/v1/insight/{insightId}/trend [get]
+func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
+	insightIdStr := ctx.Param("insightId")
+	insightId, err := strconv.ParseUint(insightIdStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	var startTime *time.Time
+	if ctx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		tt := time.Unix(t, 0)
+		startTime = &tt
+	}
+	var endTime *time.Time
+	if ctx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		tt := time.Unix(t, 0)
+		endTime = &tt
+	}
+	var datapointCount *int
+	if ctx.QueryParam("datapointCount") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("datapointCount"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
+		}
+		tt := int(t)
+		datapointCount = &tt
+	}
+
+	insightRow, err := h.db.GetInsight(uint(insightId))
+	if err != nil {
+		return err
+	}
+
+	timeAtToInsightResults, err := h.inventoryClient.GetInsightTrendResults(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, startTime, endTime, datapointCount)
+	if err != nil {
+		return err
+	}
+
+	result := make([]api.InsightTrendDatapoint, 0, len(timeAtToInsightResults))
+	for timeAt, insightResults := range timeAtToInsightResults {
+		datapoint := api.InsightTrendDatapoint{
+			Timestamp: timeAt,
+			Value:     0,
+		}
+		for _, insightResult := range insightResults {
+			datapoint.Value += int(insightResult.Result)
+		}
+		result = append(result, datapoint)
+	}
+
 	return ctx.JSON(200, result)
 }

@@ -56,7 +56,7 @@ func (r ConnectionResourcesSummary) KeysAndIndex() ([]string, string) {
 
 type ConnectionLocationSummary struct {
 	SummarizeJobID       uint                 `json:"summarize_job_id"`
-	ScheduleJobID        uint                 `json:"schedule_job_id"`
+	SummarizedAt         int64                `json:"summarized_at"`
 	SourceID             string               `json:"source_id"`
 	SourceType           source.Type          `json:"source_type"`
 	SourceJobID          uint                 `json:"source_job_id"`

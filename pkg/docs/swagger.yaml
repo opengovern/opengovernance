@@ -885,6 +885,15 @@ definitions:
         description: Result
         type: integer
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint:
+    properties:
+      timestamp:
+        description: Time
+        type: integer
+      value:
+        description: Resource Count
+        type: integer
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page:
     properties:
       "no":
@@ -2204,15 +2213,6 @@ definitions:
       serviceName:
         description: Service Name
         type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint:
-    properties:
-      timestamp:
-        description: Time
-        type: integer
-      value:
-        description: Resource Count
-        type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadata:
     properties:
@@ -3658,7 +3658,18 @@ paths:
       - insights
   /compliance/api/v1/insight/{insightId}:
     get:
-      description: Get insight by id
+      description: Get insight with result by id
+      parameters:
+      - description: filter the result by source id
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: unix seconds for the time to get the insight result for
+        in: query
+        name: time
+        type: integer
       produces:
       - application/json
       responses:
@@ -3666,7 +3677,41 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
-      summary: Get insight by id
+      summary: Get insight with result by id
+      tags:
+      - insights
+  /compliance/api/v1/insight/{insightId}/trend:
+    get:
+      description: Get insight trend with result by id
+      parameters:
+      - description: filter the result by source id
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: unix seconds for the start time of the trend
+        in: query
+        name: startTime
+        type: integer
+      - description: unix seconds for the end time of the trend
+        in: query
+        name: endTime
+        type: integer
+      - description: number of datapoints to return
+        in: query
+        name: datapointCount
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint'
+            type: array
+      summary: Get insight trend with result by id
       tags:
       - insights
   /compliance/api/v1/metadata/insight:
@@ -4341,46 +4386,6 @@ paths:
       security:
       - BearerToken: []
       summary: Returns top n services of specified provider by resource count
-      tags:
-      - benchmarks
-  /inventory/api/v1/resources/trend:
-    get:
-      consumes:
-      - application/json
-      description: |-
-        Returns trend of resource count in the specified time window
-        In case of not specifying SourceID, Provider is used for filtering
-      parameters:
-      - description: SourceID
-        in: query
-        name: sourceId
-        type: string
-      - description: Provider
-        in: query
-        name: provider
-        type: string
-      - description: Time Window
-        enum:
-        - 24h
-        - 1w
-        - 3m
-        - 1y
-        - max
-        in: query
-        name: timeWindow
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Returns trend of resource count growth for specific account
       tags:
       - benchmarks
   /inventory/api/v1/services/distribution:

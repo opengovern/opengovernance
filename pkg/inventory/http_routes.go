@@ -62,7 +62,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/resources/filters", httpserver.AuthorizeHandler(h.GetResourcesFilters, api3.ViewerRole))
 	v1.POST("/resource", httpserver.AuthorizeHandler(h.GetResource, api3.ViewerRole))
 
-	v1.GET("/resources/trend", httpserver.AuthorizeHandler(h.GetResourceGrowthTrend, api3.ViewerRole))
 	v1.GET("/resources/top/growing/accounts", httpserver.AuthorizeHandler(h.GetTopFastestGrowingAccountsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, api3.ViewerRole))
@@ -124,75 +123,6 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	}
 
 	return nil
-}
-
-// GetResourceGrowthTrend godoc
-//
-//	@Summary		Returns trend of resource count growth for specific account
-//	@Description	Returns trend of resource count in the specified time window
-//	@Description	In case of not specifying SourceID, Provider is used for filtering
-//	@Security		BearerToken
-//	@Tags			benchmarks
-//	@Accept			json
-//	@Produce		json
-//	@Param			sourceId	query		string	false	"SourceID"
-//	@Param			provider	query		string	false	"Provider"
-//	@Param			timeWindow	query		string	false	"Time Window"	Enums(24h,1w,3m,1y,max)
-//	@Success		200			{object}	[]api.TrendDataPoint
-//	@Router			/inventory/api/v1/resources/trend [get]
-func (h *HttpHandler) GetResourceGrowthTrend(ctx echo.Context) error {
-	var err error
-	var fromTime, toTime int64
-
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	sourceID := ctx.QueryParam("sourceId")
-	timeWindow := ctx.QueryParam("timeWindow")
-	if timeWindow == "" {
-		timeWindow = "24h"
-	}
-
-	toTime = time.Now().UnixMilli()
-	tw, err := ParseTimeWindow(timeWindow)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
-	}
-	fromTime = time.Now().Add(-1 * tw).UnixMilli()
-
-	datapoints := map[int64]int{}
-	sortMap := []map[string]interface{}{
-		{
-			"described_at": "asc",
-		},
-	}
-	if sourceID != "" {
-		hits, err := es.FetchConnectionTrendSummaryPage(h.client, []string{sourceID}, fromTime, toTime, sortMap, EsFetchPageSize)
-		if err != nil {
-			return err
-		}
-		for _, hit := range hits {
-			datapoints[hit.DescribedAt] += hit.ResourceCount
-		}
-	} else {
-		hits, err := es.FetchProviderTrendSummaryPage(h.client, []source.Type{provider}, fromTime, toTime, sortMap, EsFetchPageSize)
-		if err != nil {
-			return err
-		}
-		for _, hit := range hits {
-			datapoints[hit.DescribedAt] += hit.ResourceCount
-		}
-	}
-
-	var resp []api.TrendDataPoint
-	for k, v := range datapoints {
-		resp = append(resp, api.TrendDataPoint{
-			Timestamp: k,
-			Value:     int64(v),
-		})
-	}
-	sort.SliceStable(resp, func(i, j int) bool {
-		return resp[i].Timestamp < resp[j].Timestamp
-	})
-	return ctx.JSON(http.StatusOK, resp)
 }
 
 // GetTopAccountsByCost godoc
@@ -541,9 +471,10 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 
 	var response []api.LocationResponse
 	for region, count := range locationDistribution {
+		cnt := count
 		response = append(response, api.LocationResponse{
 			Location:      region,
-			ResourceCount: &count,
+			ResourceCount: &cnt,
 		})
 	}
 	sort.Slice(response, func(i, j int) bool {
@@ -3071,7 +3002,9 @@ func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapoint count")
 		}
-		dataPointCount = int(count)
+		if int(count) < dataPointCount {
+			dataPointCount = int(count)
+		}
 	}
 
 	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(h.client, startTime, endTime, dataPointCount, nil, connectionIDs, []uint{uint(insightId)})

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
@@ -33,7 +34,7 @@ func (b *locationSummaryBuilder) Process(resource describe.LookupResource) {
 	if _, ok := b.connectionSummary[resource.SourceID]; !ok {
 		b.connectionSummary[resource.SourceID] = es.ConnectionLocationSummary{
 			SummarizeJobID:       b.summarizerJobID,
-			ScheduleJobID:        resource.ScheduleJobID,
+			SummarizedAt:         time.Now().Unix(),
 			SourceID:             resource.SourceID,
 			SourceType:           resource.SourceType,
 			SourceJobID:          resource.SourceJobID,
@@ -45,7 +46,7 @@ func (b *locationSummaryBuilder) Process(resource describe.LookupResource) {
 	if _, ok := b.providerSummary[resource.SourceType]; !ok {
 		b.providerSummary[resource.SourceType] = es.ProviderLocationSummary{
 			SummarizeJobID:       b.summarizerJobID,
-			ScheduleJobID:        resource.ScheduleJobID,
+			SummarizedAt:         time.Now().Unix(),
 			SourceType:           resource.SourceType,
 			LocationDistribution: map[string]int{},
 			ReportType:           es.LocationProviderSummary,
@@ -72,9 +73,15 @@ func (b *locationSummaryBuilder) Build() []kafka.Doc {
 	var docs []kafka.Doc
 	for _, v := range b.connectionSummary {
 		docs = append(docs, v)
+		h := v
+		h.ReportType = h.ReportType + "History"
+		docs = append(docs, h)
 	}
 	for _, v := range b.providerSummary {
 		docs = append(docs, v)
+		h := v
+		h.ReportType = h.ReportType + "History"
+		docs = append(docs, h)
 	}
 	return docs
 }

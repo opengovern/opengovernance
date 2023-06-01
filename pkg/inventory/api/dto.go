@@ -311,37 +311,9 @@ type SmartQueryItem struct {
 	Tags        map[string]string `json:"tags"`        // Tags
 }
 
-type TrendDataPoint struct {
-	Timestamp int64 `json:"timestamp"` // Time
-	Value     int64 `json:"value"`     // Resource Count
-}
-
 type CostTrendDataPoint struct {
 	Timestamp int64        `json:"timestamp"` // Time
 	Value     CostWithUnit `json:"value"`     // Cost
-}
-
-type CategoryResourceTrend struct {
-	Name  string           `json:"name"`  // Category Name
-	Trend []TrendDataPoint `json:"trend"` // Trends (Time Series)
-}
-
-// CategoryCostTrend is a struct for category resource cost trend. trend represents cost trend data in a map with currencies as keys.
-type CategoryCostTrend struct {
-	Name  string                          `json:"name"`  // Category Name
-	Trend map[string][]CostTrendDataPoint `json:"trend"` // Trends (Time Series)
-}
-
-type ResourceGrowthTrendResponse struct {
-	CategoryName  string                  `json:"categoryName"`  // Category Name
-	Trend         []TrendDataPoint        `json:"trend"`         // Main Category Cost Trend (Time Series)
-	Subcategories []CategoryResourceTrend `json:"Subcategories"` // List of sub-categories Cost Trends (Time Series)
-}
-
-type CostGrowthTrendResponse struct {
-	CategoryName  string                          `json:"categoryName"`  // Category Name
-	Trend         map[string][]CostTrendDataPoint `json:"trend"`         // Main Category Cost Trend (Time Series)
-	Subcategories []CategoryCostTrend             `json:"Subcategories"` // List of sub-categories Cost Trends (Time Series)
 }
 
 type ListQueryRequest struct {

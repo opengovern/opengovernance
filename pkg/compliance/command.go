@@ -4,12 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"github.com/spf13/cobra"
 	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 	"go.uber.org/zap"
+)
+
+var (
+	S3AccessKey    = os.Getenv("S3_ACCESS_KEY")
+	S3AccessSecret = os.Getenv("S3_ACCESS_SECRET")
+	S3Region       = os.Getenv("S3_REGION")
 )
 
 const (
@@ -99,7 +107,9 @@ func startHttpServer(ctx context.Context) error {
 		return fmt.Errorf("new logger: %w", err)
 	}
 
-	handler, err := InitializeHttpHandler(conf, logger)
+	handler, err := InitializeHttpHandler(conf,
+		S3Region, S3AccessKey, S3AccessSecret,
+		logger)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)
 	}
