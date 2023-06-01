@@ -43,3 +43,8 @@ type Insight struct {
 	TotalResultValue *int64          `json:"totalResultValue,omitempty"`
 	Results          []InsightResult `json:"result,omitempty"`
 }
+
+type InsightTrendDatapoint struct {
+	Timestamp int `json:"timestamp"` // Time
+	Value     int `json:"value"`     // Resource Count
+}

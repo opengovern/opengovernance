@@ -1303,14 +1303,14 @@ const docTemplate = `{
         },
         "/compliance/api/v1/insight/{insightId}": {
             "get": {
-                "description": "Get insight with result",
+                "description": "Get insight with result by id",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "insights"
                 ],
-                "summary": "Get insight with result",
+                "summary": "Get insight with result by id",
                 "parameters": [
                     {
                         "type": "array",
@@ -1333,6 +1333,58 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/insight/{insightId}/trend": {
+            "get": {
+                "description": "Get insight trend with result by id",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "Get insight trend with result by id",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter the result by source id",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the start time of the trend",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the end time of the trend",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of datapoints to return",
+                        "name": "datapointCount",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint"
+                            }
                         }
                     }
                 }
@@ -2355,64 +2407,6 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServicesResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v1/resources/trend": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Returns trend of resource count in the specified time window\nIn case of not specifying SourceID, Provider is used for filtering",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns trend of resource count growth for specific account",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "24h",
-                            "1w",
-                            "3m",
-                            "1y",
-                            "max"
-                        ],
-                        "type": "string",
-                        "description": "Time Window",
-                        "name": "timeWindow",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint"
                             }
                         }
                     }
@@ -7119,6 +7113,19 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint": {
+            "type": "object",
+            "properties": {
+                "timestamp": {
+                    "description": "Time",
+                    "type": "integer"
+                },
+                "value": {
+                    "description": "Resource Count",
+                    "type": "integer"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page": {
             "type": "object",
             "properties": {
@@ -9004,19 +9011,6 @@ const docTemplate = `{
                 "serviceName": {
                     "description": "Service Name",
                     "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TrendDataPoint": {
-            "type": "object",
-            "properties": {
-                "timestamp": {
-                    "description": "Time",
-                    "type": "integer"
-                },
-                "value": {
-                    "description": "Resource Count",
-                    "type": "integer"
                 }
             }
         },
