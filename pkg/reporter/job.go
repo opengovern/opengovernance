@@ -146,7 +146,6 @@ func (j *Job) RunJob() error {
 		}
 	}()
 
-	//j.logger.Info("Starting job")
 	account, err := j.RandomAccount()
 	if err != nil {
 		return err
@@ -165,12 +164,18 @@ func (j *Job) RunJob() error {
 	}
 
 	cmd := exec.Command("steampipe", "service", "stop", "--force")
-	err = cmd.Run()
+	err = cmd.Start()
 	if err != nil {
 		return err
 	}
 	time.Sleep(5 * time.Second)
-	//fmt.Println("+++++ Steampipe service stoped")
+	//NOTE: stop must be called twice. it's not a mistake
+	cmd = exec.Command("steampipe", "service", "stop", "--force")
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+	time.Sleep(5 * time.Second)
 
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
 		"9193", "--database-password", "abcd")
@@ -179,7 +184,6 @@ func (j *Job) RunJob() error {
 		return err
 	}
 	time.Sleep(5 * time.Second)
-	//fmt.Println("+++++ Steampipe service started")
 
 	s1, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: "localhost",
