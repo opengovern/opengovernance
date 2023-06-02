@@ -143,6 +143,13 @@ func New(config JobConfig) (*Job, error) {
 
 func (j *Job) Run() {
 	fmt.Println("starting scheduling")
+	for _, q := range awsQueries {
+		j.logger.Info("loaded aws query ", zap.String("listQuery", q.ListQuery))
+	}
+	for _, q := range azureQueries {
+		j.logger.Info("loaded azure query ", zap.String("listQuery", q.ListQuery))
+	}
+
 	for {
 		//fmt.Println("starting job")
 		if err := j.RunJob(); err != nil {
