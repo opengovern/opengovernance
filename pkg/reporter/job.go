@@ -90,26 +90,6 @@ func New(config JobConfig) (*Job, error) {
 		return nil, err
 	}
 
-	cmdSteampipe := exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-		"9193", "--database-password", "abcd")
-	err = cmdSteampipe.Run()
-	if err != nil {
-		return nil, err
-	}
-	time.Sleep(5 * time.Second)
-	fmt.Println("Steampipe service started")
-
-	s1, err := steampipe.NewSteampipeDatabase(steampipe.Option{
-		Host: "localhost",
-		Port: "9193",
-		User: "steampipe",
-		Pass: "abcd",
-		Db:   "steampipe",
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	s2, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: config.SteampipeES.Host,
 		Port: config.SteampipeES.Port,
@@ -133,7 +113,7 @@ func New(config JobConfig) (*Job, error) {
 	}
 
 	return &Job{
-		steampipe:       s1,
+		steampipe:       nil,
 		esSteampipe:     s2,
 		onboardClient:   onboard,
 		logger:          logger,
