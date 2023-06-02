@@ -51,10 +51,10 @@ type Job struct {
 }
 
 func New(config JobConfig) (*Job, error) {
-	if content, err := os.ReadFile("/queries-aws.json"); err != nil {
+	if content, err := os.ReadFile("/queries-aws.json"); err == nil {
 		awsQueriesStr = string(content)
 	}
-	if content, err := os.ReadFile("/queries-azure.json"); err != nil {
+	if content, err := os.ReadFile("/queries-azure.json"); err == nil {
 		azureQueriesStr = string(content)
 	}
 
