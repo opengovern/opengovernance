@@ -210,6 +210,7 @@ func (j *Job) RunJob() error {
 
 	j.logger.Info("running query", zap.String("account", account.ConnectionID), zap.String("query", query.ListQuery))
 	listQuery := strings.ReplaceAll(query.ListQuery, "%ACCOUNT_ID%", account.ConnectionID)
+	listQuery = strings.ReplaceAll(listQuery, "%KEIBI_ACCOUNT_ID%", account.ID.String())
 	steampipeRows, err := j.steampipe.Conn().Query(context.Background(), listQuery)
 	if err != nil {
 		return err
@@ -230,6 +231,7 @@ func (j *Job) RunJob() error {
 		}
 
 		getQuery := strings.ReplaceAll(query.GetQuery, "%ACCOUNT_ID%", account.ConnectionID)
+		getQuery = strings.ReplaceAll(getQuery, "%KEIBI_ACCOUNT_ID%", account.ID.String())
 
 		var keyValues []interface{}
 		for _, f := range query.KeyFields {
