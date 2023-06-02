@@ -80,6 +80,7 @@ type DescribeSourceJob struct {
 	AccountID            string
 	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
 	Status               api.DescribeSourceJobStatus
+	FullDiscovery        bool
 	TriggerType          enums.DescribeTriggerType
 }
 

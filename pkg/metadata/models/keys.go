@@ -41,6 +41,8 @@ const (
 	MetadataKeyAutoDiscoveryMethod      MetadataKey = "auto_discovery_method"
 	// MetadataKeyDescribeJobInterval is the interval in minutes for describe job
 	MetadataKeyDescribeJobInterval MetadataKey = "describe_job_interval"
+	// MetadataKeyFullDiscoveryJobInterval is the interval in minutes for full describe job
+	MetadataKeyFullDiscoveryJobInterval MetadataKey = "full_discovery_job_interval"
 	// MetadataKeyHealthCheckJobInterval is the interval in minutes for health check job
 	MetadataKeyHealthCheckJobInterval MetadataKey = "health_check_job_interval"
 	// MetadataKeyInsightJobInterval is the interval in minutes for insight job
@@ -73,6 +75,7 @@ var MetadataKeys = []MetadataKey{
 	MetadataKeyAllowedEmailDomains,
 	MetadataKeyAutoDiscoveryMethod,
 	MetadataKeyDescribeJobInterval,
+	MetadataKeyFullDiscoveryJobInterval,
 	MetadataKeyHealthCheckJobInterval,
 	MetadataKeyInsightJobInterval,
 	MetadataKeyMetricsJobInterval,
@@ -126,6 +129,8 @@ func (k MetadataKey) GetConfigMetadataType() ConfigMetadataType {
 	case MetadataKeyAutoDiscoveryMethod:
 		return ConfigMetadataTypeString
 	case MetadataKeyDescribeJobInterval:
+		return ConfigMetadataTypeInt
+	case MetadataKeyFullDiscoveryJobInterval:
 		return ConfigMetadataTypeInt
 	case MetadataKeyHealthCheckJobInterval:
 		return ConfigMetadataTypeInt
@@ -182,6 +187,8 @@ func (k MetadataKey) GetMinAuthRole() api.Role {
 	case MetadataKeyAutoDiscoveryMethod:
 		return api.KeibiAdminRole
 	case MetadataKeyDescribeJobInterval:
+		return api.KeibiAdminRole
+	case MetadataKeyFullDiscoveryJobInterval:
 		return api.KeibiAdminRole
 	case MetadataKeyHealthCheckJobInterval:
 		return api.KeibiAdminRole

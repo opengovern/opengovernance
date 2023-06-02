@@ -428,6 +428,19 @@ func (db Database) GetLastDescribeSourceJob(sourceID uuid.UUID) (*DescribeSource
 	return &job, nil
 }
 
+func (db Database) GetLastFullDiscoveryDescribeSourceJob(sourceID uuid.UUID) (*DescribeSourceJob, error) {
+	var job DescribeSourceJob
+	tx := db.orm.Preload(clause.Associations).Where("source_id = ? AND full_discovery = true", sourceID).Order("updated_at DESC").First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+
+	return &job, nil
+}
+
 // GetDescribeSourceJob returns the DescribeSourceJobs for the given id.
 func (db Database) GetDescribeSourceJob(jobID uint) (*DescribeSourceJob, error) {
 	var job DescribeSourceJob

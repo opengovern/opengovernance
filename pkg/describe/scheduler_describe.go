@@ -204,9 +204,21 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 		if job == nil {
 			triggerType = enums.DescribeTriggerTypeInitialDiscovery
 		}
-
 		s.logger.Debug("Source is due for a describe. Creating a job now", zap.String("sourceId", connection.ID.String()))
-		daj := newDescribeSourceJob(connection, describedAt, triggerType)
+
+		fullDiscoveryJob, err := s.db.GetLastFullDiscoveryDescribeSourceJob(connection.ID)
+		if err != nil {
+			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+			return err
+		}
+
+		isFullDiscovery := false
+		if triggerType == enums.DescribeTriggerTypeInitialDiscovery ||
+			fullDiscoveryJob == nil ||
+			fullDiscoveryJob.UpdatedAt.Add(time.Duration(s.fullDiscoveryIntervalHours)*time.Hour).Before(time.Now()) {
+			isFullDiscovery = true
+		}
+		daj := newDescribeSourceJob(connection, describedAt, triggerType, isFullDiscovery)
 		err = s.db.CreateDescribeSourceJob(&daj)
 		if err != nil {
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
@@ -217,7 +229,7 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 	return nil
 }
 
-func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.DescribeTriggerType) DescribeSourceJob {
+func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.DescribeTriggerType, isFullDiscovery bool) DescribeSourceJob {
 	daj := DescribeSourceJob{
 		DescribedAt:          describedAt,
 		SourceID:             a.ID,
@@ -226,13 +238,22 @@ func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.Des
 		DescribeResourceJobs: []DescribeResourceJob{},
 		Status:               api.DescribeSourceJobCreated,
 		TriggerType:          triggerType,
+		FullDiscovery:        isFullDiscovery,
 	}
 	var resourceTypes []string
 	switch a.Type {
 	case source.CloudAWS:
-		resourceTypes = aws.ListResourceTypes()
+		if isFullDiscovery {
+			resourceTypes = aws.ListResourceTypes()
+		} else {
+			resourceTypes = aws.ListFastDiscoveryResourceTypes()
+		}
 	case source.CloudAzure:
-		resourceTypes = azure.ListResourceTypes()
+		if isFullDiscovery {
+			resourceTypes = azure.ListResourceTypes()
+		} else {
+			resourceTypes = azure.ListFastDiscoveryResourceTypes()
+		}
 	default:
 		panic(fmt.Errorf("unsupported source type: %s", a.Type))
 	}

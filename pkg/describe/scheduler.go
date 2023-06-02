@@ -136,6 +136,7 @@ type Scheduler struct {
 	deletedSources chan string
 
 	describeIntervalHours      int64
+	fullDiscoveryIntervalHours int64
 	describeTimeoutHours       int64
 	complianceIntervalHours    int64
 	complianceTimeoutHours     int64
@@ -209,6 +210,7 @@ func InitializeScheduler(
 	postgresSSLMode string,
 	httpServerAddress string,
 	describeIntervalHours string,
+	fullDiscoveryIntervalHours string,
 	describeTimeoutHours string,
 	complianceIntervalHours string,
 	complianceTimeoutHours string,
@@ -343,6 +345,10 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
+	s.fullDiscoveryIntervalHours, err = strconv.ParseInt(fullDiscoveryIntervalHours, 10, 64)
+	if err != nil {
+		return nil, err
+	}
 	s.describeTimeoutHours, err = strconv.ParseInt(describeTimeoutHours, 10, 64)
 	if err != nil {
 		return nil, err
@@ -428,6 +434,18 @@ func (s *Scheduler) Run() error {
 			s.logger.Info("set describe interval", zap.Int64("interval", s.describeIntervalHours))
 		} else {
 			s.logger.Error("failed to set describe interval due to invalid type", zap.String("type", string(describeJobIntM.GetType())))
+		}
+	}
+
+	fullDiscoveryJobIntM, err := s.metadataClient.GetConfigMetadata(httpctx, models.MetadataKeyFullDiscoveryJobInterval)
+	if err != nil {
+		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
+	} else {
+		if v, ok := fullDiscoveryJobIntM.GetValue().(int); ok {
+			s.fullDiscoveryIntervalHours = int64(v * int(time.Minute) / int(time.Hour))
+			s.logger.Info("set describe interval", zap.Int64("interval", s.fullDiscoveryIntervalHours))
+		} else {
+			s.logger.Error("failed to set describe interval due to invalid type", zap.String("type", string(fullDiscoveryJobIntM.GetType())))
 		}
 	}
 

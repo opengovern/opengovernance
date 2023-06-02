@@ -48,6 +48,7 @@ var (
 	RedisAddress = os.Getenv("REDIS_ADDRESS")
 
 	DescribeIntervalHours      = os.Getenv("DESCRIBE_INTERVAL_HOURS")
+	FullDiscoveryIntervalHours = os.Getenv("FULL_DISCOVERY_INTERVAL_HOURS")
 	DescribeTimeoutHours       = os.Getenv("DESCRIBE_TIMEOUT_HOURS")
 	ComplianceIntervalHours    = os.Getenv("COMPLIANCE_INTERVAL_HOURS")
 	ComplianceTimeoutHours     = os.Getenv("COMPLIANCE_TIMEOUT_HOURS")
@@ -108,6 +109,7 @@ func SchedulerCommand() *cobra.Command {
 				PostgreSQLSSLMode,
 				HttpServerAddress,
 				DescribeIntervalHours,
+				FullDiscoveryIntervalHours,
 				DescribeTimeoutHours,
 				ComplianceIntervalHours,
 				ComplianceTimeoutHours,
