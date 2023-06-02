@@ -184,7 +184,7 @@ func (j *Job) RunJob() error {
 		return err
 	}
 
-	cmd := exec.Command("steampipe", "service", "stop")
+	cmd := exec.Command("steampipe", "service", "stop", "--force")
 	err = cmd.Run()
 	if err != nil {
 		return err
@@ -211,6 +211,8 @@ func (j *Job) RunJob() error {
 	if err != nil {
 		return err
 	}
+	defer s1.Conn().Close()
+
 	j.steampipe = s1
 	//fmt.Println("+++++ Connected to steampipe")
 	query := j.RandomQuery(account.Type)
