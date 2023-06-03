@@ -161,13 +161,8 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command("curl", "-k", elasticSearchConfig.Address+"/_cat/indices", "-H", "Content-type: application/json", "-u", elasticSearchConfig.Username+":"+elasticSearchConfig.Password)
-	err = cmd.Run()
-	if err != nil {
-		return err
-	}
 
-	cmd = exec.Command("steampipe", "service", "stop")
+	cmd := exec.Command("steampipe", "service", "stop")
 	err = cmd.Run()
 	if err != nil {
 		return err
@@ -177,8 +172,11 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	time.Sleep(5 * time.Second)
 
-	tries, err := executeRecursive(20)
-	fmt.Println("steampipe started with error:{", err, "} and,", 20-tries, "tries.")
+	// tries, err := executeRecursive(20)
+	// fmt.Println("steampipe started with error:{", err, "} and,", 20-tries, "tries.")
+	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
+		"9193", "--database-password", "abcd")
+	err = cmd.Run()
 	if err != nil {
 		return err
 	}
