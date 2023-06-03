@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -48,6 +49,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.DELETE("/assignments/:benchmark_id/connection/:connection_id", httpserver.AuthorizeHandler(h.DeleteBenchmarkAssignment, api3.EditorRole))
 
 	metadata := v1.Group("/metadata")
+	metadata.GET("/tag/insight", httpserver.AuthorizeHandler(h.ListInsightTags, api3.ViewerRole))
+	metadata.GET("/tag/insight/:key", httpserver.AuthorizeHandler(h.GetInsightTag, api3.ViewerRole))
 	metadata.GET("/insight", httpserver.AuthorizeHandler(h.ListInsightsMetadata, api3.ViewerRole))
 	metadata.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsightMetadata, api3.ViewerRole))
 
@@ -1180,4 +1183,45 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(200, result)
+}
+
+// ListInsightTags godoc
+//
+//	@Summary	Return list of the keys with possible values for filtering insights
+//	@Security	BearerToken
+//	@Tags		insights
+//	@Accept		json
+//	@Produce	json
+//	@Success	200	{object}	map[string][]string
+//	@Router		/compliance/api/v1/metadata/tag/insight [get]
+func (h *HttpHandler) ListInsightTags(ctx echo.Context) error {
+	tags, err := h.db.ListInsightTagKeysWithPossibleValues()
+	if err != nil {
+		return err
+	}
+	tags = model.TrimPrivateTags(tags)
+	return ctx.JSON(http.StatusOK, tags)
+}
+
+// GetInsightTag godoc
+//
+//	@Summary	Return list of the possible values for filtering insights with specified key
+//	@Security	BearerToken
+//	@Tags		insights
+//	@Accept		json
+//	@Produce	json
+//	@Param		key	path		string	true	"Tag key"
+//	@Success	200	{object}	[]string
+//	@Router		/compliance/api/v1/metadata/tag/insight/{key} [get]
+func (h *HttpHandler) GetInsightTag(ctx echo.Context) error {
+	tagKey := ctx.Param("key")
+	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
+		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
+	}
+
+	tags, err := h.db.GetInsightTagTagPossibleValues(tagKey)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, tags)
 }

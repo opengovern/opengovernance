@@ -3740,6 +3740,51 @@ paths:
       summary: List insight metadata
       tags:
       - insights
+  /compliance/api/v1/metadata/tag/insight:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                type: string
+              type: array
+            type: object
+      security:
+      - BearerToken: []
+      summary: Return list of the keys with possible values for filtering insights
+      tags:
+      - insights
+  /compliance/api/v1/metadata/tag/insight/{key}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Tag key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      security:
+      - BearerToken: []
+      summary: Return list of the possible values for filtering insights with specified
+        key
+      tags:
+      - insights
   /compliance/api/v1/queries/{query_id}:
     get:
       consumes:
