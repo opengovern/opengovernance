@@ -196,6 +196,12 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	fmt.Println("+++++ Steampipe database created")
 
+	queryRes, err := steampipeConn.QueryAll("select * from information_schema.tables;")
+	if err != nil {
+		return err
+	}
+	fmt.Println("+++++ Query result:", queryRes)
+
 	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Type)
 	if err != nil {
 		return err
