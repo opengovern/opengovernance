@@ -184,17 +184,13 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	fmt.Println("+++++ Steampipe service started")
 
-	steampipeConn, tries, err := connectRecursive(func() (*steampipe.Database, error) {
-		conn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
-			Host: "localhost",
-			Port: "9193",
-			User: "steampipe",
-			Pass: "abcd",
-			Db:   "steampipe",
-		})
-		return conn, err
-	}, 20)
-	fmt.Println("steampipe connected with error:{", err, "} and,", 20-tries, "tries.")
+	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
+		Host: "localhost",
+		Port: "9193",
+		User: "steampipe",
+		Pass: "abcd",
+		Db:   "steampipe",
+	})
 	if err != nil {
 		return err
 	}
@@ -332,15 +328,4 @@ func executeRecursive(cmd *exec.Cmd, try int) (int, error) {
 		}
 	}
 	return try, nil
-}
-
-func connectRecursive(f func() (*steampipe.Database, error), try int) (*steampipe.Database, int, error) {
-	db, err := f()
-	time.Sleep(5 * time.Second)
-	if err != nil {
-		if try > 0 {
-			return connectRecursive(f, try-1)
-		}
-	}
-	return db, try, nil
 }
