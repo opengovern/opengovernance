@@ -3,6 +3,7 @@ package db
 import (
 	"errors"
 
+	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/lib/pq"
 	"gorm.io/gorm"
@@ -255,6 +256,34 @@ func (db Database) DeleteBenchmarkAssignmentById(connectionId string, benchmarkI
 	}
 
 	return nil
+}
+
+func (db Database) ListInsightTagKeysWithPossibleValues() (map[string][]string, error) {
+	var tags []InsightTag
+	tx := db.Orm.Model(InsightTag{}).Find(&tags)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	tagLikes := make([]model.TagLike, 0, len(tags))
+	for _, tag := range tags {
+		tagLikes = append(tagLikes, tag)
+	}
+	result := model.GetTagsMap(tagLikes)
+	return result, nil
+}
+
+func (db Database) GetInsightTagTagPossibleValues(key string) ([]string, error) {
+	var tags []InsightTag
+	tx := db.Orm.Model(InsightTag{}).Where("key = ?", key).Find(&tags)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	tagLikes := make([]model.TagLike, 0, len(tags))
+	for _, tag := range tags {
+		tagLikes = append(tagLikes, tag)
+	}
+	result := model.GetTagsMap(tagLikes)
+	return result[key], nil
 }
 
 func (db Database) GetInsight(id uint) (*Insight, error) {
