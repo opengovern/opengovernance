@@ -160,7 +160,7 @@ func (w *Worker) Run() error {
 		return err
 	}
 
-	w.logger.Error("Waiting indefinitly for messages. To exit press CTRL+C")
+	w.logger.Info("Waiting indefinitly for messages. To exit press CTRL+C")
 	for msg := range msgs {
 		var job Job
 		if err := json.Unmarshal(msg.Body, &job); err != nil {
