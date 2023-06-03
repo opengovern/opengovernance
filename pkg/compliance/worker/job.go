@@ -161,8 +161,13 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	if err != nil {
 		return err
 	}
+	cmd := exec.Command("curl", "-k", elasticSearchConfig.Address+"/_cat/indices", "-H", "Content-type: application/json", "-u", elasticSearchConfig.Username+":"+elasticSearchConfig.Password)
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
 
-	cmd := exec.Command("steampipe", "service", "stop")
+	cmd = exec.Command("steampipe", "service", "stop")
 	err = cmd.Run()
 	if err != nil {
 		return err
