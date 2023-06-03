@@ -157,12 +157,10 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	fmt.Println("+++++ New elasticSearch Client created")
 
-	err = j.PopulateSteampipeConfig(elasticSearchConfig, src.ConnectionID)
+	err = j.PopulateSteampipeConfig(elasticSearchConfig, defaultAccountID)
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("+++++ Steampipe config populated:", elasticSearchConfig, "connectionID:", src.ConnectionID)
 
 	cmd := exec.Command("steampipe", "service", "stop")
 	err = cmd.Run()
@@ -174,9 +172,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	time.Sleep(5 * time.Second)
 
-	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-		"9193", "--database-password", "abcd")
-	tries, err := executeRecursive(cmd, 20)
+	tries, err := executeRecursive(20)
 	fmt.Println("steampipe started with error:{", err, "} and,", 20-tries, "tries.")
 	if err != nil {
 		return err
@@ -317,15 +313,21 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 	return findings, nil
 }
 
-func executeRecursive(cmd *exec.Cmd, try int) (int, error) {
+func executeRecursive(try int) (int, error) {
+	cmd := exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
+		"9193", "--database-password", "abcd")
 	err := cmd.Run()
-	time.Sleep(5 * time.Second)
+
+	if try == 0 {
+		return try, err
+	}
+
 	if err != nil {
 		if err.Error() == "exit status 31" {
-			if try > 0 {
-				return executeRecursive(cmd, try-1)
-			}
+			time.Sleep(5 * time.Second)
+			return executeRecursive(try - 1)
 		}
 	}
-	return try, nil
+
+	return try, err
 }

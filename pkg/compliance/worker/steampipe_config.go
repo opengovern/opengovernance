@@ -7,28 +7,26 @@ import (
 	"os"
 	"path/filepath"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 )
 
 func (j *Job) PopulateSteampipeConfig(elasticSearchConfig config.ElasticSearch, AccountID string) error {
 	cfg := map[string]interface{}{}
 
-	var accountID string
 	switch j.Connector {
 	case source.CloudAWS:
-		creds, err := AWSAccountConfigFromMap(cfg)
+		// creds, err := AWSAccountConfigFromMap(cfg)
+		// if err != nil {
+		// 	return err
+		// }
+
+		err := BuildSpecFile("aws", elasticSearchConfig, AccountID)
 		if err != nil {
 			return err
 		}
-		fmt.Println(creds.AccountID)
 
-		err = BuildSpecFile("aws", elasticSearchConfig, accountID)
-		if err != nil {
-			return err
-		}
-
-		err = PopulateEnv(elasticSearchConfig, accountID)
+		err = PopulateEnv(elasticSearchConfig, AccountID)
 		if err != nil {
 			return err
 		}
@@ -40,17 +38,17 @@ func (j *Job) PopulateSteampipeConfig(elasticSearchConfig config.ElasticSearch, 
 
 		fmt.Println(creds.SubscriptionID)
 
-		err = BuildSpecFile("azure", elasticSearchConfig, accountID)
+		err = BuildSpecFile("azure", elasticSearchConfig, AccountID)
 		if err != nil {
 			return err
 		}
 
-		err = BuildSpecFile("azuread", elasticSearchConfig, accountID)
+		err = BuildSpecFile("azuread", elasticSearchConfig, AccountID)
 		if err != nil {
 			return err
 		}
 
-		err = PopulateEnv(elasticSearchConfig, accountID)
+		err = PopulateEnv(elasticSearchConfig, AccountID)
 		if err != nil {
 			return err
 		}
