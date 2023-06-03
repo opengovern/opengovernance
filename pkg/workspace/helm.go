@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"reflect"
 	"time"
 
@@ -18,8 +20,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type WorkspaceConfig struct {
-	Name string `json:"name"`
+type KaytuWorkspaceSettings struct {
+	Keibi KeibiConfig `json:"keibi"`
+	Kaytu KaytuConfig `json:"kaytu"`
 }
 type KeibiConfig struct {
 	ReplicaCount int             `json:"replicaCount"`
@@ -27,14 +30,21 @@ type KeibiConfig struct {
 	Domain       string          `json:"domain"`
 }
 type KaytuConfig struct {
-	Docker DockerConfig `json:"docker"`
+	Docker   DockerConfig   `json:"docker"`
+	Insights InsightsConfig `json:"insights"`
+}
+type InsightsConfig struct {
+	S3 S3Config `json:"s3"`
+}
+type S3Config struct {
+	AccessKey string `json:"accessKey"`
+	SecretKey string `json:"secretKey"`
 }
 type DockerConfig struct {
 	Config string `json:"config"`
 }
-type KaytuWorkspaceSettings struct {
-	Keibi KeibiConfig `json:"keibi"`
-	Kaytu KaytuConfig `json:"kaytu"`
+type WorkspaceConfig struct {
+	Name string `json:"name"`
 }
 
 func (s *Server) newKubeClient() (client.Client, error) {
@@ -52,8 +62,20 @@ func (s *Server) newKubeClient() (client.Client, error) {
 	return kubeClient, nil
 }
 
+func (s *Server) createInsightBucket(ctx context.Context, workspace *Workspace) error {
+	cli := s3.NewFromConfig(s.awsConfig)
+	_, err := cli.CreateBucket(ctx, &s3.CreateBucketInput{
+		Bucket: aws.String(fmt.Sprintf("insights-%s", workspace.ID)),
+	})
+	return err
+}
+
 func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace, dockerRegistryConfig string) error {
 	id := workspace.ID
+
+	if err := s.createInsightBucket(ctx, workspace); err != nil {
+		return err
+	}
 
 	settings := KaytuWorkspaceSettings{
 		Keibi: KeibiConfig{
@@ -66,6 +88,12 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace, do
 		Kaytu: KaytuConfig{
 			Docker: DockerConfig{
 				Config: dockerRegistryConfig,
+			},
+			Insights: InsightsConfig{
+				S3: S3Config{
+					AccessKey: s.cfg.S3AccessKey,
+					SecretKey: s.cfg.S3SecretKey,
+				},
 			},
 		},
 	}

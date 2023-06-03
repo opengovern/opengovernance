@@ -28,6 +28,8 @@ var (
 	FluxSystemNamespace       = os.Getenv("FLUX_SYSTEM_NAMESPACE")
 	PipedriveBaseUrl          = os.Getenv("PIPEDRIVE_BASE_URL")
 	PipedriveApiToken         = os.Getenv("PIPEDRIVE_API_TOKEN")
+	S3AccessKey               = os.Getenv("S3_ACCESS_KEY")
+	S3SecretKey               = os.Getenv("S3_SECRET_KEY")
 )
 
 type Config struct {
@@ -47,6 +49,8 @@ type Config struct {
 	AutoSuspendDuration    time.Duration
 	PipedriveBaseUrl       string
 	PipedriveApiToken      string
+	S3AccessKey            string
+	S3SecretKey            string
 }
 
 func NewConfig() *Config {
@@ -68,6 +72,8 @@ func NewConfig() *Config {
 		AutoSuspendDuration:    time.Duration(d) * time.Minute,
 		PipedriveBaseUrl:       PipedriveBaseUrl,
 		PipedriveApiToken:      PipedriveApiToken,
+		S3AccessKey:            S3AccessKey,
+		S3SecretKey:            S3AccessKey,
 	}
 }
 

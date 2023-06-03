@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	httpserver2 "gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"net/http"
@@ -66,6 +68,7 @@ type Server struct {
 	rdb                  *redis.Client
 	cache                *cache.Cache
 	dockerRegistryConfig string
+	awsConfig            aws.Config
 }
 
 func NewServer(cfg *Config) (*Server, error) {
@@ -125,6 +128,11 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, err
 	}
 	s.dockerRegistryConfig = base64.StdEncoding.EncodeToString(registrySecret.Data[".dockerconfigjson"])
+
+	s.awsConfig, err = aws2.GetConfig(context.Background(), cfg.S3AccessKey, cfg.S3SecretKey, "", "")
+	if err != nil {
+		return nil, err
+	}
 
 	return s, nil
 }
