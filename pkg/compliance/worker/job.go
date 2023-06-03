@@ -144,12 +144,12 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return errors.New("connection not healthy")
 	}
 
-	defaultAccountID := "default"
+	//defaultAccountID := "default"
 	esk, err := keibi.NewClient(keibi.ClientConfig{
 		Addresses: []string{elasticSearchConfig.Address},
 		Username:  &elasticSearchConfig.Username,
 		Password:  &elasticSearchConfig.Password,
-		AccountID: &defaultAccountID,
+		AccountID: &src.ConnectionID,
 	})
 	if err != nil {
 		return err
@@ -161,8 +161,6 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("+++++ Steampipe config populated:", elasticSearchConfig, "connectionID:", src.ConnectionID)
 
 	cmd := exec.Command("steampipe", "service", "stop")
 	err = cmd.Run()
