@@ -177,14 +177,17 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	time.Sleep(5 * time.Second)
 
-	tries, err := executeRecursive(20)
-	fmt.Println("steampipe started with error:{", err, "} and,", 20-tries, "tries.")
-	// cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-	// 	"9193", "--database-password", "abcd")
+	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
+		"9193", "--database-password", "abcd")
 	err = cmd.Run()
 	time.Sleep(5 * time.Second)
 	if err != nil {
-		return err
+		if err.Error() == "exit status 31" {
+			tries, err := executeRecursive(20)
+			fmt.Println("steampipe started with error:{", err, "} and,", 20-tries, "tries.")
+		} else {
+			return err
+		}
 	}
 
 	fmt.Println("+++++ Steampipe service started")
@@ -329,8 +332,7 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 }
 
 func executeRecursive(try int) (int, error) {
-	cmd := exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-		"9193", "--database-password", "abcd")
+	cmd := exec.Command("steampipe", "service", "restart")
 	err := cmd.Run()
 
 	if try == 0 {
