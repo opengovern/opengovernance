@@ -2258,6 +2258,7 @@ definitions:
     - allowed_email_domains
     - auto_discovery_method
     - describe_job_interval
+    - full_discovery_job_interval
     - health_check_job_interval
     - insight_job_interval
     - metrics_job_interval
@@ -2285,6 +2286,7 @@ definitions:
     - MetadataKeyAllowedEmailDomains
     - MetadataKeyAutoDiscoveryMethod
     - MetadataKeyDescribeJobInterval
+    - MetadataKeyFullDiscoveryJobInterval
     - MetadataKeyHealthCheckJobInterval
     - MetadataKeyInsightJobInterval
     - MetadataKeyMetricsJobInterval
@@ -4645,11 +4647,6 @@ paths:
           trend for
         in: query
         name: endTime
-        type: integer
-      - description: number of datapoints to return - defaults to number of days between
-          start and end time
-        in: query
-        name: datapointCount
         type: integer
       produces:
       - application/json

@@ -2815,12 +2815,6 @@ const docTemplate = `{
                         "description": "unix seconds for the end of the time window to get the insight trend for",
                         "name": "endTime",
                         "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "number of datapoints to return - defaults to number of days between start and end time",
-                        "name": "datapointCount",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -9139,6 +9133,7 @@ const docTemplate = `{
                 "allowed_email_domains",
                 "auto_discovery_method",
                 "describe_job_interval",
+                "full_discovery_job_interval",
                 "health_check_job_interval",
                 "insight_job_interval",
                 "metrics_job_interval",
@@ -9166,6 +9161,7 @@ const docTemplate = `{
                 "MetadataKeyAllowedEmailDomains",
                 "MetadataKeyAutoDiscoveryMethod",
                 "MetadataKeyDescribeJobInterval",
+                "MetadataKeyFullDiscoveryJobInterval",
                 "MetadataKeyHealthCheckJobInterval",
                 "MetadataKeyInsightJobInterval",
                 "MetadataKeyMetricsJobInterval",

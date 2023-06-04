@@ -2,6 +2,8 @@ package resourcebuilder
 
 import (
 	"fmt"
+	"math"
+	"strings"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
@@ -86,6 +88,8 @@ func (b *costSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQu
 }
 
 func (b *costSummaryBuilder) Build() []kafka.Doc {
+	jsonCosts := helpers.GetEbsCosts()
+
 	var docs []kafka.Doc
 	ebsCosts := make([]es.ServiceCostSummary, 0)
 	ebsCostsRegionMap := make(map[string]EBSCostDoc)
@@ -98,6 +102,7 @@ func (b *costSummaryBuilder) Build() []kafka.Doc {
 		}
 	}
 	for _, v := range ebsCosts {
+		costManifest := jsonCosts[strings.ToLower(*v.Region)]
 		volDesc := v.Cost.(awsModel.EC2VolumeDescription)
 		key := fmt.Sprintf("%s-%s", *v.Region, v.SourceID)
 		if _, ok := ebsCostsRegionMap[key]; !ok {
@@ -133,8 +138,8 @@ func (b *costSummaryBuilder) Build() []kafka.Doc {
 			ebsCost.Desc.Gp2Size += size
 		case ec2.VolumeTypeGp3:
 			ebsCost.Desc.Gp3Size += size
-			ebsCost.Desc.Gp3IOPS += Iops
-			ebsCost.Desc.Gp3Throughput += throughput
+			ebsCost.Desc.Gp3IOPS += int(math.Max(float64(Iops-costManifest.Gp3.FreeIOPSThreshold), 0))
+			ebsCost.Desc.Gp3Throughput += int(math.Max(float64(throughput-costManifest.Gp3.FreeThroughputThreshold), 0))
 		case ec2.VolumeTypeSc1:
 			ebsCost.Desc.Sc1Size += size
 		case ec2.VolumeTypeSt1:

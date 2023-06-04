@@ -67,7 +67,7 @@ func (j *Job) Do(
 	return result
 }
 
-func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]es.Finding, error) {
+func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type, accountID string) ([]es.Finding, error) {
 	ctx := &httpclient.Context{
 		UserRole: api2.AdminRole,
 	}
@@ -81,7 +81,7 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 
 	var findings []es.Finding
 	for _, childBenchmarkID := range benchmark.Children {
-		f, err := j.RunBenchmark(childBenchmarkID, complianceClient, steampipeConn, connector)
+		f, err := j.RunBenchmark(childBenchmarkID, complianceClient, steampipeConn, connector, accountID)
 		if err != nil {
 			return nil, err
 		}
@@ -114,9 +114,14 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 			return nil, err
 		}
 
-		fmt.Println("+++++++++++ Query Executed:", res)
+		fmt.Println("+++++++++++ Query Executed with following number:", len(res.Data))
+		filteredRes, err := filterAccountID(res, accountID)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println("+++++++++++ Query Executed with following number after filter by", accountID, ":", len(filteredRes.Data))
 
-		f, err := j.ExtractFindings(benchmark, policy, query, res)
+		f, err := j.ExtractFindings(benchmark, policy, query, filteredRes)
 		if err != nil {
 			return nil, err
 		}
@@ -144,12 +149,12 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return errors.New("connection not healthy")
 	}
 
-	defaultAccountID := "default"
+	//defaultAccountID := "default"
 	esk, err := keibi.NewClient(keibi.ClientConfig{
 		Addresses: []string{elasticSearchConfig.Address},
 		Username:  &elasticSearchConfig.Username,
 		Password:  &elasticSearchConfig.Password,
-		AccountID: &defaultAccountID,
+		AccountID: &src.ConnectionID,
 	})
 	if err != nil {
 		return err
@@ -157,7 +162,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	fmt.Println("+++++ New elasticSearch Client created")
 
-	err = j.PopulateSteampipeConfig(elasticSearchConfig, defaultAccountID)
+	err = j.PopulateSteampipeConfig(elasticSearchConfig, src.ConnectionID)
 	if err != nil {
 		return err
 	}
@@ -172,11 +177,10 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	time.Sleep(5 * time.Second)
 
-	// tries, err := executeRecursive(20)
-	// fmt.Println("steampipe started with error:{", err, "} and,", 20-tries, "tries.")
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
 		"9193", "--database-password", "abcd")
 	err = cmd.Run()
+	time.Sleep(5 * time.Second)
 	if err != nil {
 		return err
 	}
@@ -202,7 +206,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	}
 	fmt.Println("+++++ Query result:", queryRes)
 
-	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Type)
+	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Type, src.ConnectionID)
 	if err != nil {
 		return err
 	}
@@ -322,21 +326,26 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 	return findings, nil
 }
 
-func executeRecursive(try int) (int, error) {
-	cmd := exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-		"9193", "--database-password", "abcd")
-	err := cmd.Run()
+func filterAccountID(res *steampipe.Result, accountID string) (*steampipe.Result, error) {
+	var data [][]interface{}
+	for _, record := range res.Data {
+		if len(record) != len(res.Headers) {
+			return nil, fmt.Errorf("invalid record length, record=%d headers=%d", len(record), len(res.Headers))
+		}
+		recordValue := map[string]interface{}{}
+		for idx, header := range res.Headers {
+			value := record[idx]
+			recordValue[header] = value
+		}
 
-	if try == 0 {
-		return try, err
-	}
-
-	if err != nil {
-		if err.Error() == "exit status 31" {
-			time.Sleep(5 * time.Second)
-			return executeRecursive(try - 1)
+		var accId string
+		if v, ok := recordValue["account_id"].(string); ok {
+			accId = v
+		}
+		if accId == accountID {
+			data = append(data, record)
 		}
 	}
-
-	return try, err
+	res.Data = data
+	return res, nil
 }

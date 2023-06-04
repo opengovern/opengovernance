@@ -17,7 +17,7 @@ type InventoryServiceClient interface {
 	GetAccountsResourceCount(ctx *httpclient.Context, provider source.Type, sourceId *string) ([]api.ConnectionResourceCountResponse, error)
 	ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error)
 	GetInsightResult(ctx *httpclient.Context, connectionIds []string, insightId uint, timeAt *time.Time) ([]insight.InsightResource, error)
-	GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, timeStart, timeEnd *time.Time, datapointCount *int) (map[int][]insight.InsightResource, error)
+	GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, timeStart, timeEnd *time.Time) (map[int][]insight.InsightResource, error)
 }
 
 type inventoryClient struct {
@@ -135,7 +135,7 @@ func (s *inventoryClient) GetInsightResult(ctx *httpclient.Context, connectionId
 	return response, nil
 }
 
-func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, timeStart, timeEnd *time.Time, datapointCount *int) (map[int][]insight.InsightResource, error) {
+func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, timeStart, timeEnd *time.Time) (map[int][]insight.InsightResource, error) {
 	url := fmt.Sprintf("%s/api/v2/insights/%d/trend", s.baseURL, insightId)
 	firstParamAttached := false
 	if len(connectionIds) > 0 {
@@ -166,15 +166,6 @@ func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connec
 			url += "&"
 		}
 		url += fmt.Sprintf("timeEnd=%d", timeEnd.Unix())
-	}
-	if datapointCount != nil {
-		if !firstParamAttached {
-			url += "?"
-			firstParamAttached = true
-		} else {
-			url += "&"
-		}
-		url += fmt.Sprintf("datapointCount=%d", *datapointCount)
 	}
 
 	var response map[int][]insight.InsightResource
