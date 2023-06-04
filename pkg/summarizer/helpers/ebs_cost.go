@@ -10,7 +10,9 @@ import (
 )
 
 var (
-	io2Thresholds = []int{32000, 64000}
+	defaultIo2Thresholds              = []int{32000, 64000}
+	defaultGp3FreeIOPSThreshold       = 3000
+	defaultGp3FreeThroughputThreshold = 125
 )
 
 type EBSCostDescription struct {
@@ -54,11 +56,11 @@ func (e EBSCostDescription) CalculateCostFromPriceJSON() float64 {
 	//Io2
 	total += costManifest.Io2.PricePerGBMonth.GetPerDayFloat64() * float64(e.Io2Size)
 	switch {
-	case e.Io2IOPS <= io2Thresholds[0]:
+	case e.Io2IOPS <= costManifest.Io2.PricePerTierThresholds[0]:
 		total += costManifest.Io2.PricePerTier1IOPSMonth.GetPerDayFloat64() * float64(e.Io2IOPS)
-	case io2Thresholds[0] < e.Io2IOPS && e.Io2IOPS <= io2Thresholds[1]:
+	case costManifest.Io2.PricePerTierThresholds[0] < e.Io2IOPS && e.Io2IOPS <= costManifest.Io2.PricePerTierThresholds[1]:
 		total += costManifest.Io2.PricePerTier2IOPSMonth.GetPerDayFloat64() * float64(e.Io2IOPS)
-	case io2Thresholds[1] < e.Io2IOPS:
+	case costManifest.Io2.PricePerTierThresholds[1] < e.Io2IOPS:
 		total += costManifest.Io2.PricePerTier3IOPSMonth.GetPerDayFloat64() * float64(e.Io2IOPS)
 	}
 
@@ -100,6 +102,9 @@ type EbsCost struct {
 		PricePerGBMonth    PricePerMonth `json:"pricePerGBMonth"`
 		PricePerGiBpsMonth PricePerMonth `json:"pricePerGiBpsMonth"`
 		PricePerIOPSMonth  PricePerMonth `json:"pricePerIOPSMonth"`
+
+		FreeIOPSThreshold       int `json:"freeIOPSThreshold"`
+		FreeThroughputThreshold int `json:"freeThroughputThreshold"`
 	} `json:"gp3,omitempty"`
 	Io1 struct {
 		PricePerGBMonth   PricePerMonth `json:"pricePerGBMonth"`
@@ -110,6 +115,8 @@ type EbsCost struct {
 		PricePerTier1IOPSMonth PricePerMonth `json:"pricePerTier1IOPSMonth"`
 		PricePerTier2IOPSMonth PricePerMonth `json:"pricePerTier2IOPSMonth"`
 		PricePerTier3IOPSMonth PricePerMonth `json:"pricePerTier3IOPSMonth"`
+
+		PricePerTierThresholds []int `json:"pricePerTierThresholds"`
 	} `json:"io2,omitempty"`
 	Sc1 struct {
 		PricePerGBMonth PricePerMonth `json:"pricePerGBMonth"`
@@ -163,6 +170,15 @@ func initEbsCosts() error {
 		return err
 	}
 	for _, cost := range costsArr {
+		if cost.EbsPrices.Io2.PricePerTierThresholds == nil {
+			cost.EbsPrices.Io2.PricePerTierThresholds = defaultIo2Thresholds
+		}
+		if cost.EbsPrices.Gp3.FreeIOPSThreshold == 0 {
+			cost.EbsPrices.Gp3.FreeIOPSThreshold = defaultGp3FreeIOPSThreshold
+		}
+		if cost.EbsPrices.Gp3.FreeThroughputThreshold == 0 {
+			cost.EbsPrices.Gp3.FreeThroughputThreshold = defaultGp3FreeThroughputThreshold
+		}
 		ebsCosts[strings.ToLower(cost.RzCode)] = cost.EbsPrices
 	}
 	return nil
