@@ -32,6 +32,7 @@ type EBSCostDescription struct {
 }
 
 func (e EBSCostDescription) CalculateCostFromPriceJSON() float64 {
+	const GBtoMBRatio = 1024
 	costManifest, ok := GetEbsCosts()[strings.ToLower(e.Region)]
 	if !ok {
 		return 0
@@ -44,7 +45,7 @@ func (e EBSCostDescription) CalculateCostFromPriceJSON() float64 {
 	// GP3
 	total += costManifest.Gp3.PricePerGBMonth.GetPerDayFloat64() * float64(e.Gp3Size)
 	total += costManifest.Gp3.PricePerIOPSMonth.GetPerDayFloat64() * float64(e.Gp3IOPS)
-	total += costManifest.Gp3.PricePerGiBpsMonth.GetPerDayFloat64() * float64(e.Gp3Throughput)
+	total += costManifest.Gp3.PricePerGiBpsMonth.GetPerDayFloat64() / GBtoMBRatio * float64(e.Gp3Throughput)
 
 	//Io1
 	total += costManifest.Io1.PricePerGBMonth.GetPerDayFloat64() * float64(e.Io1Size)

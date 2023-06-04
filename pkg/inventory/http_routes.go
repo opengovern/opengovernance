@@ -742,15 +742,11 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 			if apiResourceType.Count == nil {
 				continue
 			}
-			if oldApiResourceType.Count == nil {
-				apiResourceType.CountChangePercent = utils.GetPointer(float64(1))
-				continue
-			}
-			if *oldApiResourceType.Count == 0 {
+			if oldApiResourceType.Count == nil || *oldApiResourceType.Count == 0 {
 				apiResourceType.CountChangePercent = nil
 				continue
 			}
-			apiResourceType.CountChangePercent = utils.GetPointer(float64((float64(*apiResourceType.Count) - float64(*oldApiResourceType.Count)) / float64(*oldApiResourceType.Count)))
+			apiResourceType.CountChangePercent = utils.GetPointer(float64((float64(*apiResourceType.Count)-float64(*oldApiResourceType.Count))/float64(*oldApiResourceType.Count)) * 100)
 			apiResourceTypesMap[oldApiResourceType.ResourceType] = apiResourceType
 		}
 	}
@@ -1143,7 +1139,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 		}
 		srv.Cost = &serviceCost.totalCost
 		if serviceCost.startCost != 0 {
-			srv.CostChangePercent = utils.GetPointer((serviceCost.endCost - serviceCost.startCost) / serviceCost.startCost)
+			srv.CostChangePercent = utils.GetPointer(((serviceCost.endCost - serviceCost.startCost) / serviceCost.startCost) * 100)
 		} else {
 			srv.CostChangePercent = nil
 		}
