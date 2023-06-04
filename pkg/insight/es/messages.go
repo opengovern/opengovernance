@@ -2,6 +2,7 @@ package es
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
@@ -75,7 +76,7 @@ func (r InsightResource) KeysAndIndex() ([]string, string) {
 		fmt.Sprintf("%d", r.QueryID),
 		fmt.Sprintf("%s", r.SourceID),
 	}
-	if r.ResourceType == InsightResourceHistory {
+	if strings.HasSuffix(strings.ToLower(string(r.ResourceType)), "history") {
 		keys = []string{
 			string(r.ResourceType),
 			fmt.Sprintf("%d", r.QueryID),
