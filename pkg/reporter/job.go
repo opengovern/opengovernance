@@ -101,7 +101,7 @@ func New(config JobConfig) (*Job, error) {
 		return nil, err
 	}
 
-	logger, err := zap.NewDevelopment()
+	logger, err := zap.NewProduction()
 	if err != nil {
 		return nil, err
 	}
