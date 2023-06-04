@@ -1134,7 +1134,7 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	connectionIDs := ctx.QueryParams()["connectionId"]
 	var startTime *time.Time
 	if ctx.QueryParam("startTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
