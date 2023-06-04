@@ -162,7 +162,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	fmt.Println("+++++ New elasticSearch Client created")
 
-	err = j.PopulateSteampipeConfig(elasticSearchConfig, "all")
+	err = j.PopulateSteampipeConfig(elasticSearchConfig, src.ConnectionID)
 	if err != nil {
 		return err
 	}
@@ -182,12 +182,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	err = cmd.Run()
 	time.Sleep(5 * time.Second)
 	if err != nil {
-		if err.Error() == "exit status 31" {
-			tries, err := executeRecursive(20)
-			fmt.Println("steampipe started with error:{", err, "} and,", 20-tries, "tries.")
-		} else {
-			return err
-		}
+		return err
 	}
 
 	fmt.Println("+++++ Steampipe service started")
@@ -329,24 +324,6 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 		})
 	}
 	return findings, nil
-}
-
-func executeRecursive(try int) (int, error) {
-	cmd := exec.Command("steampipe", "service", "restart")
-	err := cmd.Run()
-
-	if try == 0 {
-		return try, err
-	}
-
-	if err != nil {
-		if err.Error() == "exit status 31" {
-			time.Sleep(5 * time.Second)
-			return executeRecursive(try - 1)
-		}
-	}
-
-	return try, err
 }
 
 func filterAccountID(res *steampipe.Result, accountID string) (*steampipe.Result, error) {
