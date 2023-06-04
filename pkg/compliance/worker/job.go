@@ -184,12 +184,9 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
 		"9193", "--database-password", "abcd")
 	err = cmd.Run()
-	time.Sleep(5 * time.Second)
+	time.Sleep(20 * time.Second)
 	if err != nil {
-		dirname, err := os.UserHomeDir()
-		if err != nil {
-			return err
-		}
+		dirname, _ := os.UserHomeDir()
 		folderPath := dirname + "/.steampipe/logs"
 		err = filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
 			fmt.Println("====================================================================")
@@ -214,9 +211,6 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 			return nil
 		})
 		fmt.Println("+++++ Logs ended")
-		if err != nil {
-			log.Fatal(err)
-		}
 		return err
 	}
 
