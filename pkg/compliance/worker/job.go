@@ -177,10 +177,10 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	time.Sleep(5 * time.Second)
 
-	// tries, err := executeRecursive(20)
-	// fmt.Println("steampipe started with error:{", err, "} and,", 20-tries, "tries.")
-	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-		"9193", "--database-password", "abcd")
+	tries, err := executeRecursive(20)
+	fmt.Println("steampipe started with error:{", err, "} and,", 20-tries, "tries.")
+	// cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
+	// 	"9193", "--database-password", "abcd")
 	err = cmd.Run()
 	time.Sleep(5 * time.Second)
 	if err != nil {
