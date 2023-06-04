@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/internal"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
@@ -1165,7 +1167,7 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 		return err
 	}
 
-	timeAtToInsightResults, err := h.inventoryClient.GetInsightTrendResults(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, startTime, endTime, datapointCount)
+	timeAtToInsightResults, err := h.inventoryClient.GetInsightTrendResults(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, startTime, endTime)
 	if err != nil {
 		return err
 	}
@@ -1181,6 +1183,14 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 		}
 		result = append(result, datapoint)
 	}
+
+	if datapointCount != nil {
+		result = internal.DownSampleInsightTrendDatapoints(result, *datapointCount)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Timestamp < result[j].Timestamp
+	})
 
 	return ctx.JSON(200, result)
 }
