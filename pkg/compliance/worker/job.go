@@ -149,12 +149,12 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return errors.New("connection not healthy")
 	}
 
-	defaultAccountID := "default"
+	//defaultAccountID := "default"
 	esk, err := keibi.NewClient(keibi.ClientConfig{
 		Addresses: []string{elasticSearchConfig.Address},
 		Username:  &elasticSearchConfig.Username,
 		Password:  &elasticSearchConfig.Password,
-		AccountID: &defaultAccountID,
+		AccountID: &src.ConnectionID,
 	})
 	if err != nil {
 		return err
@@ -182,6 +182,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
 		"9193", "--database-password", "abcd")
 	err = cmd.Run()
+	time.Sleep(5 * time.Second)
 	if err != nil {
 		return err
 	}
