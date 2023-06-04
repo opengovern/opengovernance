@@ -172,8 +172,11 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	time.Sleep(5 * time.Second)
 
-	tries, err := executeRecursive(20)
-	fmt.Println("steampipe started with error:{", err, "} and,", 20-tries, "tries.")
+	// tries, err := executeRecursive(20)
+	// fmt.Println("steampipe started with error:{", err, "} and,", 20-tries, "tries.")
+	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
+		"9193", "--database-password", "abcd")
+	err = cmd.Run()
 	if err != nil {
 		return err
 	}
@@ -192,6 +195,12 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	}
 
 	fmt.Println("+++++ Steampipe database created")
+
+	queryRes, err := steampipeConn.QueryAll("select * from information_schema.tables;")
+	if err != nil {
+		return err
+	}
+	fmt.Println("+++++ Query result:", queryRes)
 
 	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Type)
 	if err != nil {

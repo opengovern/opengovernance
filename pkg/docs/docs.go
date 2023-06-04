@@ -1429,6 +1429,78 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/metadata/tag/insight": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "Return list of the keys with possible values for filtering insights",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/metadata/tag/insight/{key}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "Return list of the possible values for filtering insights with specified key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tag key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/queries/{query_id}": {
             "get": {
                 "consumes": [
