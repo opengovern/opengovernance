@@ -67,7 +67,7 @@ func (j *Job) Do(
 	return result
 }
 
-func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]es.Finding, error) {
+func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type, accountID string) ([]es.Finding, error) {
 	ctx := &httpclient.Context{
 		UserRole: api2.AdminRole,
 	}
@@ -81,7 +81,7 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 
 	var findings []es.Finding
 	for _, childBenchmarkID := range benchmark.Children {
-		f, err := j.RunBenchmark(childBenchmarkID, complianceClient, steampipeConn, connector)
+		f, err := j.RunBenchmark(childBenchmarkID, complianceClient, steampipeConn, connector, accountID)
 		if err != nil {
 			return nil, err
 		}
@@ -114,9 +114,14 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 			return nil, err
 		}
 
-		fmt.Println("+++++++++++ Query Executed:", res)
+		fmt.Println("+++++++++++ Query Executed with following number:", len(res.Data))
+		filteredRes, err := filterAccountID(res, accountID)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println("+++++++++++ Query Executed with following number after filter by", accountID, ":", len(filteredRes.Data))
 
-		f, err := j.ExtractFindings(benchmark, policy, query, res)
+		f, err := j.ExtractFindings(benchmark, policy, query, filteredRes)
 		if err != nil {
 			return nil, err
 		}
@@ -157,7 +162,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	fmt.Println("+++++ New elasticSearch Client created")
 
-	err = j.PopulateSteampipeConfig(elasticSearchConfig, defaultAccountID)
+	err = j.PopulateSteampipeConfig(elasticSearchConfig, "all")
 	if err != nil {
 		return err
 	}
@@ -202,7 +207,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	}
 	fmt.Println("+++++ Query result:", queryRes)
 
-	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Type)
+	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Type, src.ConnectionID)
 	if err != nil {
 		return err
 	}
@@ -339,4 +344,28 @@ func executeRecursive(try int) (int, error) {
 	}
 
 	return try, err
+}
+
+func filterAccountID(res *steampipe.Result, accountID string) (*steampipe.Result, error) {
+	var data [][]interface{}
+	for _, record := range res.Data {
+		if len(record) != len(res.Headers) {
+			return nil, fmt.Errorf("invalid record length, record=%d headers=%d", len(record), len(res.Headers))
+		}
+		recordValue := map[string]interface{}{}
+		for idx, header := range res.Headers {
+			value := record[idx]
+			recordValue[header] = value
+		}
+
+		var accId string
+		if v, ok := recordValue["account_id"].(string); ok {
+			accId = v
+		}
+		if accId == accountID {
+			data = append(data, record)
+		}
+	}
+	res.Data = data
+	return res, nil
 }
