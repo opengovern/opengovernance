@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.153
 	github.com/aws/aws-sdk-go-v2 v1.18.0
 	github.com/aws/aws-sdk-go-v2/config v1.18.25 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.24 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.24
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.74.1
 	github.com/aws/aws-sdk-go-v2/service/iam v1.18.9
 	github.com/aws/aws-sdk-go-v2/service/kms v1.21.1 // indirect
@@ -57,6 +57,7 @@ require github.com/go-errors/errors v1.4.2
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.1
 	github.com/confluentinc/confluent-kafka-go/v2 v2.1.1
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/go-redis/cache/v8 v8.4.3
@@ -117,7 +118,6 @@ require (
 	github.com/apparentlymart/go-cidr v1.1.0 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
-	github.com/aws/aws-lambda-go v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.9 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.33 // indirect
@@ -223,7 +223,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.24.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/route53domains v1.14.10 // indirect
 	github.com/aws/aws-sdk-go-v2/service/route53resolver v1.15.19 // indirect
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/s3control v1.21.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sagemaker v1.48.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.16.2 // indirect
@@ -295,7 +294,6 @@ require (
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/gocarina/gocsv v0.0.0-20211203214250-4735fba0c1d9 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect

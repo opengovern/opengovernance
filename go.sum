@@ -790,7 +790,6 @@ github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a/go.mod h1:DAHtR1m6l
 github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535/go.mod h1:oGkLhpf+kjZl6xBf758TQhh5XrAeiJv/7FRz/2spLIg=
-github.com/aws/aws-lambda-go v1.13.3 h1:SuCy7H3NLyp+1Mrfp+m80jcbi9KYWAs9/BXwppwRDzY=
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
 github.com/aws/aws-sdk-go v1.15.11/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
 github.com/aws/aws-sdk-go v1.25.37/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
@@ -1713,8 +1712,6 @@ github.com/golang-jwt/jwt v3.2.2+incompatible/go.mod h1:8pz2t5EyA70fFQQSrl6XZXzq
 github.com/golang-jwt/jwt/v4 v4.0.0/go.mod h1:/xlHOz8bRuivTWchD4jCa+NbatV+wEUSzwAxVc6locg=
 github.com/golang-jwt/jwt/v4 v4.2.0 h1:besgBTC8w8HjP6NzQdxwKH9Z5oQMZ24ThTrHp3cZ8eU=
 github.com/golang-jwt/jwt/v4 v4.2.0/go.mod h1:/xlHOz8bRuivTWchD4jCa+NbatV+wEUSzwAxVc6locg=
-github.com/golang-jwt/jwt/v5 v5.0.0 h1:1n1XNM9hk7O9mnQoNBGolZvzebBQ7p93ULHRc28XJUE=
-github.com/golang-jwt/jwt/v5 v5.0.0/go.mod h1:pqrtFR0X4osieyHYxtmOUWsAWrfe1Q5UVIyoH402zdk=
 github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe/go.mod h1:8vg3r2VgvsThLBIFL93Qb5yWzgyZWhEmBwUJWevAkK0=
 github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 h1:au07oEsX2xN0ktxqI+Sida1w446QrXBRJ0nee3SNZlA=
 github.com/golang-sql/sqlexp v0.1.0 h1:ZCD6MBpcuOVfGVqsEmY5/4FtYiKz6tSyUv9LPEDei6A=
@@ -2107,12 +2104,8 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
-github.com/kaytu-io/kaytu-aws-describer v0.0.5 h1:LrdJ90ygCaoV2QkcBpd6CSOS2i1w0dvFYyRLtZ0VETg=
-github.com/kaytu-io/kaytu-aws-describer v0.0.5/go.mod h1:KlTkpQXylCs83cO7BOw13omkrUDNM6dZ98oztNIhgt8=
 github.com/kaytu-io/kaytu-aws-describer v0.0.6 h1:QBQkuI6mbSuCg4gilC+TJ7Z1uido1qXdzYm93OMuEmc=
 github.com/kaytu-io/kaytu-aws-describer v0.0.6/go.mod h1:UE90y8Zyfhq4mmzWmKAzFgcLBP+UJC9IGaTN1OuADrE=
-github.com/kaytu-io/kaytu-azure-describer v0.0.8 h1:NjTkOeIH4ecHqW0PaWVgVZDHzXp9yed2v+Hy/hVpecQ=
-github.com/kaytu-io/kaytu-azure-describer v0.0.8/go.mod h1:QwJ7A7FaMsBCRuDfaEwNTXuQeDF/OdKIFuvReDregxU=
 github.com/kaytu-io/kaytu-azure-describer v0.0.9 h1:xzyhFRpHgEGT9i56VRFsyLTfj1knO6LQa+RAGrn9rWg=
 github.com/kaytu-io/kaytu-azure-describer v0.0.9/go.mod h1:QwJ7A7FaMsBCRuDfaEwNTXuQeDF/OdKIFuvReDregxU=
 github.com/kaytu-io/kaytu-util v0.0.0-20230531155513-01401f7ae3f5 h1:fPvqN4Sh5szUjKGVej6h8aLhZsK4xnJ4u4NvgPOtlno=
