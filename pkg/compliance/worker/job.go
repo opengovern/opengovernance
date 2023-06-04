@@ -192,6 +192,8 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		}
 		folderPath := dirname + "/.steampipe/logs"
 		err = filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
+			fmt.Println("====================================================================")
+			fmt.Println("+++++ Log:", path)
 			if err != nil {
 				return err
 			}
