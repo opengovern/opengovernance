@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -182,30 +181,20 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	time.Sleep(5 * time.Second)
 
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-		"9193", "--database-password", "abcd")
+		"9194", "--database-password", "abcd")
 	err = cmd.Run()
 	time.Sleep(20 * time.Second)
 	if err != nil {
 		dirname, _ := os.UserHomeDir()
 		folderPath := dirname + "/.steampipe/logs"
-		err = filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
+		_ = filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
 			fmt.Println("====================================================================")
 			fmt.Println("+++++ Log:", path)
-			if err != nil {
-				return err
-			}
 			if filepath.Ext(path) == ".log" {
-				file, err := os.Open(path)
-				if err != nil {
-					log.Fatal(err)
-				}
+				file, _ := os.Open(path)
 				defer file.Close()
 
-				content, err := ioutil.ReadAll(file)
-				if err != nil {
-					log.Fatal(err)
-				}
-
+				content, _ := ioutil.ReadAll(file)
 				fmt.Println(string(content))
 			}
 			return nil
@@ -218,7 +207,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: "localhost",
-		Port: "9193",
+		Port: "9194", //temp
 		User: "steampipe",
 		Pass: "abcd",
 		Db:   "steampipe",
