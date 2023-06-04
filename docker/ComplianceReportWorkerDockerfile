@@ -1,6 +1,6 @@
-FROM registry.digitalocean.com/keibi/steampipe-plugin-aws:0.0.1-200 as aws
-FROM registry.digitalocean.com/keibi/steampipe-plugin-azure:0.0.1-74 as azure
-FROM registry.digitalocean.com/keibi/steampipe-plugin-azuread:0.0.1-46 as azuread
+FROM registry.digitalocean.com/keibi/steampipe-plugin-aws:0.0.1 as aws
+FROM registry.digitalocean.com/keibi/steampipe-plugin-azure:0.0.1 as azure
+FROM registry.digitalocean.com/keibi/steampipe-plugin-azuread:0.0.1 as azuread
 
 FROM docker.io/turbot/steampipe:latest
 

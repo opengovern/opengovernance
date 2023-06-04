@@ -14,7 +14,7 @@ if [[ $SERVICES == *"checkup-worker"* ]]; then
     podman push registry.digitalocean.com/keibi/checkup-worker:$SVER_VERSION
 fi
 if [[ $SERVICES == *"compliance-report-worker"* ]]; then
-    podman build -f  docker/ComplianceReportWorkerDockerfile . -t registry.digitalocean.com/keibi/compliance-report-worker:$SVER_VERSION
+    podman build --no-cache -f  docker/ComplianceReportWorkerDockerfile . -t registry.digitalocean.com/keibi/compliance-report-worker:$SVER_VERSION
     podman push registry.digitalocean.com/keibi/compliance-report-worker:$SVER_VERSION
 fi
 if [[ $SERVICES == *"compliance-service"* ]]; then
@@ -66,14 +66,11 @@ if [[ $SERVICES == *"workspace-service"* ]]; then
     podman push registry.digitalocean.com/keibi/workspace-service:$SVER_VERSION
 fi
 if [[ $SERVICES == *"steampipe"* ]]; then
-    podman build -f  docker/SteampipeServiceDockerfile . -t registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
+    podman build --no-cache -f  docker/SteampipeServiceDockerfile . -t registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
     podman push registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
 fi
 
 if [[ $SERVICES == *"redoc"* ]]; then
   podman build -f  docker/RedocDockerfile . -t registry.digitalocean.com/keibi/redoc:$SVER_VERSION
   podman push registry.digitalocean.com/keibi/redoc:$SVER_VERSION
-
-  podman build -f  docker/SteampipeServiceDockerfile . -t registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
-  podman push registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
 fi
