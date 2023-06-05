@@ -46,7 +46,8 @@ func (c *authClient) PutRoleBinding(ctx *httpclient.Context, request *api.PutRol
 		httpserver.XKeibiMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),
 		httpserver.XKeibiMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
 	}
-	return httpclient.DoRequest(http.MethodPut, url, headers, payload, nil)
+	_, res := httpclient.DoRequest(http.MethodPut, url, headers, payload, nil)
+	return res
 }
 
 func (c *authClient) GetWorkspaceRoleBindings(ctx *httpclient.Context, workspaceName, workspaceID string) (api.GetWorkspaceRoleBindingResponse, error) {
