@@ -3,10 +3,7 @@ package worker
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -70,7 +67,7 @@ func (j *Job) Do(
 	return result
 }
 
-func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type, accountID string) ([]es.Finding, error) {
+func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]es.Finding, error) {
 	ctx := &httpclient.Context{
 		UserRole: api2.AdminRole,
 	}
@@ -84,7 +81,7 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 
 	var findings []es.Finding
 	for _, childBenchmarkID := range benchmark.Children {
-		f, err := j.RunBenchmark(childBenchmarkID, complianceClient, steampipeConn, connector, accountID)
+		f, err := j.RunBenchmark(childBenchmarkID, complianceClient, steampipeConn, connector)
 		if err != nil {
 			return nil, err
 		}
@@ -118,13 +115,8 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 		}
 
 		fmt.Println("+++++++++++ Query Executed with following number:", len(res.Data))
-		filteredRes, err := filterAccountID(res, accountID)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println("+++++++++++ Query Executed with following number after filter by", accountID, ":", len(filteredRes.Data))
 
-		f, err := j.ExtractFindings(benchmark, policy, query, filteredRes)
+		f, err := j.ExtractFindings(benchmark, policy, query, res)
 		if err != nil {
 			return nil, err
 		}
@@ -181,33 +173,15 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	time.Sleep(5 * time.Second)
 
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-		"9194", "--database-password", "abcd")
+		"9193", "--database-password", "abcd")
 	err = cmd.Run()
-	time.Sleep(20 * time.Second)
-	if err != nil {
-		dirname, _ := os.UserHomeDir()
-		folderPath := dirname + "/.steampipe/logs"
-		_ = filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
-			fmt.Println("====================================================================")
-			fmt.Println("+++++ Log:", path)
-			if filepath.Ext(path) == ".log" {
-				file, _ := os.Open(path)
-				defer file.Close()
-
-				content, _ := ioutil.ReadAll(file)
-				fmt.Println(string(content))
-			}
-			return nil
-		})
-		fmt.Println("+++++ Logs ended")
-		return err
-	}
+	time.Sleep(5 * time.Second)
 
 	fmt.Println("+++++ Steampipe service started")
 
 	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: "localhost",
-		Port: "9194", //temp
+		Port: "9193",
 		User: "steampipe",
 		Pass: "abcd",
 		Db:   "steampipe",
@@ -218,13 +192,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	fmt.Println("+++++ Steampipe database created")
 
-	queryRes, err := steampipeConn.QueryAll("select * from information_schema.tables;")
-	if err != nil {
-		return err
-	}
-	fmt.Println("+++++ Query result:", queryRes)
-
-	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Type, src.ConnectionID)
+	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Type)
 	if err != nil {
 		return err
 	}
@@ -342,28 +310,4 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 		})
 	}
 	return findings, nil
-}
-
-func filterAccountID(res *steampipe.Result, accountID string) (*steampipe.Result, error) {
-	var data [][]interface{}
-	for _, record := range res.Data {
-		if len(record) != len(res.Headers) {
-			return nil, fmt.Errorf("invalid record length, record=%d headers=%d", len(record), len(res.Headers))
-		}
-		recordValue := map[string]interface{}{}
-		for idx, header := range res.Headers {
-			value := record[idx]
-			recordValue[header] = value
-		}
-
-		var accId string
-		if v, ok := recordValue["account_id"].(string); ok {
-			accId = v
-		}
-		if accId == accountID {
-			data = append(data, record)
-		}
-	}
-	res.Data = data
-	return res, nil
 }

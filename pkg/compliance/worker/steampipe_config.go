@@ -85,7 +85,7 @@ connection "` + plugin + `" {
   addresses = ["` + config.Address + `"]
   username = "` + config.Username + `"
   password = "` + config.Password + `"
-  accountID = "all"
+  accountID = "` + accountID + `"
 }
 `
 	dirname, err := os.UserHomeDir()
