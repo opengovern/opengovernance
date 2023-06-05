@@ -2312,7 +2312,7 @@ func (h HttpHandler) CountConnections(ctx echo.Context) error {
 //	@Param		endTime			query		int			false	"end time in unix seconds"
 //	@Param		sortBy			query		string		false	"column to sort by - default is cost"	Enums(onboard_date,resource_count,cost)
 //	@Success	200				{object}	api.ListConnectionSummaryResponse
-//	@Router		/inventory/api/v2/connections/summary [get]
+//	@Router		/onboard/api/v1/connections/summary [get]
 func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["connectionId"]
@@ -2439,7 +2439,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 //	@Param		startTime	query		int	false	"start time in unix seconds"
 //	@Param		endTime		query		int	false	"end time in unix seconds"
 //	@Success	200			{object}	api.Connection
-//	@Router		/inventory/api/v2/connections/summary/{connectionId} [get]
+//	@Router		/onboard/api/v1/connections/summary/{connectionId} [get]
 func (h HttpHandler) GetConnectionSummary(ctx echo.Context) error {
 	connectionId, err := uuid.Parse(ctx.Param("connectionId"))
 	if err != nil {

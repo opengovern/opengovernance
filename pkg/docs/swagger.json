@@ -2541,145 +2541,6 @@
                 }
             }
         },
-        "/inventory/api/v2/connections/summary": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "connections"
-                ],
-                "summary": "Returns resource count of accounts",
-                "parameters": [
-                    {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
-                        "description": "Connector",
-                        "name": "connector",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Connection IDs",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "healthy",
-                            "unhealthy"
-                        ],
-                        "type": "string",
-                        "description": "Source Healthstate",
-                        "name": "healthState",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "lifecycle state filter",
-                        "name": "lifecycleState",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page size - default is 20",
-                        "name": "pageSize",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page number - default is 1",
-                        "name": "pageNumber",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "start time in unix seconds",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "end time in unix seconds",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "onboard_date",
-                            "resource_count",
-                            "cost"
-                        ],
-                        "type": "string",
-                        "description": "column to sort by - default is cost",
-                        "name": "sortBy",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ListConnectionSummaryResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v2/connections/summary/{connectionId}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "connections"
-                ],
-                "summary": "Returns resource count of accounts",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "start time in unix seconds",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "end time in unix seconds",
-                        "name": "endTime",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
-                        }
-                    }
-                }
-            }
-        },
         "/inventory/api/v2/insights": {
             "get": {
                 "security": [
@@ -3979,6 +3840,145 @@
                         "description": "OK",
                         "schema": {
                             "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/connections/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "connections"
+                ],
+                "summary": "Returns resource count of accounts",
+                "parameters": [
+                    {
+                        "enum": [
+                            "",
+                            "AWS",
+                            "Azure"
+                        ],
+                        "type": "string",
+                        "description": "Connector",
+                        "name": "connector",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection IDs",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "healthy",
+                            "unhealthy"
+                        ],
+                        "type": "string",
+                        "description": "Source Healthstate",
+                        "name": "healthState",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "lifecycle state filter",
+                        "name": "lifecycleState",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size - default is 20",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number - default is 1",
+                        "name": "pageNumber",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "start time in unix seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "end time in unix seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "onboard_date",
+                            "resource_count",
+                            "cost"
+                        ],
+                        "type": "string",
+                        "description": "column to sort by - default is cost",
+                        "name": "sortBy",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ListConnectionSummaryResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/connections/summary/{connectionId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "connections"
+                ],
+                "summary": "Returns resource count of accounts",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "start time in unix seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "end time in unix seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
                         }
                     }
                 }

@@ -4438,96 +4438,6 @@ paths:
         specified time - internal use api,  for full result use onboard api
       tags:
       - connection
-  /inventory/api/v2/connections/summary:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Connector
-        enum:
-        - ""
-        - AWS
-        - Azure
-        in: query
-        name: connector
-        required: true
-        type: string
-      - description: Connection IDs
-        in: query
-        name: connectionId
-        type: string
-      - description: Source Healthstate
-        enum:
-        - healthy
-        - unhealthy
-        in: query
-        name: healthState
-        type: string
-      - description: lifecycle state filter
-        in: query
-        name: lifecycleState
-        type: string
-      - description: page size - default is 20
-        in: query
-        name: pageSize
-        type: integer
-      - description: page number - default is 1
-        in: query
-        name: pageNumber
-        type: integer
-      - description: start time in unix seconds
-        in: query
-        name: startTime
-        type: integer
-      - description: end time in unix seconds
-        in: query
-        name: endTime
-        type: integer
-      - description: column to sort by - default is cost
-        enum:
-        - onboard_date
-        - resource_count
-        - cost
-        in: query
-        name: sortBy
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ListConnectionSummaryResponse'
-      security:
-      - BearerToken: []
-      summary: Returns resource count of accounts
-      tags:
-      - connections
-  /inventory/api/v2/connections/summary/{connectionId}:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: start time in unix seconds
-        in: query
-        name: startTime
-        type: integer
-      - description: end time in unix seconds
-        in: query
-        name: endTime
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
-      security:
-      - BearerToken: []
-      summary: Returns resource count of accounts
-      tags:
-      - connections
   /inventory/api/v2/insights:
     get:
       description: List all insight results for the given insightIds - this mostly
@@ -5393,6 +5303,96 @@ paths:
       summary: Returns a count of connections
       tags:
       - onboard
+  /onboard/api/v1/connections/summary:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Connector
+        enum:
+        - ""
+        - AWS
+        - Azure
+        in: query
+        name: connector
+        required: true
+        type: string
+      - description: Connection IDs
+        in: query
+        name: connectionId
+        type: string
+      - description: Source Healthstate
+        enum:
+        - healthy
+        - unhealthy
+        in: query
+        name: healthState
+        type: string
+      - description: lifecycle state filter
+        in: query
+        name: lifecycleState
+        type: string
+      - description: page size - default is 20
+        in: query
+        name: pageSize
+        type: integer
+      - description: page number - default is 1
+        in: query
+        name: pageNumber
+        type: integer
+      - description: start time in unix seconds
+        in: query
+        name: startTime
+        type: integer
+      - description: end time in unix seconds
+        in: query
+        name: endTime
+        type: integer
+      - description: column to sort by - default is cost
+        enum:
+        - onboard_date
+        - resource_count
+        - cost
+        in: query
+        name: sortBy
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ListConnectionSummaryResponse'
+      security:
+      - BearerToken: []
+      summary: Returns resource count of accounts
+      tags:
+      - connections
+  /onboard/api/v1/connections/summary/{connectionId}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: start time in unix seconds
+        in: query
+        name: startTime
+        type: integer
+      - description: end time in unix seconds
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+      security:
+      - BearerToken: []
+      summary: Returns resource count of accounts
+      tags:
+      - connections
   /onboard/api/v1/connectors:
     get:
       description: Getting connectors
