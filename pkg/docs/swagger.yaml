@@ -1420,37 +1420,16 @@ definitions:
         description: Resource Type Name
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Connection:
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionData:
     properties:
       connectionID:
         type: string
-      connector:
-        $ref: '#/definitions/source.Type'
-      connectorConnectionID:
-        type: string
-      connectorConnectionName:
-        type: string
       cost:
-        additionalProperties:
-          type: number
-        type: object
-      healthReason:
-        type: string
-      healthState:
-        $ref: '#/definitions/source.HealthStatus'
-      lastHealthCheckTime:
-        type: string
+        type: number
+      count:
+        type: integer
       lastInventory:
         type: string
-      lifecycleState:
-        type: string
-      metadata:
-        additionalProperties: {}
-        type: object
-      onboardDate:
-        type: string
-      resourceCount:
-        type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionFull:
     properties:
@@ -1649,23 +1628,6 @@ definitions:
         type: array
       totalCount:
         description: Number of returned resources
-        type: integer
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListConnectionsResponse:
-    properties:
-      connections:
-        items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Connection'
-        type: array
-      totalCost:
-        additionalProperties:
-          type: number
-        type: object
-      totalCount:
-        type: integer
-      totalDisabledCount:
-        type: integer
-      totalUnhealthyCount:
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest:
@@ -2307,6 +2269,46 @@ definitions:
       unhealthyConnections:
         type: integer
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection:
+    properties:
+      assetDiscoveryMethod:
+        $ref: '#/definitions/source.AssetDiscoveryMethodType'
+      connector:
+        $ref: '#/definitions/source.Type'
+      cost:
+        type: number
+      credentialID:
+        type: string
+      credentialName:
+        type: string
+      description:
+        type: string
+      email:
+        type: string
+      healthReason:
+        type: string
+      healthState:
+        $ref: '#/definitions/source.HealthStatus'
+      id:
+        type: string
+      lastHealthCheckTime:
+        type: string
+      lastInventory:
+        type: string
+      lifecycleState:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState'
+      metadata:
+        additionalProperties: {}
+        type: object
+      onboardDate:
+        type: string
+      providerConnectionID:
+        type: string
+      providerConnectionName:
+        type: string
+      resourceCount:
+        type: integer
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest:
     properties:
       connectors:
@@ -2424,7 +2426,7 @@ definitions:
     properties:
       connections:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
         type: array
       connectorType:
         $ref: '#/definitions/source.Type'
@@ -2461,6 +2463,23 @@ definitions:
           type: string
         type: array
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ListConnectionSummaryResponse:
+    properties:
+      TotalResourceCount:
+        type: integer
+      connectionCount:
+        type: integer
+      connections:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+        type: array
+      totalCost:
+        type: number
+      totalDisabledCount:
+        type: integer
+      totalUnhealthyCount:
+        type: integer
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Provider:
     properties:
       id:
@@ -2484,40 +2503,6 @@ definitions:
         type: string
       typeName:
         type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source:
-    properties:
-      assetDiscoveryMethod:
-        $ref: '#/definitions/source.AssetDiscoveryMethodType'
-      credentialID:
-        type: string
-      credentialName:
-        type: string
-      description:
-        type: string
-      email:
-        type: string
-      healthReason:
-        type: string
-      healthState:
-        $ref: '#/definitions/source.HealthStatus'
-      id:
-        type: string
-      lastHealthCheckTime:
-        type: string
-      lifecycleState:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState'
-      metadata:
-        additionalProperties: {}
-        type: object
-      onboardDate:
-        type: string
-      providerConnectionID:
-        type: string
-      providerConnectionName:
-        type: string
-      type:
-        $ref: '#/definitions/source.Type'
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAWS:
     properties:
@@ -4392,6 +4377,67 @@ paths:
       summary: Returns distribution of services for specific account
       tags:
       - benchmarks
+  /inventory/api/v2/connections/data:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Connection IDs
+        in: query
+        items:
+          type: string
+        name: connectionId
+        required: true
+        type: array
+      - description: start time in unix seconds
+        in: query
+        name: startTime
+        type: integer
+      - description: end time in unix seconds
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionData'
+            type: object
+      security:
+      - BearerToken: []
+      summary: Returns cost and resource count data of the specified accounts at the
+        specified time - internal use api,  for full result use onboard api
+      tags:
+      - connection
+  /inventory/api/v2/connections/data/{connectionId}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: start time in unix seconds
+        in: query
+        name: startTime
+        type: integer
+      - description: end time in unix seconds
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionData'
+      security:
+      - BearerToken: []
+      summary: Returns cost and resource count data of the specified account at the
+        specified time - internal use api,  for full result use onboard api
+      tags:
+      - connection
   /inventory/api/v2/connections/summary:
     get:
       consumes:
@@ -4451,12 +4497,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListConnectionsResponse'
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ListConnectionSummaryResponse'
       security:
       - BearerToken: []
       summary: Returns resource count of accounts
       tags:
-      - benchmarks
+      - connections
   /inventory/api/v2/connections/summary/{connectionId}:
     get:
       consumes:
@@ -4476,10 +4522,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Connection'
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+      security:
+      - BearerToken: []
       summary: Returns resource count of accounts
       tags:
-      - benchmarks
+      - connections
   /inventory/api/v2/insights:
     get:
       description: List all insight results for the given insightIds - this mostly
@@ -5490,7 +5538,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
             type: array
       summary: Onboard all available connections for a credential
       tags:
@@ -5631,7 +5679,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
       summary: Returns a single source
       tags:
       - onboard
@@ -5723,7 +5771,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
       summary: Returns source by account id
       tags:
       - onboard
@@ -5811,7 +5859,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
             type: array
       summary: Returns a list of sources
       tags:
@@ -5839,7 +5887,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source'
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
             type: array
       summary: Returns a list of sources
       tags:

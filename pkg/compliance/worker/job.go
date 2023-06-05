@@ -203,7 +203,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	fmt.Println("+++++ Steampipe database created")
 
-	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Type)
+	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Connector)
 	if err != nil {
 		return err
 	}

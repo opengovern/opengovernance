@@ -64,6 +64,35 @@ func (db Database) ListSources() ([]Source, error) {
 	return s, nil
 }
 
+// ListSourcesWithFilters gets list of all source with specified filters
+func (db Database) ListSourcesWithFilters(
+	connectorTypes []source.Type,
+	connectionIDs []string,
+	healthStates []source.HealthStatus,
+	lifecycleState []ConnectionLifecycleState) ([]Source, error) {
+
+	var s []Source
+	tx := db.orm.Model(Source{}).Preload(clause.Associations)
+	if len(connectorTypes) > 0 {
+		tx = tx.Where("type IN ?", connectorTypes)
+	}
+	if len(connectionIDs) > 0 {
+		tx = tx.Where("id IN ?", connectionIDs)
+	}
+	if len(healthStates) > 0 {
+		tx = tx.Where("health_state IN ?", connectionIDs)
+	}
+	if len(lifecycleState) > 0 {
+		tx = tx.Where("lifecycle_state IN ?", lifecycleState)
+	}
+	tx.Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}
+
 // GetSources gets sources by id
 func (db Database) GetSources(ids []uuid.UUID) ([]Source, error) {
 	var s []Source

@@ -5,6 +5,13 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -13,12 +20,6 @@ import (
 	api2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"go.uber.org/zap"
-	"math/rand"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 //go:embed queries-aws.json
@@ -199,7 +200,7 @@ func (j *Job) RunJob() error {
 
 	j.steampipe = s1
 	//fmt.Println("+++++ Connected to steampipe")
-	query := j.RandomQuery(account.Type)
+	query := j.RandomQuery(account.Connector)
 
 	j.logger.Info("running query", zap.String("account", account.ConnectionID), zap.String("query", query.ListQuery))
 	listQuery := strings.ReplaceAll(query.ListQuery, "%ACCOUNT_ID%", account.ConnectionID)
@@ -301,7 +302,7 @@ func (j *Job) RunJob() error {
 	return nil
 }
 
-func (j *Job) RandomAccount() (*api2.Source, error) {
+func (j *Job) RandomAccount() (*api2.Connection, error) {
 	srcs, err := j.onboardClient.ListSources(&httpclient.Context{
 		UserRole: api.AdminRole,
 	}, nil)
@@ -325,7 +326,7 @@ func (j *Job) RandomQuery(sourceType source.Type) *Query {
 	return nil
 }
 
-func (j *Job) PopulateSteampipe(account *api2.Source, cred *api2.AWSCredential, azureCred *api2.AzureCredential) error {
+func (j *Job) PopulateSteampipe(account *api2.Connection, cred *api2.AWSCredential, azureCred *api2.AzureCredential) error {
 	dirname, err := os.UserHomeDir()
 	if err != nil {
 		return err

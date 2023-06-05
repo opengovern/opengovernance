@@ -2451,6 +2451,101 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/connections/data": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "connection"
+                ],
+                "summary": "Returns cost and resource count data of the specified accounts at the specified time - internal use api,  for full result use onboard api",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs",
+                        "name": "connectionId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "start time in unix seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "end time in unix seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionData"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/connections/data/{connectionId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "connection"
+                ],
+                "summary": "Returns cost and resource count data of the specified account at the specified time - internal use api,  for full result use onboard api",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "start time in unix seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "end time in unix seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionData"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/connections/summary": {
             "get": {
                 "security": [
@@ -2465,7 +2560,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "benchmarks"
+                    "connections"
                 ],
                 "summary": "Returns resource count of accounts",
                 "parameters": [
@@ -2543,7 +2638,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListConnectionsResponse"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ListConnectionSummaryResponse"
                         }
                     }
                 }
@@ -2551,6 +2646,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/connections/summary/{connectionId}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -2558,7 +2658,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "benchmarks"
+                    "connections"
                 ],
                 "summary": "Returns resource count of accounts",
                 "parameters": [
@@ -2579,7 +2679,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Connection"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
                         }
                     }
                 }
@@ -4172,7 +4272,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source"
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
                             }
                         }
                     }
@@ -4294,7 +4394,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
                         }
                     }
                 }
@@ -4421,7 +4521,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
                         }
                     }
                 }
@@ -4591,7 +4691,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source"
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
                             }
                         }
                     }
@@ -4632,7 +4732,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source"
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
                             }
                         }
                     }
@@ -7863,51 +7963,20 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Connection": {
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionData": {
             "type": "object",
             "properties": {
                 "connectionID": {
                     "type": "string"
                 },
-                "connector": {
-                    "$ref": "#/definitions/source.Type"
-                },
-                "connectorConnectionID": {
-                    "type": "string"
-                },
-                "connectorConnectionName": {
-                    "type": "string"
-                },
                 "cost": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "number"
-                    }
+                    "type": "number"
                 },
-                "healthReason": {
-                    "type": "string"
-                },
-                "healthState": {
-                    "$ref": "#/definitions/source.HealthStatus"
-                },
-                "lastHealthCheckTime": {
-                    "type": "string"
+                "count": {
+                    "type": "integer"
                 },
                 "lastInventory": {
                     "type": "string"
-                },
-                "lifecycleState": {
-                    "type": "string"
-                },
-                "metadata": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "onboardDate": {
-                    "type": "string"
-                },
-                "resourceCount": {
-                    "type": "integer"
                 }
             }
         },
@@ -8195,32 +8264,6 @@ const docTemplate = `{
                 },
                 "totalCount": {
                     "description": "Number of returned resources",
-                    "type": "integer"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListConnectionsResponse": {
-            "type": "object",
-            "properties": {
-                "connections": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Connection"
-                    }
-                },
-                "totalCost": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "number"
-                    }
-                },
-                "totalCount": {
-                    "type": "integer"
-                },
-                "totalDisabledCount": {
-                    "type": "integer"
-                },
-                "totalUnhealthyCount": {
                     "type": "integer"
                 }
             }
@@ -9113,6 +9156,66 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection": {
+            "type": "object",
+            "properties": {
+                "assetDiscoveryMethod": {
+                    "$ref": "#/definitions/source.AssetDiscoveryMethodType"
+                },
+                "connector": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "cost": {
+                    "type": "number"
+                },
+                "credentialID": {
+                    "type": "string"
+                },
+                "credentialName": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "healthReason": {
+                    "type": "string"
+                },
+                "healthState": {
+                    "$ref": "#/definitions/source.HealthStatus"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "lastHealthCheckTime": {
+                    "type": "string"
+                },
+                "lastInventory": {
+                    "type": "string"
+                },
+                "lifecycleState": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "onboardDate": {
+                    "type": "string"
+                },
+                "providerConnectionID": {
+                    "type": "string"
+                },
+                "providerConnectionName": {
+                    "type": "string"
+                },
+                "resourceCount": {
+                    "type": "integer"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest": {
             "type": "object",
             "properties": {
@@ -9284,7 +9387,7 @@ const docTemplate = `{
                 "connections": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source"
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
                     }
                 },
                 "connectorType": {
@@ -9340,6 +9443,32 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ListConnectionSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "TotalResourceCount": {
+                    "type": "integer"
+                },
+                "connectionCount": {
+                    "type": "integer"
+                },
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
+                    }
+                },
+                "totalCost": {
+                    "type": "number"
+                },
+                "totalDisabledCount": {
+                    "type": "integer"
+                },
+                "totalUnhealthyCount": {
+                    "type": "integer"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Provider": {
             "type": "object",
             "properties": {
@@ -9373,57 +9502,6 @@ const docTemplate = `{
                 },
                 "typeName": {
                     "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Source": {
-            "type": "object",
-            "properties": {
-                "assetDiscoveryMethod": {
-                    "$ref": "#/definitions/source.AssetDiscoveryMethodType"
-                },
-                "credentialID": {
-                    "type": "string"
-                },
-                "credentialName": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "healthReason": {
-                    "type": "string"
-                },
-                "healthState": {
-                    "$ref": "#/definitions/source.HealthStatus"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "lastHealthCheckTime": {
-                    "type": "string"
-                },
-                "lifecycleState": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState"
-                },
-                "metadata": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "onboardDate": {
-                    "type": "string"
-                },
-                "providerConnectionID": {
-                    "type": "string"
-                },
-                "providerConnectionName": {
-                    "type": "string"
-                },
-                "type": {
-                    "$ref": "#/definitions/source.Type"
                 }
             }
         },

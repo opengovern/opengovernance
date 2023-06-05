@@ -54,6 +54,35 @@ type Source struct {
 	DeletedAt sql.NullTime `gorm:"index"`
 }
 
+func (s Source) toApi() api.Connection {
+	metadata := make(map[string]any)
+	if s.Metadata.String() != "" {
+		_ = json.Unmarshal(s.Metadata, &metadata)
+	}
+	apiCon := api.Connection{
+		ID:                   s.ID,
+		ConnectionID:         s.SourceId,
+		ConnectionName:       s.Name,
+		Email:                s.Email,
+		Connector:            s.Type,
+		Description:          s.Description,
+		CredentialID:         s.CredentialID.String(),
+		CredentialName:       s.Credential.Name,
+		OnboardDate:          s.CreatedAt,
+		LifecycleState:       api.ConnectionLifecycleState(s.LifecycleState),
+		AssetDiscoveryMethod: s.AssetDiscoveryMethod,
+		HealthState:          s.HealthState,
+		LastHealthCheckTime:  s.LastHealthCheckTime,
+		HealthReason:         s.HealthReason,
+		Metadata:             metadata,
+
+		ResourceCount: nil,
+		Cost:          nil,
+		LastInventory: nil,
+	}
+	return apiCon
+}
+
 type AWSConnectionMetadata struct {
 	AccountID           string              `json:"account_id"`
 	AccountName         string              `json:"account_name"`
