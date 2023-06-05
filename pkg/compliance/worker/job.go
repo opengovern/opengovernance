@@ -3,7 +3,10 @@ package worker
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -186,6 +189,23 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		Pass: "abcd",
 		Db:   "steampipe",
 	})
+
+	dirname, _ := os.UserHomeDir()
+	folderPath := dirname + "/.steampipe/logs"
+	_ = filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
+		fmt.Println("====================================================================")
+		fmt.Println("+++++ Log:", path)
+		if filepath.Ext(path) == ".log" {
+			file, _ := os.Open(path)
+			defer file.Close()
+
+			content, _ := ioutil.ReadAll(file)
+			fmt.Println(string(content))
+		}
+		return nil
+	})
+	fmt.Println("+++++ Logs ended")
+
 	if err != nil {
 		return err
 	}
