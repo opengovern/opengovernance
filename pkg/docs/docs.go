@@ -2115,24 +2115,25 @@ const docTemplate = `{
                     {
                         "type": "array",
                         "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
                             "type": "string"
                         },
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query",
-                        "required": true
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
                     },
                     {
-                        "enum": [
-                            "AWS",
-                            "Azure",
-                            "all"
-                        ],
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query",
-                        "required": true
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
                     },
                     {
                         "enum": [
