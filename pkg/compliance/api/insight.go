@@ -17,14 +17,14 @@ type InsightConnection struct {
 }
 
 type InsightResult struct {
-	JobID        uint                `json:"jobID"`             // Job ID
-	InsightID    uint                `json:"insightID"`         // Insight ID
-	ConnectionID string              `json:"connectionID"`      // Connection ID
-	ExecutedAt   time.Time           `json:"executedAt"`        // Time of Execution
-	Result       int64               `json:"result"`            // Result
-	Locations    []string            `json:"locations"`         // Locations
-	Connections  []InsightConnection `json:"connections"`       // Connections
-	Details      *InsightDetail      `json:"details,omitempty"` // Insight Details
+	JobID        uint                `json:"jobID"`                 // Job ID
+	InsightID    uint                `json:"insightID"`             // Insight ID
+	ConnectionID string              `json:"connectionID"`          // Connection ID
+	ExecutedAt   time.Time           `json:"executedAt"`            // Time of Execution
+	Result       int64               `json:"result"`                // Result
+	Locations    []string            `json:"locations"`             // Locations
+	Connections  []InsightConnection `json:"connections,omitempty"` // Connections
+	Details      *InsightDetail      `json:"details,omitempty"`     // Insight Details
 }
 
 type Insight struct {

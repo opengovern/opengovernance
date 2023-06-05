@@ -2192,30 +2192,6 @@ definitions:
         description: Service Name
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServicesResponse:
-    properties:
-      lastDayCount:
-        description: Number of resources on last day
-        type: integer
-      lastQuarterCount:
-        description: Number of resources on last quarter
-        type: integer
-      lastWeekCount:
-        description: Number of resources on last week
-        type: integer
-      lastYearCount:
-        description: Number of resources on last year
-        type: integer
-      provider:
-        description: Service Provider Name
-        type: string
-      resourceCount:
-        description: Number of resources
-        type: integer
-      serviceName:
-        description: Service Name
-        type: string
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadata:
     properties:
       key:
@@ -3904,19 +3880,9 @@ paths:
       summary: Returns top n services of specified provider by cost
       tags:
       - cost
-  /inventory/api/v1/locations/{provider}:
+  /inventory/api/v1/locations/{connector}:
     get:
       description: Getting locations by provider
-      parameters:
-      - description: Provider
-        enum:
-        - aws
-        - azure
-        - all
-        in: path
-        name: provider
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -4277,15 +4243,21 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Provider
+      - description: Connector type to filter by
         in: query
-        name: provider
-        type: string
-      - description: SourceId
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
-        name: sourceId
+        name: connectionId
         type: array
       - description: page size - default is 20
         in: query
@@ -4309,35 +4281,6 @@ paths:
       summary: Returns top n regions of specified provider by resource count
       tags:
       - inventory
-  /inventory/api/v1/resources/top/accounts:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Number of top accounts returning.
-        in: query
-        name: count
-        required: true
-        type: integer
-      - description: Provider
-        in: query
-        name: provider
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountResponse'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Returns top n accounts of specified provider by resource count
-      tags:
-      - benchmarks
   /inventory/api/v1/resources/top/growing/accounts:
     get:
       consumes:
@@ -4388,15 +4331,21 @@ paths:
         name: count
         required: true
         type: integer
-      - description: Provider
+      - description: Connector type to filter by
         in: query
-        name: provider
-        type: string
-      - description: SourceId
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
-        name: sourceId
+        name: connectionId
         type: array
       produces:
       - application/json
@@ -4412,39 +4361,6 @@ paths:
       summary: Returns top n regions of specified provider by resource count
       tags:
       - inventory
-  /inventory/api/v1/resources/top/services:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Number of top ser
-        in: query
-        name: count
-        required: true
-        type: integer
-      - description: Provider
-        in: query
-        name: provider
-        required: true
-        type: string
-      - description: SourceID
-        in: query
-        name: sourceId
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServicesResponse'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Returns top n services of specified provider by resource count
-      tags:
-      - benchmarks
   /inventory/api/v1/services/distribution:
     get:
       consumes:

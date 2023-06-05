@@ -625,7 +625,7 @@ type ConnectionLocationsSummaryQueryHit struct {
 	Sort    []interface{}                        `json:"sort"`
 }
 
-func FetchConnectionLocationsSummaryPage(client keibi.Client, provider source.Type, sourceIDs []string, sort []map[string]interface{}, size int) ([]summarizer.ConnectionLocationSummary, error) {
+func FetchConnectionLocationsSummaryPage(client keibi.Client, connectors []source.Type, connectionIDs []string, sort []map[string]interface{}, size int) ([]summarizer.ConnectionLocationSummary, error) {
 	var hits []summarizer.ConnectionLocationSummary
 	res := make(map[string]interface{})
 	var filters []interface{}
@@ -634,15 +634,19 @@ func FetchConnectionLocationsSummaryPage(client keibi.Client, provider source.Ty
 		"terms": map[string][]string{"report_type": {string(summarizer.LocationConnectionSummary)}},
 	})
 
-	if !provider.IsNull() {
+	if len(connectors) > 0 {
+		connectorStr := make([]string, 0, len(connectors))
+		for _, connector := range connectors {
+			connectorStr = append(connectorStr, connector.String())
+		}
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {provider.String()}},
+			"terms": map[string][]string{"source_type": connectorStr},
 		})
 	}
 
-	if sourceIDs != nil {
+	if connectionIDs != nil {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_id": sourceIDs},
+			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
 
