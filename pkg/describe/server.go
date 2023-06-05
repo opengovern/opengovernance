@@ -93,7 +93,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.POST("/stacks/build", httpserver.AuthorizeHandler(h.CreateStack, api3.AdminRole))
 	v1.DELETE("/stacks/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, api3.AdminRole))
 	v1.GET("/stacks/findings/:jobId", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
-	v1.GET("/stacks/:stackId/insights", httpserver.AuthorizeHandler(h.GetInsights, api3.ViewerRole))
+	v1.GET("/stacks/:stackId/insights", httpserver.AuthorizeHandler(h.GetStackInsights, api3.ViewerRole))
 }
 
 // HandleListSources godoc
@@ -905,7 +905,7 @@ func (h HttpServer) DeleteStack(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-// TriggerBenchmark godoc
+// TriggerStackBenchmark godoc
 //
 //	@Summary		Trigger benchmarks
 //	@Description	Trigger defined benchmarks for a stack
@@ -990,7 +990,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, complianceJobs)
 }
 
-// GetBenchmarkResult godoc
+// GetStackFindings godoc
 //
 //	@Summary		Get Benchmark Result
 //	@Description	Get a benchmark result by jobId
@@ -1029,7 +1029,15 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	findings, err := h.Scheduler.complianceClient.GetFindings(httpclient.FromEchoContext(ctx), conns, evaluation.BenchmarkID, []string(stackRecord.Resources))
+	var benchmarkIDs []string
+	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(httpclient.FromEchoContext(ctx), evaluation.BenchmarkID)
+	if err != nil {
+		return err
+	}
+
+	benchmarkIDs = append(benchmarkIDs, benchmark.Children...)
+	benchmarkIDs = append(benchmarkIDs, evaluation.BenchmarkID)
+	findings, err := h.Scheduler.complianceClient.GetFindings(httpclient.FromEchoContext(ctx), conns, benchmarkIDs, []string(stackRecord.Resources))
 	if err != nil {
 		return err
 	}
@@ -1043,7 +1051,7 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, result)
 }
 
-// GetInsights godoc
+// GetStackInsights godoc
 //
 //	@Summary		Get Insights Result
 //	@Description	Get a benchmark result by jobId
@@ -1055,7 +1063,7 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 //	@Param			stackId	path		string	true	"StackID"
 //	@Success		200		{object}	[]complianceapi.Insight
 //	@Router			/schedule/api/v1/stacks/{stackId}/insights [get]
-func (h HttpServer) GetInsights(ctx echo.Context) error {
+func (h HttpServer) GetStackInsights(ctx echo.Context) error {
 	stackId := ctx.Param("stackId")
 	timeStr := ctx.QueryParam("time")
 	var timeAt *time.Time

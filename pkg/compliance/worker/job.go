@@ -3,10 +3,7 @@ package worker
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -106,7 +103,6 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("+++++++++++ Policy Query:", query.QueryToExecute)
 
 		if query.Connector != string(connector) {
 			return nil, errors.New("connector doesn't match")
@@ -117,14 +113,10 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 			return nil, err
 		}
 
-		fmt.Println("+++++++++++ Query Executed with following number:", len(res.Data))
-
 		f, err := j.ExtractFindings(benchmark, policy, query, res)
 		if err != nil {
 			return nil, err
 		}
-
-		fmt.Println("+++++++++++ Query Findings:", f)
 
 		findings = append(findings, f...)
 	}
@@ -209,25 +201,9 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return err
 	}
 
-	dirname, _ := os.UserHomeDir()
-	folderPath := dirname + "/.steampipe/logs"
-	_ = filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
-		fmt.Println("====================================================================")
-		fmt.Println("+++++ Log:", path)
-		if filepath.Ext(path) == ".log" {
-			file, _ := os.Open(path)
-			defer file.Close()
-
-			content, _ := ioutil.ReadAll(file)
-			fmt.Println(string(content))
-		}
-		return nil
-	})
-	fmt.Println("+++++ Logs ended")
-
 	fmt.Println("+++++ Steampipe database created")
 
-	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Type)
+	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Connector)
 	if err != nil {
 		return err
 	}

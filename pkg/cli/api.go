@@ -4,6 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"time"
+
 	"github.com/golang-jwt/jwt"
 	_ "github.com/golang-jwt/jwt/v4"
 	"github.com/spf13/cobra"
@@ -11,11 +17,6 @@ import (
 	urls "gitlab.com/keibiengine/keibi-engine/pkg/cli/consts"
 	apiOnboard "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	workspace "gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"time"
 )
 
 func GetConfig(cmd *cobra.Command, workspaceNameRequired bool) (*Config, error) {
@@ -1140,29 +1141,29 @@ func OnboardDeleteCredential(workspaceName string, accessToken string, credentia
 	}
 	return nil
 }
-func OnboardGetCredentialAvailableConnections(workspaceName string, accessToken string, credentialId string) ([]apiOnboard.Source, error) {
+func OnboardGetCredentialAvailableConnections(workspaceName string, accessToken string, credentialId string) ([]apiOnboard.Connection, error) {
 	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/credential/"+credentialId+"/autoonboard", nil)
 	if err != nil {
-		return []apiOnboard.Source{}, err
+		return []apiOnboard.Connection{}, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return []apiOnboard.Source{}, err
+		return []apiOnboard.Connection{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return []apiOnboard.Source{}, err
+		return []apiOnboard.Connection{}, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return []apiOnboard.Source{}, err
+		return []apiOnboard.Connection{}, err
 	}
-	var response []apiOnboard.Source
+	var response []apiOnboard.Connection
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return []apiOnboard.Source{}, err
+		return []apiOnboard.Connection{}, err
 	}
 	return response, nil
 }
@@ -1322,59 +1323,59 @@ func OnboardDeleteSource(workspaceName string, accessToken string, sourceId stri
 		return fmt.Errorf("exist some error with status code : %v ", res.StatusCode)
 	}
 }
-func OnboardGetSingleSource(workspaceName string, accessToken string, sourceId string) (apiOnboard.Source, error) {
+func OnboardGetSingleSource(workspaceName string, accessToken string, sourceId string) (apiOnboard.Connection, error) {
 	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/onboard/api/v1/source/"+sourceId, nil)
 	if err != nil {
-		return apiOnboard.Source{}, err
+		return apiOnboard.Connection{}, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return apiOnboard.Source{}, err
+		return apiOnboard.Connection{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return apiOnboard.Source{}, err
+		return apiOnboard.Connection{}, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return apiOnboard.Source{}, err
+		return apiOnboard.Connection{}, err
 	}
-	var response apiOnboard.Source
+	var response apiOnboard.Connection
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return apiOnboard.Source{}, err
+		return apiOnboard.Connection{}, err
 	}
 	return response, nil
 }
-func OnboardHealthSource(workspaceName string, accessToken string, sourceId string) (apiOnboard.Source, error) {
+func OnboardHealthSource(workspaceName string, accessToken string, sourceId string) (apiOnboard.Connection, error) {
 	req, err := http.NewRequest("POST", urls.Url+workspaceName+"/onboard/api/v1/source/"+sourceId+"/healthcheck", nil)
 	if err != nil {
-		return apiOnboard.Source{}, err
+		return apiOnboard.Connection{}, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return apiOnboard.Source{}, err
+		return apiOnboard.Connection{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return apiOnboard.Source{}, err
+		return apiOnboard.Connection{}, err
 	}
 	err = res.Body.Close()
 	if err != nil {
-		return apiOnboard.Source{}, err
+		return apiOnboard.Connection{}, err
 	}
-	var response apiOnboard.Source
+	var response apiOnboard.Connection
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return apiOnboard.Source{}, err
+		return apiOnboard.Connection{}, err
 	}
 	return response, nil
 }
-func OnboardGetListSourcesFilteredById(workspaceName string, accessToken string, sourceIDs []string) ([]apiOnboard.Source, error) {
+func OnboardGetListSourcesFilteredById(workspaceName string, accessToken string, sourceIDs []string) ([]apiOnboard.Connection, error) {
 	var request apiOnboard.GetSourcesRequest
 	request.SourceIDs = sourceIDs
 	reqEncoded, err := json.Marshal(request)
@@ -1395,7 +1396,7 @@ func OnboardGetListSourcesFilteredById(workspaceName string, accessToken string,
 	if err != nil {
 		return nil, err
 	}
-	var response []apiOnboard.Source
+	var response []apiOnboard.Connection
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return nil, err
@@ -1474,7 +1475,7 @@ func OnboardDisableSource(workspaceName string, accessToken string, sourceId str
 		return fmt.Errorf("error with status: %v", statusCode)
 	}
 }
-func OnboardGetListOfSource(workspaceName string, accessToken string) ([]apiOnboard.Source, error) {
+func OnboardGetListOfSource(workspaceName string, accessToken string) ([]apiOnboard.Connection, error) {
 	req, err := http.NewRequest("GET", urls.Url+workspaceName+"/onboard/api/v1/sources", nil)
 	if err != nil {
 		return nil, err
@@ -1493,7 +1494,7 @@ func OnboardGetListOfSource(workspaceName string, accessToken string) ([]apiOnbo
 	if err != nil {
 		return nil, err
 	}
-	var response []apiOnboard.Source
+	var response []apiOnboard.Connection
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return nil, err

@@ -36,7 +36,7 @@ type Credential struct {
 
 	Metadata map[string]any `json:"metadata,omitempty"`
 
-	Connections []Source `json:"connections,omitempty"`
+	Connections []Connection `json:"connections,omitempty"`
 
 	TotalConnections     *int `json:"total_connections,omitempty"`
 	EnabledConnections   *int `json:"enabled_connections,omitempty"`

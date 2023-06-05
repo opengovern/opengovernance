@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 
@@ -73,6 +74,8 @@ func (h HttpHandler) Register(r *echo.Echo) {
 
 	connections := v1.Group("/connections")
 	connections.POST("/count", httpserver.AuthorizeHandler(h.CountConnections, api3.ViewerRole))
+	connections.GET("/summary", httpserver.AuthorizeHandler(h.ListConnectionsSummaries, api3.ViewerRole))
+	connections.GET("/summary/:connectionId", httpserver.AuthorizeHandler(h.GetConnectionSummary, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -800,7 +803,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		HealthStatus:        credential.HealthStatus,
 		HealthReason:        credential.HealthReason,
 		Metadata:            metadata,
-		Connections:         make([]api.Source, 0, len(connections)),
+		Connections:         make([]api.Connection, 0, len(connections)),
 	}
 	for _, conn := range connections {
 		metadata := make(map[string]any)
@@ -811,12 +814,12 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 			}
 		}
 
-		apiCredential.Connections = append(apiCredential.Connections, api.Source{
+		apiCredential.Connections = append(apiCredential.Connections, api.Connection{
 			ID:                   conn.ID,
 			ConnectionID:         conn.SourceId,
 			ConnectionName:       conn.Name,
 			Email:                conn.Email,
-			Type:                 conn.Type,
+			Connector:            conn.Type,
 			Description:          conn.Description,
 			CredentialID:         conn.CredentialID.String(),
 			CredentialName:       conn.Credential.Name,
@@ -839,7 +842,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 //	@Description	Onboard all available connections for a credential
 //	@Tags			onboard
 //	@Produce		json
-//	@Success		200	{object}	[]api.Source
+//	@Success		200	{object}	[]api.Connection
 //	@Router			/onboard/api/v1/credential/{credentialId}/autoonboard [post]
 func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
@@ -855,7 +858,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	onboardedSources := make([]api.Source, 0)
+	onboardedSources := make([]api.Connection, 0)
 	switch credential.ConnectorType {
 	case source.CloudAzure:
 		cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
@@ -961,12 +964,12 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 				}
 			}
 
-			onboardedSources = append(onboardedSources, api.Source{
+			onboardedSources = append(onboardedSources, api.Connection{
 				ID:                   src.ID,
 				ConnectionID:         src.SourceId,
 				ConnectionName:       src.Name,
 				Email:                src.Email,
-				Type:                 src.Type,
+				Connector:            src.Type,
 				Description:          src.Description,
 				CredentialID:         src.CredentialID.String(),
 				CredentialName:       src.Credential.Name,
@@ -1083,7 +1086,7 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 	for _, src := range sources {
 		if v, ok := apiCredentials[src.CredentialID.String()]; ok {
 			if v.Connections == nil {
-				v.Connections = make([]api.Source, 0)
+				v.Connections = make([]api.Connection, 0)
 			}
 			metadata := make(map[string]any)
 			if src.Metadata.String() != "" {
@@ -1093,12 +1096,12 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 				}
 			}
 
-			v.Connections = append(v.Connections, api.Source{
+			v.Connections = append(v.Connections, api.Connection{
 				ID:                   src.ID,
 				ConnectionID:         src.SourceId,
 				ConnectionName:       src.Name,
 				Email:                src.Email,
-				Type:                 src.Type,
+				Connector:            src.Type,
 				Description:          src.Description,
 				CredentialID:         src.CredentialID.String(),
 				CredentialName:       src.Credential.Name,
@@ -1669,12 +1672,12 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, &api.Source{
+	return ctx.JSON(http.StatusOK, &api.Connection{
 		ID:                   src.ID,
 		ConnectionID:         src.SourceId,
 		ConnectionName:       src.Name,
 		Email:                src.Email,
-		Type:                 src.Type,
+		Connector:            src.Type,
 		Description:          src.Description,
 		CredentialID:         src.CredentialID.String(),
 		CredentialName:       src.Credential.Name,
@@ -1761,7 +1764,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 //	@Description	Returning single source either AWS / Azure.
 //	@Tags			onboard
 //	@Produce		json
-//	@Success		200			{object}	api.Source
+//	@Success		200			{object}	api.Connection
 //	@Param			sourceId	path		integer	true	"SourceID"
 //	@Router			/onboard/api/v1/source/{sourceId} [get]
 func (h HttpHandler) GetSource(ctx echo.Context) error {
@@ -1786,12 +1789,12 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, &api.Source{
+	return ctx.JSON(http.StatusOK, &api.Connection{
 		ID:                   src.ID,
 		ConnectionID:         src.SourceId,
 		ConnectionName:       src.Name,
 		Email:                src.Email,
-		Type:                 src.Type,
+		Connector:            src.Type,
 		Description:          src.Description,
 		CredentialID:         src.CredentialID.String(),
 		CredentialName:       src.Credential.Name,
@@ -1982,12 +1985,12 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 				return err
 			}
 		}
-		src := api.Source{
+		src := api.Connection{
 			ID:                   s.ID,
 			ConnectionID:         s.SourceId,
 			ConnectionName:       s.Name,
 			Email:                s.Email,
-			Type:                 s.Type,
+			Connector:            s.Type,
 			Description:          s.Description,
 			CredentialID:         s.CredentialID.String(),
 			CredentialName:       s.Credential.Name,
@@ -2037,7 +2040,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 		return err
 	}
 
-	var res []api.Source
+	var res []api.Connection
 	for _, src := range srcs {
 		metadata := make(map[string]any)
 		if src.Metadata.String() != "" {
@@ -2046,12 +2049,12 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 				return err
 			}
 		}
-		res = append(res, api.Source{
+		res = append(res, api.Connection{
 			ID:                   src.ID,
 			ConnectionID:         src.SourceId,
 			ConnectionName:       src.Name,
 			Email:                src.Email,
-			Type:                 src.Type,
+			Connector:            src.Type,
 			Description:          src.Description,
 			CredentialID:         src.CredentialID.String(),
 			CredentialName:       src.Credential.Name,
@@ -2073,7 +2076,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 //	@Description	Returning account source either AWS / Azure.
 //	@Tags			onboard
 //	@Produce		json
-//	@Success		200			{object}	api.Source
+//	@Success		200			{object}	api.Connection
 //	@Param			account_id	path		integer	true	"SourceID"
 //	@Router			/onboard/api/v1/source/account/{accountId} [get]
 func (h HttpHandler) GetSourcesByAccount(ctx echo.Context) error {
@@ -2087,31 +2090,7 @@ func (h HttpHandler) GetSourcesByAccount(ctx echo.Context) error {
 		return err
 	}
 
-	metadata := make(map[string]any)
-	if src.Metadata.String() != "" {
-		err := json.Unmarshal(src.Metadata, &metadata)
-		if err != nil {
-			return err
-		}
-	}
-
-	return ctx.JSON(http.StatusOK, &api.Source{
-		ID:                   src.ID,
-		ConnectionID:         src.SourceId,
-		ConnectionName:       src.Name,
-		Email:                src.Email,
-		Type:                 src.Type,
-		Description:          src.Description,
-		CredentialID:         src.CredentialID.String(),
-		CredentialName:       src.Credential.Name,
-		OnboardDate:          src.CreatedAt,
-		LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
-		AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-		HealthState:          src.HealthState,
-		LastHealthCheckTime:  src.LastHealthCheckTime,
-		HealthReason:         src.HealthReason,
-		Metadata:             metadata,
-	})
+	return ctx.JSON(http.StatusOK, src.toApi())
 }
 
 // CountSources godoc
@@ -2314,4 +2293,191 @@ func (h HttpHandler) CountConnections(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, count)
+}
+
+// ListConnectionsSummaries godoc
+//
+//	@Summary	Returns resource count of accounts
+//	@Security	BearerToken
+//	@Tags		connections
+//	@Accept		json
+//	@Produce	json
+//	@Param		connector		query		source.Type	true	"Connector"
+//	@Param		connectionId	query		string		false	"Connection IDs"
+//	@Param		healthState		query		string		false	"Source Healthstate"	Enums(healthy,unhealthy)
+//	@Param		lifecycleState	query		string		false	"lifecycle state filter"
+//	@Param		pageSize		query		int			false	"page size - default is 20"
+//	@Param		pageNumber		query		int			false	"page number - default is 1"
+//	@Param		startTime		query		int			false	"start time in unix seconds"
+//	@Param		endTime			query		int			false	"end time in unix seconds"
+//	@Param		sortBy			query		string		false	"column to sort by - default is cost"	Enums(onboard_date,resource_count,cost)
+//	@Success	200				{object}	api.ListConnectionSummaryResponse
+//	@Router		/inventory/api/v2/connections/summary [get]
+func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
+	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now()
+	if endTimeStr != "" {
+		endTimeUnix, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid integer")
+		}
+		endTime = time.Unix(endTimeUnix, 0)
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := endTime.AddDate(0, 0, -7)
+	if startTimeStr != "" {
+		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid integer")
+		}
+		startTime = time.Unix(startTimeUnix, 0)
+	}
+	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+	sortBy := ctx.QueryParam("sortBy")
+	if sortBy == "" {
+		sortBy = "cost"
+	}
+	var healthStateSlice []source.HealthStatus
+	healthState := ctx.QueryParam("healthState")
+	if healthState != "" {
+		healthStateSlice = append(healthStateSlice, source.HealthStatus(healthState))
+	}
+	var lifecycleStateSlice []ConnectionLifecycleState
+	lifecycleState := ctx.QueryParam("lifecycleState")
+	if lifecycleState != "" {
+		lifecycleStateSlice = append(lifecycleStateSlice, ConnectionLifecycleState(lifecycleState))
+	}
+
+	connections, err := h.db.ListSourcesWithFilters(connectors, connectionIDs, healthStateSlice, lifecycleStateSlice)
+	if err != nil {
+		return err
+	}
+
+	connectionIDStrs := make([]string, 0, len(connections))
+	for _, connection := range connections {
+		connectionIDStrs = append(connectionIDStrs, connection.ID.String())
+	}
+
+	connectionData, err := h.inventoryClient.ListConnectionsData(httpclient.FromEchoContext(ctx), connectionIDStrs, &startTime, &endTime)
+	if err != nil {
+		return err
+	}
+
+	result := api.ListConnectionSummaryResponse{
+		ConnectionCount:     len(connections),
+		TotalCost:           0,
+		TotalResourceCount:  0,
+		TotalUnhealthyCount: 0,
+		TotalDisabledCount:  0,
+		Connections:         make([]api.Connection, 0, len(connections)),
+	}
+
+	for _, connection := range connections {
+		if data, ok := connectionData[connection.ID.String()]; ok {
+			localData := data
+			apiConn := connection.toApi()
+			apiConn.Cost = &localData.Cost
+			apiConn.ResourceCount = &localData.Count
+			apiConn.LastInventory = &localData.LastInventory
+
+			result.TotalCost += localData.Cost
+			result.TotalResourceCount += localData.Count
+			if connection.HealthState == source.HealthStatusUnhealthy {
+				result.TotalUnhealthyCount++
+			}
+			if connection.LifecycleState == ConnectionLifecycleStateDisabled {
+				result.TotalDisabledCount++
+			}
+			result.Connections = append(result.Connections, apiConn)
+		}
+	}
+
+	sort.Slice(result.Connections, func(i, j int) bool {
+		switch sortBy {
+		case "onboard_date":
+			return result.Connections[i].OnboardDate.Before(result.Connections[j].OnboardDate)
+		case "resource_count":
+			if result.Connections[i].ResourceCount == nil {
+				return true
+			}
+			if result.Connections[j].ResourceCount == nil {
+				return false
+			}
+			if *result.Connections[i].ResourceCount != *result.Connections[j].ResourceCount {
+				return *result.Connections[i].ResourceCount < *result.Connections[j].ResourceCount
+			}
+		case "cost":
+			if result.Connections[i].Cost == nil {
+				return true
+			}
+			if result.Connections[j].Cost == nil {
+				return false
+			}
+			if *result.Connections[i].Cost != *result.Connections[j].Cost {
+				return *result.Connections[i].Cost < *result.Connections[j].Cost
+			}
+		}
+		return result.Connections[i].ID.String() < result.Connections[j].ID.String()
+	})
+
+	result.Connections = utils.Paginate(pageNumber, pageSize, result.Connections)
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetConnectionSummary godoc
+//
+//	@Summary	Returns resource count of accounts
+//	@Security	BearerToken
+//	@Tags		connections
+//	@Accept		json
+//	@Produce	json
+//	@Param		startTime	query		int	false	"start time in unix seconds"
+//	@Param		endTime		query		int	false	"end time in unix seconds"
+//	@Success	200			{object}	api.Connection
+//	@Router		/inventory/api/v2/connections/summary/{connectionId} [get]
+func (h HttpHandler) GetConnectionSummary(ctx echo.Context) error {
+	connectionId, err := uuid.Parse(ctx.Param("connectionId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid connectionId uuid")
+	}
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now()
+	if endTimeStr != "" {
+		endTimeUnix, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid integer")
+		}
+		endTime = time.Unix(endTimeUnix, 0)
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := endTime.AddDate(0, 0, -7)
+	if startTimeStr != "" {
+		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid integer")
+		}
+		startTime = time.Unix(startTimeUnix, 0)
+	}
+
+	connection, err := h.db.GetSource(connectionId)
+	if err != nil {
+		return err
+	}
+
+	connectionData, err := h.inventoryClient.GetConnectionData(httpclient.FromEchoContext(ctx), connectionId.String(), &startTime, &endTime)
+	if err != nil {
+		return err
+	}
+
+	result := connection.toApi()
+	result.Cost = &connectionData.Cost
+	result.ResourceCount = &connectionData.Count
+	result.LastInventory = &connectionData.LastInventory
+
+	return ctx.JSON(http.StatusOK, result)
 }
