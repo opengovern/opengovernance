@@ -1019,14 +1019,6 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		totalOldResultValue := int64(0)
 		if insightResults, ok := insightIdToResults[insightRow.ID]; ok {
 			for _, insightResult := range insightResults {
-				connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
-				for _, connection := range insightResult.IncludedConnections {
-					connections = append(connections, api.InsightConnection{
-						ConnectionID: connection.ConnectionID,
-						OriginalID:   connection.OriginalID,
-					})
-				}
-
 				apiRes.Results = append(apiRes.Results, api.InsightResult{
 					JobID:        insightResult.JobID,
 					InsightID:    insightRow.ID,
@@ -1034,7 +1026,6 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 					ExecutedAt:   time.UnixMilli(insightResult.ExecutedAt),
 					Result:       insightResult.Result,
 					Locations:    insightResult.Locations,
-					Connections:  connections,
 				})
 				apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, &insightResult.Result)
 			}

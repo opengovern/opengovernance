@@ -1682,7 +1682,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v1/locations/{provider}": {
+        "/inventory/api/v1/locations/{connector}": {
             "get": {
                 "security": [
                     {
@@ -1697,20 +1697,6 @@ const docTemplate = `{
                     "location"
                 ],
                 "summary": "Get locations",
-                "parameters": [
-                    {
-                        "enum": [
-                            "aws",
-                            "azure",
-                            "all"
-                        ],
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2246,9 +2232,17 @@ const docTemplate = `{
                 "summary": "Returns top n regions of specified provider by resource count",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "description": "Connector type to filter by",
+                        "name": "connector",
                         "in": "query"
                     },
                     {
@@ -2256,8 +2250,8 @@ const docTemplate = `{
                         "items": {
                             "type": "string"
                         },
-                        "description": "SourceId",
-                        "name": "sourceId",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
                         "in": "query"
                     },
                     {
@@ -2280,52 +2274,6 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v1/resources/top/accounts": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns top n accounts of specified provider by resource count",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Number of top accounts returning.",
-                        "name": "count",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountResponse"
                             }
                         }
                     }
@@ -2417,9 +2365,17 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "description": "Connector type to filter by",
+                        "name": "connector",
                         "in": "query"
                     },
                     {
@@ -2427,8 +2383,8 @@ const docTemplate = `{
                         "items": {
                             "type": "string"
                         },
-                        "description": "SourceId",
-                        "name": "sourceId",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
                         "in": "query"
                     }
                 ],
@@ -2439,58 +2395,6 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v1/resources/top/services": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks"
-                ],
-                "summary": "Returns top n services of specified provider by resource count",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Number of top ser",
-                        "name": "count",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Provider",
-                        "name": "provider",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServicesResponse"
                             }
                         }
                     }
@@ -9055,39 +8959,6 @@ const docTemplate = `{
                 "cost": {
                     "description": "Service Cost",
                     "type": "number"
-                },
-                "serviceName": {
-                    "description": "Service Name",
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServicesResponse": {
-            "type": "object",
-            "properties": {
-                "lastDayCount": {
-                    "description": "Number of resources on last day",
-                    "type": "integer"
-                },
-                "lastQuarterCount": {
-                    "description": "Number of resources on last quarter",
-                    "type": "integer"
-                },
-                "lastWeekCount": {
-                    "description": "Number of resources on last week",
-                    "type": "integer"
-                },
-                "lastYearCount": {
-                    "description": "Number of resources on last year",
-                    "type": "integer"
-                },
-                "provider": {
-                    "description": "Service Provider Name",
-                    "type": "string"
-                },
-                "resourceCount": {
-                    "description": "Number of resources",
-                    "type": "integer"
                 },
                 "serviceName": {
                     "description": "Service Name",

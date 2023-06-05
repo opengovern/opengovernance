@@ -27,10 +27,8 @@ import (
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	apiOnboard "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 
-	insight "gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
-	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
+	insight "gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
@@ -53,7 +51,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 	v2 := e.Group("/api/v2")
 
-	v1.GET("/locations/:provider", httpserver.AuthorizeHandler(h.GetLocations, api3.ViewerRole))
+	v1.GET("/locations/:connector", httpserver.AuthorizeHandler(h.GetLocations, api3.ViewerRole))
 
 	v1.POST("/resources", httpserver.AuthorizeHandler(h.GetAllResources, api3.ViewerRole))
 	v1.POST("/resources/azure", httpserver.AuthorizeHandler(h.GetAzureResources, api3.ViewerRole))
@@ -63,10 +61,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/resource", httpserver.AuthorizeHandler(h.GetResource, api3.ViewerRole))
 
 	v1.GET("/resources/top/growing/accounts", httpserver.AuthorizeHandler(h.GetTopFastestGrowingAccountsByResourceCount, api3.ViewerRole))
-	v1.GET("/resources/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/regions", httpserver.AuthorizeHandler(h.GetRegionsByResourceCount, api3.ViewerRole))
-	v1.GET("/resources/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByResourceCount, api3.ViewerRole))
 
 	resourcesV2 := v2.Group("/resources")
 	resourcesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListResourceTypeTags, api3.ViewerRole))
@@ -278,63 +274,6 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, serviceCost)
 }
 
-// GetTopAccountsByResourceCount godoc
-//
-//	@Summary	Returns top n accounts of specified provider by resource count
-//	@Security	BearerToken
-//	@Tags		benchmarks
-//	@Accept		json
-//	@Produce	json
-//	@Param		count		query		int		true	"Number of top accounts returning."
-//	@Param		provider	query		string	true	"Provider"
-//	@Success	200			{object}	[]api.TopAccountResponse
-//	@Router		/inventory/api/v1/resources/top/accounts [get]
-func (h *HttpHandler) GetTopAccountsByResourceCount(ctx echo.Context) error {
-	providers := source.ParseTypes(ctx.QueryParams()["provider"])
-	count := EsFetchPageSize
-	countStr := ctx.QueryParam("count")
-	if len(countStr) > 0 {
-		c, err := strconv.Atoi(countStr)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
-		}
-		count = c
-	}
-
-	var hits []summarizer.ConnectionResourcesSummary
-
-	srt := []map[string]interface{}{{"resource_count": "desc"}}
-	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, providers, nil, srt, count)
-	var res []api.TopAccountResponse
-	for _, v := range hits {
-		res = append(res, api.TopAccountResponse{
-			SourceID:      v.SourceID,
-			Provider:      string(v.SourceType),
-			ResourceCount: v.ResourceCount,
-		})
-	}
-
-	var sourceIds []string
-	for _, r := range res {
-		sourceIds = append(sourceIds, r.SourceID)
-	}
-	srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceIds)
-	if err != nil {
-		return err
-	}
-
-	for idx, r := range res {
-		for _, src := range srcs {
-			if r.SourceID == src.ID.String() {
-				res[idx].ProviderConnectionID = src.ConnectionID
-				res[idx].ProviderConnectionName = src.ConnectionName
-				break
-			}
-		}
-	}
-	return ctx.JSON(http.StatusOK, res)
-}
-
 // GetTopFastestGrowingAccountsByResourceCount godoc
 //
 //	@Summary	Returns top n fastest growing accounts of specified provider in the specified time window by resource count
@@ -440,26 +379,26 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
-//	@Param		count		query		int			true	"count"
-//	@Param		provider	query		string		false	"Provider"
-//	@Param		sourceId	query		[]string	false	"SourceId"
-//	@Success	200			{object}	[]api.LocationResponse
+//	@Param		count			query		int				true	"count"
+//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Success	200				{object}	[]api.LocationResponse
 //	@Router		/inventory/api/v1/resources/top/regions [get]
 func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
+	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 	count, err := strconv.Atoi(ctx.QueryParam("count"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	sourceIDs := ctx.QueryParams()["sourceId"]
-	if len(sourceIDs) == 0 {
-		sourceIDs = nil
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) == 0 {
+		connectionIDs = nil
 	}
 
 	locationDistribution := map[string]int{}
 
-	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, provider, sourceIDs, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -493,19 +432,18 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
-//	@Param		provider	query		string		false	"Provider"
-//	@Param		sourceId	query		[]string	false	"SourceId"
-//	@Param		pageSize	query		int			false	"page size - default is 20"
-//	@Param		pageNumber	query		int			false	"page number - default is 1"
-//	@Success	200			{object}	[]api.LocationResponse
+//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param		pageSize		query		int				false	"page size - default is 20"
+//	@Param		pageNumber		query		int				false	"page number - default is 1"
+//	@Success	200				{object}	[]api.LocationResponse
 //	@Router		/inventory/api/v1/resources/regions [get]
 func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 	var err error
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-
-	sourceIDs := ctx.QueryParams()["sourceId"]
-	if len(sourceIDs) == 0 {
-		sourceIDs = nil
+	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) == 0 {
+		connectionIDs = nil
 	}
 	pageNumber, pageSize, err := internal.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
 	if err != nil {
@@ -514,7 +452,7 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 
 	locationDistribution := map[string]int{}
 
-	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, provider, sourceIDs, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -543,56 +481,6 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 		TotalCount: len(response),
 		Regions:    utils.Paginate(pageNumber, pageSize, response),
 	})
-}
-
-// GetTopServicesByResourceCount godoc
-//
-//	@Summary	Returns top n services of specified provider by resource count
-//	@Security	BearerToken
-//	@Tags		benchmarks
-//	@Accept		json
-//	@Produce	json
-//	@Param		count		query		int		true	"Number of top ser"
-//	@Param		provider	query		string	true	"Provider"
-//	@Param		sourceId	query		string	false	"SourceID"
-//	@Success	200			{object}	[]api.TopServicesResponse
-//	@Router		/inventory/api/v1/resources/top/services [get]
-func (h *HttpHandler) GetTopServicesByResourceCount(ctx echo.Context) error {
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-
-	var count *int
-	countStr := ctx.QueryParam("count")
-	if len(countStr) > 0 {
-		c, err := strconv.Atoi(countStr)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
-		}
-		count = &c
-	}
-
-	var sourceID *string
-	sID := ctx.QueryParam("sourceId")
-	if sID != "" {
-		sourceUUID, err := uuid.Parse(sID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid sourceID")
-		}
-		s := sourceUUID.String()
-		sourceID = &s
-	}
-
-	res, err := GetServices(h.client, provider, sourceID)
-	if err != nil {
-		return err
-	}
-
-	sort.Slice(res, func(i, j int) bool {
-		return res[i].ResourceCount > res[j].ResourceCount
-	})
-	if count != nil && len(res) > *count {
-		res = res[:*count]
-	}
-	return ctx.JSON(http.StatusOK, res)
 }
 
 // ListResourceTypeTags godoc
@@ -2332,15 +2220,15 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			location
 //	@Produce		json
-//	@Param			provider	path		string	true	"Provider"	Enums(aws,azure,all)
-//	@Success		200			{object}	[]api.LocationByProviderResponse
-//	@Router			/inventory/api/v1/locations/{provider} [get]
+//	@Success		200	{object}	[]api.LocationByProviderResponse
+//	@Router			/inventory/api/v1/locations/{connector} [get]
 func (h *HttpHandler) GetLocations(ctx echo.Context) error {
-	provider := ctx.Param("provider")
+	connectorStr := ctx.Param("connector")
+	connector, _ := source.ParseType(connectorStr)
 
 	var locations []api.LocationByProviderResponse
 
-	if provider == "aws" || provider == "all" {
+	if connectorStr == "all" || connector == source.CloudAWS {
 		regions, err := h.awsClient.NewEC2RegionPaginator(nil, nil)
 		if err != nil {
 			return err
@@ -2364,7 +2252,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 		}
 	}
 
-	if provider == "azure" || provider == "all" {
+	if connectorStr == "all" || connector == source.CloudAzure {
 		locs, err := h.azureClient.NewLocationPaginator(nil, nil)
 		if err != nil {
 			return err
