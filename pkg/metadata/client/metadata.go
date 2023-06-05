@@ -2,9 +2,10 @@ package client
 
 import (
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"net/http"
 	"strconv"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 )
@@ -26,7 +27,7 @@ func NewMetadataServiceClient(baseURL string) MetadataServiceClient {
 func (s *metadataClient) GetConfigMetadata(ctx *httpclient.Context, key models.MetadataKey) (models.IConfigMetadata, error) {
 	url := fmt.Sprintf("%s/api/v1/metadata/%s", s.baseURL, string(key))
 	var cnf models.ConfigMetadata
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &cnf); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &cnf); err != nil {
 		return nil, err
 	}
 

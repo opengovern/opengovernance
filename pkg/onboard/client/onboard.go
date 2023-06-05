@@ -51,7 +51,7 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 			return &source, nil
 		}
 	}
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
 		return nil, err
 	}
 	if s.cache != nil {
@@ -138,7 +138,7 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 		}
 
 		var response []api.Source
-		if err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+		if _, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
 			return nil, err
 		}
 		if s.cache != nil {
@@ -169,7 +169,7 @@ func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([
 	}
 
 	var response []api.Source
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return nil, err
 	}
 	if s.cache != nil {
@@ -194,7 +194,7 @@ func (s *onboardClient) CountSources(ctx *httpclient.Context, provider source.Ty
 	}
 
 	var count int64
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &count); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &count); err != nil {
 		return 0, err
 	}
 	return count, nil
@@ -209,7 +209,7 @@ func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, sourceID s
 			return &source, nil
 		}
 	}
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
 		return nil, err
 	}
 	if s.cache != nil {
@@ -227,7 +227,7 @@ func (s *onboardClient) GetSourcesByAccount(ctx *httpclient.Context, accountID s
 	url := fmt.Sprintf("%s/api/v1/source/account/%s", s.baseURL, accountID)
 
 	var source api.Source
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
 		return api.Source{}, err
 	}
 	return source, nil

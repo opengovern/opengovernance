@@ -2949,7 +2949,7 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 	if insightResult, ok := insightResults[uint(insightId)]; ok {
 		return ctx.JSON(http.StatusOK, insightResult)
 	} else {
-		return echo.NewHTTPError(http.StatusNotFound, "insight not found")
+		return echo.NewHTTPError(http.StatusNotFound, "no data for insight found")
 	}
 }
 
@@ -2999,7 +2999,7 @@ func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 	if insightResult, ok := insightResults[uint(insightId)]; ok {
 		return ctx.JSON(http.StatusOK, insightResult)
 	} else {
-		return echo.NewHTTPError(http.StatusNotFound, "insight not found")
+		return echo.NewHTTPError(http.StatusNotFound, "no data for insight found")
 	}
 }
 

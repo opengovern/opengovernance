@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/labstack/echo/v4"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/labstack/echo/v4"
+	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 )
@@ -67,10 +68,10 @@ func FromEchoContext(c echo.Context) *Context {
 	}
 }
 
-func DoRequest(method, url string, headers map[string]string, payload []byte, v interface{}) error {
+func DoRequest(method string, url string, headers map[string]string, payload []byte, v interface{}) (statusCode int, err error) {
 	req, err := http.NewRequest(method, url, bytes.NewReader(payload))
 	if err != nil {
-		return fmt.Errorf("new request: %w", err)
+		return statusCode, fmt.Errorf("new request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
@@ -87,25 +88,25 @@ func DoRequest(method, url string, headers map[string]string, payload []byte, v 
 	}
 	res, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("do request: %w", err)
+		return statusCode, fmt.Errorf("do request: %w", err)
 	}
 	defer res.Body.Close()
-
+	statusCode = res.StatusCode
 	if res.StatusCode != http.StatusOK {
-		d, err := ioutil.ReadAll(res.Body)
+		d, err := io.ReadAll(res.Body)
 		if err != nil {
-			return fmt.Errorf("read body: %w", err)
+			return statusCode, fmt.Errorf("read body: %w", err)
 		}
 
 		var echoerr EchoError
 		if jserr := json.Unmarshal(d, &echoerr); jserr == nil {
-			return fmt.Errorf(echoerr.Message)
+			return statusCode, fmt.Errorf(echoerr.Message)
 		}
 
-		return fmt.Errorf("http status: %d: %s", res.StatusCode, d)
+		return statusCode, fmt.Errorf("http status: %d: %s", res.StatusCode, d)
 	}
 	if v == nil {
-		return nil
+		return statusCode, nil
 	}
-	return json.NewDecoder(res.Body).Decode(v)
+	return statusCode, json.NewDecoder(res.Body).Decode(v)
 }
