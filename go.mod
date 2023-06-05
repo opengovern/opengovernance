@@ -66,8 +66,8 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/jedib0t/go-pretty/v6 v6.4.6
-	github.com/kaytu-io/kaytu-aws-describer v0.0.8
-	github.com/kaytu-io/kaytu-azure-describer v0.0.12
+	github.com/kaytu-io/kaytu-aws-describer v0.0.9
+	github.com/kaytu-io/kaytu-azure-describer v0.0.13
 	github.com/kaytu-io/kaytu-util v0.0.0-20230605084433-73e3af414279
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/lib/pq v1.10.3
@@ -118,6 +118,7 @@ require (
 	github.com/apparentlymart/go-cidr v1.1.0 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
+	github.com/aws/aws-lambda-go v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.9 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.33 // indirect
@@ -294,6 +295,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/gocarina/gocsv v0.0.0-20211203214250-4735fba0c1d9 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
@@ -400,8 +402,8 @@ require (
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/zclconf/go-cty v1.12.1 // indirect
 	github.com/zclconf/go-cty-yaml v1.0.3 // indirect
-	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230605105809-e8089c173298 // indirect
-	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230603172003-72419cf0f0de // indirect
+	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230605150213-6b1fd97e8240 // indirect
+	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230605143848-094405582c60 // indirect
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230524160620-9c9e9d92e11e // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/otel v1.8.0 // indirect
