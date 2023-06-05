@@ -14,25 +14,23 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"github.com/labstack/echo/v4"
+	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/internal"
+	insight "gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
-
-	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	es2 "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
-
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
-
-	"github.com/labstack/echo/v4"
 )
 
 func (h *HttpHandler) Register(e *echo.Echo) {
@@ -968,21 +966,29 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 //	@Param			tag				query		string			false	"Key-Value tags in key=value format to filter by"
 //	@Param			connector		query		[]source.Type	false	"filter insights by connector"
 //	@Param			connectionId	query		[]string		false	"filter the result by source id"
-//	@Param			time			query		int				false	"unix seconds for the time to get the insight result for"
+//	@Param			startTime		query		int				false	"unix seconds for the start time of the trend"
+//	@Param			endTime			query		int				false	"unix seconds for the end time of the trend"
 //	@Success		200				{object}	[]api.Insight
 //	@Router			/compliance/api/v1/insight [get]
 func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["connectionId"]
-	var timeAt *time.Time
-	if ctx.QueryParam("time") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("time"), 10, 64)
+	endTime := time.Now()
+	if ctx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
-		tt := time.Unix(t, 0)
-		timeAt = &tt
+		endTime = time.Unix(t, 0)
+	}
+	startTime := endTime.Add(-1 * 7 * 24 * time.Hour)
+	if ctx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		startTime = time.Unix(t, 0)
 	}
 
 	enabled := true
@@ -996,14 +1002,21 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		insightIDsList = append(insightIDsList, insightRow.ID)
 	}
 
-	insightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), connectors, connectionIDs, insightIDsList, timeAt)
+	insightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), connectors, connectionIDs, insightIDsList, &endTime)
 	if err != nil {
 		return err
+	}
+
+	oldInsightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), connectors, connectionIDs, insightIDsList, &startTime)
+	if err != nil {
+		h.logger.Warn("failed to get old insight results", zap.Error(err))
+		oldInsightIdToResults = make(map[uint][]insight.InsightResource)
 	}
 
 	var result []api.Insight
 	for _, insightRow := range insightRows {
 		apiRes := insightRow.ToApi()
+		totalOldResultValue := int64(0)
 		if insightResults, ok := insightIdToResults[insightRow.ID]; ok {
 			for _, insightResult := range insightResults {
 				connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
@@ -1026,6 +1039,14 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 				apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, &insightResult.Result)
 			}
 		}
+		if oldInsightResults, ok := oldInsightIdToResults[insightRow.ID]; ok {
+			for _, oldInsightResult := range oldInsightResults {
+				totalOldResultValue += oldInsightResult.Result
+			}
+		}
+		if totalOldResultValue != 0 && apiRes.TotalResultValue != nil {
+			apiRes.TotalResultValueChangePercent = utils.GetPointer((float64(*apiRes.TotalResultValue-totalOldResultValue) / float64(totalOldResultValue)) * 100)
+		}
 		result = append(result, apiRes)
 	}
 	return ctx.JSON(200, result)
@@ -1038,7 +1059,8 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 //	@Tags			insights
 //	@Produce		json
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
-//	@Param			time			query		int			false	"unix seconds for the time to get the insight result for"
+//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
+//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
 //	@Success		200				{object}	api.Insight
 //	@Router			/compliance/api/v1/insight/{insightId} [get]
 func (h *HttpHandler) GetInsight(ctx echo.Context) error {
@@ -1048,14 +1070,21 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
 	connectionIDs := ctx.QueryParams()["connectionId"]
-	var timeAt *time.Time
-	if ctx.QueryParam("time") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("time"), 10, 64)
+	endTime := time.Now()
+	if ctx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
-		tt := time.Unix(t, 0)
-		timeAt = &tt
+		endTime = time.Unix(t, 0)
+	}
+	startTime := endTime.Add(-1 * 7 * 24 * time.Hour)
+	if ctx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		startTime = time.Unix(t, 0)
 	}
 
 	insightRow, err := h.db.GetInsight(uint(insightId))
@@ -1063,12 +1092,19 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 		return err
 	}
 
-	insightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, timeAt)
+	insightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, &endTime)
 	if err != nil {
 		return err
 	}
 
+	oldInsightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, &startTime)
+	if err != nil {
+		h.logger.Warn("failed to get old insight results", zap.Error(err))
+		oldInsightResults = make([]insight.InsightResource, 0)
+	}
+
 	apiRes := insightRow.ToApi()
+	totalOldResultValue := int64(0)
 	for _, insightResult := range insightResults {
 		connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
 		for _, connection := range insightResult.IncludedConnections {
@@ -1110,6 +1146,12 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 			},
 		})
 		apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, &insightResult.Result)
+	}
+	for _, oldInsightResult := range oldInsightResults {
+		totalOldResultValue += oldInsightResult.Result
+	}
+	if totalOldResultValue != 0 && apiRes.TotalResultValue != nil {
+		apiRes.TotalResultValueChangePercent = utils.GetPointer((float64(*apiRes.TotalResultValue-totalOldResultValue) / float64(totalOldResultValue)) * 100)
 	}
 
 	return ctx.JSON(200, apiRes)

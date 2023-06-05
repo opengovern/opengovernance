@@ -1283,8 +1283,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "unix seconds for the time to get the insight result for",
-                        "name": "time",
+                        "description": "unix seconds for the start time of the trend",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the end time of the trend",
+                        "name": "endTime",
                         "in": "query"
                     }
                 ],
@@ -1323,8 +1329,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "unix seconds for the time to get the insight result for",
-                        "name": "time",
+                        "description": "unix seconds for the start time of the trend",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the end time of the trend",
+                        "name": "endTime",
                         "in": "query"
                     }
                 ],
@@ -7100,6 +7112,9 @@ const docTemplate = `{
                 },
                 "totalResultValue": {
                     "type": "integer"
+                },
+                "totalResultValueChangePercent": {
+                    "type": "number"
                 }
             }
         },

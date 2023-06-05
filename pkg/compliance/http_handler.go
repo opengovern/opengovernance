@@ -21,6 +21,7 @@ import (
 type HttpHandler struct {
 	client keibi.Client
 	db     db.Database
+	logger *zap.Logger
 
 	s3Client *s3.Client
 
@@ -33,7 +34,9 @@ func InitializeHttpHandler(
 	conf ServerConfig,
 	s3Region, s3AccessKey, s3AccessSecret string,
 	logger *zap.Logger) (h *HttpHandler, err error) {
-	h = &HttpHandler{}
+	h = &HttpHandler{
+		logger: logger,
+	}
 
 	fmt.Println("Initializing http handler")
 

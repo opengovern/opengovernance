@@ -833,6 +833,8 @@ definitions:
         type: string
       totalResultValue:
         type: integer
+      totalResultValueChangePercent:
+        type: number
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightConnection:
     properties:
@@ -3642,9 +3644,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: unix seconds for the time to get the insight result for
+      - description: unix seconds for the start time of the trend
         in: query
-        name: time
+        name: startTime
+        type: integer
+      - description: unix seconds for the end time of the trend
+        in: query
+        name: endTime
         type: integer
       produces:
       - application/json
@@ -3668,9 +3674,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: unix seconds for the time to get the insight result for
+      - description: unix seconds for the start time of the trend
         in: query
-        name: time
+        name: startTime
+        type: integer
+      - description: unix seconds for the end time of the trend
+        in: query
+        name: endTime
         type: integer
       produces:
       - application/json
