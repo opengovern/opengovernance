@@ -165,23 +165,35 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return err
 	}
 
-	cmd := exec.Command("steampipe", "service", "stop")
+	cmd := exec.Command("steampipe", "plugin", "list")
 	err = cmd.Run()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("+++++ Steampipe service stoped")
-
+	cmd = exec.Command("steampipe", "service", "stop", "--force")
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+	time.Sleep(5 * time.Second)
+	//NOTE: stop must be called twice. it's not a mistake
+	cmd = exec.Command("steampipe", "service", "stop", "--force")
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
 	time.Sleep(5 * time.Second)
 
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
 		"9193", "--database-password", "abcd")
 	err = cmd.Run()
+	if err != nil {
+		return err
+	}
 	time.Sleep(5 * time.Second)
 
 	fmt.Println("+++++ Steampipe service started")
-
 	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: "localhost",
 		Port: "9193",
@@ -189,6 +201,9 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		Pass: "abcd",
 		Db:   "steampipe",
 	})
+	if err != nil {
+		return err
+	}
 
 	dirname, _ := os.UserHomeDir()
 	folderPath := dirname + "/.steampipe/logs"
@@ -205,10 +220,6 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return nil
 	})
 	fmt.Println("+++++ Logs ended")
-
-	if err != nil {
-		return err
-	}
 
 	fmt.Println("+++++ Steampipe database created")
 
