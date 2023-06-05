@@ -103,7 +103,6 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("+++++++++++ Policy Query:", query.QueryToExecute)
 
 		if query.Connector != string(connector) {
 			return nil, errors.New("connector doesn't match")
@@ -114,14 +113,10 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 			return nil, err
 		}
 
-		fmt.Println("+++++++++++ Query Executed with following number:", len(res.Data))
-
 		f, err := j.ExtractFindings(benchmark, policy, query, res)
 		if err != nil {
 			return nil, err
 		}
-
-		fmt.Println("+++++++++++ Query Findings:", f)
 
 		findings = append(findings, f...)
 	}
