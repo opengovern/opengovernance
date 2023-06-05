@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	insight "gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
@@ -32,7 +33,10 @@ func (s *inventoryClient) CountResources(ctx *httpclient.Context) (int64, error)
 	url := fmt.Sprintf("%s/api/v1/resources/count", s.baseURL)
 
 	var count int64
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &count); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &count); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return 0, echo.NewHTTPError(statusCode, err.Error())
+		}
 		return 0, err
 	}
 	return count, nil
@@ -45,7 +49,10 @@ func (s *inventoryClient) GetAccountsResourceCount(ctx *httpclient.Context, prov
 	}
 
 	var response []api.ConnectionResourceCountResponse
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
 		return nil, err
 	}
 	return response, nil
@@ -98,7 +105,7 @@ func (s *inventoryClient) ListInsightResults(ctx *httpclient.Context, connectors
 	}
 
 	var response map[uint][]insight.InsightResource
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return nil, err
 	}
 	return response, nil
@@ -129,7 +136,10 @@ func (s *inventoryClient) GetInsightResult(ctx *httpclient.Context, connectionId
 	}
 
 	var response []insight.InsightResource
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
 		return nil, err
 	}
 	return response, nil
@@ -169,7 +179,10 @@ func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connec
 	}
 
 	var response map[int][]insight.InsightResource
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
 		return nil, err
 	}
 	return response, nil

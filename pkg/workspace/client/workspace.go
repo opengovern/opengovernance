@@ -29,7 +29,7 @@ func (s *workspaceClient) GetLimits(ctx *httpclient.Context, workspaceName strin
 
 	fmt.Println(url)
 	var response api.WorkspaceLimitsUsage
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return api.WorkspaceLimitsUsage{}, err
 	}
 	return response, nil
@@ -39,7 +39,7 @@ func (s *workspaceClient) GetLimitsByID(ctx *httpclient.Context, workspaceID str
 	url := fmt.Sprintf("%s/api/v1/workspaces/limits/byid/%s", s.baseURL, workspaceID)
 
 	var response api.WorkspaceLimits
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return api.WorkspaceLimits{}, err
 	}
 	return response, nil
@@ -48,7 +48,7 @@ func (s *workspaceClient) GetLimitsByID(ctx *httpclient.Context, workspaceID str
 func (s *workspaceClient) GetByID(ctx *httpclient.Context, workspaceID string) (api.Workspace, error) {
 	url := fmt.Sprintf("%s/api/v1/workspaces/byid/%s", s.baseURL, workspaceID)
 	var response api.Workspace
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return api.Workspace{}, err
 	}
 	return response, nil
@@ -58,7 +58,7 @@ func (s *workspaceClient) ListWorkspaces(ctx *httpclient.Context) ([]api.Workspa
 	url := fmt.Sprintf("%s/workspace/api/v1/workspaces", s.baseURL)
 
 	var response []api.WorkspaceResponse
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return nil, err
 	}
 	return response, nil

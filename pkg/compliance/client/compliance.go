@@ -36,7 +36,7 @@ func (s *complianceClient) GetAllBenchmarkAssignmentsBySourceId(ctx *httpclient.
 	url := fmt.Sprintf("%s/api/v1/assignments/connection/%s", s.baseURL, sourceID.String())
 
 	var response []compliance.BenchmarkAssignment
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return nil, err
 	}
 	return response, nil
@@ -46,7 +46,7 @@ func (s *complianceClient) GetBenchmark(ctx *httpclient.Context, benchmarkID str
 	url := fmt.Sprintf("%s/api/v1/benchmarks/%s", s.baseURL, benchmarkID)
 
 	var response compliance.Benchmark
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return nil, err
 	}
 	return &response, nil
@@ -56,7 +56,7 @@ func (s *complianceClient) GetPolicy(ctx *httpclient.Context, policyID string) (
 	url := fmt.Sprintf("%s/api/v1/benchmarks/policies/%s", s.baseURL, policyID)
 
 	var response compliance.Policy
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return nil, err
 	}
 	return &response, nil
@@ -66,7 +66,7 @@ func (s *complianceClient) GetQuery(ctx *httpclient.Context, queryID string) (*c
 	url := fmt.Sprintf("%s/api/v1/queries/%s", s.baseURL, queryID)
 
 	var response compliance.Query
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return nil, err
 	}
 	return &response, nil
@@ -88,7 +88,7 @@ func (s *complianceClient) ListInsightsMetadata(ctx *httpclient.Context, connect
 	}
 
 	var insights []compliance.Insight
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insights); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insights); err != nil {
 		return nil, err
 	}
 	return insights, nil
@@ -98,7 +98,7 @@ func (s *complianceClient) GetInsightMetadataById(ctx *httpclient.Context, id ui
 	url := fmt.Sprintf("%s/api/v1/metadata/insight/%d", s.baseURL, id)
 
 	var insight compliance.Insight
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insight); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insight); err != nil {
 		return nil, err
 	}
 	return &insight, nil
@@ -151,7 +151,7 @@ func (s *complianceClient) ListInsights(ctx *httpclient.Context, tags map[string
 	}
 
 	var insights []compliance.Insight
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insights); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insights); err != nil {
 		return nil, err
 	}
 	return insights, nil
@@ -184,7 +184,7 @@ func (s *complianceClient) GetFindings(ctx *httpclient.Context, sourceIDs []stri
 	}
 
 	var response compliance.GetFindingsResponse
-	if err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
 		return compliance.GetFindingsResponse{}, err
 	}
 

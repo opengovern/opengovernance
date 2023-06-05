@@ -2,8 +2,9 @@ package client
 
 import (
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"net/http"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	compliance "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
@@ -31,7 +32,7 @@ func (s *schedulerClient) GetSource(ctx *httpclient.Context, sourceID string) (*
 	url := fmt.Sprintf("%s/api/v1/sources/%s", s.baseURL, sourceID)
 
 	var source api.Source
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
 		return nil, err
 	}
 	return &source, nil
@@ -44,7 +45,7 @@ func (s *schedulerClient) ListComplianceReportJobs(ctx *httpclient.Context, sour
 	}
 
 	reports := []*compliance.ComplianceReport{}
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &reports); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &reports); err != nil {
 		return nil, err
 	}
 	return reports, nil
@@ -54,7 +55,7 @@ func (s *schedulerClient) GetLastComplianceReportID(ctx *httpclient.Context) (ui
 	url := fmt.Sprintf("%s/api/v1/compliance/report/last/completed", s.baseURL)
 
 	var id uint
-	if err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &id); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &id); err != nil {
 		return 0, err
 	}
 	return id, nil

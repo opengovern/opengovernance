@@ -3,9 +3,10 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-	"net/http"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 )
@@ -62,7 +63,7 @@ func (c *authClient) GetWorkspaceRoleBindings(ctx *httpclient.Context, workspace
 		httpserver.XKeibiMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
 	}
 	var response api.GetWorkspaceRoleBindingResponse
-	err := httpclient.DoRequest(http.MethodGet, url, headers, nil, &response)
+	_, err := httpclient.DoRequest(http.MethodGet, url, headers, nil, &response)
 	return response, err
 }
 
@@ -80,6 +81,6 @@ func (c *authClient) GetUserRoleBindings(ctx *httpclient.Context) (api.GetRoleBi
 		httpserver.XKeibiMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
 	}
 	var response api.GetRoleBindingsResponse
-	err := httpclient.DoRequest(http.MethodGet, url, headers, nil, &response)
+	_, err := httpclient.DoRequest(http.MethodGet, url, headers, nil, &response)
 	return response, err
 }
