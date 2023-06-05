@@ -166,14 +166,16 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	}
 
 	cmd := exec.Command("steampipe", "plugin", "list")
-	err = cmd.Run()
+	cmdOut, err := cmd.Output()
 	if err != nil {
+		logger.Error("plugin list failed", zap.Error(err), zap.String("body", string(cmdOut)))
 		return err
 	}
 
 	cmd = exec.Command("steampipe", "service", "stop", "--force")
 	err = cmd.Start()
 	if err != nil {
+		logger.Error("first stop failed", zap.Error(err))
 		return err
 	}
 	time.Sleep(5 * time.Second)
@@ -181,14 +183,16 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	cmd = exec.Command("steampipe", "service", "stop", "--force")
 	err = cmd.Start()
 	if err != nil {
+		logger.Error("second stop failed", zap.Error(err))
 		return err
 	}
 	time.Sleep(5 * time.Second)
 
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
 		"9193", "--database-password", "abcd")
-	err = cmd.Run()
+	cmdOut, err = cmd.Output()
 	if err != nil {
+		logger.Error("start failed", zap.Error(err), zap.String("body", string(cmdOut)))
 		return err
 	}
 	time.Sleep(5 * time.Second)
