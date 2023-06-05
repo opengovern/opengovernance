@@ -4164,22 +4164,22 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: SourceID
+      - description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
-        name: sourceId
-        required: true
+        name: connectionId
         type: array
-      - description: Provider
-        enum:
-        - AWS
-        - Azure
-        - all
-        in: query
-        name: provider
-        required: true
-        type: string
       - description: Time Window
         enum:
         - 24h

@@ -1597,21 +1597,21 @@ func (h *HttpHandler) GetConnectionSummary(ctx echo.Context) error {
 //	@Tags		benchmarks
 //	@Accept		json
 //	@Produce	json
-//	@Param		sourceId	query		[]string	true	"SourceID"
-//	@Param		provider	query		string		true	"Provider"		Enums(AWS,Azure,all)
-//	@Param		timeWindow	query		string		true	"Time Window"	Enums(24h,1w,3m,1y,max)
-//	@Success	200			{object}	map[string]int
+//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param		timeWindow		query		string			true	"Time Window"	Enums(24h,1w,3m,1y,max)
+//	@Success	200				{object}	map[string]int
 //	@Router		/inventory/api/v1/resources/distribution [get]
 func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	sourceIDs := ctx.QueryParams()["sourceId"]
+	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectionIDs := ctx.QueryParams()["sourceId"]
 
-	if len(sourceIDs) != 0 {
-		sourceIDs = nil
+	if len(connectionIDs) != 0 {
+		connectionIDs = nil
 	}
 	locationDistribution := map[string]int{}
 
-	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, provider, sourceIDs, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
