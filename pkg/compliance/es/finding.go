@@ -99,7 +99,7 @@ func FindingsQuery(client keibi.Client,
 	id []string,
 	provider []source.Type,
 	resourceID []string,
-	sourceID []string,
+	connectionID []string,
 	benchmarkID []string,
 	policyID []string,
 	severity []string,
@@ -133,9 +133,9 @@ func FindingsQuery(client keibi.Client,
 		})
 	}
 
-	if len(sourceID) > 0 {
+	if len(connectionID) > 0 {
 		filters = append(filters, map[string]interface{}{
-			"terms": map[string]interface{}{"sourceID": sourceID},
+			"terms": map[string]interface{}{"connectionID": connectionID},
 		})
 	}
 
