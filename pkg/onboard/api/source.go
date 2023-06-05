@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
@@ -100,29 +99,11 @@ type CreateSourceResponse struct {
 	ID uuid.UUID `json:"id"`
 }
 
-type Source struct {
-	ID                   uuid.UUID                       `json:"id"`
-	ConnectionID         string                          `json:"providerConnectionID"`
-	ConnectionName       string                          `json:"providerConnectionName"`
-	Email                string                          `json:"email"`
-	Type                 source.Type                     `json:"type"`
-	Description          string                          `json:"description"`
-	CredentialID         string                          `json:"credentialID"`
-	CredentialName       *string                         `json:"credentialName,omitempty"`
-	OnboardDate          time.Time                       `json:"onboardDate"`
-	LifecycleState       ConnectionLifecycleState        `json:"lifecycleState"`
-	AssetDiscoveryMethod source.AssetDiscoveryMethodType `json:"assetDiscoveryMethod"`
-	HealthState          source.HealthStatus             `json:"healthState"`
-	LastHealthCheckTime  time.Time                       `json:"lastHealthCheckTime"`
-	HealthReason         *string                         `json:"healthReason,omitempty"`
-	Metadata             map[string]any                  `json:"metadata"`
-}
-
 type GetSourcesRequest struct {
 	SourceIDs []string `json:"source_ids"`
 }
 
-type GetSourcesResponse []Source
+type GetSourcesResponse []Connection
 
 type DiscoverAWSAccountsRequest struct {
 	AccessKey string `json:"accessKey" validate:"required"`

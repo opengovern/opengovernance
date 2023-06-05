@@ -20,13 +20,13 @@ import (
 )
 
 type OnboardServiceClient interface {
-	GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error)
+	GetSource(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
 	GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredential, *api.AzureCredential, error)
-	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Source, error)
-	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Source, error)
+	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Connection, error)
+	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error)
 	CountSources(ctx *httpclient.Context, provider source.Type) (int64, error)
-	GetSourceHealthcheck(ctx *httpclient.Context, sourceID string) (*api.Source, error)
-	GetSourcesByAccount(ctx *httpclient.Context, accountID string) (api.Source, error)
+	GetSourceHealthcheck(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
+	GetSourcesByAccount(ctx *httpclient.Context, accountID string) (api.Connection, error)
 }
 
 type onboardClient struct {
@@ -42,10 +42,10 @@ func NewOnboardServiceClient(baseURL string, cache *cache.Cache) OnboardServiceC
 	}
 }
 
-func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error) {
+func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*api.Connection, error) {
 	url := fmt.Sprintf("%s/api/v1/source/%s", s.baseURL, sourceID)
 
-	var source api.Source
+	var source api.Connection
 	if s.cache != nil {
 		if err := s.cache.Get(context.Background(), "get-source-"+sourceID, &source); err == nil {
 			return &source, nil
@@ -114,15 +114,15 @@ func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID stri
 	return nil, nil, err
 }
 
-func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) ([]api.Source, error) {
+func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) ([]api.Connection, error) {
 	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
 
 	var req api.GetSourcesRequest
-	var res []api.Source
+	var res []api.Connection
 
 	for _, sourceID := range sourceIDs {
 		if s.cache != nil {
-			var src api.Source
+			var src api.Connection
 			if err := s.cache.Get(context.Background(), "get-source-"+sourceID, &src); err == nil {
 				res = append(res, src)
 				continue
@@ -137,7 +137,7 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 			return nil, err
 		}
 
-		var response []api.Source
+		var response []api.Connection
 		if _, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
 			return nil, err
 		}
@@ -157,7 +157,7 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 	return res, nil
 }
 
-func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Source, error) {
+func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error) {
 	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
 	for i, v := range t {
 		if i == 0 {
@@ -168,7 +168,7 @@ func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([
 		url += "connector=" + string(v)
 	}
 
-	var response []api.Source
+	var response []api.Connection
 	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return nil, err
 	}
@@ -200,10 +200,10 @@ func (s *onboardClient) CountSources(ctx *httpclient.Context, provider source.Ty
 	return count, nil
 }
 
-func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, sourceID string) (*api.Source, error) {
+func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, sourceID string) (*api.Connection, error) {
 	url := fmt.Sprintf("%s/api/v1/source/%s/healthcheck", s.baseURL, sourceID)
 
-	var source api.Source
+	var source api.Connection
 	if s.cache != nil {
 		if err := s.cache.Get(context.Background(), "get-source-healthcheck-"+sourceID, &source); err == nil {
 			return &source, nil
@@ -223,12 +223,12 @@ func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, sourceID s
 	return &source, nil
 }
 
-func (s *onboardClient) GetSourcesByAccount(ctx *httpclient.Context, accountID string) (api.Source, error) {
+func (s *onboardClient) GetSourcesByAccount(ctx *httpclient.Context, accountID string) (api.Connection, error) {
 	url := fmt.Sprintf("%s/api/v1/source/account/%s", s.baseURL, accountID)
 
-	var source api.Source
+	var source api.Connection
 	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
-		return api.Source{}, err
+		return api.Connection{}, err
 	}
 	return source, nil
 }

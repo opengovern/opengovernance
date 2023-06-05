@@ -333,28 +333,11 @@ type ConnectionResourceCountResponse struct {
 	LastInventory           time.Time   `json:"lastInventory"`
 }
 
-type ListConnectionsResponse struct {
-	TotalCost           map[string]float64 `json:"totalCost"`
-	TotalCount          int                `json:"totalCount"`
-	TotalUnhealthyCount int                `json:"totalUnhealthyCount"`
-	TotalDisabledCount  int                `json:"totalDisabledCount"`
-	Connections         []Connection       `json:"connections"`
-}
-
-type Connection struct {
-	ConnectionID            string              `json:"connectionID"`
-	Connector               source.Type         `json:"connector"`
-	ConnectorConnectionName string              `json:"connectorConnectionName"`
-	ConnectorConnectionID   string              `json:"connectorConnectionID"`
-	LifecycleState          string              `json:"lifecycleState"`
-	ResourceCount           int                 `json:"resourceCount"`
-	Cost                    map[string]float64  `json:"cost,omitempty"`
-	OnboardDate             time.Time           `json:"onboardDate"`
-	LastInventory           time.Time           `json:"lastInventory"`
-	HealthState             source.HealthStatus `json:"healthState"`
-	LastHealthCheckTime     time.Time           `json:"lastHealthCheckTime"`
-	HealthReason            *string             `json:"healthReason,omitempty"`
-	Metadata                map[string]any
+type ConnectionData struct {
+	ConnectionID  string    `json:"connectionID"`
+	Count         int       `json:"count"`
+	LastInventory time.Time `json:"lastInventory"`
+	Cost          float64   `json:"cost"`
 }
 
 type TopAccountResponse struct {
