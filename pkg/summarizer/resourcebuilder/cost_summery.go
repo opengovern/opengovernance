@@ -88,11 +88,15 @@ func (b *costSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQu
 }
 
 func (b *costSummaryBuilder) Build() []kafka.Doc {
-	jsonCosts := helpers.GetEbsCosts()
-
 	var docs []kafka.Doc
+	nowTime := time.Now().Truncate(24 * time.Hour).Unix()
+
+	jsonCosts := helpers.GetEbsCosts()
 	ebsCosts := make([]es.ServiceCostSummary, 0)
 	ebsCostsRegionMap := make(map[string]EBSCostDoc)
+	for _, v := range b.costsByAccount {
+		docs = append(docs, v)
+	}
 	for _, v := range b.costsByService {
 		switch v.ServiceName {
 		case string(es.CostResourceTypeAWSEBSVolume):
@@ -148,9 +152,6 @@ func (b *costSummaryBuilder) Build() []kafka.Doc {
 		ebsCost.Desc.CostValue = ebsCost.Desc.CalculateCostFromPriceJSON()
 		ebsCostsRegionMap[key] = ebsCost
 	}
-
-	nowTime := time.Now().Truncate(24 * time.Hour).Unix()
-
 	for _, v := range ebsCostsRegionMap {
 		docs = append(docs, es.ServiceCostSummary{
 			SummarizeJobTime: v.Base.SummarizeJobTime,
