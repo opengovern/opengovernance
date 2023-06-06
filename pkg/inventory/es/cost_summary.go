@@ -12,7 +12,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 )
 
 type FetchCostByServicesQueryResponse struct {
@@ -430,7 +429,7 @@ func FetchDailyCostHistoryByServicesAtTime(client keibi.Client, connectionIDs []
 		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummaryDaily)}},
 	})
 	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"service_name": utils.ToLowerStringSlice(services)},
+		"terms": map[string][]string{"service_name": services},
 	})
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
