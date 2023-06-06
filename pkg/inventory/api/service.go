@@ -10,6 +10,8 @@ type Service struct {
 	Connector         source.Type         `json:"connector"`
 	ServiceName       string              `json:"service_name"`
 	ServiceLabel      string              `json:"service_label"`
+	ResourceTypes     []ResourceType      `json:"resource_types"`
+	IsCostSupported   bool                `json:"is_cost_supported"`
 	Tags              map[string][]string `json:"tags,omitempty"`
 	LogoURI           *string             `json:"logo_uri,omitempty"`
 	Cost              *float64            `json:"cost,omitempty"`
