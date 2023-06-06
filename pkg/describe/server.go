@@ -90,7 +90,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.POST("/stacks/benchmark/trigger", httpserver.AuthorizeHandler(h.TriggerStackBenchmark, api3.AdminRole))
 	v1.GET("/stacks", httpserver.AuthorizeHandler(h.ListStack, api3.ViewerRole))
 	v1.GET("/stacks/:stackId", httpserver.AuthorizeHandler(h.GetStack, api3.ViewerRole))
-	v1.POST("/stacks/build", httpserver.AuthorizeHandler(h.CreateStack, api3.AdminRole))
+	v1.POST("/stacks/create", httpserver.AuthorizeHandler(h.CreateStack, api3.AdminRole))
 	v1.DELETE("/stacks/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, api3.AdminRole))
 	v1.GET("/stacks/findings/:jobId", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
 	v1.GET("/stacks/:stackId/insights", httpserver.AuthorizeHandler(h.GetStackInsights, api3.ViewerRole))
@@ -754,7 +754,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Produce		json
 //	@Param			request	body		api.CreateStackRequest	true	"Request Body"
 //	@Success		200		{object}	api.Stack
-//	@Router			/schedule/api/v1/stack/create [put]
+//	@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
 	var req api.CreateStackRequest
 	bindValidate(ctx, &req)
@@ -861,7 +861,7 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 //	@Router			/schedule/api/v1/stacks [get]
 func (h HttpServer) ListStack(ctx echo.Context) error {
 	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])
-	accountIds := ctx.QueryParams()["accounIds"]
+	accountIds := ctx.QueryParams()["accountIds"]
 	stacksRecord, err := h.DB.ListStacks(tagMap, accountIds)
 	if err != nil {
 		return err
@@ -1029,15 +1029,7 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	var benchmarkIDs []string
-	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(httpclient.FromEchoContext(ctx), evaluation.BenchmarkID)
-	if err != nil {
-		return err
-	}
-
-	benchmarkIDs = append(benchmarkIDs, benchmark.Children...)
-	benchmarkIDs = append(benchmarkIDs, evaluation.BenchmarkID)
-	findings, err := h.Scheduler.complianceClient.GetFindings(httpclient.FromEchoContext(ctx), conns, benchmarkIDs, []string(stackRecord.Resources))
+	findings, err := h.Scheduler.complianceClient.GetFindings(httpclient.FromEchoContext(ctx), conns, []string{evaluation.BenchmarkID}, []string(stackRecord.Resources))
 	if err != nil {
 		return err
 	}
