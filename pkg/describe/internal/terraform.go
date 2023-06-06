@@ -22,22 +22,40 @@ func getTypes(content string) ([]string, error) {
 func ParseAccountsFromArns(arns []string) ([]string, error) {
 	haveAcc := make(map[string]bool)
 	var accounts []string
-	if arns[0] == "/" { // Azure
-		for _, arn := range arns {
+	for _, arn := range arns {
+		if arns[0] == "/" { // Azure
 			splitArn := strings.Split(arn, "/")
-			if _, value := haveAcc[splitArn[2]]; !value && splitArn[2] != "" {
-				haveAcc[splitArn[2]] = true
-				accounts = append(accounts, splitArn[2])
+			acc := splitArn[2]
+			if _, value := haveAcc[acc]; !value && acc != "" {
+				haveAcc[acc] = true
+				accounts = append(accounts, acc)
 			}
-		}
-	} else { // AWS
-		for _, arn := range arns {
+		} else { // AWS
 			splitArn := strings.Split(arn, ":")
-			if _, value := haveAcc[splitArn[4]]; !value && splitArn[4] != "" {
-				haveAcc[splitArn[4]] = true
-				accounts = append(accounts, splitArn[4])
+			acc := splitArn[4]
+			if _, value := haveAcc[acc]; !value && acc != "" {
+				haveAcc[acc] = true
+				accounts = append(accounts, acc)
 			}
 		}
 	}
 	return accounts, nil
+}
+
+func GetResourceIDFromArn(arns []string) ([]string, error) {
+	haveResource := make(map[string]bool)
+	var resources []string
+	for _, arn := range arns {
+		if arns[0] == "/" { //Azure
+			resources = append(resources, arn)
+		} else { // AWS
+			splitArn := strings.Split(arn, ":")
+			res := strings.Split(splitArn[5], "/")[1]
+			if _, value := haveResource[res]; !value && res != "" {
+				haveResource[res] = true
+				resources = append(resources, res)
+			}
+		}
+	}
+	return resources, nil
 }

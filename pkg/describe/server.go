@@ -1029,7 +1029,11 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	findings, err := h.Scheduler.complianceClient.GetFindings(httpclient.FromEchoContext(ctx), conns, []string{evaluation.BenchmarkID}, []string(stackRecord.Resources))
+	resources, err := internal.GetResourceIDFromArn([]string(stackRecord.Resources))
+	if err != nil {
+		return err
+	}
+	findings, err := h.Scheduler.complianceClient.GetFindings(httpclient.FromEchoContext(ctx), conns, []string{evaluation.BenchmarkID}, resources)
 	if err != nil {
 		return err
 	}
