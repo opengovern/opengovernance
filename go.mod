@@ -400,9 +400,9 @@ require (
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/zclconf/go-cty v1.12.1 // indirect
 	github.com/zclconf/go-cty-yaml v1.0.3 // indirect
-	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230606102918-086be553cae7 // indirect
-	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230605143848-094405582c60 // indirect
-	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230524160620-9c9e9d92e11e // indirect
+	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230606154334-9ac06ff8fb56 // indirect
+	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230606154356-0f91c7b0a3db // indirect
+	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230606154406-90b091e46ef8 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/otel v1.8.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.7.0 // indirect
