@@ -2708,68 +2708,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v2/metadata/connectors": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Gets a list of all connectors in workspace and their metadata including list of their resource types and services names.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "metadata"
-                ],
-                "summary": "Get List of Connectors",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v2/metadata/connectors/{connector}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Gets a single connector and its metadata including list of their resource types and services names by the connector name.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "metadata"
-                ],
-                "summary": "Get Connector",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "connector",
-                        "name": "connector",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata"
-                        }
-                    }
-                }
-            }
-        },
         "/inventory/api/v2/metadata/resourcetype": {
             "get": {
                 "security": [
@@ -2787,21 +2725,48 @@ const docTemplate = `{
                 "summary": "Get List of Resource Types",
                 "parameters": [
                     {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
                         "description": "Filter by Connector",
                         "name": "connector",
                         "in": "query",
                         "required": true
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "Filter by service name",
                         "name": "service",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Key-Value tags in key=value format to filter by",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size - default is 20",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number - default is 1",
+                        "name": "pageNumber",
                         "in": "query"
                     }
                 ],
@@ -2811,7 +2776,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata"
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType"
                             }
                         }
                     }
@@ -2833,23 +2798,11 @@ const docTemplate = `{
                     "metadata"
                 ],
                 "summary": "Get Resource Type",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "resourceType",
-                        "name": "resourceType",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata"
-                            }
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType"
                         }
                     }
                 }
@@ -2862,7 +2815,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Gets a list of all workspace cloud services and their metadata inclouding parent service, list of resource types and cost support.\nThe results could be filtered by cost support and resource type.",
+                "description": "Gets a list of all workspace cloud services and their metadata, list of resource types and cost support.\nThe results could be filtered by cost support and tags.",
                 "produces": [
                     "application/json"
                 ],
@@ -2872,16 +2825,27 @@ const docTemplate = `{
                 "summary": "Get List of Cloud Services",
                 "parameters": [
                     {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
                         "description": "Connector",
                         "name": "connector",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Key-Value tags in key=value format to filter by",
+                        "name": "tag",
+                        "in": "query"
                     },
                     {
                         "type": "boolean",
@@ -2890,9 +2854,15 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "Filter by resource types",
-                        "name": "resourceType",
+                        "type": "integer",
+                        "description": "page size - default is 20",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number - default is 1",
+                        "name": "pageNumber",
                         "in": "query"
                     }
                 ],
@@ -2916,7 +2886,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Gets a single cloud service details and its metadata inclouding parent service, list of resource types, cost support and costmap service names.",
+                "description": "Gets a single cloud service details and its metadata, list of resource types \u0026 cost support.",
                 "produces": [
                     "application/json"
                 ],
@@ -2924,15 +2894,6 @@ const docTemplate = `{
                     "metadata"
                 ],
                 "summary": "Get Cloud Service Details",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "serviceName",
-                        "name": "serviceName",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3533,7 +3494,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter: Category for the services",
+                        "description": "filter: tag for the services",
                         "name": "tag",
                         "in": "query"
                     },
@@ -8029,46 +7990,6 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectorMetadata": {
-            "type": "object",
-            "properties": {
-                "connector": {
-                    "description": "Connector",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ]
-                },
-                "connector_label": {
-                    "description": "Connector Label",
-                    "type": "string"
-                },
-                "logo_uri": {
-                    "type": "string"
-                },
-                "resource_types": {
-                    "description": "List of resource types",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "resource_types_count": {
-                    "type": "integer"
-                },
-                "services": {
-                    "description": "List of cloud services",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "services_count": {
-                    "type": "integer"
-                }
-            }
-        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostTrendDatapoint": {
             "type": "object",
             "properties": {
@@ -8579,14 +8500,45 @@ const docTemplate = `{
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType": {
             "type": "object",
             "properties": {
+                "attributes": {
+                    "description": "List supported steampipe Attributes (columns) for this resource type - Metadata (GET only)",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "compliance": {
+                    "description": "List of Compliance that support this Resource Type - Metadata (GET only)",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "compliance_count": {
+                    "description": "Number of Compliance that use this Resource Type - Metadata",
+                    "type": "integer"
+                },
                 "connector": {
                     "$ref": "#/definitions/source.Type"
                 },
                 "count": {
+                    "description": "Number of Resources of this Resource Type - Metric",
                     "type": "integer"
                 },
                 "count_change_percent": {
+                    "description": "Percentage change in the number of Resources of this Resource Type - Metric",
                     "type": "number"
+                },
+                "insights": {
+                    "description": "List of Insights that support this Resource Type - Metadata (GET only)",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "insights_count": {
+                    "description": "Number of Insights that use this Resource Type - Metadata",
+                    "type": "integer"
                 },
                 "logo_uri": {
                     "type": "string"
@@ -8618,64 +8570,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resource_type_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeMetadata": {
-            "type": "object",
-            "properties": {
-                "attributes": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "compliance": {
-                    "description": "List of Compliances that support this Resource Type",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "compliance_count": {
-                    "type": "integer"
-                },
-                "connector": {
-                    "description": "Resource type connector",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ]
-                },
-                "discovery_enabled": {
-                    "description": "Discovery support enabled",
-                    "type": "boolean"
-                },
-                "insights": {
-                    "description": "List of Insights that support this Resource Type",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "insights_count": {
-                    "type": "integer"
-                },
-                "logo_uri": {
-                    "type": "string"
-                },
-                "resource_type_label": {
-                    "description": "Resource type lable",
-                    "type": "string"
-                },
-                "resource_type_name": {
-                    "description": "Resource type name",
-                    "type": "string"
-                },
-                "service_name": {
-                    "description": "Platform Patern Service name",
                     "type": "string"
                 }
             }
@@ -8749,8 +8643,17 @@ const docTemplate = `{
                 "cost_change_percent": {
                     "type": "number"
                 },
+                "is_cost_supported": {
+                    "type": "boolean"
+                },
                 "logo_uri": {
                     "type": "string"
+                },
+                "resource_types": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType"
+                    }
                 },
                 "service_label": {
                     "type": "string"
@@ -8808,10 +8711,6 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "logo_uri": {
-                    "type": "string"
-                },
-                "parent_service": {
-                    "description": "Parent service",
                     "type": "string"
                 },
                 "resource_types": {

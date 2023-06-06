@@ -5,6 +5,7 @@ import (
 
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	"gorm.io/gorm"
 )
 
@@ -41,6 +42,18 @@ type ResourceType struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
+func (r ResourceType) ToApi() api.ResourceType {
+	apiResourceType := api.ResourceType{
+		Connector:     r.Connector,
+		ResourceType:  r.ResourceType,
+		ResourceLabel: r.ResourceLabel,
+		ServiceName:   r.ServiceName,
+		Tags:          model.TrimPrivateTags(r.GetTagsMap()),
+		LogoURI:       r.LogoURI,
+	}
+	return apiResourceType
+}
+
 func (r ResourceType) GetTagsMap() map[string][]string {
 	if r.tagsMap == nil {
 		tagLikeArr := make([]model.TagLike, 0, len(r.Tags))
@@ -65,6 +78,24 @@ type Service struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (s Service) ToApi() api.Service {
+	apiService := api.Service{
+		Connector:     s.Connector,
+		ServiceName:   s.ServiceName,
+		ServiceLabel:  s.ServiceLabel,
+		ResourceTypes: nil,
+		Tags:          model.TrimPrivateTags(s.GetTagsMap()),
+		LogoURI:       s.LogoURI,
+	}
+	for _, resourceType := range s.ResourceTypes {
+		apiService.ResourceTypes = append(apiService.ResourceTypes, resourceType.ToApi())
+	}
+	if v, ok := s.GetTagsMap()[model.KaytuServiceCostTag]; ok && len(v) > 0 {
+		apiService.IsCostSupported = true
+	}
+	return apiService
 }
 
 func (s Service) GetTagsMap() map[string][]string {

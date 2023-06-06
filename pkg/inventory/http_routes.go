@@ -102,8 +102,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	insightsV2.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsightResult, api3.ViewerRole))
 
 	metadata := v2.Group("/metadata")
-	metadata.GET("/connectors", httpserver.AuthorizeHandler(h.ListConnectorMetadata, api3.ViewerRole))
-	metadata.GET("/connectors/:connector", httpserver.AuthorizeHandler(h.GetConnectorMetadata, api3.ViewerRole))
 	metadata.GET("/services", httpserver.AuthorizeHandler(h.ListServiceMetadata, api3.ViewerRole))
 	metadata.GET("/services/:serviceName", httpserver.AuthorizeHandler(h.GetServiceMetadata, api3.ViewerRole))
 	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, api3.ViewerRole))
@@ -543,20 +541,12 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 	apiResourceTypes := make([]api.ResourceType, 0, len(resourceTypes))
 	totalCount := 0
 	for _, resourceType := range resourceTypes {
-		rt := api.ResourceType{
-			Connector:     resourceType.Connector,
-			ResourceType:  resourceType.ResourceType,
-			ResourceLabel: resourceType.ResourceLabel,
-			ServiceName:   resourceType.ServiceName,
-			Tags:          model.TrimPrivateTags(resourceType.GetTagsMap()),
-			LogoURI:       resourceType.LogoURI,
-			Count:         nil,
-		}
+		apiResourceType := resourceType.ToApi()
 		if count, ok := metricIndexed[strings.ToLower(resourceType.ResourceType)]; ok {
-			rt.Count = &count
+			apiResourceType.Count = &count
 			totalCount += count
 		}
-		apiResourceTypes = append(apiResourceTypes, rt)
+		apiResourceTypes = append(apiResourceTypes, apiResourceType)
 	}
 
 	return totalCount, apiResourceTypes, nil
@@ -1002,14 +992,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 	apiServices := make([]api.Service, 0, len(services))
 	totalCost := float64(0)
 	for _, service := range services {
-		srv := api.Service{
-			Connector:    service.Connector,
-			ServiceName:  service.ServiceName,
-			ServiceLabel: service.ServiceLabel,
-			Tags:         model.TrimPrivateTags(service.GetTagsMap()),
-			LogoURI:      service.LogoURI,
-			Cost:         nil,
-		}
+		apiService := service.ToApi()
 		serviceCost := serviceCosts{}
 		if v, ok := service.GetTagsMap()[model.KaytuServiceCostTag]; ok {
 			for _, costFilterName := range v {
@@ -1026,13 +1009,13 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 				}
 			}
 		}
-		srv.Cost = &serviceCost.totalCost
+		apiService.Cost = &serviceCost.totalCost
 		if serviceCost.startCost != 0 {
-			srv.CostChangePercent = utils.GetPointer(((serviceCost.endCost - serviceCost.startCost) / serviceCost.startCost) * 100)
+			apiService.CostChangePercent = utils.GetPointer(((serviceCost.endCost - serviceCost.startCost) / serviceCost.startCost) * 100)
 		} else {
-			srv.CostChangePercent = nil
+			apiService.CostChangePercent = nil
 		}
-		apiServices = append(apiServices, srv)
+		apiServices = append(apiServices, apiService)
 	}
 	switch sortBy {
 	case "name":
@@ -1539,7 +1522,7 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connectionId	query		string	false	"filter: Connection ID"
 //	@Param			connector		query		string	false	"filter: Connector"
-//	@Param			tag				query		string	false	"filter: Category for the services"
+//	@Param			tag				query		string	false	"filter: tag for the services"
 //	@Param			startTime		query		string	true	"start time for cost calculation in epoch seconds"
 //	@Param			endTime			query		string	true	"end time for cost calculation and time resource count in epoch seconds"
 //	@Param			minSpent		query		int		false	"filter: minimum spent amount for the service in the specified time"
@@ -1838,16 +1821,16 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 		return err
 	}
 
-	var source map[string]interface{}
+	var sourceMap map[string]interface{}
 	for _, hit := range response.Hits.Hits {
-		source = hit.Source
+		sourceMap = hit.Source
 	}
 
 	var cells map[string]*proto.Column
 	pluginProvider := steampipe.ExtractPlugin(req.ResourceType)
 	if pluginProvider == steampipe.SteampipePluginAWS {
 		pluginTableName := awsSteampipe.ExtractTableName(req.ResourceType)
-		desc, err := steampipe.ConvertToDescription(req.ResourceType, source, awsSteampipe.AWSDescriptionMap)
+		desc, err := steampipe.ConvertToDescription(req.ResourceType, sourceMap, awsSteampipe.AWSDescriptionMap)
 		if err != nil {
 			return err
 		}
@@ -1858,7 +1841,7 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 		}
 	} else if pluginProvider == steampipe.SteampipePluginAzure || pluginProvider == steampipe.SteampipePluginAzureAD {
 		pluginTableName := azureSteampipe.ExtractTableName(req.ResourceType)
-		desc, err := steampipe.ConvertToDescription(req.ResourceType, source, azureSteampipe.AzureDescriptionMap)
+		desc, err := steampipe.ConvertToDescription(req.ResourceType, sourceMap, azureSteampipe.AzureDescriptionMap)
 		if err != nil {
 			return err
 		}
@@ -2373,7 +2356,7 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 		resp.Filters.Category = categoriesMap
 	}
 
-	connectionIDs := []string{}
+	var connectionIDs []string
 	for _, item := range response.Aggregations.ConnectionFilter.Buckets {
 		connectionIDs = append(connectionIDs, item.Key)
 	}
@@ -2761,218 +2744,74 @@ func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 	}
 }
 
-// ListConnectorMetadata godoc
-//
-//	@Summary		Get List of Connectors
-//	@Description	Gets a list of all connectors in workspace and their metadata including list of their resource types and services names.
-//	@Security		BearerToken
-//	@Tags			metadata
-//	@Produce		json
-//	@Success		200	{object}	[]api.ConnectorMetadata
-//	@Router			/inventory/api/v2/metadata/connectors [get]
-func (h *HttpHandler) ListConnectorMetadata(ctx echo.Context) error {
-	var result []api.ConnectorMetadata
-
-	for _, connector := range source.List {
-		rootNode, err := h.graphDb.GetCategoryRootByName(ctx.Request().Context(), RootTypeConnectorRoot, connector.String())
-		if err != nil {
-			return err
-		}
-		resourceTypesCount := 0
-		for _, filter := range rootNode.SubTreeFilters {
-			if filter.GetFilterType() == FilterTypeCloudResourceType {
-				resourceTypesCount++
-			}
-		}
-
-		serviceNodes, err := h.graphDb.GetCloudServiceNodes(ctx.Request().Context(), connector)
-		if err != nil {
-			return err
-		}
-
-		result = append(result, api.ConnectorMetadata{
-			Connector:          connector,
-			ConnectorLabel:     connector.String(),
-			ResourceTypesCount: utils.GetPointer(resourceTypesCount),
-			ServicesCount:      utils.GetPointer(len(serviceNodes)),
-			LogoURI:            rootNode.LogoURI,
-		})
-	}
-
-	return ctx.JSON(http.StatusOK, result)
-}
-
-// GetConnectorMetadata godoc
-//
-//	@Summary		Get Connector
-//	@Description	Gets a single connector and its metadata including list of their resource types and services names by the connector name.
-//	@Security		BearerToken
-//	@Tags			metadata
-//	@Produce		json
-//	@Param			connector	path		string	true	"connector"
-//	@Success		200			{object}	api.ConnectorMetadata
-//	@Router			/inventory/api/v2/metadata/connectors/{connector} [get]
-func (h *HttpHandler) GetConnectorMetadata(ctx echo.Context) error {
-	connector, err := source.ParseType(ctx.Param("connector"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
-	}
-
-	rootNode, err := h.graphDb.GetCategoryRootByName(ctx.Request().Context(), RootTypeConnectorRoot, connector.String())
-	if err != nil {
-		return err
-	}
-	resourceTypes := make([]string, 0)
-	for _, filter := range rootNode.SubTreeFilters {
-		if filter.GetFilterType() == FilterTypeCloudResourceType {
-			resourceTypes = append(resourceTypes, filter.(*FilterCloudResourceTypeNode).ResourceType)
-		}
-	}
-
-	serviceNodes, err := h.graphDb.GetCloudServiceNodes(ctx.Request().Context(), connector)
-	if err != nil {
-		return err
-	}
-	services := make([]string, 0)
-	for _, serviceNode := range serviceNodes {
-		services = append(services, serviceNode.ServiceName)
-	}
-
-	result := api.ConnectorMetadata{
-		Connector:      connector,
-		ConnectorLabel: connector.String(),
-		ResourceTypes:  resourceTypes,
-		Services:       services,
-		LogoURI:        rootNode.LogoURI,
-	}
-
-	return ctx.JSON(http.StatusOK, result)
-}
-
 // ListServiceMetadata godoc
 //
 //	@Summary		Get List of Cloud Services
-//	@Description	Gets a list of all workspace cloud services and their metadata inclouding parent service, list of resource types and cost support.
-//	@Description	The results could be filtered by cost support and resource type.
+//	@Description	Gets a list of all workspace cloud services and their metadata, list of resource types and cost support.
+//	@Description	The results could be filtered by cost support and tags.
 //	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
-//	@Param			connector		query		source.Type	true	"Connector"
-//	@Param			costSupport		query		boolean		false	"Filter by cost support"
-//	@Param			resourceType	query		string		false	"Filter by resource types"
-//
-//	@Success		200				{object}	[]api.ServiceMetadata
+//	@Param			connector	query		[]source.Type	false	"Connector"
+//	@Param			tag			query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			costSupport	query		boolean			false	"Filter by cost support"
+//	@Param			pageSize	query		int				false	"page size - default is 20"
+//	@Param			pageNumber	query		int				false	"page number - default is 1"
+//	@Success		200			{object}	[]api.ServiceMetadata
 //	@Router			/inventory/api/v2/metadata/services [get]
 func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
-	connector, err := source.ParseType(ctx.QueryParam("connector"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
-	}
-
+	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
+	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 	costSupportFilterStr := ctx.QueryParam("costSupport")
-	costSupportFilter := false
 	if costSupportFilterStr != "" {
-		costSupportFilter, err = strconv.ParseBool(costSupportFilterStr)
+		b, err := strconv.ParseBool(costSupportFilterStr)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid costSupport")
 		}
+		if b {
+			tagMap[model.KaytuServiceCostTag] = make([]string, 0)
+		}
+	}
+	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	resourceTypes := ctx.QueryParams()["resourceType"]
-	if len(resourceTypes) == 0 {
-		resourceTypes = nil
-	}
-
-	services, err := h.graphDb.GetCloudServiceNodes(ctx.Request().Context(), connector)
+	services, err := h.db.ListFilteredServices(tagMap, connectors)
 	if err != nil {
 		return err
 	}
 
-	var result []api.ServiceMetadata
+	var result []api.Service
 	for _, service := range services {
-		costSupport := false
-		for _, filter := range service.Filters {
-			if filter.GetFilterType() == FilterTypeCost {
-				costSupport = true
-				break
-			}
-		}
-		if costSupportFilterStr != "" && (costSupport != costSupportFilter) {
-			continue
-		}
-		serviceResourceTypes := make([]string, 0)
-		for _, filter := range service.Filters {
-			if filter.GetFilterType() == FilterTypeCloudResourceType {
-				serviceResourceTypes = append(serviceResourceTypes, filter.(*FilterCloudResourceTypeNode).ResourceType)
-			}
-		}
-		if resourceTypes != nil {
-			if !utils.IncludesAll(serviceResourceTypes, resourceTypes) {
-				continue
-			}
-		}
-		result = append(result, api.ServiceMetadata{
-			Connector:          service.Connector,
-			ServiceName:        service.ServiceName,
-			ServiceLabel:       service.Name,
-			ParentService:      service.GetParentService(),
-			ResourceTypesCount: utils.GetPointer(len(serviceResourceTypes)),
-			CostSupport:        costSupport,
-			LogoURI:            service.LogoURI,
-		})
+		result = append(result, service.ToApi())
 	}
 
-	return ctx.JSON(http.StatusOK, result)
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].ServiceName < result[j].ServiceName
+	})
+
+	return ctx.JSON(http.StatusOK, utils.Paginate(pageNumber, pageSize, result))
 }
 
 // GetServiceMetadata godoc
 //
 //	@Summary		Get Cloud Service Details
-//	@Description	Gets a single cloud service details and its metadata inclouding parent service, list of resource types, cost support and costmap service names.
+//	@Description	Gets a single cloud service details and its metadata, list of resource types & cost support.
 //	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
-//	@Param			serviceName	path		string	true	"serviceName"
-//	@Success		200			{object}	api.ServiceMetadata
+//	@Success		200	{object}	api.ServiceMetadata
 //	@Router			/inventory/api/v2/metadata/services/{serviceName} [get]
 func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 	serviceName := ctx.Param("serviceName")
 
-	service, err := h.graphDb.GetCloudServiceNode(ctx.Request().Context(), source.Nil, serviceName)
+	service, err := h.db.GetService(serviceName)
 	if err != nil {
 		return err
 	}
 
-	costSupport := false
-	costMapServiceNames := make([]string, 0)
-	for _, filter := range service.Filters {
-		if filter.GetFilterType() == FilterTypeCost {
-			costSupport = true
-			costMapServiceNames = append(costMapServiceNames, filter.(*FilterCostNode).CostServiceName)
-		}
-	}
-	if costSupport == false {
-		costMapServiceNames = nil
-	}
-	serviceResourceTypes := make([]string, 0)
-	for _, filter := range service.Filters {
-		if filter.GetFilterType() == FilterTypeCloudResourceType {
-			serviceResourceTypes = append(serviceResourceTypes, filter.(*FilterCloudResourceTypeNode).ResourceType)
-		}
-	}
-
-	result := api.ServiceMetadata{
-		Connector:           service.Connector,
-		ServiceName:         service.ServiceName,
-		ServiceLabel:        service.Name,
-		ParentService:       service.GetParentService(),
-		ResourceTypes:       serviceResourceTypes,
-		CostSupport:         costSupport,
-		CostMapServiceNames: costMapServiceNames,
-		LogoURI:             service.LogoURI,
-	}
-
-	return ctx.JSON(http.StatusOK, result)
+	return ctx.JSON(http.StatusOK, service.ToApi())
 }
 
 // ListResourceTypeMetadata godoc
@@ -2983,47 +2822,41 @@ func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
-//	@Param			connector	query		source.Type	true	"Filter by Connector"
-//	@Param			service		query		string		false	"Filter by service name"
-//	@Success		200			{object}	[]api.ResourceTypeMetadata
+//	@Param			connector	query		[]source.Type	true	"Filter by Connector"
+//	@Param			service		query		[]string		false	"Filter by service name"
+//	@Param			tag			query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			pageSize	query		int				false	"page size - default is 20"
+//	@Param			pageNumber	query		int				false	"page number - default is 1"
+//	@Success		200			{object}	[]api.ResourceType
 //	@Router			/inventory/api/v2/metadata/resourcetype [get]
 func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
-	connector, err := source.ParseType(ctx.QueryParam("connector"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
-	}
-
+	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
+	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 	serviceNames := ctx.QueryParams()["service"]
-	filterTypeCloudResourceType := FilterTypeCloudResourceType
-	filters, err := h.graphDb.GetFilters(ctx.Request().Context(), connector, serviceNames, &filterTypeCloudResourceType)
+	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, serviceNames, connectors)
 	if err != nil {
 		return err
 	}
 
-	var result []api.ResourceTypeMetadata
+	var result []api.ResourceType
 
-	for _, filter := range filters {
-		resourceTypeNode := filter.(*FilterCloudResourceTypeNode)
-
-		res := api.ResourceTypeMetadata{
-			Connector:         resourceTypeNode.Connector,
-			ResourceTypeName:  resourceTypeNode.ResourceType,
-			ResourceTypeLabel: resourceTypeNode.ResourceLabel,
-			ServiceName:       resourceTypeNode.ServiceName,
-			DiscoveryEnabled:  true,
-			LogoURI:           resourceTypeNode.LogoURI,
-		}
+	for _, resourceType := range resourceTypes {
+		apiResourceType := resourceType.ToApi()
 
 		var table string
-		switch connector {
+		switch resourceType.Connector {
 		case source.CloudAWS:
-			table = awsSteampipe.ExtractTableName(resourceTypeNode.ResourceType)
+			table = awsSteampipe.ExtractTableName(resourceType.ResourceType)
 		case source.CloudAzure:
-			table = azureSteampipe.ExtractTableName(resourceTypeNode.ResourceType)
+			table = azureSteampipe.ExtractTableName(resourceType.ResourceType)
 		}
 		insightTableCount := 0
 		if table != "" {
-			insightList, err := h.complianceClient.ListInsightsMetadata(httpclient.FromEchoContext(ctx), []source.Type{resourceTypeNode.Connector})
+			insightList, err := h.complianceClient.ListInsightsMetadata(httpclient.FromEchoContext(ctx), []source.Type{resourceType.Connector})
 			if err != nil {
 				return err
 			}
@@ -3036,12 +2869,18 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 				}
 			}
 		}
-		res.InsightsCount = utils.GetPointerOrNil(insightTableCount)
+		apiResourceType.InsightsCount = utils.GetPointerOrNil(insightTableCount)
 
-		result = append(result, res)
+		// TODO: add compliance count
+
+		result = append(result, apiResourceType)
 	}
 
-	return ctx.JSON(http.StatusOK, result)
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].ResourceType < result[j].ResourceType
+	})
+
+	return ctx.JSON(http.StatusOK, utils.Paginate(pageNumber, pageSize, result))
 }
 
 // GetResourceTypeMetadata godoc
@@ -3051,36 +2890,26 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
-//	@Param			resourceType	path		string	true	"resourceType"
-//	@Success		200				{object}	[]api.ResourceTypeMetadata
+//	@Success		200	{object}	api.ResourceType
 //	@Router			/inventory/api/v2/metadata/resourcetype/{resourceType} [get]
 func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
-	resourceType := ctx.Param("resourceType")
-
-	resourceTypeNode, err := h.graphDb.GetResourceType(ctx.Request().Context(), source.Nil, resourceType)
+	resourceTypeStr := ctx.Param("resourceType")
+	resourceType, err := h.db.GetResourceType(resourceTypeStr)
 	if err != nil {
 		return err
 	}
 
-	result := api.ResourceTypeMetadata{
-		Connector:         resourceTypeNode.Connector,
-		ResourceTypeName:  resourceTypeNode.ResourceType,
-		ResourceTypeLabel: resourceTypeNode.ResourceLabel,
-		ServiceName:       resourceTypeNode.ServiceName,
-		DiscoveryEnabled:  true,
-		LogoURI:           resourceTypeNode.LogoURI,
-	}
-
+	result := resourceType.ToApi()
 	var table string
-	switch resourceTypeNode.Connector {
+	switch resourceType.Connector {
 	case source.CloudAWS:
-		table = awsSteampipe.ExtractTableName(resourceTypeNode.ResourceType)
+		table = awsSteampipe.ExtractTableName(resourceType.ResourceType)
 	case source.CloudAzure:
-		table = azureSteampipe.ExtractTableName(resourceTypeNode.ResourceType)
+		table = azureSteampipe.ExtractTableName(resourceType.ResourceType)
 	}
 	if table != "" {
 		insightTables := make([]uint, 0)
-		insightList, err := h.complianceClient.ListInsightsMetadata(httpclient.FromEchoContext(ctx), []source.Type{resourceTypeNode.Connector})
+		insightList, err := h.complianceClient.ListInsightsMetadata(httpclient.FromEchoContext(ctx), []source.Type{resourceType.Connector})
 		if err != nil {
 			return err
 		}
@@ -3093,8 +2922,11 @@ func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 			}
 		}
 		result.Insights = insightTables
+		result.InsightsCount = utils.GetPointerOrNil(len(insightTables))
 
-		switch resourceTypeNode.Connector {
+		// TODO: add compliance list & count
+
+		switch resourceType.Connector {
 		case source.CloudAWS:
 			result.Attributes, _ = steampipe.Cells(h.awsPlg, table)
 		case source.CloudAzure:
