@@ -73,6 +73,7 @@ func Run(es elasticsearchv7.Config, logger *zap.Logger, esFolder string) error {
 			return err
 		}
 
+		req.SetBasicAuth(es.Username, es.Password)
 		req.Header.Set("Content-type", "application/json")
 
 		client := http.Client{
@@ -118,6 +119,8 @@ func HealthCheck(es elasticsearchv7.Config, logger *zap.Logger) error {
 	if err != nil {
 		return err
 	}
+
+	req.SetBasicAuth(es.Username, es.Password)
 
 	client := http.Client{
 		Transport: &http.Transport{
