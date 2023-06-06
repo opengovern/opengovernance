@@ -1,6 +1,7 @@
 package elasticsearch
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,7 +30,7 @@ func Run(es elasticsearchv7.Config, logger *zap.Logger, esFolder string) error {
 		}
 		break
 	}
-	logger.Warn("Starting es migration ...")
+	logger.Warn("Starting es migration")
 
 	var address string
 	for _, ad := range es.Addresses {
@@ -74,7 +75,12 @@ func Run(es elasticsearchv7.Config, logger *zap.Logger, esFolder string) error {
 
 		req.Header.Set("Content-type", "application/json")
 
-		client := http.Client{}
+		client := http.Client{
+			Transport: &http.Transport{
+				MaxIdleConnsPerHost: 10,
+				TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+			},
+		}
 		res, err := client.Do(req)
 		if err != nil {
 			return err
