@@ -1,19 +1,23 @@
 package migrator
 
 import (
+	"crypto/tls"
 	"fmt"
+	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"os"
-
 	"github.com/prometheus/client_golang/prometheus/push"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/compliance"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/db"
+	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/elasticsearch"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/internal"
 	"go.uber.org/zap"
+	"net/http"
+	"os"
 )
 
 type Job struct {
 	db                    db.Database
+	elastic               elasticsearchv7.Config
 	logger                *zap.Logger
 	pusher                *push.Pusher
 	AWSComplianceGitURL   string
@@ -59,6 +63,19 @@ func InitializeJob(
 	w.QueryGitURL = conf.QueryGitURL
 	w.githubToken = conf.GithubToken
 
+	w.elastic = elasticsearchv7.Config{
+		Addresses: []string{conf.ElasticSearch.Address},
+		Username:  conf.ElasticSearch.Username,
+		Password:  conf.ElasticSearch.Password,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+	if err != nil {
+		return nil, err
+	}
 	return w, nil
 }
 
@@ -77,6 +94,11 @@ func (w *Job) Run() error {
 
 	if err := compliance.Run(w.db, w.AzureComplianceGitURL, w.QueryGitURL, w.githubToken); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running azure compliance migration: %v", err))
+	}
+
+	// run elasticsearch
+	if err := elasticsearch.Run(w.elastic, w.logger, "/elasticsearch-index-config"); err != nil {
+		w.logger.Error(fmt.Sprintf("Failure while running elasticsearch migration: %v", err))
 	}
 
 	return nil
