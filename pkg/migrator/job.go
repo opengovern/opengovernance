@@ -9,6 +9,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/compliance"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/db"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/elasticsearch"
+	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/insight"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/internal"
 	"go.uber.org/zap"
 	"net/http"
@@ -22,6 +23,7 @@ type Job struct {
 	pusher                *push.Pusher
 	AWSComplianceGitURL   string
 	AzureComplianceGitURL string
+	InsightGitURL         string
 	QueryGitURL           string
 	githubToken           string
 }
@@ -59,6 +61,7 @@ func InitializeJob(
 
 	w.pusher = push.New(prometheusPushAddress, "migrator")
 	w.AWSComplianceGitURL = conf.AWSComplianceGitURL
+	w.InsightGitURL = conf.InsightGitURL
 	w.AzureComplianceGitURL = conf.AzureComplianceGitURL
 	w.QueryGitURL = conf.QueryGitURL
 	w.githubToken = conf.GithubToken
@@ -101,10 +104,15 @@ func (w *Job) Run() error {
 		w.logger.Error(fmt.Sprintf("Failure while running elasticsearch migration: %v", err))
 	}
 
+	if err := insight.Run(w.db, w.InsightGitURL, w.githubToken); err != nil {
+		w.logger.Error(fmt.Sprintf("Failure while running insight migration: %v", err))
+	}
+
 	return nil
 }
 
 func (w *Job) Stop() {
 	os.RemoveAll(internal.ComplianceGitPath)
 	os.RemoveAll(internal.QueriesGitPath)
+	os.RemoveAll(internal.InsightsGitPath)
 }

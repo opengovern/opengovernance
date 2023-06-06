@@ -114,7 +114,18 @@ func HealthCheck(es elasticsearchv7.Config, logger *zap.Logger) error {
 		return err
 	}
 
-	res, err := http.Get(url.String())
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return err
+	}
+
+	client := http.Client{
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost: 10,
+			TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+	res, err := client.Do(req)
 	if err != nil {
 		return err
 	}
