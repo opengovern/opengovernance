@@ -1258,7 +1258,7 @@ func (db Database) ListStacks(tags map[string][]string, accountIds []string) ([]
 		Preload("Tags").
 		Preload("Evaluations")
 	if len(accountIds) != 0 {
-		query = query.Where("EXISTS (SELECT 1 FROM unnest(accounts) AS account WHERE account IN ?)", pq.StringArray(accountIds))
+		query = query.Where("EXISTS (SELECT 1 FROM unnest(account_ids) AS account WHERE account IN ?)", pq.StringArray(accountIds))
 	}
 	if len(tags) != 0 {
 		query = query.Joins("JOIN stack_tags AS tags ON tags.stack_id = stacks.stack_id")
