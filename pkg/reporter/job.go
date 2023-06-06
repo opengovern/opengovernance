@@ -278,6 +278,7 @@ func (j *Job) RunJob() error {
 				if sj1 != sj2 {
 					if k != "etag" && k != "tags" {
 						j.logger.Warn("inconsistency in data",
+							zap.String("get-query", query.GetQuery),
 							zap.String("accountID", account.ConnectionID),
 							zap.String("steampipe", sj1),
 							zap.String("es", sj2),
@@ -291,6 +292,7 @@ func (j *Job) RunJob() error {
 
 		if !found {
 			j.logger.Warn("record not found",
+				zap.String("get-query", query.GetQuery),
 				zap.String("accountID", account.ConnectionID),
 				zap.String("keyColumns", fmt.Sprintf("%v", keyValues)),
 			)

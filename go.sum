@@ -2806,8 +2806,8 @@ github.com/zeebo/assert v1.3.0/go.mod h1:Pq9JiuJQpG8JLJdtkwrJESF0Foym2/D9XMU5ciN
 github.com/zeebo/xxh3 v1.0.2/go.mod h1:5NWz9Sef7zIDm2JHfFlcQvNekmcEl9ekUZQQKCYaDcA=
 github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxtB1Q=
 github.com/ziutek/mymysql v1.5.4/go.mod h1:LMSpPZ6DbqWFxNCHW77HeMg9I646SAhApZ/wKdgO/C0=
-gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230605150213-6b1fd97e8240 h1:Hjahmd+iGU8d+fubsByg+yn/nerJAnjEmVv+L4j9lTo=
-gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230605150213-6b1fd97e8240/go.mod h1:I/vhDPl2xnJj1d02B39zo13dcheMCmfNb1SEO7Hj7xE=
+gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230606102918-086be553cae7 h1:MqVsuK72Qvs25dWPysquC6MUzaisN2M92W2gCaHTSQw=
+gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230606102918-086be553cae7/go.mod h1:I/vhDPl2xnJj1d02B39zo13dcheMCmfNb1SEO7Hj7xE=
 gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230605143848-094405582c60 h1:xYEPDB6pRJujuw1MRGUSYEFYPS4xLuqct/i4IjG99XI=
 gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230605143848-094405582c60/go.mod h1:zMzFtR+qKP5Vote7jJJz4j/pG+DI3StS1gyEYc4wQIk=
 gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230524160620-9c9e9d92e11e h1:/ej5l5i0pnEIEPEV7PWCQHggPaOnq2h7TU9vGFNBeZc=
