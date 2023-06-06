@@ -21,7 +21,7 @@ type ComplianceServiceClient interface {
 	ListInsightsMetadata(ctx *httpclient.Context, connectors []source.Type) ([]compliance.Insight, error)
 	GetInsightMetadataById(ctx *httpclient.Context, id uint) (*compliance.Insight, error)
 	ListInsights(ctx *httpclient.Context, tags map[string][]string, connectors []source.Type, connectionIDs []string, timeAt *time.Time) ([]compliance.Insight, error)
-	GetFindings(ctx *httpclient.Context, sourceIDs []string, benchmarkID []string, resourceIDs []string) (compliance.GetFindingsResponse, error)
+	GetFindings(ctx *httpclient.Context, req compliance.GetFindingsRequest) (compliance.GetFindingsResponse, error)
 }
 
 type complianceClient struct {
@@ -157,26 +157,8 @@ func (s *complianceClient) ListInsights(ctx *httpclient.Context, tags map[string
 	return insights, nil
 }
 
-func (s *complianceClient) GetFindings(ctx *httpclient.Context, sourceIDs []string, benchmarkID []string, resourceIDs []string) (compliance.GetFindingsResponse, error) {
+func (s *complianceClient) GetFindings(ctx *httpclient.Context, req compliance.GetFindingsRequest) (compliance.GetFindingsResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/findings", s.baseURL)
-
-	req := compliance.GetFindingsRequest{
-		Filters: compliance.FindingFilters{
-			ConnectionID: sourceIDs,
-			BenchmarkID:  benchmarkID,
-			ResourceID:   resourceIDs,
-		},
-		Sorts: []compliance.FindingSortItem{
-			{
-				Field:     "status",
-				Direction: "desc",
-			},
-		},
-		Page: compliance.Page{
-			No:   1,
-			Size: 100,
-		},
-	}
 
 	payload, err := json.Marshal(req)
 	if err != nil {

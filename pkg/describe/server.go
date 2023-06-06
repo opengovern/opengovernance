@@ -22,7 +22,6 @@ import (
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 	"gorm.io/gorm"
@@ -999,7 +998,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			jobId	path		string	true	"JobID"
-//	@Success		200		{object}	es.Finding
+//	@Success		200		{object}	complianceapi.GetFindingsResponse
 //	@Router			/schedule/api/v1/stacks/findings/{jobId} [get]
 func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	jobIdstring := ctx.Param("jobId")
@@ -1007,6 +1006,8 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	var reqBody api.GetStackFindings
+	bindValidate(ctx, &reqBody)
 	evaluation, err := h.DB.GetEvaluation(uint(jobId))
 	if err != nil {
 		return err
@@ -1033,18 +1034,23 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	findings, err := h.Scheduler.complianceClient.GetFindings(httpclient.FromEchoContext(ctx), conns, []string{evaluation.BenchmarkID}, resources)
+
+	req := complianceapi.GetFindingsRequest{
+		Filters: complianceapi.FindingFilters{
+			ConnectionID: conns,
+			BenchmarkID:  []string{evaluation.BenchmarkID},
+			ResourceID:   resources,
+		},
+		Sorts: reqBody.Sorts,
+		Page:  reqBody.Page,
+	}
+
+	findings, err := h.Scheduler.complianceClient.GetFindings(httpclient.FromEchoContext(ctx), req)
 	if err != nil {
 		return err
 	}
-	var result es.Finding
-	for _, f := range findings.Findings {
-		if f.ScheduleJobID == evaluation.JobID {
-			result = f
-			break
-		}
-	}
-	return ctx.JSON(http.StatusOK, result)
+
+	return ctx.JSON(http.StatusOK, findings)
 }
 
 // GetStackInsights godoc

@@ -1,6 +1,10 @@
 package api
 
-import "time"
+import (
+	"time"
+
+	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+)
 
 type EvaluateStack struct {
 	Benchmarks []string `json:"benchmarks" validate:"required"`
@@ -32,4 +36,9 @@ type StackEvaluation struct {
 	BenchmarkID string
 	JobID       uint
 	CreatedAt   time.Time
+}
+
+type GetStackFindings struct {
+	Sorts []complianceapi.FindingSortItem `json:"sorts"`
+	Page  complianceapi.Page              `json:"page" validate:"required"`
 }
