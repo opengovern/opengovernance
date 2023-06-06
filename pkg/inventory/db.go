@@ -296,6 +296,15 @@ func (db Database) ListFilteredResourceTypes(tags map[string][]string, serviceNa
 	return resourceTypes, nil
 }
 
+func (db Database) GetResourceType(resourceType string) (*ResourceType, error) {
+	var rtObj ResourceType
+	tx := db.orm.Model(ResourceType{}).Preload(clause.Associations).Where("resource_type = ?", resourceType).First(&rtObj)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &rtObj, nil
+}
+
 func (db Database) ListServiceTagsKeysWithPossibleValues() (map[string][]string, error) {
 	var tags []ServiceTag
 	tx := db.orm.Model(ServiceTag{}).Find(&tags)

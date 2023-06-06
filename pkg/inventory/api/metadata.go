@@ -13,10 +13,9 @@ type ConnectorMetadata struct {
 }
 
 type ServiceMetadata struct {
-	Connector          source.Type `json:"connector"`                // Service Connector
-	ServiceName        string      `json:"service_name"`             // Service Name
-	ServiceLabel       string      `json:"service_label"`            // Service Lable
-	ParentService      *string     `json:"parent_service,omitempty"` // Parent service
+	Connector          source.Type `json:"connector"`     // Service Connector
+	ServiceName        string      `json:"service_name"`  // Service Name
+	ServiceLabel       string      `json:"service_label"` // Service Lable
 	ResourceTypesCount *int        `json:"resource_types_count,omitempty"`
 	ResourceTypes      []string    `json:"resource_types,omitempty"` // List of resource types
 	LogoURI            *string     `json:"logo_uri,omitempty"`
@@ -36,7 +35,6 @@ type ResourceTypeMetadata struct {
 	InsightsCount   *int `json:"insights_count,omitempty"`
 	ComplianceCount *int `json:"compliance_count,omitempty"`
 
-	Attributes []string `json:"attributes,omitempty"`
 	Insights   []uint   `json:"insights,omitempty"`   // List of Insights that support this Resource Type
 	Compliance []string `json:"compliance,omitempty"` // List of Compliances that support this Resource Type
 }
