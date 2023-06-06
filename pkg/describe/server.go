@@ -1039,7 +1039,7 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	}
 	var result es.Finding
 	for _, f := range findings.Findings {
-		if f.ComplianceJobID == evaluation.JobID {
+		if f.ScheduleJobID == evaluation.JobID {
 			result = f
 			break
 		}
