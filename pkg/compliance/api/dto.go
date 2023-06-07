@@ -1,8 +1,8 @@
 package api
 
 import (
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
 	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 )
 
@@ -135,7 +135,7 @@ type BenchmarkSummary struct {
 	Title           string                        `json:"title"`
 	Description     string                        `json:"description"`
 	Connectors      []source.Type                 `json:"connectors"`
-	Tags            map[string]string             `json:"tags"`
+	Tags            map[string][]string           `json:"tags"`
 	Enabled         bool                          `json:"enabled"`
 	Result          types.ComplianceResultSummary `json:"result"`
 	Checks          types.SeverityResult          `json:"checks"`

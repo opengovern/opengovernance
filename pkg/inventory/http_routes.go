@@ -2861,7 +2861,7 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 				return err
 			}
 			for _, insightEntity := range insightList {
-				for _, insightTable := range strings.Split(insightEntity.Query.ListOfTables, ",") {
+				for _, insightTable := range insightEntity.Query.ListOfTables {
 					if insightTable == table {
 						insightTableCount++
 						break
@@ -2914,7 +2914,7 @@ func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 			return err
 		}
 		for _, insightEntity := range insightList {
-			for _, insightTable := range strings.Split(insightEntity.Query.ListOfTables, ",") {
+			for _, insightTable := range insightEntity.Query.ListOfTables {
 				if insightTable == table {
 					insightTables = append(insightTables, insightEntity.ID)
 					break
