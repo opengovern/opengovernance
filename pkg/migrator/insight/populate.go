@@ -1,6 +1,7 @@
 package insight
 
 import (
+	"fmt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -18,7 +19,7 @@ func PopulateDatabase(dbc *gorm.DB, insightsPath string) error {
 				"description", "logo_url", "tags", "links", "enabled", "internal"}), // column needed to be updated
 		}).Create(&obj).Error
 		if err != nil {
-			return err
+			return fmt.Errorf("failure in insert: %v", err)
 		}
 	}
 

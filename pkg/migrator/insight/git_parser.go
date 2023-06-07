@@ -2,6 +2,7 @@ package insight
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 	"gorm.io/gorm"
@@ -20,7 +21,7 @@ func (g *GitParser) ExtractInsights(queryPath string) error {
 		if strings.HasSuffix(path, ".json") {
 			content, err := os.ReadFile(path)
 			if err != nil {
-				return err
+				return fmt.Errorf("failure in reading file: %v", err)
 			}
 
 			var insight Insight

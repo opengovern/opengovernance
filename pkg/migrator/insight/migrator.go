@@ -1,6 +1,7 @@
 package insight
 
 import (
+	"fmt"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/db"
@@ -20,7 +21,7 @@ func Run(db db.Database, insightsInputGitURL, githubToken string) error {
 		Progress: os.Stdout,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failure in clone: %v", err)
 	}
 
 	err = PopulateDatabase(db.ORM, internal.InsightsGitPath)
