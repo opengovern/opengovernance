@@ -8,16 +8,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
-	"gorm.io/gorm"
 )
 
 type GitParser struct {
-	benchmarks    []db.Benchmark
-	benchmarkTags []db.BenchmarkTag
-	policies      []db.Policy
-	policyTags    []db.PolicyTag
-	queries       []db.Query
+	benchmarks []db.Benchmark
+	policies   []db.Policy
+	queries    []db.Query
 }
 
 func (g *GitParser) ExtractQueries(queryPath string) error {
@@ -47,62 +45,6 @@ func (g *GitParser) ExtractQueries(queryPath string) error {
 	})
 }
 
-func (g *GitParser) ExtractBenchmarkTags(compliancePath string) error {
-	return filepath.WalkDir(compliancePath, func(path string, d fs.DirEntry, err error) error {
-		if filepath.Base(path) == "tags.json" {
-			content, err := os.ReadFile(path)
-			if err != nil {
-				return err
-			}
-
-			var objs []BenchmarkTag
-			err = json.Unmarshal(content, &objs)
-			if err != nil {
-				return err
-			}
-			for _, o := range objs {
-				g.benchmarkTags = append(g.benchmarkTags, db.BenchmarkTag{
-					Model: gorm.Model{
-						ID: o.ID,
-					},
-					Key:        o.Key,
-					Value:      o.Value,
-					Benchmarks: nil,
-				})
-			}
-		}
-		return nil
-	})
-}
-
-func (g *GitParser) ExtractPolicyTags(compliancePath string) error {
-	return filepath.WalkDir(compliancePath, func(path string, d fs.DirEntry, err error) error {
-		if filepath.Base(path) == "policyTags.json" {
-			content, err := os.ReadFile(path)
-			if err != nil {
-				return err
-			}
-
-			var objs []PolicyTag
-			err = json.Unmarshal(content, &objs)
-			if err != nil {
-				return err
-			}
-			for _, o := range objs {
-				g.policyTags = append(g.policyTags, db.PolicyTag{
-					Model: gorm.Model{
-						ID: o.ID,
-					},
-					Key:      o.Key,
-					Value:    o.Value,
-					Policies: nil,
-				})
-			}
-		}
-		return nil
-	})
-}
-
 func (g *GitParser) ExtractPolicies(compliancePath string) error {
 	return filepath.WalkDir(compliancePath, func(path string, d fs.DirEntry, err error) error {
 		if filepath.Base(path) == "policies.json" {
@@ -117,11 +59,21 @@ func (g *GitParser) ExtractPolicies(compliancePath string) error {
 				return err
 			}
 			for _, o := range objs {
+				tags := make([]db.PolicyTag, 0, len(o.Tags))
+				for tagKey, tagValue := range o.Tags {
+					tags = append(tags, db.PolicyTag{
+						Tag: model.Tag{
+							Key:   tagKey,
+							Value: tagValue,
+						},
+						PolicyID: o.ID,
+					})
+				}
 				p := db.Policy{
 					ID:                 o.ID,
 					Title:              o.Title,
 					Description:        o.Description,
-					Tags:               nil,
+					Tags:               tags,
 					DocumentURI:        o.DocumentURI,
 					Enabled:            true,
 					QueryID:            o.QueryID,
@@ -129,14 +81,6 @@ func (g *GitParser) ExtractPolicies(compliancePath string) error {
 					Severity:           o.Severity,
 					ManualVerification: o.ManualVerification,
 					Managed:            o.Managed,
-				}
-				for _, tag := range g.policyTags {
-					if contains(o.Tags, tag.ID) {
-						p.Tags = append(p.Tags, tag)
-					}
-				}
-				if len(o.Tags) != len(p.Tags) {
-					//fmt.Printf("could not find some policy tags, %d != %d", len(o.Tags), len(p.Tags))
 				}
 
 				if p.QueryID != nil {
@@ -197,6 +141,16 @@ func (g *GitParser) ExtractBenchmarks(compliancePath string) error {
 
 	children := map[string][]string{}
 	for _, o := range benchmarks {
+		tags := make([]db.BenchmarkTag, 0, len(o.Tags))
+		for tagKey, tagValue := range o.Tags {
+			tags = append(tags, db.BenchmarkTag{
+				Tag: model.Tag{
+					Key:   tagKey,
+					Value: tagValue,
+				},
+				BenchmarkID: o.ID,
+			})
+		}
 		b := db.Benchmark{
 			ID:          o.ID,
 			Title:       o.Title,
@@ -208,17 +162,9 @@ func (g *GitParser) ExtractBenchmarks(compliancePath string) error {
 			Managed:     o.Managed,
 			AutoAssign:  o.AutoAssign,
 			Baseline:    o.Baseline,
-			Tags:        nil,
+			Tags:        tags,
 			Children:    nil,
 			Policies:    nil,
-		}
-		for _, tag := range g.benchmarkTags {
-			if contains(o.Tags, tag.ID) {
-				b.Tags = append(b.Tags, tag)
-			}
-		}
-		if len(o.Tags) != len(b.Tags) {
-			//fmt.Printf("could not find some benchmark tags, %d != %d", len(o.Tags), len(b.Tags))
 		}
 		for _, policy := range g.policies {
 			if contains(o.Policies, policy.ID) {
@@ -299,12 +245,6 @@ func (g *GitParser) CheckForDuplicate() error {
 }
 
 func (g *GitParser) ExtractCompliance(compliancePath string) error {
-	if err := g.ExtractPolicyTags(compliancePath); err != nil {
-		return err
-	}
-	if err := g.ExtractBenchmarkTags(compliancePath); err != nil {
-		return err
-	}
 	if err := g.ExtractPolicies(compliancePath); err != nil {
 		return err
 	}

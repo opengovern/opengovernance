@@ -32,11 +32,14 @@ type Benchmark struct {
 	Managed     bool
 	AutoAssign  bool
 	Baseline    bool
-	Tags        []BenchmarkTag `gorm:"many2many:benchmark_tag_rels;"`
-	Children    []Benchmark    `gorm:"many2many:benchmark_children;"`
-	Policies    []Policy       `gorm:"many2many:benchmark_policies;"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+
+	Tags    []BenchmarkTag      `gorm:"foreignKey:BenchmarkID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	tagsMap map[string][]string `gorm:"-:all"`
+
+	Children  []Benchmark `gorm:"many2many:benchmark_children;"`
+	Policies  []Policy    `gorm:"many2many:benchmark_policies;"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func (b Benchmark) ToApi() api.Benchmark {
@@ -53,10 +56,7 @@ func (b Benchmark) ToApi() api.Benchmark {
 		Baseline:    b.Baseline,
 		CreatedAt:   b.CreatedAt,
 		UpdatedAt:   b.UpdatedAt,
-	}
-	ba.Tags = map[string]string{}
-	for _, tag := range b.Tags {
-		ba.Tags[tag.Key] = tag.Value
+		Tags:        b.GetTagsMap(),
 	}
 	for _, child := range b.Children {
 		ba.Children = append(ba.Children, child.ID)
@@ -129,28 +129,35 @@ func (b *Benchmark) PopulateConnectors(db Database, api *api.Benchmark) error {
 	return nil
 }
 
+func (b Benchmark) GetTagsMap() map[string][]string {
+	if b.tagsMap == nil {
+		tagLikeArr := make([]model.TagLike, 0, len(b.Tags))
+		for _, tag := range b.Tags {
+			tagLikeArr = append(tagLikeArr, tag)
+		}
+		b.tagsMap = model.GetTagsMap(tagLikeArr)
+	}
+	return b.tagsMap
+}
+
 type BenchmarkChild struct {
 	BenchmarkID string
 	ChildID     string
 }
 
 type BenchmarkTag struct {
-	gorm.Model
-	Key        string
-	Value      string
-	Benchmarks []Benchmark `gorm:"many2many:benchmark_tag_rels;"`
-}
-
-type BenchmarkTagRel struct {
-	BenchmarkID    string
-	BenchmarkTagID uint
+	model.Tag
+	BenchmarkID string `gorm:"primaryKey"`
 }
 
 type Policy struct {
-	ID                 string `gorm:"primarykey"`
-	Title              string
-	Description        string
-	Tags               []PolicyTag `gorm:"many2many:policy_tag_rels;"`
+	ID          string `gorm:"primaryKey"`
+	Title       string
+	Description string
+
+	Tags    []PolicyTag         `gorm:"foreignKey:PolicyID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	tagsMap map[string][]string `gorm:"-:all"`
+
 	DocumentURI        string
 	Enabled            bool
 	QueryID            *string
@@ -167,7 +174,7 @@ func (p Policy) ToApi() api.Policy {
 		ID:                 p.ID,
 		Title:              p.Title,
 		Description:        p.Description,
-		Tags:               nil,
+		Tags:               p.GetTagsMap(),
 		Connector:          "",
 		Enabled:            p.Enabled,
 		DocumentURI:        p.DocumentURI,
@@ -178,11 +185,18 @@ func (p Policy) ToApi() api.Policy {
 		CreatedAt:          p.CreatedAt,
 		UpdatedAt:          p.UpdatedAt,
 	}
-	pa.Tags = map[string]string{}
-	for _, tag := range p.Tags {
-		pa.Tags[tag.Key] = tag.Value
-	}
 	return pa
+}
+
+func (p Policy) GetTagsMap() map[string][]string {
+	if p.tagsMap == nil {
+		tagLikeArr := make([]model.TagLike, 0, len(p.Tags))
+		for _, tag := range p.Tags {
+			tagLikeArr = append(tagLikeArr, tag)
+		}
+		p.tagsMap = model.GetTagsMap(tagLikeArr)
+	}
+	return p.tagsMap
 }
 
 func (p *Policy) PopulateConnector(db Database, api *api.Policy) error {
@@ -208,15 +222,8 @@ func (p *Policy) PopulateConnector(db Database, api *api.Policy) error {
 }
 
 type PolicyTag struct {
-	gorm.Model
-	Key      string
-	Value    string
-	Policies []Policy `gorm:"many2many:policy_tag_rels;"`
-}
-
-type PolicyTagRel struct {
-	PolicyID    string
-	PolicyTagID uint
+	model.Tag
+	PolicyID string `gorm:"primaryKey"`
 }
 
 type BenchmarkPolicies struct {
@@ -280,7 +287,7 @@ type Query struct {
 	ID             string `gorm:"primaryKey"`
 	QueryToExecute string
 	Connector      string
-	ListOfTables   string
+	ListOfTables   pq.StringArray `gorm:"type:text[]"`
 	Engine         string
 	Policies       []Policy  `gorm:"foreignKey:QueryID"`
 	Insights       []Insight `gorm:"foreignKey:QueryID"`

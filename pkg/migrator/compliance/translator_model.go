@@ -6,7 +6,7 @@ type Benchmark struct {
 	DocumentURI string
 	Description string
 	Children    []string
-	Tags        []uint
+	Tags        map[string][]string
 	Managed     bool
 	LogoURI     string
 	Category    string
@@ -14,12 +14,6 @@ type Benchmark struct {
 	AutoAssign  bool
 	Baseline    bool
 	Policies    []string
-}
-
-type BenchmarkTag struct {
-	ID    uint
-	Key   string
-	Value string
 }
 
 type Policy struct {
@@ -30,14 +24,8 @@ type Policy struct {
 	DocumentURI        string
 	ManualVerification bool
 	Severity           string
-	Tags               []uint
+	Tags               map[string][]string
 	Managed            bool
-}
-
-type PolicyTag struct {
-	ID    uint
-	Key   string
-	Value string
 }
 
 type Query struct {
@@ -45,5 +33,5 @@ type Query struct {
 	Engine         string
 	QueryToExecute string
 	Connector      string
-	ListOfTables   string
+	ListOfTables   []string
 }

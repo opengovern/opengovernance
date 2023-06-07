@@ -17,12 +17,12 @@ type Database struct {
 func (db Database) Initialize() error {
 	err := db.Orm.AutoMigrate(
 		&Query{},
+		&Policy{},
 		&PolicyTag{},
+		&Benchmark{},
 		&BenchmarkTag{},
 		&Insight{},
 		&InsightTag{},
-		&Policy{},
-		&Benchmark{},
 		&BenchmarkAssignment{},
 	)
 	if err != nil {
