@@ -23,7 +23,7 @@ func ParseAccountsFromArns(arns []string) ([]string, error) {
 	haveAcc := make(map[string]bool)
 	var accounts []string
 	for _, arn := range arns {
-		if arns[0] == "/" { // Azure
+		if arn[0] == '/' { // Azure
 			splitArn := strings.Split(arn, "/")
 			acc := splitArn[2]
 			if _, value := haveAcc[acc]; !value && acc != "" {
@@ -46,7 +46,7 @@ func GetResourceIDFromArn(arns []string) ([]string, error) {
 	haveResource := make(map[string]bool)
 	var resources []string
 	for _, arn := range arns {
-		if arns[0] == "/" { //Azure
+		if arn[0] == '/' { //Azure
 			resources = append(resources, arn)
 		} else { // AWS
 			splitArn := strings.Split(arn, ":")
