@@ -68,6 +68,7 @@ func Run(es elasticsearchv7.Config, logger *zap.Logger, esFolder string) error {
 			return err
 		}
 
+		logger.Info("running es template migrate", zap.String("url", url.String()))
 		req, err := http.NewRequest("PUT", url.String(), f)
 		if err != nil {
 			return err
