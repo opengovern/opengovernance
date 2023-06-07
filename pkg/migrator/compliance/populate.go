@@ -40,8 +40,8 @@ func PopulateDatabase(dbc *gorm.DB, compliancePath, queryPath string) error {
 		}
 		for _, tag := range obj.Tags {
 			err = dbc.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "id"}, {Name: "policy_id"}}, // key columns
-				DoUpdates: clause.AssignmentColumns([]string{"key", "value"}), // column needed to be updated
+				Columns:   []clause.Column{{Name: "key"}, {Name: "policy_id"}}, // key columns
+				DoUpdates: clause.AssignmentColumns([]string{"key", "value"}),  // column needed to be updated
 			}).Create(&tag).Error
 			if err != nil {
 				return fmt.Errorf("failure in policy tag insert: %v", err)
@@ -61,8 +61,8 @@ func PopulateDatabase(dbc *gorm.DB, compliancePath, queryPath string) error {
 		}
 		for _, tag := range obj.Tags {
 			err = dbc.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "id"}, {Name: "benchmark_id"}}, // key columns
-				DoUpdates: clause.AssignmentColumns([]string{"key", "value"}),    // column needed to be updated
+				Columns:   []clause.Column{{Name: "key"}, {Name: "benchmark_id"}}, // key columns
+				DoUpdates: clause.AssignmentColumns([]string{"key", "value"}),     // column needed to be updated
 			}).Create(&tag).Error
 			if err != nil {
 				return fmt.Errorf("failure in benchmark tag insert: %v", err)

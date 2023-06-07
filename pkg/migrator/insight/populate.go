@@ -24,8 +24,8 @@ func PopulateDatabase(dbc *gorm.DB, insightsPath string) error {
 		}
 		for _, tag := range obj.Tags {
 			err = dbc.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "id"}, {Name: "insight_id"}}, // key columns
-				DoUpdates: clause.AssignmentColumns([]string{"key", "value"}),  // column needed to be updated
+				Columns:   []clause.Column{{Name: "key"}, {Name: "insight_id"}}, // key columns
+				DoUpdates: clause.AssignmentColumns([]string{"key", "value"}),   // column needed to be updated
 			}).Create(&tag).Error
 		}
 		if err != nil {
