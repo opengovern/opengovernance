@@ -552,7 +552,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "userId",
-                        "name": "userId",
+                        "name": "user_id",
                         "in": "path",
                         "required": true
                     }
@@ -586,7 +586,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "userId",
-                        "name": "userId",
+                        "name": "user_id",
                         "in": "path",
                         "required": true
                     }
@@ -778,8 +778,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Source ID",
-                        "name": "source_id",
+                        "description": "Connection ID",
+                        "name": "connection_id",
                         "in": "path",
                         "required": true
                     }
@@ -820,8 +820,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Source ID",
-                        "name": "source_id",
+                        "description": "Connection ID",
+                        "name": "connection_id",
                         "in": "path",
                         "required": true
                     }
@@ -857,8 +857,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Source ID",
-                        "name": "source_id",
+                        "description": "Connection ID",
+                        "name": "connection_id",
                         "in": "path",
                         "required": true
                     }
@@ -1026,6 +1026,15 @@ const docTemplate = `{
                     "compliance"
                 ],
                 "summary": "Get policy",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "PolicyID",
+                        "name": "policy_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1086,6 +1095,15 @@ const docTemplate = `{
                     "compliance"
                 ],
                 "summary": "Get benchmark",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1108,6 +1126,15 @@ const docTemplate = `{
                     "compliance"
                 ],
                 "summary": "List policies",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1319,6 +1346,13 @@ const docTemplate = `{
                 "summary": "Get insight with result by id",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "InsightID",
+                        "name": "insightId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -1361,6 +1395,13 @@ const docTemplate = `{
                 ],
                 "summary": "Get insight trend with result by id",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "InsightID",
+                        "name": "insightId",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "array",
                         "items": {
@@ -1525,6 +1566,15 @@ const docTemplate = `{
                     "compliance"
                 ],
                 "summary": "Get query",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "QueryID",
+                        "name": "query_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1697,6 +1747,15 @@ const docTemplate = `{
                     "location"
                 ],
                 "summary": "Get locations",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Connector",
+                        "name": "connector",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2534,6 +2593,13 @@ const docTemplate = `{
                         "description": "end time in unix seconds",
                         "name": "endTime",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "ConnectionID",
+                        "name": "connectionId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -2632,6 +2698,13 @@ const docTemplate = `{
                 "summary": "Get insight result by id",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "InsightID",
+                        "name": "insightId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -2673,6 +2746,13 @@ const docTemplate = `{
                 ],
                 "summary": "Get insight trend data",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "InsightID",
+                        "name": "insightId",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "array",
                         "items": {
@@ -2798,6 +2878,15 @@ const docTemplate = `{
                     "metadata"
                 ],
                 "summary": "Get Resource Type",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ResourceType",
+                        "name": "resourceType",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2894,6 +2983,15 @@ const docTemplate = `{
                     "metadata"
                 ],
                 "summary": "Get Cloud Service Details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ServiceName",
+                        "name": "serviceName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2922,6 +3020,13 @@ const docTemplate = `{
                 ],
                 "summary": "Return tag values with most resources for the given key",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tag key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "integer",
                         "description": "How many top values to return default is 5",
@@ -3244,6 +3349,13 @@ const docTemplate = `{
                 ],
                 "summary": "Return tag values with most cost for the given key",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tag key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "integer",
                         "description": "How many top values to return default is 5",
@@ -3570,6 +3682,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "ServiceName",
+                        "name": "serviceName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "filter: SourceIDs",
                         "name": "connectorId",
                         "in": "query"
@@ -3704,6 +3823,15 @@ const docTemplate = `{
                     "metadata"
                 ],
                 "summary": "Returns the config metadata for the given key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3938,6 +4066,13 @@ const docTemplate = `{
                         "description": "end time in unix seconds",
                         "name": "endTime",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "ConnectionID",
+                        "name": "connectionId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -4127,20 +4262,6 @@ const docTemplate = `{
                         "description": "page number",
                         "name": "pageNumber",
                         "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 50,
-                        "description": "page size",
-                        "name": "pageSize",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "page number",
-                        "name": "pageNumber",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4166,6 +4287,15 @@ const docTemplate = `{
                     "onboard"
                 ],
                 "summary": "List credentials",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "CredentialID",
+                        "name": "credentialId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -4185,6 +4315,13 @@ const docTemplate = `{
                 ],
                 "summary": "Edit a credential by Id",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "CredentialID",
+                        "name": "credentialId",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "description": "config",
                         "name": "config",
@@ -4210,6 +4347,15 @@ const docTemplate = `{
                     "onboard"
                 ],
                 "summary": "Delete credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "CredentialID",
+                        "name": "credentialId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -4227,6 +4373,15 @@ const docTemplate = `{
                     "onboard"
                 ],
                 "summary": "Onboard all available connections for a credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "CredentialID",
+                        "name": "credentialId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -4250,6 +4405,15 @@ const docTemplate = `{
                     "onboard"
                 ],
                 "summary": "Disable credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "CredentialID",
+                        "name": "credentialId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -4267,6 +4431,15 @@ const docTemplate = `{
                     "onboard"
                 ],
                 "summary": "Enable credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "CredentialID",
+                        "name": "credentialId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -4275,7 +4448,7 @@ const docTemplate = `{
             }
         },
         "/onboard/api/v1/credential/{credentialId}/healthcheck": {
-            "post": {
+            "get": {
                 "produces": [
                     "application/json"
                 ],
@@ -4283,7 +4456,20 @@ const docTemplate = `{
                     "onboard"
                 ],
                 "summary": "Get live credential health status",
-                "responses": {}
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "CredentialID",
+                        "name": "credentialId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
             }
         },
         "/onboard/api/v1/providers": {
@@ -4332,7 +4518,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/onboard/api/v1/source/account/{accountId}": {
+        "/onboard/api/v1/source/account/{account_id}": {
             "get": {
                 "description": "Returning account source either AWS / Azure.",
                 "produces": [
@@ -4373,30 +4559,12 @@ const docTemplate = `{
                 "summary": "Create AWS source",
                 "parameters": [
                     {
-                        "description": "name",
-                        "name": "name",
+                        "description": "Request",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "description",
-                        "name": "description",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "config",
-                        "name": "config",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAWS"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAwsRequest"
                         }
                     }
                 ],
@@ -4422,30 +4590,12 @@ const docTemplate = `{
                 "summary": "Create Azure source",
                 "parameters": [
                     {
-                        "description": "name",
-                        "name": "name",
+                        "description": "Request",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "description",
-                        "name": "description",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "config",
-                        "name": "config",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAzure"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAzureRequest"
                         }
                     }
                 ],
@@ -4513,6 +4663,32 @@ const docTemplate = `{
             }
         },
         "/onboard/api/v1/source/{sourceId}/credentials": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Get source credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Source ID",
+                        "name": "sourceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.AzureCredential"
+                        }
+                    }
+                }
+            },
             "put": {
                 "produces": [
                     "application/json"
@@ -4526,30 +4702,15 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Source ID",
                         "name": "sourceId",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
-                "responses": {}
-            },
-            "post": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Get source credential",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Source ID",
-                        "name": "sourceId",
-                        "in": "query",
-                        "required": true
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
-                ],
-                "responses": {}
+                }
             }
         },
         "/onboard/api/v1/source/{sourceId}/disable": {
@@ -4620,7 +4781,14 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
+                        }
+                    }
+                }
             }
         },
         "/onboard/api/v1/sources": {
@@ -4980,6 +5148,15 @@ const docTemplate = `{
                     "describe"
                 ],
                 "summary": "Triggers a describe job to run immediately",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Connection ID",
+                        "name": "connection_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -5157,7 +5334,11 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
             }
         },
         "/schedule/api/v1/sources/{source_id}/jobs/describe": {
@@ -5211,44 +5392,9 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
-                "responses": {}
-            }
-        },
-        "/schedule/api/v1/stack/create": {
-            "put": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Temporary API for building a stack by giving a terraform statefile directory",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "stack"
-                ],
-                "summary": "Build a stack",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.CreateStackRequest"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack"
-                        }
+                        "description": "OK"
                     }
                 }
             }
@@ -5343,6 +5489,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v1/stacks/create": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Temporary API for building a stack by giving a terraform statefile directory",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stack"
+                ],
+                "summary": "Build a stack",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.CreateStackRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack"
+                        }
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/stacks/findings/{jobId}": {
             "get": {
                 "security": [
@@ -5374,7 +5559,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_es.Finding"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse"
                         }
                     }
                 }
@@ -5548,7 +5733,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/workspace/api/v1/workspace/:workspace_id": {
+        "/workspace/api/v1/workspace/{workspace_id}": {
             "get": {
                 "description": "Get workspace with workspace id",
                 "consumes": [
@@ -5604,7 +5789,118 @@ const docTemplate = `{
                 }
             }
         },
-        "/workspace/api/v1/workspace/:workspace_id/resume": {
+        "/workspace/api/v1/workspace/{workspace_id}/name": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Change name of workspace",
+                "parameters": [
+                    {
+                        "description": "Change name request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "WorkspaceID",
+                        "name": "workspace_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/workspace/api/v1/workspace/{workspace_id}/organization": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Change organization of workspace",
+                "parameters": [
+                    {
+                        "description": "Change organization request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "WorkspaceID",
+                        "name": "workspace_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/workspace/api/v1/workspace/{workspace_id}/owner": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Change ownership of workspace",
+                "parameters": [
+                    {
+                        "description": "Change ownership request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "WorkspaceID",
+                        "name": "workspace_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/workspace/api/v1/workspace/{workspace_id}/resume": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -5632,7 +5928,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/workspace/api/v1/workspace/:workspace_id/suspend": {
+        "/workspace/api/v1/workspace/{workspace_id}/suspend": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -5660,84 +5956,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/workspace/api/v1/workspace/{workspace_id}/name": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "Change name of workspace",
-                "parameters": [
-                    {
-                        "description": "Change name request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest"
-                        }
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/workspace/api/v1/workspace/{workspace_id}/organization": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "Change organization of workspace",
-                "parameters": [
-                    {
-                        "description": "Change organization request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest"
-                        }
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/workspace/api/v1/workspace/{workspace_id}/owner": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "Change ownership of workspace",
-                "parameters": [
-                    {
-                        "description": "Change ownership request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest"
-                        }
-                    }
-                ],
-                "responses": {}
-            }
-        },
         "/workspace/api/v1/workspace/{workspace_id}/tier": {
             "post": {
                 "consumes": [
@@ -5759,9 +5977,20 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceTierRequest"
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "WorkspaceID",
+                        "name": "workspace_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
             }
         },
         "/workspace/api/v1/workspaces": {
@@ -6630,7 +6859,10 @@ const docTemplate = `{
                 "tags": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "string"
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     }
                 },
                 "title": {
@@ -6725,7 +6957,10 @@ const docTemplate = `{
                 "tags": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "string"
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     }
                 },
                 "title": {
@@ -7220,7 +7455,10 @@ const docTemplate = `{
                 "tags": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "string"
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     }
                 },
                 "title": {
@@ -7267,7 +7505,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "listOfTables": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "queryToExecute": {
                     "type": "string"
@@ -8997,6 +9238,31 @@ const docTemplate = `{
                 "MetadataKeyDataRetention"
             ]
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.AWSCredential": {
+            "type": "object",
+            "properties": {
+                "accessKey": {
+                    "type": "string"
+                },
+                "secretKey": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.AzureCredential": {
+            "type": "object",
+            "properties": {
+                "clientID": {
+                    "type": "string"
+                },
+                "clientSecret": {
+                    "type": "string"
+                },
+                "tenantID": {
+                    "type": "string"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector": {
             "type": "object",
             "properties": {
@@ -9400,6 +9666,37 @@ const docTemplate = `{
                     ]
                 },
                 "typeName": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAwsRequest": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAWS"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAzureRequest": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAzure"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }

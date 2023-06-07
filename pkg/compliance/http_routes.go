@@ -535,7 +535,7 @@ func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmark_id	path		string	true	"Benchmark ID"
-//	@Param			source_id		path		string	true	"Source ID"
+//	@Param			connection_id	path		string	true	"Connection ID"
 //	@Success		200				{object}	api.BenchmarkAssignment
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [post]
 func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
@@ -606,8 +606,8 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
-//	@Param			source_id	path		string	true	"Source ID"
-//	@Success		200			{object}	[]api.BenchmarkAssignment
+//	@Param			connection_id	path		string	true	"Connection ID"
+//	@Success		200				{object}	[]api.BenchmarkAssignment
 //	@Router			/compliance/api/v1/assignments/connection/{connection_id} [get]
 func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 	connectionId := ctx.Param("connection_id")
@@ -736,7 +736,7 @@ func (h *HttpHandler) ListAssignments(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmark_id	path	string	true	"Benchmark ID"
-//	@Param			source_id		path	string	true	"Source ID"
+//	@Param			connection_id	path	string	true	"Connection ID"
 //	@Success		200
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [delete]
 func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
@@ -799,7 +799,8 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	api.Benchmark
+//	@Success	200				{object}	api.Benchmark
+//	@Param		benchmark_id	path		string	true	"BenchmarkID"
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id} [get]
 func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 	benchmarkId := ctx.Param("benchmark_id")
@@ -826,7 +827,8 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	[]api.Policy
+//	@Success	200				{object}	[]api.Policy
+//	@Param		benchmark_id	path		string	true	"BenchmarkID"
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies [get]
 func (h *HttpHandler) ListPolicies(ctx echo.Context) error {
 	var response []api.Policy
@@ -863,7 +865,8 @@ func (h *HttpHandler) ListPolicies(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	api.Policy
+//	@Param		policy_id	path		string	true	"PolicyID"
+//	@Success	200			{object}	api.Policy
 //	@Router		/compliance/api/v1/benchmarks/policies/{policy_id} [get]
 func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 	policyId := ctx.Param("policy_id")
@@ -891,7 +894,8 @@ func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	api.Query
+//	@Success	200			{object}	api.Query
+//	@Param		query_id	path		string	true	"QueryID"
 //	@Router		/compliance/api/v1/queries/{query_id} [get]
 func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	queryID := ctx.Param("query_id")
@@ -937,7 +941,8 @@ func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
 //	@Description	Get insight metadata by id
 //	@Tags			insights
 //	@Produce		json
-//	@Success		200	{object}	api.Insight
+//	@Param			insightId	path		string	true	"InsightID"
+//	@Success		200			{object}	api.Insight
 //	@Router			/compliance/api/v1/insight/{insightId} [get]
 func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 	id, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
@@ -1049,6 +1054,7 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 //	@Description	Get insight with result by id
 //	@Tags			insights
 //	@Produce		json
+//	@Param			insightId		path		string		true	"InsightID"
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
 //	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
 //	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
@@ -1154,6 +1160,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 //	@Description	Get insight trend with result by id
 //	@Tags			insights
 //	@Produce		json
+//	@Param			insightId		path		string		true	"InsightID"
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
 //	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
 //	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"

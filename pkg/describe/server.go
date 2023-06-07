@@ -373,6 +373,7 @@ func (h HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 //	@Tags			schedule
 //	@Produce		json
 //	@Param			source_id	path	string	true	"SourceID"
+//	@Success		200
 //	@Router			/schedule/api/v1/sources/{source_id}/jobs/compliance/refresh [post]
 func (h HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
@@ -414,6 +415,7 @@ func (h HttpServer) HandleGetLastCompletedComplianceReport(ctx echo.Context) err
 //	@Tags			schedule
 //	@Produce		json
 //	@Param			source_id	path	string	true	"SourceID"
+//	@Success		200
 //	@Router			/schedule/api/v1/sources/{source_id}/jobs/describe/refresh [post]
 func (h HttpServer) RunDescribeJobs(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
@@ -503,6 +505,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 //	@Tags			describe
 //	@Produce		json
 //	@Success		200
+//	@Param			connection_id	path	string	true	"Connection ID"
 //	@Router			/schedule/api/v1/describe/trigger/{connection_id} [put]
 func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 	connectionID := ctx.Param("connection_id")

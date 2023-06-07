@@ -644,7 +644,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 //	@Produce		json
 //	@Param			workspace_id	path	string	true	"Workspace ID"
 //	@Success		200
-//	@Router			/workspace/api/v1/workspace/:workspace_id [delete]
+//	@Router			/workspace/api/v1/workspace/{workspace_id} [delete]
 func (s *Server) DeleteWorkspace(c echo.Context) error {
 	userID := httpserver2.GetUserID(c)
 
@@ -681,7 +681,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 //	@Produce		json
 //	@Param			workspace_id	path	string	true	"Workspace ID"
 //	@Success		200
-//	@Router			/workspace/api/v1/workspace/:workspace_id [get]
+//	@Router			/workspace/api/v1/workspace/{workspace_id} [get]
 func (s *Server) GetWorkspace(c echo.Context) error {
 	userId := httpserver2.GetUserID(c)
 	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
@@ -771,7 +771,7 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 //	@Produce	json
 //	@Param		workspace_id	path	string	true	"Workspace ID"
 //	@Success	200
-//	@Router		/workspace/api/v1/workspace/:workspace_id/resume [post]
+//	@Router		/workspace/api/v1/workspace/{workspace_id}/resume [post]
 func (s *Server) ResumeWorkspace(c echo.Context) error {
 	id := c.Param("workspace_id")
 	if id == "" {
@@ -812,7 +812,7 @@ func (s *Server) ResumeWorkspace(c echo.Context) error {
 //	@Produce	json
 //	@Param		workspace_id	path	string	true	"Workspace ID"
 //	@Success	200
-//	@Router		/workspace/api/v1/workspace/:workspace_id/suspend [post]
+//	@Router		/workspace/api/v1/workspace/{workspace_id}/suspend [post]
 func (s *Server) SuspendWorkspace(c echo.Context) error {
 	id := c.Param("workspace_id")
 	if id == "" {
@@ -917,7 +917,9 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
-//	@Param		request	body	api.ChangeWorkspaceOwnershipRequest	true	"Change ownership request"
+//	@Param		request			body	api.ChangeWorkspaceOwnershipRequest	true	"Change ownership request"
+//	@Param		workspace_id	path	string								true	"WorkspaceID"
+//	@Success	200
 //	@Router		/workspace/api/v1/workspace/{workspace_id}/owner [post]
 func (s *Server) ChangeOwnership(c echo.Context) error {
 	userID := httpserver2.GetUserID(c)
@@ -958,7 +960,9 @@ func (s *Server) ChangeOwnership(c echo.Context) error {
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
-//	@Param		request	body	api.ChangeWorkspaceNameRequest	true	"Change name request"
+//	@Param		request			body	api.ChangeWorkspaceNameRequest	true	"Change name request"
+//	@Param		workspace_id	path	string							true	"WorkspaceID"
+//	@Success	200
 //	@Router		/workspace/api/v1/workspace/{workspace_id}/name [post]
 func (s *Server) ChangeName(c echo.Context) error {
 	workspaceID := c.Param("workspace_id")
@@ -994,7 +998,9 @@ func (s *Server) ChangeName(c echo.Context) error {
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
-//	@Param		request	body	api.ChangeWorkspaceTierRequest	true	"Change tier request"
+//	@Param		request			body	api.ChangeWorkspaceTierRequest	true	"Change tier request"
+//	@Param		workspace_id	path	string							true	"WorkspaceID"
+//	@Success	200
 //	@Router		/workspace/api/v1/workspace/{workspace_id}/tier [post]
 func (s *Server) ChangeTier(c echo.Context) error {
 	workspaceID := c.Param("workspace_id")
@@ -1030,7 +1036,9 @@ func (s *Server) ChangeTier(c echo.Context) error {
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
-//	@Param		request	body	api.ChangeWorkspaceOrganizationRequest	true	"Change organization request"
+//	@Param		request			body	api.ChangeWorkspaceOrganizationRequest	true	"Change organization request"
+//	@Param		workspace_id	path	string									true	"WorkspaceID"
+//	@Success	200
 //	@Router		/workspace/api/v1/workspace/{workspace_id}/organization [post]
 func (s *Server) ChangeOrganization(c echo.Context) error {
 	workspaceID := c.Param("workspace_id")

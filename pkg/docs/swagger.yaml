@@ -535,7 +535,9 @@ definitions:
         type: array
       tags:
         additionalProperties:
-          type: string
+          items:
+            type: string
+          type: array
         type: object
       title:
         type: string
@@ -597,7 +599,9 @@ definitions:
         $ref: '#/definitions/types.ComplianceResultSummary'
       tags:
         additionalProperties:
-          type: string
+          items:
+            type: string
+          type: array
         type: object
       title:
         type: string
@@ -927,7 +931,9 @@ definitions:
         type: string
       tags:
         additionalProperties:
-          type: string
+          items:
+            type: string
+          type: array
         type: object
       title:
         type: string
@@ -958,7 +964,9 @@ definitions:
       id:
         type: string
       listOfTables:
-        type: string
+        items:
+          type: string
+        type: array
       queryToExecute:
         type: string
       updatedAt:
@@ -2196,6 +2204,22 @@ definitions:
     - MetadataKeyInsightJobInterval
     - MetadataKeyMetricsJobInterval
     - MetadataKeyDataRetention
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.AWSCredential:
+    properties:
+      accessKey:
+        type: string
+      secretKey:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.AzureCredential:
+    properties:
+      clientID:
+        type: string
+      clientSecret:
+        type: string
+      tenantID:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector:
     properties:
       ID:
@@ -2467,6 +2491,26 @@ definitions:
         - disabled
         type: string
       typeName:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAwsRequest:
+    properties:
+      config:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAWS'
+      description:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAzureRequest:
+    properties:
+      config:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAzure'
+      description:
+        type: string
+      name:
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAWS:
@@ -2991,7 +3035,7 @@ paths:
       parameters:
       - description: userId
         in: path
-        name: userId
+        name: user_id
         required: true
         type: string
       produces:
@@ -3013,7 +3057,7 @@ paths:
       parameters:
       - description: userId
         in: path
-        name: userId
+        name: user_id
         required: true
         type: string
       produces:
@@ -3219,9 +3263,9 @@ paths:
         name: benchmark_id
         required: true
         type: string
-      - description: Source ID
+      - description: Connection ID
         in: path
-        name: source_id
+        name: connection_id
         required: true
         type: string
       produces:
@@ -3242,9 +3286,9 @@ paths:
         name: benchmark_id
         required: true
         type: string
-      - description: Source ID
+      - description: Connection ID
         in: path
-        name: source_id
+        name: connection_id
         required: true
         type: string
       produces:
@@ -3286,9 +3330,9 @@ paths:
       - application/json
       description: Returns all benchmark assignments with source id
       parameters:
-      - description: Source ID
+      - description: Connection ID
         in: path
-        name: source_id
+        name: connection_id
         required: true
         type: string
       produces:
@@ -3402,6 +3446,12 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -3416,6 +3466,12 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -3432,6 +3488,12 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: PolicyID
+        in: path
+        name: policy_id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -3594,6 +3656,11 @@ paths:
     get:
       description: Get insight with result by id
       parameters:
+      - description: InsightID
+        in: path
+        name: insightId
+        required: true
+        type: string
       - description: filter the result by source id
         in: query
         items:
@@ -3622,6 +3689,11 @@ paths:
     get:
       description: Get insight trend with result by id
       parameters:
+      - description: InsightID
+        in: path
+        name: insightId
+        required: true
+        type: string
       - description: filter the result by source id
         in: query
         items:
@@ -3727,6 +3799,12 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: QueryID
+        in: path
+        name: query_id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -3833,6 +3911,12 @@ paths:
   /inventory/api/v1/locations/{connector}:
     get:
       description: Getting locations by provider
+      parameters:
+      - description: Connector
+        in: path
+        name: connector
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -4390,6 +4474,11 @@ paths:
         in: query
         name: endTime
         type: integer
+      - description: ConnectionID
+        in: path
+        name: connectionId
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -4454,6 +4543,11 @@ paths:
       description: Get insight results for the given insightIds - this mostly for
         internal usage, use compliance api for full api
       parameters:
+      - description: InsightID
+        in: path
+        name: insightId
+        required: true
+        type: string
       - description: filter the result by source id
         in: query
         items:
@@ -4481,6 +4575,11 @@ paths:
       description: Get an insight trend data by id and time window - this mostly for
         internal usage, use compliance api for full api
       parameters:
+      - description: InsightID
+        in: path
+        name: insightId
+        required: true
+        type: string
       - description: filter the result by source id
         in: query
         items:
@@ -4566,6 +4665,12 @@ paths:
     get:
       description: Get a single resource type metadata and its details including service
         name and insights list. Specified by resource type name.
+      parameters:
+      - description: ResourceType
+        in: path
+        name: resourceType
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -4630,6 +4735,12 @@ paths:
     get:
       description: Gets a single cloud service details and its metadata, list of resource
         types & cost support.
+      parameters:
+      - description: ServiceName
+        in: path
+        name: serviceName
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -4647,6 +4758,11 @@ paths:
       consumes:
       - application/json
       parameters:
+      - description: Tag key
+        in: path
+        name: key
+        required: true
+        type: string
       - description: How many top values to return default is 5
         in: query
         name: top
@@ -4860,6 +4976,11 @@ paths:
       consumes:
       - application/json
       parameters:
+      - description: Tag key
+        in: path
+        name: key
+        required: true
+        type: string
       - description: How many top values to return default is 5
         in: query
         name: top
@@ -5081,6 +5202,11 @@ paths:
       description: Get Cloud Service Summary for the specified service name. Including
         connector, the resource counts and the cost.
       parameters:
+      - description: ServiceName
+        in: path
+        name: serviceName
+        required: true
+        type: string
       - description: 'filter: SourceIDs'
         in: query
         name: connectorId
@@ -5171,6 +5297,12 @@ paths:
   /metadata/api/v1/metadata/{key}:
     get:
       description: Returns the config metadata for the given key
+      parameters:
+      - description: Key
+        in: path
+        name: key
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -5321,6 +5453,11 @@ paths:
         in: query
         name: endTime
         type: integer
+      - description: ConnectionID
+        in: path
+        name: connectionId
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -5431,6 +5568,12 @@ paths:
   /onboard/api/v1/credential/{credentialId}:
     delete:
       description: Delete credential
+      parameters:
+      - description: CredentialID
+        in: path
+        name: credentialId
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -5441,6 +5584,12 @@ paths:
       - onboard
     get:
       description: List credentials
+      parameters:
+      - description: CredentialID
+        in: path
+        name: credentialId
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -5454,6 +5603,11 @@ paths:
     put:
       description: Edit a credential by Id
       parameters:
+      - description: CredentialID
+        in: path
+        name: credentialId
+        required: true
+        type: string
       - description: config
         in: body
         name: config
@@ -5471,6 +5625,12 @@ paths:
   /onboard/api/v1/credential/{credentialId}/autoonboard:
     post:
       description: Onboard all available connections for a credential
+      parameters:
+      - description: CredentialID
+        in: path
+        name: credentialId
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -5486,6 +5646,12 @@ paths:
   /onboard/api/v1/credential/{credentialId}/disable:
     post:
       description: Disable credential
+      parameters:
+      - description: CredentialID
+        in: path
+        name: credentialId
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -5497,6 +5663,12 @@ paths:
   /onboard/api/v1/credential/{credentialId}/enable:
     post:
       description: Enable credential
+      parameters:
+      - description: CredentialID
+        in: path
+        name: credentialId
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -5506,10 +5678,18 @@ paths:
       tags:
       - onboard
   /onboard/api/v1/credential/{credentialId}/healthcheck:
-    post:
+    get:
+      parameters:
+      - description: CredentialID
+        in: path
+        name: credentialId
+        required: true
+        type: string
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
       summary: Get live credential health status
       tags:
       - onboard
@@ -5526,16 +5706,6 @@ paths:
         in: query
         name: connector
         type: string
-      - default: 50
-        description: page size
-        in: query
-        name: pageSize
-        type: integer
-      - default: 1
-        description: page number
-        in: query
-        name: pageNumber
-        type: integer
       - default: 50
         description: page size
         in: query
@@ -5624,29 +5794,35 @@ paths:
       tags:
       - onboard
   /onboard/api/v1/source/{sourceId}/credentials:
-    post:
+    get:
       parameters:
       - description: Source ID
-        in: query
+        in: path
         name: sourceId
         required: true
         type: string
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.AzureCredential'
       summary: Get source credential
       tags:
       - onboard
     put:
       parameters:
       - description: Source ID
-        in: query
+        in: path
         name: sourceId
         required: true
         type: string
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
       summary: Put source credential
       tags:
       - onboard
@@ -5692,11 +5868,15 @@ paths:
         type: string
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
       summary: Get live source health status
       tags:
       - onboard
-  /onboard/api/v1/source/account/{accountId}:
+  /onboard/api/v1/source/account/{account_id}:
     get:
       description: Returning account source either AWS / Azure.
       parameters:
@@ -5719,24 +5899,12 @@ paths:
     post:
       description: Creating AWS source
       parameters:
-      - description: name
+      - description: Request
         in: body
-        name: name
+        name: request
         required: true
         schema:
-          type: string
-      - description: description
-        in: body
-        name: description
-        required: true
-        schema:
-          type: string
-      - description: config
-        in: body
-        name: config
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAWS'
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAwsRequest'
       produces:
       - application/json
       responses:
@@ -5751,24 +5919,12 @@ paths:
     post:
       description: Creating Azure source
       parameters:
-      - description: name
+      - description: Request
         in: body
-        name: name
+        name: request
         required: true
         schema:
-          type: string
-      - description: description
-        in: body
-        name: description
-        required: true
-        schema:
-          type: string
-      - description: config
-        in: body
-        name: config
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAzure'
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAzureRequest'
       produces:
       - application/json
       responses:
@@ -6009,6 +6165,12 @@ paths:
   /schedule/api/v1/describe/trigger/{connection_id}:
     put:
       description: Triggers a describe job to run immediately
+      parameters:
+      - description: Connection ID
+        in: path
+        name: connection_id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -6127,7 +6289,9 @@ paths:
         type: string
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
       summary: Run compliance report jobs
       tags:
       - schedule
@@ -6163,35 +6327,12 @@ paths:
         type: string
       produces:
       - application/json
-      responses: {}
-      summary: Run describe jobs
-      tags:
-      - schedule
-  /schedule/api/v1/stack/create:
-    put:
-      consumes:
-      - application/json
-      description: Temporary API for building a stack by giving a terraform statefile
-        directory
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.CreateStackRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack'
-      security:
-      - BearerToken: []
-      summary: Build a stack
+      summary: Run describe jobs
       tags:
-      - stack
+      - schedule
   /schedule/api/v1/stacks:
     get:
       consumes:
@@ -6320,6 +6461,31 @@ paths:
       summary: Trigger benchmarks
       tags:
       - stack
+  /schedule/api/v1/stacks/create:
+    post:
+      consumes:
+      - application/json
+      description: Temporary API for building a stack by giving a terraform statefile
+        directory
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.CreateStackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack'
+      security:
+      - BearerToken: []
+      summary: Build a stack
+      tags:
+      - stack
   /schedule/api/v1/stacks/findings/{jobId}:
     get:
       consumes:
@@ -6337,7 +6503,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_es.Finding'
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse'
       security:
       - BearerToken: []
       summary: Get Benchmark Result
@@ -6377,7 +6543,7 @@ paths:
       summary: Create workspace for workspace service
       tags:
       - workspace
-  /workspace/api/v1/workspace/:workspace_id:
+  /workspace/api/v1/workspace/{workspace_id}:
     delete:
       consumes:
       - application/json
@@ -6414,7 +6580,79 @@ paths:
       summary: Get workspace for workspace service
       tags:
       - workspace
-  /workspace/api/v1/workspace/:workspace_id/resume:
+  /workspace/api/v1/workspace/{workspace_id}/name:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Change name request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest'
+      - description: WorkspaceID
+        in: path
+        name: workspace_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Change name of workspace
+      tags:
+      - workspace
+  /workspace/api/v1/workspace/{workspace_id}/organization:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Change organization request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest'
+      - description: WorkspaceID
+        in: path
+        name: workspace_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Change organization of workspace
+      tags:
+      - workspace
+  /workspace/api/v1/workspace/{workspace_id}/owner:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Change ownership request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest'
+      - description: WorkspaceID
+        in: path
+        name: workspace_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Change ownership of workspace
+      tags:
+      - workspace
+  /workspace/api/v1/workspace/{workspace_id}/resume:
     post:
       consumes:
       - application/json
@@ -6432,7 +6670,7 @@ paths:
       summary: Resume workspace
       tags:
       - workspace
-  /workspace/api/v1/workspace/:workspace_id/suspend:
+  /workspace/api/v1/workspace/{workspace_id}/suspend:
     post:
       consumes:
       - application/json
@@ -6450,57 +6688,6 @@ paths:
       summary: Suspend workspace
       tags:
       - workspace
-  /workspace/api/v1/workspace/{workspace_id}/name:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Change name request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest'
-      produces:
-      - application/json
-      responses: {}
-      summary: Change name of workspace
-      tags:
-      - workspace
-  /workspace/api/v1/workspace/{workspace_id}/organization:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Change organization request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest'
-      produces:
-      - application/json
-      responses: {}
-      summary: Change organization of workspace
-      tags:
-      - workspace
-  /workspace/api/v1/workspace/{workspace_id}/owner:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Change ownership request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest'
-      produces:
-      - application/json
-      responses: {}
-      summary: Change ownership of workspace
-      tags:
-      - workspace
   /workspace/api/v1/workspace/{workspace_id}/tier:
     post:
       consumes:
@@ -6512,9 +6699,16 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceTierRequest'
+      - description: WorkspaceID
+        in: path
+        name: workspace_id
+        required: true
+        type: string
       produces:
       - application/json
-      responses: {}
+      responses:
+        "200":
+          description: OK
       summary: Change Tier of workspace
       tags:
       - workspace

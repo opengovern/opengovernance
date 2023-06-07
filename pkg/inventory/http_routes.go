@@ -668,6 +668,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
+//	@Param		key				path		string			true	"Tag key"
 //	@Param		top				query		int				true	"How many top values to return default is 5"
 //	@Param		connector		query		[]source.Type	false	"Connector types to filter by"
 //	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
@@ -1049,6 +1050,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
+//	@Param		key				path		string			true	"Tag key"
 //	@Param		top				query		int				true	"How many top values to return default is 5"
 //	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
@@ -1392,9 +1394,10 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 //	@Tags		connection
 //	@Accept		json
 //	@Produce	json
-//	@Param		startTime	query		int	false	"start time in unix seconds"
-//	@Param		endTime		query		int	false	"end time in unix seconds"
-//	@Success	200			{object}	api.ConnectionData
+//	@Param		startTime		query		int		false	"start time in unix seconds"
+//	@Param		endTime			query		int		false	"end time in unix seconds"
+//	@Param		connectionId	path		string	true	"ConnectionID"
+//	@Success	200				{object}	api.ConnectionData
 //	@Router		/inventory/api/v2/connections/data/{connectionId} [get]
 func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 	connectionId := ctx.Param("connectionId")
@@ -1689,6 +1692,7 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 //	@Tags			benchmarks
 //	@Accepts		json
 //	@Produce		json
+//	@Param			serviceName	path		string	true	"ServiceName"
 //	@Param			connectorId	query		string	false	"filter: SourceIDs"
 //	@Param			connector	query		string	false	"filter: Provider"
 //	@Param			startTime	query		string	true	"start time for cost calculation in epoch seconds"
@@ -2073,7 +2077,8 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			location
 //	@Produce		json
-//	@Success		200	{object}	[]api.LocationByProviderResponse
+//	@Param			connector	path		string	true	"Connector"
+//	@Success		200			{object}	[]api.LocationByProviderResponse
 //	@Router			/inventory/api/v1/locations/{connector} [get]
 func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 	connectorStr := ctx.Param("connector")
@@ -2655,6 +2660,7 @@ func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			insight
 //	@Produce		json
+//	@Param			insightId		path		string		true	"InsightID"
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
 //	@Param			time			query		int			false	"unix seconds for the time to get the insight result for"
 //	@Success		200				{object}	insight.InsightResource
@@ -2701,6 +2707,7 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			insight
 //	@Produce		json
+//	@Param			insightId		path		string		true	"InsightID"
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
 //	@Param			startTime		query		int			false	"unix seconds for the start of the time window to get the insight trend for"
 //	@Param			endTime			query		int			false	"unix seconds for the end of the time window to get the insight trend for"
@@ -2801,7 +2808,8 @@ func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
-//	@Success		200	{object}	api.ServiceMetadata
+//	@Param			serviceName	path		string	true	"ServiceName"
+//	@Success		200			{object}	api.ServiceMetadata
 //	@Router			/inventory/api/v2/metadata/services/{serviceName} [get]
 func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 	serviceName := ctx.Param("serviceName")
@@ -2890,7 +2898,8 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
-//	@Success		200	{object}	api.ResourceType
+//	@Param			resourceType	path		string	true	"ResourceType"
+//	@Success		200				{object}	api.ResourceType
 //	@Router			/inventory/api/v2/metadata/resourcetype/{resourceType} [get]
 func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 	resourceTypeStr := ctx.Param("resourceType")

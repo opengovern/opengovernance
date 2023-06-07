@@ -314,10 +314,8 @@ func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
 //	@Description	Creating AWS source
 //	@Tags			onboard
 //	@Produce		json
-//	@Success		200			{object}	api.CreateSourceResponse
-//	@Param			name		body		string				true	"name"
-//	@Param			description	body		string				true	"description"
-//	@Param			config		body		api.SourceConfigAWS	true	"config"
+//	@Success		200		{object}	api.CreateSourceResponse
+//	@Param			request	body		api.SourceAwsRequest	true	"Request"
 //	@Router			/onboard/api/v1/source/aws [post]
 func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	var req api.SourceAwsRequest
@@ -405,10 +403,8 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 //	@Description	Creating Azure source
 //	@Tags			onboard
 //	@Produce		json
-//	@Success		200			{object}	api.CreateSourceResponse
-//	@Param			name		body		string					true	"name"
-//	@Param			description	body		string					true	"description"
-//	@Param			config		body		api.SourceConfigAzure	true	"config"
+//	@Success		200		{object}	api.CreateSourceResponse
+//	@Param			request	body		api.SourceAzureRequest	true	"Request"
 //	@Router			/onboard/api/v1/source/azure [post]
 func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	var req api.SourceAzureRequest
@@ -765,7 +761,8 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 //	@Description	List credentials
 //	@Tags			onboard
 //	@Produce		json
-//	@Success		200	{object}	api.Credential
+//	@Success		200				{object}	api.Credential
+//	@Param			credentialId	path		string	true	"CredentialID"
 //	@Router			/onboard/api/v1/credential/{credentialId} [get]
 func (h HttpHandler) GetCredential(ctx echo.Context) error {
 	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
@@ -842,7 +839,8 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 //	@Description	Onboard all available connections for a credential
 //	@Tags			onboard
 //	@Produce		json
-//	@Success		200	{object}	[]api.Connection
+//	@Param			credentialId	path		string	true	"CredentialID"
+//	@Success		200				{object}	[]api.Connection
 //	@Router			/onboard/api/v1/credential/{credentialId}/autoonboard [post]
 func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
@@ -994,7 +992,9 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 //	@Summary	Get live credential health status
 //	@Tags		onboard
 //	@Produce	json
-//	@Router		/onboard/api/v1/credential/{credentialId}/healthcheck [post]
+//	@Param		credentialId	path	string	true	"CredentialID"
+//	@Success	200
+//	@Router		/onboard/api/v1/credential/{credentialId}/healthcheck [get]
 func (h HttpHandler) GetCredentialHealth(ctx echo.Context) error {
 	credUUID, err := uuid.Parse(ctx.Param("credentialId"))
 	if err != nil {
@@ -1025,9 +1025,6 @@ func (h HttpHandler) GetCredentialHealth(ctx echo.Context) error {
 //	@Param			connector	query		source.Type	false	"filter by connector type"
 //	@Param			pageSize	query		int			false	"page size"		default(50)
 //	@Param			pageNumber	query		int			false	"page number"	default(1)
-//	@Param			pageSize	query		int			false	"page size"		default(50)
-//	@Param			pageNumber	query		int			false	"page number"	default(1)
-//
 //	@Success		200			{object}	[]api.Credential
 //	@Router			/onboard/api/v1/credential/sources/list [get]
 func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
@@ -1293,7 +1290,8 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
-//	@Param			config	body	api.UpdateCredentialRequest	true	"config"
+//	@Param			credentialId	path	string						true	"CredentialID"
+//	@Param			config			body	api.UpdateCredentialRequest	true	"config"
 //	@Router			/onboard/api/v1/credential/{credentialId} [put]
 func (h HttpHandler) PutCredentials(ctx echo.Context) error {
 	var req api.UpdateCredentialRequest
@@ -1318,6 +1316,7 @@ func (h HttpHandler) PutCredentials(ctx echo.Context) error {
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
+//	@Param			credentialId	path	string	true	"CredentialID"
 //	@Router			/onboard/api/v1/credential/{credentialId} [delete]
 func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
@@ -1373,6 +1372,7 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
+//	@Param			credentialId	path	string	true	"CredentialID"
 //	@Router			/onboard/api/v1/credential/{credentialId}/disable [post]
 func (h HttpHandler) DisableCredential(ctx echo.Context) error {
 	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
@@ -1434,6 +1434,7 @@ func (h HttpHandler) DisableCredential(ctx echo.Context) error {
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
+//	@Param			credentialId	path	string	true	"CredentialID"
 //	@Router			/onboard/api/v1/credential/{credentialId}/enable [post]
 func (h HttpHandler) EnableCredential(ctx echo.Context) error {
 	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
@@ -1466,8 +1467,10 @@ func (h HttpHandler) EnableCredential(ctx echo.Context) error {
 //	@Summary	Get source credential
 //	@Tags		onboard
 //	@Produce	json
-//	@Param		sourceId	query	string	true	"Source ID"
-//	@Router		/onboard/api/v1/source/{sourceId}/credentials [post]
+//	@Param		sourceId	path		string	true	"Source ID"
+//	@Success	200			{object}	api.AWSCredential
+//	@Success	200			{object}	api.AzureCredential
+//	@Router		/onboard/api/v1/source/{sourceId}/credentials [get]
 func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
@@ -1553,7 +1556,8 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 //	@Summary	Get live source health status
 //	@Tags		onboard
 //	@Produce	json
-//	@Param		sourceId	path	string	true	"Source ID"
+//	@Param		sourceId	path		string	true	"Source ID"
+//	@Success	200			{object}	api.Connection
 //	@Router		/onboard/api/v1/source/{sourceId}/healthcheck [post]
 func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
@@ -1696,7 +1700,8 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 //	@Summary	Put source credential
 //	@Tags		onboard
 //	@Produce	json
-//	@Param		sourceId	query	string	true	"Source ID"
+//	@Param		sourceId	path	string	true	"Source ID"
+//	@Success	200
 //	@Router		/onboard/api/v1/source/{sourceId}/credentials [put]
 func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
@@ -2078,7 +2083,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 //	@Produce		json
 //	@Success		200			{object}	api.Connection
 //	@Param			account_id	path		integer	true	"SourceID"
-//	@Router			/onboard/api/v1/source/account/{accountId} [get]
+//	@Router			/onboard/api/v1/source/account/{account_id} [get]
 func (h HttpHandler) GetSourcesByAccount(ctx echo.Context) error {
 	accId := ctx.Param("accountId")
 
@@ -2436,9 +2441,10 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 //	@Tags		connections
 //	@Accept		json
 //	@Produce	json
-//	@Param		startTime	query		int	false	"start time in unix seconds"
-//	@Param		endTime		query		int	false	"end time in unix seconds"
-//	@Success	200			{object}	api.Connection
+//	@Param		startTime		query		int		false	"start time in unix seconds"
+//	@Param		endTime			query		int		false	"end time in unix seconds"
+//	@Param		connectionId	path		string	true	"ConnectionID"
+//	@Success	200				{object}	api.Connection
 //	@Router		/onboard/api/v1/connections/summary/{connectionId} [get]
 func (h HttpHandler) GetConnectionSummary(ctx echo.Context) error {
 	connectionId, err := uuid.Parse(ctx.Param("connectionId"))

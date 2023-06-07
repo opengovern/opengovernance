@@ -325,7 +325,7 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			users
 //	@Produce		json
-//	@Param			userId	path		string	true	"userId"
+//	@Param			user_id	path		string	true	"userId"
 //	@Success		200		{object}	api.GetRoleBindingsResponse
 //	@Router			/auth/api/v1/user/{user_id}/workspace/membership [get]
 func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
@@ -439,7 +439,7 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			users
 //	@Produce		json
-//	@Param			userId	path		string	true	"userId"
+//	@Param			user_id	path		string	true	"userId"
 //	@Success		200		{object}	api.GetUserResponse
 //	@Router			/auth/api/v1/user/{user_id} [get]
 func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
