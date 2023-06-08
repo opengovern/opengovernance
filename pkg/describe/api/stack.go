@@ -11,11 +11,6 @@ type EvaluateStack struct {
 	StackID    string   `json:"stackId"`
 }
 
-type CreateStackRequest struct {
-	Resources []string            `json:"resources"`
-	Tags      map[string][]string `json:"tags"`
-}
-
 type UpdateStackResourcesRequest struct {
 	ResourcesToAdd    []string `json:"resourcesToAdd"`
 	ResourcesToRemove []string `json:"resourcesToRemove"`

@@ -146,42 +146,31 @@ func (s *HttpServerSuite) TestCreateStack() []string {
 	var stackIds []string
 	createStackTestCase := []struct {
 		TestId       int
-		Request      api.CreateStackRequest
 		Result       int
 		ErrorMessage string
 	}{
 		{
 			TestId: 1,
-			Request: api.CreateStackRequest{
-				Statefile: "terraform.tfstate",
-				Tags: map[string][]string{
-					"key1": {"value1", "value2"},
-					"key2": {"value3", "value4"},
-				},
-			},
+
 			Result: http.StatusOK,
 		},
 		{
 			TestId:       2,
-			Request:      api.CreateStackRequest{},
 			Result:       http.StatusBadRequest,
 			ErrorMessage: "code=400, message=No resource provided",
 		},
 	}
 	for i, tc := range createStackTestCase {
 		s.T().Run(fmt.Sprintf("createStack-%d", i), func(t *testing.T) {
-			requestBody, err := json.Marshal(tc.Request)
-			if err != nil {
-				t.Fatalf("Marshal request: %v", err)
-			}
-			r := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(requestBody))
+
+			r := httptest.NewRequest(http.MethodPost, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
 			c.SetPath("/stacks/build")
 
-			err = s.handler.CreateStack(c)
+			err := s.handler.CreateStack(c)
 			if tc.ErrorMessage != "" {
 				s.Equal(tc.ErrorMessage, err.Error())
 				s.Equal(tc.Result, err.(*echo.HTTPError).Code)

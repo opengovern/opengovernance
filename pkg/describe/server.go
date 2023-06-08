@@ -756,14 +756,22 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			terrafromFile	formData	file					false	"File to upload"
-//	@Param			data			formData	api.CreateStackRequest	false	"Request Body"
+//	@Param			tags			formData	map[string][]string		false	"Tags"
+//	@Param			resources		formData	[]string				false	"Additional Resources"
 //	@Success		200				{object}	api.Stack
 //	@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
-	var req api.CreateStackRequest
-	data := ctx.FormValue("data")
-	json.Unmarshal([]byte(data), &req)
-	resources := req.Resources
+	var tags map[string][]string
+	tagsData := ctx.FormValue("tags")
+	if tagsData != "" {
+		json.Unmarshal([]byte(tagsData), &tags)
+	}
+
+	var resources []string
+	resourcesData := ctx.FormValue("resources")
+	if resourcesData != "" {
+		json.Unmarshal([]byte(resourcesData), &resources)
+	}
 
 	file, err := ctx.FormFile("terrafromFile")
 	if err != nil {
@@ -794,8 +802,8 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "No resource provided")
 	}
 	var recordTags []*StackTag
-	if len(req.Tags) != 0 {
-		for key, value := range req.Tags {
+	if len(tags) != 0 {
+		for key, value := range tags {
 			recordTags = append(recordTags, &StackTag{
 				Key:   key,
 				Value: pq.StringArray(value),
