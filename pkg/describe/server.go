@@ -749,16 +749,16 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 // BuildStackFromStatefile godoc
 //
-//		@Summary		Create stack
-//		@Description	Create a stack by giving terraform statefile and additional resources
-//		@Security		BearerToken
-//		@Tags			stack
-//		@Accept			json
-//		@Produce		json
-//	 @Param 			terrafromFile formData  file false "File to upload"
-//		@Param			request	formData		api.CreateStackRequest	false	"Request Body"
-//		@Success		200		{object}	api.Stack
-//		@Router			/schedule/api/v1/stacks/create [post]
+//	@Summary		Create stack
+//	@Description	Create a stack by giving terraform statefile and additional resources
+//	@Security		BearerToken
+//	@Tags			stack
+//	@Accept			json
+//	@Produce		json
+//	@Param			terrafromFile	formData	file					false	"File to upload"
+//	@Param			request			formData	api.CreateStackRequest	false	"Request Body"
+//	@Success		200				{object}	api.Stack
+//	@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
 	var req api.CreateStackRequest
 	bindValidate(ctx, &req)
@@ -1080,11 +1080,11 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			insightId		query		string		true	"InsightID"
-//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
-//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
-//	@Param			stackId	path		string	true	"StackID"
-//	@Success		200		{object}	complianceapi.Insight
+//	@Param			insightId	query		string	true	"InsightID"
+//	@Param			startTime	query		int		false	"unix seconds for the start time of the trend"
+//	@Param			endTime		query		int		false	"unix seconds for the end time of the trend"
+//	@Param			stackId		path		string	true	"StackID"
+//	@Success		200			{object}	complianceapi.Insight
 //	@Router			/schedule/api/v1/stacks/{stackId}/insight [get]
 func (h HttpServer) GetStackInsights(ctx echo.Context) error {
 	stackId := ctx.Param("stackId")
