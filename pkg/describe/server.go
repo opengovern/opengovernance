@@ -2,6 +2,7 @@ package describe
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -755,12 +756,13 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			terrafromFile	formData	file					false	"File to upload"
-//	@Param			request			formData	api.CreateStackRequest	false	"Request Body"
+//	@Param			data			formData	api.CreateStackRequest	false	"Request Body"
 //	@Success		200				{object}	api.Stack
 //	@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
 	var req api.CreateStackRequest
-	bindValidate(ctx, &req)
+	data := ctx.FormValue("data")
+	json.Unmarshal([]byte(data), &req)
 	resources := req.Resources
 
 	file, err := ctx.FormFile("terrafromFile")
@@ -792,12 +794,15 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "No resource provided")
 	}
 	var recordTags []*StackTag
-	for key, value := range req.Tags {
-		recordTags = append(recordTags, &StackTag{
-			Key:   key,
-			Value: pq.StringArray(value),
-		})
+	if len(req.Tags) != 0 {
+		for key, value := range req.Tags {
+			recordTags = append(recordTags, &StackTag{
+				Key:   key,
+				Value: pq.StringArray(value),
+			})
+		}
 	}
+
 	accs, err := internal.ParseAccountsFromArns(resources)
 	if err != nil {
 		return err
