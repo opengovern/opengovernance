@@ -900,11 +900,12 @@ func (h HttpServer) ListStack(ctx echo.Context) error {
 	for _, sr := range stacksRecord {
 
 		stack := api.Stack{
-			StackID:   sr.StackID,
-			CreatedAt: sr.CreatedAt,
-			UpdatedAt: sr.UpdatedAt,
-			Resources: []string(sr.Resources),
-			Tags:      trimPrivateTags(sr.GetTagsMap()),
+			StackID:    sr.StackID,
+			CreatedAt:  sr.CreatedAt,
+			UpdatedAt:  sr.UpdatedAt,
+			Resources:  []string(sr.Resources),
+			Tags:       trimPrivateTags(sr.GetTagsMap()),
+			AccountIDs: sr.AccountIDs,
 		}
 		stacks = append(stacks, stack)
 	}
