@@ -271,15 +271,15 @@ func (s *HttpServerSuite) TestGetStack() {
 func (s *HttpServerSuite) TestTriggerStackBenchmark() {
 	ids := s.TestCreateStack()
 	var benchmarkTestCase []struct {
-		request api.EvaluateStack
+		request api.StackBenchmarkRequest
 		result  int
 	}
 	for _, id := range ids {
 		benchmarkTestCase = append(benchmarkTestCase, struct {
-			request api.EvaluateStack
+			request api.StackBenchmarkRequest
 			result  int
 		}{
-			request: api.EvaluateStack{
+			request: api.StackBenchmarkRequest{
 				StackID:    id,
 				Benchmarks: []string{"aws_foundational_security"},
 			},
@@ -287,10 +287,10 @@ func (s *HttpServerSuite) TestTriggerStackBenchmark() {
 		})
 	}
 	benchmarkTestCase = append(benchmarkTestCase, struct {
-		request api.EvaluateStack
+		request api.StackBenchmarkRequest
 		result  int
 	}{
-		request: api.EvaluateStack{
+		request: api.StackBenchmarkRequest{
 			StackID:    "not-a-stack",
 			Benchmarks: []string{},
 		},
@@ -325,7 +325,7 @@ func (s *HttpServerSuite) TestTriggerStackBenchmark() {
 				var evaluations []api.StackEvaluation
 				for _, e := range stackRecord.Evaluations {
 					evaluations = append(evaluations, api.StackEvaluation{
-						BenchmarkID: e.BenchmarkID,
+						EvaluatorID: e.EvaluatorID,
 						JobID:       e.JobID,
 						CreatedAt:   e.CreatedAt,
 					})

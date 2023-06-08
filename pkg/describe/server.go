@@ -96,7 +96,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.DELETE("/stacks/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, api3.AdminRole))
 	v1.GET("/stacks/findings/:jobId", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
 	v1.GET("/stacks/:stackId/insight", httpserver.AuthorizeHandler(h.GetStackInsight, api3.ViewerRole))
-	v1.GET("/stacks/:resourceId", httpserver.AuthorizeHandler(h.ListResourceStack, api3.ViewerRole))
+	v1.GET("/stacks/resource/:resourceId", httpserver.AuthorizeHandler(h.ListResourceStack, api3.ViewerRole))
 	v1.POST("/stacks/insight/trigger", httpserver.AuthorizeHandler(h.TriggerStackInsight, api3.AdminRole))
 }
 
@@ -1216,7 +1216,7 @@ func (h HttpServer) GetStackInsight(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			resourceId	path		string	true	"Resource ID"
 //	@Success		200			{object}	[]api.Stack
-//	@Router			/schedule/api/v1/stacks/{resourceId} [get]
+//	@Router			/schedule/api/v1/stacks/resource/{resourceId} [get]
 func (h HttpServer) ListResourceStack(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
 	stacksRecord, err := h.DB.GetResourceStacks(resourceId)
