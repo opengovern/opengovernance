@@ -12,7 +12,6 @@ import (
 
 	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/lib/pq"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
@@ -93,7 +92,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.POST("/stacks/create", httpserver.AuthorizeHandler(h.CreateStack, api3.AdminRole))
 	v1.DELETE("/stacks/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, api3.AdminRole))
 	v1.GET("/stacks/findings/:jobId", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
-	v1.GET("/stacks/:stackId/insights", httpserver.AuthorizeHandler(h.GetStackInsights, api3.ViewerRole))
+	v1.GET("/stacks/:stackId/insight", httpserver.AuthorizeHandler(h.GetStackInsight, api3.ViewerRole))
 }
 
 // HandleListSources godoc
@@ -1086,7 +1085,7 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 //	@Param			stackId		path		string	true	"StackID"
 //	@Success		200			{object}	complianceapi.Insight
 //	@Router			/schedule/api/v1/stacks/{stackId}/insight [get]
-func (h HttpServer) GetStackInsights(ctx echo.Context) error {
+func (h HttpServer) GetStackInsight(ctx echo.Context) error {
 	stackId := ctx.Param("stackId")
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
@@ -1123,9 +1122,8 @@ func (h HttpServer) GetStackInsights(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	inventoryClient := client.NewComplianceClient(h.Address + "/compliance") //TODO arta: this is wrong check other clients
 
-	insight, err := inventoryClient.GetInsight(httpclient.FromEchoContext(ctx), insightId, conns, &startTime, &endTime)
+	insight, err := h.Scheduler.complianceClient.GetInsight(httpclient.FromEchoContext(ctx), insightId, conns, &startTime, &endTime)
 	if err != nil {
 		return err
 	}
