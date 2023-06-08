@@ -4,6 +4,7 @@
 if [[ ! -z $SERVICE_LIST ]]; then
   if [[ "$SERVICE_LIST" == "all" ]]; then
     ls cmd/
+    echo "steampipe"
     exit 0
   fi
   echo "$SERVICE_LIST"
@@ -15,6 +16,7 @@ GIT_CHANGE=$(git  diff --name-only HEAD~1 HEAD)
 MOD_CHANGE=$(echo "$GIT_CHANGE" | grep "go.mod" | wc -l)
 if [[ $MOD_CHANGE != "0" ]]; then
   ls cmd/
+  echo "steampipe"
   exit 0
 fi
 
