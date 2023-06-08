@@ -22,6 +22,7 @@ type ComplianceServiceClient interface {
 	GetInsightMetadataById(ctx *httpclient.Context, id uint) (*compliance.Insight, error)
 	ListInsights(ctx *httpclient.Context, tags map[string][]string, connectors []source.Type, connectionIDs []string, timeAt *time.Time) ([]compliance.Insight, error)
 	GetFindings(ctx *httpclient.Context, req compliance.GetFindingsRequest) (compliance.GetFindingsResponse, error)
+	GetInsight(ctx *httpclient.Context, insightId string, connectionId []string, startTime *time.Time, endTime *time.Time) (compliance.Insight, error)
 }
 
 type complianceClient struct {
@@ -171,4 +172,46 @@ func (s *complianceClient) GetFindings(ctx *httpclient.Context, req compliance.G
 	}
 
 	return response, nil
+}
+
+func (s *complianceClient) GetInsight(ctx *httpclient.Context, insightId string, connectionIDs []string, startTime *time.Time, endTime *time.Time) (compliance.Insight, error) {
+	url := fmt.Sprintf("%s/api/v1/insight/%s", s.baseURL, insightId)
+	firstParamAttached := false
+	if len(connectionIDs) > 0 {
+		for _, connectionID := range connectionIDs {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("connection=%s", connectionID)
+		}
+	}
+
+	if startTime != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("startTime=%d", startTime.Unix())
+	}
+
+	if endTime != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("endTime=%d", endTime.Unix())
+	}
+
+	var insight compliance.Insight
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insight); err != nil {
+		return compliance.Insight{}, err
+	}
+	return insight, nil
 }

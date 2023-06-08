@@ -1058,28 +1058,37 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 
 // GetStackInsights godoc
 //
-//	@Summary		Get Insights Result
+//	@Summary		Get Stack Insight
 //	@Description	Get a benchmark result by jobId
 //	@Security		BearerToken
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			time	query		int		false	"unix seconds for the time to get the insight result for"
+//	@Param			insightId		query		string		true	"InsightID"
+//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
+//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
 //	@Param			stackId	path		string	true	"StackID"
-//	@Success		200		{object}	[]complianceapi.Insight
-//	@Router			/schedule/api/v1/stacks/{stackId}/insights [get]
+//	@Success		200		{object}	complianceapi.Insight
+//	@Router			/schedule/api/v1/stacks/{stackId}/insight [get]
 func (h HttpServer) GetStackInsights(ctx echo.Context) error {
 	stackId := ctx.Param("stackId")
-	timeStr := ctx.QueryParam("time")
-	var timeAt *time.Time
-	if timeStr != "" {
-		t, err := strconv.ParseInt(timeStr, 10, 64)
+	endTime := time.Now()
+	if ctx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
 		if err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
-		tm := time.Unix(t, 0)
-		timeAt = &tm
+		endTime = time.Unix(t, 0)
 	}
+	startTime := endTime.Add(-1 * 7 * 24 * time.Hour)
+	if ctx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		startTime = time.Unix(t, 0)
+	}
+	insightId := ctx.QueryParam("insightId")
 	stackRecord, err := h.DB.GetStack(stackId)
 	if err != nil {
 		return err
@@ -1099,10 +1108,42 @@ func (h HttpServer) GetStackInsights(ctx echo.Context) error {
 		return err
 	}
 	inventoryClient := client.NewComplianceClient(h.Address + "/compliance") //TODO arta: this is wrong check other clients
-	var result []complianceapi.Insight
-	result, err = inventoryClient.ListInsights(httpclient.FromEchoContext(ctx), nil, nil, conns, timeAt)
+
+	insight, err := inventoryClient.GetInsight(httpclient.FromEchoContext(ctx), insightId, conns, &startTime, &endTime)
 	if err != nil {
 		return err
 	}
-	return ctx.JSON(http.StatusOK, result)
+	var totalResaults int64
+	var filteredResults []complianceapi.InsightResult
+	for _, result := range insight.Results {
+		var headerIndex int
+		for i, header := range result.Details.Headers {
+			if header == "kaytu_resource_id" {
+				headerIndex = i
+			}
+		}
+		var count int64
+		var filteredRows [][]interface{}
+		for _, row := range result.Details.Rows {
+			for _, resourceId := range []string(stackRecord.Resources) {
+				if row[headerIndex] == resourceId {
+					filteredRows = append(filteredRows, row)
+					count++
+					break
+				}
+			}
+		}
+		if count > 0 {
+			result.Details = &complianceapi.InsightDetail{
+				Headers: result.Details.Headers,
+				Rows:    filteredRows,
+			}
+			result.Result = count
+			filteredResults = append(filteredResults, result)
+			totalResaults = totalResaults + count
+		}
+	}
+	insight.Results = filteredResults
+	insight.TotalResultValue = &totalResaults
+	return ctx.JSON(http.StatusOK, insight)
 }
