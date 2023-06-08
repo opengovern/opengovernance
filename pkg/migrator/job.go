@@ -27,6 +27,7 @@ type Job struct {
 	InsightGitURL         string
 	QueryGitURL           string
 	githubToken           string
+	conf                  JobConfig
 }
 
 func InitializeJob(
@@ -80,6 +81,8 @@ func InitializeJob(
 	if err != nil {
 		return nil, err
 	}
+
+	w.conf = conf
 	return w, nil
 }
 
@@ -109,7 +112,7 @@ func (w *Job) Run() error {
 		w.logger.Error(fmt.Sprintf("Failure while running insight migration: %v", err))
 	}
 
-	if err := workspace.Run(w.db, w.logger, "/workspace-migration"); err != nil {
+	if err := workspace.Run(w.conf, w.logger, "/workspace-migration"); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running workspace migration: %v", err))
 	}
 
