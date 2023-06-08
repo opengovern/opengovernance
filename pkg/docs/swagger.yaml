@@ -6724,9 +6724,7 @@ paths:
           description: OK
           schema:
             items:
-              items:
-                $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceResponse'
-              type: array
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceResponse'
             type: array
       summary: List all workspaces with owner id
       tags:

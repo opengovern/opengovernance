@@ -6012,10 +6012,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceResponse"
-                                }
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceResponse"
                             }
                         }
                     }

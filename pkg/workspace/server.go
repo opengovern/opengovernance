@@ -850,7 +850,7 @@ func (s *Server) SuspendWorkspace(c echo.Context) error {
 //	@Tags			workspace
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{array}	[]api.WorkspaceResponse
+//	@Success		200	{array}	api.WorkspaceResponse
 //	@Router			/workspace/api/v1/workspaces [get]
 func (s *Server) ListWorkspaces(c echo.Context) error {
 	userId := httpserver2.GetUserID(c)

@@ -82,7 +82,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 //	@Security		BearerToken
 //	@Tags			roles
 //	@Produce		json
-//	@Success		200	{object}	[]api.RolesListResponse
+//	@Success		200	{array}	api.RolesListResponse
 //	@Router			/auth/api/v1/roles [get]
 func (r *httpRoutes) ListRoles(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
@@ -404,8 +404,8 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			users
 //	@Produce		json
-//	@Param			request	body		api.GetUsersRequest	true	"Request Body"
-//	@Success		200		{object}	[]api.GetUsersResponse
+//	@Param			request	body	api.GetUsersRequest	true	"Request Body"
+//	@Success		200		{array}	api.GetUsersResponse
 //	@Router			/auth/api/v1/users [get]
 func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
