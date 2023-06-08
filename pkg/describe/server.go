@@ -775,7 +775,9 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 
 	file, err := ctx.FormFile("terrafromFile")
 	if err != nil {
-		return err
+		if err.Error() != "http: no such file" {
+			return err
+		}
 	}
 	if file != nil {
 		src, err := file.Open()
