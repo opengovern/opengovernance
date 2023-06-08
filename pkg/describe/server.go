@@ -65,6 +65,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v0.GET("/compliance/trigger", httpserver.AuthorizeHandler(h.TriggerComplianceJob, api3.AdminRole))
 	v0.GET("/compliance/summarizer/trigger", httpserver.AuthorizeHandler(h.TriggerComplianceSummarizerJob, api3.AdminRole))
 	v1.PUT("/benchmark/evaluation/trigger", httpserver.AuthorizeHandler(h.TriggerBenchmarkEvaluation, api3.AdminRole))
+	v1.PUT("/insight/evaluation/trigger", httpserver.AuthorizeHandler(h.TriggerInsightEvaluation, api3.AdminRole))
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerDescribeJobV1, api3.AdminRole))
 
 	v1.GET("/describe/source/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingDescribeSourceJobs, api3.ViewerRole))
@@ -629,8 +630,8 @@ func (h HttpServer) TriggerComplianceSummarizerJob(ctx echo.Context) error {
 //	@Tags		describe
 //	@Produce	json
 //	@Param		request	body		api.TriggerBenchmarkEvaluationRequest	true	"Request Body"
-//	@Success	200		{object}	[]describe.ComplianceReportJob
-//	@Router		/schedule/api/v1/compliance/trigger [put]
+//	@Success	200		{object}	[]ComplianceReportJob
+//	@Router		/schedule/api/v1/benchmark/evaluation/trigger [put]
 func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 	var req api.TriggerBenchmarkEvaluationRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -1232,4 +1233,58 @@ func (h HttpServer) ListResourceStack(ctx echo.Context) error {
 		stacks = append(stacks, stack)
 	}
 	return ctx.JSON(http.StatusOK, stacks)
+}
+
+// TriggerInsightEvaluation godoc
+//
+//	@Summary	Triggers a insight evaluation job to run immediately
+//	@Security	BearerToken
+//	@Tags		describe
+//	@Produce	json
+//	@Param		request	body		api.TriggerInsightEvaluationRequest	true	"Request Body"
+//	@Success	200		{object}	[]InsightJob
+//	@Router		/schedule/api/v1/insight/evaluation/trigger [put]
+func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
+	var req api.TriggerInsightEvaluationRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	var connectionIDs []string
+	if req.ConnectionID != nil {
+		connectionIDs = append(connectionIDs, *req.ConnectionID)
+	}
+	if len(req.ResourceIDs) > 0 {
+		//TODO
+		// figure out connection ids and add them
+	}
+	//TODO
+	// which schedule job best fits for this ?
+
+	insight, err := h.Scheduler.complianceClient.GetInsightMetadataById(httpclient.FromEchoContext(ctx), req.InsightID)
+	if err != nil {
+		return err
+	}
+
+	var insightJobs []InsightJob
+	for _, srcID := range connectionIDs {
+		src, err := h.DB.GetSourceByID(srcID)
+		if err != nil {
+			return err
+		}
+		job := newInsightJob(*insight, string(src.Type), srcID, src.AccountID, "")
+		err = h.Scheduler.db.AddInsightJob(&job)
+		if err != nil {
+			return err
+		}
+
+		err = enqueueInsightJobs(h.Scheduler.db, h.Scheduler.insightJobQueue, job, *insight)
+		if err != nil {
+			job.Status = insightapi.InsightJobFailed
+			job.FailureMessage = "Failed to enqueue InsightJob"
+			h.Scheduler.db.UpdateInsightJobStatus(job)
+		}
+		insightJobs = append(insightJobs, job)
+	}
+	return ctx.JSON(http.StatusOK, insightJobs)
 }

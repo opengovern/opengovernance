@@ -20,6 +20,12 @@ type TriggerBenchmarkEvaluationRequest struct {
 	ResourceIDs  []string `json:"resourceIDs"`
 }
 
+type TriggerInsightEvaluationRequest struct {
+	InsightID    uint     `json:"insightID"`
+	ConnectionID *string  `json:"connectionID"`
+	ResourceIDs  []string `json:"resourceIDs"`
+}
+
 type ListBenchmarkEvaluationsRequest struct {
 	EvaluatedAtAfter  *int64       `json:"evaluatedAtAfter"`
 	EvaluatedAtBefore *int64       `json:"evaluatedAtBefore"`
