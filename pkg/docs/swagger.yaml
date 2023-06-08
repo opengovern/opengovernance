@@ -30,38 +30,6 @@ x-tagGroups:
   - name: workspace
     tags:
     - workspace
-x-tagGroups:
-  - name: auth
-    tags:
-    - users
-    - roles
-    - keys
-  - name: compliance
-    tags:
-    - compliance
-    - benchmarks_assignemnt
-  - name: inventory
-    tags:
-    - insights
-    - benchmarks
-    - inventory
-    - cost
-    - location
-    - smart_query
-    - resource
-    - metadata
-  - name: onboard
-    tags:
-    - onboard
-  - name: schedule
-    tags:
-    - describe
-    - schedule
-    - jobs
-    - stack
-  - name: workspace
-    tags:
-    - workspace
 definitions:
   aws.Resources:
     properties:
@@ -1214,7 +1182,7 @@ definitions:
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack:
     properties:
-      accountIDs:
+      accountIds:
         items:
           type: string
         type: array
@@ -1228,7 +1196,7 @@ definitions:
         items:
           type: string
         type: array
-      stackID:
+      stackId:
         type: string
       tags:
         additionalProperties:
@@ -1238,6 +1206,8 @@ definitions:
         type: object
       updatedAt:
         type: string
+    required:
+    - stackId
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackEvaluation:
     properties:
@@ -3249,6 +3219,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse'
+      security:
+      - BearerToken: []
       summary: Returns all findings with respect to filters
       tags:
       - compliance
@@ -3543,6 +3515,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetBenchmarksSummaryResponse'
+      security:
+      - BearerToken: []
       summary: Get benchmark summary
       tags:
       - compliance
@@ -3564,6 +3538,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse'
+      security:
+      - BearerToken: []
       summary: Returns all findings with respect to filters
       tags:
       - compliance
@@ -3599,6 +3575,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse'
+      security:
+      - BearerToken: []
       summary: Returns all findings with respect to filters
       tags:
       - compliance
@@ -3622,6 +3600,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsMetricsResponse'
+      security:
+      - BearerToken: []
       summary: Returns findings metrics
       tags:
       - compliance
@@ -3633,8 +3613,7 @@ paths:
         in: query
         name: tag
         type: string
-      - collectionFormat: csv
-        description: filter insights by connector
+      - description: filter insights by connector
         in: query
         items:
           enum:
@@ -3644,8 +3623,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -3680,8 +3658,7 @@ paths:
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -3714,8 +3691,7 @@ paths:
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -3749,8 +3725,7 @@ paths:
     get:
       description: Listing insight metadata
       parameters:
-      - collectionFormat: csv
-        description: filter by connector
+      - description: filter by connector
         in: query
         items:
           enum:
@@ -3847,8 +3822,7 @@ paths:
         name: provider
         required: true
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4221,8 +4195,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4232,8 +4205,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4302,8 +4274,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4313,8 +4284,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4392,8 +4362,7 @@ paths:
         name: count
         required: true
         type: integer
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4403,8 +4372,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4429,8 +4397,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4461,8 +4428,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connection IDs
+      - description: Connection IDs
         in: query
         items:
           type: string
@@ -4528,8 +4494,7 @@ paths:
       description: List all insight results for the given insightIds - this mostly
         for internal usage, use compliance api for full api
       parameters:
-      - collectionFormat: csv
-        description: filter insights by connector
+      - description: filter insights by connector
         in: query
         items:
           enum:
@@ -4539,15 +4504,13 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
         name: connectionId
         type: array
-      - collectionFormat: csv
-        description: filter the result by insight id
+      - description: filter the result by insight id
         in: query
         items:
           type: string
@@ -4582,8 +4545,7 @@ paths:
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4615,8 +4577,7 @@ paths:
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4652,8 +4613,7 @@ paths:
         Gets a list of all resource types in workspace and their metadata including service name.
         The results could be filtered by provider name and service name.
       parameters:
-      - collectionFormat: csv
-        description: Filter by Connector
+      - description: Filter by Connector
         in: query
         items:
           enum:
@@ -4664,15 +4624,13 @@ paths:
         name: connector
         required: true
         type: array
-      - collectionFormat: csv
-        description: Filter by service name
+      - description: Filter by service name
         in: query
         items:
           type: string
         name: service
         type: array
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
@@ -4728,8 +4686,7 @@ paths:
         Gets a list of all workspace cloud services and their metadata, list of resource types and cost support.
         The results could be filtered by cost support and tags.
       parameters:
-      - collectionFormat: csv
-        description: Connector
+      - description: Connector
         in: query
         items:
           enum:
@@ -4739,8 +4696,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
@@ -4809,8 +4765,7 @@ paths:
         name: top
         required: true
         type: integer
-      - collectionFormat: csv
-        description: Connector types to filter by
+      - description: Connector types to filter by
         in: query
         items:
           enum:
@@ -4820,8 +4775,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4848,22 +4802,19 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Service names to filter by
+      - description: Service names to filter by
         in: query
         items:
           type: string
         name: servicename
         type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4873,8 +4824,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4910,6 +4860,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse'
+      security:
+      - BearerToken: []
       summary: Returns list of resource types with metrics of each type based on the
         given input filters
       tags:
@@ -4965,22 +4917,19 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Service names to filter by
+      - description: Service names to filter by
         in: query
         items:
           type: string
         name: servicename
         type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4990,8 +4939,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5018,6 +4966,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeTrendDatapoint'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns list of resource counts over the course of the specified time
         frame based on the given input filters
       tags:
@@ -5037,8 +4987,7 @@ paths:
         name: top
         required: true
         type: integer
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5048,8 +4997,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5084,8 +5032,7 @@ paths:
         in: query
         name: tag
         type: string
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5095,8 +5042,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5132,15 +5078,13 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5150,8 +5094,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5187,6 +5130,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse'
+      security:
+      - BearerToken: []
       summary: Returns list of resource types with metrics of each type based on the
         given input filters
       tags:
@@ -5349,6 +5294,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Sets the config metadata for the given key
       tags:
       - metadata
@@ -5368,6 +5315,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadata'
+      security:
+      - BearerToken: []
       summary: Returns the config metadata for the given key
       tags:
       - metadata
@@ -5399,6 +5348,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns the list of connectors for catalog page.
       tags:
       - onboard
@@ -5411,6 +5362,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogMetrics'
+      security:
+      - BearerToken: []
       summary: Returns the list of metrics for catalog page.
       tags:
       - onboard
@@ -5430,6 +5383,8 @@ paths:
           description: OK
           schema:
             type: integer
+      security:
+      - BearerToken: []
       summary: Returns a count of connections
       tags:
       - onboard
@@ -5540,6 +5495,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount'
             type: array
+      security:
+      - BearerToken: []
       summary: Get connectors
       tags:
       - onboard
@@ -5559,6 +5516,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connector'
+      security:
+      - BearerToken: []
       summary: Get connector
       tags:
       - onboard
@@ -5601,6 +5560,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential'
             type: array
+      security:
+      - BearerToken: []
       summary: List credentials
       tags:
       - onboard
@@ -5620,6 +5581,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialResponse'
+      security:
+      - BearerToken: []
       summary: Create connection credentials
       tags:
       - onboard
@@ -5637,6 +5600,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Delete credential
       tags:
       - onboard
@@ -5655,6 +5620,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential'
+      security:
+      - BearerToken: []
       summary: List credentials
       tags:
       - onboard
@@ -5677,6 +5644,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Edit a credential by Id
       tags:
       - onboard
@@ -5698,6 +5667,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
             type: array
+      security:
+      - BearerToken: []
       summary: Onboard all available connections for a credential
       tags:
       - onboard
@@ -5715,6 +5686,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Disable credential
       tags:
       - onboard
@@ -5732,6 +5705,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Enable credential
       tags:
       - onboard
@@ -5748,6 +5723,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Get live credential health status
       tags:
       - onboard
@@ -5783,6 +5760,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns a list of sources
       tags:
       - onboard
@@ -5798,6 +5777,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Provider'
             type: array
+      security:
+      - BearerToken: []
       summary: Get providers
       tags:
       - onboard
@@ -5813,6 +5794,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ProviderType'
             type: array
+      security:
+      - BearerToken: []
       summary: Get provider types
       tags:
       - onboard
@@ -5830,6 +5813,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Delete a single source
       tags:
       - onboard
@@ -5848,6 +5833,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+      security:
+      - BearerToken: []
       summary: Returns a single source
       tags:
       - onboard
@@ -5866,6 +5853,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.AzureCredential'
+      security:
+      - BearerToken: []
       summary: Get source credential
       tags:
       - onboard
@@ -5881,6 +5870,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Put source credential
       tags:
       - onboard
@@ -5897,6 +5888,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Disable a single source
       tags:
       - onboard
@@ -5913,6 +5906,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Enable a single source
       tags:
       - onboard
@@ -5931,6 +5926,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+      security:
+      - BearerToken: []
       summary: Get live source health status
       tags:
       - onboard
@@ -5950,6 +5947,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+      security:
+      - BearerToken: []
       summary: Returns source by account id
       tags:
       - onboard
@@ -5970,6 +5969,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSourceResponse'
+      security:
+      - BearerToken: []
       summary: Create AWS source
       tags:
       - onboard
@@ -5990,6 +5991,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSourceResponse'
+      security:
+      - BearerToken: []
       summary: Create Azure source
       tags:
       - onboard
@@ -6015,6 +6018,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns a list of sources
       tags:
       - onboard
@@ -6043,6 +6048,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns a list of sources
       tags:
       - onboard
@@ -6066,6 +6073,8 @@ paths:
           description: OK
           schema:
             type: integer
+      security:
+      - BearerToken: []
       summary: Returns a count of sources
       tags:
       - onboard
@@ -6076,6 +6085,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Triggers a compliance summarizer job to run immediately
       tags:
       - describe
@@ -6087,6 +6098,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Triggers a compliance job to run immediately
       tags:
       - describe
@@ -6098,6 +6111,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Triggers a describe job to run immediately
       tags:
       - describe
@@ -6109,6 +6124,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Triggers an insight job to run immediately
       tags:
       - describe
@@ -6120,6 +6137,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Triggers a summarize job to run immediately
       tags:
       - describe
@@ -6141,6 +6160,8 @@ paths:
             items:
               $ref: '#/definitions/describe.ComplianceReportJob'
             type: array
+      security:
+      - BearerToken: []
       summary: Lists all benchmark evaluations
       tags:
       - compliance
@@ -6153,6 +6174,8 @@ paths:
           description: OK
           schema:
             type: integer
+      security:
+      - BearerToken: []
       summary: Get last completed compliance report
       tags:
       - schedule
@@ -6174,6 +6197,8 @@ paths:
             items:
               $ref: '#/definitions/describe.ComplianceReportJob'
             type: array
+      security:
+      - BearerToken: []
       summary: Triggers a benchmark evaluation job to run immediately
       tags:
       - describe
@@ -6193,6 +6218,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/aws.Resources'
+      security:
+      - BearerToken: []
       summary: Describe single resource
       tags:
       - describe
@@ -6205,6 +6232,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+      security:
+      - BearerToken: []
       summary: Listing describe resource jobs
       tags:
       - schedule
@@ -6217,6 +6246,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+      security:
+      - BearerToken: []
       summary: Listing describe source jobs
       tags:
       - schedule
@@ -6234,6 +6265,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Triggers a describe job to run immediately
       tags:
       - describe
@@ -6246,6 +6279,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+      security:
+      - BearerToken: []
       summary: Listing insight jobs
       tags:
       - schedule
@@ -6270,6 +6305,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ResourceTypeDetail'
             type: array
+      security:
+      - BearerToken: []
       summary: get resource type by provider
       tags:
       - schedule
@@ -6285,6 +6322,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
             type: array
+      security:
+      - BearerToken: []
       summary: List Sources
       tags:
       - schedule
@@ -6304,6 +6343,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+      security:
+      - BearerToken: []
       summary: Get Source by id
       tags:
       - schedule
@@ -6333,6 +6374,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReport'
             type: array
+      security:
+      - BearerToken: []
       summary: List source compliance reports
       tags:
       - schedule
@@ -6350,6 +6393,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Run compliance report jobs
       tags:
       - schedule
@@ -6371,6 +6416,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSource'
             type: array
+      security:
+      - BearerToken: []
       summary: List source describe jobs
       tags:
       - schedule
@@ -6388,6 +6435,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - BearerToken: []
       summary: Run describe jobs
       tags:
       - schedule
@@ -6401,8 +6450,7 @@ paths:
         in: query
         name: tag
         type: string
-      - collectionFormat: csv
-        description: Account IDs to filter by
+      - description: Account IDs to filter by
         in: query
         items:
           type: string
@@ -6537,7 +6585,11 @@ paths:
         in: formData
         name: terrafromFile
         type: file
-      - collectionFormat: csv
+      - description: Tags
+        in: formData
+        name: tags
+        type: string
+      - description: Additional Resources
         in: formData
         items:
           type: string
@@ -6587,6 +6639,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+      security:
+      - BearerToken: []
       summary: Listing summarize jobs
       tags:
       - schedule
@@ -6871,9 +6925,9 @@ paths:
 schemes:
 - https
 securityDefinitions:
-  OAuth2Application:
+  BearerToken:
     description: Enter the token with the `Bearer` prefix.
-    flow: application
-    tokenUrl: https://example.com/oauth/token
-    type: oauth2
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

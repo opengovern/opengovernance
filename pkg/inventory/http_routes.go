@@ -1166,6 +1166,7 @@ func (h *HttpHandler) ListServiceComposition(ctx echo.Context) error {
 // ListServiceCostTrend godoc
 //
 //	@Summary	Returns list of costs over the course of the specified time frame based on the given input filters
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json

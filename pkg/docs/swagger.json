@@ -665,6 +665,11 @@
         },
         "/compliance/api/v1/alarms/top": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1042,6 +1047,11 @@
         },
         "/compliance/api/v1/benchmarks/summary": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1145,6 +1155,11 @@
         },
         "/compliance/api/v1/findings": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1178,6 +1193,11 @@
         },
         "/compliance/api/v1/findings/metrics": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1214,6 +1234,11 @@
         },
         "/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1290,7 +1315,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter insights by connector",
                         "name": "connector",
                         "in": "query"
@@ -1300,7 +1324,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1354,7 +1377,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1405,7 +1427,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1463,7 +1484,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter by connector",
                         "name": "connector",
                         "in": "query"
@@ -1615,7 +1635,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -2182,7 +2201,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2192,7 +2210,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2304,7 +2321,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2314,7 +2330,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2439,7 +2454,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2449,7 +2463,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2491,7 +2504,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query",
@@ -2541,7 +2553,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs",
                         "name": "connectionId",
                         "in": "query",
@@ -2647,7 +2658,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter insights by connector",
                         "name": "connector",
                         "in": "query"
@@ -2657,7 +2667,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -2667,7 +2676,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by insight id",
                         "name": "insightId",
                         "in": "query",
@@ -2721,7 +2729,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -2771,7 +2778,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -2828,7 +2834,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Filter by Connector",
                         "name": "connector",
                         "in": "query",
@@ -2839,7 +2844,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Filter by service name",
                         "name": "service",
                         "in": "query"
@@ -2849,7 +2853,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -2940,7 +2943,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector",
                         "name": "connector",
                         "in": "query"
@@ -2950,7 +2952,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3063,7 +3064,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector types to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3073,7 +3073,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3097,6 +3096,11 @@
         },
         "/inventory/api/v2/resources/metric": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -3113,7 +3117,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3123,7 +3126,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Service names to filter by",
                         "name": "servicename",
                         "in": "query"
@@ -3138,7 +3140,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3148,7 +3149,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3272,6 +3272,11 @@
         },
         "/inventory/api/v2/resources/trend": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -3288,7 +3293,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3298,7 +3302,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Service names to filter by",
                         "name": "servicename",
                         "in": "query"
@@ -3313,7 +3316,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3323,7 +3325,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3402,7 +3403,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3412,7 +3412,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3469,7 +3468,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3479,7 +3477,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3518,6 +3515,11 @@
         },
         "/inventory/api/v2/services/metric": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -3534,7 +3536,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3549,7 +3550,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3559,7 +3559,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3834,6 +3833,11 @@
         },
         "/metadata/api/v1/metadata": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Sets the config metadata for the given key",
                 "produces": [
                     "application/json"
@@ -3851,6 +3855,11 @@
         },
         "/metadata/api/v1/metadata/{key}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returns the config metadata for the given key",
                 "produces": [
                     "application/json"
@@ -3880,6 +3889,11 @@
         },
         "/onboard/api/v1/catalog/connectors": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3928,6 +3942,11 @@
         },
         "/onboard/api/v1/catalog/metrics": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3947,6 +3966,11 @@
         },
         "/onboard/api/v1/connections/count": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -4123,6 +4147,11 @@
         },
         "/onboard/api/v1/connectors": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Getting connectors",
                 "produces": [
                     "application/json"
@@ -4146,6 +4175,11 @@
         },
         "/onboard/api/v1/connectors/{connectorName}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Getting connector",
                 "produces": [
                     "application/json"
@@ -4175,6 +4209,11 @@
         },
         "/onboard/api/v1/credential": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "List credentials",
                 "produces": [
                     "application/json"
@@ -4234,6 +4273,11 @@
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Creating connection credentials",
                 "produces": [
                     "application/json"
@@ -4265,6 +4309,11 @@
         },
         "/onboard/api/v1/credential/sources/list": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returning a list of sources including both AWS and Azure unless filtered by Type.",
                 "produces": [
                     "application/json"
@@ -4315,6 +4364,11 @@
         },
         "/onboard/api/v1/credential/{credentialId}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "List credentials",
                 "produces": [
                     "application/json"
@@ -4342,6 +4396,11 @@
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Edit a credential by Id",
                 "produces": [
                     "application/json"
@@ -4375,6 +4434,11 @@
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Delete credential",
                 "produces": [
                     "application/json"
@@ -4401,6 +4465,11 @@
         },
         "/onboard/api/v1/credential/{credentialId}/autoonboard": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Onboard all available connections for a credential",
                 "produces": [
                     "application/json"
@@ -4433,6 +4502,11 @@
         },
         "/onboard/api/v1/credential/{credentialId}/disable": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Disable credential",
                 "produces": [
                     "application/json"
@@ -4459,6 +4533,11 @@
         },
         "/onboard/api/v1/credential/{credentialId}/enable": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Enable credential",
                 "produces": [
                     "application/json"
@@ -4485,6 +4564,11 @@
         },
         "/onboard/api/v1/credential/{credentialId}/healthcheck": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -4510,6 +4594,11 @@
         },
         "/onboard/api/v1/providers": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Getting cloud providers",
                 "produces": [
                     "application/json"
@@ -4533,6 +4622,11 @@
         },
         "/onboard/api/v1/providers/types": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Getting provider types",
                 "produces": [
                     "application/json"
@@ -4556,6 +4650,11 @@
         },
         "/onboard/api/v1/source/account/{account_id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returning account source either AWS / Azure.",
                 "produces": [
                     "application/json"
@@ -4585,6 +4684,11 @@
         },
         "/onboard/api/v1/source/aws": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Creating AWS source",
                 "produces": [
                     "application/json"
@@ -4616,6 +4720,11 @@
         },
         "/onboard/api/v1/source/azure": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Creating Azure source",
                 "produces": [
                     "application/json"
@@ -4647,6 +4756,11 @@
         },
         "/onboard/api/v1/source/{sourceId}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returning single source either AWS / Azure.",
                 "produces": [
                     "application/json"
@@ -4674,6 +4788,11 @@
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Deleting a single source either AWS / Azure.",
                 "produces": [
                     "application/json"
@@ -4700,6 +4819,11 @@
         },
         "/onboard/api/v1/source/{sourceId}/credentials": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -4726,6 +4850,11 @@
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -4751,6 +4880,11 @@
         },
         "/onboard/api/v1/source/{sourceId}/disable": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -4776,6 +4910,11 @@
         },
         "/onboard/api/v1/source/{sourceId}/enable": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -4801,6 +4940,11 @@
         },
         "/onboard/api/v1/source/{sourceId}/healthcheck": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -4829,6 +4973,11 @@
         },
         "/onboard/api/v1/sources": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returning a list of sources including both AWS and Azure unless filtered by Type.",
                 "produces": [
                     "application/json"
@@ -4863,6 +5012,11 @@
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returning a list of sources including both AWS and Azure unless filtered by Type.",
                 "produces": [
                     "application/json"
@@ -4906,6 +5060,11 @@
         },
         "/onboard/api/v1/sources/count": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returning a count of sources including both AWS and Azure unless filtered by Type.",
                 "produces": [
                     "application/json"
@@ -4939,6 +5098,11 @@
         },
         "/schedule/api/v0/compliance/summarizer/trigger": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -4955,6 +5119,11 @@
         },
         "/schedule/api/v0/compliance/trigger": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Triggers a compliance job to run immediately",
                 "produces": [
                     "application/json"
@@ -4972,6 +5141,11 @@
         },
         "/schedule/api/v0/describe/trigger": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Triggers a describe job to run immediately",
                 "produces": [
                     "application/json"
@@ -4989,6 +5163,11 @@
         },
         "/schedule/api/v0/insight/trigger": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Triggers an insight job to run immediately",
                 "produces": [
                     "application/json"
@@ -5006,6 +5185,11 @@
         },
         "/schedule/api/v0/summarize/trigger": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Triggers a summarize job to run immediately",
                 "produces": [
                     "application/json"
@@ -5023,6 +5207,11 @@
         },
         "/schedule/api/v1/benchmark/evaluations": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -5056,6 +5245,11 @@
         },
         "/schedule/api/v1/compliance/report/last/completed": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -5075,6 +5269,11 @@
         },
         "/schedule/api/v1/compliance/trigger": {
             "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -5108,6 +5307,11 @@
         },
         "/schedule/api/v1/describe/resource": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -5138,6 +5342,11 @@
         },
         "/schedule/api/v1/describe/resource/jobs/pending": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -5157,6 +5366,11 @@
         },
         "/schedule/api/v1/describe/source/jobs/pending": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -5176,6 +5390,11 @@
         },
         "/schedule/api/v1/describe/trigger/{connection_id}": {
             "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Triggers a describe job to run immediately",
                 "produces": [
                     "application/json"
@@ -5202,6 +5421,11 @@
         },
         "/schedule/api/v1/insight/jobs/pending": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -5221,6 +5445,11 @@
         },
         "/schedule/api/v1/resource_type/{provider}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "get resource type by provider",
                 "produces": [
                     "application/json"
@@ -5257,6 +5486,11 @@
         },
         "/schedule/api/v1/sources": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Getting all of Keibi sources",
                 "produces": [
                     "application/json"
@@ -5280,6 +5514,11 @@
         },
         "/schedule/api/v1/sources/{source_id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Getting Keibi source by id",
                 "produces": [
                     "application/json"
@@ -5309,6 +5548,11 @@
         },
         "/schedule/api/v1/sources/{source_id}/jobs/compliance": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "List source compliance reports",
                 "produces": [
                     "application/json"
@@ -5353,6 +5597,11 @@
         },
         "/schedule/api/v1/sources/{source_id}/jobs/compliance/refresh": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Run compliance report jobs",
                 "produces": [
                     "application/json"
@@ -5379,6 +5628,11 @@
         },
         "/schedule/api/v1/sources/{source_id}/jobs/describe": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "List source describe jobs",
                 "produces": [
                     "application/json"
@@ -5411,6 +5665,11 @@
         },
         "/schedule/api/v1/sources/{source_id}/jobs/describe/refresh": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Run describe jobs",
                 "produces": [
                     "application/json"
@@ -5465,7 +5724,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Account IDs to filter by",
                         "name": "accounIds",
                         "in": "query"
@@ -5552,11 +5810,17 @@
                         "in": "formData"
                     },
                     {
+                        "type": "string",
+                        "description": "Tags",
+                        "name": "tags",
+                        "in": "formData"
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
+                        "description": "Additional Resources",
                         "name": "resources",
                         "in": "formData"
                     }
@@ -5735,6 +5999,11 @@
         },
         "/schedule/api/v1/summarize/jobs/pending": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -7861,8 +8130,11 @@
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack": {
             "type": "object",
+            "required": [
+                "stackId"
+            ],
             "properties": {
-                "accountIDs": {
+                "accountIds": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -7883,7 +8155,7 @@
                         "type": "string"
                     }
                 },
-                "stackID": {
+                "stackId": {
                     "type": "string"
                 },
                 "tags": {
@@ -10139,11 +10411,11 @@
         }
     },
     "securityDefinitions": {
-        "OAuth2Application": {
+        "BearerToken": {
             "description": "Enter the token with the `Bearer` prefix.",
-            "type": "oauth2",
-            "flow": "application",
-            "tokenUrl": "https://example.com/oauth/token"
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }
