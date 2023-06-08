@@ -6,9 +6,14 @@ import (
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 )
 
-type EvaluateStack struct {
+type StackBenchmarkRequest struct {
 	Benchmarks []string `json:"benchmarks" validate:"required"`
-	StackID    string   `json:"stackId"`
+	StackID    string   `json:"stackId" validate:"required"`
+}
+
+type StackInsightRequest struct {
+	Insights []uint `json:"insights" validate:"required"`
+	StackID  string `json:"stackId" validate:"required"`
 }
 
 type UpdateStackResourcesRequest struct {
@@ -27,7 +32,8 @@ type Stack struct {
 }
 
 type StackEvaluation struct {
-	BenchmarkID string
+	EvaluatorID string
+	Type        string
 	JobID       uint
 	CreatedAt   time.Time
 }

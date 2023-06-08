@@ -1638,6 +1638,15 @@ definitions:
       total_value_count:
         type: integer
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetadataResponse:
+    properties:
+      resource_types:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
+        type: array
+      total_resource_type_count:
+        type: integer
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse:
     properties:
       resource_types:
@@ -1660,6 +1669,15 @@ definitions:
       total_count:
         type: number
       total_value_count:
+        type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetadataResponse:
+    properties:
+      services:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service'
+        type: array
+      total_service_count:
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse:
@@ -1698,6 +1716,9 @@ definitions:
       resourceCount:
         description: Number of resources in the region
         type: integer
+      resourceCountChangePercent:
+        description: Change in number of resources in the region
+        type: number
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Page:
     properties:
@@ -1968,36 +1989,6 @@ definitions:
         type: object
       serviceName:
         description: Service name
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata:
-    properties:
-      connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        description: Service Connector
-      cost_map_service_names:
-        description: List of Cost map service names
-        items:
-          type: string
-        type: array
-      cost_support:
-        description: Cost is supported [yes/no]
-        type: boolean
-      logo_uri:
-        type: string
-      resource_types:
-        description: List of resource types
-        items:
-          type: string
-        type: array
-      resource_types_count:
-        type: integer
-      service_label:
-        description: Service Lable
-        type: string
-      service_name:
-        description: Service Name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary:
@@ -4335,6 +4326,15 @@ paths:
           type: string
         name: connectionId
         type: array
+      - description: timestamp for resource count per location in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: timestamp for resource count per location change comparison in
+          epoch seconds
+        in: query
+        name: startTime
+        type: string
       - description: page size - default is 20
         in: query
         name: pageSize
@@ -4695,9 +4695,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
-            type: array
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetadataResponse'
       security:
       - BearerToken: []
       summary: Get List of Resource Types
@@ -4765,9 +4763,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata'
-            type: array
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetadataResponse'
       security:
       - BearerToken: []
       summary: Get List of Cloud Services
@@ -4789,7 +4785,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata'
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service'
       security:
       - BearerToken: []
       summary: Get Cloud Service Details

@@ -18,11 +18,11 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )
 
-func FindAWSCostQuery(sourceID *uuid.UUID, fetchSize int, searchAfter []interface{}) (string, error) {
-	res := make(map[string]interface{})
+func FindAWSCostQuery(sourceID *uuid.UUID, fetchSize int, searchAfter []any) (string, error) {
+	res := make(map[string]any)
 
 	res["size"] = fetchSize
-	res["sort"] = []map[string]interface{}{
+	res["sort"] = []map[string]any{
 		{
 			"_id": "asc",
 		},
@@ -32,12 +32,12 @@ func FindAWSCostQuery(sourceID *uuid.UUID, fetchSize int, searchAfter []interfac
 	}
 
 	if sourceID != nil {
-		var filters []interface{}
-		filters = append(filters, map[string]interface{}{
+		var filters []any
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": {sourceID.String()}},
 		})
-		res["query"] = map[string]interface{}{
-			"bool": map[string]interface{}{
+		res["query"] = map[string]any{
+			"bool": map[string]any{
 				"filter": filters,
 			},
 		}
@@ -110,22 +110,22 @@ func BuildFilterQuery(
 	}
 	notTerms["resource_type"] = utils.ToLowerStringSlice(ignoreResourceTypes)
 
-	root := map[string]interface{}{}
+	root := map[string]any{}
 	root["size"] = 0
 
-	sourceTypeFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "source_type", "size": 1000},
+	sourceTypeFilter := map[string]any{
+		"terms": map[string]any{"field": "source_type", "size": 1000},
 	}
-	resourceTypeFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "resource_type", "size": 1000},
+	resourceTypeFilter := map[string]any{
+		"terms": map[string]any{"field": "resource_type", "size": 1000},
 	}
-	locationFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "location", "size": 1000},
+	locationFilter := map[string]any{
+		"terms": map[string]any{"field": "location", "size": 1000},
 	}
-	connectionIDFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": "source_id", "size": 1000},
+	connectionIDFilter := map[string]any{
+		"terms": map[string]any{"field": "source_id", "size": 1000},
 	}
-	aggs := map[string]interface{}{
+	aggs := map[string]any{
 		"source_type_filter":   sourceTypeFilter,
 		"resource_type_filter": resourceTypeFilter,
 		"location_filter":      locationFilter,
@@ -133,11 +133,11 @@ func BuildFilterQuery(
 	}
 	root["aggs"] = aggs
 
-	boolQuery := make(map[string]interface{})
+	boolQuery := make(map[string]any)
 	if terms != nil && len(terms) > 0 {
-		var filters []map[string]interface{}
+		var filters []map[string]any
 		for k, vs := range terms {
-			filters = append(filters, map[string]interface{}{
+			filters = append(filters, map[string]any{
 				"terms": map[string][]string{
 					k: vs,
 				},
@@ -147,8 +147,8 @@ func BuildFilterQuery(
 		boolQuery["filter"] = filters
 	}
 	if len(query) > 0 {
-		boolQuery["must"] = map[string]interface{}{
-			"multi_match": map[string]interface{}{
+		boolQuery["must"] = map[string]any{
+			"multi_match": map[string]any{
 				"fields": []string{"resource_id", "name", "source_type", "resource_type", "resource_group",
 					"location", "source_id"},
 				"query":     query,
@@ -157,9 +157,9 @@ func BuildFilterQuery(
 		}
 	}
 	if len(notTerms) > 0 {
-		var filters []map[string]interface{}
+		var filters []map[string]any
 		for k, vs := range notTerms {
-			filters = append(filters, map[string]interface{}{
+			filters = append(filters, map[string]any{
 				"terms": map[string][]string{
 					k: vs,
 				},
@@ -169,7 +169,7 @@ func BuildFilterQuery(
 		boolQuery["must_not"] = filters
 	}
 	if len(boolQuery) > 0 {
-		root["query"] = map[string]interface{}{
+		root["query"] = map[string]any{
 			"bool": boolQuery,
 		}
 	}
@@ -195,15 +195,15 @@ type ConnectionResourcesSummaryQueryHit struct {
 	Type    string                                `json:"_type"`
 	Version int64                                 `json:"_version,omitempty"`
 	Source  summarizer.ConnectionResourcesSummary `json:"_source"`
-	Sort    []interface{}                         `json:"sort"`
+	Sort    []any                                 `json:"sort"`
 }
 
-func FetchConnectionResourcesSummaryPage(client keibi.Client, connectors []source.Type, sourceID *string, sort []map[string]interface{}, size int) ([]summarizer.ConnectionResourcesSummary, error) {
+func FetchConnectionResourcesSummaryPage(client keibi.Client, connectors []source.Type, sourceID *string, sort []map[string]any, size int) ([]summarizer.ConnectionResourcesSummary, error) {
 	var hits []summarizer.ConnectionResourcesSummary
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceSummary)}},
 	})
 
@@ -212,26 +212,26 @@ func FetchConnectionResourcesSummaryPage(client keibi.Client, connectors []sourc
 		for _, c := range connectors {
 			connectorsStr = append(connectorsStr, c.String())
 		}
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": connectorsStr},
 		})
 	}
 
 	if sourceID != nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": {*sourceID}},
 		})
 	}
 
 	sort = append(sort,
-		map[string]interface{}{
+		map[string]any{
 			"_id": "desc",
 		},
 	)
 	res["size"] = size
 	res["sort"] = sort
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -266,19 +266,19 @@ type FetchConnectionResourcesCountAtResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionResourcesCountAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, t time.Time, sort []map[string]interface{}, size int) ([]summarizer.ConnectionResourcesSummary, error) {
+func FetchConnectionResourcesCountAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, t time.Time, sort []map[string]any, size int) ([]summarizer.ConnectionResourcesSummary, error) {
 	var hits []summarizer.ConnectionResourcesSummary
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
 	t = t.Truncate(24 * time.Hour)
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceSummary) + "History"}},
 	})
 
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
 			"described_at": map[string]string{
 				"lte": strconv.FormatInt(t.UnixMilli(), 10),
 			},
@@ -290,26 +290,26 @@ func FetchConnectionResourcesCountAtTime(client keibi.Client, connectors []sourc
 		for _, c := range connectors {
 			connectorsStr = append(connectorsStr, c.String())
 		}
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": connectorsStr},
 		})
 	}
 
 	if connectionIDs != nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
 
 	sort = append(sort,
-		map[string]interface{}{
+		map[string]any{
 			"_id": "desc",
 		},
 	)
 	res["size"] = 0
 	res["sort"] = sort
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -370,33 +370,33 @@ type ProviderServicesSummaryQueryHit struct {
 	Type    string                            `json:"_type"`
 	Version int64                             `json:"_version,omitempty"`
 	Source  summarizer.ProviderServiceSummary `json:"_source"`
-	Sort    []interface{}                     `json:"sort"`
+	Sort    []any                             `json:"sort"`
 }
 
-func FetchProviderServicesSummaryPage(client keibi.Client, provider source.Type, sort []map[string]interface{}, size int) ([]summarizer.ProviderServiceSummary, error) {
+func FetchProviderServicesSummaryPage(client keibi.Client, provider source.Type, sort []map[string]any, size int) ([]summarizer.ProviderServiceSummary, error) {
 	var hits []summarizer.ProviderServiceSummary
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ServiceProviderSummary)}},
 	})
 
 	if !provider.IsNull() {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": {provider.String()}},
 		})
 	}
 
 	sort = append(sort,
-		map[string]interface{}{
+		map[string]any{
 			"_id": "desc",
 		},
 	)
 	res["size"] = size
 	res["sort"] = sort
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -433,33 +433,33 @@ type ConnectionServicesSummaryQueryHit struct {
 	Type    string                              `json:"_type"`
 	Version int64                               `json:"_version,omitempty"`
 	Source  summarizer.ConnectionServiceSummary `json:"_source"`
-	Sort    []interface{}                       `json:"sort"`
+	Sort    []any                               `json:"sort"`
 }
 
-func FetchConnectionServicesSummaryPage(client keibi.Client, sourceId *string, sort []map[string]interface{}, size int) ([]summarizer.ConnectionServiceSummary, error) {
+func FetchConnectionServicesSummaryPage(client keibi.Client, sourceId *string, sort []map[string]any, size int) ([]summarizer.ConnectionServiceSummary, error) {
 	var hits []summarizer.ConnectionServiceSummary
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ServiceSummary)}},
 	})
 
 	if sourceId != nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": {*sourceId}},
 		})
 	}
 
 	sort = append(sort,
-		map[string]interface{}{
+		map[string]any{
 			"_id": "desc",
 		},
 	)
 	res["size"] = size
 	res["sort"] = sort
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -482,188 +482,86 @@ func FetchConnectionServicesSummaryPage(client keibi.Client, sourceId *string, s
 	return hits, nil
 }
 
-type ProviderCategoriesSummaryQueryResponse struct {
-	Hits ProviderCategoriesSummaryQueryHits `json:"hits"`
-}
-type ProviderCategoriesSummaryQueryHits struct {
-	Total keibi.SearchTotal                   `json:"total"`
-	Hits  []ProviderCategoriesSummaryQueryHit `json:"hits"`
-}
-type ProviderCategoriesSummaryQueryHit struct {
-	ID      string                             `json:"_id"`
-	Score   float64                            `json:"_score"`
-	Index   string                             `json:"_index"`
-	Type    string                             `json:"_type"`
-	Version int64                              `json:"_version,omitempty"`
-	Source  summarizer.ProviderCategorySummary `json:"_source"`
-	Sort    []interface{}                      `json:"sort"`
-}
-
-func FetchProviderCategoriesSummaryPage(client keibi.Client, provider source.Type, sort []map[string]interface{}, size int) ([]summarizer.ProviderCategorySummary, error) {
-	var hits []summarizer.ProviderCategorySummary
-	res := make(map[string]interface{})
-	var filters []interface{}
-
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"report_type": {string(summarizer.CategoryProviderSummary)}},
-	})
-
-	if !provider.IsNull() {
-		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_type": {provider.String()}},
-		})
-	}
-
-	sort = append(sort,
-		map[string]interface{}{
-			"_id": "desc",
-		},
-	)
-	res["size"] = size
-	res["sort"] = sort
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
-			"filter": filters,
-		},
-	}
-	b, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-
-	query := string(b)
-
-	var response ProviderCategoriesSummaryQueryResponse
-	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, hit := range response.Hits.Hits {
-		hits = append(hits, hit.Source)
-	}
-	return hits, nil
-}
-
-type ConnectionCategoriesSummaryQueryResponse struct {
-	Hits ConnectionCategoriesSummaryQueryHits `json:"hits"`
-}
-type ConnectionCategoriesSummaryQueryHits struct {
-	Total keibi.SearchTotal                     `json:"total"`
-	Hits  []ConnectionCategoriesSummaryQueryHit `json:"hits"`
-}
-type ConnectionCategoriesSummaryQueryHit struct {
-	ID      string                               `json:"_id"`
-	Score   float64                              `json:"_score"`
-	Index   string                               `json:"_index"`
-	Type    string                               `json:"_type"`
-	Version int64                                `json:"_version,omitempty"`
-	Source  summarizer.ConnectionCategorySummary `json:"_source"`
-	Sort    []interface{}                        `json:"sort"`
-}
-
-func FetchConnectionCategoriesSummaryPage(client keibi.Client, sourceId *string, sort []map[string]interface{}, size int) ([]summarizer.ConnectionCategorySummary, error) {
-	var hits []summarizer.ConnectionCategorySummary
-	res := make(map[string]interface{})
-	var filters []interface{}
-
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"report_type": {string(summarizer.CategorySummary)}},
-	})
-
-	if sourceId != nil {
-		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"source_id": {*sourceId}},
-		})
-	}
-
-	sort = append(sort,
-		map[string]interface{}{
-			"_id": "desc",
-		},
-	)
-	res["size"] = size
-	res["sort"] = sort
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
-			"filter": filters,
-		},
-	}
-	b, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-
-	query := string(b)
-
-	var response ConnectionCategoriesSummaryQueryResponse
-	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, hit := range response.Hits.Hits {
-		hits = append(hits, hit.Source)
-	}
-	return hits, nil
-}
-
 type ConnectionLocationsSummaryQueryResponse struct {
-	Hits ConnectionLocationsSummaryQueryHits `json:"hits"`
-}
-type ConnectionLocationsSummaryQueryHits struct {
-	Total keibi.SearchTotal                    `json:"total"`
-	Hits  []ConnectionLocationsSummaryQueryHit `json:"hits"`
-}
-type ConnectionLocationsSummaryQueryHit struct {
-	ID      string                               `json:"_id"`
-	Score   float64                              `json:"_score"`
-	Index   string                               `json:"_index"`
-	Type    string                               `json:"_type"`
-	Version int64                                `json:"_version,omitempty"`
-	Source  summarizer.ConnectionLocationSummary `json:"_source"`
-	Sort    []interface{}                        `json:"sort"`
+	Aggregations struct {
+		ConnectionIdGroup struct {
+			Buckets []struct {
+				Key    string `json:"key"`
+				Latest struct {
+					Hits struct {
+						Hits []struct {
+							Source summarizer.ConnectionLocationSummary `json:"_source"`
+						} `json:"hits"`
+					} `json:"hits"`
+				} `json:"latest"`
+			} `json:"buckets"`
+		} `json:"connection_id_group"`
+	} `json:"aggregations"`
 }
 
-func FetchConnectionLocationsSummaryPage(client keibi.Client, connectors []source.Type, connectionIDs []string, sort []map[string]interface{}, size int) ([]summarizer.ConnectionLocationSummary, error) {
+func FetchConnectionLocationsSummaryPage(client keibi.Client, connectors []source.Type, connectionIDs []string, sort []map[string]any, timeAt time.Time) ([]summarizer.ConnectionLocationSummary, error) {
 	var hits []summarizer.ConnectionLocationSummary
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
 
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]string{"report_type": {string(summarizer.LocationConnectionSummary)}},
+	var filters []any
+	filters = append(filters, map[string]any{
+		"terms": map[string][]string{"report_type": {string(summarizer.LocationConnectionSummaryHistory)}},
 	})
-
 	if len(connectors) > 0 {
 		connectorStr := make([]string, 0, len(connectors))
 		for _, connector := range connectors {
 			connectorStr = append(connectorStr, connector.String())
 		}
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": connectorStr},
 		})
 	}
-
 	if connectionIDs != nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
-
-	res["size"] = size
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"summarized_at": map[string]any{
+				"lte": timeAt.Unix(),
+			},
+		},
+	})
+	res["size"] = 0
 	if sort != nil {
 		res["sort"] = sort
 	}
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
+
+	res["aggs"] = map[string]any{
+		"connection_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "source_id",
+			},
+			"aggs": map[string]any{
+				"latest": map[string]any{
+					"top_hits": map[string]any{
+						"size": 1,
+						"sort": []map[string]any{
+							{
+								"summarized_at": "desc",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
 	b, err := json.Marshal(res)
 	if err != nil {
 		return nil, err
 	}
-
 	query := string(b)
 
 	fmt.Printf("query= %s, index= %s\n", query, summarizer.ConnectionSummaryIndex)
@@ -674,8 +572,10 @@ func FetchConnectionLocationsSummaryPage(client keibi.Client, connectors []sourc
 		return nil, err
 	}
 
-	for _, hit := range response.Hits.Hits {
-		hits = append(hits, hit.Source)
+	for _, connectionIdBucket := range response.Aggregations.ConnectionIdGroup.Buckets {
+		for _, hit := range connectionIdBucket.Latest.Hits.Hits {
+			hits = append(hits, hit.Source)
+		}
 	}
 	return hits, nil
 }
@@ -694,26 +594,26 @@ type ConnectionTrendSummaryQueryHit struct {
 	Type    string                            `json:"_type"`
 	Version int64                             `json:"_version,omitempty"`
 	Source  summarizer.ConnectionTrendSummary `json:"_source"`
-	Sort    []interface{}                     `json:"sort"`
+	Sort    []any                             `json:"sort"`
 }
 
 func FetchConnectionTrendSummaryPage(client keibi.Client, connectionIDs []string, createdAtFrom, createdAtTo int64,
-	sort []map[string]interface{}, size int) ([]summarizer.ConnectionTrendSummary, error) {
+	sort []map[string]any, size int) ([]summarizer.ConnectionTrendSummary, error) {
 	var hits []summarizer.ConnectionTrendSummary
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.TrendConnectionSummary)}},
 	})
 
 	if connectionIDs != nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
 			"described_at": map[string]string{
 				"gte": strconv.FormatInt(createdAtFrom, 10),
 				"lte": strconv.FormatInt(createdAtTo, 10),
@@ -722,14 +622,14 @@ func FetchConnectionTrendSummaryPage(client keibi.Client, connectionIDs []string
 	})
 
 	sort = append(sort,
-		map[string]interface{}{
+		map[string]any{
 			"_id": "desc",
 		},
 	)
 	res["size"] = size
 	res["sort"] = sort
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -766,31 +666,31 @@ type ConnectionResourceTypeTrendSummaryQueryHit struct {
 	Type    string                                        `json:"_type"`
 	Version int64                                         `json:"_version,omitempty"`
 	Source  summarizer.ConnectionResourceTypeTrendSummary `json:"_source"`
-	Sort    []interface{}                                 `json:"sort"`
+	Sort    []any                                         `json:"sort"`
 }
 
 func FetchConnectionResourceTypeTrendSummaryPage(client keibi.Client, sourceIDs []string, resourceTypes []string, createdAtFrom, createdAtTo time.Time,
-	sort []map[string]interface{}, size int) ([]summarizer.ConnectionResourceTypeTrendSummary, error) {
+	sort []map[string]any, size int) ([]summarizer.ConnectionResourceTypeTrendSummary, error) {
 	var hits []summarizer.ConnectionResourceTypeTrendSummary
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendConnectionSummary)}},
 	})
 
 	resourceTypes = utils.ToLowerStringSlice(resourceTypes)
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"resource_type": resourceTypes},
 	})
 
 	if sourceIDs != nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": sourceIDs},
 		})
 	}
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
 			"described_at": map[string]string{
 				"gte": strconv.FormatInt(createdAtFrom.UnixMilli(), 10),
 				"lte": strconv.FormatInt(createdAtTo.UnixMilli(), 10),
@@ -799,14 +699,14 @@ func FetchConnectionResourceTypeTrendSummaryPage(client keibi.Client, sourceIDs 
 	})
 
 	sort = append(sort,
-		map[string]interface{}{
+		map[string]any{
 			"_id": "desc",
 		},
 	)
 	res["size"] = size
 	res["sort"] = sort
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -843,16 +743,16 @@ type ProviderTrendSummaryQueryHit struct {
 	Type    string                          `json:"_type"`
 	Version int64                           `json:"_version,omitempty"`
 	Source  summarizer.ProviderTrendSummary `json:"_source"`
-	Sort    []interface{}                   `json:"sort"`
+	Sort    []any                           `json:"sort"`
 }
 
 func FetchProviderTrendSummaryPage(client keibi.Client, connectors []source.Type, createdAtFrom, createdAtTo int64,
-	sort []map[string]interface{}, size int) ([]summarizer.ProviderTrendSummary, error) {
+	sort []map[string]any, size int) ([]summarizer.ProviderTrendSummary, error) {
 	var hits []summarizer.ProviderTrendSummary
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.TrendProviderSummary)}},
 	})
 
@@ -861,12 +761,12 @@ func FetchProviderTrendSummaryPage(client keibi.Client, connectors []source.Type
 		for _, connector := range connectors {
 			connectorsStr = append(connectorsStr, string(connector))
 		}
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": connectorsStr},
 		})
 	}
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
 			"described_at": map[string]string{
 				"gte": strconv.FormatInt(createdAtFrom, 10),
 				"lte": strconv.FormatInt(createdAtTo, 10),
@@ -875,14 +775,14 @@ func FetchProviderTrendSummaryPage(client keibi.Client, connectors []source.Type
 	})
 
 	sort = append(sort,
-		map[string]interface{}{
+		map[string]any{
 			"_id": "desc",
 		},
 	)
 	res["size"] = size
 	res["sort"] = sort
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -919,21 +819,21 @@ type ProviderResourceTypeTrendSummaryQueryHit struct {
 	Type    string                                      `json:"_type"`
 	Version int64                                       `json:"_version,omitempty"`
 	Source  summarizer.ProviderResourceTypeTrendSummary `json:"_source"`
-	Sort    []interface{}                               `json:"sort"`
+	Sort    []any                                       `json:"sort"`
 }
 
 func FetchProviderResourceTypeTrendSummaryPage(client keibi.Client, connectors []source.Type, resourceTypes []string, createdAtFrom, createdAtTo time.Time,
-	sort []map[string]interface{}, size int) ([]summarizer.ProviderResourceTypeTrendSummary, error) {
+	sort []map[string]any, size int) ([]summarizer.ProviderResourceTypeTrendSummary, error) {
 	var hits []summarizer.ProviderResourceTypeTrendSummary
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendProviderSummary)}},
 	})
 
 	resourceTypes = utils.ToLowerStringSlice(resourceTypes)
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"resource_type": resourceTypes},
 	})
 
@@ -942,12 +842,12 @@ func FetchProviderResourceTypeTrendSummaryPage(client keibi.Client, connectors [
 		for _, connector := range connectors {
 			connectorsStr = append(connectorsStr, string(connector))
 		}
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": connectorsStr},
 		})
 	}
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
 			"described_at": map[string]string{
 				"gte": strconv.FormatInt(createdAtFrom.UnixMilli(), 10),
 				"lte": strconv.FormatInt(createdAtTo.UnixMilli(), 10),
@@ -956,14 +856,14 @@ func FetchProviderResourceTypeTrendSummaryPage(client keibi.Client, connectors [
 	})
 
 	sort = append(sort,
-		map[string]interface{}{
+		map[string]any{
 			"_id": "desc",
 		},
 	)
 	res["size"] = size
 	res["sort"] = sort
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -1000,41 +900,41 @@ type ProviderResourceTypeSummaryQueryHit struct {
 	Type    string                                 `json:"_type"`
 	Version int64                                  `json:"_version,omitempty"`
 	Source  summarizer.ProviderResourceTypeSummary `json:"_source"`
-	Sort    []interface{}                          `json:"sort"`
+	Sort    []any                                  `json:"sort"`
 }
 
 func FetchProviderResourceTypeSummaryPage(client keibi.Client, provider source.Type, resourceTypes []string,
-	sort []map[string]interface{}, size int) ([]summarizer.ProviderResourceTypeSummary, error) {
+	sort []map[string]any, size int) ([]summarizer.ProviderResourceTypeSummary, error) {
 	var hits []summarizer.ProviderResourceTypeSummary
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeProviderSummary)}},
 	})
 
 	if !provider.IsNull() {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": {provider.String()}},
 		})
 	}
 
 	if resourceTypes != nil {
 		resourceTypes = utils.ToLowerStringSlice(resourceTypes)
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"resource_type": resourceTypes},
 		})
 	}
 
 	sort = append(sort,
-		map[string]interface{}{
+		map[string]any{
 			"_id": "desc",
 		},
 	)
 	res["size"] = size
 	res["sort"] = sort
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -1071,41 +971,41 @@ type ConnectionResourceTypeSummaryQueryHit struct {
 	Type    string                                   `json:"_type"`
 	Version int64                                    `json:"_version,omitempty"`
 	Source  summarizer.ConnectionResourceTypeSummary `json:"_source"`
-	Sort    []interface{}                            `json:"sort"`
+	Sort    []any                                    `json:"sort"`
 }
 
 func FetchConnectionResourceTypeSummaryPage(client keibi.Client, sourceIDs []string, resourceTypes []string,
-	sort []map[string]interface{}, size int) ([]summarizer.ConnectionResourceTypeSummary, error) {
+	sort []map[string]any, size int) ([]summarizer.ConnectionResourceTypeSummary, error) {
 	var hits []summarizer.ConnectionResourceTypeSummary
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeSummary)}},
 	})
 
 	if sourceIDs != nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": sourceIDs},
 		})
 	}
 
 	if resourceTypes != nil {
 		resourceTypes = utils.ToLowerStringSlice(resourceTypes)
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"resource_type": resourceTypes},
 		})
 	}
 
 	sort = append(sort,
-		map[string]interface{}{
+		map[string]any{
 			"_id": "desc",
 		},
 	)
 	res["size"] = size
 	res["sort"] = sort
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -1142,39 +1042,39 @@ type ConnectionServiceLocationsSummaryQueryHit struct {
 	Type    string                                      `json:"_type"`
 	Version int64                                       `json:"_version,omitempty"`
 	Source  summarizer.ConnectionServiceLocationSummary `json:"_source"`
-	Sort    []interface{}                               `json:"sort"`
+	Sort    []any                                       `json:"sort"`
 }
 
-func FetchConnectionServiceLocationsSummaryPage(client keibi.Client, provider source.Type, sourceIDs []string, sort []map[string]interface{}, size int) ([]summarizer.ConnectionServiceLocationSummary, error) {
+func FetchConnectionServiceLocationsSummaryPage(client keibi.Client, provider source.Type, sourceIDs []string, sort []map[string]any, size int) ([]summarizer.ConnectionServiceLocationSummary, error) {
 	var hits []summarizer.ConnectionServiceLocationSummary
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ServiceLocationConnectionSummary)}},
 	})
 
 	if !provider.IsNull() {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": {provider.String()}},
 		})
 	}
 
 	if sourceIDs != nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": sourceIDs},
 		})
 	}
 
 	sort = append(sort,
-		map[string]interface{}{
+		map[string]any{
 			"_id": "desc",
 		},
 	)
 	res["size"] = size
 	res["sort"] = sort
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -1254,20 +1154,20 @@ type FetchResourceTypeCountAtTimeResponse struct {
 }
 
 func FetchResourceTypeCountAtTime(client keibi.Client, providers []source.Type, sourceIDs []string, t time.Time, resourceTypes []string, size int) (map[string]int, error) {
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendConnectionSummary)}},
 	})
 
 	resourceTypes = utils.ToLowerStringSlice(resourceTypes)
-	filters = append(filters, map[string]interface{}{
+	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"resource_type": resourceTypes},
 	})
 
 	if sourceIDs != nil {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_id": sourceIDs},
 		})
 	}
@@ -1277,13 +1177,13 @@ func FetchResourceTypeCountAtTime(client keibi.Client, providers []source.Type, 
 		for _, provider := range providers {
 			providerStrings = append(providerStrings, provider.String())
 		}
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": providerStrings},
 		})
 	}
 
-	filters = append(filters, map[string]interface{}{
-		"range": map[string]interface{}{
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
 			"described_at": map[string]string{
 				"lte": strconv.FormatInt(t.UnixMilli(), 10),
 			},

@@ -1042,6 +1042,7 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	var result []api.Insight
 	for _, insightRow := range insightRows {
 		apiRes := insightRow.ToApi()
+		apiRes.TotalResultValue = utils.GetPointer(int64(0))
 		totalOldResultValue := int64(0)
 		if insightResults, ok := insightIdToResults[insightRow.ID]; ok {
 			for _, insightResult := range insightResults {
@@ -1123,6 +1124,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	}
 
 	apiRes := insightRow.ToApi()
+	apiRes.TotalResultValue = utils.GetPointer(int64(0))
 	totalOldResultValue := int64(0)
 	for _, insightResult := range insightResults {
 		connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
