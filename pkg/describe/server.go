@@ -908,12 +908,12 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			tag			query		map[string][]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			tags		query		map[string][]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			accounIds	query		[]string	false	"Account IDs to filter by"
 //	@Success		200			{object}	[]api.Stack
 //	@Router			/schedule/api/v1/stacks [get]
 func (h HttpServer) ListStack(ctx echo.Context) error {
-	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])
+	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tags"])
 	accountIds := ctx.QueryParams()["accountIds"]
 	stacksRecord, err := h.DB.ListStacks(tagMap, accountIds)
 	if err != nil {
