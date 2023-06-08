@@ -908,7 +908,7 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			tag			query		string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			tag			query		map[string][]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			accounIds	query		[]string	false	"Account IDs to filter by"
 //	@Success		200			{object}	[]api.Stack
 //	@Router			/schedule/api/v1/stacks [get]
