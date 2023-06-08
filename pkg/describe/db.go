@@ -1255,8 +1255,7 @@ func (db Database) GetStack(stackID string) (Stack, error) {
 func (db Database) ListStacks(tags map[string][]string, accountIds []string) ([]Stack, error) {
 	var s []Stack
 	query := db.orm.Model(&Stack{}).
-		Preload("Tags").
-		Preload("Evaluations")
+		Preload("Tags")
 	if len(accountIds) != 0 {
 		query = query.Where("EXISTS (SELECT 1 FROM unnest(account_ids) AS account WHERE account IN ?)", accountIds)
 	}
@@ -1314,4 +1313,16 @@ func (db Database) GetEvaluation(jobId uint) (StackEvaluation, error) {
 	}
 
 	return result, nil
+}
+
+func (db Database) GetResourceStacks(resourceID string) ([]Stack, error) {
+	var stacks []Stack
+	tx := db.orm.Model(&Stack{}).
+		Where("resources @> ?", pq.StringArray{resourceID}).
+		Preload("Tags").
+		Find(&stacks)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return stacks, nil
 }
