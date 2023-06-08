@@ -11,25 +11,19 @@ type EvaluateStack struct {
 	StackID    string   `json:"stackId"`
 }
 
-type CreateStackRequest struct {
-	Statefile string              `json:"statefile"`
-	Resources []string            `json:"resources"`
-	Tags      map[string][]string `json:"tags"`
-}
-
 type UpdateStackResourcesRequest struct {
 	ResourcesToAdd    []string `json:"resourcesToAdd"`
 	ResourcesToRemove []string `json:"resourcesToRemove"`
 }
 
 type Stack struct {
-	StackID     string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	Resources   []string
-	Tags        map[string][]string
-	Evaluations []StackEvaluation
-	AccountIDs  []string
+	StackID     string              `json:"stackId" validate:"required"`
+	CreatedAt   time.Time           `json:"createdAt"`
+	UpdatedAt   time.Time           `json:"updatedAt"`
+	Resources   []string            `json:"resources"`
+	Tags        map[string][]string `json:"tags"`
+	Evaluations []StackEvaluation   `json:"evaluations,omitempty"`
+	AccountIDs  []string            `json:"accountIds"`
 }
 
 type StackEvaluation struct {

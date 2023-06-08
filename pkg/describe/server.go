@@ -2,16 +2,17 @@ package describe
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/lib/pq"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
@@ -92,7 +93,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.POST("/stacks/create", httpserver.AuthorizeHandler(h.CreateStack, api3.AdminRole))
 	v1.DELETE("/stacks/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, api3.AdminRole))
 	v1.GET("/stacks/findings/:jobId", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
-	v1.GET("/stacks/:stackId/insights", httpserver.AuthorizeHandler(h.GetStackInsights, api3.ViewerRole))
+	v1.GET("/stacks/:stackId/insight", httpserver.AuthorizeHandler(h.GetStackInsight, api3.ViewerRole))
 }
 
 // HandleListSources godoc
@@ -748,41 +749,70 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 // BuildStackFromStatefile godoc
 //
-//	@Summary		Build a stack
-//	@Description	Temporary API for building a stack by giving a terraform statefile directory
+//	@Summary		Create stack
+//	@Description	Create a stack by giving terraform statefile and additional resources
 //	@Security		BearerToken
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		api.CreateStackRequest	true	"Request Body"
-//	@Success		200		{object}	api.Stack
+//	@Param			terrafromFile	formData	file					false	"File to upload"
+//	@Param			tags			formData	map[string][]string		false	"Tags"
+//	@Param			resources		formData	[]string				false	"Additional Resources"
+//	@Success		200				{object}	api.Stack
 //	@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
-	var req api.CreateStackRequest
-	bindValidate(ctx, &req)
-	resources := req.Resources
-	if req.Statefile != "" {
-		data, err := ioutil.ReadFile(req.Statefile)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-		}
+	var tags map[string][]string
+	tagsData := ctx.FormValue("tags")
+	if tagsData != "" {
+		json.Unmarshal([]byte(tagsData), &tags)
+	}
 
+	var resources []string
+	resourcesData := ctx.FormValue("resources")
+	if resourcesData != "" {
+		json.Unmarshal([]byte(resourcesData), &resources)
+	}
+
+	file, err := ctx.FormFile("terrafromFile")
+	if err != nil {
+		if err.Error() != "http: no such file" {
+			return err
+		}
+	}
+	if file != nil {
+		src, err := file.Open()
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+
+		data, err := ioutil.ReadAll(src)
+		if err != nil {
+			return err
+		}
+		if !strings.HasSuffix(file.Filename, ".tfstate") {
+			echo.NewHTTPError(http.StatusBadRequest, "File must have a .tfstate suffix")
+		}
 		arns, err := internal.GetArns(string(data))
 		if err != nil {
 			return err
 		}
 		resources = append(resources, arns...)
 	}
+
 	if len(resources) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "No resource provided")
 	}
 	var recordTags []*StackTag
-	for key, value := range req.Tags {
-		recordTags = append(recordTags, &StackTag{
-			Key:   key,
-			Value: pq.StringArray(value),
-		})
+	if len(tags) != 0 {
+		for key, value := range tags {
+			recordTags = append(recordTags, &StackTag{
+				Key:   key,
+				Value: pq.StringArray(value),
+			})
+		}
 	}
+
 	accs, err := internal.ParseAccountsFromArns(resources)
 	if err != nil {
 		return err
@@ -851,7 +881,7 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 
 // ListStack godoc
 //
-//	@Summary		List Stack
+//	@Summary		List Stacks
 //	@Description	Get list of stacks
 //	@Security		BearerToken
 //	@Tags			stack
@@ -872,11 +902,12 @@ func (h HttpServer) ListStack(ctx echo.Context) error {
 	for _, sr := range stacksRecord {
 
 		stack := api.Stack{
-			StackID:   sr.StackID,
-			CreatedAt: sr.CreatedAt,
-			UpdatedAt: sr.UpdatedAt,
-			Resources: []string(sr.Resources),
-			Tags:      trimPrivateTags(sr.GetTagsMap()),
+			StackID:    sr.StackID,
+			CreatedAt:  sr.CreatedAt,
+			UpdatedAt:  sr.UpdatedAt,
+			Resources:  []string(sr.Resources),
+			Tags:       trimPrivateTags(sr.GetTagsMap()),
+			AccountIDs: sr.AccountIDs,
 		}
 		stacks = append(stacks, stack)
 	}
@@ -909,8 +940,8 @@ func (h HttpServer) DeleteStack(ctx echo.Context) error {
 
 // TriggerStackBenchmark godoc
 //
-//	@Summary		Trigger benchmarks
-//	@Description	Trigger defined benchmarks for a stack
+//	@Summary		Evaluate Stack
+//	@Description	Trigger defined benchmarks for a stack and save in the history
 //	@Security		BearerToken
 //	@Tags			stack
 //	@Accept			json
@@ -994,8 +1025,8 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 
 // GetStackFindings godoc
 //
-//	@Summary		Get Benchmark Result
-//	@Description	Get a benchmark result by jobId
+//	@Summary		Get Stack Findings
+//	@Description	Get all findings for a stack
 //	@Security		BearerToken
 //	@Tags			stack
 //	@Accept			json
@@ -1058,28 +1089,37 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 
 // GetStackInsights godoc
 //
-//	@Summary		Get Insights Result
+//	@Summary		Get Stack Insight
 //	@Description	Get a benchmark result by jobId
 //	@Security		BearerToken
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			time	query		int		false	"unix seconds for the time to get the insight result for"
-//	@Param			stackId	path		string	true	"StackID"
-//	@Success		200		{object}	[]complianceapi.Insight
-//	@Router			/schedule/api/v1/stacks/{stackId}/insights [get]
-func (h HttpServer) GetStackInsights(ctx echo.Context) error {
+//	@Param			insightId	query		string	true	"InsightID"
+//	@Param			startTime	query		int		false	"unix seconds for the start time of the trend"
+//	@Param			endTime		query		int		false	"unix seconds for the end time of the trend"
+//	@Param			stackId		path		string	true	"StackID"
+//	@Success		200			{object}	complianceapi.Insight
+//	@Router			/schedule/api/v1/stacks/{stackId}/insight [get]
+func (h HttpServer) GetStackInsight(ctx echo.Context) error {
 	stackId := ctx.Param("stackId")
-	timeStr := ctx.QueryParam("time")
-	var timeAt *time.Time
-	if timeStr != "" {
-		t, err := strconv.ParseInt(timeStr, 10, 64)
+	endTime := time.Now()
+	if ctx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
 		if err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
-		tm := time.Unix(t, 0)
-		timeAt = &tm
+		endTime = time.Unix(t, 0)
 	}
+	startTime := endTime.Add(-1 * 7 * 24 * time.Hour)
+	if ctx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		startTime = time.Unix(t, 0)
+	}
+	insightId := ctx.QueryParam("insightId")
 	stackRecord, err := h.DB.GetStack(stackId)
 	if err != nil {
 		return err
@@ -1098,11 +1138,42 @@ func (h HttpServer) GetStackInsights(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	inventoryClient := client.NewComplianceClient(h.Address + "/compliance") //TODO arta: this is wrong check other clients
-	var result []complianceapi.Insight
-	result, err = inventoryClient.ListInsights(httpclient.FromEchoContext(ctx), nil, nil, conns, timeAt)
+
+	insight, err := h.Scheduler.complianceClient.GetInsight(httpclient.FromEchoContext(ctx), insightId, conns, &startTime, &endTime)
 	if err != nil {
 		return err
 	}
-	return ctx.JSON(http.StatusOK, result)
+	var totalResaults int64
+	var filteredResults []complianceapi.InsightResult
+	for _, result := range insight.Results {
+		var headerIndex int
+		for i, header := range result.Details.Headers {
+			if header == "kaytu_resource_id" {
+				headerIndex = i
+			}
+		}
+		var count int64
+		var filteredRows [][]interface{}
+		for _, row := range result.Details.Rows {
+			for _, resourceId := range []string(stackRecord.Resources) {
+				if row[headerIndex] == resourceId {
+					filteredRows = append(filteredRows, row)
+					count++
+					break
+				}
+			}
+		}
+		if count > 0 {
+			result.Details = &complianceapi.InsightDetail{
+				Headers: result.Details.Headers,
+				Rows:    filteredRows,
+			}
+			result.Result = count
+			filteredResults = append(filteredResults, result)
+			totalResaults = totalResaults + count
+		}
+	}
+	insight.Results = filteredResults
+	insight.TotalResultValue = &totalResaults
+	return ctx.JSON(http.StatusOK, insight)
 }
