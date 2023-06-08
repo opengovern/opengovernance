@@ -575,6 +575,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 //
 //	@Summary		Create workspace for workspace service
 //	@Description	Returns workspace created
+//	@Security		BearerToken
 //	@Tags			workspace
 //	@Accept			json
 //	@Produce		json
@@ -639,6 +640,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 //
 //	@Summary		Delete workspace for workspace service
 //	@Description	Delete workspace with workspace id
+//	@Security		BearerToken
 //	@Tags			workspace
 //	@Accept			json
 //	@Produce		json
@@ -676,6 +678,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 //
 //	@Summary		Get workspace for workspace service
 //	@Description	Get workspace with workspace id
+//	@Security		BearerToken
 //	@Tags			workspace
 //	@Accept			json
 //	@Produce		json
@@ -767,6 +770,7 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 //
 //	@Summary	Resume workspace
 //	@Tags		workspace
+//	@Security	BearerToken
 //	@Accept		json
 //	@Produce	json
 //	@Param		workspace_id	path	string	true	"Workspace ID"
@@ -808,6 +812,7 @@ func (s *Server) ResumeWorkspace(c echo.Context) error {
 //
 //	@Summary	Suspend workspace
 //	@Tags		workspace
+//	@Security	BearerToken
 //	@Accept		json
 //	@Produce	json
 //	@Param		workspace_id	path	string	true	"Workspace ID"
@@ -847,6 +852,7 @@ func (s *Server) SuspendWorkspace(c echo.Context) error {
 //
 //	@Summary		List all workspaces with owner id
 //	@Description	Returns all workspaces with owner id
+//	@Security		BearerToken
 //	@Tags			workspace
 //	@Accept			json
 //	@Produce		json
@@ -915,6 +921,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 //
 //	@Summary	Change ownership of workspace
 //	@Tags		workspace
+//	@Security	BearerToken
 //	@Accept		json
 //	@Produce	json
 //	@Param		request			body	api.ChangeWorkspaceOwnershipRequest	true	"Change ownership request"
@@ -957,6 +964,7 @@ func (s *Server) ChangeOwnership(c echo.Context) error {
 // ChangeName godoc
 //
 //	@Summary	Change name of workspace
+//	@Security	BearerToken
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
@@ -995,6 +1003,7 @@ func (s *Server) ChangeName(c echo.Context) error {
 // ChangeTier godoc
 //
 //	@Summary	Change Tier of workspace
+//	@Security	BearerToken
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
@@ -1033,6 +1042,7 @@ func (s *Server) ChangeTier(c echo.Context) error {
 // ChangeOrganization godoc
 //
 //	@Summary	Change organization of workspace
+//	@Security	BearerToken
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
@@ -1071,6 +1081,7 @@ func (s *Server) ChangeOrganization(c echo.Context) error {
 // GetWorkspaceLimits godoc
 //
 //	@Summary	Get workspace limits
+//	@Security	BearerToken
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
@@ -1121,6 +1132,7 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 // GetWorkspaceLimitsByID godoc
 //
 //	@Summary	Get workspace limits
+//	@Security	BearerToken
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
@@ -1140,6 +1152,7 @@ func (s *Server) GetWorkspaceLimitsByID(c echo.Context) error {
 // GetWorkspaceByID godoc
 //
 //	@Summary	Get workspace
+//	@Security	BearerToken
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json

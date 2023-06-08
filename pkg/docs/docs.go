@@ -708,6 +708,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/assignments": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returns all assignments",
                 "consumes": [
                     "application/json"
@@ -734,6 +739,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/assignments/benchmark/{benchmark_id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returns all benchmark assigned sources with benchmark id",
                 "consumes": [
                     "application/json"
@@ -769,6 +779,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/assignments/connection/{connection_id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returns all benchmark assignments with source id",
                 "consumes": [
                     "application/json"
@@ -804,6 +819,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id}": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returns benchmark assignment which insert",
                 "consumes": [
                     "application/json"
@@ -841,6 +861,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Delete benchmark assignment with source id and benchmark id",
                 "consumes": [
                     "application/json"
@@ -877,6 +902,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/benchmark/{benchmark_id}/summary": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -908,6 +938,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -953,6 +988,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/benchmark/{benchmark_id}/tree": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -996,6 +1036,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/benchmarks": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1021,6 +1066,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/benchmarks/policies/{policy_id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1095,6 +1145,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/benchmarks/{benchmark_id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1126,6 +1181,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/benchmarks/{benchmark_id}/policies": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -1295,6 +1355,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/insight": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Listing insight with result",
                 "produces": [
                     "application/json"
@@ -1361,6 +1426,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/insight/{insightId}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Get insight with result by id",
                 "produces": [
                     "application/json"
@@ -1411,6 +1481,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/insight/{insightId}/trend": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Get insight trend with result by id",
                 "produces": [
                     "application/json"
@@ -1470,6 +1545,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/metadata/insight": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Listing insight metadata",
                 "produces": [
                     "application/json"
@@ -1581,6 +1661,11 @@ const docTemplate = `{
         },
         "/compliance/api/v1/queries/{query_id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -3446,6 +3531,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/services/cost/trend": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -5719,7 +5809,10 @@ const docTemplate = `{
                 "summary": "List Stacks",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -5816,7 +5909,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Tags",
+                        "description": "Tags Map[string][]string",
                         "name": "tags",
                         "in": "formData"
                     },
@@ -5865,6 +5958,15 @@ const docTemplate = `{
                         "name": "jobId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetStackFindings"
+                        }
                     }
                 ],
                 "responses": {
@@ -5872,6 +5974,46 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/schedule/api/v1/stacks/{resourceId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get list of all stacks containing a resource",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stack"
+                ],
+                "summary": "List Resource Stacks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resource ID",
+                        "name": "resourceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack"
+                            }
                         }
                     }
                 }
@@ -6028,6 +6170,11 @@ const docTemplate = `{
         },
         "/workspace/api/v1/workspace": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returns workspace created",
                 "consumes": [
                     "application/json"
@@ -6062,6 +6209,11 @@ const docTemplate = `{
         },
         "/workspace/api/v1/workspace/{workspace_id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Get workspace with workspace id",
                 "consumes": [
                     "application/json"
@@ -6089,6 +6241,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Delete workspace with workspace id",
                 "consumes": [
                     "application/json"
@@ -6118,6 +6275,11 @@ const docTemplate = `{
         },
         "/workspace/api/v1/workspace/{workspace_id}/name": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -6155,6 +6317,11 @@ const docTemplate = `{
         },
         "/workspace/api/v1/workspace/{workspace_id}/organization": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -6192,6 +6359,11 @@ const docTemplate = `{
         },
         "/workspace/api/v1/workspace/{workspace_id}/owner": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -6229,6 +6401,11 @@ const docTemplate = `{
         },
         "/workspace/api/v1/workspace/{workspace_id}/resume": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -6257,6 +6434,11 @@ const docTemplate = `{
         },
         "/workspace/api/v1/workspace/{workspace_id}/suspend": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -6285,6 +6467,11 @@ const docTemplate = `{
         },
         "/workspace/api/v1/workspace/{workspace_id}/tier": {
             "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -6322,6 +6509,11 @@ const docTemplate = `{
         },
         "/workspace/api/v1/workspaces": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "Returns all workspaces with owner id",
                 "consumes": [
                     "application/json"
@@ -6348,6 +6540,11 @@ const docTemplate = `{
         },
         "/workspace/api/v1/workspaces/byid/{workspace_id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -6382,6 +6579,11 @@ const docTemplate = `{
         },
         "/workspace/api/v1/workspaces/limits/byid/{workspace_id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -6416,6 +6618,11 @@ const docTemplate = `{
         },
         "/workspace/api/v1/workspaces/limits/{workspace_name}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -8079,6 +8286,23 @@ const docTemplate = `{
                 },
                 "stackId": {
                     "type": "string"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetStackFindings": {
+            "type": "object",
+            "required": [
+                "page"
+            ],
+            "properties": {
+                "page": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page"
+                },
+                "sorts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingSortItem"
+                    }
                 }
             }
         },

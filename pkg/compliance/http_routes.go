@@ -385,6 +385,7 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 // GetBenchmarkSummary godoc
 //
 //	@Summary	Get benchmark summary
+//	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
@@ -451,6 +452,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 // GetBenchmarkResultTrend godoc
 //
 //	@Summary	Get result trend
+//	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
@@ -497,6 +499,7 @@ func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
 // GetBenchmarkTree godoc
 //
 //	@Summary	Get benchmark tree
+//	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
@@ -536,6 +539,7 @@ func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
 //
 //	@Summary		Create benchmark assignment for inventory service
 //	@Description	Returns benchmark assignment which insert
+//	@Security		BearerToken
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
@@ -608,6 +612,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 //
 //	@Summary		Get all benchmark assignments with source id
 //	@Description	Returns all benchmark assignments with source id
+//	@Security		BearerToken
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
@@ -645,6 +650,7 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 //
 //	@Summary		Get all benchmark assigned sources with benchmark id
 //	@Description	Returns all benchmark assigned sources with benchmark id
+//	@Security		BearerToken
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
@@ -709,6 +715,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 //
 //	@Summary		Get all assignments
 //	@Description	Returns all assignments
+//	@Security		BearerToken
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
@@ -737,6 +744,7 @@ func (h *HttpHandler) ListAssignments(ctx echo.Context) error {
 //
 //	@Summary		Delete benchmark assignment for inventory service
 //	@Description	Delete benchmark assignment with source id and benchmark id
+//	@Security		BearerToken
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
@@ -773,6 +781,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 // ListBenchmarks godoc
 //
 //	@Summary	List benchmarks
+//	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
@@ -801,6 +810,7 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 // GetBenchmark godoc
 //
 //	@Summary	Get benchmark
+//	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
@@ -829,6 +839,7 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 // ListPolicies godoc
 //
 //	@Summary	List policies
+//	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
@@ -867,6 +878,7 @@ func (h *HttpHandler) ListPolicies(ctx echo.Context) error {
 // GetPolicy godoc
 //
 //	@Summary	Get policy
+//	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
@@ -896,6 +908,7 @@ func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 // GetQuery godoc
 //
 //	@Summary	Get query
+//	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
@@ -920,6 +933,7 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 //
 //	@Summary		List insight metadata
 //	@Description	Listing insight metadata
+//	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
 //	@Param			connector	query		[]source.Type	false	"filter by connector"
@@ -944,6 +958,7 @@ func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
 //
 //	@Summary		Get insight metadata by id
 //	@Description	Get insight metadata by id
+//	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
 //	@Param			insightId	path		string	true	"InsightID"
@@ -971,6 +986,7 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 //
 //	@Summary		List insight with result
 //	@Description	Listing insight with result
+//	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
 //	@Param			tag				query		string			false	"Key-Value tags in key=value format to filter by"
@@ -1057,6 +1073,7 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 //
 //	@Summary		Get insight with result by id
 //	@Description	Get insight with result by id
+//	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
 //	@Param			insightId		path		string		true	"InsightID"
@@ -1163,6 +1180,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 //
 //	@Summary		Get insight trend with result by id
 //	@Description	Get insight trend with result by id
+//	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
 //	@Param			insightId		path		string		true	"InsightID"
