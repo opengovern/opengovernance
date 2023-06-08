@@ -18,6 +18,7 @@ import (
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 
+	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -908,12 +909,12 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			tag			query		string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			tag			query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			accounIds	query		[]string	false	"Account IDs to filter by"
 //	@Success		200			{object}	[]api.Stack
 //	@Router			/schedule/api/v1/stacks [get]
 func (h HttpServer) ListStack(ctx echo.Context) error {
-	tagMap := internal.TagStringsToTagMap(ctx.QueryParams()["tag"])
+	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
 	accountIds := ctx.QueryParams()["accountIds"]
 	stacksRecord, err := h.DB.ListStacks(tagMap, accountIds)
 	if err != nil {
@@ -1053,6 +1054,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			jobId	path		string	true	"JobID"
+//	@Param			request	body		api.GetStackFindings	true	"Request Body"
 //	@Success		200		{object}	complianceapi.GetFindingsResponse
 //	@Router			/schedule/api/v1/stacks/findings/{jobId} [get]
 func (h HttpServer) GetStackFindings(ctx echo.Context) error {
@@ -1197,4 +1199,37 @@ func (h HttpServer) GetStackInsight(ctx echo.Context) error {
 	insight.Results = filteredResults
 	insight.TotalResultValue = &totalResaults
 	return ctx.JSON(http.StatusOK, insight)
+}
+
+// ListStack godoc
+//
+//	@Summary		List Resource Stacks
+//	@Description	Get list of all stacks containing a resource
+//	@Security		BearerToken
+//	@Tags			stack
+//	@Accept			json
+//	@Produce		json
+//	@Param			resourceId	path		string	true	"Resource ID"
+//	@Success		200			{object}	[]api.Stack
+//	@Router			/schedule/api/v1/stacks/{resourceId} [get]
+func (h HttpServer) ListResourceStack(ctx echo.Context) error {
+	resourceId := ctx.Param("resourceId")
+	stacksRecord, err := h.DB.GetResourceStacks(resourceId)
+	if err != nil {
+		return err
+	}
+	var stacks []api.Stack
+	for _, sr := range stacksRecord {
+
+		stack := api.Stack{
+			StackID:    sr.StackID,
+			CreatedAt:  sr.CreatedAt,
+			UpdatedAt:  sr.UpdatedAt,
+			Resources:  []string(sr.Resources),
+			Tags:       trimPrivateTags(sr.GetTagsMap()),
+			AccountIDs: sr.AccountIDs,
+		}
+		stacks = append(stacks, stack)
+	}
+	return ctx.JSON(http.StatusOK, stacks)
 }
