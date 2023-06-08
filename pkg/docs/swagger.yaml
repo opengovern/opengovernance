@@ -6804,9 +6804,9 @@ paths:
 schemes:
 - https
 securityDefinitions:
-  BearerToken:
+  OAuth2Application:
     description: Enter the token with the `Bearer` prefix.
-    in: header
-    name: Authorization
-    type: apiKey
+    flow: application
+    tokenUrl: https://example.com/oauth/token
+    type: oauth2
 swagger: "2.0"

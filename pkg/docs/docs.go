@@ -10112,11 +10112,11 @@ const docTemplate = `{
         }
     },
     "securityDefinitions": {
-        "BearerToken": {
+        "OAuth2Application": {
             "description": "Enter the token with the ` + "`" + `Bearer` + "`" + ` prefix.",
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
+            "type": "oauth2",
+            "flow": "application",
+            "tokenUrl": "https://example.com/oauth/token"
         }
     }
 }`
