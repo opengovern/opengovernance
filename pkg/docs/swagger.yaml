@@ -74,6 +74,31 @@ definitions:
       updatedAt:
         type: string
     type: object
+  describe.InsightJob:
+    properties:
+      accountID:
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      failureMessage:
+        type: string
+      id:
+        type: integer
+      insightID:
+        type: integer
+      scheduleUUID:
+        type: string
+      sourceID:
+        type: string
+      sourceType:
+        $ref: '#/definitions/source.Type'
+      status:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus'
+      updatedAt:
+        type: string
+    type: object
   describer.Resource:
     properties:
       account:
@@ -1136,17 +1161,6 @@ definitions:
     - DescribeSourceJobInProgress
     - DescribeSourceJobCompletedWithFailure
     - DescribeSourceJobCompleted
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.EvaluateStack:
-    properties:
-      benchmarks:
-        items:
-          type: string
-        type: array
-      stackId:
-        type: string
-    required:
-    - benchmarks
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetStackFindings:
     properties:
       page:
@@ -1220,14 +1234,28 @@ definitions:
     required:
     - stackId
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackBenchmarkRequest:
+    properties:
+      benchmarks:
+        items:
+          type: string
+        type: array
+      stackId:
+        type: string
+    required:
+    - benchmarks
+    - stackId
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackEvaluation:
     properties:
-      benchmarkID:
-        type: string
       createdAt:
+        type: string
+      evaluatorID:
         type: string
       jobID:
         type: integer
+      type:
+        type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest:
     properties:
@@ -1240,6 +1268,27 @@ definitions:
           type: string
         type: array
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerInsightEvaluationRequest:
+    properties:
+      connectionID:
+        type: string
+      insightID:
+        type: integer
+      resourceIDs:
+        items:
+          type: string
+        type: array
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus:
+    enum:
+    - IN_PROGRESS
+    - FAILED
+    - SUCCEEDED
+    type: string
+    x-enum-varnames:
+    - InsightJobInProgress
+    - InsightJobFailed
+    - InsightJobSucceeded
   gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightConnection:
     properties:
       connection_id:
@@ -6185,6 +6234,29 @@ paths:
       summary: Triggers a summarize job to run immediately
       tags:
       - describe
+  /schedule/api/v1/benchmark/evaluation/trigger:
+    put:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/describe.ComplianceReportJob'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Triggers a benchmark evaluation job to run immediately
+      tags:
+      - describe
   /schedule/api/v1/benchmark/evaluations:
     get:
       parameters:
@@ -6222,29 +6294,6 @@ paths:
       summary: Get last completed compliance report
       tags:
       - schedule
-  /schedule/api/v1/compliance/trigger:
-    put:
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/describe.ComplianceReportJob'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Triggers a benchmark evaluation job to run immediately
-      tags:
-      - describe
   /schedule/api/v1/describe/resource:
     post:
       parameters:
@@ -6311,6 +6360,29 @@ paths:
       security:
       - BearerToken: []
       summary: Triggers a describe job to run immediately
+      tags:
+      - describe
+  /schedule/api/v1/insight/evaluation/trigger:
+    put:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerInsightEvaluationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/describe.InsightJob'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Triggers a insight evaluation job to run immediately
       tags:
       - describe
   /schedule/api/v1/insight/jobs/pending:
@@ -6515,31 +6587,6 @@ paths:
       summary: List Stacks
       tags:
       - stack
-  /schedule/api/v1/stacks/{resourceId}:
-    get:
-      consumes:
-      - application/json
-      description: Get list of all stacks containing a resource
-      parameters:
-      - description: Resource ID
-        in: path
-        name: resourceId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack'
-            type: array
-      security:
-      - BearerToken: []
-      summary: List Resource Stacks
-      tags:
-      - stack
   /schedule/api/v1/stacks/{stackId}:
     delete:
       consumes:
@@ -6630,7 +6677,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.EvaluateStack'
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackBenchmarkRequest'
       produces:
       - application/json
       responses:
@@ -6704,6 +6751,31 @@ paths:
       security:
       - BearerToken: []
       summary: Get Stack Findings
+      tags:
+      - stack
+  /schedule/api/v1/stacks/resource/{resourceId}:
+    get:
+      consumes:
+      - application/json
+      description: Get list of all stacks containing a resource
+      parameters:
+      - description: Resource ID
+        in: path
+        name: resourceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List Resource Stacks
       tags:
       - stack
   /schedule/api/v1/summarize/jobs/pending:

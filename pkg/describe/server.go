@@ -972,7 +972,7 @@ func (h HttpServer) DeleteStack(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		api.EvaluateStack	true	"Request Body"
+//	@Param			request	body		api.StackBenchmarkRequest	true	"Request Body"
 //	@Success		200		{object}	[]ComplianceReportJob
 //	@Router			/schedule/api/v1/stacks/benchmark/trigger [post]
 func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
