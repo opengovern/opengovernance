@@ -12,7 +12,6 @@ type EvaluateStack struct {
 }
 
 type CreateStackRequest struct {
-	Statefile string              `json:"statefile"`
 	Resources []string            `json:"resources"`
 	Tags      map[string][]string `json:"tags"`
 }

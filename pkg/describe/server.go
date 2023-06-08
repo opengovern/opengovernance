@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
@@ -748,31 +749,46 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 // BuildStackFromStatefile godoc
 //
-//	@Summary		Build a stack
-//	@Description	Temporary API for building a stack by giving a terraform statefile directory
-//	@Security		BearerToken
-//	@Tags			stack
-//	@Accept			json
-//	@Produce		json
-//	@Param			request	body		api.CreateStackRequest	true	"Request Body"
-//	@Success		200		{object}	api.Stack
-//	@Router			/schedule/api/v1/stacks/create [post]
+//		@Summary		Create stack
+//		@Description	Create a stack by giving terraform statefile and additional resources
+//		@Security		BearerToken
+//		@Tags			stack
+//		@Accept			json
+//		@Produce		json
+//	 @Param 			terrafromFile formData  file false "File to upload"
+//		@Param			request	formData		api.CreateStackRequest	false	"Request Body"
+//		@Success		200		{object}	api.Stack
+//		@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
 	var req api.CreateStackRequest
 	bindValidate(ctx, &req)
 	resources := req.Resources
-	if req.Statefile != "" {
-		data, err := ioutil.ReadFile(req.Statefile)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-		}
 
+	file, err := ctx.FormFile("terrafromFile")
+	if err != nil {
+		return err
+	}
+	if file != nil {
+		src, err := file.Open()
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+
+		data, err := ioutil.ReadAll(src)
+		if err != nil {
+			return err
+		}
+		if !strings.HasSuffix(file.Filename, ".tfstate") {
+			echo.NewHTTPError(http.StatusBadRequest, "File must have a .tfstate suffix")
+		}
 		arns, err := internal.GetArns(string(data))
 		if err != nil {
 			return err
 		}
 		resources = append(resources, arns...)
 	}
+
 	if len(resources) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "No resource provided")
 	}
@@ -851,7 +867,7 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 
 // ListStack godoc
 //
-//	@Summary		List Stack
+//	@Summary		List Stacks
 //	@Description	Get list of stacks
 //	@Security		BearerToken
 //	@Tags			stack
@@ -909,8 +925,8 @@ func (h HttpServer) DeleteStack(ctx echo.Context) error {
 
 // TriggerStackBenchmark godoc
 //
-//	@Summary		Trigger benchmarks
-//	@Description	Trigger defined benchmarks for a stack
+//	@Summary		Evaluate Stack
+//	@Description	Trigger defined benchmarks for a stack and save in the history
 //	@Security		BearerToken
 //	@Tags			stack
 //	@Accept			json
@@ -994,8 +1010,8 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 
 // GetStackFindings godoc
 //
-//	@Summary		Get Benchmark Result
-//	@Description	Get a benchmark result by jobId
+//	@Summary		Get Stack Findings
+//	@Description	Get all findings for a stack
 //	@Security		BearerToken
 //	@Tags			stack
 //	@Accept			json
