@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
-	"gitlab.com/keibiengine/keibi-engine/pkg/migrator"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/db"
 	"gitlab.com/keibiengine/keibi-engine/pkg/onboard"
 	"go.uber.org/zap"
@@ -13,7 +12,7 @@ import (
 	"os"
 )
 
-func Run(conf migrator.JobConfig, logger *zap.Logger, wsFolder string) error {
+func Run(conf postgres.Config, logger *zap.Logger, wsFolder string) error {
 	if err := OnboardMigration(conf, logger, wsFolder+"/onboard.json"); err != nil {
 		return err
 	}
@@ -26,16 +25,9 @@ func Run(conf migrator.JobConfig, logger *zap.Logger, wsFolder string) error {
 	return nil
 }
 
-func OnboardMigration(conf migrator.JobConfig, logger *zap.Logger, onboardFilePath string) error {
-	cfg := postgres.Config{
-		Host:    conf.PostgreSQL.Host,
-		Port:    conf.PostgreSQL.Port,
-		User:    conf.PostgreSQL.Username,
-		Passwd:  conf.PostgreSQL.Password,
-		DB:      "onboard",
-		SSLMode: conf.PostgreSQL.SSLMode,
-	}
-	orm, err := postgres.NewClient(&cfg, logger)
+func OnboardMigration(conf postgres.Config, logger *zap.Logger, onboardFilePath string) error {
+	conf.DB = "onboard"
+	orm, err := postgres.NewClient(&conf, logger)
 	if err != nil {
 		return fmt.Errorf("new postgres client: %w", err)
 	}
@@ -66,16 +58,9 @@ func OnboardMigration(conf migrator.JobConfig, logger *zap.Logger, onboardFilePa
 	return nil
 }
 
-func MetadataMigration(conf migrator.JobConfig, logger *zap.Logger, metadataFilePath string) error {
-	cfg := postgres.Config{
-		Host:    conf.PostgreSQL.Host,
-		Port:    conf.PostgreSQL.Port,
-		User:    conf.PostgreSQL.Username,
-		Passwd:  conf.PostgreSQL.Password,
-		DB:      "metadata",
-		SSLMode: conf.PostgreSQL.SSLMode,
-	}
-	orm, err := postgres.NewClient(&cfg, logger)
+func MetadataMigration(conf postgres.Config, logger *zap.Logger, metadataFilePath string) error {
+	conf.DB = "metadata"
+	orm, err := postgres.NewClient(&conf, logger)
 	if err != nil {
 		return fmt.Errorf("new postgres client: %w", err)
 	}
@@ -104,6 +89,6 @@ func MetadataMigration(conf migrator.JobConfig, logger *zap.Logger, metadataFile
 	return nil
 }
 
-func InventoryMigration(db migrator.JobConfig, logger *zap.Logger, onboardFilePath string) error {
+func InventoryMigration(conf postgres.Config, logger *zap.Logger, onboardFilePath string) error {
 	return nil
 }

@@ -112,7 +112,16 @@ func (w *Job) Run() error {
 		w.logger.Error(fmt.Sprintf("Failure while running insight migration: %v", err))
 	}
 
-	if err := workspace.Run(w.conf, w.logger, "/workspace-migration"); err != nil {
+	cfg := postgres.Config{
+		Host:    w.conf.PostgreSQL.Host,
+		Port:    w.conf.PostgreSQL.Port,
+		User:    w.conf.PostgreSQL.Username,
+		Passwd:  w.conf.PostgreSQL.Password,
+		DB:      w.conf.PostgreSQL.DB,
+		SSLMode: w.conf.PostgreSQL.SSLMode,
+	}
+
+	if err := workspace.Run(cfg, w.logger, "/workspace-migration"); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running workspace migration: %v", err))
 	}
 
