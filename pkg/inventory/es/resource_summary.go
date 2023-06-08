@@ -537,10 +537,6 @@ func FetchConnectionLocationsSummaryPage(client keibi.Client, connectors []sourc
 			"filter": filters,
 		},
 	}
-	b, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
 
 	res["aggs"] = map[string]any{
 		"connection_id_group": map[string]any{
@@ -562,6 +558,10 @@ func FetchConnectionLocationsSummaryPage(client keibi.Client, connectors []sourc
 		},
 	}
 
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
 	query := string(b)
 
 	fmt.Printf("query= %s, index= %s\n", query, summarizer.ConnectionSummaryIndex)
