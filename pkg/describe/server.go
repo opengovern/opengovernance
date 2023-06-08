@@ -909,7 +909,7 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			tag			query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			tag			query		[]string	false	"Key-Value tags in key=value format to filter by"
 //	@Param			accounIds	query		[]string	false	"Account IDs to filter by"
 //	@Success		200			{object}	[]api.Stack
 //	@Router			/schedule/api/v1/stacks [get]
@@ -1053,7 +1053,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			jobId	path		string	true	"JobID"
+//	@Param			jobId	path		string					true	"JobID"
 //	@Param			request	body		api.GetStackFindings	true	"Request Body"
 //	@Success		200		{object}	complianceapi.GetFindingsResponse
 //	@Router			/schedule/api/v1/stacks/findings/{jobId} [get]

@@ -2340,6 +2340,18 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "timestamp for resource count per location in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for resource count per location change comparison in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page size - default is 20",
                         "name": "pageSize",
@@ -2879,10 +2891,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType"
-                            }
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetadataResponse"
                         }
                     }
                 }
@@ -2984,10 +2993,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata"
-                            }
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetadataResponse"
                         }
                     }
                 }
@@ -3021,7 +3027,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata"
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service"
                         }
                     }
                 }
@@ -3446,6 +3452,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/services/cost/trend": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -5719,7 +5730,10 @@ const docTemplate = `{
                 "summary": "List Stacks",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -5816,7 +5830,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Tags",
+                        "description": "Tags Map[string][]string",
                         "name": "tags",
                         "in": "formData"
                     },
@@ -5865,6 +5879,15 @@ const docTemplate = `{
                         "name": "jobId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetStackFindings"
+                        }
                     }
                 ],
                 "responses": {
@@ -5872,6 +5895,46 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/schedule/api/v1/stacks/{resourceId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get list of all stacks containing a resource",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stack"
+                ],
+                "summary": "List Resource Stacks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Resource ID",
+                        "name": "resourceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack"
+                            }
                         }
                     }
                 }
@@ -8082,6 +8145,23 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetStackFindings": {
+            "type": "object",
+            "required": [
+                "page"
+            ],
+            "properties": {
+                "page": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page"
+                },
+                "sorts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingSortItem"
+                    }
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest": {
             "type": "object",
             "properties": {
@@ -8778,6 +8858,20 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetadataResponse": {
+            "type": "object",
+            "properties": {
+                "resource_types": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType"
+                    }
+                },
+                "total_resource_type_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse": {
             "type": "object",
             "properties": {
@@ -8811,6 +8905,20 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "total_value_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetadataResponse": {
+            "type": "object",
+            "properties": {
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service"
+                    }
+                },
+                "total_service_count": {
                     "type": "integer"
                 }
             }
@@ -8867,6 +8975,10 @@ const docTemplate = `{
                 "resourceCount": {
                     "description": "Number of resources in the region",
                     "type": "integer"
+                },
+                "resourceCountChangePercent": {
+                    "description": "Change in number of resources in the region",
+                    "type": "number"
                 }
             }
         },
@@ -9229,51 +9341,6 @@ const docTemplate = `{
                 },
                 "serviceName": {
                     "description": "Service name",
-                    "type": "string"
-                }
-            }
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata": {
-            "type": "object",
-            "properties": {
-                "connector": {
-                    "description": "Service Connector",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ]
-                },
-                "cost_map_service_names": {
-                    "description": "List of Cost map service names",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "cost_support": {
-                    "description": "Cost is supported [yes/no]",
-                    "type": "boolean"
-                },
-                "logo_uri": {
-                    "type": "string"
-                },
-                "resource_types": {
-                    "description": "List of resource types",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "resource_types_count": {
-                    "type": "integer"
-                },
-                "service_label": {
-                    "description": "Service Lable",
-                    "type": "string"
-                },
-                "service_name": {
-                    "description": "Service Name",
                     "type": "string"
                 }
             }
