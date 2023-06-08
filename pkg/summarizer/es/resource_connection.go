@@ -21,6 +21,7 @@ const (
 	ResourceSummary                    ConnectionReportType = "ResourcesPerSource"
 	ResourceTypeSummary                ConnectionReportType = "ResourceTypePerSource"
 	LocationConnectionSummary          ConnectionReportType = "LocationPerSource"
+	LocationConnectionSummaryHistory   ConnectionReportType = "LocationPerSourceHistory"
 	ServiceLocationConnectionSummary   ConnectionReportType = "ServiceLocationPerSource"
 	TrendConnectionSummary             ConnectionReportType = "TrendPerSourceHistory"
 	ResourceTypeTrendConnectionSummary ConnectionReportType = "ResourceTypeTrendPerSourceHistory"

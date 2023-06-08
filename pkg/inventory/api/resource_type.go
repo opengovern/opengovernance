@@ -24,6 +24,11 @@ type ResourceType struct {
 	Attributes      []string `json:"attributes,omitempty"`       // List supported steampipe Attributes (columns) for this resource type - Metadata (GET only)
 }
 
+type ListResourceTypeMetadataResponse struct {
+	TotalResourceTypeCount int            `json:"total_resource_type_count"`
+	ResourceTypes          []ResourceType `json:"resource_types"`
+}
+
 type ListResourceTypeMetricsResponse struct {
 	TotalCount         int            `json:"total_count"`
 	TotalResourceTypes int            `json:"total_resource_types"`

@@ -24,6 +24,11 @@ type ListServiceMetricsResponse struct {
 	Services      []Service `json:"services"`
 }
 
+type ListServiceMetadataResponse struct {
+	TotalServiceCount int       `json:"total_service_count"`
+	Services          []Service `json:"services"`
+}
+
 type ListServiceCostCompositionResponse struct {
 	TotalCost       float64            `json:"total_count"`
 	TotalValueCount int                `json:"total_value_count"`

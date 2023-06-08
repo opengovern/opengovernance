@@ -1147,6 +1147,17 @@ definitions:
     required:
     - benchmarks
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetStackFindings:
+    properties:
+      page:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page'
+      sorts:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingSortItem'
+        type: array
+    required:
+    - page
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest:
     properties:
       benchmarkID:
@@ -1627,6 +1638,15 @@ definitions:
       total_value_count:
         type: integer
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetadataResponse:
+    properties:
+      resource_types:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
+        type: array
+      total_resource_type_count:
+        type: integer
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse:
     properties:
       resource_types:
@@ -1649,6 +1669,15 @@ definitions:
       total_count:
         type: number
       total_value_count:
+        type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetadataResponse:
+    properties:
+      services:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service'
+        type: array
+      total_service_count:
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse:
@@ -1687,6 +1716,9 @@ definitions:
       resourceCount:
         description: Number of resources in the region
         type: integer
+      resourceCountChangePercent:
+        description: Change in number of resources in the region
+        type: number
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Page:
     properties:
@@ -1957,36 +1989,6 @@ definitions:
         type: object
       serviceName:
         description: Service name
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata:
-    properties:
-      connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        description: Service Connector
-      cost_map_service_names:
-        description: List of Cost map service names
-        items:
-          type: string
-        type: array
-      cost_support:
-        description: Cost is supported [yes/no]
-        type: boolean
-      logo_uri:
-        type: string
-      resource_types:
-        description: List of resource types
-        items:
-          type: string
-        type: array
-      resource_types_count:
-        type: integer
-      service_label:
-        description: Service Lable
-        type: string
-      service_name:
-        description: Service Name
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary:
@@ -4290,6 +4292,15 @@ paths:
           type: string
         name: connectionId
         type: array
+      - description: timestamp for resource count per location in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: timestamp for resource count per location change comparison in
+          epoch seconds
+        in: query
+        name: startTime
+        type: string
       - description: page size - default is 20
         in: query
         name: pageSize
@@ -4650,9 +4661,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
-            type: array
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetadataResponse'
       security:
       - BearerToken: []
       summary: Get List of Resource Types
@@ -4720,9 +4729,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata'
-            type: array
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetadataResponse'
       security:
       - BearerToken: []
       summary: Get List of Cloud Services
@@ -4744,7 +4751,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceMetadata'
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service'
       security:
       - BearerToken: []
       summary: Get Cloud Service Details
@@ -5069,6 +5076,8 @@ paths:
             items:
               $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostTrendDatapoint'
             type: array
+      security:
+      - BearerToken: []
       summary: Returns list of costs over the course of the specified time frame based
         on the given input filters
       tags:
@@ -6448,8 +6457,10 @@ paths:
       parameters:
       - description: Key-Value tags in key=value format to filter by
         in: query
+        items:
+          type: string
         name: tag
-        type: string
+        type: array
       - description: Account IDs to filter by
         in: query
         items:
@@ -6468,6 +6479,31 @@ paths:
       security:
       - BearerToken: []
       summary: List Stacks
+      tags:
+      - stack
+  /schedule/api/v1/stacks/{resourceId}:
+    get:
+      consumes:
+      - application/json
+      description: Get list of all stacks containing a resource
+      parameters:
+      - description: Resource ID
+        in: path
+        name: resourceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List Resource Stacks
       tags:
       - stack
   /schedule/api/v1/stacks/{stackId}:
@@ -6585,7 +6621,7 @@ paths:
         in: formData
         name: terrafromFile
         type: file
-      - description: Tags
+      - description: Tags Map[string][]string
         in: formData
         name: tags
         type: string
@@ -6618,6 +6654,12 @@ paths:
         name: jobId
         required: true
         type: string
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetStackFindings'
       produces:
       - application/json
       responses:

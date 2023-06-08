@@ -59,7 +59,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/resources/filters", httpserver.AuthorizeHandler(h.GetResourcesFilters, api3.ViewerRole))
 	v1.POST("/resource", httpserver.AuthorizeHandler(h.GetResource, api3.ViewerRole))
 
-	v1.GET("/resources/top/growing/accounts", httpserver.AuthorizeHandler(h.GetTopFastestGrowingAccountsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/regions", httpserver.AuthorizeHandler(h.GetRegionsByResourceCount, api3.ViewerRole))
 
@@ -397,7 +396,7 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 
 	locationDistribution := map[string]int{}
 
-	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, time.Now())
 	if err != nil {
 		return err
 	}
@@ -433,6 +432,8 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 //	@Produce	json
 //	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param		endTime			query		string			false	"timestamp for resource count per location in epoch seconds"
+//	@Param		startTime		query		string			false	"timestamp for resource count per location change comparison in epoch seconds"
 //	@Param		pageSize		query		int				false	"page size - default is 20"
 //	@Param		pageNumber		query		int				false	"page number - default is 1"
 //	@Success	200				{object}	[]api.LocationResponse
@@ -444,14 +445,29 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 	if len(connectionIDs) == 0 {
 		connectionIDs = nil
 	}
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now().Unix()
+	if endTimeStr != "" {
+		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid endTime value")
+		}
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
+	if startTimeStr != "" {
+		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid startTime value")
+		}
+	}
 	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	locationDistribution := map[string]int{}
-
-	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, time.Unix(endTime, 0))
 	if err != nil {
 		return err
 	}
@@ -460,14 +476,28 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 			locationDistribution[k] += v
 		}
 	}
+	oldLocationDistribution := map[string]int{}
+	hits, err = es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, time.Unix(startTime, 0))
+	if err != nil {
+		return err
+	}
+	for _, hit := range hits {
+		for k, v := range hit.LocationDistribution {
+			oldLocationDistribution[k] += v
+		}
+	}
 
 	var response []api.LocationResponse
 	for region, count := range locationDistribution {
 		cnt := count
-		response = append(response, api.LocationResponse{
+		res := api.LocationResponse{
 			Location:      region,
 			ResourceCount: &cnt,
-		})
+		}
+		if oldLocationDistribution[region] != 0 {
+			res.ResourceCountChangePercent = utils.GetPointer((float64(count) - float64(oldLocationDistribution[region])) / float64(oldLocationDistribution[region]) * 100)
+		}
+		response = append(response, res)
 	}
 	sort.Slice(response, func(i, j int) bool {
 		if *response[i].ResourceCount != *response[j].ResourceCount {
@@ -1474,7 +1504,7 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 	}
 	locationDistribution := map[string]int{}
 
-	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, time.Now())
 	if err != nil {
 		return err
 	}
@@ -2768,7 +2798,7 @@ func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 //	@Param			costSupport	query		boolean			false	"Filter by cost support"
 //	@Param			pageSize	query		int				false	"page size - default is 20"
 //	@Param			pageNumber	query		int				false	"page number - default is 1"
-//	@Success		200			{object}	[]api.ServiceMetadata
+//	@Success		200			{object}	api.ListServiceMetadataResponse
 //	@Router			/inventory/api/v2/metadata/services [get]
 func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
@@ -2793,16 +2823,21 @@ func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 		return err
 	}
 
-	var result []api.Service
+	var serviceMetadata []api.Service
 	for _, service := range services {
-		result = append(result, service.ToApi())
+		serviceMetadata = append(serviceMetadata, service.ToApi())
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].ServiceName < result[j].ServiceName
+	sort.Slice(serviceMetadata, func(i, j int) bool {
+		return serviceMetadata[i].ServiceName < serviceMetadata[j].ServiceName
 	})
 
-	return ctx.JSON(http.StatusOK, utils.Paginate(pageNumber, pageSize, result))
+	result := api.ListServiceMetadataResponse{
+		TotalServiceCount: len(serviceMetadata),
+		Services:          utils.Paginate(pageNumber, pageSize, serviceMetadata),
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }
 
 // GetServiceMetadata godoc
@@ -2813,7 +2848,7 @@ func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 //	@Tags			metadata
 //	@Produce		json
 //	@Param			serviceName	path		string	true	"ServiceName"
-//	@Success		200			{object}	api.ServiceMetadata
+//	@Success		200			{object}	api.Service
 //	@Router			/inventory/api/v2/metadata/services/{serviceName} [get]
 func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 	serviceName := ctx.Param("serviceName")
@@ -2839,7 +2874,7 @@ func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 //	@Param			tag			query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			pageSize	query		int				false	"page size - default is 20"
 //	@Param			pageNumber	query		int				false	"page number - default is 1"
-//	@Success		200			{object}	[]api.ResourceType
+//	@Success		200			{object}	api.ListResourceTypeMetadataResponse
 //	@Router			/inventory/api/v2/metadata/resourcetype [get]
 func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
@@ -2854,7 +2889,7 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 		return err
 	}
 
-	var result []api.ResourceType
+	var resourceTypeMetadata []api.ResourceType
 
 	for _, resourceType := range resourceTypes {
 		apiResourceType := resourceType.ToApi()
@@ -2885,14 +2920,19 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 
 		// TODO: add compliance count
 
-		result = append(result, apiResourceType)
+		resourceTypeMetadata = append(resourceTypeMetadata, apiResourceType)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].ResourceType < result[j].ResourceType
+	sort.Slice(resourceTypeMetadata, func(i, j int) bool {
+		return resourceTypeMetadata[i].ResourceType < resourceTypeMetadata[j].ResourceType
 	})
 
-	return ctx.JSON(http.StatusOK, utils.Paginate(pageNumber, pageSize, result))
+	result := api.ListResourceTypeMetadataResponse{
+		TotalResourceTypeCount: len(resourceTypeMetadata),
+		ResourceTypes:          utils.Paginate(pageNumber, pageSize, resourceTypeMetadata),
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }
 
 // GetResourceTypeMetadata godoc
