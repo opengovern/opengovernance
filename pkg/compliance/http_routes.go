@@ -86,6 +86,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //
 //	@Summary	Returns all findings with respect to filters
 //	@Tags		compliance
+//	@Security	BearerToken
 //	@Accept		json
 //	@Produce	json
 //	@Param		request	body		api.GetFindingsRequest	true	"Request Body"
@@ -132,6 +133,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 // GetTopFieldByFindingCount godoc
 //
 //	@Summary	Returns all findings with respect to filters
+//	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
@@ -173,6 +175,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 // GetTopFieldByAlarmCount godoc
 //
 //	@Summary	Returns all findings with respect to filters
+//	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
@@ -205,6 +208,7 @@ func (h *HttpHandler) GetTopFieldByAlarmCount(ctx echo.Context) error {
 // GetFindingsMetrics godoc
 //
 //	@Summary	Returns findings metrics
+//	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
@@ -263,6 +267,7 @@ func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
 // GetBenchmarksSummary godoc
 //
 //	@Summary	Get benchmark summary
+//	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json

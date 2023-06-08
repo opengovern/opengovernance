@@ -34,6 +34,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //
 //	@Summary		Returns the config metadata for the given key
 //	@Description	Returns the config metadata for the given key
+//	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
 //	@Param			key	path		string	true	"Key"
@@ -53,6 +54,7 @@ func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 //
 //	@Summary		Sets the config metadata for the given key
 //	@Description	Sets the config metadata for the given key
+//	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
 //	@Success		200

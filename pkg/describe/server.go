@@ -100,6 +100,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 //
 //	@Summary		List Sources
 //	@Description	Getting all of Keibi sources
+//	@Security		BearerToken
 //	@Tags			schedule
 //	@Produce		json
 //	@Success		200	{object}	[]api.Source
@@ -147,6 +148,7 @@ func (h HttpServer) HandleListSources(ctx echo.Context) error {
 // HandleGetSource godoc
 //
 //	@Summary		Get Source by id
+//	@Security		BearerToken
 //	@Description	Getting Keibi source by id
 //	@Tags			schedule
 //	@Produce		json
@@ -197,6 +199,7 @@ func (h HttpServer) HandleGetSource(ctx echo.Context) error {
 // HandleListPendingDescribeSourceJobs godoc
 //
 //	@Summary	Listing describe source jobs
+//	@Security	BearerToken
 //	@Tags		schedule
 //	@Produce	json
 //	@Success	200	{object}	api.Source
@@ -213,6 +216,7 @@ func (h HttpServer) HandleListPendingDescribeSourceJobs(ctx echo.Context) error 
 // HandleListPendingDescribeResourceJobs godoc
 //
 //	@Summary	Listing describe resource jobs
+//	@Security	BearerToken
 //	@Tags		schedule
 //	@Produce	json
 //	@Success	200	{object}	api.Source
@@ -229,6 +233,7 @@ func (h HttpServer) HandleListPendingDescribeResourceJobs(ctx echo.Context) erro
 // HandleListPendingSummarizeJobs godoc
 //
 //	@Summary	Listing summarize jobs
+//	@Security	BearerToken
 //	@Tags		schedule
 //	@Produce	json
 //	@Success	200	{object}	api.Source
@@ -245,6 +250,7 @@ func (h HttpServer) HandleListPendingSummarizeJobs(ctx echo.Context) error {
 // HandleListPendingInsightJobs godoc
 //
 //	@Summary	Listing insight jobs
+//	@Security	BearerToken
 //	@Tags		schedule
 //	@Produce	json
 //	@Success	200	{object}	api.Source
@@ -262,6 +268,7 @@ func (h HttpServer) HandleListPendingInsightJobs(ctx echo.Context) error {
 //
 //	@Summary		List source describe jobs
 //	@Description	List source describe jobs
+//	@Security		BearerToken
 //	@Tags			schedule
 //	@Produce		json
 //	@Param			source_id	path		string	true	"SourceID"
@@ -305,6 +312,7 @@ func (h HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 //
 //	@Summary		List source compliance reports
 //	@Description	List source compliance reports
+//	@Security		BearerToken
 //	@Tags			schedule
 //	@Produce		json
 //	@Param			source_id	path		string	true	"SourceID"
@@ -371,6 +379,7 @@ func (h HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 //
 //	@Summary		Run compliance report jobs
 //	@Description	Run compliance report jobs
+//	@Security		BearerToken
 //	@Tags			schedule
 //	@Produce		json
 //	@Param			source_id	path	string	true	"SourceID"
@@ -396,6 +405,7 @@ func (h HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
 // HandleGetLastCompletedComplianceReport godoc
 //
 //	@Summary	Get last completed compliance report
+//	@Security	BearerToken
 //	@Tags		schedule
 //	@Produce	json
 //	@Success	200	{object}	int
@@ -413,6 +423,7 @@ func (h HttpServer) HandleGetLastCompletedComplianceReport(ctx echo.Context) err
 //
 //	@Summary		Run describe jobs
 //	@Description	Run describe jobs
+//	@Security		BearerToken
 //	@Tags			schedule
 //	@Produce		json
 //	@Param			source_id	path	string	true	"SourceID"
@@ -439,6 +450,7 @@ func (h HttpServer) RunDescribeJobs(ctx echo.Context) error {
 //
 //	@Summary		get resource type by provider
 //	@Description	get resource type by provider
+//	@Security		BearerToken
 //	@Tags			schedule
 //	@Produce		json
 //	@Param			provider	path		string	true	"Provider"	Enums(aws,azure)
@@ -473,6 +485,7 @@ func (h HttpServer) GetResourceTypesByProvider(ctx echo.Context) error {
 //
 //	@Summary		Triggers a describe job to run immediately
 //	@Description	Triggers a describe job to run immediately
+//	@Security		BearerToken
 //	@Tags			describe
 //	@Produce		json
 //	@Success		200
@@ -503,6 +516,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 //
 //	@Summary		Triggers a describe job to run immediately
 //	@Description	Triggers a describe job to run immediately
+//	@Security		BearerToken
 //	@Tags			describe
 //	@Produce		json
 //	@Success		200
@@ -527,6 +541,7 @@ func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 //
 //	@Summary		Triggers a summarize job to run immediately
 //	@Description	Triggers a summarize job to run immediately
+//	@Security		BearerToken
 //	@Tags			describe
 //	@Produce		json
 //	@Success		200
@@ -544,6 +559,7 @@ func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
 //
 //	@Summary		Triggers an insight job to run immediately
 //	@Description	Triggers an insight job to run immediately
+//	@Security		BearerToken
 //	@Tags			describe
 //	@Produce		json
 //	@Success		200
@@ -564,6 +580,7 @@ func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 //
 //	@Summary		Triggers a compliance job to run immediately
 //	@Description	Triggers a compliance job to run immediately
+//	@Security		BearerToken
 //	@Tags			describe
 //	@Produce		json
 //	@Success		200
@@ -585,6 +602,7 @@ func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
 // TriggerComplianceSummarizerJob godoc
 //
 //	@Summary	Triggers a compliance summarizer job to run immediately
+//	@Security	BearerToken
 //	@Tags		describe
 //	@Produce	json
 //	@Success	200
@@ -606,6 +624,7 @@ func (h HttpServer) TriggerComplianceSummarizerJob(ctx echo.Context) error {
 // TriggerBenchmarkEvaluation godoc
 //
 //	@Summary	Triggers a benchmark evaluation job to run immediately
+//	@Security	BearerToken
 //	@Tags		describe
 //	@Produce	json
 //	@Param		request	body		api.TriggerBenchmarkEvaluationRequest	true	"Request Body"
@@ -676,6 +695,7 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 // HandleListBenchmarkEvaluations godoc
 //
 //	@Summary	Lists all benchmark evaluations
+//	@Security	BearerToken
 //	@Tags		compliance
 //	@Produce	json
 //	@Success	200
@@ -699,6 +719,7 @@ func (h HttpServer) HandleListBenchmarkEvaluations(ctx echo.Context) error {
 // DescribeSingleResource godoc
 //
 //	@Summary	Describe single resource
+//	@Security	BearerToken
 //	@Tags		describe
 //	@Produce	json
 //	@Success	200
@@ -755,9 +776,9 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			terrafromFile	formData	file					false	"File to upload"
-//	@Param			tags			formData	map[string][]string		false	"Tags"
-//	@Param			resources		formData	[]string				false	"Additional Resources"
+//	@Param			terrafromFile	formData	file				false	"File to upload"
+//	@Param			tags			formData	map[string][]string	false	"Tags"
+//	@Param			resources		formData	[]string			false	"Additional Resources"
 //	@Success		200				{object}	api.Stack
 //	@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {

@@ -555,6 +555,7 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 // ListResourceTypeMetricsHandler godoc
 //
 //	@Summary	Returns list of resource types with metrics of each type based on the given input filters
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -757,6 +758,7 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 // ListResourceTypeTrend godoc
 //
 //	@Summary	Returns list of resource counts over the course of the specified time frame based on the given input filters
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -901,6 +903,7 @@ func (h *HttpHandler) GetServiceTag(ctx echo.Context) error {
 // ListServiceMetricsHandler godoc
 //
 //	@Summary	Returns list of resource types with metrics of each type based on the given input filters
+//	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json

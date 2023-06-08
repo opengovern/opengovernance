@@ -94,6 +94,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //
 //	@Summary		Get providers
 //	@Description	Getting cloud providers
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200	{object}	api.ProvidersResponse
@@ -187,6 +188,7 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 //
 //	@Summary		Get connectors
 //	@Description	Getting connectors
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200	{object}	[]api.ConnectorCount
@@ -233,6 +235,7 @@ func (h HttpHandler) ListConnectors(ctx echo.Context) error {
 //
 //	@Summary		Get connector
 //	@Description	Getting connector
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Param			connectorName	path		string	true	"Connector name"
@@ -281,6 +284,7 @@ func (h HttpHandler) GetConnector(ctx echo.Context) error {
 //
 //	@Summary		Get provider types
 //	@Description	Getting provider types
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200	{object}	api.ProviderTypesResponse
@@ -312,6 +316,7 @@ func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
 //
 //	@Summary		Create AWS source
 //	@Description	Creating AWS source
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200		{object}	api.CreateSourceResponse
@@ -401,6 +406,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 //
 //	@Summary		Create Azure source
 //	@Description	Creating Azure source
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200		{object}	api.CreateSourceResponse
@@ -674,6 +680,7 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 //
 //	@Summary		Create connection credentials
 //	@Description	Creating connection credentials
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200		{object}	api.CreateCredentialResponse
@@ -700,6 +707,7 @@ func (h HttpHandler) PostCredentials(ctx echo.Context) error {
 //
 //	@Summary		List credentials
 //	@Description	List credentials
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200			{object}	[]api.Credential
@@ -759,6 +767,7 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 //
 //	@Summary		List credentials
 //	@Description	List credentials
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200				{object}	api.Credential
@@ -837,6 +846,7 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 //
 //	@Summary		Onboard all available connections for a credential
 //	@Description	Onboard all available connections for a credential
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Param			credentialId	path		string	true	"CredentialID"
@@ -991,6 +1001,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 //
 //	@Summary	Get live credential health status
 //	@Tags		onboard
+//	@Security	BearerToken
 //	@Produce	json
 //	@Param		credentialId	path	string	true	"CredentialID"
 //	@Success	200
@@ -1020,6 +1031,7 @@ func (h HttpHandler) GetCredentialHealth(ctx echo.Context) error {
 //
 //	@Summary		Returns a list of sources
 //	@Description	Returning a list of sources including both AWS and Azure unless filtered by Type.
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Param			connector	query		source.Type	false	"filter by connector type"
@@ -1287,6 +1299,7 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 //
 //	@Summary		Edit a credential by Id
 //	@Description	Edit a credential by Id
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
@@ -1313,6 +1326,7 @@ func (h HttpHandler) PutCredentials(ctx echo.Context) error {
 //
 //	@Summary		Delete credential
 //	@Description	Delete credential
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
@@ -1369,6 +1383,7 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 //
 //	@Summary		Disable credential
 //	@Description	Disable credential
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
@@ -1431,6 +1446,7 @@ func (h HttpHandler) DisableCredential(ctx echo.Context) error {
 //
 //	@Summary		Enable credential
 //	@Description	Enable credential
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
@@ -1465,6 +1481,7 @@ func (h HttpHandler) EnableCredential(ctx echo.Context) error {
 // GetSourceCred godoc
 //
 //	@Summary	Get source credential
+//	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
 //	@Param		sourceId	path		string	true	"Source ID"
@@ -1554,6 +1571,7 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 // GetSourceHealth godoc
 //
 //	@Summary	Get live source health status
+//	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
 //	@Param		sourceId	path		string	true	"Source ID"
@@ -1698,6 +1716,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 // PutSourceCred godoc
 //
 //	@Summary	Put source credential
+//	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
 //	@Param		sourceId	path	string	true	"Source ID"
@@ -1767,6 +1786,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 //
 //	@Summary		Returns a single source
 //	@Description	Returning single source either AWS / Azure.
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200			{object}	api.Connection
@@ -1817,6 +1837,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 //
 //	@Summary		Delete a single source
 //	@Description	Deleting a single source either AWS / Azure.
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
@@ -1869,6 +1890,7 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 // DisableSource godoc
 //
 //	@Summary	Disable a single source
+//	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
 //	@Success	200
@@ -1913,6 +1935,7 @@ func (h HttpHandler) DisableSource(ctx echo.Context) error {
 // EnableSource godoc
 //
 //	@Summary	Enable a single source
+//	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
 //	@Success	200
@@ -1959,6 +1982,7 @@ func (h HttpHandler) EnableSource(ctx echo.Context) error {
 //
 //	@Summary		Returns a list of sources
 //	@Description	Returning a list of sources including both AWS and Azure unless filtered by Type.
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Param			connector	query		source.Type	false	"filter by source type"
@@ -2017,6 +2041,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 //
 //	@Summary		Returns a list of sources
 //	@Description	Returning a list of sources including both AWS and Azure unless filtered by Type.
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Param			type	query		string					false	"Type"	Enums(aws,azure)
@@ -2079,6 +2104,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 //
 //	@Summary		Returns source by account id
 //	@Description	Returning account source either AWS / Azure.
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200			{object}	api.Connection
@@ -2102,6 +2128,7 @@ func (h HttpHandler) GetSourcesByAccount(ctx echo.Context) error {
 //
 //	@Summary		Returns a count of sources
 //	@Description	Returning a count of sources including both AWS and Azure unless filtered by Type.
+//	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Param			connector	query		source.Type	false	"filter by source type"
@@ -2134,6 +2161,7 @@ func (h HttpHandler) CountSources(ctx echo.Context) error {
 // CatalogMetrics godoc
 //
 //	@Summary	Returns the list of metrics for catalog page.
+//	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
 //	@Success	200	{object}	api.CatalogMetrics
@@ -2168,6 +2196,7 @@ var catalogsJSON string
 // CatalogConnectors godoc
 //
 //	@Summary	Returns the list of connectors for catalog page.
+//	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
 //	@Param		category		query		string	false	"Category filter"
@@ -2235,6 +2264,7 @@ func (h HttpHandler) CatalogConnectors(ctx echo.Context) error {
 // CountConnections godoc
 //
 //	@Summary	Returns a count of connections
+//	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
 //	@Param		type	body		api.ConnectionCountRequest	true	"Request"

@@ -17,15 +17,15 @@ var (
 
 //go:generate ../../scripts/generate_doc.sh
 
-//	@title									Keibi Service API
-//	@version								1.0
-//	@host									dev-cluster.keibi.io
-//	@schemes								https
-//	@securityDefinitions.oauth2.application	OAuth2Application
-//	@tokenUrl								https://example.com/oauth/token
-//	@in										header
-//	@name									Authorization
-//	@description							Enter the token with the `Bearer` prefix.
+//	@title						Keibi Service API
+//	@version					1.0
+//	@host						dev-cluster.keibi.io
+//	@schemes					https
+//	@securityDefinitions.apikey	BearerToken
+//	@tokenUrl					https://example.com/oauth/token
+//	@in							header
+//	@name						Authorization
+//	@description				Enter the token with the `Bearer` prefix.
 
 func main() {
 	e := echo.New()

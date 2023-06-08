@@ -30,6 +30,38 @@ x-tagGroups:
   - name: workspace
     tags:
     - workspace
+x-tagGroups:
+  - name: auth
+    tags:
+    - users
+    - roles
+    - keys
+  - name: compliance
+    tags:
+    - compliance
+    - benchmarks_assignemnt
+  - name: inventory
+    tags:
+    - insights
+    - benchmarks
+    - inventory
+    - cost
+    - location
+    - smart_query
+    - resource
+    - metadata
+  - name: onboard
+    tags:
+    - onboard
+  - name: schedule
+    tags:
+    - describe
+    - schedule
+    - jobs
+    - stack
+  - name: workspace
+    tags:
+    - workspace
 definitions:
   aws.Resources:
     properties:
