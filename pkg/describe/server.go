@@ -96,6 +96,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.DELETE("/stacks/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, api3.AdminRole))
 	v1.GET("/stacks/findings/:jobId", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
 	v1.GET("/stacks/:stackId/insight", httpserver.AuthorizeHandler(h.GetStackInsight, api3.ViewerRole))
+	v1.GET("/stacks/:resourceId", httpserver.AuthorizeHandler(h.ListResourceStack, api3.ViewerRole))
+	v1.POST("/stacks/insight/trigger", httpserver.AuthorizeHandler(h.TriggerStackInsight, api3.AdminRole))
 }
 
 // HandleListSources godoc
@@ -884,7 +886,8 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 	var evaluations []api.StackEvaluation
 	for _, e := range stackRecord.Evaluations {
 		evaluations = append(evaluations, api.StackEvaluation{
-			BenchmarkID: e.BenchmarkID,
+			Type:        e.Type,
+			EvaluatorID: e.EvaluatorID,
 			JobID:       e.JobID,
 			CreatedAt:   e.CreatedAt,
 		})
@@ -973,7 +976,7 @@ func (h HttpServer) DeleteStack(ctx echo.Context) error {
 //	@Success		200		{object}	[]ComplianceReportJob
 //	@Router			/schedule/api/v1/stacks/benchmark/trigger [post]
 func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
-	var req api.EvaluateStack
+	var req api.StackBenchmarkRequest
 	bindValidate(ctx, &req)
 
 	stackRecord, err := h.DB.GetStack(req.StackID)
@@ -1032,7 +1035,8 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 				return err
 			}
 			evaluation := StackEvaluation{
-				BenchmarkID: benchmarkID,
+				EvaluatorID: benchmarkID,
+				Type:        "BENCHMARK",
 				StackID:     stackRecord.StackID,
 				JobID:       job.ID,
 			}
@@ -1096,7 +1100,7 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	req := complianceapi.GetFindingsRequest{
 		Filters: complianceapi.FindingFilters{
 			ConnectionID: conns,
-			BenchmarkID:  []string{evaluation.BenchmarkID},
+			BenchmarkID:  []string{evaluation.EvaluatorID},
 			ResourceID:   resources,
 		},
 		Sorts: reqBody.Sorts,
@@ -1285,6 +1289,77 @@ func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
 			h.Scheduler.db.UpdateInsightJobStatus(job)
 		}
 		insightJobs = append(insightJobs, job)
+	}
+	return ctx.JSON(http.StatusOK, insightJobs)
+}
+
+// TriggerInsightEvaluation godoc
+//
+//	@Summary	Triggers a insight evaluation job to run immediately
+//	@Security	BearerToken
+//	@Tags		describe
+//	@Produce	json
+//	@Param		request	body		api.TriggerInsightEvaluationRequest	true	"Request Body"
+//	@Success	200		{object}	[]InsightJob
+//	@Router		/schedule/api/v1/insight/evaluation/trigger [put]
+func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
+	var req api.StackInsightRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	stackRecord, err := h.DB.GetStack(req.StackID)
+	if err != nil {
+		return err
+	}
+	if stackRecord.StackID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
+	}
+	var connectionIDs []string
+	for _, acc := range []string(stackRecord.AccountIDs) {
+		source, err := h.Scheduler.onboardClient.GetSourcesByAccount(httpclient.FromEchoContext(ctx), acc)
+		if err != nil {
+			return err
+		}
+		connectionIDs = append(connectionIDs, source.ID.String())
+	}
+
+	var insightJobs []InsightJob
+
+	for _, insightId := range req.Insights {
+		insight, err := h.Scheduler.complianceClient.GetInsightMetadataById(httpclient.FromEchoContext(ctx), insightId)
+		if err != nil {
+			return err
+		}
+		for _, srcID := range connectionIDs {
+			src, err := h.DB.GetSourceByID(srcID)
+			if err != nil {
+				return err
+			}
+			job := newInsightJob(*insight, string(src.Type), srcID, src.AccountID, "")
+			err = h.Scheduler.db.AddInsightJob(&job)
+			if err != nil {
+				return err
+			}
+
+			err = enqueueInsightJobs(h.Scheduler.db, h.Scheduler.insightJobQueue, job, *insight)
+			if err != nil {
+				job.Status = insightapi.InsightJobFailed
+				job.FailureMessage = "Failed to enqueue InsightJob"
+				h.Scheduler.db.UpdateInsightJobStatus(job)
+			}
+			evaluation := StackEvaluation{
+				EvaluatorID: strconv.FormatUint(uint64(insightId), 10),
+				Type:        "INSIGHT",
+				StackID:     stackRecord.StackID,
+				JobID:       job.ID,
+			}
+			err = h.DB.AddEvaluation(&evaluation)
+			if err != nil {
+				return err
+			}
+			insightJobs = append(insightJobs, job)
+		}
 	}
 	return ctx.JSON(http.StatusOK, insightJobs)
 }
