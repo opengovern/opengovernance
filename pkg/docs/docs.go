@@ -3366,6 +3366,13 @@ const docTemplate = `{
                         "description": "timestamp for resource count change comparison in epoch seconds",
                         "name": "startTime",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "ResourceType",
+                        "name": "resourceType",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -3811,6 +3818,13 @@ const docTemplate = `{
                 ],
                 "summary": "Returns the service with metrics for the given service name",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ServiceName",
+                        "name": "serviceName",
+                        "in": "path",
+                        "required": true
+                    },
                     {
                         "type": "array",
                         "items": {
@@ -8852,26 +8866,6 @@ const docTemplate = `{
                     "description": "JobID is the ID of the job which produced this resource",
                     "type": "integer"
                 },
-                "last_day_value": {
-                    "description": "LastDayValue result of the same query last day",
-                    "type": "integer"
-                },
-                "last_month_value": {
-                    "description": "LastMonthValue result of the same query last week",
-                    "type": "integer"
-                },
-                "last_quarter_value": {
-                    "description": "LastQuarterValue result of the same query last quarter",
-                    "type": "integer"
-                },
-                "last_week_value": {
-                    "description": "LastWeekValue result of the same query last week",
-                    "type": "integer"
-                },
-                "last_year_value": {
-                    "description": "LastYearValue result of the same query last year",
-                    "type": "integer"
-                },
                 "locations": {
                     "description": "Locations list of the locations of the resources included in this insight",
                     "type": "array",
@@ -8909,10 +8903,6 @@ const docTemplate = `{
                 "schedule_uuid": {
                     "description": "ScheduleUUID",
                     "type": "string"
-                },
-                "smart_query_id": {
-                    "description": "SmartQueryID is the ID of smart query id which is connected to this insight",
-                    "type": "integer"
                 },
                 "source_id": {
                     "description": "SourceID",

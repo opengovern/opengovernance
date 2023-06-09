@@ -720,6 +720,7 @@ func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionID
 //	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
 //	@Param		endTime			query		string		false	"timestamp for resource count in epoch seconds"
 //	@Param		startTime		query		string		false	"timestamp for resource count change comparison in epoch seconds"
+//	@Param		resourceType	path		string		true	"ResourceType"
 //	@Success	200				{object}	api.ResourceType
 //	@Router		/inventory/api/v2/resources/metric/{resourceType} [get]
 func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
@@ -1173,6 +1174,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
+//	@Param		serviceName		path		string		true	"ServiceName"
 //	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
 //	@Param		startTime		query		string		false	"timestamp for start of cost aggregation in epoch seconds"
 //	@Param		endTime			query		string		false	"timestamp for end of cost aggregation in epoch seconds"
