@@ -1172,6 +1172,27 @@ definitions:
     required:
     - page
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightJob:
+    properties:
+      FailureMessage:
+        type: string
+      accountId:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+      insightId:
+        type: integer
+      sourceId:
+        type: string
+      sourceType:
+        $ref: '#/definitions/source.Type'
+      status:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus'
+      updatedAt:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest:
     properties:
       benchmarkID:
@@ -1257,6 +1278,18 @@ definitions:
       type:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackInsightRequest:
+    properties:
+      insights:
+        items:
+          type: integer
+        type: array
+      stackId:
+        type: string
+    required:
+    - insights
+    - stackId
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest:
     properties:
       benchmarkID:
@@ -1313,6 +1346,9 @@ definitions:
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightConnection'
         type: array
+      insight_id:
+        description: InsightID is the ID of insight which has been executed
+        type: integer
       internal:
         description: Internal hidden to user
         type: boolean
@@ -1347,9 +1383,6 @@ definitions:
       query:
         description: Query
         type: string
-      query_id:
-        description: QueryID is the ID of steampipe query which has been executed
-        type: integer
       resource_type:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResourceType'
@@ -1926,10 +1959,6 @@ definitions:
       count:
         description: Number of Resources of this Resource Type - Metric
         type: integer
-      count_change_percent:
-        description: Percentage change in the number of Resources of this Resource
-          Type - Metric
-        type: number
       insights:
         description: List of Insights that support this Resource Type - Metadata (GET
           only)
@@ -1941,6 +1970,9 @@ definitions:
         type: integer
       logo_uri:
         type: string
+      old_count:
+        description: Number of Resources of this Resource Type in the past - Metric
+        type: integer
       resource_name:
         type: string
       resource_type:
@@ -2008,12 +2040,16 @@ definitions:
         $ref: '#/definitions/source.Type'
       cost:
         type: number
-      cost_change_percent:
+      end_daily_cost:
         type: number
       is_cost_supported:
         type: boolean
       logo_uri:
         type: string
+      old_resource_count:
+        type: integer
+      resource_count:
+        type: integer
       resource_types:
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
@@ -2022,6 +2058,8 @@ definitions:
         type: string
       service_name:
         type: string
+      start_daily_cost:
+        type: number
       tags:
         additionalProperties:
           items:
@@ -4701,6 +4739,28 @@ paths:
       summary: Get insight trend data
       tags:
       - insight
+  /inventory/api/v2/insights/job/{jobId}:
+    get:
+      description: Get insight result for the given JobId - this mostly for internal
+        usage, use compliance api for full api
+      parameters:
+      - description: JobId
+        in: path
+        name: jobId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource'
+      security:
+      - BearerToken: []
+      summary: Get insight result by Job ID
+      tags:
+      - insight
   /inventory/api/v2/metadata/resourcetype:
     get:
       description: |-
@@ -5255,8 +5315,39 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse'
       security:
       - BearerToken: []
-      summary: Returns list of resource types with metrics of each type based on the
-        given input filters
+      summary: Returns list of services with their metrics based on the given input
+        filters
+      tags:
+      - inventory
+  /inventory/api/v2/services/metric/{serviceName}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: timestamp for start of cost aggregation in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      - description: timestamp for end of cost aggregation in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service'
+      security:
+      - BearerToken: []
+      summary: Returns the service with metrics for the given service name
       tags:
       - inventory
   /inventory/api/v2/services/summary:
@@ -6416,6 +6507,29 @@ paths:
       summary: Triggers a insight evaluation job to run immediately
       tags:
       - describe
+  /schedule/api/v1/insight/job/{jobId}:
+    get:
+      consumes:
+      - application/json
+      description: Get an Insight Job details by ID
+      parameters:
+      - description: JobId
+        in: path
+        name: jobId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightJob'
+      security:
+      - BearerToken: []
+      summary: Get an Insight Job
+      tags:
+      - describe
   /schedule/api/v1/insight/jobs/pending:
     get:
       produces:
@@ -6784,6 +6898,29 @@ paths:
       summary: Get Stack Findings
       tags:
       - stack
+  /schedule/api/v1/stacks/insight/trigger:
+    post:
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackInsightRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/describe.InsightJob'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Triggers an insight evaluation job to run immediately
+      tags:
+      - describe
   /schedule/api/v1/stacks/resource/{resourceId}:
     get:
       consumes:

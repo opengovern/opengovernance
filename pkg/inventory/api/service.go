@@ -7,15 +7,19 @@ import (
 )
 
 type Service struct {
-	Connector         source.Type         `json:"connector"`
-	ServiceName       string              `json:"service_name"`
-	ServiceLabel      string              `json:"service_label"`
-	ResourceTypes     []ResourceType      `json:"resource_types"`
-	IsCostSupported   bool                `json:"is_cost_supported"`
-	Tags              map[string][]string `json:"tags,omitempty"`
-	LogoURI           *string             `json:"logo_uri,omitempty"`
-	Cost              *float64            `json:"cost,omitempty"`
-	CostChangePercent *float64            `json:"cost_change_percent,omitempty"`
+	Connector       source.Type         `json:"connector"`
+	ServiceName     string              `json:"service_name"`
+	ServiceLabel    string              `json:"service_label"`
+	ResourceTypes   []ResourceType      `json:"resource_types"`
+	IsCostSupported bool                `json:"is_cost_supported"`
+	Tags            map[string][]string `json:"tags,omitempty"`
+	LogoURI         *string             `json:"logo_uri,omitempty"`
+
+	ResourceCount    *int     `json:"resource_count,omitempty"`
+	OldResourceCount *int     `json:"old_resource_count,omitempty"`
+	Cost             *float64 `json:"cost,omitempty"`
+	StartDailyCost   *float64 `json:"start_daily_cost,omitempty"`
+	EndDailyCost     *float64 `json:"end_daily_cost,omitempty"`
 }
 
 type ListServiceMetricsResponse struct {

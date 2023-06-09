@@ -142,7 +142,7 @@ func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob, ins comp
 
 	if err := q.Publish(insight.Job{
 		JobID:            job.ID,
-		QueryID:          job.InsightID,
+		InsightID:        job.InsightID,
 		SourceID:         job.SourceID,
 		ScheduleJobUUID:  job.ScheduleUUID,
 		AccountID:        job.AccountID,

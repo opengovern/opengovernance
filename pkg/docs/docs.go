@@ -2803,6 +2803,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/insights/job/{jobId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get insight result for the given JobId - this mostly for internal usage, use compliance api for full api",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insight"
+                ],
+                "summary": "Get insight result by Job ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "JobId",
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/insights/{insightId}": {
             "get": {
                 "security": [
@@ -3680,7 +3714,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Returns list of resource types with metrics of each type based on the given input filters",
+                "summary": "Returns list of services with their metrics based on the given input filters",
                 "parameters": [
                     {
                         "type": "array",
@@ -3754,6 +3788,56 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/services/metric/{serviceName}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Returns the service with metrics for the given service name",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for start of cost aggregation in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for end of cost aggregation in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service"
                         }
                     }
                 }
@@ -5608,6 +5692,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v1/insight/job/{jobId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get an Insight Job details by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Get an Insight Job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "JobId",
+                        "name": "jobId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightJob"
+                        }
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/insight/jobs/pending": {
             "get": {
                 "security": [
@@ -6068,6 +6189,44 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/schedule/api/v1/stacks/insight/trigger": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Triggers an insight evaluation job to run immediately",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackInsightRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/describe.InsightJob"
+                            }
                         }
                     }
                 }
@@ -8421,6 +8580,38 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightJob": {
+            "type": "object",
+            "properties": {
+                "FailureMessage": {
+                    "type": "string"
+                },
+                "accountId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "insightId": {
+                    "type": "integer"
+                },
+                "sourceId": {
+                    "type": "string"
+                },
+                "sourceType": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "status": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest": {
             "type": "object",
             "properties": {
@@ -8551,6 +8742,24 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackInsightRequest": {
+            "type": "object",
+            "required": [
+                "insights",
+                "stackId"
+            ],
+            "properties": {
+                "insights": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "stackId": {
+                    "type": "string"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest": {
             "type": "object",
             "properties": {
@@ -8631,6 +8840,10 @@ const docTemplate = `{
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightConnection"
                     }
                 },
+                "insight_id": {
+                    "description": "InsightID is the ID of insight which has been executed",
+                    "type": "integer"
+                },
                 "internal": {
                     "description": "Internal hidden to user",
                     "type": "boolean"
@@ -8677,10 +8890,6 @@ const docTemplate = `{
                 "query": {
                     "description": "Query",
                     "type": "string"
-                },
-                "query_id": {
-                    "description": "QueryID is the ID of steampipe query which has been executed",
-                    "type": "integer"
                 },
                 "resource_type": {
                     "description": "ResourceType shows which collection of docs this resource belongs to",
@@ -9492,10 +9701,6 @@ const docTemplate = `{
                     "description": "Number of Resources of this Resource Type - Metric",
                     "type": "integer"
                 },
-                "count_change_percent": {
-                    "description": "Percentage change in the number of Resources of this Resource Type - Metric",
-                    "type": "number"
-                },
                 "insights": {
                     "description": "List of Insights that support this Resource Type - Metadata (GET only)",
                     "type": "array",
@@ -9509,6 +9714,10 @@ const docTemplate = `{
                 },
                 "logo_uri": {
                     "type": "string"
+                },
+                "old_count": {
+                    "description": "Number of Resources of this Resource Type in the past - Metric",
+                    "type": "integer"
                 },
                 "resource_name": {
                     "type": "string"
@@ -9607,7 +9816,7 @@ const docTemplate = `{
                 "cost": {
                     "type": "number"
                 },
-                "cost_change_percent": {
+                "end_daily_cost": {
                     "type": "number"
                 },
                 "is_cost_supported": {
@@ -9615,6 +9824,12 @@ const docTemplate = `{
                 },
                 "logo_uri": {
                     "type": "string"
+                },
+                "old_resource_count": {
+                    "type": "integer"
+                },
+                "resource_count": {
+                    "type": "integer"
                 },
                 "resource_types": {
                     "type": "array",
@@ -9627,6 +9842,9 @@ const docTemplate = `{
                 },
                 "service_name": {
                     "type": "string"
+                },
+                "start_daily_cost": {
+                    "type": "number"
                 },
                 "tags": {
                     "type": "object",

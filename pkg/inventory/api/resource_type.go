@@ -14,8 +14,8 @@ type ResourceType struct {
 	Tags          map[string][]string `json:"tags,omitempty"`
 	LogoURI       *string             `json:"logo_uri,omitempty"`
 
-	Count              *int     `json:"count,omitempty"`                // Number of Resources of this Resource Type - Metric
-	CountChangePercent *float64 `json:"count_change_percent,omitempty"` // Percentage change in the number of Resources of this Resource Type - Metric
+	Count    *int `json:"count,omitempty"`     // Number of Resources of this Resource Type - Metric
+	OldCount *int `json:"old_count,omitempty"` // Number of Resources of this Resource Type in the past - Metric
 
 	InsightsCount   *int     `json:"insights_count,omitempty"`   // Number of Insights that use this Resource Type - Metadata
 	ComplianceCount *int     `json:"compliance_count,omitempty"` // Number of Compliance that use this Resource Type - Metadata

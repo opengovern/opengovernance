@@ -28,8 +28,8 @@ type InsightConnection struct {
 type InsightResource struct {
 	// JobID is the ID of the job which produced this resource
 	JobID uint `json:"job_id"`
-	// QueryID is the ID of steampipe query which has been executed
-	QueryID uint `json:"query_id"`
+	// InsightID is the ID of insight which has been executed
+	InsightID uint `json:"insight_id"`
 	// SmartQueryID is the ID of smart query id which is connected to this insight
 	SmartQueryID uint `json:"smart_query_id"`
 	// Query
@@ -73,13 +73,13 @@ type InsightResource struct {
 func (r InsightResource) KeysAndIndex() ([]string, string) {
 	keys := []string{
 		string(r.ResourceType),
-		fmt.Sprintf("%d", r.QueryID),
+		fmt.Sprintf("%d", r.InsightID),
 		fmt.Sprintf("%s", r.SourceID),
 	}
 	if strings.HasSuffix(strings.ToLower(string(r.ResourceType)), "history") {
 		keys = []string{
 			string(r.ResourceType),
-			fmt.Sprintf("%d", r.QueryID),
+			fmt.Sprintf("%d", r.InsightID),
 			fmt.Sprintf("%s", r.SourceID),
 			fmt.Sprintf("%s", r.ScheduleUUID),
 		}
