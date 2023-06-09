@@ -1287,7 +1287,7 @@ func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
 			return err
 		}
 
-		err = enqueueInsightJobs(h.Scheduler.db, h.Scheduler.insightJobQueue, job, *insight)
+		err = enqueueInsightJobs(h.Scheduler.insightJobQueue, job, *insight)
 		if err != nil {
 			job.Status = insightapi.InsightJobFailed
 			job.FailureMessage = "Failed to enqueue InsightJob"
@@ -1347,7 +1347,7 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 				return err
 			}
 
-			err = enqueueInsightJobs(h.Scheduler.db, h.Scheduler.insightJobQueue, job, *insight)
+			err = enqueueInsightJobs(h.Scheduler.insightJobQueue, job, *insight)
 			if err != nil {
 				job.Status = insightapi.InsightJobFailed
 				job.FailureMessage = "Failed to enqueue InsightJob"
