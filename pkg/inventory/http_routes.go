@@ -2806,6 +2806,40 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 	}
 }
 
+// GetInsightResult godoc
+//
+//	@Summary		Get insight result by Job ID
+//	@Description	Get insight result for the given JobId - this mostly for internal usage, use compliance api for full api
+//	@Security		BearerToken
+//	@Tags			insight
+//	@Produce		json
+//	@Param			jobId			path		string		true	"JobId"
+//	@Success		200				{object}	insight.InsightResource
+//	@Router			/inventory/api/v2/insights/jobs/{jobId} [get]
+func (h *HttpHandler) GetInsightResultByJobId(ctx echo.Context) error {
+	jobId, err := strconv.ParseUint(ctx.Param("jobId"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
+	}
+	job, err := h.schedulerClient.GetInsightJobById(httpclient.FromEchoContext(ctx), uint(jobId))
+	timeAt := time.Now().Unix()
+	var insightResults map[uint][]insight.InsightResource
+
+	insightResults, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), nil, []string{job.SourceID}, []uint{uint(job.InsightID)}, false)
+	if err != nil {
+		return err
+	}
+
+	if insightResult, ok := insightResults[uint(job.InsightID)]; ok {
+		for _, res := range insightResult {
+			if res.JobID == job.ID {
+				return ctx.JSON(http.StatusOK, res)
+			}
+		}
+	}
+	return echo.NewHTTPError(http.StatusNotFound, "no data found")
+}
+
 // GetInsightTrendResults godoc
 //
 //	@Summary		Get insight trend data

@@ -1,6 +1,11 @@
 package api
 
-import "github.com/kaytu-io/kaytu-util/pkg/source"
+import (
+	"time"
+
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
+)
 
 type GetCredsForJobRequest struct {
 	SourceID string `json:"sourceId"`
@@ -32,4 +37,17 @@ type ListBenchmarkEvaluationsRequest struct {
 	ConnectionID      *string      `json:"connectionID"`
 	Connector         *source.Type `json:"connector"`
 	BenchmarkID       *string      `json:"benchmarkID"`
+}
+
+type InsightJob struct {
+	ID             uint                        `json:"id"`
+	InsightID      uint                        `json:"insightId"`
+	SourceID       string                      `json:"sourceId"`
+	AccountID      string                      `json:"accountId"`
+	SourceType     source.Type                 `json:"sourceType"`
+	Status         insightapi.InsightJobStatus `json:"status"`
+	FailureMessage string                      `json:"FailureMessage,omitempty"`
+
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }

@@ -941,6 +941,20 @@ func (db Database) GetOldCompletedInsightJob(insightID uint, nDaysBefore int) (*
 	return job, nil
 }
 
+func (db Database) GetInsightJobById(jobId uint) (*InsightJob, error) {
+	var job InsightJob
+	tx := db.orm.Model(&InsightJob{}).
+		Where("id = ?", jobId).
+		Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &job, nil
+}
+
 // UpdateInsightJobsTimedOut updates the status of InsightJobs
 // that have timed out while in the status of 'IN_PROGRESS' for longer
 // than 4 hours.

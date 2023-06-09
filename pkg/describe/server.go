@@ -68,6 +68,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.PUT("/insight/evaluation/trigger", httpserver.AuthorizeHandler(h.TriggerInsightEvaluation, api3.AdminRole))
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerDescribeJobV1, api3.AdminRole))
 
+	v1.GET("/insight/job/:jobId", httpserver.AuthorizeHandler(h.GetInsightJob, api3.ViewerRole))
+
 	v1.GET("/describe/source/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingDescribeSourceJobs, api3.ViewerRole))
 	v1.GET("/describe/resource/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingDescribeResourceJobs, api3.ViewerRole))
 	v1.GET("/summarize/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingSummarizeJobs, api3.ViewerRole))
@@ -1365,4 +1367,36 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 		}
 	}
 	return ctx.JSON(http.StatusOK, insightJobs)
+}
+
+// GetInsightJob godoc
+//
+//	@Summary		Get an Insight Job
+//	@Description	Get an Insight Job details by ID
+//	@Security		BearerToken
+//	@Tags			describe
+//	@Accept			json
+//	@Produce		json
+//	@Param			jobId	path		string	true	"JobId"
+//	@Success		200		{object}	api.InsightJob
+//	@Router			/schedule/api/v1/insight/job/{jobId} [get]
+func (h HttpServer) GetInsightJob(ctx echo.Context) error {
+	jobIdstring := ctx.Param("jobId")
+	jobId, err := strconv.ParseUint(jobIdstring, 10, 32)
+	if err != nil {
+		return err
+	}
+	job, err := h.DB.GetInsightJobById(uint(jobId))
+	result := api.InsightJob{
+		ID:             job.ID,
+		InsightID:      job.InsightID,
+		SourceID:       job.SourceID,
+		AccountID:      job.AccountID,
+		SourceType:     job.SourceType,
+		Status:         job.Status,
+		FailureMessage: job.FailureMessage,
+		CreatedAt:      job.CreatedAt,
+		UpdatedAt:      job.UpdatedAt,
+	}
+	return ctx.JSON(http.StatusOK, result)
 }
