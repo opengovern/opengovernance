@@ -696,6 +696,9 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionIDs []string, timeAt int64) (*api.ResourceType, error) {
 	resourceType, err := h.db.GetResourceType(resourceTypeStr)
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, echo.NewHTTPError(http.StatusNotFound, "resource type not found")
+		}
 		return nil, err
 	}
 
