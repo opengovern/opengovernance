@@ -4956,6 +4956,37 @@ paths:
         given input filters
       tags:
       - inventory
+  /inventory/api/v2/resources/metric/{resourceType}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: timestamp for resource count in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: timestamp for resource count change comparison in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
+      security:
+      - BearerToken: []
+      summary: Returns resource type with metrics
+      tags:
+      - inventory
   /inventory/api/v2/resources/tag:
     get:
       consumes:
@@ -5302,11 +5333,11 @@ paths:
         name: serviceName
         required: true
         type: string
-      - description: 'filter: SourceIDs'
+      - description: 'filter: connectorId'
         in: query
         name: connectorId
         type: string
-      - description: 'filter: Provider'
+      - description: 'filter: connector'
         in: query
         name: connector
         type: string
