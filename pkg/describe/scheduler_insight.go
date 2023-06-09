@@ -86,7 +86,7 @@ func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceapi.Insight, s
 			return err
 		}
 
-		err = enqueueInsightJobs(s.db, s.insightJobQueue, job, ins)
+		err = enqueueInsightJobs(s.insightJobQueue, job, ins)
 		if err != nil {
 			job.Status = insightapi.InsightJobFailed
 			job.FailureMessage = "Failed to enqueue InsightJob"
@@ -97,65 +97,18 @@ func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceapi.Insight, s
 	return nil
 }
 
-func enqueueInsightJobs(db Database, q queue.Interface, job InsightJob, ins complianceapi.Insight) error {
-	var lastDayJobID, lastWeekJobID, lastMonthJobID, lastQuarterJobID, lastYearJobID uint
-
-	lastDay, err := db.GetOldCompletedInsightJob(job.InsightID, 1)
-	if err != nil {
-		return err
-	}
-	if lastDay != nil {
-		lastDayJobID = lastDay.ID
-	}
-
-	lastWeek, err := db.GetOldCompletedInsightJob(job.InsightID, 7)
-	if err != nil {
-		return err
-	}
-	if lastWeek != nil {
-		lastWeekJobID = lastWeek.ID
-	}
-
-	lastMonth, err := db.GetOldCompletedInsightJob(job.InsightID, 30)
-	if err != nil {
-		return err
-	}
-	if lastMonth != nil {
-		lastMonthJobID = lastMonth.ID
-	}
-
-	lastQuarter, err := db.GetOldCompletedInsightJob(job.InsightID, 93)
-	if err != nil {
-		return err
-	}
-	if lastQuarter != nil {
-		lastQuarterJobID = lastQuarter.ID
-	}
-
-	lastYear, err := db.GetOldCompletedInsightJob(job.InsightID, 428)
-	if err != nil {
-		return err
-	}
-	if lastYear != nil {
-		lastYearJobID = lastYear.ID
-	}
-
+func enqueueInsightJobs(q queue.Interface, job InsightJob, ins complianceapi.Insight) error {
 	if err := q.Publish(insight.Job{
-		JobID:            job.ID,
-		InsightID:        job.InsightID,
-		SourceID:         job.SourceID,
-		ScheduleJobUUID:  job.ScheduleUUID,
-		AccountID:        job.AccountID,
-		SourceType:       ins.Connector,
-		Internal:         ins.Internal,
-		Query:            ins.Query.QueryToExecute,
-		Description:      ins.Description,
-		ExecutedAt:       job.CreatedAt.UnixMilli(),
-		LastDayJobID:     lastDayJobID,
-		LastWeekJobID:    lastWeekJobID,
-		LastMonthJobID:   lastMonthJobID,
-		LastQuarterJobID: lastQuarterJobID,
-		LastYearJobID:    lastYearJobID,
+		JobID:           job.ID,
+		InsightID:       job.InsightID,
+		SourceID:        job.SourceID,
+		ScheduleJobUUID: job.ScheduleUUID,
+		AccountID:       job.AccountID,
+		SourceType:      ins.Connector,
+		Internal:        ins.Internal,
+		Query:           ins.Query.QueryToExecute,
+		Description:     ins.Description,
+		ExecutedAt:      job.CreatedAt.UnixMilli(),
 	}); err != nil {
 		return err
 	}

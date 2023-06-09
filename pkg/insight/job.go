@@ -1,7 +1,6 @@
 package insight
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -47,22 +46,16 @@ var DoInsightJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 }, []string{"queryid", "status"})
 
 type Job struct {
-	JobID            uint
-	InsightID        uint
-	SmartQueryID     uint
-	SourceID         string
-	ScheduleJobUUID  string
-	AccountID        string
-	SourceType       source.Type
-	Internal         bool
-	Query            string
-	Description      string
-	ExecutedAt       int64
-	LastDayJobID     uint
-	LastWeekJobID    uint
-	LastMonthJobID   uint
-	LastQuarterJobID uint
-	LastYearJobID    uint
+	JobID           uint
+	InsightID       uint
+	SourceID        string
+	ScheduleJobUUID string
+	AccountID       string
+	SourceType      source.Type
+	Internal        bool
+	Query           string
+	Description     string
+	ExecutedAt      int64
 }
 
 type JobResult struct {
@@ -187,35 +180,6 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 				Body:   strings.NewReader(string(content)),
 			})
 			if err == nil {
-				var lastDayValue, lastWeekValue, lastMonthValue, lastQuarterValue, lastYearValue *int64
-				for idx, jobID := range []uint{j.LastDayJobID, j.LastWeekJobID, j.LastMonthJobID, j.LastQuarterJobID, j.LastYearJobID} {
-					var response ResultQueryResponse
-					query, err := FindOldInsightValue(jobID, j.InsightID)
-					if err != nil {
-						fail(fmt.Errorf("failed to build query: %w", err))
-					}
-					err = client.Search(context.Background(), es.InsightsIndex, query, &response)
-					if err != nil {
-						fail(fmt.Errorf("failed to run query: %w", err))
-					}
-
-					if len(response.Hits.Hits) > 0 {
-						// there will be only one result anyway
-						switch idx {
-						case 0:
-							lastDayValue = &response.Hits.Hits[0].Source.Result
-						case 1:
-							lastWeekValue = &response.Hits.Hits[0].Source.Result
-						case 2:
-							lastMonthValue = &response.Hits.Hits[0].Source.Result
-						case 3:
-							lastQuarterValue = &response.Hits.Hits[0].Source.Result
-						case 4:
-							lastYearValue = &response.Hits.Hits[0].Source.Result
-						}
-					}
-				}
-
 				var locations []string = nil
 				if locationsMap != nil {
 					locations = make([]string, 0, len(locationsMap))
@@ -243,7 +207,6 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 					resources = append(resources, es.InsightResource{
 						JobID:               j.JobID,
 						InsightID:           j.InsightID,
-						SmartQueryID:        j.SmartQueryID,
 						Query:               j.Query,
 						Internal:            j.Internal,
 						Description:         j.Description,
@@ -253,11 +216,6 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 						ExecutedAt:          time.Now().UnixMilli(),
 						ScheduleUUID:        j.ScheduleJobUUID,
 						Result:              count,
-						LastDayValue:        lastDayValue,
-						LastWeekValue:       lastWeekValue,
-						LastMonthValue:      lastMonthValue,
-						LastQuarterValue:    lastQuarterValue,
-						LastYearValue:       lastYearValue,
 						ResourceType:        resourceType,
 						Locations:           locations,
 						IncludedConnections: connections,

@@ -30,8 +30,6 @@ type InsightResource struct {
 	JobID uint `json:"job_id"`
 	// InsightID is the ID of insight which has been executed
 	InsightID uint `json:"insight_id"`
-	// SmartQueryID is the ID of smart query id which is connected to this insight
-	SmartQueryID uint `json:"smart_query_id"`
 	// Query
 	Query string `json:"query"`
 	// Internal hidden to user
@@ -50,16 +48,6 @@ type InsightResource struct {
 	ScheduleUUID string `json:"schedule_uuid"`
 	// Result of query
 	Result int64 `json:"result"`
-	// LastDayValue result of the same query last day
-	LastDayValue *int64 `json:"last_day_value"`
-	// LastWeekValue result of the same query last week
-	LastWeekValue *int64 `json:"last_week_value"`
-	// LastMonthValue result of the same query last week
-	LastMonthValue *int64 `json:"last_month_value"`
-	// LastQuarterValue result of the same query last quarter
-	LastQuarterValue *int64 `json:"last_quarter_value"`
-	// LastYearValue result of the same query last year
-	LastYearValue *int64 `json:"last_year_value"`
 	// ResourceType shows which collection of docs this resource belongs to
 	ResourceType InsightResourceType `json:"resource_type"`
 	// Locations list of the locations of the resources included in this insight
