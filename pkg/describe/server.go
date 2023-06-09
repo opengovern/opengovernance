@@ -977,7 +977,10 @@ func (h HttpServer) DeleteStack(ctx echo.Context) error {
 //	@Router			/schedule/api/v1/stacks/benchmark/trigger [post]
 func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 	var req api.StackBenchmarkRequest
-	bindValidate(ctx, &req)
+	err := bindValidate(ctx, &req)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 
 	stackRecord, err := h.DB.GetStack(req.StackID)
 	if err != nil {

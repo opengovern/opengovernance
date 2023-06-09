@@ -79,6 +79,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	resourcesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListResourceTypeTags, api3.ViewerRole))
 	resourcesV2.GET("/tag/:key", httpserver.AuthorizeHandler(h.GetResourceTypeTag, api3.ViewerRole))
 	resourcesV2.GET("/metric", httpserver.AuthorizeHandler(h.ListResourceTypeMetricsHandler, api3.ViewerRole))
+	resourcesV2.GET("/metric/:resourceType", httpserver.AuthorizeHandler(h.GetResourceTypeMetricsHandler, api3.ViewerRole))
 	resourcesV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListResourceTypeComposition, api3.ViewerRole))
 	resourcesV2.GET("/trend", httpserver.AuthorizeHandler(h.ListResourceTypeTrend, api3.ViewerRole))
 
@@ -690,6 +691,74 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, result)
+}
+
+func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionIDs []string, timeAt int64) (*api.ResourceType, error) {
+	resourceType, err := h.db.GetResourceType(resourceTypeStr)
+	if err != nil {
+		return nil, err
+	}
+
+	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(timeAt, 0), []string{resourceTypeStr}, EsFetchPageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	apiResourceType := resourceType.ToApi()
+	if count, ok := metricIndexed[strings.ToLower(resourceType.ResourceType)]; ok {
+		apiResourceType.Count = &count
+	}
+
+	return &apiResourceType, nil
+}
+
+// GetResourceTypeMetricsHandler godoc
+//
+//	@Summary	Returns resource type with metrics
+//	@Security	BearerToken
+//	@Tags		inventory
+//	@Accept		json
+//	@Produce	json
+//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param		endTime			query		string		false	"timestamp for resource count in epoch seconds"
+//	@Param		startTime		query		string		false	"timestamp for resource count change comparison in epoch seconds"
+//	@Success	200				{object}	api.ResourceType
+//	@Router		/inventory/api/v2/resources/metric/{resourceType} [get]
+func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
+	var err error
+	resourceType := ctx.Param("resourceType")
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now().Unix()
+	if endTimeStr != "" {
+		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid endTime value")
+		}
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
+	if startTimeStr != "" {
+		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid startTime value")
+		}
+	}
+
+	apiResourceType, err := h.GetResourceTypeMetric(resourceType, connectionIDs, endTime)
+	if err != nil {
+		return err
+	}
+
+	oldApiResourceType, err := h.GetResourceTypeMetric(resourceType, connectionIDs, startTime)
+	if err != nil {
+		return err
+	}
+	if apiResourceType.Count != nil && oldApiResourceType.Count != nil && *oldApiResourceType.Count != 0 {
+		apiResourceType.CountChangePercent = utils.GetPointer(float64((float64(*apiResourceType.Count)-float64(*oldApiResourceType.Count))/float64(*oldApiResourceType.Count)) * 100)
+	}
+
+	return ctx.JSON(http.StatusOK, *apiResourceType)
 }
 
 // ListResourceTypeComposition godoc
@@ -1727,8 +1796,8 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 //	@Accepts		json
 //	@Produce		json
 //	@Param			serviceName	path		string	true	"ServiceName"
-//	@Param			connectorId	query		string	false	"filter: SourceIDs"
-//	@Param			connector	query		string	false	"filter: Provider"
+//	@Param			connectorId	query		string	false	"filter: connectorId"
+//	@Param			connector	query		string	false	"filter: connector"
 //	@Param			startTime	query		string	true	"start time for cost calculation in epoch seconds"
 //	@Param			endTime		query		string	true	"end time for cost calculation and time resource count in epoch seconds"
 //	@Success		200			{object}	api.ServiceSummary

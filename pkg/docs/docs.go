@@ -3294,6 +3294,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/resources/metric/{resourceType}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Returns resource type with metrics",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for resource count in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for resource count change comparison in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/resources/tag": {
             "get": {
                 "security": [
@@ -3825,13 +3875,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter: SourceIDs",
+                        "description": "filter: connectorId",
                         "name": "connectorId",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "filter: Provider",
+                        "description": "filter: connector",
                         "name": "connector",
                         "in": "query"
                     },
