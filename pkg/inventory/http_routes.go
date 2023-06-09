@@ -87,6 +87,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	servicesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListServiceTags, api3.ViewerRole))
 	servicesV2.GET("/tag/:key", httpserver.AuthorizeHandler(h.GetServiceTag, api3.ViewerRole))
 	servicesV2.GET("/metric", httpserver.AuthorizeHandler(h.ListServiceMetricsHandler, api3.ViewerRole))
+	servicesV2.GET("/metric/:serviceName", httpserver.AuthorizeHandler(h.GetServiceMetricsHandler, api3.ViewerRole))
 	servicesV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListServiceComposition, api3.ViewerRole))
 	servicesV2.GET("/cost/trend", httpserver.AuthorizeHandler(h.ListServiceCostTrend, api3.ViewerRole))
 	servicesV2.GET("/summary", httpserver.AuthorizeHandler(h.ListServiceSummaries, api3.ViewerRole))
@@ -98,6 +99,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	insightsV2 := v2.Group("/insights")
 	insightsV2.GET("", httpserver.AuthorizeHandler(h.ListInsightResults, api3.ViewerRole))
+	insightsV2.GET("/job/:jobId", httpserver.AuthorizeHandler(h.GetInsightResultByJobId, api3.ViewerRole))
 	insightsV2.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrendResults, api3.ViewerRole))
 	insightsV2.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsightResult, api3.ViewerRole))
 
@@ -650,14 +652,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	}
 	for _, oldApiResourceType := range oldApiResourceTypes {
 		if apiResourceType, ok := apiResourceTypesMap[oldApiResourceType.ResourceType]; ok {
-			if apiResourceType.Count == nil {
-				continue
-			}
-			if oldApiResourceType.Count == nil || *oldApiResourceType.Count == 0 {
-				apiResourceType.CountChangePercent = nil
-				continue
-			}
-			apiResourceType.CountChangePercent = utils.GetPointer(float64((float64(*apiResourceType.Count)-float64(*oldApiResourceType.Count))/float64(*oldApiResourceType.Count)) * 100)
+			apiResourceType.OldCount = oldApiResourceType.Count
 			apiResourceTypesMap[oldApiResourceType.ResourceType] = apiResourceType
 		}
 	}
@@ -757,9 +752,7 @@ func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	if apiResourceType.Count != nil && oldApiResourceType.Count != nil && *oldApiResourceType.Count != 0 {
-		apiResourceType.CountChangePercent = utils.GetPointer(float64((float64(*apiResourceType.Count)-float64(*oldApiResourceType.Count))/float64(*oldApiResourceType.Count)) * 100)
-	}
+	apiResourceType.OldCount = oldApiResourceType.Count
 
 	return ctx.JSON(http.StatusOK, *apiResourceType)
 }
@@ -1004,7 +997,7 @@ func (h *HttpHandler) GetServiceTag(ctx echo.Context) error {
 
 // ListServiceMetricsHandler godoc
 //
-//	@Summary	Returns list of resource types with metrics of each type based on the given input filters
+//	@Summary	Returns list of services with their metrics based on the given input filters
 //	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
@@ -1057,16 +1050,24 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 		return err
 	}
 	costFilterNamesMap := make(map[string]bool)
+	resourceTypeMap := make(map[string]int)
 	for _, service := range services {
 		if v, ok := service.GetTagsMap()[model.KaytuServiceCostTag]; ok {
 			for _, costFilterName := range v {
 				costFilterNamesMap[costFilterName] = true
 			}
 		}
+		for _, resourceType := range service.ResourceTypes {
+			resourceTypeMap[strings.ToLower(resourceType.ResourceType)] = 0
+		}
 	}
 	costFilterNames := make([]string, 0, len(costFilterNamesMap))
 	for costFilterName := range costFilterNamesMap {
 		costFilterNames = append(costFilterNames, costFilterName)
+	}
+	resourceTypeNames := make([]string, 0, len(resourceTypeMap))
+	for resourceType := range resourceTypeMap {
+		resourceTypeNames = append(resourceTypeNames, resourceType)
 	}
 
 	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, connectionIDs, connectorTypes, costFilterNames, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
@@ -1088,6 +1089,15 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 		return err
 	}
 	startTimeHits := internal.AggregateServiceCosts(startTimeHitsRaw)
+
+	resourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+	oldResourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(startTime, 0), resourceTypeNames, EsFetchPageSize)
+	if err != nil {
+		return err
+	}
 
 	type serviceCosts struct {
 		totalCost float64
@@ -1116,11 +1126,19 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 			}
 		}
 		apiService.Cost = &serviceCost.totalCost
-		if serviceCost.startCost != 0 {
-			apiService.CostChangePercent = utils.GetPointer(((serviceCost.endCost - serviceCost.startCost) / serviceCost.startCost) * 100)
-		} else {
-			apiService.CostChangePercent = nil
+		apiService.StartDailyCost = &serviceCost.startCost
+		apiService.EndDailyCost = &serviceCost.endCost
+		for _, resourceType := range service.ResourceTypes {
+			if resourceTypeCount, ok := resourceTypeCounts[strings.ToLower(resourceType.ResourceType)]; ok {
+				cnt := &resourceTypeCount
+				apiService.ResourceCount = utils.PAdd(apiService.ResourceCount, cnt)
+			}
+			if oldResourceTypeCount, ok := oldResourceTypeCounts[strings.ToLower(resourceType.ResourceType)]; ok {
+				cnt := &oldResourceTypeCount
+				apiService.OldResourceCount = utils.PAdd(apiService.OldResourceCount, cnt)
+			}
 		}
+
 		apiServices = append(apiServices, apiService)
 	}
 	switch sortBy {
@@ -1146,6 +1164,129 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 		Services:      utils.Paginate(pageNumber, pageSize, apiServices),
 	}
 	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetServiceMetricsHandler godoc
+//
+//	@Summary	Returns the service with metrics for the given service name
+//	@Security	BearerToken
+//	@Tags		inventory
+//	@Accept		json
+//	@Produce	json
+//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param		startTime		query		string		false	"timestamp for start of cost aggregation in epoch seconds"
+//	@Param		endTime			query		string		false	"timestamp for end of cost aggregation in epoch seconds"
+//	@Success	200				{object}	api.Service
+//	@Router		/inventory/api/v2/services/metric/{serviceName} [get]
+func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
+	var err error
+	serviceName := ctx.Param("serviceName")
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now().Unix()
+	if endTimeStr != "" {
+		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, err.Error())
+		}
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
+	if startTimeStr != "" {
+		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, err.Error())
+		}
+	}
+
+	service, err := h.db.GetService(serviceName)
+	if err != nil {
+		return err
+	}
+	costFilterNamesMap := make(map[string]bool)
+	resourceTypeMap := make(map[string]int)
+	if v, ok := service.GetTagsMap()[model.KaytuServiceCostTag]; ok {
+		for _, costFilterName := range v {
+			costFilterNamesMap[costFilterName] = true
+		}
+	}
+	for _, resourceType := range service.ResourceTypes {
+		resourceTypeMap[strings.ToLower(resourceType.ResourceType)] = 0
+	}
+	costFilterNames := make([]string, 0, len(costFilterNamesMap))
+	for costFilterName := range costFilterNamesMap {
+		costFilterNames = append(costFilterNames, costFilterName)
+	}
+	resourceTypeNames := make([]string, 0, len(resourceTypeMap))
+	for resourceType := range resourceTypeMap {
+		resourceTypeNames = append(resourceTypeNames, resourceType)
+	}
+
+	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, connectionIDs, nil, costFilterNames, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+	aggregatedCostHits := internal.AggregateServiceCosts(costHits)
+	if err != nil {
+		return err
+	}
+
+	endTimeHitsRaw, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, nil, costFilterNames, time.Unix(endTime, 0), EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+	endTimeHits := internal.AggregateServiceCosts(endTimeHitsRaw)
+	startTimeHitsRaw, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, nil, costFilterNames, time.Unix(startTime, 0), EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+	startTimeHits := internal.AggregateServiceCosts(startTimeHitsRaw)
+
+	resourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+	oldResourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(startTime, 0), resourceTypeNames, EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+
+	type serviceCosts struct {
+		totalCost float64
+		startCost float64
+		endCost   float64
+	}
+
+	apiService := service.ToApi()
+	serviceCost := serviceCosts{}
+	if v, ok := service.GetTagsMap()[model.KaytuServiceCostTag]; ok {
+		for _, costFilterName := range v {
+			if costWithUnit, ok := aggregatedCostHits[costFilterName]; ok {
+				defaultCost := costWithUnit[DefaultCurrency]
+				serviceCost.totalCost += defaultCost.Cost
+				if startTimeHit, ok := startTimeHits[costFilterName]; ok {
+					serviceCost.startCost += startTimeHit[DefaultCurrency].Cost
+				}
+				if endTimeHit, ok := endTimeHits[costFilterName]; ok {
+					serviceCost.endCost += endTimeHit[DefaultCurrency].Cost
+				}
+			}
+		}
+	}
+	apiService.Cost = &serviceCost.totalCost
+	apiService.StartDailyCost = &serviceCost.startCost
+	apiService.EndDailyCost = &serviceCost.endCost
+	for _, resourceType := range service.ResourceTypes {
+		if resourceTypeCount, ok := resourceTypeCounts[strings.ToLower(resourceType.ResourceType)]; ok {
+			cnt := &resourceTypeCount
+			apiService.ResourceCount = utils.PAdd(apiService.ResourceCount, cnt)
+		}
+		if oldResourceTypeCount, ok := oldResourceTypeCounts[strings.ToLower(resourceType.ResourceType)]; ok {
+			cnt := &oldResourceTypeCount
+			apiService.OldResourceCount = utils.PAdd(apiService.OldResourceCount, cnt)
+		}
+	}
+	return ctx.JSON(http.StatusOK, apiService)
 }
 
 // ListServiceComposition godoc
@@ -2806,38 +2947,36 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 	}
 }
 
-// GetInsightResult godoc
+// GetInsightResultByJobId godoc
 //
 //	@Summary		Get insight result by Job ID
 //	@Description	Get insight result for the given JobId - this mostly for internal usage, use compliance api for full api
 //	@Security		BearerToken
 //	@Tags			insight
 //	@Produce		json
-//	@Param			jobId			path		string		true	"JobId"
-//	@Success		200				{object}	insight.InsightResource
-//	@Router			/inventory/api/v2/insights/jobs/{jobId} [get]
+//	@Param			jobId	path		string	true	"JobId"
+//	@Success		200		{object}	insight.InsightResource
+//	@Router			/inventory/api/v2/insights/job/{jobId} [get]
 func (h *HttpHandler) GetInsightResultByJobId(ctx echo.Context) error {
 	jobId, err := strconv.ParseUint(ctx.Param("jobId"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
 	}
-	job, err := h.schedulerClient.GetInsightJobById(httpclient.FromEchoContext(ctx), uint(jobId))
-	timeAt := time.Now().Unix()
-	var insightResults map[uint][]insight.InsightResource
 
-	insightResults, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), nil, []string{job.SourceID}, []uint{uint(job.InsightID)}, false)
+	job, err := h.schedulerClient.GetInsightJobById(httpclient.FromEchoContext(ctx), uint(jobId))
+	if err != nil {
+		return err
+	}
+	insightResult, err := es.FetchInsightByJobIDAndInsightID(h.client, uint(jobId), job.InsightID)
 	if err != nil {
 		return err
 	}
 
-	if insightResult, ok := insightResults[uint(job.InsightID)]; ok {
-		for _, res := range insightResult {
-			if res.JobID == job.ID {
-				return ctx.JSON(http.StatusOK, res)
-			}
-		}
+	if insightResult == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "no data for insight found")
 	}
-	return echo.NewHTTPError(http.StatusNotFound, "no data found")
+
+	return echo.NewHTTPError(http.StatusNotFound, *insightResult)
 }
 
 // GetInsightTrendResults godoc

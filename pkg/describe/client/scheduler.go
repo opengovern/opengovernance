@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	compliance "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
@@ -33,7 +34,10 @@ func (s *schedulerClient) GetSource(ctx *httpclient.Context, sourceID string) (*
 	url := fmt.Sprintf("%s/api/v1/sources/%s", s.baseURL, sourceID)
 
 	var source api.Source
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
 		return nil, err
 	}
 	return &source, nil
@@ -46,7 +50,10 @@ func (s *schedulerClient) ListComplianceReportJobs(ctx *httpclient.Context, sour
 	}
 
 	reports := []*compliance.ComplianceReport{}
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &reports); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &reports); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
 		return nil, err
 	}
 	return reports, nil
@@ -56,7 +63,10 @@ func (s *schedulerClient) GetLastComplianceReportID(ctx *httpclient.Context) (ui
 	url := fmt.Sprintf("%s/api/v1/compliance/report/last/completed", s.baseURL)
 
 	var id uint
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &id); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &id); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return 0, echo.NewHTTPError(statusCode, err.Error())
+		}
 		return 0, err
 	}
 	return id, nil
@@ -66,7 +76,10 @@ func (s *schedulerClient) GetInsightJobById(ctx *httpclient.Context, jobId uint)
 	url := fmt.Sprintf("%s/api/v1/insight/job/%q", s.baseURL, jobId)
 
 	var job api.InsightJob
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, nil); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, nil); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return api.InsightJob{}, echo.NewHTTPError(statusCode, err.Error())
+		}
 		return api.InsightJob{}, err
 	}
 	return job, nil

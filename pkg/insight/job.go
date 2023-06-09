@@ -48,7 +48,7 @@ var DoInsightJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 
 type Job struct {
 	JobID            uint
-	QueryID          uint
+	InsightID        uint
 	SmartQueryID     uint
 	SourceID         string
 	ScheduleJobUUID  string
@@ -78,8 +78,8 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 			fmt.Println("paniced with error:", err)
 			fmt.Println(errors.Wrap(err, 2).ErrorStack())
 
-			DoInsightJobsDuration.WithLabelValues(strconv.Itoa(int(j.QueryID)), "failure").Observe(float64(time.Now().Unix() - startTime))
-			DoInsightJobsCount.WithLabelValues(strconv.Itoa(int(j.QueryID)), "failure").Inc()
+			DoInsightJobsDuration.WithLabelValues(strconv.Itoa(int(j.InsightID)), "failure").Observe(float64(time.Now().Unix() - startTime))
+			DoInsightJobsCount.WithLabelValues(strconv.Itoa(int(j.InsightID)), "failure").Inc()
 			r = JobResult{
 				JobID:  j.JobID,
 				Status: api.InsightJobFailed,
@@ -95,8 +95,8 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 	)
 
 	fail := func(err error) {
-		DoInsightJobsDuration.WithLabelValues(strconv.Itoa(int(j.QueryID)), "failure").Observe(float64(time.Now().Unix() - startTime))
-		DoInsightJobsCount.WithLabelValues(strconv.Itoa(int(j.QueryID)), "failure").Inc()
+		DoInsightJobsDuration.WithLabelValues(strconv.Itoa(int(j.InsightID)), "failure").Observe(float64(time.Now().Unix() - startTime))
+		DoInsightJobsCount.WithLabelValues(strconv.Itoa(int(j.InsightID)), "failure").Inc()
 		status = api.InsightJobFailed
 		if firstErr == nil {
 			firstErr = err
@@ -178,7 +178,7 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 	}
 	logger.Info("Got the results, uploading to s3")
 	if err == nil {
-		objectName := fmt.Sprintf("%d-%d.out", j.QueryID, j.JobID)
+		objectName := fmt.Sprintf("%d-%d.out", j.InsightID, j.JobID)
 		content, err := json.Marshal(res)
 		if err == nil {
 			result, err := uploader.Upload(&s3manager.UploadInput{
@@ -190,7 +190,7 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 				var lastDayValue, lastWeekValue, lastMonthValue, lastQuarterValue, lastYearValue *int64
 				for idx, jobID := range []uint{j.LastDayJobID, j.LastWeekJobID, j.LastMonthJobID, j.LastQuarterJobID, j.LastYearJobID} {
 					var response ResultQueryResponse
-					query, err := FindOldInsightValue(jobID, j.QueryID)
+					query, err := FindOldInsightValue(jobID, j.InsightID)
 					if err != nil {
 						fail(fmt.Errorf("failed to build query: %w", err))
 					}
@@ -242,7 +242,7 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 				for _, resourceType := range resourceTypeList {
 					resources = append(resources, es.InsightResource{
 						JobID:               j.JobID,
-						QueryID:             j.QueryID,
+						InsightID:           j.InsightID,
 						SmartQueryID:        j.SmartQueryID,
 						Query:               j.Query,
 						Internal:            j.Internal,
@@ -283,8 +283,8 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 		errMsg = firstErr.Error()
 	}
 	if status == api.InsightJobSucceeded {
-		DoInsightJobsDuration.WithLabelValues(strconv.Itoa(int(j.QueryID)), "successful").Observe(float64(time.Now().Unix() - startTime))
-		DoInsightJobsCount.WithLabelValues(strconv.Itoa(int(j.QueryID)), "successful").Inc()
+		DoInsightJobsDuration.WithLabelValues(strconv.Itoa(int(j.InsightID)), "successful").Observe(float64(time.Now().Unix() - startTime))
+		DoInsightJobsCount.WithLabelValues(strconv.Itoa(int(j.InsightID)), "successful").Inc()
 	}
 
 	return JobResult{
