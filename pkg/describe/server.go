@@ -1298,13 +1298,13 @@ func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
 
 // TriggerInsightEvaluation godoc
 //
-//	@Summary	Triggers a insight evaluation job to run immediately
+//	@Summary	Triggers an insight evaluation job to run immediately
 //	@Security	BearerToken
 //	@Tags		describe
 //	@Produce	json
-//	@Param		request	body		api.TriggerInsightEvaluationRequest	true	"Request Body"
+//	@Param		request	body		api.StackInsightRequest	true	"Request Body"
 //	@Success	200		{object}	[]InsightJob
-//	@Router		/schedule/api/v1/insight/evaluation/trigger [put]
+//	@Router		/schedule/api/v1/stacks/insight/trigger [post]
 func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 	var req api.StackInsightRequest
 	if err := bindValidate(ctx, &req); err != nil {

@@ -185,7 +185,7 @@ func (s *complianceClient) GetInsight(ctx *httpclient.Context, insightId string,
 			} else {
 				url += "&"
 			}
-			url += fmt.Sprintf("connection=%s", connectionID)
+			url += fmt.Sprintf("connectionId=%s", connectionID)
 		}
 	}
 
