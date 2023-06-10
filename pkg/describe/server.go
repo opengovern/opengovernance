@@ -1089,7 +1089,6 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	resources, err := internal.GetResourceIDFromArn([]string(stackRecord.Resources))
 	if err != nil {
 		return err
 	}
@@ -1098,7 +1097,7 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 		Filters: complianceapi.FindingFilters{
 			ConnectionID: conns,
 			BenchmarkID:  reqBody.BenchmarkIDs,
-			ResourceID:   resources,
+			ResourceID:   []string(stackRecord.Resources),
 		},
 		Sorts: reqBody.Sorts,
 		Page:  reqBody.Page,
