@@ -1123,7 +1123,7 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 			})
 			apiCredentials[src.CredentialID.String()] = v
 			v.TotalConnections = utils.PAdd(v.TotalConnections, utils.GetPointer(1))
-			if src.Enabled {
+			if src.LifecycleState.IsEnabled() {
 				v.EnabledConnections = utils.PAdd(v.EnabledConnections, utils.GetPointer(1))
 			}
 			if src.HealthState == source.HealthStatusUnhealthy {
@@ -2152,7 +2152,7 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 
 	for _, src := range srcs {
 		metrics.TotalConnections++
-		if src.Enabled {
+		if src.LifecycleState.IsEnabled() {
 			metrics.ConnectionsEnabled++
 		}
 

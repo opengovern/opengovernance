@@ -243,13 +243,12 @@ func (db Database) DeleteSource(id uuid.UUID) error {
 	return nil
 }
 
-// UpdateSourceLifecycleState update source enabled
+// UpdateSourceLifecycleState update source lifecycle state
 func (db Database) UpdateSourceLifecycleState(id uuid.UUID, state ConnectionLifecycleState) error {
 	tx := db.orm.
 		Model(&Source{}).
 		Where("id = ?", id.String()).
 		Updates(map[string]interface{}{
-			"enabled":         state.IsEnabled(),
 			"lifecycle_state": state,
 		})
 
