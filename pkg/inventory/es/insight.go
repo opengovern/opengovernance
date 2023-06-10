@@ -326,11 +326,6 @@ func FetchInsightByJobIDAndInsightID(client keibi.Client, jobID uint, insightID 
 		},
 	})
 	filters = append(filters, map[string]any{
-		"term": map[string]any{
-			"insight_id": insightID,
-		},
-	})
-	filters = append(filters, map[string]any{
 		"terms": map[string][]string{
 			"resource_type": {string(es.InsightResourceHistory), string(es.InsightResourceProviderHistory)},
 		},

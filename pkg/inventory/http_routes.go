@@ -2969,6 +2969,9 @@ func (h *HttpHandler) GetInsightResultByJobId(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	if job.ID == 0 {
+		return echo.NewHTTPError(http.StatusNotFound, "No job found")
+	}
 	insightResult, err := es.FetchInsightByJobIDAndInsightID(h.client, uint(jobId), job.InsightID)
 	if err != nil {
 		return err
@@ -2978,7 +2981,7 @@ func (h *HttpHandler) GetInsightResultByJobId(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "no data for insight found")
 	}
 
-	return echo.NewHTTPError(http.StatusNotFound, *insightResult)
+	return echo.NewHTTPError(http.StatusOK, *insightResult)
 }
 
 // GetInsightTrendResults godoc
