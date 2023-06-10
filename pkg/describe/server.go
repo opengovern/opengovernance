@@ -96,7 +96,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/stacks/:stackId", httpserver.AuthorizeHandler(h.GetStack, api3.ViewerRole))
 	v1.POST("/stacks/create", httpserver.AuthorizeHandler(h.CreateStack, api3.AdminRole))
 	v1.DELETE("/stacks/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, api3.AdminRole))
-	v1.GET("/stacks/findings/:jobId", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
+	v1.GET("/stacks/:stackId/findings", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
 	v1.GET("/stacks/:stackId/insight", httpserver.AuthorizeHandler(h.GetStackInsight, api3.ViewerRole))
 	v1.GET("/stacks/resource/:resourceId", httpserver.AuthorizeHandler(h.ListResourceStack, api3.ViewerRole))
 	v1.POST("/stacks/insight/trigger", httpserver.AuthorizeHandler(h.TriggerStackInsight, api3.AdminRole))
@@ -1066,20 +1066,12 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 //	@Param			jobId	path		string					true	"JobID"
 //	@Param			request	body		api.GetStackFindings	true	"Request Body"
 //	@Success		200		{object}	complianceapi.GetFindingsResponse
-//	@Router			/schedule/api/v1/stacks/findings/{jobId} [get]
+//	@Router			/schedule/api/v1/stacks/{stackId}/findings [get]
 func (h HttpServer) GetStackFindings(ctx echo.Context) error {
-	jobIdstring := ctx.Param("jobId")
-	jobId, err := strconv.ParseUint(jobIdstring, 10, 32)
-	if err != nil {
-		return err
-	}
+	stackId := ctx.Param("stackId")
 	var reqBody api.GetStackFindings
 	bindValidate(ctx, &reqBody)
-	evaluation, err := h.DB.GetEvaluation(uint(jobId))
-	if err != nil {
-		return err
-	}
-	stackRecord, err := h.DB.GetStack(evaluation.StackID)
+	stackRecord, err := h.DB.GetStack(stackId)
 	if err != nil {
 		return err
 	}
@@ -1105,7 +1097,7 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	req := complianceapi.GetFindingsRequest{
 		Filters: complianceapi.FindingFilters{
 			ConnectionID: conns,
-			BenchmarkID:  []string{evaluation.EvaluatorID},
+			BenchmarkID:  reqBody.BenchmarkIDs,
 			ResourceID:   resources,
 		},
 		Sorts: reqBody.Sorts,

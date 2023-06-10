@@ -39,6 +39,7 @@ type StackEvaluation struct {
 }
 
 type GetStackFindings struct {
-	Sorts []complianceapi.FindingSortItem `json:"sorts"`
-	Page  complianceapi.Page              `json:"page" validate:"required"`
+	BenchmarkIDs []string                        `json:"benchmarkIds"`
+	Sorts        []complianceapi.FindingSortItem `json:"sorts"`
+	Page         complianceapi.Page              `json:"page" validate:"required"`
 }
