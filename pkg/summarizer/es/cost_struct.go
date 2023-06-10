@@ -296,7 +296,7 @@ type ServiceCostSummary struct {
 func (c ServiceCostSummary) GetCostAndUnit() (float64, string) {
 	costResourceType := GetCostResourceTypeFromString(c.ResourceType)
 	if costResourceType != CostResourceTypeNull {
-		return costResourceType.GetCostAndUnitFromResource(c.Cost.(map[string]any))
+		return costResourceType.GetCostAndUnitFromResource(c.Cost)
 	}
 	return 0, ""
 }
@@ -337,7 +337,7 @@ type ConnectionCostSummary struct {
 func (c ConnectionCostSummary) GetCostAndUnit() (float64, string) {
 	costResourceType := GetCostResourceTypeFromString(c.ResourceType)
 	if costResourceType != CostResourceTypeNull {
-		return costResourceType.GetCostAndUnitFromResource(c.Cost.(map[string]any))
+		return costResourceType.GetCostAndUnitFromResource(c.Cost)
 	}
 	return 0, ""
 }
