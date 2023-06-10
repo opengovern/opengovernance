@@ -11,6 +11,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/elasticsearch"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/insight"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/internal"
+	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/inventory"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/workspace"
 	"go.uber.org/zap"
 	"net/http"
@@ -110,6 +111,10 @@ func (w *Job) Run() error {
 
 	if err := insight.Run(w.db, w.InsightGitURL, w.githubToken); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running insight migration: %v", err))
+	}
+
+	if err := inventory.Run(w.db, w.logger, "/inventory-data-config"); err != nil {
+		w.logger.Error(fmt.Sprintf("Failure while running inventory migration: %v", err))
 	}
 
 	cfg := postgres.Config{
