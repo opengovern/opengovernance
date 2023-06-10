@@ -2960,12 +2960,13 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 //	@Success		200		{object}	insight.InsightResource
 //	@Router			/inventory/api/v2/insights/job/{jobId} [get]
 func (h *HttpHandler) GetInsightResultByJobId(ctx echo.Context) error {
-	jobId, err := strconv.ParseUint(ctx.Param("jobId"), 10, 64)
+	jobIdStr := ctx.Param("jobId")
+	jobId, err := strconv.ParseUint(jobIdStr, 10, 32)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
 	}
 
-	job, err := h.schedulerClient.GetInsightJobById(httpclient.FromEchoContext(ctx), uint(jobId))
+	job, err := h.schedulerClient.GetInsightJobById(httpclient.FromEchoContext(ctx), jobIdStr)
 	if err != nil {
 		return err
 	}

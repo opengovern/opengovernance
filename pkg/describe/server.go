@@ -1063,7 +1063,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			jobId	path		string					true	"JobID"
+//	@Param			stackId	path		string					true	"StackId"
 //	@Param			request	body		api.GetStackFindings	true	"Request Body"
 //	@Success		200		{object}	complianceapi.GetFindingsResponse
 //	@Router			/schedule/api/v1/stacks/{stackId}/findings [get]
@@ -1115,7 +1115,7 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 // GetStackInsight godoc
 //
 //	@Summary		Get Stack Insight
-//	@Description	Get a benchmark result by jobId
+//	@Description	Get benchmark results for a stack
 //	@Security		BearerToken
 //	@Tags			stack
 //	@Accept			json
