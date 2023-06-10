@@ -1043,7 +1043,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 				EvaluatorID: benchmarkID,
 				Type:        "BENCHMARK",
 				StackID:     stackRecord.StackID,
-				JobID:       job.ID,
+				JobID:       crj.ID,
 			}
 			err = h.DB.AddEvaluation(&evaluation)
 			if err != nil {
