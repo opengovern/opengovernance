@@ -2973,16 +2973,16 @@ func (h *HttpHandler) GetInsightResultByJobId(ctx echo.Context) error {
 	if job.ID == 0 {
 		return echo.NewHTTPError(http.StatusNotFound, "No job found")
 	}
-	insightResult, err := es.FetchInsightByJobIDAndInsightID(h.client, uint(jobId), job.InsightID)
-	if err != nil {
-		return err
-	}
+	// insightResult, err := es.FetchInsightByJobIDAndInsightID(h.client, uint(jobId), job.InsightID)
+	// if err != nil {
+	// 	return err
+	// }
 
-	if insightResult == nil {
-		return echo.NewHTTPError(http.StatusNotFound, "no data for insight found")
-	}
+	// if insightResult == nil {
+	// 	return echo.NewHTTPError(http.StatusNotFound, "no data for insight found")
+	// }
 
-	return echo.NewHTTPError(http.StatusOK, *insightResult)
+	return echo.NewHTTPError(http.StatusOK, job)
 }
 
 // GetInsightTrendResults godoc
