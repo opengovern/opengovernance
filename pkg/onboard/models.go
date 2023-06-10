@@ -51,7 +51,6 @@ type Source struct {
 	Type           source.Type `gorm:"not null"`
 	Description    string
 	CredentialID   uuid.UUID
-	Enabled        bool
 	LifecycleState ConnectionLifecycleState `gorm:"not null;default:'enabled'"`
 
 	AssetDiscoveryMethod source.AssetDiscoveryMethodType `gorm:"not null;default:'scheduled'"`
@@ -156,7 +155,6 @@ func NewAWSSource(account awsAccount, description string) Source {
 		Description:          description,
 		CredentialID:         creds.ID,
 		Credential:           creds,
-		Enabled:              true,
 		LifecycleState:       ConnectionLifecycleStateInitialDiscovery,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		HealthState:          source.HealthStatusHealthy,
@@ -208,7 +206,6 @@ func NewAzureSourceWithCredentials(sub azureSubscription, creationMethod source.
 		Type:                 source.CloudAzure,
 		CredentialID:         creds.ID,
 		Credential:           creds,
-		Enabled:              true,
 		LifecycleState:       ConnectionLifecycleStateInitialDiscovery,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		HealthState:          source.HealthStatusHealthy,
