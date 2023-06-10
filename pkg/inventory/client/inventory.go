@@ -211,7 +211,7 @@ func (s *inventoryClient) ListConnectionsData(ctx *httpclient.Context, connectio
 		} else {
 			url += "&"
 		}
-		url += fmt.Sprintf("timeStart=%d", timeStart.Unix())
+		url += fmt.Sprintf("startTime=%d", timeStart.Unix())
 	}
 	if timeEnd != nil {
 		if !firstParamAttached {
@@ -220,7 +220,7 @@ func (s *inventoryClient) ListConnectionsData(ctx *httpclient.Context, connectio
 		} else {
 			url += "&"
 		}
-		url += fmt.Sprintf("timeEnd=%d", timeEnd.Unix())
+		url += fmt.Sprintf("endTime=%d", timeEnd.Unix())
 	}
 
 	var response map[string]api.ConnectionData
@@ -243,7 +243,7 @@ func (s *inventoryClient) GetConnectionData(ctx *httpclient.Context, connectionI
 		} else {
 			url += "&"
 		}
-		url += fmt.Sprintf("timeStart=%d", timeStart.Unix())
+		url += fmt.Sprintf("startTime=%d", timeStart.Unix())
 	}
 	if timeEnd != nil {
 		if !firstParamAttached {
@@ -252,7 +252,7 @@ func (s *inventoryClient) GetConnectionData(ctx *httpclient.Context, connectionI
 		} else {
 			url += "&"
 		}
-		url += fmt.Sprintf("timeEnd=%d", timeEnd.Unix())
+		url += fmt.Sprintf("endTime=%d", timeEnd.Unix())
 	}
 
 	var response api.ConnectionData
