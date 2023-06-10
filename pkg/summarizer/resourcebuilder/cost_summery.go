@@ -82,6 +82,8 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		if _, ok := b.costsByAccount[key]; !ok {
 			b.costsByAccount[key] = *connectionCostSummary
 		}
+	default:
+		fmt.Printf("(costSummaryBuilder) - WARNING: Unknown cost summary type: %T:%v", costSummary, costSummary)
 	}
 }
 

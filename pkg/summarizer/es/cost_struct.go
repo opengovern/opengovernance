@@ -42,7 +42,8 @@ const (
 )
 
 func GetCostResourceTypeFromString(resourceType string) CostResourceType {
-	switch strings.ToLower(resourceType) {
+	lowerResourceType := strings.ToLower(resourceType)
+	switch lowerResourceType {
 	case "aws::costexplorer::byservicemonthly":
 		return CostResourceTypeAWSCostExplorerServiceCostMonthly
 	case "aws::costexplorer::byaccountmonthly":
@@ -194,7 +195,7 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			return nil, "", err
 		}
 		key := fmt.Sprintf("%s|%s|%s", resource.SourceID, *desc.PeriodStart, *desc.PeriodEnd)
-		return ConnectionCostSummary{
+		return &ConnectionCostSummary{
 			AccountID:   *desc.Dimension1,
 			Cost:        desc,
 			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Unix(),
@@ -227,7 +228,6 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			Region:      &region,
 		}, key, nil
 	case CostResourceTypeAzureCostManagementCostByResourceType:
-		fmt.Printf("Processing AzureCostManagementCostByResourceType: %s\n", resource.SourceID)
 		jsonDesc, err := json.Marshal(resource.Description)
 		if err != nil {
 			return nil, "", err
@@ -235,12 +235,10 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 		desc := azureModel.CostManagementCostByResourceTypeDescription{}
 		err = json.Unmarshal(jsonDesc, &desc)
 		if err != nil {
-			fmt.Printf("Failed to unmarshal AzureCostManagementCostByResourceType: %s\n", resource.SourceID)
 			return nil, "", err
 		}
 		key := fmt.Sprintf("%s|%s|%s|%d", resource.SourceID, *desc.CostManagementCostByResourceType.ResourceType, desc.CostManagementCostByResourceType.Currency, desc.CostManagementCostByResourceType.UsageDate)
-		fmt.Printf("Processed AzureCostManagementCostByResourceType: %s, key=%s\n", resource.SourceID, key)
-		return ServiceCostSummary{
+		return &ServiceCostSummary{
 			ServiceName: *desc.CostManagementCostByResourceType.ResourceType,
 			Cost:        desc.CostManagementCostByResourceType,
 			PeriodStart: getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Unix(),
@@ -248,7 +246,6 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			ReportType:  CostProviderSummaryDaily,
 		}, key, nil
 	case CostResourceTypeAzureCostManagementCostBySubscription:
-		fmt.Printf("Processing AzureCostManagementCostBySubscription: %s\n", resource.SourceID)
 		jsonDesc, err := json.Marshal(resource.Description)
 		if err != nil {
 			return nil, "", err
@@ -256,12 +253,10 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 		desc := azureModel.CostManagementCostBySubscriptionDescription{}
 		err = json.Unmarshal(jsonDesc, &desc)
 		if err != nil {
-			fmt.Printf("Failed to unmarshal AzureCostManagementCostBySubscription: %s\n", resource.SourceID)
 			return nil, "", err
 		}
 		key := fmt.Sprintf("%s|%s|%d", resource.SourceID, desc.CostManagementCostBySubscription.Currency, desc.CostManagementCostBySubscription.UsageDate)
-		fmt.Printf("Processed AzureCostManagementCostBySubscription: %s, key=%s\n", resource.SourceID, key)
-		return ConnectionCostSummary{
+		return &ConnectionCostSummary{
 			AccountID:   *desc.CostManagementCostBySubscription.SubscriptionID,
 			Cost:        desc.CostManagementCostBySubscription,
 			PeriodStart: getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Unix(),
