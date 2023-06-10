@@ -73,7 +73,11 @@ func (c CostResourceType) GetProviderReportType() ProviderReportType {
 	return ""
 }
 
-func (c CostResourceType) GetCostAndUnitFromResource(costDescription map[string]any) (float64, string) {
+func (c CostResourceType) GetCostAndUnitFromResource(costDescriptionObj any) (float64, string) {
+	costDescriptionJson, _ := json.Marshal(costDescriptionObj)
+	var costDescription map[string]any
+	_ = json.Unmarshal(costDescriptionJson, &costDescription)
+
 	var err error
 	switch c {
 	case CostResourceTypeAWSCostExplorerServiceCostMonthly, CostResourceTypeAWSCostExplorerAccountCostMonthly, CostResourceTypeAWSCostExplorerServiceCostDaily, CostResourceTypeAWSCostExplorerAccountCostDaily:
