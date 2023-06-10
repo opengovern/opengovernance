@@ -55,8 +55,6 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	sourceApiGroup.GET("/:sourceId/credentials", httpserver.AuthorizeHandler(h.GetSourceCred, api3.ViewerRole))
 	sourceApiGroup.GET("/:sourceId/credentials/full", httpserver.AuthorizeHandler(h.GetSourceFullCred, api3.KeibiAdminRole))
 	sourceApiGroup.PUT("/:sourceId/credentials", httpserver.AuthorizeHandler(h.PutSourceCred, api3.EditorRole))
-	sourceApiGroup.POST("/:sourceId/disable", httpserver.AuthorizeHandler(h.DisableSource, api3.EditorRole))
-	sourceApiGroup.POST("/:sourceId/enable", httpserver.AuthorizeHandler(h.EnableSource, api3.EditorRole))
 	sourceApiGroup.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, api3.EditorRole))
 	sourceApiGroup.GET("/account/:accountId", httpserver.AuthorizeHandler(h.GetSourcesByAccount, api3.ViewerRole))
 
@@ -76,6 +74,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	connections.POST("/count", httpserver.AuthorizeHandler(h.CountConnections, api3.ViewerRole))
 	connections.GET("/summary", httpserver.AuthorizeHandler(h.ListConnectionsSummaries, api3.ViewerRole))
 	connections.GET("/summary/:connectionId", httpserver.AuthorizeHandler(h.GetConnectionSummary, api3.ViewerRole))
+	connections.POST("/:connectionId/state", httpserver.AuthorizeHandler(h.ChangeConnectionLifecycleState, api3.EditorRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -1357,7 +1356,7 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 		}
 
 		for _, src := range sources {
-			if err := h.db.UpdateSourceEnabled(src.ID, false); err != nil {
+			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateDisabled); err != nil {
 				return err
 			}
 
@@ -1419,7 +1418,7 @@ func (h HttpHandler) DisableCredential(ctx echo.Context) error {
 		}
 
 		for _, src := range sources {
-			if err := h.db.UpdateSourceEnabled(src.ID, false); err != nil {
+			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateDisabled); err != nil {
 				return err
 			}
 
@@ -1887,67 +1886,30 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-// DisableSource godoc
-//
-//	@Summary	Disable a single source
-//	@Security	BearerToken
-//	@Tags		onboard
-//	@Produce	json
-//	@Success	200
-//	@Param		sourceId	path	integer	true	"SourceID"
-//	@Router		/onboard/api/v1/source/{sourceId}/disable [post]
-func (h HttpHandler) DisableSource(ctx echo.Context) error {
-	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-
-	src, err := h.db.GetSource(srcId)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
-		}
-		return err
-	}
-
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		if err := h.db.UpdateSourceEnabled(srcId, false); err != nil {
-			return err
-		}
-
-		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
-			Action:     api.SourceDeleted,
-			SourceID:   src.ID,
-			SourceType: src.Type,
-			Secret:     src.Credential.Secret,
-		}); err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	return ctx.NoContent(http.StatusOK)
-}
-
-// EnableSource godoc
+// ChangeConnectionLifecycleState godoc
 //
 //	@Summary	Enable a single source
 //	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
 //	@Success	200
-//	@Param		sourceId	path	integer	true	"SourceID"
-//	@Router		/onboard/api/v1/source/{sourceId}/enable [post]
-func (h HttpHandler) EnableSource(ctx echo.Context) error {
-	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
+//	@Param		connectionId	path	integer										true	"ConnectionID"
+//	@Param		request			body	api.ChangeConnectionLifecycleStateRequest	true	"Request"
+//	@Router		/onboard/api/v1/connections/{connectionId}/state [post]
+func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
+	connectionId, err := uuid.Parse(ctx.Param("connectionId"))
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection id")
 	}
 
-	src, err := h.db.GetSource(srcId)
+	var req api.ChangeConnectionLifecycleStateRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	} else if err = req.State.Validate(); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	connection, err := h.db.GetSource(connectionId)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
@@ -1955,22 +1917,36 @@ func (h HttpHandler) EnableSource(ctx echo.Context) error {
 		return err
 	}
 
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		if err := h.db.UpdateSourceEnabled(srcId, true); err != nil {
-			return err
-		}
+	reqState := ConnectionLifecycleStateFromApi(req.State)
+	if reqState == connection.LifecycleState {
+		return echo.NewHTTPError(http.StatusBadRequest, "connection already in requested state")
+	}
 
-		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
-			Action:     api.SourceCreated,
-			SourceID:   src.ID,
-			AccountID:  src.SourceId,
-			SourceType: src.Type,
-			Secret:     src.Credential.Secret,
-		}); err != nil {
-			return err
-		}
-		return nil
-	})
+	if reqState.IsEnabled() != connection.LifecycleState.IsEnabled() {
+		err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+			if err := h.db.UpdateSourceLifecycleState(connectionId, reqState); err != nil {
+				return err
+			}
+
+			action := api.SourceDeleted
+			if reqState.IsEnabled() {
+				action = api.SourceCreated
+			}
+
+			if err := h.sourceEventsQueue.Publish(api.SourceEvent{
+				Action:     action,
+				SourceID:   connection.ID,
+				AccountID:  connection.SourceId,
+				SourceType: connection.Type,
+				Secret:     connection.Credential.Secret,
+			}); err != nil {
+				return err
+			}
+			return nil
+		})
+	} else {
+		err = h.db.UpdateSourceLifecycleState(connectionId, reqState)
+	}
 	if err != nil {
 		return err
 	}
@@ -2313,12 +2289,8 @@ func (h HttpHandler) CountConnections(ctx echo.Context) error {
 	}
 
 	if request.State != nil {
-		condQuery = append(condQuery, "enabled = ?")
-		if *request.State == api.ConnectionState_ENABLED {
-			params = append(params, true)
-		} else {
-			params = append(params, false)
-		}
+		condQuery = append(condQuery, "lifecycle_state = ?")
+		params = append(params, string(*request.State))
 	}
 
 	query := strings.Join(condQuery, " AND ")
@@ -2418,7 +2390,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 			apiConn := connection.toApi()
 			apiConn.Cost = &localData.Cost
 			apiConn.ResourceCount = &localData.Count
-			apiConn.LastInventory = &localData.LastInventory
+			apiConn.LastInventory = localData.LastInventory
 
 			result.TotalCost += localData.Cost
 			result.TotalResourceCount += localData.Count
@@ -2513,7 +2485,7 @@ func (h HttpHandler) GetConnectionSummary(ctx echo.Context) error {
 	result := connection.toApi()
 	result.Cost = &connectionData.Cost
 	result.ResourceCount = &connectionData.Count
-	result.LastInventory = &connectionData.LastInventory
+	result.LastInventory = connectionData.LastInventory
 
 	return ctx.JSON(http.StatusOK, result)
 }

@@ -1,5 +1,7 @@
 package utils
 
+import "time"
+
 func PAdd[T int | int64 | int32 | float64](a, b *T) *T {
 	if a == nil && b == nil {
 		return nil
@@ -13,7 +15,7 @@ func PAdd[T int | int64 | int32 | float64](a, b *T) *T {
 	}
 }
 
-func GetPointer[T int | int64 | int32 | string | float64](a T) *T {
+func GetPointer[T int | int64 | int32 | string | float64 | time.Time](a T) *T {
 	v := a
 	return &v
 }

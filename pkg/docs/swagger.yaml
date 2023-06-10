@@ -2315,6 +2315,11 @@ definitions:
       unhealthyConnections:
         type: integer
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest:
+    properties:
+      state:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState'
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection:
     properties:
       assetDiscoveryMethod:
@@ -2364,7 +2369,7 @@ definitions:
       health:
         $ref: '#/definitions/source.HealthStatus'
       state:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionState'
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState'
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState:
     enum:
@@ -2380,14 +2385,6 @@ definitions:
     - ConnectionLifecycleStateEnabled
     - ConnectionLifecycleStateDisabled
     - ConnectionLifecycleStateDeleted
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionState:
-    enum:
-    - ENABLED
-    - DISABLED
-    type: string
-    x-enum-varnames:
-    - ConnectionState_ENABLED
-    - ConnectionState_DISABLED
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connector:
     properties:
       allowNewConnections:
@@ -5572,6 +5569,30 @@ paths:
       summary: Returns the list of metrics for catalog page.
       tags:
       - onboard
+  /onboard/api/v1/connections/{connectionId}/state:
+    post:
+      parameters:
+      - description: ConnectionID
+        in: path
+        name: connectionId
+        required: true
+        type: integer
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Enable a single source
+      tags:
+      - onboard
   /onboard/api/v1/connections/count:
     get:
       parameters:
@@ -6078,42 +6099,6 @@ paths:
       security:
       - BearerToken: []
       summary: Put source credential
-      tags:
-      - onboard
-  /onboard/api/v1/source/{sourceId}/disable:
-    post:
-      parameters:
-      - description: SourceID
-        in: path
-        name: sourceId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Disable a single source
-      tags:
-      - onboard
-  /onboard/api/v1/source/{sourceId}/enable:
-    post:
-      parameters:
-      - description: SourceID
-        in: path
-        name: sourceId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Enable a single source
       tags:
       - onboard
   /onboard/api/v1/source/{sourceId}/healthcheck:
