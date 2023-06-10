@@ -1374,7 +1374,7 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 //	@Router			/schedule/api/v1/insight/job/{jobId} [get]
 func (h HttpServer) GetInsightJob(ctx echo.Context) error {
 	jobIdstring := ctx.Param("jobId")
-	jobId, err := strconv.ParseUint(jobIdstring, 10, 32)
+	jobId, err := strconv.ParseUint(jobIdstring, 10, 64)
 	if err != nil {
 		return err
 	}
