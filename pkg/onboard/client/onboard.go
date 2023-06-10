@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"github.com/go-redis/cache/v8"
@@ -26,6 +27,7 @@ type OnboardServiceClient interface {
 	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error)
 	CountSources(ctx *httpclient.Context, provider source.Type) (int64, error)
 	GetSourceHealthcheck(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
+	SetConnectionLifecycleState(ctx *httpclient.Context, connectionId string, state api.ConnectionLifecycleState) (*api.Connection, error)
 	GetSourcesByAccount(ctx *httpclient.Context, accountID string) (api.Connection, error)
 }
 
@@ -51,7 +53,10 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 			return &source, nil
 		}
 	}
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
 		return nil, err
 	}
 	if s.cache != nil {
@@ -138,7 +143,10 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 		}
 
 		var response []api.Connection
-		if _, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+		if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &response); err != nil {
+			if 400 <= statusCode && statusCode < 500 {
+				return nil, echo.NewHTTPError(statusCode, err.Error())
+			}
 			return nil, err
 		}
 		if s.cache != nil {
@@ -169,7 +177,10 @@ func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([
 	}
 
 	var response []api.Connection
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
 		return nil, err
 	}
 	if s.cache != nil {
@@ -194,7 +205,10 @@ func (s *onboardClient) CountSources(ctx *httpclient.Context, provider source.Ty
 	}
 
 	var count int64
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &count); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &count); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return 0, echo.NewHTTPError(statusCode, err.Error())
+		}
 		return 0, err
 	}
 	return count, nil
@@ -209,7 +223,10 @@ func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, sourceID s
 			return &source, nil
 		}
 	}
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
 		return nil, err
 	}
 	if s.cache != nil {
@@ -223,11 +240,33 @@ func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, sourceID s
 	return &source, nil
 }
 
-func (s *onboardClient) GetSourcesByAccount(ctx *httpclient.Context, accountID string) (api.Connection, error) {
-	url := fmt.Sprintf("%s/api/v1/source/account/%s", s.baseURL, accountID)
+func (s *onboardClient) SetConnectionLifecycleState(ctx *httpclient.Context, connectionId string, state api.ConnectionLifecycleState) (*api.Connection, error) {
+	url := fmt.Sprintf("%s/api/v1/connections/%s/state", s.baseURL, connectionId)
+	req := api.ChangeConnectionLifecycleStateRequest{
+		State: state,
+	}
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	var connection api.Connection
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), payload, &connection); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &connection, nil
+}
+
+func (s *onboardClient) GetSourcesByAccount(ctx *httpclient.Context, connectionId string) (api.Connection, error) {
+	url := fmt.Sprintf("%s/api/v1/source/account/%s", s.baseURL, connectionId)
 
 	var source api.Connection
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return api.Connection{}, echo.NewHTTPError(statusCode, err.Error())
+		}
 		return api.Connection{}, err
 	}
 	return source, nil

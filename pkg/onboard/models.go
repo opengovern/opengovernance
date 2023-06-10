@@ -25,6 +25,24 @@ const (
 	ConnectionLifecycleStateDeleted          ConnectionLifecycleState = "deleted"
 )
 
+func (c ConnectionLifecycleState) IsEnabled() bool {
+	enabledStates := []ConnectionLifecycleState{ConnectionLifecycleStateEnabled, ConnectionLifecycleStateInitialDiscovery}
+	for _, state := range enabledStates {
+		if c == state {
+			return true
+		}
+	}
+	return false
+}
+
+func (c ConnectionLifecycleState) ToApi() api.ConnectionLifecycleState {
+	return api.ConnectionLifecycleState(c)
+}
+
+func ConnectionLifecycleStateFromApi(state api.ConnectionLifecycleState) ConnectionLifecycleState {
+	return ConnectionLifecycleState(state)
+}
+
 type Source struct {
 	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"` // Auto-generated UUID
 	SourceId       string    `gorm:"index:idx_source_id,unique"`                      // AWS Account ID, Azure Subscription ID, ...

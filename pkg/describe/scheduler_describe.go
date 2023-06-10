@@ -5,21 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
 	"io"
 	"math/rand"
 	"net/http"
 	"strings"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
+	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	apiAuth "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	apiDescribe "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	apiOnboard "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	"go.uber.org/zap"
 )
 
@@ -182,7 +182,7 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 		job == nil || job.UpdatedAt.Before(time.Now().Add(time.Duration(-s.describeIntervalHours)*time.Hour)) {
 
 		healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
-			UserRole: api2.EditorRole,
+			UserRole: apiAuth.EditorRole,
 		}, connection.ID.String())
 		if err != nil {
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
@@ -201,7 +201,7 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 
 		describedAt := time.Now()
 		triggerType := enums.DescribeTriggerTypeScheduled
-		if job == nil {
+		if healthCheckedSrc.LifecycleState == apiOnboard.ConnectionLifecycleStateInitialDiscovery {
 			triggerType = enums.DescribeTriggerTypeInitialDiscovery
 		}
 		s.logger.Debug("Source is due for a describe. Creating a job now", zap.String("sourceId", connection.ID.String()))
@@ -225,6 +225,15 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 			return err
 		}
 		DescribeSourceJobsCount.WithLabelValues("successful").Inc()
+
+		if healthCheckedSrc.LifecycleState == apiOnboard.ConnectionLifecycleStateInitialDiscovery {
+			_, err = s.onboardClient.SetConnectionLifecycleState(&httpclient.Context{
+				UserRole: apiAuth.EditorRole,
+			}, connection.ID.String(), apiOnboard.ConnectionLifecycleStateEnabled)
+			if err != nil {
+				s.logger.Warn("Failed to set connection lifecycle state", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+			}
+		}
 	}
 	return nil
 }
@@ -236,7 +245,7 @@ func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.Des
 		SourceType:           a.Type,
 		AccountID:            a.AccountID,
 		DescribeResourceJobs: []DescribeResourceJob{},
-		Status:               api.DescribeSourceJobCreated,
+		Status:               apiDescribe.DescribeSourceJobCreated,
 		TriggerType:          triggerType,
 		FullDiscovery:        isFullDiscovery,
 	}
@@ -262,7 +271,7 @@ func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.Des
 	for _, rType := range resourceTypes {
 		daj.DescribeResourceJobs = append(daj.DescribeResourceJobs, DescribeResourceJob{
 			ResourceType: rType,
-			Status:       api.DescribeResourceJobCreated,
+			Status:       apiDescribe.DescribeResourceJobCreated,
 		})
 	}
 	return daj

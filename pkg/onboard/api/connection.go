@@ -1,17 +1,11 @@
 package api
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-)
-
-type ConnectionState string
-
-const (
-	ConnectionState_ENABLED  ConnectionState = "ENABLED"
-	ConnectionState_DISABLED ConnectionState = "DISABLED"
 )
 
 type ConnectionLifecycleState string
@@ -24,10 +18,19 @@ const (
 	ConnectionLifecycleStateDeleted          ConnectionLifecycleState = "deleted"
 )
 
+func (c ConnectionLifecycleState) Validate() error {
+	switch c {
+	case ConnectionLifecycleStateInitialDiscovery, ConnectionLifecycleStateEnabled, ConnectionLifecycleStateDisabled:
+		return nil
+	default:
+		return fmt.Errorf("invalid connection lifecycle state: %s", c)
+	}
+}
+
 type ConnectionCountRequest struct {
-	ConnectorsNames []string             `json:"connectors"`
-	State           *ConnectionState     `json:"state"`
-	Health          *source.HealthStatus `json:"health"`
+	ConnectorsNames []string                  `json:"connectors"`
+	State           *ConnectionLifecycleState `json:"state"`
+	Health          *source.HealthStatus      `json:"health"`
 }
 
 type Connection struct {
@@ -51,6 +54,10 @@ type Connection struct {
 	ResourceCount *int       `json:"resourceCount,omitempty"`
 
 	Metadata map[string]any `json:"metadata"`
+}
+
+type ChangeConnectionLifecycleStateRequest struct {
+	State ConnectionLifecycleState `json:"state"`
 }
 
 type ListConnectionSummaryResponse struct {

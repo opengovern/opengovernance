@@ -1605,7 +1605,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 		res[connectionID] = api.ConnectionData{
 			ConnectionID:  connectionID,
 			Count:         0,
-			LastInventory: time.Time{},
+			LastInventory: nil,
 			Cost:          0,
 		}
 	}
@@ -1614,8 +1614,8 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	for _, hit := range hits {
 		if v, ok := res[hit.SourceID]; ok {
 			v.Count += hit.ResourceCount
-			if v.LastInventory.IsZero() || v.LastInventory.Before(time.UnixMilli(hit.DescribedAt)) {
-				v.LastInventory = time.UnixMilli(hit.DescribedAt)
+			if v.LastInventory == nil || v.LastInventory.IsZero() || v.LastInventory.Before(time.UnixMilli(hit.DescribedAt)) {
+				v.LastInventory = utils.GetPointer(time.UnixMilli(hit.DescribedAt))
 			}
 			res[hit.SourceID] = v
 		}
@@ -1677,8 +1677,8 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 	for _, hit := range hits {
 		if hit.SourceID == connectionId {
 			res.Count += hit.ResourceCount
-			if res.LastInventory.IsZero() || res.LastInventory.Before(time.UnixMilli(hit.DescribedAt)) {
-				res.LastInventory = time.UnixMilli(hit.DescribedAt)
+			if res.LastInventory == nil || res.LastInventory.IsZero() || res.LastInventory.Before(time.UnixMilli(hit.DescribedAt)) {
+				res.LastInventory = utils.GetPointer(time.UnixMilli(hit.DescribedAt))
 			}
 		}
 	}

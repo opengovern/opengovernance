@@ -4394,6 +4394,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/connections/{connectionId}/state": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Enable a single source",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ConnectionID",
+                        "name": "connectionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/connectors": {
             "get": {
                 "security": [
@@ -5115,66 +5154,6 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Source ID",
-                        "name": "sourceId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/source/{sourceId}/disable": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Disable a single source",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "SourceID",
-                        "name": "sourceId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/onboard/api/v1/source/{sourceId}/enable": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Enable a single source",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "SourceID",
                         "name": "sourceId",
                         "in": "path",
                         "required": true
@@ -10210,6 +10189,14 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest": {
+            "type": "object",
+            "properties": {
+                "state": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection": {
             "type": "object",
             "properties": {
@@ -10283,7 +10270,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/source.HealthStatus"
                 },
                 "state": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionState"
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState"
                 }
             }
         },
@@ -10302,17 +10289,6 @@ const docTemplate = `{
                 "ConnectionLifecycleStateEnabled",
                 "ConnectionLifecycleStateDisabled",
                 "ConnectionLifecycleStateDeleted"
-            ]
-        },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionState": {
-            "type": "string",
-            "enum": [
-                "ENABLED",
-                "DISABLED"
-            ],
-            "x-enum-varnames": [
-                "ConnectionState_ENABLED",
-                "ConnectionState_DISABLED"
             ]
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connector": {
