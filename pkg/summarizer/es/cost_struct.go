@@ -223,6 +223,7 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			Region:      &region,
 		}, key, nil
 	case CostResourceTypeAzureCostManagementCostByResourceType:
+		fmt.Printf("Processing AzureCostManagementCostByResourceType: %s\n", resource.SourceID)
 		jsonDesc, err := json.Marshal(resource.Description)
 		if err != nil {
 			return nil, "", err
@@ -230,9 +231,11 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 		desc := azureModel.CostManagementCostByResourceTypeDescription{}
 		err = json.Unmarshal(jsonDesc, &desc)
 		if err != nil {
+			fmt.Printf("Failed to unmarshal AzureCostManagementCostByResourceType: %s\n", resource.SourceID)
 			return nil, "", err
 		}
 		key := fmt.Sprintf("%s|%s|%s|%d", resource.SourceID, *desc.CostManagementCostByResourceType.ResourceType, desc.CostManagementCostByResourceType.Currency, desc.CostManagementCostByResourceType.UsageDate)
+		fmt.Printf("Processed AzureCostManagementCostByResourceType: %s, key=%s\n", resource.SourceID, key)
 		return ServiceCostSummary{
 			ServiceName: *desc.CostManagementCostByResourceType.ResourceType,
 			Cost:        desc.CostManagementCostByResourceType,
@@ -241,6 +244,7 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			ReportType:  CostProviderSummaryDaily,
 		}, key, nil
 	case CostResourceTypeAzureCostManagementCostBySubscription:
+		fmt.Printf("Processing AzureCostManagementCostBySubscription: %s\n", resource.SourceID)
 		jsonDesc, err := json.Marshal(resource.Description)
 		if err != nil {
 			return nil, "", err
@@ -248,9 +252,11 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 		desc := azureModel.CostManagementCostBySubscriptionDescription{}
 		err = json.Unmarshal(jsonDesc, &desc)
 		if err != nil {
+			fmt.Printf("Failed to unmarshal AzureCostManagementCostBySubscription: %s\n", resource.SourceID)
 			return nil, "", err
 		}
 		key := fmt.Sprintf("%s|%s|%d", resource.SourceID, desc.CostManagementCostBySubscription.Currency, desc.CostManagementCostBySubscription.UsageDate)
+		fmt.Printf("Processed AzureCostManagementCostBySubscription: %s, key=%s\n", resource.SourceID, key)
 		return ConnectionCostSummary{
 			AccountID:   *desc.CostManagementCostBySubscription.SubscriptionID,
 			Cost:        desc.CostManagementCostBySubscription,
@@ -271,12 +277,12 @@ type ServiceCostSummary struct {
 	SummarizeJobTime int64              `json:"summarize_job_time"`
 	SummarizeJobID   uint               `json:"summarize_job_id"`
 	ServiceName      string             `json:"service_name"`
-	ScheduleJobID    uint               `json:"schedule_job_id"`
 	SourceID         string             `json:"source_id"`
 	SourceType       source.Type        `json:"source_type"`
 	SourceJobID      uint               `json:"source_job_id"`
 	ResourceType     string             `json:"resource_type"`
 	Cost             any                `json:"cost"`
+	CostValue        float64            `json:"cost_value"`
 	PeriodStart      int64              `json:"period_start"`
 	PeriodEnd        int64              `json:"period_end"`
 	ReportType       ProviderReportType `json:"report_type"`
@@ -313,12 +319,12 @@ type ConnectionCostSummary struct {
 	SummarizeJobTime int64                `json:"summarize_job_time"`
 	SummarizeJobID   uint                 `json:"summarize_job_id"`
 	AccountID        string               `json:"account_id"`
-	ScheduleJobID    uint                 `json:"schedule_job_id"`
 	SourceID         string               `json:"source_id"`
 	SourceType       source.Type          `json:"source_type"`
 	SourceJobID      uint                 `json:"source_job_id"`
 	ResourceType     string               `json:"resource_type"`
 	Cost             any                  `json:"cost"`
+	CostValue        float64              `json:"cost_value"`
 	PeriodStart      int64                `json:"period_start"`
 	PeriodEnd        int64                `json:"period_end"`
 	ReportType       ConnectionReportType `json:"report_type"`
