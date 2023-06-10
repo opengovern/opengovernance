@@ -2961,10 +2961,10 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 //	@Router			/inventory/api/v2/insights/job/{jobId} [get]
 func (h *HttpHandler) GetInsightResultByJobId(ctx echo.Context) error {
 	jobIdStr := ctx.Param("jobId")
-	// jobId, err := strconv.ParseUint(jobIdStr, 10, 64)
-	// if err != nil {
-	// 	return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
-	// }
+	jobId, err := strconv.ParseUint(jobIdStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid job id")
+	}
 
 	job, err := h.schedulerClient.GetInsightJobById(httpclient.FromEchoContext(ctx), jobIdStr)
 	if err != nil {
@@ -2973,16 +2973,16 @@ func (h *HttpHandler) GetInsightResultByJobId(ctx echo.Context) error {
 	if job.ID == 0 {
 		return echo.NewHTTPError(http.StatusNotFound, "No job found")
 	}
-	// insightResult, err := es.FetchInsightByJobIDAndInsightID(h.client, uint(jobId), job.InsightID)
-	// if err != nil {
-	// 	return err
-	// }
+	insightResult, err := es.FetchInsightByJobIDAndInsightID(h.client, uint(jobId), job.InsightID)
+	if err != nil {
+		return err
+	}
 
-	// if insightResult == nil {
-	// 	return echo.NewHTTPError(http.StatusNotFound, "no data for insight found")
-	// }
+	if insightResult == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "no data for insight found")
+	}
 
-	return echo.NewHTTPError(http.StatusOK, job)
+	return echo.NewHTTPError(http.StatusOK, *insightResult)
 }
 
 // GetInsightTrendResults godoc

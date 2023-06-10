@@ -76,7 +76,7 @@ func (s *schedulerClient) GetInsightJobById(ctx *httpclient.Context, jobId strin
 	url := fmt.Sprintf("%s/api/v1/insight/job/%s", s.baseURL, jobId)
 
 	var job api.InsightJob
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, nil); err != nil {
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &job); err != nil {
 		return api.InsightJob{}, err
 	}
 	return job, nil
