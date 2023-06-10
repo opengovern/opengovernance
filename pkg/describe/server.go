@@ -96,7 +96,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/stacks/:stackId", httpserver.AuthorizeHandler(h.GetStack, api3.ViewerRole))
 	v1.POST("/stacks/create", httpserver.AuthorizeHandler(h.CreateStack, api3.AdminRole))
 	v1.DELETE("/stacks/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, api3.AdminRole))
-	v1.GET("/stacks/:stackId/findings", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
+	v1.POST("/stacks/:stackId/findings", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
 	v1.GET("/stacks/:stackId/insight", httpserver.AuthorizeHandler(h.GetStackInsight, api3.ViewerRole))
 	v1.GET("/stacks/resource/:resourceId", httpserver.AuthorizeHandler(h.ListResourceStack, api3.ViewerRole))
 	v1.POST("/stacks/insight/trigger", httpserver.AuthorizeHandler(h.TriggerStackInsight, api3.AdminRole))
@@ -1066,7 +1066,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 //	@Param			stackId	path		string					true	"StackId"
 //	@Param			request	body		api.GetStackFindings	true	"Request Body"
 //	@Success		200		{object}	complianceapi.GetFindingsResponse
-//	@Router			/schedule/api/v1/stacks/{stackId}/findings [get]
+//	@Router			/schedule/api/v1/stacks/{stackId}/findings [post]
 func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	stackId := ctx.Param("stackId")
 	var reqBody api.GetStackFindings
