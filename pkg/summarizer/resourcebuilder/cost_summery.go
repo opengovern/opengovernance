@@ -64,7 +64,7 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		serviceCostSummary.SourceID = resource.SourceID
 		serviceCostSummary.SourceJobID = resource.SourceJobID
 		serviceCostSummary.ResourceType = resource.ResourceType
-		costVal, _ := costResourceType.GetCostAndUnitFromResource(serviceCostSummary.Cost.(map[string]any))
+		costVal, _ := costResourceType.GetCostAndUnitFromResource(serviceCostSummary.Cost)
 		serviceCostSummary.CostValue = costVal
 		if _, ok := b.costsByService[key]; !ok {
 			b.costsByService[key] = *serviceCostSummary
@@ -77,7 +77,7 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		connectionCostSummary.SourceID = resource.SourceID
 		connectionCostSummary.SourceJobID = resource.SourceJobID
 		connectionCostSummary.ResourceType = resource.ResourceType
-		costVal, _ := costResourceType.GetCostAndUnitFromResource(connectionCostSummary.Cost.(map[string]any))
+		costVal, _ := costResourceType.GetCostAndUnitFromResource(connectionCostSummary.Cost)
 		connectionCostSummary.CostValue = costVal
 		if _, ok := b.costsByAccount[key]; !ok {
 			b.costsByAccount[key] = *connectionCostSummary
