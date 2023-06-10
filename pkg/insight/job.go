@@ -214,7 +214,6 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 						AccountID:           j.AccountID,
 						Provider:            j.SourceType,
 						ExecutedAt:          time.Now().UnixMilli(),
-						ScheduleUUID:        j.ScheduleJobUUID,
 						Result:              count,
 						ResourceType:        resourceType,
 						Locations:           locations,

@@ -44,8 +44,6 @@ type InsightResource struct {
 	Provider source.Type `json:"provider"`
 	// ExecutedAt is when the query is executed
 	ExecutedAt int64 `json:"executed_at"`
-	// ScheduleUUID
-	ScheduleUUID string `json:"schedule_uuid"`
 	// Result of query
 	Result int64 `json:"result"`
 	// ResourceType shows which collection of docs this resource belongs to
@@ -69,7 +67,7 @@ func (r InsightResource) KeysAndIndex() ([]string, string) {
 			string(r.ResourceType),
 			fmt.Sprintf("%d", r.InsightID),
 			fmt.Sprintf("%s", r.SourceID),
-			fmt.Sprintf("%s", r.ScheduleUUID),
+			fmt.Sprintf("%d", r.JobID),
 		}
 	}
 

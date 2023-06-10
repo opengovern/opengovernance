@@ -60,11 +60,12 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		serviceCostSummary := costSummary.(*es.ServiceCostSummary)
 		serviceCostSummary.SummarizeJobID = b.summarizerJobID
 		serviceCostSummary.SummarizeJobTime = time.Now().Unix()
-		serviceCostSummary.ScheduleJobID = resource.ScheduleJobID
 		serviceCostSummary.SourceType = resource.SourceType
 		serviceCostSummary.SourceID = resource.SourceID
 		serviceCostSummary.SourceJobID = resource.SourceJobID
 		serviceCostSummary.ResourceType = resource.ResourceType
+		costVal, _ := costResourceType.GetCostAndUnitFromResource(serviceCostSummary.Cost.(map[string]any))
+		serviceCostSummary.CostValue = costVal
 		if _, ok := b.costsByService[key]; !ok {
 			b.costsByService[key] = *serviceCostSummary
 		}
@@ -72,11 +73,12 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		connectionCostSummary := costSummary.(*es.ConnectionCostSummary)
 		connectionCostSummary.SummarizeJobID = b.summarizerJobID
 		connectionCostSummary.SummarizeJobTime = time.Now().Unix()
-		connectionCostSummary.ScheduleJobID = resource.ScheduleJobID
 		connectionCostSummary.SourceType = resource.SourceType
 		connectionCostSummary.SourceID = resource.SourceID
 		connectionCostSummary.SourceJobID = resource.SourceJobID
 		connectionCostSummary.ResourceType = resource.ResourceType
+		costVal, _ := costResourceType.GetCostAndUnitFromResource(connectionCostSummary.Cost.(map[string]any))
+		connectionCostSummary.CostValue = costVal
 		if _, ok := b.costsByAccount[key]; !ok {
 			b.costsByAccount[key] = *connectionCostSummary
 		}
@@ -157,7 +159,6 @@ func (b *costSummaryBuilder) Build() []kafka.Doc {
 			SummarizeJobTime: v.Base.SummarizeJobTime,
 			SummarizeJobID:   v.Base.SummarizeJobID,
 			ServiceName:      v.Base.ServiceName,
-			ScheduleJobID:    v.Base.ScheduleJobID,
 			SourceID:         v.Base.SourceID,
 			SourceType:       v.Base.SourceType,
 			SourceJobID:      v.Base.SourceJobID,
@@ -166,6 +167,7 @@ func (b *costSummaryBuilder) Build() []kafka.Doc {
 			Region:           v.Base.Region,
 
 			Cost:        v.Desc,
+			CostValue:   v.Desc.CostValue,
 			PeriodStart: nowTime,
 			PeriodEnd:   nowTime,
 		})
