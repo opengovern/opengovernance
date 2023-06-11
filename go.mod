@@ -400,7 +400,7 @@ require (
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/zclconf/go-cty v1.12.1 // indirect
 	github.com/zclconf/go-cty-yaml v1.0.3 // indirect
-	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230608062209-85e8d6e2bfa0 // indirect
+	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230611092453-64727233bd54 // indirect
 	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230611133824-9a1ea0555bd0 // indirect
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230611092520-901cabdfc4d6 // indirect
 	go.opencensus.io v0.24.0 // indirect
