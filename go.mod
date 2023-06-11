@@ -67,7 +67,7 @@ require (
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/kaytu-io/kaytu-aws-describer v0.0.14
-	github.com/kaytu-io/kaytu-azure-describer v0.0.28
+	github.com/kaytu-io/kaytu-azure-describer v0.0.29
 	github.com/kaytu-io/kaytu-util v0.0.0-20230606093232-acd39bd68f48
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/lib/pq v1.10.3
@@ -401,7 +401,7 @@ require (
 	github.com/zclconf/go-cty v1.12.1 // indirect
 	github.com/zclconf/go-cty-yaml v1.0.3 // indirect
 	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230608062209-85e8d6e2bfa0 // indirect
-	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230611132718-839a48d34dab // indirect
+	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230611133824-9a1ea0555bd0 // indirect
 	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230611092520-901cabdfc4d6 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/otel v1.8.0 // indirect
