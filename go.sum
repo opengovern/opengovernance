@@ -2109,6 +2109,8 @@ github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/kaytu-io/kaytu-aws-describer v0.0.11 h1:WDL4Q4bSOsTO+0ab8bF6dV+ojlbpOlYKVfYoY60eCA0=
 github.com/kaytu-io/kaytu-aws-describer v0.0.11/go.mod h1:CKpRCOdioCAqQkmgM2bY7eQGUaNcr1GiVfj1Nt+xtns=
+github.com/kaytu-io/kaytu-aws-describer v0.0.14 h1:cMfDfqduR8gTrf6LzRdNa8jf4QjJsEIWEPPDINY8DDM=
+github.com/kaytu-io/kaytu-aws-describer v0.0.14/go.mod h1:CKpRCOdioCAqQkmgM2bY7eQGUaNcr1GiVfj1Nt+xtns=
 github.com/kaytu-io/kaytu-azure-describer v0.0.17 h1:NRvlqc9kQliyjtndSqINNhgLcPo5oze/1sJrWc+dfVY=
 github.com/kaytu-io/kaytu-azure-describer v0.0.17/go.mod h1:DRogWJZFoVsBzQdsLWQgUrp4/zJ6ehZsFnYRyUu/LFQ=
 github.com/kaytu-io/kaytu-azure-describer v0.0.18 h1:L2r16HempZVGbuHKPSSE6u7JZzjkmEAIUPjCQwuHiwk=
@@ -2117,6 +2119,8 @@ github.com/kaytu-io/kaytu-azure-describer v0.0.20 h1:91IAEGdcRyVF6b28x3xtCYR88nx
 github.com/kaytu-io/kaytu-azure-describer v0.0.20/go.mod h1:0HV1dWfH1HYhN9QSvJZhGOkzogXTd29kkqEmPvcDhVg=
 github.com/kaytu-io/kaytu-azure-describer v0.0.21 h1:txLb+PPFFf/gaBXXqDMsZqiZkrTb9UpV10VkMpaswf8=
 github.com/kaytu-io/kaytu-azure-describer v0.0.21/go.mod h1:0HV1dWfH1HYhN9QSvJZhGOkzogXTd29kkqEmPvcDhVg=
+github.com/kaytu-io/kaytu-azure-describer v0.0.24 h1:/Rw0ehDen89z7Hk/miMGTjsQPSmhaUb8/4LCM+iTAC8=
+github.com/kaytu-io/kaytu-azure-describer v0.0.24/go.mod h1:+aok/DRtN1Ihj5n3zXxOVpy7VCHU3WfotzJlpiPeXxs=
 github.com/kaytu-io/kaytu-util v0.0.0-20230606093232-acd39bd68f48 h1:avglwGfAyhGMUd9/HtbJKEqS8lqXEpBdT8H64QPOmLQ=
 github.com/kaytu-io/kaytu-util v0.0.0-20230606093232-acd39bd68f48/go.mod h1:QULmP8Hug87ctExrOBAzZgwKJ7BXEWUcs0vIJAV1Hrs=
 github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1 h1:tKxk2n0ZuXgt1QBZe8tb+ztYQitO1Z8glexWz08e2ow=
@@ -2821,8 +2825,12 @@ gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230608062902-229ecce71
 gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230608062902-229ecce71aa9/go.mod h1:9lVkcE4T/iHxjVACFy0FP9cw7HtxvrS/QBwPSu6j2Jo=
 gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230610062548-95824fc23b7a h1:E1h/N/q2CfDFtM0LkpibPlvHmW4Uy8GqGsBQ/50lLXQ=
 gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230610062548-95824fc23b7a/go.mod h1:87/eEGpFq7Gy+xVroYW4IZ9Cf790pRPkjDff88kpEHw=
+gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230611082459-cbc9acfb48e4 h1:VI7/XMBNHQ+OcuaCE1OqexqbEqAWqF3MRHO5auQ5XVo=
+gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230611082459-cbc9acfb48e4/go.mod h1:ziE6971GiuXdthB+mV4oAtg5ii/dzX47pPDm1IRcVV4=
 gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230608063712-f481fab2c03f h1:I59NEm5ONN/xCJ6y6/FFnDBDoMcf6IaokIYKb9ihphU=
 gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230608063712-f481fab2c03f/go.mod h1:xidBSZkTvYMDCzPCGBAWQBN6TFf9ESphmYlBeX6Yffc=
+gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230611082459-b2148307e394 h1:tbLYVvsHHvOfixmQ//GftcFli3MdcngDtCGPh5ueAQ4=
+gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230611082459-b2148307e394/go.mod h1:MAGe5y9ExH7mBjWyKJbzC9Qq9KLI1EjkIYO2Lm67pbY=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/bbolt v1.3.5/go.mod h1:G5EMThwa9y8QZGBClrRx5EY+Yw9kAhnjy3bSjsnlVTQ=
