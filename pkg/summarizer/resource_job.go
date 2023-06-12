@@ -6,6 +6,8 @@ import (
 	"time"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
@@ -97,6 +99,10 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 		}
 	}
 
+	resourceTypes := make([]string, 0)
+	resourceTypes = append(resourceTypes, aws.ListSummarizeResourceTypes()...)
+	resourceTypes = append(resourceTypes, azure.ListSummarizeResourceTypes()...)
+
 	builders := []resourcebuilder.Builder{
 		resourcebuilder.NewResourceSummaryBuilder(client, j.JobID),
 		resourcebuilder.NewTrendSummaryBuilder(client, j.JobID),
@@ -109,7 +115,7 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 	}
 	var searchAfter []interface{}
 	for {
-		lookups, err := es.FetchLookups(client, searchAfter, es.EsFetchPageSize)
+		lookups, err := es.FetchLookupByResourceTypes(client, resourceTypes, searchAfter, es.EsFetchPageSize)
 		if err != nil {
 			fail(fmt.Errorf("Failed to fetch lookups: %v ", err))
 			break
