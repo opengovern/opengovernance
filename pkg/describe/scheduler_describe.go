@@ -213,7 +213,7 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 		}
 
 		isFullDiscovery := false
-		if triggerType == enums.DescribeTriggerTypeInitialDiscovery ||
+		if job == nil ||
 			fullDiscoveryJob == nil ||
 			fullDiscoveryJob.UpdatedAt.Add(time.Duration(s.fullDiscoveryIntervalHours)*time.Hour).Before(time.Now()) {
 			isFullDiscovery = true
