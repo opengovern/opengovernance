@@ -2106,8 +2106,8 @@ github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/kaytu-io/kaytu-aws-describer v0.0.15 h1:MhXDq/6amyogP0oIdRBrlTIu3bBYkH58iM+0rP2uJPM=
 github.com/kaytu-io/kaytu-aws-describer v0.0.15/go.mod h1:p/XRTwAq43yYF8LORF+j97QTeTSZVkc7uFZbsXiOlJ4=
-github.com/kaytu-io/kaytu-azure-describer v0.0.35 h1:Q2efoFklzEU0q9l9mtoKjsDNATrJWEJxMC1faKrpIns=
-github.com/kaytu-io/kaytu-azure-describer v0.0.35/go.mod h1:ZOUlkCEia+RF7TDY3r2oVjU2JOAntZpCwP0gRDxM3v4=
+github.com/kaytu-io/kaytu-azure-describer v0.0.37 h1:D9YHEUeMb+PpCMB0Bw1iHRorqKKJqTvCJreNzhyQpHg=
+github.com/kaytu-io/kaytu-azure-describer v0.0.37/go.mod h1:FbgZGP2WZ5KpMdZS5raI+hUncVhlukT74QaII18zQWI=
 github.com/kaytu-io/kaytu-util v0.0.0-20230612111112-f01681c34d0f h1:UMoJqcXtEOuceVIDmrPsiOeuUyryXPJVDFGymB3QIM0=
 github.com/kaytu-io/kaytu-util v0.0.0-20230612111112-f01681c34d0f/go.mod h1:QULmP8Hug87ctExrOBAzZgwKJ7BXEWUcs0vIJAV1Hrs=
 github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1 h1:tKxk2n0ZuXgt1QBZe8tb+ztYQitO1Z8glexWz08e2ow=
@@ -2808,8 +2808,8 @@ github.com/zenazn/goji v0.9.0/go.mod h1:7S9M489iMyHBNxwZnk9/EHS098H4/F6TATF2mIxt
 github.com/ziutek/mymysql v1.5.4/go.mod h1:LMSpPZ6DbqWFxNCHW77HeMg9I646SAhApZ/wKdgO/C0=
 gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230611092453-64727233bd54 h1:c3yCmG5ufOiA9VmWp6YDUYtoYtEZn3Yven1TrrtLBcY=
 gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230611092453-64727233bd54/go.mod h1:uAERVhg0ayJhMQvGYsifoqVFxFEOgsQzCFTtSMpWETQ=
-gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230612132029-4f600696d5cc h1:WODZu5bc2F9e2qogci58fKyx7SK608QEQhwba4Zfz08=
-gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230612132029-4f600696d5cc/go.mod h1:vU6Hep0PgK9mQN8N9Q+HrcnE7ACRQb3PnwVioNpGrvk=
+gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230612161801-2b2e9d4d6c42 h1:QO8ZU5VTYBLhXNtnvni+chsjuQBA0YBF0kkDkHvnytE=
+gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230612161801-2b2e9d4d6c42/go.mod h1:p3kPLUOvDkWnSJK3Y+N0cwfqcIvsPWLfsnfJECr3+70=
 gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230611092520-901cabdfc4d6 h1:6dbSY06hqRa8rUnSMzkz4NK87WpOZlKe2Z2q1zv0STg=
 gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230611092520-901cabdfc4d6/go.mod h1:ZxHYh5bZdtrIafo6hH6rqxkhXsEZrMj3cQag/TLo+h8=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
