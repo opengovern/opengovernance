@@ -40,9 +40,9 @@ type Insight struct {
 	Enabled     bool                `json:"enabled"`
 	Internal    bool                `json:"internal"`
 
-	TotalResultValue              *int64          `json:"totalResultValue,omitempty"`
-	TotalResultValueChangePercent *float64        `json:"totalResultValueChangePercent,omitempty"`
-	Results                       []InsightResult `json:"result,omitempty"`
+	TotalResultValue    *int64          `json:"totalResultValue,omitempty"`
+	OldTotalResultValue *int64          `json:"oldTotalResultValue,omitempty"`
+	Results             []InsightResult `json:"result,omitempty"`
 }
 
 type InsightTrendDatapoint struct {

@@ -1043,7 +1043,7 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	for _, insightRow := range insightRows {
 		apiRes := insightRow.ToApi()
 		apiRes.TotalResultValue = utils.GetPointer(int64(0))
-		totalOldResultValue := int64(0)
+		var totalOldResultValue *int64
 		if insightResults, ok := insightIdToResults[insightRow.ID]; ok {
 			for _, insightResult := range insightResults {
 				apiRes.Results = append(apiRes.Results, api.InsightResult{
@@ -1059,12 +1059,11 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		}
 		if oldInsightResults, ok := oldInsightIdToResults[insightRow.ID]; ok {
 			for _, oldInsightResult := range oldInsightResults {
-				totalOldResultValue += oldInsightResult.Result
+				localOldInsightResult := oldInsightResult.Result
+				totalOldResultValue = utils.PAdd(totalOldResultValue, &localOldInsightResult)
 			}
 		}
-		if totalOldResultValue != 0 && apiRes.TotalResultValue != nil {
-			apiRes.TotalResultValueChangePercent = utils.GetPointer((float64(*apiRes.TotalResultValue-totalOldResultValue) / float64(totalOldResultValue)) * 100)
-		}
+		apiRes.OldTotalResultValue = totalOldResultValue
 		result = append(result, apiRes)
 	}
 	return ctx.JSON(200, result)
@@ -1125,7 +1124,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 
 	apiRes := insightRow.ToApi()
 	apiRes.TotalResultValue = utils.GetPointer(int64(0))
-	totalOldResultValue := int64(0)
+	var totalOldResultValue *int64
 	for _, insightResult := range insightResults {
 		connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
 		for _, connection := range insightResult.IncludedConnections {
@@ -1169,11 +1168,10 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 		apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, &insightResult.Result)
 	}
 	for _, oldInsightResult := range oldInsightResults {
-		totalOldResultValue += oldInsightResult.Result
+		localOldInsightResult := oldInsightResult.Result
+		totalOldResultValue = utils.PAdd(totalOldResultValue, &localOldInsightResult)
 	}
-	if totalOldResultValue != 0 && apiRes.TotalResultValue != nil {
-		apiRes.TotalResultValueChangePercent = utils.GetPointer((float64(*apiRes.TotalResultValue-totalOldResultValue) / float64(totalOldResultValue)) * 100)
-	}
+	apiRes.OldTotalResultValue = totalOldResultValue
 
 	return ctx.JSON(200, apiRes)
 }
