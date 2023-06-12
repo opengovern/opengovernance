@@ -66,8 +66,8 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/jedib0t/go-pretty/v6 v6.4.6
-	github.com/kaytu-io/kaytu-aws-describer v0.0.14
-	github.com/kaytu-io/kaytu-azure-describer v0.0.29
+	github.com/kaytu-io/kaytu-aws-describer v0.0.15
+	github.com/kaytu-io/kaytu-azure-describer v0.0.30
 	github.com/kaytu-io/kaytu-util v0.0.0-20230606093232-acd39bd68f48
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/lib/pq v1.10.3
