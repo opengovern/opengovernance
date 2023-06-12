@@ -111,7 +111,6 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 		resourcebuilder.NewServiceSummaryBuilder(client, j.JobID),
 		resourcebuilder.NewCategorySummaryBuilder(client, j.JobID),
 		resourcebuilder.NewServiceLocationSummaryBuilder(client, j.JobID),
-		resourcebuilder.NewCostSummaryBuilder(client, j.JobID),
 	}
 	var searchAfter []interface{}
 	for {
@@ -133,20 +132,47 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 			searchAfter = lookup.Sort
 		}
 	}
-	logger.Info("processed lookup resources")
-	for _, b := range builders {
-		err := b.PopulateHistory(j.LastDayScheduleJobID, j.LastWeekScheduleJobID, j.LastQuarterScheduleJobID, j.LastYearScheduleJobID)
+
+	costBuilder := resourcebuilder.NewCostSummaryBuilder(client, j.JobID)
+	costResourceTypes := make([]string, 0)
+	for _, t := range es.CostResourceTypeList {
+		costResourceTypes = append(costResourceTypes, t.String())
+	}
+	for {
+		lookups, err := es.FetchLookupByResourceTypes(client, costResourceTypes, searchAfter, es.EsFetchPageSize)
 		if err != nil {
-			fail(fmt.Errorf("Failed to populate history: %v ", err))
+			fail(fmt.Errorf("Failed to fetch cost lookups: %v ", err))
+			break
 		}
+
+		if len(lookups.Hits.Hits) == 0 {
+			break
+		}
+
+		logger.Info("got a batch of cost lookup resources", zap.Int("count", len(lookups.Hits.Hits)))
+		for _, lookup := range lookups.Hits.Hits {
+			costBuilder.Process(lookup.Source)
+			searchAfter = lookup.Sort
+		}
+	}
+	logger.Info("processed cost lookup resources")
+	err := costBuilder.PopulateHistory(j.LastDayScheduleJobID, j.LastWeekScheduleJobID, j.LastQuarterScheduleJobID, j.LastYearScheduleJobID)
+	if err != nil {
+		fail(fmt.Errorf("Failed to populate history: %v ", err))
 	}
 	logger.Info("history populated")
 
 	var msgs []kafka.Doc
+	msgs = append(msgs, costBuilder.Build()...)
 	for _, b := range builders {
 		msgs = append(msgs, b.Build()...)
 	}
 	logger.Info("built messages", zap.Int("count", len(msgs)))
+
+	err = costBuilder.Cleanup(j.JobID)
+	if err != nil {
+		fail(fmt.Errorf("Failed to cleanup: %v ", err))
+	}
 	for _, b := range builders {
 		err := b.Cleanup(j.JobID)
 		if err != nil {
