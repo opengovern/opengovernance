@@ -98,7 +98,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.DELETE("/stacks/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, api3.AdminRole))
 	v1.POST("/stacks/:stackId/findings", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
 	v1.GET("/stacks/:stackId/insight", httpserver.AuthorizeHandler(h.GetStackInsight, api3.ViewerRole))
-	v1.GET("/stacks/resource/:resourceId", httpserver.AuthorizeHandler(h.ListResourceStack, api3.ViewerRole))
+	v1.GET("/stacks/resource", httpserver.AuthorizeHandler(h.ListResourceStack, api3.ViewerRole))
 	v1.POST("/stacks/insight/trigger", httpserver.AuthorizeHandler(h.TriggerStackInsight, api3.AdminRole))
 }
 
@@ -783,13 +783,13 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			terrafromFile	formData	file		false	"File to upload"
-//	@Param			tags			formData	string		false	"Tags Map[string][]string"
+//	@Param			tag				formData	string		false	"Tags Map[string][]string"
 //	@Param			resources		formData	[]string	false	"Additional Resources"
 //	@Success		200				{object}	api.Stack
 //	@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
 	var tags map[string][]string
-	tagsData := ctx.FormValue("tags")
+	tagsData := ctx.FormValue("tag")
 	if tagsData != "" {
 		json.Unmarshal([]byte(tagsData), &tags)
 	}
@@ -916,7 +916,7 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			tag			query		[]string	false	"Key-Value tags in key=value format to filter by"
-//	@Param			accounIds	query		[]string	false	"Account IDs to filter by"
+//	@Param			accountIds	query		[]string	false	"Account IDs to filter by"
 //	@Success		200			{object}	[]api.Stack
 //	@Router			/schedule/api/v1/stacks [get]
 func (h HttpServer) ListStack(ctx echo.Context) error {
@@ -948,6 +948,7 @@ func (h HttpServer) ListStack(ctx echo.Context) error {
 //	@Description	Delete a stack by ID
 //	@Security		BearerToken
 //	@Tags			stack
+//	@Cli			delete-stack
 //	@Accept			json
 //	@Produce		json
 //	@Param			stackId	path	string	true	"StackID"
@@ -1210,11 +1211,11 @@ func (h HttpServer) GetStackInsight(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			resourceId	path		string	true	"Resource ID"
+//	@Param			resourceId	query		string	true	"Resource ID"
 //	@Success		200			{object}	[]api.Stack
-//	@Router			/schedule/api/v1/stacks/resource/{resourceId} [get]
+//	@Router			/schedule/api/v1/stacks/resource [get]
 func (h HttpServer) ListResourceStack(ctx echo.Context) error {
-	resourceId := ctx.Param("resourceId")
+	resourceId := ctx.QueryParam("resourceId")
 	stacksRecord, err := h.DB.GetResourceStacks(resourceId)
 	if err != nil {
 		return err
@@ -1296,7 +1297,7 @@ func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
 //	@Tags		describe
 //	@Produce	json
 //	@Param		request	body		api.StackInsightRequest	true	"Request Body"
-//	@Success	200		{object}	[]InsightJob
+//	@Success	200		{object}	[]api.InsightJob
 //	@Router		/schedule/api/v1/stacks/insight/trigger [post]
 func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 	var req api.StackInsightRequest
@@ -1320,7 +1321,7 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 		connectionIDs = append(connectionIDs, source.ID.String())
 	}
 
-	var insightJobs []InsightJob
+	var insightJobs []api.InsightJob
 
 	for _, insightId := range req.Insights {
 		insight, err := h.Scheduler.complianceClient.GetInsightMetadataById(httpclient.FromEchoContext(ctx), insightId)
@@ -1354,7 +1355,17 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 			if err != nil {
 				return err
 			}
-			insightJobs = append(insightJobs, job)
+			insightJobs = append(insightJobs, api.InsightJob{
+				ID:             job.ID,
+				InsightID:      job.InsightID,
+				SourceID:       job.SourceID,
+				AccountID:      job.AccountID,
+				SourceType:     job.SourceType,
+				Status:         job.Status,
+				FailureMessage: job.FailureMessage,
+				CreatedAt:      job.CreatedAt,
+				UpdatedAt:      job.UpdatedAt,
+			})
 		}
 	}
 	return ctx.JSON(http.StatusOK, insightJobs)
