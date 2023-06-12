@@ -41,6 +41,20 @@ const (
 	CostResourceTypeAzureCostManagementCostBySubscription CostResourceType = "microsoft.costmanagement/costbysubscription"
 )
 
+func (c CostResourceType) String() string {
+	return string(c)
+}
+
+var CostResourceTypeList = []CostResourceType{
+	CostResourceTypeAWSCostExplorerServiceCostMonthly,
+	CostResourceTypeAWSCostExplorerAccountCostMonthly,
+	CostResourceTypeAWSCostExplorerServiceCostDaily,
+	CostResourceTypeAWSCostExplorerAccountCostDaily,
+	CostResourceTypeAWSEBSVolume,
+	CostResourceTypeAzureCostManagementCostByResourceType,
+	CostResourceTypeAzureCostManagementCostBySubscription,
+}
+
 func GetCostResourceTypeFromString(resourceType string) CostResourceType {
 	lowerResourceType := strings.ToLower(resourceType)
 	switch lowerResourceType {
