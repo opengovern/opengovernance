@@ -250,7 +250,7 @@ func (s *onboardClient) SetConnectionLifecycleState(ctx *httpclient.Context, con
 		return nil, err
 	}
 	var connection api.Connection
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), payload, &connection); err != nil {
+	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), payload, &connection); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
