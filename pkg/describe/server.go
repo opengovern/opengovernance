@@ -1216,6 +1216,7 @@ func (h HttpServer) GetStackInsight(ctx echo.Context) error {
 //	@Router			/schedule/api/v1/stacks/resource [get]
 func (h HttpServer) ListResourceStack(ctx echo.Context) error {
 	resourceId := ctx.QueryParam("resourceId")
+	resourceId = strings.ReplaceAll(resourceId, "%2F", "/")
 	stacksRecord, err := h.DB.GetResourceStacks(resourceId)
 	if err != nil {
 		return err
