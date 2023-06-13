@@ -54,7 +54,7 @@ func (b *locationSummaryBuilder) Process(resource describe.LookupResource) {
 	}
 
 	if resource.Location == "" {
-		fmt.Printf("resource from account %s of type %s has no location ignoring it in location summary\n", resource.SourceID, resource.SourceType)
+		fmt.Printf("resource from account %s of type %s from connector %s has no location ignoring it in location summary\n", resource.SourceID, resource.ResourceType, resource.SourceType)
 		return
 	}
 	v := b.connectionSummary[resource.SourceID]
