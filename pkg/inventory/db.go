@@ -38,7 +38,8 @@ func (db Database) Initialize() error {
 	awsResourceTypes := aws.GetResourceTypesMap()
 	for _, resourceType := range awsResourceTypes {
 		err = db.orm.Clauses(clause.OnConflict{
-			DoNothing: true,
+			Columns:   []clause.Column{{Name: "service_name"}},
+			DoUpdates: clause.AssignmentColumns([]string{"connector", "service_label"}),
 		}).Create(&Service{
 			ServiceName:  strings.ToLower(resourceType.ServiceName),
 			ServiceLabel: resourceType.ServiceName,
@@ -48,7 +49,8 @@ func (db Database) Initialize() error {
 			return err
 		}
 		err = db.orm.Clauses(clause.OnConflict{
-			DoNothing: true,
+			Columns:   []clause.Column{{Name: "resource_type"}},
+			DoUpdates: clause.AssignmentColumns([]string{"connector", "resource_label", "service_name"}),
 		}).Create(&ResourceType{
 			Connector:     source.CloudAWS,
 			ResourceType:  resourceType.ResourceName,
@@ -62,7 +64,8 @@ func (db Database) Initialize() error {
 	azureResourceTypes := azure.GetResourceTypesMap()
 	for _, resourceType := range azureResourceTypes {
 		err = db.orm.Clauses(clause.OnConflict{
-			DoNothing: true,
+			Columns:   []clause.Column{{Name: "service_name"}},
+			DoUpdates: clause.AssignmentColumns([]string{"connector", "service_label"}),
 		}).Create(&Service{
 			ServiceName:  strings.ToLower(resourceType.ServiceName),
 			ServiceLabel: resourceType.ServiceName,
@@ -72,7 +75,8 @@ func (db Database) Initialize() error {
 			return err
 		}
 		err = db.orm.Clauses(clause.OnConflict{
-			DoNothing: true,
+			Columns:   []clause.Column{{Name: "resource_type"}},
+			DoUpdates: clause.AssignmentColumns([]string{"connector", "resource_label", "service_name"}),
 		}).Create(&ResourceType{
 			Connector:     source.CloudAzure,
 			ResourceType:  resourceType.ResourceName,
