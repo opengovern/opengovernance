@@ -138,6 +138,7 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 	for _, t := range es.CostResourceTypeList {
 		costResourceTypes = append(costResourceTypes, t.String())
 	}
+	searchAfter = nil
 	for {
 		lookups, err := es.FetchLookupByResourceTypes(client, costResourceTypes, searchAfter, es.EsFetchPageSize)
 		if err != nil {
