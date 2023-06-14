@@ -12,8 +12,8 @@ type Service struct {
 	Tags          map[string][]string `json:"tags,omitempty"`
 	LogoURI       *string             `json:"logo_uri,omitempty"`
 
-	ResourceCount    *int `json:"resource_count,omitempty"`
-	OldResourceCount *int `json:"old_resource_count,omitempty"`
+	ResourceCount    *int `json:"resource_count"`
+	OldResourceCount *int `json:"old_resource_count"`
 }
 
 type ListServiceMetricsResponse struct {

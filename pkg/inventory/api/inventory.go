@@ -12,7 +12,7 @@ type GetResourcesResult struct {
 	AllResources   []AllResource
 	AzureResources []AzureResource
 	AWSResources   []AWSResource
-	TotalCount     int64 `json:"totalCount,omitempty"`
+	TotalCount     int64 `json:"totalCount"`
 }
 
 func QueryResources(ctx context.Context, client keibi.Client, req *GetResourcesRequest, provider *SourceType, commonFilter *bool) (*GetResourcesResult, error) {

@@ -49,9 +49,9 @@ type Connection struct {
 	LastHealthCheckTime  time.Time                       `json:"lastHealthCheckTime"`
 	HealthReason         *string                         `json:"healthReason,omitempty"`
 
-	LastInventory *time.Time `json:"lastInventory,omitempty"`
-	Cost          *float64   `json:"cost,omitempty"`
-	ResourceCount *int       `json:"resourceCount,omitempty"`
+	LastInventory *time.Time `json:"lastInventory"`
+	Cost          *float64   `json:"cost"`
+	ResourceCount *int       `json:"resourceCount"`
 
 	Metadata map[string]any `json:"metadata"`
 }

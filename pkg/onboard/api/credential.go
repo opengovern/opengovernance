@@ -38,7 +38,7 @@ type Credential struct {
 
 	Connections []Connection `json:"connections,omitempty"`
 
-	TotalConnections     *int `json:"total_connections,omitempty"`
-	EnabledConnections   *int `json:"enabled_connections,omitempty"`
-	UnhealthyConnections *int `json:"unhealthy_connections,omitempty"`
+	TotalConnections     *int `json:"total_connections"`
+	EnabledConnections   *int `json:"enabled_connections"`
+	UnhealthyConnections *int `json:"unhealthy_connections"`
 }

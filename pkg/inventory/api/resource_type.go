@@ -14,14 +14,14 @@ type ResourceType struct {
 	Tags          map[string][]string `json:"tags,omitempty"`
 	LogoURI       *string             `json:"logo_uri,omitempty"`
 
-	Count    *int `json:"count,omitempty"`     // Number of Resources of this Resource Type - Metric
-	OldCount *int `json:"old_count,omitempty"` // Number of Resources of this Resource Type in the past - Metric
+	Count    *int `json:"count"`     // Number of Resources of this Resource Type - Metric
+	OldCount *int `json:"old_count"` // Number of Resources of this Resource Type in the past - Metric
 
-	InsightsCount   *int     `json:"insights_count,omitempty"`   // Number of Insights that use this Resource Type - Metadata
-	ComplianceCount *int     `json:"compliance_count,omitempty"` // Number of Compliance that use this Resource Type - Metadata
-	Insights        []uint   `json:"insights,omitempty"`         // List of Insights that support this Resource Type - Metadata (GET only)
-	Compliance      []string `json:"compliance,omitempty"`       // List of Compliance that support this Resource Type - Metadata (GET only)
-	Attributes      []string `json:"attributes,omitempty"`       // List supported steampipe Attributes (columns) for this resource type - Metadata (GET only)
+	InsightsCount   *int     `json:"insights_count"`   // Number of Insights that use this Resource Type - Metadata
+	ComplianceCount *int     `json:"compliance_count"` // Number of Compliance that use this Resource Type - Metadata
+	Insights        []uint   `json:"insights"`         // List of Insights that support this Resource Type - Metadata (GET only)
+	Compliance      []string `json:"compliance"`       // List of Compliance that support this Resource Type - Metadata (GET only)
+	Attributes      []string `json:"attributes"`       // List supported steampipe Attributes (columns) for this resource type - Metadata (GET only)
 }
 
 type ListResourceTypeMetadataResponse struct {
