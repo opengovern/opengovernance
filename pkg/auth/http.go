@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -446,6 +447,10 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
 	userID := ctx.Param("user_id")
+	userID, err := url.QueryUnescape(userID)
+	if err != nil {
+		return err
+	}
 	user, err := r.auth0Service.GetUser(userID)
 	if err != nil {
 		return err
