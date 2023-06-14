@@ -3,12 +3,11 @@ package internal
 import (
 	"fmt"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 )
 
-func AggregateServiceCosts(costs map[string][]summarizer.ServiceCostSummary) map[string]map[string]api.CostWithUnit {
-	aggregatedCosts := make(map[string]map[string]api.CostWithUnit)
+func AggregateServiceCosts(costs map[string][]summarizer.ServiceCostSummary) map[string]float64 {
+	aggregatedCosts := make(map[string]float64)
 	for service, cost := range costs {
 		dateFlagMap := make(map[string]bool)
 		for _, value := range cost {
@@ -17,36 +16,20 @@ func AggregateServiceCosts(costs map[string][]summarizer.ServiceCostSummary) map
 			} else {
 				dateFlagMap[fmt.Sprintf("%d:--:%s", value.PeriodEnd, value.SourceID)] = true
 			}
-			costValue, costUnit := value.GetCostAndUnit()
+			costValue, _ := value.GetCostAndUnit()
 			if aggCosts, ok := aggregatedCosts[service]; !ok {
-				aggregatedCosts[service] = map[string]api.CostWithUnit{
-					costUnit: {
-						Cost: costValue,
-						Unit: costUnit,
-					},
-				}
+				aggregatedCosts[service] = costValue
 				continue
 			} else {
-				for i, aggCost := range aggCosts {
-					if v, ok := aggCosts[aggCost.Unit]; ok {
-						v.Cost += costValue
-						aggCosts[i] = v
-					} else {
-						aggCosts[aggCost.Unit] = api.CostWithUnit{
-							Cost: costValue,
-							Unit: costUnit,
-						}
-					}
-				}
+				aggregatedCosts[service] = aggCosts + costValue
 			}
-
 		}
 	}
 	return aggregatedCosts
 }
 
-func AggregateConnectionCosts(costs map[string][]summarizer.ConnectionCostSummary) map[string]map[string]api.CostWithUnit {
-	aggregatedCosts := make(map[string]map[string]api.CostWithUnit)
+func AggregateConnectionCosts(costs map[string][]summarizer.ConnectionCostSummary) map[string]float64 {
+	aggregatedCosts := make(map[string]float64)
 	for service, cost := range costs {
 		dateFlagMap := make(map[string]bool)
 		for _, value := range cost {
@@ -55,53 +38,14 @@ func AggregateConnectionCosts(costs map[string][]summarizer.ConnectionCostSummar
 			} else {
 				dateFlagMap[fmt.Sprintf("%d:--:%s", value.PeriodEnd, value.SourceID)] = true
 			}
-			costValue, costUnit := value.GetCostAndUnit()
+			costValue, _ := value.GetCostAndUnit()
 			if aggCosts, ok := aggregatedCosts[service]; !ok {
-				aggregatedCosts[service] = map[string]api.CostWithUnit{
-					costUnit: {
-						Cost: costValue,
-						Unit: costUnit,
-					},
-				}
+				aggregatedCosts[service] = costValue
 				continue
 			} else {
-				for i, aggCost := range aggCosts {
-					if v, ok := aggCosts[aggCost.Unit]; ok {
-						v.Cost += costValue
-						aggCosts[i] = v
-					} else {
-						aggCosts[aggCost.Unit] = api.CostWithUnit{
-							Cost: costValue,
-							Unit: costUnit,
-						}
-					}
-				}
+				aggregatedCosts[service] = aggCosts + costValue
 			}
-
 		}
 	}
 	return aggregatedCosts
-}
-
-func MergeCostMaps(costs ...map[string]api.CostWithUnit) map[string]api.CostWithUnit {
-	mergedCostsMap := make(map[string]api.CostWithUnit)
-	for _, costMap := range costs {
-		if costMap == nil {
-			continue
-		}
-		for _, cost := range costMap {
-			if v, ok := mergedCostsMap[cost.Unit]; !ok {
-				mergedCostsMap[cost.Unit] = cost
-			} else {
-				v.Cost += cost.Cost
-				mergedCostsMap[cost.Unit] = v
-			}
-		}
-	}
-
-	if len(mergedCostsMap) == 0 {
-		return nil
-	}
-
-	return mergedCostsMap
 }

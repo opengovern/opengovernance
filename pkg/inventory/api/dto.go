@@ -311,11 +311,6 @@ type SmartQueryItem struct {
 	Tags        map[string]string `json:"tags"`        // Tags
 }
 
-type CostTrendDataPoint struct {
-	Timestamp int64        `json:"timestamp"` // Time
-	Value     CostWithUnit `json:"value"`     // Cost
-}
-
 type ListQueryRequest struct {
 	TitleFilter    string      `json:"titleFilter"`    // Specifies the Title
 	ProviderFilter *SourceType `json:"providerFilter"` // Specifies the Provider
@@ -502,12 +497,10 @@ func (f FilterCloudResourceType) GetFilterName() string {
 }
 
 type FilterCost struct {
-	FilterType    FilterType              `json:"filterType"`
-	FilterID      string                  `json:"filterID"`
-	CloudProvider source.Type             `json:"cloudProvider"`
-	ServiceLabel  string                  `json:"serviceLabel"`
-	Cost          map[string]CostWithUnit `json:"cost"`
-	CostChange    map[string]float64      `json:"costChange,omitempty"`
+	FilterType    FilterType  `json:"filterType"`
+	FilterID      string      `json:"filterID"`
+	CloudProvider source.Type `json:"cloudProvider"`
+	ServiceLabel  string      `json:"serviceLabel"`
 }
 
 func (f FilterCost) GetFilterID() string {
@@ -545,12 +538,10 @@ func (f FilterInsightMetric) GetFilterName() string {
 }
 
 type CategoryNode struct {
-	CategoryID          string                  `json:"categoryID"`
-	CategoryName        string                  `json:"categoryName"`            // Name of the Category
-	ResourceCount       *int                    `json:"resourceCount,omitempty"` // Number of Resources of the category
-	ResourceCountChange *float64                `json:"resourceCountChange,omitempty"`
-	Cost                map[string]CostWithUnit `json:"cost,omitempty"` // The aggregation of all the services costs
-	CostChange          map[string]float64      `json:"costChange,omitempty"`
-	Subcategories       []CategoryNode          `json:"subcategories,omitempty"` // Subcategories sorted by ResourceCount [resources/category, ]
-	Filters             []Filter                `json:"filters,omitempty"`       // List of Filters associated with this Category
+	CategoryID          string         `json:"categoryID"`
+	CategoryName        string         `json:"categoryName"`            // Name of the Category
+	ResourceCount       *int           `json:"resourceCount,omitempty"` // Number of Resources of the category
+	ResourceCountChange *float64       `json:"resourceCountChange,omitempty"`
+	Subcategories       []CategoryNode `json:"subcategories,omitempty"` // Subcategories sorted by ResourceCount [resources/category, ]
+	Filters             []Filter       `json:"filters,omitempty"`       // List of Filters associated with this Category
 }

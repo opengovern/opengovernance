@@ -291,7 +291,7 @@ type ServiceCostSummary struct {
 	SummarizeJobID   uint               `json:"summarize_job_id"`
 	ServiceName      string             `json:"service_name"`
 	SourceID         string             `json:"source_id"`
-	SourceType       source.Type        `json:"source_type"`
+	Connector        source.Type        `json:"source_type"`
 	SourceJobID      uint               `json:"source_job_id"`
 	ResourceType     string             `json:"resource_type"`
 	Cost             any                `json:"cost"`
