@@ -1,8 +1,6 @@
 package api
 
 import (
-	"time"
-
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
@@ -27,9 +25,4 @@ type ListServiceMetricsResponse struct {
 type ListServiceMetadataResponse struct {
 	TotalServiceCount int       `json:"total_service_count"`
 	Services          []Service `json:"services"`
-}
-
-type CostTrendDatapoint struct {
-	Cost float64   `json:"count"`
-	Date time.Time `json:"date"`
 }

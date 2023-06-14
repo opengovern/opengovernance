@@ -60,7 +60,7 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		serviceCostSummary := costSummary.(*es.ServiceCostSummary)
 		serviceCostSummary.SummarizeJobID = b.summarizerJobID
 		serviceCostSummary.SummarizeJobTime = time.Now().Unix()
-		serviceCostSummary.SourceType = resource.SourceType
+		serviceCostSummary.Connector = resource.SourceType
 		serviceCostSummary.SourceID = resource.SourceID
 		serviceCostSummary.SourceJobID = resource.SourceJobID
 		serviceCostSummary.ResourceType = resource.ResourceType
@@ -162,7 +162,7 @@ func (b *costSummaryBuilder) Build() []kafka.Doc {
 			SummarizeJobID:   v.Base.SummarizeJobID,
 			ServiceName:      v.Base.ServiceName,
 			SourceID:         v.Base.SourceID,
-			SourceType:       v.Base.SourceType,
+			Connector:        v.Base.Connector,
 			SourceJobID:      v.Base.SourceJobID,
 			ResourceType:     v.Base.ResourceType,
 			ReportType:       v.Base.ReportType,
