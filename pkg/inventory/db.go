@@ -60,6 +60,21 @@ func (db Database) Initialize() error {
 		if err != nil {
 			return err
 		}
+		for tagKey, tagValue := range resourceType.Tags {
+			err = db.orm.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "tag_key"}},
+				DoUpdates: clause.AssignmentColumns([]string{"tag_value"}),
+			}).Create(&ResourceTypeTag{
+				ResourceType: resourceType.ResourceName,
+				Tag: model.Tag{
+					Key:   tagKey,
+					Value: tagValue,
+				},
+			}).Error
+			if err != nil {
+				return err
+			}
+		}
 	}
 	azureResourceTypes := azure.GetResourceTypesMap()
 	for _, resourceType := range azureResourceTypes {
@@ -85,6 +100,21 @@ func (db Database) Initialize() error {
 		}).Error
 		if err != nil {
 			return err
+		}
+		for tagKey, tagValue := range resourceType.Tags {
+			err = db.orm.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "tag_key"}},
+				DoUpdates: clause.AssignmentColumns([]string{"tag_value"}),
+			}).Create(&ResourceTypeTag{
+				ResourceType: resourceType.ResourceName,
+				Tag: model.Tag{
+					Key:   tagKey,
+					Value: tagValue,
+				},
+			}).Error
+			if err != nil {
+				return err
+			}
 		}
 	}
 
