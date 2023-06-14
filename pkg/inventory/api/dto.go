@@ -457,7 +457,6 @@ type ServiceSummary struct {
 	ServiceLabel  string      `json:"serviceLabel"`            // Service Label
 	ServiceName   string      `json:"serviceName"`             // Service Name
 	ResourceCount *int        `json:"resourceCount,omitempty"` // Number of Resources
-	Cost          *float64    `json:"cost,omitempty"`          // Cost
 }
 
 type ListResourceTypesResponse struct {

@@ -1380,7 +1380,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter insights by connector",
                         "name": "connector",
                         "in": "query"
@@ -1390,7 +1389,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1449,7 +1447,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1505,7 +1502,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1568,7 +1564,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter by connector",
                         "name": "connector",
                         "in": "query"
@@ -1725,7 +1720,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -2292,7 +2286,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2302,7 +2295,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2414,7 +2406,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2424,7 +2415,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2561,7 +2551,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2571,7 +2560,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2613,7 +2601,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query",
@@ -2663,7 +2650,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs",
                         "name": "connectionId",
                         "in": "query",
@@ -2769,7 +2755,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter insights by connector",
                         "name": "connector",
                         "in": "query"
@@ -2779,7 +2764,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -2789,7 +2773,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by insight id",
                         "name": "insightId",
                         "in": "query",
@@ -2877,7 +2860,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -2927,7 +2909,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -2984,7 +2965,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Filter by Connector",
                         "name": "connector",
                         "in": "query",
@@ -2995,7 +2975,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Filter by service name",
                         "name": "service",
                         "in": "query"
@@ -3005,7 +2984,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3074,7 +3052,7 @@
                         "BearerToken": []
                     }
                 ],
-                "description": "Gets a list of all workspace cloud services and their metadata, list of resource types and cost support.\nThe results could be filtered by cost support and tags.",
+                "description": "Gets a list of all workspace cloud services and their metadata, and list of resource types.\nThe results could be filtered by tags.",
                 "produces": [
                     "application/json"
                 ],
@@ -3093,7 +3071,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector",
                         "name": "connector",
                         "in": "query"
@@ -3103,15 +3080,8 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Filter by cost support",
-                        "name": "costSupport",
                         "in": "query"
                     },
                     {
@@ -3144,7 +3114,7 @@
                         "BearerToken": []
                     }
                 ],
-                "description": "Gets a single cloud service details and its metadata, list of resource types \u0026 cost support.",
+                "description": "Gets a single cloud service details and its metadata and list of resource types.",
                 "produces": [
                     "application/json"
                 ],
@@ -3213,7 +3183,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector types to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3223,7 +3192,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3268,7 +3236,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3278,7 +3245,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Service names to filter by",
                         "name": "servicename",
                         "in": "query"
@@ -3293,7 +3259,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3303,7 +3268,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3376,7 +3340,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3506,7 +3469,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3516,7 +3478,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Service names to filter by",
                         "name": "servicename",
                         "in": "query"
@@ -3531,7 +3492,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3541,7 +3501,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3573,86 +3532,6 @@
                             "items": {
                                 "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeTrendDatapoint"
                             }
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v2/services/composition/{key}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inventory"
-                ],
-                "summary": "Return tag values with most cost for the given key",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Tag key",
-                        "name": "key",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "How many top values to return default is 5",
-                        "name": "top",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for start of cost aggregation in epoch seconds",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "timestamp for end of cost aggregation in epoch seconds",
-                        "name": "endTime",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceCostCompositionResponse"
                         }
                     }
                 }
@@ -3692,7 +3571,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3702,7 +3580,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3762,7 +3639,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3777,7 +3653,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3787,30 +3662,29 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "timestamp for start of cost aggregation in epoch seconds",
+                        "description": "timestamp for old values in epoch seconds",
                         "name": "startTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "timestamp for end of cost aggregation in epoch seconds",
+                        "description": "timestamp for current values in epoch seconds",
                         "name": "endTime",
                         "in": "query"
                     },
                     {
                         "enum": [
                             "name",
-                            "cost"
+                            "count"
                         ],
                         "type": "string",
-                        "description": "Sort by field - default is cost",
+                        "description": "Sort by field - default is count",
                         "name": "sortBy",
                         "in": "query"
                     },
@@ -3867,20 +3741,19 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "timestamp for start of cost aggregation in epoch seconds",
+                        "description": "timestamp for old values in epoch seconds",
                         "name": "startTime",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "timestamp for end of cost aggregation in epoch seconds",
+                        "description": "timestamp for current values in epoch seconds",
                         "name": "endTime",
                         "in": "query"
                     }
@@ -3902,7 +3775,7 @@
                         "BearerToken": []
                     }
                 ],
-                "description": "Gets a summary of the services including the number of them and the API filters and a list of services with more details. Including connector, the resource counts and the cost.",
+                "description": "Gets a summary of the services including the number of them and the API filters and a list of services with more details. Including connector and the resource counts.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3934,23 +3807,10 @@
                     },
                     {
                         "type": "string",
-                        "description": "start time for cost calculation in epoch seconds",
-                        "name": "startTime",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "end time for cost calculation and time resource count in epoch seconds",
+                        "description": "time for resource count in epoch seconds",
                         "name": "endTime",
                         "in": "query",
                         "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "filter: minimum spent amount for the service in the specified time",
-                        "name": "minSpent",
-                        "in": "query"
                     },
                     {
                         "type": "integer",
@@ -3967,11 +3827,10 @@
                     {
                         "enum": [
                             "servicecode",
-                            "resourcecount",
-                            "cost"
+                            "resourcecount"
                         ],
                         "type": "string",
-                        "description": "column to sort by - default is cost",
+                        "description": "column to sort by - default is resourcecount",
                         "name": "sortBy",
                         "in": "query"
                     }
@@ -3993,7 +3852,7 @@
                         "BearerToken": []
                     }
                 ],
-                "description": "Get Cloud Service Summary for the specified service name. Including connector, the resource counts and the cost.",
+                "description": "Get Cloud Service Summary for the specified service name. Including connector, the resource counts.",
                 "produces": [
                     "application/json"
                 ],
@@ -4023,14 +3882,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "start time for cost calculation in epoch seconds",
-                        "name": "startTime",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "end time for cost calculation and time resource count in epoch seconds",
+                        "description": "time for resource count in epoch seconds",
                         "name": "endTime",
                         "in": "query",
                         "required": true
@@ -6059,7 +5911,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -6069,7 +5920,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Account IDs to filter by",
                         "name": "accountIds",
                         "in": "query"
@@ -6166,7 +6016,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Additional Resources",
                         "name": "resources",
                         "in": "formData"
@@ -8155,6 +8004,9 @@
                 "longTitle": {
                     "type": "string"
                 },
+                "oldTotalResultValue": {
+                    "type": "integer"
+                },
                 "query": {
                     "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query"
                 },
@@ -8169,9 +8021,6 @@
                 },
                 "totalResultValue": {
                     "type": "integer"
-                },
-                "totalResultValueChangePercent": {
-                    "type": "number"
                 }
             }
         },
@@ -9420,26 +9269,6 @@
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceCostCompositionResponse": {
-            "type": "object",
-            "properties": {
-                "others": {
-                    "type": "number"
-                },
-                "top_values": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "number"
-                    }
-                },
-                "total_count": {
-                    "type": "number"
-                },
-                "total_value_count": {
-                    "type": "integer"
-                }
-            }
-        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetadataResponse": {
             "type": "object",
             "properties": {
@@ -9463,8 +9292,8 @@
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service"
                     }
                 },
-                "total_cost": {
-                    "type": "number"
+                "total_count": {
+                    "type": "integer"
                 },
                 "total_services": {
                     "type": "integer"
@@ -9825,15 +9654,6 @@
                 "connector": {
                     "$ref": "#/definitions/source.Type"
                 },
-                "cost": {
-                    "type": "number"
-                },
-                "end_daily_cost": {
-                    "type": "number"
-                },
-                "is_cost_supported": {
-                    "type": "boolean"
-                },
                 "logo_uri": {
                     "type": "string"
                 },
@@ -9854,9 +9674,6 @@
                 },
                 "service_name": {
                     "type": "string"
-                },
-                "start_daily_cost": {
-                    "type": "number"
                 },
                 "tags": {
                     "type": "object",
@@ -9895,10 +9712,6 @@
                             "$ref": "#/definitions/source.Type"
                         }
                     ]
-                },
-                "cost": {
-                    "description": "Cost",
-                    "type": "number"
                 },
                 "resourceCount": {
                     "description": "Number of Resources",

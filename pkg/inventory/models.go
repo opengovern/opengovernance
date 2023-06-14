@@ -32,6 +32,7 @@ type ResourceType struct {
 	ResourceType  string      `json:"resource_type" gorm:"primaryKey"`
 	ResourceLabel string      `json:"resource_name"`
 	ServiceName   string      `json:"service_name" gorm:"index"`
+	DoSummarize   bool        `json:"do_summarize"`
 	LogoURI       *string     `json:"logo_uri,omitempty"`
 
 	Tags    []ResourceTypeTag   `gorm:"foreignKey:ResourceType;references:ResourceType;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
@@ -91,9 +92,6 @@ func (s Service) ToApi() api.Service {
 	}
 	for _, resourceType := range s.ResourceTypes {
 		apiService.ResourceTypes = append(apiService.ResourceTypes, resourceType.ToApi())
-	}
-	if v, ok := s.GetTagsMap()[model.KaytuServiceCostTag]; ok && len(v) > 0 {
-		apiService.IsCostSupported = true
 	}
 	return apiService
 }
