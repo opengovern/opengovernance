@@ -3060,27 +3060,6 @@ paths:
       summary: Get Role Details
       tags:
       - roles
-  /auth/api/v1/user/{user_id}:
-    get:
-      description: Get user details by user id.
-      parameters:
-      - description: userId
-        in: path
-        name: user_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
-      security:
-      - BearerToken: []
-      summary: Get User details
-      tags:
-      - users
   /auth/api/v1/user/{user_id}/workspace/membership:
     get:
       description: Returns a list of workspaces and the user role in it for the specified
@@ -3101,6 +3080,27 @@ paths:
       security:
       - BearerToken: []
       summary: User Workspaces
+      tags:
+      - users
+  /auth/api/v1/user/details:
+    get:
+      description: Get user details by user id.
+      parameters:
+      - description: User ID
+        in: query
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
+      security:
+      - BearerToken: []
+      summary: Get User details
       tags:
       - users
   /auth/api/v1/user/invite:
@@ -3681,7 +3681,8 @@ paths:
         in: query
         name: tag
         type: string
-      - description: filter insights by connector
+      - collectionFormat: csv
+        description: filter insights by connector
         in: query
         items:
           enum:
@@ -3691,7 +3692,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -3728,7 +3730,8 @@ paths:
         name: insightId
         required: true
         type: string
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -3763,7 +3766,8 @@ paths:
         name: insightId
         required: true
         type: string
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -3799,7 +3803,8 @@ paths:
     get:
       description: Listing insight metadata
       parameters:
-      - description: filter by connector
+      - collectionFormat: csv
+        description: filter by connector
         in: query
         items:
           enum:
@@ -3900,7 +3905,8 @@ paths:
         name: provider
         required: true
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4273,7 +4279,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4283,7 +4290,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4352,7 +4360,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4362,7 +4371,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4449,7 +4459,8 @@ paths:
         name: count
         required: true
         type: integer
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4459,7 +4470,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4484,7 +4496,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4515,7 +4528,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Connection IDs
+      - collectionFormat: csv
+        description: Connection IDs
         in: query
         items:
           type: string
@@ -4581,7 +4595,8 @@ paths:
       description: List all insight results for the given insightIds - this mostly
         for internal usage, use compliance api for full api
       parameters:
-      - description: filter insights by connector
+      - collectionFormat: csv
+        description: filter insights by connector
         in: query
         items:
           enum:
@@ -4591,13 +4606,15 @@ paths:
           type: string
         name: connector
         type: array
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
         name: connectionId
         type: array
-      - description: filter the result by insight id
+      - collectionFormat: csv
+        description: filter the result by insight id
         in: query
         items:
           type: string
@@ -4632,7 +4649,8 @@ paths:
         name: insightId
         required: true
         type: string
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -4664,7 +4682,8 @@ paths:
         name: insightId
         required: true
         type: string
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -4722,7 +4741,8 @@ paths:
         Gets a list of all resource types in workspace and their metadata including service name.
         The results could be filtered by provider name and service name.
       parameters:
-      - description: Filter by Connector
+      - collectionFormat: csv
+        description: Filter by Connector
         in: query
         items:
           enum:
@@ -4733,13 +4753,15 @@ paths:
         name: connector
         required: true
         type: array
-      - description: Filter by service name
+      - collectionFormat: csv
+        description: Filter by service name
         in: query
         items:
           type: string
         name: service
         type: array
-      - description: Key-Value tags in key=value format to filter by
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
@@ -4793,7 +4815,8 @@ paths:
         Gets a list of all workspace cloud services and their metadata, and list of resource types.
         The results could be filtered by tags.
       parameters:
-      - description: Connector
+      - collectionFormat: csv
+        description: Connector
         in: query
         items:
           enum:
@@ -4803,7 +4826,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Key-Value tags in key=value format to filter by
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
@@ -4866,7 +4890,8 @@ paths:
         name: top
         required: true
         type: integer
-      - description: Connector types to filter by
+      - collectionFormat: csv
+        description: Connector types to filter by
         in: query
         items:
           enum:
@@ -4876,7 +4901,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4903,19 +4929,22 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Key-Value tags in key=value format to filter by
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - description: Service names to filter by
+      - collectionFormat: csv
+        description: Service names to filter by
         in: query
         items:
           type: string
         name: servicename
         type: array
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4925,7 +4954,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4972,7 +5002,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5054,19 +5085,22 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Key-Value tags in key=value format to filter by
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - description: Service names to filter by
+      - collectionFormat: csv
+        description: Service names to filter by
         in: query
         items:
           type: string
         name: servicename
         type: array
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5076,7 +5110,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5118,7 +5153,8 @@ paths:
         in: query
         name: tag
         type: string
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5128,7 +5164,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5166,13 +5203,15 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Key-Value tags in key=value format to filter by
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5182,7 +5221,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5234,7 +5274,8 @@ paths:
         name: serviceName
         required: true
         type: string
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -6586,13 +6627,15 @@ paths:
       - application/json
       description: Get list of stacks
       parameters:
-      - description: Key-Value tags in key=value format to filter by
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - description: Account IDs to filter by
+      - collectionFormat: csv
+        description: Account IDs to filter by
         in: query
         items:
           type: string
@@ -6760,7 +6803,8 @@ paths:
         in: formData
         name: tag
         type: string
-      - description: Additional Resources
+      - collectionFormat: csv
+        description: Additional Resources
         in: formData
         items:
           type: string
