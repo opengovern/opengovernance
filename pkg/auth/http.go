@@ -8,15 +8,16 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/email"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-	metadataClient "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/kaytu-io/kaytu-util/pkg/email"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	metadataClient "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 
@@ -56,7 +57,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/user/:user_id/workspace/membership", httpserver.AuthorizeHandler(r.GetWorkspaceMembership, api.AdminRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
 	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api.EditorRole))
-	v1.GET("/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api.EditorRole))
+	v1.GET("/user/details", httpserver.AuthorizeHandler(r.GetUserDetails, api.EditorRole))
 	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
 	v1.POST("/user/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
 	v1.DELETE("/user/invite", httpserver.AuthorizeHandler(r.DeleteInvitation, api.AdminRole))
@@ -439,18 +440,18 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			users
 //	@Produce		json
-//	@Param			user_id	path		string	true	"userId"
+//	@Param			userId	query		string	true	"User ID"
 //	@Success		200		{object}	api.GetUserResponse
-//	@Router			/auth/api/v1/user/{user_id} [get]
+//	@Router			/auth/api/v1/user/details [get]
 func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
-	userID := ctx.Param("user_id")
+	userID := ctx.QueryParam("userId")
 	user, err := r.auth0Service.GetUser(userID)
 	if err != nil {
 		return err
 	}
 	hasARole := false
-	for ws, _ := range user.AppMetadata.WorkspaceAccess {
+	for ws := range user.AppMetadata.WorkspaceAccess {
 		if ws == workspaceID {
 			hasARole = true
 			break
