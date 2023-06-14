@@ -885,7 +885,7 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 		}
 	}
 	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).Add(-1 * 30 * 24 * time.Hour).Unix()
+	startTime := time.Unix(endTime, 0).AddDate(0, -1, 0).Unix()
 	if startTimeStr != "" {
 		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
 		if err != nil {
@@ -1216,7 +1216,7 @@ func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 		}
 	}
 	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).Add(-1 * 30 * 24 * time.Hour).Unix()
+	startTime := time.Unix(endTime, 0).AddDate(0, -1, 0).Unix()
 	if startTimeStr != "" {
 		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
 		if err != nil {
@@ -1298,7 +1298,7 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 		}
 	}
 	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).Add(-1 * 30 * 24 * time.Hour).Unix()
+	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
 	if startTimeStr != "" {
 		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
 		if err != nil {
