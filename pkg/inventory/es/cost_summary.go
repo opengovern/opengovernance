@@ -406,9 +406,10 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs [
 
 type FetchDailyCostHistoryByServicesAtTimeResponse struct {
 	Aggregations struct {
-		SummarizeJobIDGroup struct {
+		ServiceNameGroup struct {
 			Buckets []struct {
-				ServiceNameGroup struct {
+				Key               string `json:"key"`
+				ConnectionIDGroup struct {
 					Buckets []struct {
 						Key  string `json:"key"`
 						Hits struct {
@@ -419,9 +420,9 @@ type FetchDailyCostHistoryByServicesAtTimeResponse struct {
 							} `json:"hits"`
 						} `json:"hits"`
 					} `json:"buckets"`
-				} `json:"service_name_group"`
+				} `json:"connection_id_group"`
 			} `json:"buckets"`
-		} `json:"summarize_job_id_group"`
+		} `json:"service_name_group"`
 	} `json:"aggregations"`
 }
 
@@ -465,24 +466,21 @@ func FetchDailyCostHistoryByServicesAtTime(client keibi.Client, connectionIDs []
 		},
 	}
 	res["aggs"] = map[string]any{
-		"summarize_job_id_group": map[string]any{
+		"service_name_group": map[string]any{
 			"terms": map[string]any{
-				"field": "summarize_job_id",
-				"size":  1,
-				"order": map[string]string{
-					"_term": "desc",
-				},
+				"field": "service_name",
+				"size":  size,
 			},
 			"aggs": map[string]any{
-				"service_name_group": map[string]any{
+				"connection_id_group": map[string]any{
 					"terms": map[string]any{
-						"field": "service_name",
+						"field": "source_id",
 						"size":  size,
 					},
 					"aggs": map[string]any{
 						"hits": map[string]any{
 							"top_hits": map[string]any{
-								"size": size,
+								"size": 1,
 								"sort": map[string]string{
 									"period_end": "desc",
 								},
@@ -507,10 +505,10 @@ func FetchDailyCostHistoryByServicesAtTime(client keibi.Client, connectionIDs []
 	}
 
 	result := make(map[string][]summarizer.ServiceCostSummary)
-	for _, bucket := range response.Aggregations.SummarizeJobIDGroup.Buckets {
-		for _, serviceBucket := range bucket.ServiceNameGroup.Buckets {
-			for _, hit := range serviceBucket.Hits.Hits.Hits {
-				result[serviceBucket.Key] = append(result[serviceBucket.Key], hit.Source)
+	for _, bucket := range response.Aggregations.ServiceNameGroup.Buckets {
+		for _, connectionBucket := range bucket.ConnectionIDGroup.Buckets {
+			for _, hit := range connectionBucket.Hits.Hits.Hits {
+				result[bucket.Key] = append(result[bucket.Key], hit.Source)
 			}
 		}
 	}
