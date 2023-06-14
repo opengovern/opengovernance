@@ -3060,6 +3060,27 @@ paths:
       summary: Get Role Details
       tags:
       - roles
+  /auth/api/v1/user/{user_id}:
+    get:
+      description: Get user details by user id.
+      parameters:
+      - description: userId
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
+      security:
+      - BearerToken: []
+      summary: Get User details
+      tags:
+      - users
   /auth/api/v1/user/{user_id}/workspace/membership:
     get:
       description: Returns a list of workspaces and the user role in it for the specified
@@ -3080,27 +3101,6 @@ paths:
       security:
       - BearerToken: []
       summary: User Workspaces
-      tags:
-      - users
-  /auth/api/v1/user/details:
-    get:
-      description: Get user details by user id.
-      parameters:
-      - description: User ID
-        in: query
-        name: userId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
-      security:
-      - BearerToken: []
-      summary: Get User details
       tags:
       - users
   /auth/api/v1/user/invite:

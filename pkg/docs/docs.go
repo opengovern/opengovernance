@@ -385,40 +385,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/api/v1/user/details": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Get user details by user id.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Get User details",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User ID",
-                        "name": "userId",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/auth/api/v1/user/invite": {
             "post": {
                 "security": [
@@ -563,6 +529,40 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/api/v1/user/{user_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get user details by user id.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get User details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "userId",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse"
                         }
                     }
                 }
