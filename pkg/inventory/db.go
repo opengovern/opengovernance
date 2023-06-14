@@ -50,11 +50,12 @@ func (db Database) Initialize() error {
 		}
 		err = db.orm.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "resource_type"}},
-			DoUpdates: clause.AssignmentColumns([]string{"connector", "resource_label", "service_name"}),
+			DoUpdates: clause.AssignmentColumns([]string{"connector", "resource_label", "service_name", "do_summarize"}),
 		}).Create(&ResourceType{
 			Connector:     source.CloudAWS,
 			ResourceType:  resourceType.ResourceName,
 			ResourceLabel: resourceType.ResourceLabel,
+			DoSummarize:   resourceType.Summarize,
 			ServiceName:   strings.ToLower(resourceType.ServiceName),
 		}).Error
 		if err != nil {
@@ -62,8 +63,8 @@ func (db Database) Initialize() error {
 		}
 		for tagKey, tagValue := range resourceType.Tags {
 			err = db.orm.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "tag_key"}},
-				DoUpdates: clause.AssignmentColumns([]string{"tag_value"}),
+				Columns:   []clause.Column{{Name: "key"}, {Name: "resource_type"}},
+				DoUpdates: clause.AssignmentColumns([]string{"value"}),
 			}).Create(&ResourceTypeTag{
 				ResourceType: resourceType.ResourceName,
 				Tag: model.Tag{
@@ -91,11 +92,12 @@ func (db Database) Initialize() error {
 		}
 		err = db.orm.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "resource_type"}},
-			DoUpdates: clause.AssignmentColumns([]string{"connector", "resource_label", "service_name"}),
+			DoUpdates: clause.AssignmentColumns([]string{"connector", "resource_label", "service_name", "do_summarize"}),
 		}).Create(&ResourceType{
 			Connector:     source.CloudAzure,
 			ResourceType:  resourceType.ResourceName,
 			ResourceLabel: resourceType.ResourceLabel,
+			DoSummarize:   resourceType.Summarize,
 			ServiceName:   strings.ToLower(resourceType.ServiceName),
 		}).Error
 		if err != nil {
@@ -103,8 +105,8 @@ func (db Database) Initialize() error {
 		}
 		for tagKey, tagValue := range resourceType.Tags {
 			err = db.orm.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "tag_key"}},
-				DoUpdates: clause.AssignmentColumns([]string{"tag_value"}),
+				Columns:   []clause.Column{{Name: "key"}, {Name: "resource_type"}},
+				DoUpdates: clause.AssignmentColumns([]string{"value"}),
 			}).Create(&ResourceTypeTag{
 				ResourceType: resourceType.ResourceName,
 				Tag: model.Tag{

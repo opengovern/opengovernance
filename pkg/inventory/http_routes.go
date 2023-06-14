@@ -88,7 +88,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	servicesV2.GET("/tag/:key", httpserver.AuthorizeHandler(h.GetServiceTag, api3.ViewerRole))
 	servicesV2.GET("/metric", httpserver.AuthorizeHandler(h.ListServiceMetricsHandler, api3.ViewerRole))
 	servicesV2.GET("/metric/:serviceName", httpserver.AuthorizeHandler(h.GetServiceMetricsHandler, api3.ViewerRole))
-	servicesV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListServiceComposition, api3.ViewerRole))
 	servicesV2.GET("/cost/trend", httpserver.AuthorizeHandler(h.ListServiceCostTrend, api3.ViewerRole))
 	servicesV2.GET("/summary", httpserver.AuthorizeHandler(h.ListServiceSummaries, api3.ViewerRole))
 	servicesV2.GET("/summary/:serviceName", httpserver.AuthorizeHandler(h.GetServiceSummary, api3.ViewerRole))
@@ -1006,9 +1005,9 @@ func (h *HttpHandler) GetServiceTag(ctx echo.Context) error {
 //	@Param		tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param		startTime		query		string			false	"timestamp for start of cost aggregation in epoch seconds"
-//	@Param		endTime			query		string			false	"timestamp for end of cost aggregation in epoch seconds"
-//	@Param		sortBy			query		string			false	"Sort by field - default is cost"	Enums(name,cost)
+//	@Param		startTime		query		string			false	"timestamp for old values in epoch seconds"
+//	@Param		endTime			query		string			false	"timestamp for current values in epoch seconds"
+//	@Param		sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count)
 //	@Param		pageSize		query		int				false	"page size - default is 20"
 //	@Param		pageNumber		query		int				false	"page number - default is 1"
 //	@Success	200				{object}	api.ListServiceMetricsResponse
@@ -1040,9 +1039,9 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 	}
 	sortBy := strings.ToLower(ctx.QueryParam("sortBy"))
 	if sortBy == "" {
-		sortBy = "cost"
+		sortBy = "count"
 	}
-	if sortBy != "name" && sortBy != "cost" {
+	if sortBy != "name" && sortBy != "count" {
 		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
 	}
 
@@ -1050,46 +1049,16 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	costFilterNamesMap := make(map[string]bool)
 	resourceTypeMap := make(map[string]int)
 	for _, service := range services {
-		if v, ok := service.GetTagsMap()[model.KaytuServiceCostTag]; ok {
-			for _, costFilterName := range v {
-				costFilterNamesMap[costFilterName] = true
-			}
-		}
 		for _, resourceType := range service.ResourceTypes {
 			resourceTypeMap[strings.ToLower(resourceType.ResourceType)] = 0
 		}
-	}
-	costFilterNames := make([]string, 0, len(costFilterNamesMap))
-	for costFilterName := range costFilterNamesMap {
-		costFilterNames = append(costFilterNames, costFilterName)
 	}
 	resourceTypeNames := make([]string, 0, len(resourceTypeMap))
 	for resourceType := range resourceTypeMap {
 		resourceTypeNames = append(resourceTypeNames, resourceType)
 	}
-
-	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, connectionIDs, connectorTypes, costFilterNames, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	aggregatedCostHits := internal.AggregateServiceCosts(costHits)
-	if err != nil {
-		return err
-	}
-
-	endTimeHitsRaw, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, connectorTypes, costFilterNames, time.Unix(endTime, 0), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	endTimeHits := internal.AggregateServiceCosts(endTimeHitsRaw)
-	startTimeHitsRaw, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, connectorTypes, costFilterNames, time.Unix(startTime, 0), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	startTimeHits := internal.AggregateServiceCosts(startTimeHitsRaw)
 
 	resourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
 	if err != nil {
@@ -1100,67 +1069,46 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 		return err
 	}
 
-	type serviceCosts struct {
-		totalCost float64
-		startCost float64
-		endCost   float64
-	}
-
+	totalCount := 0
 	apiServices := make([]api.Service, 0, len(services))
-	totalCost := float64(0)
 	for _, service := range services {
 		apiService := service.ToApi()
-		serviceCost := serviceCosts{}
-		if v, ok := service.GetTagsMap()[model.KaytuServiceCostTag]; ok {
-			for _, costFilterName := range v {
-				if costWithUnit, ok := aggregatedCostHits[costFilterName]; ok {
-					defaultCost := costWithUnit[DefaultCurrency]
-					serviceCost.totalCost += defaultCost.Cost
-					if startTimeHit, ok := startTimeHits[costFilterName]; ok {
-						serviceCost.startCost += startTimeHit[DefaultCurrency].Cost
-					}
-					if endTimeHit, ok := endTimeHits[costFilterName]; ok {
-						serviceCost.endCost += endTimeHit[DefaultCurrency].Cost
-					}
-					totalCost += defaultCost.Cost
-				}
-			}
-		}
-		apiService.Cost = &serviceCost.totalCost
-		apiService.StartDailyCost = &serviceCost.startCost
-		apiService.EndDailyCost = &serviceCost.endCost
 		for _, resourceType := range service.ResourceTypes {
 			if resourceTypeCount, ok := resourceTypeCounts[strings.ToLower(resourceType.ResourceType)]; ok {
 				cnt := &resourceTypeCount
 				apiService.ResourceCount = utils.PAdd(apiService.ResourceCount, cnt)
+				totalCount += resourceTypeCount
 			}
 			if oldResourceTypeCount, ok := oldResourceTypeCounts[strings.ToLower(resourceType.ResourceType)]; ok {
 				cnt := &oldResourceTypeCount
 				apiService.OldResourceCount = utils.PAdd(apiService.OldResourceCount, cnt)
 			}
 		}
-
 		apiServices = append(apiServices, apiService)
 	}
+
 	switch sortBy {
 	case "name":
 		sort.Slice(apiServices, func(i, j int) bool {
 			return apiServices[i].ServiceName < apiServices[j].ServiceName
 		})
-	case "cost":
+	case "count":
 		sort.Slice(apiServices, func(i, j int) bool {
-			if apiServices[i].Cost == nil {
+			if apiServices[i].ResourceCount == nil {
 				return false
 			}
-			if apiServices[j].Cost == nil {
+			if apiServices[j].ResourceCount == nil {
 				return true
 			}
-			return *apiServices[i].Cost > *apiServices[j].Cost
+			if *apiServices[i].ResourceCount == *apiServices[j].ResourceCount {
+				return apiServices[i].ServiceName < apiServices[j].ServiceName
+			}
+			return *apiServices[i].ResourceCount > *apiServices[j].ResourceCount
 		})
 	}
 
 	result := api.ListServiceMetricsResponse{
-		TotalCost:     totalCost,
+		TotalCount:    totalCount,
 		TotalServices: len(apiServices),
 		Services:      utils.Paginate(pageNumber, pageSize, apiServices),
 	}
@@ -1176,8 +1124,8 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 //	@Produce	json
 //	@Param		serviceName		path		string		true	"ServiceName"
 //	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		startTime		query		string		false	"timestamp for start of cost aggregation in epoch seconds"
-//	@Param		endTime			query		string		false	"timestamp for end of cost aggregation in epoch seconds"
+//	@Param		startTime		query		string		false	"timestamp for old values in epoch seconds"
+//	@Param		endTime			query		string		false	"timestamp for current values in epoch seconds"
 //	@Success	200				{object}	api.Service
 //	@Router		/inventory/api/v2/services/metric/{serviceName} [get]
 func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
@@ -1205,44 +1153,14 @@ func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	costFilterNamesMap := make(map[string]bool)
 	resourceTypeMap := make(map[string]int)
-	if v, ok := service.GetTagsMap()[model.KaytuServiceCostTag]; ok {
-		for _, costFilterName := range v {
-			costFilterNamesMap[costFilterName] = true
-		}
-	}
 	for _, resourceType := range service.ResourceTypes {
 		resourceTypeMap[strings.ToLower(resourceType.ResourceType)] = 0
-	}
-	costFilterNames := make([]string, 0, len(costFilterNamesMap))
-	for costFilterName := range costFilterNamesMap {
-		costFilterNames = append(costFilterNames, costFilterName)
 	}
 	resourceTypeNames := make([]string, 0, len(resourceTypeMap))
 	for resourceType := range resourceTypeMap {
 		resourceTypeNames = append(resourceTypeNames, resourceType)
 	}
-
-	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, connectionIDs, nil, costFilterNames, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	aggregatedCostHits := internal.AggregateServiceCosts(costHits)
-	if err != nil {
-		return err
-	}
-
-	endTimeHitsRaw, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, nil, costFilterNames, time.Unix(endTime, 0), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	endTimeHits := internal.AggregateServiceCosts(endTimeHitsRaw)
-	startTimeHitsRaw, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, nil, costFilterNames, time.Unix(startTime, 0), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	startTimeHits := internal.AggregateServiceCosts(startTimeHitsRaw)
 
 	resourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
 	if err != nil {
@@ -1253,31 +1171,7 @@ func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 		return err
 	}
 
-	type serviceCosts struct {
-		totalCost float64
-		startCost float64
-		endCost   float64
-	}
-
 	apiService := service.ToApi()
-	serviceCost := serviceCosts{}
-	if v, ok := service.GetTagsMap()[model.KaytuServiceCostTag]; ok {
-		for _, costFilterName := range v {
-			if costWithUnit, ok := aggregatedCostHits[costFilterName]; ok {
-				defaultCost := costWithUnit[DefaultCurrency]
-				serviceCost.totalCost += defaultCost.Cost
-				if startTimeHit, ok := startTimeHits[costFilterName]; ok {
-					serviceCost.startCost += startTimeHit[DefaultCurrency].Cost
-				}
-				if endTimeHit, ok := endTimeHits[costFilterName]; ok {
-					serviceCost.endCost += endTimeHit[DefaultCurrency].Cost
-				}
-			}
-		}
-	}
-	apiService.Cost = &serviceCost.totalCost
-	apiService.StartDailyCost = &serviceCost.startCost
-	apiService.EndDailyCost = &serviceCost.endCost
 	for _, resourceType := range service.ResourceTypes {
 		if resourceTypeCount, ok := resourceTypeCounts[strings.ToLower(resourceType.ResourceType)]; ok {
 			cnt := &resourceTypeCount
@@ -1289,123 +1183,6 @@ func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 		}
 	}
 	return ctx.JSON(http.StatusOK, apiService)
-}
-
-// ListServiceComposition godoc
-//
-//	@Summary	Return tag values with most cost for the given key
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		key				path		string			true	"Tag key"
-//	@Param		top				query		int				true	"How many top values to return default is 5"
-//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param		startTime		query		string			false	"timestamp for start of cost aggregation in epoch seconds"
-//	@Param		endTime			query		string			false	"timestamp for end of cost aggregation in epoch seconds"
-//	@Success	200				{object}	api.ListServiceCostCompositionResponse
-//	@Router		/inventory/api/v2/services/composition/{key} [get]
-func (h *HttpHandler) ListServiceComposition(ctx echo.Context) error {
-	var err error
-	tagKey := ctx.Param("key")
-	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
-		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
-	}
-	topStr := ctx.QueryParam("top")
-	top := int64(5)
-	if topStr != "" {
-		top, err = strconv.ParseInt(topStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid top value")
-		}
-
-	}
-	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now().Unix()
-	if endTimeStr != "" {
-		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
-	if startTimeStr != "" {
-		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-	}
-
-	services, err := h.db.ListFilteredServices(map[string][]string{tagKey: nil}, connectorTypes)
-	if err != nil {
-		return err
-	}
-	costFilterNamesMap := make(map[string]bool)
-	for _, service := range services {
-		if v, ok := service.GetTagsMap()[model.KaytuServiceCostTag]; ok {
-			for _, costFilterName := range v {
-				costFilterNamesMap[costFilterName] = true
-			}
-		}
-	}
-	costFilterNames := make([]string, 0, len(costFilterNamesMap))
-	for costFilterName := range costFilterNamesMap {
-		costFilterNames = append(costFilterNames, costFilterName)
-	}
-
-	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, connectionIDs, connectorTypes, costFilterNames, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	aggregatedCostHits := internal.AggregateServiceCosts(costHits)
-	if err != nil {
-		return err
-	}
-
-	valueCostMap := make(map[string]float64)
-	totalCount := float64(0)
-	for _, service := range services {
-		for _, tagValue := range service.GetTagsMap()[tagKey] {
-			for _, costFilterName := range service.GetTagsMap()[model.KaytuServiceCostTag] {
-				valueCostMap[tagValue] += aggregatedCostHits[costFilterName][DefaultCurrency].Cost
-				totalCount += aggregatedCostHits[costFilterName][DefaultCurrency].Cost
-			}
-			break
-		}
-	}
-
-	type strFloatPair struct {
-		str   string
-		float float64
-	}
-	valueCostPairs := make([]strFloatPair, 0, len(valueCostMap))
-	for value, count := range valueCostMap {
-		valueCostPairs = append(valueCostPairs, strFloatPair{str: value, float: count})
-	}
-	sort.Slice(valueCostPairs, func(i, j int) bool {
-		return valueCostPairs[i].float > valueCostPairs[j].float
-	})
-
-	apiResult := api.ListServiceCostCompositionResponse{
-		TotalCost:       totalCount,
-		TotalValueCount: len(valueCostMap),
-		TopValues:       make(map[string]float64),
-		Others:          0,
-	}
-
-	for i, pair := range valueCostPairs {
-		if i < int(top) {
-			apiResult.TopValues[pair.str] = pair.float
-		} else {
-			apiResult.Others += pair.float
-		}
-	}
-
-	return ctx.JSON(http.StatusOK, apiResult)
 }
 
 // ListServiceCostTrend godoc
@@ -1767,7 +1544,7 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 // ListServiceSummaries godoc
 //
 //	@Summary		Get Cloud Services Summary
-//	@Description	Gets a summary of the services including the number of them and the API filters and a list of services with more details. Including connector, the resource counts and the cost.
+//	@Description	Gets a summary of the services including the number of them and the API filters and a list of services with more details. Including connector and the resource counts.
 //	@Security		BearerToken
 //	@Tags			benchmarks
 //	@Accept			json
@@ -1775,12 +1552,10 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 //	@Param			connectionId	query		string	false	"filter: Connection ID"
 //	@Param			connector		query		string	false	"filter: Connector"
 //	@Param			tag				query		string	false	"filter: tag for the services"
-//	@Param			startTime		query		string	true	"start time for cost calculation in epoch seconds"
-//	@Param			endTime			query		string	true	"end time for cost calculation and time resource count in epoch seconds"
-//	@Param			minSpent		query		int		false	"filter: minimum spent amount for the service in the specified time"
+//	@Param			endTime			query		string	true	"time for resource count in epoch seconds"
 //	@Param			pageSize		query		int		false	"page size - default is 20"
 //	@Param			pageNumber		query		int		false	"page number - default is 1"
-//	@Param			sortBy			query		string	false	"column to sort by - default is cost"	Enums(servicecode,resourcecount,cost)
+//	@Param			sortBy			query		string	false	"column to sort by - default is resourcecount"	Enums(servicecode,resourcecount)
 //	@Success		200				{object}	api.ListServiceSummariesResponse
 //	@Router			/inventory/api/v2/services/summary [get]
 func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
@@ -1801,24 +1576,6 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid epoch time")
 		}
 	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
-	if startTimeStr != "" {
-		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid epoch time")
-		}
-	}
-
-	minSpentStr := ctx.QueryParam("minSpent")
-	var minSpent *float64
-	if minSpentStr != "" {
-		minSpentF, err := strconv.ParseFloat(minSpentStr, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "minSpent is not a valid integer")
-		}
-		minSpent = &minSpentF
-	}
 
 	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
 	if err != nil {
@@ -1826,10 +1583,9 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 	}
 	sortBy := ctx.QueryParam("sortBy")
 	if sortBy == "" {
-		sortBy = "cost"
+		sortBy = "resourcecount"
 	}
 
-	costFilterMap := make(map[string]float64)
 	resourceTypeMap := make(map[string]int64)
 	services, err := h.db.ListFilteredServices(tagMap, connectors)
 	if err != nil {
@@ -1837,27 +1593,14 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 	}
 
 	for _, service := range services {
-		for _, costFilterName := range service.GetTagsMap()[model.KaytuServiceCostTag] {
-			costFilterMap[costFilterName] = 0
-		}
 		for _, resourceType := range service.ResourceTypes {
 			resourceTypeMap[strings.ToLower(resourceType.ResourceType)] = 0
 		}
-	}
-	costFilterNames := make([]string, 0, len(costFilterMap))
-	for costFilterName := range costFilterMap {
-		costFilterNames = append(costFilterNames, costFilterName)
 	}
 	resourceTypeNames := make([]string, 0, len(resourceTypeMap))
 	for resourceTypeName := range resourceTypeMap {
 		resourceTypeNames = append(resourceTypeNames, resourceTypeName)
 	}
-
-	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, connectionIDs, connectors, costFilterNames, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	costs := internal.AggregateServiceCosts(costHits)
 
 	resourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, connectors, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
 	if err != nil {
@@ -1871,12 +1614,6 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 			ServiceLabel:  service.ServiceLabel,
 			ServiceName:   service.ServiceName,
 			ResourceCount: nil,
-			Cost:          nil,
-		}
-		for _, costFilterName := range service.GetTagsMap()[model.KaytuServiceCostTag] {
-			if cost, ok := costs[costFilterName]; ok {
-				serviceSummary.Cost = utils.PAdd(serviceSummary.Cost, utils.GetPointer(cost[DefaultCurrency].Cost))
-			}
 		}
 		for _, resourceType := range service.ResourceTypes {
 			if resourceTypeCount, ok := resourceTypeCounts[strings.ToLower(resourceType.ResourceType)]; ok {
@@ -1887,28 +1624,8 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 		serviceSummaries = append(serviceSummaries, serviceSummary)
 	}
 
-	if minSpent != nil {
-		filteredServiceSummaries := make([]api.ServiceSummary, 0, len(serviceSummaries))
-		for _, serviceSummary := range serviceSummaries {
-			if serviceSummary.Cost != nil && *serviceSummary.Cost >= *minSpent {
-				filteredServiceSummaries = append(filteredServiceSummaries, serviceSummary)
-			}
-		}
-		serviceSummaries = filteredServiceSummaries
-	}
-
 	sort.Slice(serviceSummaries, func(i, j int) bool {
 		switch sortBy {
-		case "cost":
-			if serviceSummaries[i].Cost == nil {
-				return false
-			}
-			if serviceSummaries[j].Cost == nil {
-				return true
-			}
-			if *serviceSummaries[i].Cost != *serviceSummaries[j].Cost {
-				return *serviceSummaries[i].Cost > *serviceSummaries[j].Cost
-			}
 		case "resourcecount":
 			if serviceSummaries[i].ResourceCount == nil {
 				return false
@@ -1936,7 +1653,7 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 // GetServiceSummary godoc
 //
 //	@Summary		Get Cloud Service Summary
-//	@Description	Get Cloud Service Summary for the specified service name. Including connector, the resource counts and the cost.
+//	@Description	Get Cloud Service Summary for the specified service name. Including connector, the resource counts.
 //	@Security		BearerToken
 //	@Tags			benchmarks
 //	@Accepts		json
@@ -1944,8 +1661,7 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 //	@Param			serviceName	path		string	true	"ServiceName"
 //	@Param			connectorId	query		string	false	"filter: connectorId"
 //	@Param			connector	query		string	false	"filter: connector"
-//	@Param			startTime	query		string	true	"start time for cost calculation in epoch seconds"
-//	@Param			endTime		query		string	true	"end time for cost calculation and time resource count in epoch seconds"
+//	@Param			endTime		query		string	true	"time for resource count in epoch seconds"
 //	@Success		200			{object}	api.ServiceSummary
 //	@Router			/inventory/api/v2/services/summary/{serviceName} [get]
 func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
@@ -1969,43 +1685,22 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid epoch time")
 		}
 	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
-	if startTimeStr != "" {
-		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid epoch time")
-		}
-	}
 
-	costFilterMap := make(map[string]float64)
 	resourceTypeMap := make(map[string]int64)
 	service, err := h.db.GetService(serviceName)
 	if err != nil {
 		return err
 	}
 
-	for _, costFilterName := range service.GetTagsMap()[model.KaytuServiceCostTag] {
-		costFilterMap[costFilterName] = 0
-	}
 	for _, resourceType := range service.ResourceTypes {
 		resourceTypeMap[strings.ToLower(resourceType.ResourceType)] = 0
 	}
 
-	costFilterNames := make([]string, 0, len(costFilterMap))
-	for costFilterName := range costFilterMap {
-		costFilterNames = append(costFilterNames, costFilterName)
-	}
 	resourceTypeNames := make([]string, 0, len(resourceTypeMap))
 	for resourceTypeName := range resourceTypeMap {
 		resourceTypeNames = append(resourceTypeNames, resourceTypeName)
 	}
 
-	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, connectionIDs, connectors, costFilterNames, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	costs := internal.AggregateServiceCosts(costHits)
 	resourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, connectors, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
 	if err != nil {
 		return err
@@ -2016,12 +1711,6 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 		ServiceLabel:  service.ServiceLabel,
 		ServiceName:   service.ServiceName,
 		ResourceCount: nil,
-		Cost:          nil,
-	}
-	for _, costFilterName := range service.GetTagsMap()[model.KaytuServiceCostTag] {
-		if cost, ok := costs[costFilterName]; ok {
-			serviceSummary.Cost = utils.PAdd(serviceSummary.Cost, utils.GetPointer(cost[DefaultCurrency].Cost))
-		}
 	}
 	for _, resourceType := range service.ResourceTypes {
 		if resourceTypeCount, ok := resourceTypeCounts[strings.ToLower(resourceType.ResourceType)]; ok {
@@ -3039,14 +2728,13 @@ func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 // ListServiceMetadata godoc
 //
 //	@Summary		Get List of Cloud Services
-//	@Description	Gets a list of all workspace cloud services and their metadata, list of resource types and cost support.
-//	@Description	The results could be filtered by cost support and tags.
+//	@Description	Gets a list of all workspace cloud services and their metadata, and list of resource types.
+//	@Description	The results could be filtered by tags.
 //	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
 //	@Param			connector	query		[]source.Type	false	"Connector"
 //	@Param			tag			query		[]string		false	"Key-Value tags in key=value format to filter by"
-//	@Param			costSupport	query		boolean			false	"Filter by cost support"
 //	@Param			pageSize	query		int				false	"page size - default is 20"
 //	@Param			pageNumber	query		int				false	"page number - default is 1"
 //	@Success		200			{object}	api.ListServiceMetadataResponse
@@ -3054,16 +2742,6 @@ func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	costSupportFilterStr := ctx.QueryParam("costSupport")
-	if costSupportFilterStr != "" {
-		b, err := strconv.ParseBool(costSupportFilterStr)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid costSupport")
-		}
-		if b {
-			tagMap[model.KaytuServiceCostTag] = make([]string, 0)
-		}
-	}
 	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
@@ -3094,7 +2772,7 @@ func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 // GetServiceMetadata godoc
 //
 //	@Summary		Get Cloud Service Details
-//	@Description	Gets a single cloud service details and its metadata, list of resource types & cost support.
+//	@Description	Gets a single cloud service details and its metadata and list of resource types.
 //	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json

@@ -852,6 +852,8 @@ definitions:
         type: string
       longTitle:
         type: string
+      oldTotalResultValue:
+        type: integer
       query:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query'
       result:
@@ -862,8 +864,6 @@ definitions:
         type: string
       totalResultValue:
         type: integer
-      totalResultValueChangePercent:
-        type: number
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightConnection:
     properties:
@@ -1722,19 +1722,6 @@ definitions:
       total_resource_types:
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceCostCompositionResponse:
-    properties:
-      others:
-        type: number
-      top_values:
-        additionalProperties:
-          type: number
-        type: object
-      total_count:
-        type: number
-      total_value_count:
-        type: integer
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetadataResponse:
     properties:
       services:
@@ -1750,8 +1737,8 @@ definitions:
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service'
         type: array
-      total_cost:
-        type: number
+      total_count:
+        type: integer
       total_services:
         type: integer
     type: object
@@ -2020,12 +2007,6 @@ definitions:
     properties:
       connector:
         $ref: '#/definitions/source.Type'
-      cost:
-        type: number
-      end_daily_cost:
-        type: number
-      is_cost_supported:
-        type: boolean
       logo_uri:
         type: string
       old_resource_count:
@@ -2040,8 +2021,6 @@ definitions:
         type: string
       service_name:
         type: string
-      start_daily_cost:
-        type: number
       tags:
         additionalProperties:
           items:
@@ -2066,9 +2045,6 @@ definitions:
         allOf:
         - $ref: '#/definitions/source.Type'
         description: Cloud provider
-      cost:
-        description: Cost
-        type: number
       resourceCount:
         description: Number of Resources
         type: integer
@@ -3705,8 +3681,7 @@ paths:
         in: query
         name: tag
         type: string
-      - collectionFormat: csv
-        description: filter insights by connector
+      - description: filter insights by connector
         in: query
         items:
           enum:
@@ -3716,8 +3691,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -3754,8 +3728,7 @@ paths:
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -3790,8 +3763,7 @@ paths:
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -3827,8 +3799,7 @@ paths:
     get:
       description: Listing insight metadata
       parameters:
-      - collectionFormat: csv
-        description: filter by connector
+      - description: filter by connector
         in: query
         items:
           enum:
@@ -3929,8 +3900,7 @@ paths:
         name: provider
         required: true
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4303,8 +4273,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4314,8 +4283,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4384,8 +4352,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4395,8 +4362,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4483,8 +4449,7 @@ paths:
         name: count
         required: true
         type: integer
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4494,8 +4459,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4520,8 +4484,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: SourceID
+      - description: SourceID
         in: query
         items:
           type: string
@@ -4552,8 +4515,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connection IDs
+      - description: Connection IDs
         in: query
         items:
           type: string
@@ -4619,8 +4581,7 @@ paths:
       description: List all insight results for the given insightIds - this mostly
         for internal usage, use compliance api for full api
       parameters:
-      - collectionFormat: csv
-        description: filter insights by connector
+      - description: filter insights by connector
         in: query
         items:
           enum:
@@ -4630,15 +4591,13 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
         name: connectionId
         type: array
-      - collectionFormat: csv
-        description: filter the result by insight id
+      - description: filter the result by insight id
         in: query
         items:
           type: string
@@ -4673,8 +4632,7 @@ paths:
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4706,8 +4664,7 @@ paths:
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4765,8 +4722,7 @@ paths:
         Gets a list of all resource types in workspace and their metadata including service name.
         The results could be filtered by provider name and service name.
       parameters:
-      - collectionFormat: csv
-        description: Filter by Connector
+      - description: Filter by Connector
         in: query
         items:
           enum:
@@ -4777,15 +4733,13 @@ paths:
         name: connector
         required: true
         type: array
-      - collectionFormat: csv
-        description: Filter by service name
+      - description: Filter by service name
         in: query
         items:
           type: string
         name: service
         type: array
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
@@ -4836,11 +4790,10 @@ paths:
   /inventory/api/v2/metadata/services:
     get:
       description: |-
-        Gets a list of all workspace cloud services and their metadata, list of resource types and cost support.
-        The results could be filtered by cost support and tags.
+        Gets a list of all workspace cloud services and their metadata, and list of resource types.
+        The results could be filtered by tags.
       parameters:
-      - collectionFormat: csv
-        description: Connector
+      - description: Connector
         in: query
         items:
           enum:
@@ -4850,17 +4803,12 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - description: Filter by cost support
-        in: query
-        name: costSupport
-        type: boolean
       - description: page size - default is 20
         in: query
         name: pageSize
@@ -4883,8 +4831,8 @@ paths:
       - metadata
   /inventory/api/v2/metadata/services/{serviceName}:
     get:
-      description: Gets a single cloud service details and its metadata, list of resource
-        types & cost support.
+      description: Gets a single cloud service details and its metadata and list of
+        resource types.
       parameters:
       - description: ServiceName
         in: path
@@ -4918,8 +4866,7 @@ paths:
         name: top
         required: true
         type: integer
-      - collectionFormat: csv
-        description: Connector types to filter by
+      - description: Connector types to filter by
         in: query
         items:
           enum:
@@ -4929,8 +4876,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4957,22 +4903,19 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Service names to filter by
+      - description: Service names to filter by
         in: query
         items:
           type: string
         name: servicename
         type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4982,8 +4925,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5030,8 +4972,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5113,22 +5054,19 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Service names to filter by
+      - description: Service names to filter by
         in: query
         items:
           type: string
         name: servicename
         type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5138,8 +5076,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5172,59 +5109,6 @@ paths:
         frame based on the given input filters
       tags:
       - inventory
-  /inventory/api/v2/services/composition/{key}:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Tag key
-        in: path
-        name: key
-        required: true
-        type: string
-      - description: How many top values to return default is 5
-        in: query
-        name: top
-        required: true
-        type: integer
-      - collectionFormat: csv
-        description: Connector type to filter by
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
-        type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - description: timestamp for start of cost aggregation in epoch seconds
-        in: query
-        name: startTime
-        type: string
-      - description: timestamp for end of cost aggregation in epoch seconds
-        in: query
-        name: endTime
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceCostCompositionResponse'
-      security:
-      - BearerToken: []
-      summary: Return tag values with most cost for the given key
-      tags:
-      - inventory
   /inventory/api/v2/services/cost/trend:
     get:
       consumes:
@@ -5234,8 +5118,7 @@ paths:
         in: query
         name: tag
         type: string
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5245,8 +5128,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5284,15 +5166,13 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5302,25 +5182,24 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
         name: connectionId
         type: array
-      - description: timestamp for start of cost aggregation in epoch seconds
+      - description: timestamp for old values in epoch seconds
         in: query
         name: startTime
         type: string
-      - description: timestamp for end of cost aggregation in epoch seconds
+      - description: timestamp for current values in epoch seconds
         in: query
         name: endTime
         type: string
-      - description: Sort by field - default is cost
+      - description: Sort by field - default is count
         enum:
         - name
-        - cost
+        - count
         in: query
         name: sortBy
         type: string
@@ -5355,18 +5234,17 @@ paths:
         name: serviceName
         required: true
         type: string
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
         name: connectionId
         type: array
-      - description: timestamp for start of cost aggregation in epoch seconds
+      - description: timestamp for old values in epoch seconds
         in: query
         name: startTime
         type: string
-      - description: timestamp for end of cost aggregation in epoch seconds
+      - description: timestamp for current values in epoch seconds
         in: query
         name: endTime
         type: string
@@ -5387,8 +5265,8 @@ paths:
       consumes:
       - application/json
       description: Gets a summary of the services including the number of them and
-        the API filters and a list of services with more details. Including connector,
-        the resource counts and the cost.
+        the API filters and a list of services with more details. Including connector
+        and the resource counts.
       parameters:
       - description: 'filter: Connection ID'
         in: query
@@ -5402,22 +5280,11 @@ paths:
         in: query
         name: tag
         type: string
-      - description: start time for cost calculation in epoch seconds
-        in: query
-        name: startTime
-        required: true
-        type: string
-      - description: end time for cost calculation and time resource count in epoch
-          seconds
+      - description: time for resource count in epoch seconds
         in: query
         name: endTime
         required: true
         type: string
-      - description: 'filter: minimum spent amount for the service in the specified
-          time'
-        in: query
-        name: minSpent
-        type: integer
       - description: page size - default is 20
         in: query
         name: pageSize
@@ -5426,11 +5293,10 @@ paths:
         in: query
         name: pageNumber
         type: integer
-      - description: column to sort by - default is cost
+      - description: column to sort by - default is resourcecount
         enum:
         - servicecode
         - resourcecount
-        - cost
         in: query
         name: sortBy
         type: string
@@ -5449,7 +5315,7 @@ paths:
   /inventory/api/v2/services/summary/{serviceName}:
     get:
       description: Get Cloud Service Summary for the specified service name. Including
-        connector, the resource counts and the cost.
+        connector, the resource counts.
       parameters:
       - description: ServiceName
         in: path
@@ -5464,13 +5330,7 @@ paths:
         in: query
         name: connector
         type: string
-      - description: start time for cost calculation in epoch seconds
-        in: query
-        name: startTime
-        required: true
-        type: string
-      - description: end time for cost calculation and time resource count in epoch
-          seconds
+      - description: time for resource count in epoch seconds
         in: query
         name: endTime
         required: true
@@ -6726,15 +6586,13 @@ paths:
       - application/json
       description: Get list of stacks
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Account IDs to filter by
+      - description: Account IDs to filter by
         in: query
         items:
           type: string
@@ -6902,8 +6760,7 @@ paths:
         in: formData
         name: tag
         type: string
-      - collectionFormat: csv
-        description: Additional Resources
+      - description: Additional Resources
         in: formData
         items:
           type: string
