@@ -333,7 +333,7 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 func (r *httpRoutes) GetWorkspaceMembership(ctx echo.Context) error {
 	hctx := httpclient.FromEchoContext(ctx)
 	userID := ctx.Param("user_id")
-
+	userID, err := url.QueryUnescape(userID)
 	var resp []api.Membership
 	usr, err := r.auth0Service.GetUser(userID)
 	if err != nil {
