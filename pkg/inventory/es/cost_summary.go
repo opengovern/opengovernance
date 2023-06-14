@@ -430,9 +430,11 @@ func FetchDailyCostHistoryByServicesAtTime(client keibi.Client, connectionIDs []
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummaryDaily)}},
 	})
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"service_name": services},
-	})
+	if len(services) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"service_name": services},
+		})
+	}
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
 			"period_end": map[string]string{
