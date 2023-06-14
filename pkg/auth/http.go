@@ -57,7 +57,7 @@ func (r *httpRoutes) Register(e *echo.Echo) {
 	v1.GET("/user/:user_id/workspace/membership", httpserver.AuthorizeHandler(r.GetWorkspaceMembership, api.AdminRole))
 	v1.GET("/workspace/role/bindings", httpserver.AuthorizeHandler(r.GetWorkspaceRoleBindings, api.AdminRole))
 	v1.GET("/users", httpserver.AuthorizeHandler(r.GetUsers, api.EditorRole))
-	v1.GET("/user/details", httpserver.AuthorizeHandler(r.GetUserDetails, api.EditorRole))
+	v1.GET("/user/:user_id", httpserver.AuthorizeHandler(r.GetUserDetails, api.EditorRole))
 	v1.POST("/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
 	v1.POST("/user/invite", httpserver.AuthorizeHandler(r.Invite, api.AdminRole))
 	v1.DELETE("/user/invite", httpserver.AuthorizeHandler(r.DeleteInvitation, api.AdminRole))
@@ -440,18 +440,18 @@ func (r *httpRoutes) GetUsers(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			users
 //	@Produce		json
-//	@Param			userId	query		string	true	"User ID"
+//	@Param			user_id	path		string	true	"userId"
 //	@Success		200		{object}	api.GetUserResponse
-//	@Router			/auth/api/v1/user/details [get]
+//	@Router			/auth/api/v1/user/{user_id} [get]
 func (r *httpRoutes) GetUserDetails(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
-	userID := ctx.QueryParam("userId")
+	userID := ctx.Param("user_id")
 	user, err := r.auth0Service.GetUser(userID)
 	if err != nil {
 		return err
 	}
 	hasARole := false
-	for ws := range user.AppMetadata.WorkspaceAccess {
+	for ws, _ := range user.AppMetadata.WorkspaceAccess {
 		if ws == workspaceID {
 			hasARole = true
 			break
