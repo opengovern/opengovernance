@@ -2666,7 +2666,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 //	@Param			connectionId	query		[]string		false	"filter the result by source id"
 //	@Param			insightId		query		[]string		true	"filter the result by insight id"
 //	@Param			time			query		int				false	"unix seconds for the time to get the insight result for"
-//	@Success		200				{object}	map[uint]insight.InsightResource
+//	@Success		200				{object}	map[uint][]insight.InsightResource
 //	@Router			/inventory/api/v2/insights [get]
 func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 	var err error
@@ -2717,7 +2717,7 @@ func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 //	@Param			insightId		path		string		true	"InsightID"
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
 //	@Param			time			query		int			false	"unix seconds for the time to get the insight result for"
-//	@Success		200				{object}	insight.InsightResource
+//	@Success		200				{object}	[]insight.InsightResource
 //	@Router			/inventory/api/v2/insights/{insightId} [get]
 func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
@@ -2801,7 +2801,7 @@ func (h *HttpHandler) GetInsightResultByJobId(ctx echo.Context) error {
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
 //	@Param			startTime		query		int			false	"unix seconds for the start of the time window to get the insight trend for"
 //	@Param			endTime			query		int			false	"unix seconds for the end of the time window to get the insight trend for"
-//	@Success		200				{object}	[]insight.InsightResource
+//	@Success		200				{object}	map[int][]insight.InsightResource
 //	@Router			/inventory/api/v2/insights/{insightId}/trend [get]
 func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)

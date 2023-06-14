@@ -6,15 +6,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	httpserver2 "gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	httpserver2 "gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client/pipedrive"
@@ -684,7 +685,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 //	@Produce		json
 //	@Param			workspace_id	path	string	true	"Workspace ID"
 //	@Success		200
-//	@Router			/workspace/api/v1/workspace/{workspace_id} [get]
+//	@Router			/workspace/api/v1/workspaces/{workspace_id} [get]
 func (s *Server) GetWorkspace(c echo.Context) error {
 	userId := httpserver2.GetUserID(c)
 	resp, err := s.authClient.GetUserRoleBindings(httpclient.FromEchoContext(c))
@@ -1087,7 +1088,7 @@ func (s *Server) ChangeOrganization(c echo.Context) error {
 //	@Produce	json
 //	@Param		workspace_name	path	string	true	"Workspace Name"
 //	@Param		ignore_usage	query	bool	false	"Ignore usage"
-//	@Success	200				{array}	api.WorkspaceLimitsUsage
+//	@Success	200				{object}	api.WorkspaceLimitsUsage
 //	@Router		/workspace/api/v1/workspaces/limits/{workspace_name} [get]
 func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 	var response api.WorkspaceLimitsUsage
@@ -1136,8 +1137,8 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
-//	@Param		workspace_id	path	string	true	"Workspace Name"
-//	@Success	200				{array}	api.WorkspaceLimits
+//	@Param		workspace_id	path	string	true	"Workspace ID"
+//	@Success	200				{object}	api.WorkspaceLimits
 //	@Router		/workspace/api/v1/workspaces/limits/byid/{workspace_id} [get]
 func (s *Server) GetWorkspaceLimitsByID(c echo.Context) error {
 	workspaceID := c.Param("workspace_id")
@@ -1156,8 +1157,8 @@ func (s *Server) GetWorkspaceLimitsByID(c echo.Context) error {
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
-//	@Param		workspace_id	path	string	true	"Workspace Name"
-//	@Success	200				{array}	api.WorkspaceLimits
+//	@Param		workspace_id	path	string	true	"Workspace ID"
+//	@Success	200				{object}	api.Workspace
 //	@Router		/workspace/api/v1/workspaces/byid/{workspace_id} [get]
 func (s *Server) GetWorkspaceByID(c echo.Context) error {
 	workspaceID := c.Param("workspace_id")
