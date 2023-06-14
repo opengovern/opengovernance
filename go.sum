@@ -2105,10 +2105,10 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
-github.com/kaytu-io/kaytu-aws-describer v0.0.18 h1:BuCnCSXTUooO2acZgzrF0z6XAUiFfUnTPdwBZ1apyQs=
-github.com/kaytu-io/kaytu-aws-describer v0.0.18/go.mod h1:p/XRTwAq43yYF8LORF+j97QTeTSZVkc7uFZbsXiOlJ4=
-github.com/kaytu-io/kaytu-azure-describer v0.0.42 h1:ZGOcVY57dvSH42YZM5e7xCajo8YYGDyQ09xI2qXGlPU=
-github.com/kaytu-io/kaytu-azure-describer v0.0.42/go.mod h1:FbgZGP2WZ5KpMdZS5raI+hUncVhlukT74QaII18zQWI=
+github.com/kaytu-io/kaytu-aws-describer v0.0.19 h1:60CP4sEEAPTCYmjR/r7oZGovvXnLVyZsSsQAwd1aWm0=
+github.com/kaytu-io/kaytu-aws-describer v0.0.19/go.mod h1:p/XRTwAq43yYF8LORF+j97QTeTSZVkc7uFZbsXiOlJ4=
+github.com/kaytu-io/kaytu-azure-describer v0.0.43 h1:280PZWsyOOoiQhDW1otN6PU+M26c+KFLYLS8e8W1hdA=
+github.com/kaytu-io/kaytu-azure-describer v0.0.43/go.mod h1:hdD/6pAYgeqRY8NhOWR6bnZuPuVRpSrOXTJhK2+txjg=
 github.com/kaytu-io/kaytu-util v0.0.0-20230612111112-f01681c34d0f h1:UMoJqcXtEOuceVIDmrPsiOeuUyryXPJVDFGymB3QIM0=
 github.com/kaytu-io/kaytu-util v0.0.0-20230612111112-f01681c34d0f/go.mod h1:QULmP8Hug87ctExrOBAzZgwKJ7BXEWUcs0vIJAV1Hrs=
 github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1 h1:tKxk2n0ZuXgt1QBZe8tb+ztYQitO1Z8glexWz08e2ow=
