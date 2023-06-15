@@ -155,13 +155,17 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			return nil, "", err
 		}
 		key := fmt.Sprintf("%s|%s|%s|%s", resource.SourceID, *desc.Dimension1, *desc.PeriodStart, *desc.PeriodEnd)
-		return &ServiceCostSummary{
+		serviceCostSummary := &ServiceCostSummary{
 			ServiceName: *desc.Dimension1,
 			Cost:        desc,
 			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Unix(),
 			PeriodEnd:   getTimeFromTimestring(*desc.PeriodEnd).Unix(),
 			ReportType:  CostProviderSummaryMonthly,
-		}, key, nil
+		}
+		if serviceCostSummary.ServiceName == "" {
+			serviceCostSummary.ServiceName = "AWS Uncategorized"
+		}
+		return serviceCostSummary, key, nil
 	case CostResourceTypeAWSCostExplorerServiceCostDaily:
 		jsonDesc, err := json.Marshal(resource.Description)
 		if err != nil {
@@ -173,13 +177,17 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			return nil, "", err
 		}
 		key := fmt.Sprintf("%s|%s|%s|%s", resource.SourceID, *desc.Dimension1, *desc.PeriodStart, *desc.PeriodEnd)
-		return &ServiceCostSummary{
+		serviceCostSummary := &ServiceCostSummary{
 			ServiceName: *desc.Dimension1,
 			Cost:        desc,
 			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Unix(),
 			PeriodEnd:   getTimeFromTimestring(*desc.PeriodEnd).Unix(),
 			ReportType:  CostProviderSummaryDaily,
-		}, key, nil
+		}
+		if serviceCostSummary.ServiceName == "" {
+			serviceCostSummary.ServiceName = "AWS Uncategorized"
+		}
+		return serviceCostSummary, key, nil
 	case CostResourceTypeAWSCostExplorerAccountCostMonthly:
 		jsonDesc, err := json.Marshal(resource.Description)
 		if err != nil {
@@ -191,13 +199,14 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			return nil, "", err
 		}
 		key := fmt.Sprintf("%s|%s|%s", resource.SourceID, *desc.PeriodStart, *desc.PeriodEnd)
-		return &ConnectionCostSummary{
+		connectionCostSummary := &ConnectionCostSummary{
 			AccountID:   *desc.Dimension1,
 			Cost:        desc,
 			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Unix(),
 			PeriodEnd:   getTimeFromTimestring(*desc.PeriodEnd).Unix(),
 			ReportType:  CostConnectionSummaryMonthly,
-		}, key, nil
+		}
+		return connectionCostSummary, key, nil
 	case CostResourceTypeAWSCostExplorerAccountCostDaily:
 		jsonDesc, err := json.Marshal(resource.Description)
 		if err != nil {
@@ -209,13 +218,14 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			return nil, "", err
 		}
 		key := fmt.Sprintf("%s|%s|%s", resource.SourceID, *desc.PeriodStart, *desc.PeriodEnd)
-		return &ConnectionCostSummary{
+		connectionCostSummary := &ConnectionCostSummary{
 			AccountID:   *desc.Dimension1,
 			Cost:        desc,
 			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Unix(),
 			PeriodEnd:   getTimeFromTimestring(*desc.PeriodEnd).Unix(),
 			ReportType:  CostConnectionSummaryDaily,
-		}, key, nil
+		}
+		return connectionCostSummary, key, nil
 	case CostResourceTypeAWSEBSVolume:
 		jsonDesc, err := json.Marshal(resource.Description)
 		if err != nil {
@@ -233,14 +243,15 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			resource.Metadata["region"] = region
 		}
 		key := fmt.Sprintf("%s|%s|%s", resource.SourceID, region, *desc.Volume.VolumeId)
-		return &ServiceCostSummary{
+		serviceCostSummary := &ServiceCostSummary{
 			ServiceName: string(CostResourceTypeAWSEBSVolume),
 			Cost:        desc,
 			PeriodStart: lookupResource.CreatedAt / 1000,
 			PeriodEnd:   lookupResource.CreatedAt / 1000,
 			ReportType:  CostProviderSummaryDaily,
 			Region:      &region,
-		}, key, nil
+		}
+		return serviceCostSummary, key, nil
 	case CostResourceTypeAzureCostManagementCostByResourceType:
 		jsonDesc, err := json.Marshal(resource.Description)
 		if err != nil {
@@ -252,13 +263,17 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			return nil, "", err
 		}
 		key := fmt.Sprintf("%s|%s|%s|%d", resource.SourceID, *desc.CostManagementCostByResourceType.ResourceType, desc.CostManagementCostByResourceType.Currency, desc.CostManagementCostByResourceType.UsageDate)
-		return &ServiceCostSummary{
+		serviceCostSummary := &ServiceCostSummary{
 			ServiceName: *desc.CostManagementCostByResourceType.ResourceType,
 			Cost:        desc.CostManagementCostByResourceType,
 			PeriodStart: getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Unix(),
 			PeriodEnd:   getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Unix(),
 			ReportType:  CostProviderSummaryDaily,
-		}, key, nil
+		}
+		if serviceCostSummary.ServiceName == "" {
+			serviceCostSummary.ServiceName = "Azure Uncategorized"
+		}
+		return serviceCostSummary, key, nil
 	case CostResourceTypeAzureCostManagementCostBySubscription:
 		jsonDesc, err := json.Marshal(resource.Description)
 		if err != nil {
@@ -270,13 +285,14 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			return nil, "", err
 		}
 		key := fmt.Sprintf("%s|%s|%d", resource.SourceID, desc.CostManagementCostBySubscription.Currency, desc.CostManagementCostBySubscription.UsageDate)
-		return &ConnectionCostSummary{
+		connectionCostSummary := &ConnectionCostSummary{
 			AccountID:   *desc.CostManagementCostBySubscription.SubscriptionID,
 			Cost:        desc.CostManagementCostBySubscription,
 			PeriodStart: getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Unix(),
 			PeriodEnd:   getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Unix(),
 			ReportType:  CostConnectionSummaryDaily,
-		}, key, nil
+		}
+		return connectionCostSummary, key, nil
 	}
 	return nil, "", fmt.Errorf("unknown resource type %s", resource.ResourceType)
 }
