@@ -1845,6 +1845,15 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 		serviceSummaries = append(serviceSummaries, serviceSummary)
 	}
 
+	// remove services with no resource count
+	serviceSummariesFiltered := make([]api.ServiceSummary, 0, len(serviceSummaries))
+	for _, serviceSummary := range serviceSummaries {
+		if serviceSummary.ResourceCount != nil {
+			serviceSummariesFiltered = append(serviceSummariesFiltered, serviceSummary)
+		}
+	}
+	serviceSummaries = serviceSummariesFiltered
+
 	sort.Slice(serviceSummaries, func(i, j int) bool {
 		switch sortBy {
 		case "resourcecount":
