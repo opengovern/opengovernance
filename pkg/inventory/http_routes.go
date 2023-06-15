@@ -1204,7 +1204,7 @@ func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 //	@Param		pageSize		query		int				false	"page size - default is 20"
 //	@Param		pageNumber		query		int				false	"page number - default is 1"
 //	@Success	200				{object}	api.ListCostMetricsResponse
-//	@Router		/inventory/api/v2/cost/metrics [get]
+//	@Router		/inventory/api/v2/cost/metric [get]
 func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 	var err error
 	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])

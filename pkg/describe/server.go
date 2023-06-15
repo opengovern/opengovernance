@@ -208,7 +208,7 @@ func (h HttpServer) HandleGetSource(ctx echo.Context) error {
 //	@Security	BearerToken
 //	@Tags		schedule
 //	@Produce	json
-//	@Success	200	{object}	api.Source
+//	@Success	200	{object}	[]DescribeSourceJob
 //	@Router		/schedule/api/v1/describe/source/jobs/pending [get]
 func (h HttpServer) HandleListPendingDescribeSourceJobs(ctx echo.Context) error {
 	jobs, err := h.DB.ListPendingDescribeSourceJobs()
@@ -225,7 +225,7 @@ func (h HttpServer) HandleListPendingDescribeSourceJobs(ctx echo.Context) error 
 //	@Security	BearerToken
 //	@Tags		schedule
 //	@Produce	json
-//	@Success	200	{object}	api.Source
+//	@Success	200	{object}	[]DescribeResourceJob
 //	@Router		/schedule/api/v1/describe/resource/jobs/pending [get]
 func (h HttpServer) HandleListPendingDescribeResourceJobs(ctx echo.Context) error {
 	jobs, err := h.DB.ListPendingDescribeResourceJobs()
@@ -242,7 +242,7 @@ func (h HttpServer) HandleListPendingDescribeResourceJobs(ctx echo.Context) erro
 //	@Security	BearerToken
 //	@Tags		schedule
 //	@Produce	json
-//	@Success	200	{object}	api.Source
+//	@Success	200	{object}	[]SummarizerJob
 //	@Router		/schedule/api/v1/summarize/jobs/pending [get]
 func (h HttpServer) HandleListPendingSummarizeJobs(ctx echo.Context) error {
 	jobs, err := h.DB.ListPendingSummarizeJobs()
@@ -259,7 +259,7 @@ func (h HttpServer) HandleListPendingSummarizeJobs(ctx echo.Context) error {
 //	@Security	BearerToken
 //	@Tags		schedule
 //	@Produce	json
-//	@Success	200	{object}	api.Source
+//	@Success	200	{object}	[]InsightJob
 //	@Router		/schedule/api/v1/insight/jobs/pending [get]
 func (h HttpServer) HandleListPendingInsightJobs(ctx echo.Context) error {
 	jobs, err := h.DB.ListPendingInsightJobs()
@@ -706,7 +706,7 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 //	@Produce	json
 //	@Success	200
 //	@Param		request	body		api.ListBenchmarkEvaluationsRequest	true	"Request Body"
-//	@Success	200		{object}	[]describe.ComplianceReportJob
+//	@Success	200		{object}	[]ComplianceReportJob
 //	@Router		/schedule/api/v1/benchmark/evaluations [get]
 func (h HttpServer) HandleListBenchmarkEvaluations(ctx echo.Context) error {
 	var req api.ListBenchmarkEvaluationsRequest

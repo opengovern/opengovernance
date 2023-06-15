@@ -191,7 +191,7 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200	{object}	[]api.ConnectorCount
-//	@Router			/onboard/api/v1/connectors [get]
+//	@Router			/onboard/api/v1/connector [get]
 func (h HttpHandler) ListConnectors(ctx echo.Context) error {
 	connectors, err := h.db.ListConnectors()
 	if err != nil {
@@ -239,7 +239,7 @@ func (h HttpHandler) ListConnectors(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connectorName	path		string	true	"Connector name"
 //	@Success		200				{object}	api.Connector
-//	@Router			/onboard/api/v1/connectors/{connectorName} [get]
+//	@Router			/onboard/api/v1/connector/{connectorName} [get]
 func (h HttpHandler) GetConnector(ctx echo.Context) error {
 	connectorName, err := source.ParseType(ctx.Param("connectorName"))
 	if err != nil {
