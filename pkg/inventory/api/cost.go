@@ -24,3 +24,10 @@ type ListCostMetricsResponse struct {
 	TotalCost  float64      `json:"total_cost"`
 	Metrics    []CostMetric `json:"metrics"`
 }
+
+type ListCostCompositionResponse struct {
+	TotalCount     int                `json:"total_count"`
+	TotalCostValue float64            `json:"total_cost_value"`
+	TopValues      map[string]float64 `json:"top_values"`
+	Others         float64            `json:"others"`
+}

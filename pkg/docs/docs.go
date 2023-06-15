@@ -2734,6 +2734,77 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/cost/composition": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Returns cost composition for a given time range",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "How many top values to return default is 5",
+                        "name": "top",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for start in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for end in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostCompositionResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/cost/metrics": {
             "get": {
                 "security": [
@@ -2955,7 +3026,10 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource"
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource"
+                                }
                             }
                         }
                     }
@@ -3039,7 +3113,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource"
+                            }
                         }
                     }
                 }
@@ -3094,9 +3171,12 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource"
+                                }
                             }
                         }
                     }
@@ -6429,38 +6509,6 @@ const docTemplate = `{
             }
         },
         "/workspace/api/v1/workspace/{workspace_id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Get workspace with workspace id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workspace"
-                ],
-                "summary": "Get workspace for workspace service",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Workspace ID",
-                        "name": "workspace_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            },
             "delete": {
                 "security": [
                     {
@@ -6779,7 +6827,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Workspace Name",
+                        "description": "Workspace ID",
                         "name": "workspace_id",
                         "in": "path",
                         "required": true
@@ -6789,10 +6837,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits"
-                            }
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Workspace"
                         }
                     }
                 }
@@ -6818,7 +6863,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Workspace Name",
+                        "description": "Workspace ID",
                         "name": "workspace_id",
                         "in": "path",
                         "required": true
@@ -6828,10 +6873,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits"
-                            }
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits"
                         }
                     }
                 }
@@ -6873,11 +6915,42 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimitsUsage"
-                            }
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimitsUsage"
                         }
+                    }
+                }
+            }
+        },
+        "/workspace/api/v1/workspaces/{workspace_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get workspace with workspace id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Get workspace for workspace service",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspace_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -9299,6 +9372,26 @@ const docTemplate = `{
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostCompositionResponse": {
+            "type": "object",
+            "properties": {
+                "others": {
+                    "type": "number"
+                },
+                "top_values": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
+                },
+                "total_cost_value": {
+                    "type": "number"
+                },
+                "total_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostMetricsResponse": {
             "type": "object",
             "properties": {
@@ -10717,6 +10810,35 @@ const docTemplate = `{
                 "Tier_Teams",
                 "Tier_Enterprise"
             ]
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Workspace": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "organization_id": {
+                    "type": "integer"
+                },
+                "owner_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "tier": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Tier"
+                },
+                "uri": {
+                    "type": "string"
+                }
+            }
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits": {
             "type": "object",

@@ -1086,8 +1086,8 @@ func (s *Server) ChangeOrganization(c echo.Context) error {
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
-//	@Param		workspace_name	path	string	true	"Workspace Name"
-//	@Param		ignore_usage	query	bool	false	"Ignore usage"
+//	@Param		workspace_name	path		string	true	"Workspace Name"
+//	@Param		ignore_usage	query		bool	false	"Ignore usage"
 //	@Success	200				{object}	api.WorkspaceLimitsUsage
 //	@Router		/workspace/api/v1/workspaces/limits/{workspace_name} [get]
 func (s *Server) GetWorkspaceLimits(c echo.Context) error {
@@ -1137,7 +1137,7 @@ func (s *Server) GetWorkspaceLimits(c echo.Context) error {
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
-//	@Param		workspace_id	path	string	true	"Workspace ID"
+//	@Param		workspace_id	path		string	true	"Workspace ID"
 //	@Success	200				{object}	api.WorkspaceLimits
 //	@Router		/workspace/api/v1/workspaces/limits/byid/{workspace_id} [get]
 func (s *Server) GetWorkspaceLimitsByID(c echo.Context) error {
@@ -1157,7 +1157,7 @@ func (s *Server) GetWorkspaceLimitsByID(c echo.Context) error {
 //	@Tags		workspace
 //	@Accept		json
 //	@Produce	json
-//	@Param		workspace_id	path	string	true	"Workspace ID"
+//	@Param		workspace_id	path		string	true	"Workspace ID"
 //	@Success	200				{object}	api.Workspace
 //	@Router		/workspace/api/v1/workspaces/byid/{workspace_id} [get]
 func (s *Server) GetWorkspaceByID(c echo.Context) error {
