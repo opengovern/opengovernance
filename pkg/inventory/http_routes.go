@@ -1412,6 +1412,9 @@ func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 
 	topCostMap := make(map[string]float64)
 	othersCost := float64(0)
+	if top > int64(len(costMetrics)) {
+		top = int64(len(costMetrics))
+	}
 	for _, costMetric := range costMetrics[:int(top)] {
 		if costMetric.TotalCost != nil {
 			topCostMap[costMetric.CostDimensionName] = *costMetric.TotalCost
@@ -1766,13 +1769,13 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 //	@Tags			benchmarks
 //	@Accept			json
 //	@Produce		json
-//	@Param			connectionId	query		string	false	"filter: Connection ID"
-//	@Param			connector		query		string	false	"filter: Connector"
-//	@Param			tag				query		string	false	"filter: tag for the services"
-//	@Param			endTime			query		string	true	"time for resource count in epoch seconds"
-//	@Param			pageSize		query		int		false	"page size - default is 20"
-//	@Param			pageNumber		query		int		false	"page number - default is 1"
-//	@Param			sortBy			query		string	false	"column to sort by - default is resourcecount"	Enums(servicecode,resourcecount)
+//	@Param			connectionId	query		[]string	false	"filter: Connection ID"
+//	@Param			connector		query		[]string	false	"filter: Connector"
+//	@Param			tag				query		[]string	false	"filter: tag for the services"
+//	@Param			endTime			query		string		false	"time for resource count in epoch seconds"
+//	@Param			pageSize		query		int			false	"page size - default is 20"
+//	@Param			pageNumber		query		int			false	"page number - default is 1"
+//	@Param			sortBy			query		string		false	"column to sort by - default is resourcecount"	Enums(servicecode,resourcecount)
 //	@Success		200				{object}	api.ListServiceSummariesResponse
 //	@Router			/inventory/api/v2/services/summary [get]
 func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
