@@ -1380,6 +1380,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter insights by connector",
                         "name": "connector",
                         "in": "query"
@@ -1389,6 +1390,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1447,6 +1449,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1502,6 +1505,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1564,6 +1568,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter by connector",
                         "name": "connector",
                         "in": "query"
@@ -1720,6 +1725,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query"
@@ -2286,6 +2292,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2295,6 +2302,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2406,6 +2414,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2415,6 +2424,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2551,6 +2561,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2560,6 +2571,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2601,6 +2613,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "SourceID",
                         "name": "sourceId",
                         "in": "query",
@@ -2650,6 +2663,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs",
                         "name": "connectionId",
                         "in": "query",
@@ -2757,6 +2771,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2766,6 +2781,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2800,7 +2816,7 @@
                 }
             }
         },
-        "/inventory/api/v2/cost/metrics": {
+        "/inventory/api/v2/cost/metric": {
             "get": {
                 "security": [
                     {
@@ -2828,6 +2844,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2837,6 +2854,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2914,6 +2932,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2923,6 +2942,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2985,6 +3005,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter insights by connector",
                         "name": "connector",
                         "in": "query"
@@ -2994,6 +3015,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -3003,6 +3025,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by insight id",
                         "name": "insightId",
                         "in": "query",
@@ -3093,6 +3116,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -3145,6 +3169,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -3204,6 +3229,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Filter by Connector",
                         "name": "connector",
                         "in": "query",
@@ -3214,6 +3240,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Filter by service name",
                         "name": "service",
                         "in": "query"
@@ -3223,6 +3250,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3310,6 +3338,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector",
                         "name": "connector",
                         "in": "query"
@@ -3319,6 +3348,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3422,6 +3452,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector types to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3431,6 +3462,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3475,6 +3507,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3484,6 +3517,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Service names to filter by",
                         "name": "servicename",
                         "in": "query"
@@ -3498,6 +3532,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3507,6 +3542,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3579,6 +3615,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3708,6 +3745,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3717,6 +3755,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Service names to filter by",
                         "name": "servicename",
                         "in": "query"
@@ -3731,6 +3770,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3740,6 +3780,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3799,6 +3840,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3813,6 +3855,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3822,6 +3865,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3901,6 +3945,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -4483,7 +4528,7 @@
                 }
             }
         },
-        "/onboard/api/v1/connectors": {
+        "/onboard/api/v1/connector": {
             "get": {
                 "security": [
                     {
@@ -4511,7 +4556,7 @@
                 }
             }
         },
-        "/onboard/api/v1/connectors/{connectorName}": {
+        "/onboard/api/v1/connector/{connectorName}": {
             "get": {
                 "security": [
                     {
@@ -5636,7 +5681,10 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/describe.DescribeResourceJob"
+                            }
                         }
                     }
                 }
@@ -5660,7 +5708,10 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/describe.DescribeSourceJob"
+                            }
                         }
                     }
                 }
@@ -5790,7 +5841,10 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/describe.InsightJob"
+                            }
                         }
                     }
                 }
@@ -6071,6 +6125,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -6080,6 +6135,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Account IDs to filter by",
                         "name": "accountIds",
                         "in": "query"
@@ -6176,6 +6232,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Additional Resources",
                         "name": "resources",
                         "in": "formData"
@@ -6458,7 +6515,10 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/describe.SummarizerJob"
+                            }
                         }
                     }
                 }
@@ -7016,6 +7076,91 @@
                 }
             }
         },
+        "describe.DescribeResourceJob": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "describedResourceCount": {
+                    "type": "integer"
+                },
+                "errorCode": {
+                    "description": "Should be NULLSTRING",
+                    "type": "string"
+                },
+                "failureMessage": {
+                    "description": "Should be NULLSTRING",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "parentJobID": {
+                    "type": "integer"
+                },
+                "resourceType": {
+                    "type": "string"
+                },
+                "retryCount": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "describe.DescribeSourceJob": {
+            "type": "object",
+            "properties": {
+                "accountID": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "describeResourceJobs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/describe.DescribeResourceJob"
+                    }
+                },
+                "describedAt": {
+                    "type": "string"
+                },
+                "fullDiscovery": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "sourceID": {
+                    "description": "Not the primary key but should be a unique identifier",
+                    "type": "string"
+                },
+                "sourceType": {
+                    "$ref": "#/definitions/source.Type"
+                },
+                "status": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSourceJobStatus"
+                },
+                "triggerType": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_enums.DescribeTriggerType"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "describe.InsightJob": {
             "type": "object",
             "properties": {
@@ -7048,6 +7193,35 @@
                 },
                 "status": {
                     "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "describe.SummarizerJob": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "$ref": "#/definitions/gorm.DeletedAt"
+                },
+                "failureMessage": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "jobType": {
+                    "$ref": "#/definitions/summarizer.JobType"
+                },
+                "scheduleJobID": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_summarizer_api.SummarizerJobStatus"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -8835,6 +9009,22 @@
                     }
                 }
             }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_describe_enums.DescribeTriggerType": {
+            "type": "string",
+            "enum": [
+                "initial_discovery",
+                "scheduled",
+                "manual"
+            ],
+            "x-enum-comments": {
+                "DescribeTriggerTypeScheduled": "default"
+            },
+            "x-enum-varnames": [
+                "DescribeTriggerTypeInitialDiscovery",
+                "DescribeTriggerTypeScheduled",
+                "DescribeTriggerTypeManual"
+            ]
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus": {
             "type": "string",
@@ -10698,6 +10888,19 @@
                 }
             }
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_summarizer_api.SummarizerJobStatus": {
+            "type": "string",
+            "enum": [
+                "IN_PROGRESS",
+                "FAILED",
+                "SUCCEEDED"
+            ],
+            "x-enum-varnames": [
+                "SummarizerJobInProgress",
+                "SummarizerJobFailed",
+                "SummarizerJobSucceeded"
+            ]
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest": {
             "type": "object",
             "properties": {
@@ -10995,6 +11198,19 @@
                 "Nil",
                 "CloudAWS",
                 "CloudAzure"
+            ]
+        },
+        "summarizer.JobType": {
+            "type": "string",
+            "enum": [
+                "resourceSummarizer",
+                "resourceMustSummarizer",
+                "complianceSummarizer"
+            ],
+            "x-enum-varnames": [
+                "JobType_ResourceSummarizer",
+                "JobType_ResourceMustSummarizer",
+                "JobType_ComplianceSummarizer"
             ]
         },
         "types.ComplianceResult": {
