@@ -283,7 +283,7 @@ func (db Database) ListResourceTypeTagsKeysWithPossibleValues(doSummarize *bool)
 	// query = query.Joins("JOIN resource_type_tags AS tags ON tags.resource_type = resource_types.resource_type")
 	tx := db.orm.Model(ResourceTypeTag{})
 	if doSummarize != nil {
-		tx = tx.Joins("JOIN resource_types AS tags ON resource_type_tags.resource_type = resource_types.resource_type").
+		tx = tx.Joins("JOIN resource_types ON resource_type_tags.resource_type = resource_types.resource_type").
 			Where("resource_types.do_summarize = ?", true)
 	}
 	tx.Distinct().Find(&tags)
