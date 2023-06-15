@@ -1414,20 +1414,16 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 //	@Router		/inventory/api/v1/accounts/resource/count [get]
 func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	connectors := source.ParseTypes(ctx.QueryParams()["provider"])
-	sourceId := ctx.QueryParam("sourceId")
-	var sourceIdPtr *string
-	if sourceId != "" {
-		sourceIdPtr = &sourceId
-	}
+	sourceId := ctx.QueryParams()["sourceId"]
 
 	res := map[string]api.ConnectionResourceCountResponse{}
 
 	var err error
 	var allSources []apiOnboard.Connection
-	if sourceId == "" {
+	if sourceId == nil || len(sourceId) > 0 {
 		allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), connectors)
 	} else {
-		allSources, err = h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), []string{sourceId})
+		allSources, err = h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceId)
 	}
 	if err != nil {
 		return err
@@ -1444,7 +1440,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 		}
 	}
 
-	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, connectors, sourceIdPtr, nil, EsFetchPageSize)
+	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, connectors, sourceId, nil, EsFetchPageSize)
 	for _, hit := range hits {
 		if v, ok := res[hit.SourceID]; ok {
 			v.ResourceCount += hit.ResourceCount

@@ -198,7 +198,7 @@ type ConnectionResourcesSummaryQueryHit struct {
 	Sort    []any                                 `json:"sort"`
 }
 
-func FetchConnectionResourcesSummaryPage(client keibi.Client, connectors []source.Type, sourceID *string, sort []map[string]any, size int) ([]summarizer.ConnectionResourcesSummary, error) {
+func FetchConnectionResourcesSummaryPage(client keibi.Client, connectors []source.Type, sourceID []string, sort []map[string]any, size int) ([]summarizer.ConnectionResourcesSummary, error) {
 	var hits []summarizer.ConnectionResourcesSummary
 	res := make(map[string]any)
 	var filters []any
@@ -217,9 +217,9 @@ func FetchConnectionResourcesSummaryPage(client keibi.Client, connectors []sourc
 		})
 	}
 
-	if sourceID != nil {
+	if sourceID != nil && len(sourceID) > 0 {
 		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"source_id": {*sourceID}},
+			"terms": map[string][]string{"source_id": sourceID},
 		})
 	}
 
