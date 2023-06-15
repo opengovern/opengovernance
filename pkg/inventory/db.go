@@ -306,9 +306,10 @@ func (db Database) GetResourceTypeTagPossibleValues(key string) ([]string, error
 	return result[key], nil
 }
 
-func (db Database) ListFilteredResourceTypes(tags map[string][]string, serviceNames []string, connectorTypes []source.Type) ([]ResourceType, error) {
+func (db Database) ListFilteredResourceTypes(tags map[string][]string, serviceNames []string, connectorTypes []source.Type, doSummarize bool) ([]ResourceType, error) {
 	var resourceTypes []ResourceType
 	query := db.orm.Model(ResourceType{}).Preload(clause.Associations)
+	query = query.Where("resource_types.do_summarize = ?", doSummarize)
 	if len(tags) != 0 {
 		query = query.Joins("JOIN resource_type_tags AS tags ON tags.resource_type = resource_types.resource_type")
 		for key, values := range tags {

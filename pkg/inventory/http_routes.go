@@ -560,7 +560,7 @@ func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, serviceNames []string, connectorTypes []source.Type, connectionIDs []string, timeAt int64) (int, []api.ResourceType, error) {
-	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, serviceNames, connectorTypes)
+	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, serviceNames, connectorTypes, true)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -801,7 +801,7 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 		}
 	}
 
-	resourceTypes, err := h.db.ListFilteredResourceTypes(map[string][]string{tagKey: nil}, nil, connectorTypes)
+	resourceTypes, err := h.db.ListFilteredResourceTypes(map[string][]string{tagKey: nil}, nil, connectorTypes, true)
 	if err != nil {
 		return err
 	}
@@ -903,7 +903,7 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 		}
 	}
 
-	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, serviceNames, connectorTypes)
+	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, serviceNames, connectorTypes, true)
 	if err != nil {
 		return err
 	}
@@ -3042,7 +3042,7 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
-	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, serviceNames, connectors)
+	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, serviceNames, connectors, true)
 	if err != nil {
 		return err
 	}
