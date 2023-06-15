@@ -1528,7 +1528,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 
 	var err error
 	var allSources []apiOnboard.Connection
-	if sourceId == nil || len(sourceId) > 0 {
+	if sourceId == nil || len(sourceId) == 0 {
 		allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), connectors)
 	} else {
 		allSources, err = h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceId)
