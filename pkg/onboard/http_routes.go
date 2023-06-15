@@ -2398,7 +2398,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 				return false
 			}
 			if *result.Connections[i].ResourceCount != *result.Connections[j].ResourceCount {
-				return *result.Connections[i].ResourceCount < *result.Connections[j].ResourceCount
+				return *result.Connections[i].ResourceCount > *result.Connections[j].ResourceCount
 			}
 		case "cost":
 			if result.Connections[i].Cost == nil {
@@ -2408,7 +2408,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 				return false
 			}
 			if *result.Connections[i].Cost != *result.Connections[j].Cost {
-				return *result.Connections[i].Cost < *result.Connections[j].Cost
+				return *result.Connections[i].Cost > *result.Connections[j].Cost
 			}
 		}
 		return result.Connections[i].ID.String() < result.Connections[j].ID.String()
