@@ -963,7 +963,7 @@ func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			insightId	path		string	true	"InsightID"
 //	@Success		200			{object}	api.Insight
-//	@Router			/compliance/api/v1/insight/{insightId} [get]
+//	@Router			/compliance/api/v1/metadata/insight/{insightId} [get]
 func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 	id, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
 	if err != nil {

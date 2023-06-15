@@ -89,15 +89,6 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	return nil
 }
 
-// GetProviders godoc
-//
-//	@Summary		Get providers
-//	@Description	Getting cloud providers
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200	{object}	api.ProvidersResponse
-//	@Router			/onboard/api/v1/providers [get]
 func (h HttpHandler) GetProviders(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, api.ProvidersResponse{
 		{Name: "Sumo Logic", ID: "sumologic", Type: "IT Operations", State: api.ProviderStateDisabled},
@@ -279,15 +270,6 @@ func (h HttpHandler) GetConnector(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-// GetProviderTypes godoc
-//
-//	@Summary		Get provider types
-//	@Description	Getting provider types
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200	{object}	api.ProviderTypesResponse
-//	@Router			/onboard/api/v1/providers/types [get]
 func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, api.ProviderTypesResponse{
 		{ID: "1", TypeName: "Public Cloud", State: api.ProviderTypeStateEnabled},
