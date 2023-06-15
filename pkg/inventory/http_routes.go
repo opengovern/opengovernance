@@ -1489,11 +1489,8 @@ func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 	timepointToCost := make(map[int]float64)
 
 	for _, serviceCosts := range costTrendHits {
-		for timeAt, hitsAtTime := range serviceCosts {
-			timepointToCost[timeAt] = 0
-			for _, hit := range hitsAtTime {
-				timepointToCost[timeAt] += hit.CostValue
-			}
+		for timeAt, costAtTime := range serviceCosts {
+			timepointToCost[timeAt] += costAtTime
 		}
 	}
 

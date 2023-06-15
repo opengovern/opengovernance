@@ -226,20 +226,11 @@ type FetchDailyCostTrendByServicesBetweenResponse struct {
 				Key                 string `json:"key"`
 				PeriodEndRangeGroup struct {
 					Buckets []struct {
-						From              float64 `json:"from"`
-						To                float64 `json:"to"`
-						ConnectionIDGroup struct {
-							Buckets []struct {
-								Key  string `json:"key"`
-								Hits struct {
-									Hits struct {
-										Hits []struct {
-											Source summarizer.ServiceCostSummary `json:"_source"`
-										} `json:"hits"`
-									} `json:"hits"`
-								} `json:"hits"`
-							} `json:"buckets"`
-						} `json:"connection_id_group"`
+						From         float64 `json:"from"`
+						To           float64 `json:"to"`
+						CostSumGroup struct {
+							Value float64 `json:"value"`
+						} `json:"cost_sum_group"`
 					} `json:"buckets"`
 				} `json:"period_end_range_group"`
 			} `json:"buckets"`
@@ -247,7 +238,7 @@ type FetchDailyCostTrendByServicesBetweenResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchDailyCostTrendByServicesBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, startTime, endTime time.Time, datapointCount int) (map[string]map[int][]summarizer.ServiceCostSummary, error) {
+func FetchDailyCostTrendByServicesBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, startTime, endTime time.Time, datapointCount int) (map[string]map[int]float64, error) {
 	startTime = startTime.Truncate(time.Hour * 24)
 	endTime = endTime.Truncate(time.Hour * 24)
 
@@ -320,20 +311,9 @@ func FetchDailyCostTrendByServicesBetween(client keibi.Client, connectionIDs []s
 						"ranges": ranges,
 					},
 					"aggs": map[string]any{
-						"connection_id_group": map[string]any{
-							"terms": map[string]any{
-								"field": "source_id",
-								"size":  10000,
-							},
-							"aggs": map[string]any{
-								"hits": map[string]any{
-									"top_hits": map[string]any{
-										"size": 1,
-										"sort": map[string]string{
-											"period_end": "desc",
-										},
-									},
-								},
+						"cost_sum_group": map[string]any{
+							"sum": map[string]string{
+								"field": "cost_value",
 							},
 						},
 					},
@@ -354,18 +334,14 @@ func FetchDailyCostTrendByServicesBetween(client keibi.Client, connectionIDs []s
 		return nil, err
 	}
 
-	result := make(map[string]map[int][]summarizer.ServiceCostSummary)
+	result := make(map[string]map[int]float64)
 	for _, serviceNameBucket := range response.Aggregations.ServiceNameGroup.Buckets {
 		if _, ok := result[serviceNameBucket.Key]; !ok {
-			result[serviceNameBucket.Key] = make(map[int][]summarizer.ServiceCostSummary)
+			result[serviceNameBucket.Key] = make(map[int]float64)
 		}
 		for _, periodEndRangeBucket := range serviceNameBucket.PeriodEndRangeGroup.Buckets {
 			rangeBucketKey := int((periodEndRangeBucket.From + periodEndRangeBucket.To) / 2)
-			for _, connectionIDBucket := range periodEndRangeBucket.ConnectionIDGroup.Buckets {
-				for _, hit := range connectionIDBucket.Hits.Hits.Hits {
-					result[serviceNameBucket.Key][rangeBucketKey] = append(result[serviceNameBucket.Key][rangeBucketKey], hit.Source)
-				}
-			}
+			result[serviceNameBucket.Key][rangeBucketKey] = periodEndRangeBucket.CostSumGroup.Value
 		}
 	}
 
