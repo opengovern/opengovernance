@@ -93,6 +93,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	costV2 := v2.Group("/cost")
 	costV2.GET("/metric", httpserver.AuthorizeHandler(h.ListCostMetricsHandler, api3.ViewerRole))
+	costV2.GET("/composition", httpserver.AuthorizeHandler(h.ListCostComposition, api3.ViewerRole))
 	costV2.GET("/trend", httpserver.AuthorizeHandler(h.GetCostTrend, api3.ViewerRole))
 
 	connectionsV2 := v2.Group("/connections")
@@ -1188,87 +1189,6 @@ func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, apiService)
 }
 
-// GetCostTrend godoc
-//
-//	@Summary	Returns list of costs over the course of the specified time frame based on the given input filters
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param		startTime		query		string			false	"timestamp for start in epoch seconds"
-//	@Param		endTime			query		string			false	"timestamp for end in epoch seconds"
-//	@Param		datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
-//	@Success	200				{object}	[]api.CostTrendDatapoint
-//	@Router		/inventory/api/v2/cost/trend [get]
-func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
-	var err error
-	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
-
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now().Unix()
-	if endTimeStr != "" {
-		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).AddDate(0, -1, 0).Unix()
-	if startTimeStr != "" {
-		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-	}
-
-	datapointCountStr := ctx.QueryParam("datapointCount")
-	datapointCount := int64(30)
-	if datapointCountStr != "" {
-		datapointCount, err = strconv.ParseInt(datapointCountStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
-		}
-	}
-
-	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, connectionIDs, connectorTypes, nil, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-
-	type costTimePair struct {
-		cost float64
-		time time.Time
-	}
-
-	summarizeJobIDCountMap := make(map[uint]costTimePair)
-
-	for _, hitArr := range costHits {
-		for _, hit := range hitArr {
-			cost, _ := hit.GetCostAndUnit()
-			if v, ok := summarizeJobIDCountMap[hit.SummarizeJobID]; !ok {
-				summarizeJobIDCountMap[hit.SummarizeJobID] = costTimePair{cost: cost, time: time.Unix(hit.SummarizeJobTime, 0)}
-			} else {
-				v.cost += cost
-				summarizeJobIDCountMap[hit.SummarizeJobID] = v
-			}
-		}
-	}
-
-	apiDatapoints := make([]api.CostTrendDatapoint, 0, len(summarizeJobIDCountMap))
-	for _, v := range summarizeJobIDCountMap {
-		apiDatapoints = append(apiDatapoints, api.CostTrendDatapoint{Cost: v.cost, Date: v.time})
-	}
-	sort.Slice(apiDatapoints, func(i, j int) bool {
-		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
-	})
-	apiDatapoints = internal.DownSampleCostTrendDatapoints(apiDatapoints, int(datapointCount))
-
-	return ctx.JSON(http.StatusOK, apiDatapoints)
-}
-
 // ListCostMetricsHandler godoc
 //
 //	@Summary	Returns list of cost metrics
@@ -1317,7 +1237,7 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
 	}
 
-	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, connectionIDs, connectorTypes, nil, time.Unix(endTime, 0), time.Unix(startTime, 0), EsFetchPageSize)
+	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, connectionIDs, connectorTypes, nil, time.Unix(startTime, 0), time.Unix(endTime, 0), EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -1399,6 +1319,194 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 		TotalCost:  totalCost,
 		Metrics:    utils.Paginate(pageNumber, pageSize, costMetrics),
 	})
+}
+
+// ListCostComposition godoc
+//
+//	@Summary	Returns cost composition for a given time range
+//	@Security	BearerToken
+//	@Tags		inventory
+//	@Accept		json
+//	@Produce	json
+//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param		top				query		int				true	"How many top values to return default is 5"
+//	@Param		startTime		query		string			false	"timestamp for start in epoch seconds"
+//	@Param		endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Success	200				{object}	api.ListCostCompositionResponse
+//	@Router		/inventory/api/v2/cost/composition [get]
+func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
+	var err error
+	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now().Unix()
+	if endTimeStr != "" {
+		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
+	if startTimeStr != "" {
+		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+	}
+	topStr := ctx.QueryParam("top")
+	top := int64(5)
+	if topStr != "" {
+		top, err = strconv.ParseInt(topStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid top value")
+		}
+	}
+
+	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, connectionIDs, connectorTypes, nil, time.Unix(startTime, 0), time.Unix(endTime, 0), EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+	costMetricMap := make(map[string]api.CostMetric)
+	for _, hitArr := range costHits {
+		for _, hit := range hitArr {
+			costMetricMap[hit.ServiceName] = api.CostMetric{
+				Connector:         hit.Connector,
+				CostDimensionName: hit.ServiceName,
+			}
+			break
+		}
+	}
+	aggregatedCostHits := internal.AggregateServiceCosts(costHits)
+
+	for dimension, costVal := range aggregatedCostHits {
+		if costMetric, ok := costMetricMap[dimension]; ok {
+			localCostVal := costVal
+			costMetric.TotalCost = utils.PAdd(costMetric.TotalCost, &localCostVal)
+			costMetricMap[dimension] = costMetric
+		}
+	}
+
+	var costMetrics []api.CostMetric
+	totalCost := float64(0)
+	for _, costMetric := range costMetricMap {
+		costMetrics = append(costMetrics, costMetric)
+		if costMetric.TotalCost != nil {
+			totalCost += *costMetric.TotalCost
+		}
+	}
+
+	sort.Slice(costMetrics, func(i, j int) bool {
+		if costMetrics[i].TotalCost == nil {
+			return false
+		}
+		if costMetrics[j].TotalCost == nil {
+			return true
+		}
+		if *costMetrics[i].TotalCost != *costMetrics[j].TotalCost {
+			return *costMetrics[i].TotalCost > *costMetrics[j].TotalCost
+		}
+		return costMetrics[i].CostDimensionName < costMetrics[j].CostDimensionName
+	})
+
+	topCostMap := make(map[string]float64)
+	othersCost := float64(0)
+	for _, costMetric := range costMetrics[:int(top)] {
+		if costMetric.TotalCost != nil {
+			topCostMap[costMetric.CostDimensionName] = *costMetric.TotalCost
+		}
+	}
+	if len(costMetrics) > int(top) {
+		for _, costMetric := range costMetrics[int(top):] {
+			if costMetric.TotalCost != nil {
+				othersCost += *costMetric.TotalCost
+			}
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, api.ListCostCompositionResponse{
+		TotalCount:     len(costMetrics),
+		TotalCostValue: totalCost,
+		TopValues:      topCostMap,
+		Others:         othersCost,
+	})
+}
+
+// GetCostTrend godoc
+//
+//	@Summary	Returns list of costs over the course of the specified time frame based on the given input filters
+//	@Security	BearerToken
+//	@Tags		inventory
+//	@Accept		json
+//	@Produce	json
+//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param		startTime		query		string			false	"timestamp for start in epoch seconds"
+//	@Param		endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param		datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
+//	@Success	200				{object}	[]api.CostTrendDatapoint
+//	@Router		/inventory/api/v2/cost/trend [get]
+func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
+	var err error
+	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectionIDs := ctx.QueryParams()["connectionId"]
+
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now()
+	if endTimeStr != "" {
+		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		endTime = time.Unix(endTimeVal, 0)
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := endTime.AddDate(0, -1, 0)
+	if startTimeStr != "" {
+		startTimeVal, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		startTime = time.Unix(startTimeVal, 0)
+	}
+
+	datapointCountStr := ctx.QueryParam("datapointCount")
+	datapointCount := int64(30)
+	if datapointCountStr != "" {
+		datapointCount, err = strconv.ParseInt(datapointCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
+		}
+	}
+
+	esDataPointCount := int(endTime.Sub(startTime).Hours() / 24)
+	costTrendHits, err := es.FetchDailyCostTrendByServicesBetween(h.client, connectionIDs, connectorTypes, nil, startTime, endTime, esDataPointCount)
+	if err != nil {
+		return err
+	}
+
+	timepointToCost := make(map[int]float64)
+
+	for _, serviceCosts := range costTrendHits {
+		for timeAt, hitsAtTime := range serviceCosts {
+			timepointToCost[timeAt] = 0
+			for _, hit := range hitsAtTime {
+				timepointToCost[timeAt] += hit.CostValue
+			}
+		}
+	}
+
+	apiDatapoints := make([]api.CostTrendDatapoint, 0, len(timepointToCost))
+	for timeAt, costVal := range timepointToCost {
+		apiDatapoints = append(apiDatapoints, api.CostTrendDatapoint{Cost: costVal, Date: time.Unix(int64(timeAt), 0)})
+	}
+	sort.Slice(apiDatapoints, func(i, j int) bool {
+		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
+	})
+	apiDatapoints = internal.DownSampleCostTrendDatapoints(apiDatapoints, int(datapointCount))
+
+	return ctx.JSON(http.StatusOK, apiDatapoints)
 }
 
 // GetAccountsResourceCount godoc

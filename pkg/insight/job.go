@@ -7,10 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -113,11 +112,13 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 			Data:    [][]any{{count}},
 		}
 	} else {
-		sourceIdFilterWhereClause := fmt.Sprintf("kaytu_account_id = '%s'", j.SourceID)
+		isAllConnectionsQuery := "FALSE"
 		if strings.HasPrefix(strings.ToLower(j.SourceID), "all:") {
-			sourceIdFilterWhereClause = "1=1"
+			isAllConnectionsQuery = "TRUE"
 		}
-		res, err = steampipeConn.QueryAll(strings.ReplaceAll(j.Query, "$SOURCEID_WHERE_CLAUSE", sourceIdFilterWhereClause))
+		query := strings.ReplaceAll(j.Query, "$CONNECITON_ID", j.SourceID)
+		query = strings.ReplaceAll(query, "$IS_ALL_CONNECTIONS_QUERY", isAllConnectionsQuery)
+		res, err = steampipeConn.QueryAll(query)
 		if res != nil {
 			count = int64(len(res.Data))
 			for colNo, col := range res.Headers {
