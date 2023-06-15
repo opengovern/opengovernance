@@ -74,6 +74,63 @@ definitions:
       updatedAt:
         type: string
     type: object
+  describe.DescribeResourceJob:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      describedResourceCount:
+        type: integer
+      errorCode:
+        description: Should be NULLSTRING
+        type: string
+      failureMessage:
+        description: Should be NULLSTRING
+        type: string
+      id:
+        type: integer
+      parentJobID:
+        type: integer
+      resourceType:
+        type: string
+      retryCount:
+        type: integer
+      status:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus'
+      updatedAt:
+        type: string
+    type: object
+  describe.DescribeSourceJob:
+    properties:
+      accountID:
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      describeResourceJobs:
+        items:
+          $ref: '#/definitions/describe.DescribeResourceJob'
+        type: array
+      describedAt:
+        type: string
+      fullDiscovery:
+        type: boolean
+      id:
+        type: integer
+      sourceID:
+        description: Not the primary key but should be a unique identifier
+        type: string
+      sourceType:
+        $ref: '#/definitions/source.Type'
+      status:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSourceJobStatus'
+      triggerType:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_enums.DescribeTriggerType'
+      updatedAt:
+        type: string
+    type: object
   describe.InsightJob:
     properties:
       accountID:
@@ -96,6 +153,25 @@ definitions:
         $ref: '#/definitions/source.Type'
       status:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus'
+      updatedAt:
+        type: string
+    type: object
+  describe.SummarizerJob:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      failureMessage:
+        type: string
+      id:
+        type: integer
+      jobType:
+        $ref: '#/definitions/summarizer.JobType'
+      scheduleJobID:
+        type: integer
+      status:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_summarizer_api.SummarizerJobStatus'
       updatedAt:
         type: string
     type: object
@@ -1316,6 +1392,18 @@ definitions:
           type: string
         type: array
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_describe_enums.DescribeTriggerType:
+    enum:
+    - initial_discovery
+    - scheduled
+    - manual
+    type: string
+    x-enum-comments:
+      DescribeTriggerTypeScheduled: default
+    x-enum-varnames:
+    - DescribeTriggerTypeInitialDiscovery
+    - DescribeTriggerTypeScheduled
+    - DescribeTriggerTypeManual
   gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus:
     enum:
     - IN_PROGRESS
@@ -1685,6 +1773,19 @@ definitions:
         type: array
       totalCount:
         description: Number of returned resources
+        type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostCompositionResponse:
+    properties:
+      others:
+        type: number
+      top_values:
+        additionalProperties:
+          type: number
+        type: object
+      total_cost_value:
+        type: number
+      total_count:
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostMetricsResponse:
@@ -2613,6 +2714,16 @@ definitions:
       name:
         type: string
     type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_summarizer_api.SummarizerJobStatus:
+    enum:
+    - IN_PROGRESS
+    - FAILED
+    - SUCCEEDED
+    type: string
+    x-enum-varnames:
+    - SummarizerJobInProgress
+    - SummarizerJobFailed
+    - SummarizerJobSucceeded
   gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest:
     properties:
       newName:
@@ -2684,6 +2795,25 @@ definitions:
     - Tier_Free
     - Tier_Teams
     - Tier_Enterprise
+  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Workspace:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      organization_id:
+        type: integer
+      owner_id:
+        type: string
+      status:
+        type: string
+      tier:
+        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Tier'
+      uri:
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits:
     properties:
       maxConnections:
@@ -2797,6 +2927,16 @@ definitions:
     - Nil
     - CloudAWS
     - CloudAzure
+  summarizer.JobType:
+    enum:
+    - resourceSummarizer
+    - resourceMustSummarizer
+    - complianceSummarizer
+    type: string
+    x-enum-varnames:
+    - JobType_ResourceSummarizer
+    - JobType_ResourceMustSummarizer
+    - JobType_ComplianceSummarizer
   types.ComplianceResult:
     enum:
     - ok
@@ -3705,7 +3845,8 @@ paths:
         in: query
         name: tag
         type: string
-      - description: filter insights by connector
+      - collectionFormat: csv
+        description: filter insights by connector
         in: query
         items:
           enum:
@@ -3715,7 +3856,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -3752,7 +3894,8 @@ paths:
         name: insightId
         required: true
         type: string
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -3787,7 +3930,8 @@ paths:
         name: insightId
         required: true
         type: string
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -3823,7 +3967,8 @@ paths:
     get:
       description: Listing insight metadata
       parameters:
-      - description: filter by connector
+      - collectionFormat: csv
+        description: filter by connector
         in: query
         items:
           enum:
@@ -3924,7 +4069,8 @@ paths:
         name: provider
         required: true
         type: string
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4297,7 +4443,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4307,7 +4454,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4376,7 +4524,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4386,7 +4535,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4473,7 +4623,8 @@ paths:
         name: count
         required: true
         type: integer
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4483,7 +4634,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4508,7 +4660,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: SourceID
+      - collectionFormat: csv
+        description: SourceID
         in: query
         items:
           type: string
@@ -4539,7 +4692,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Connection IDs
+      - collectionFormat: csv
+        description: Connection IDs
         in: query
         items:
           type: string
@@ -4600,12 +4754,13 @@ paths:
         specified time - internal use api,  for full result use onboard api
       tags:
       - connection
-  /inventory/api/v2/cost/metrics:
+  /inventory/api/v2/cost/composition:
     get:
       consumes:
       - application/json
       parameters:
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4615,7 +4770,56 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: How many top values to return default is 5
+        in: query
+        name: top
+        required: true
+        type: integer
+      - description: timestamp for start in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      - description: timestamp for end in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostCompositionResponse'
+      security:
+      - BearerToken: []
+      summary: Returns cost composition for a given time range
+      tags:
+      - inventory
+  /inventory/api/v2/cost/metric:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4661,7 +4865,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4671,7 +4876,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4709,7 +4915,8 @@ paths:
       description: List all insight results for the given insightIds - this mostly
         for internal usage, use compliance api for full api
       parameters:
-      - description: filter insights by connector
+      - collectionFormat: csv
+        description: filter insights by connector
         in: query
         items:
           enum:
@@ -4719,13 +4926,15 @@ paths:
           type: string
         name: connector
         type: array
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
         name: connectionId
         type: array
-      - description: filter the result by insight id
+      - collectionFormat: csv
+        description: filter the result by insight id
         in: query
         items:
           type: string
@@ -4743,7 +4952,9 @@ paths:
           description: OK
           schema:
             additionalProperties:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource'
+              items:
+                $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource'
+              type: array
             type: object
       security:
       - BearerToken: []
@@ -4760,7 +4971,8 @@ paths:
         name: insightId
         required: true
         type: string
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -4776,7 +4988,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource'
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource'
+            type: array
       security:
       - BearerToken: []
       summary: Get insight result by id
@@ -4792,7 +5006,8 @@ paths:
         name: insightId
         required: true
         type: string
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -4814,9 +5029,11 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource'
-            type: array
+            additionalProperties:
+              items:
+                $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource'
+              type: array
+            type: object
       security:
       - BearerToken: []
       summary: Get insight trend data
@@ -4850,7 +5067,8 @@ paths:
         Gets a list of all resource types in workspace and their metadata including service name.
         The results could be filtered by provider name and service name.
       parameters:
-      - description: Filter by Connector
+      - collectionFormat: csv
+        description: Filter by Connector
         in: query
         items:
           enum:
@@ -4861,13 +5079,15 @@ paths:
         name: connector
         required: true
         type: array
-      - description: Filter by service name
+      - collectionFormat: csv
+        description: Filter by service name
         in: query
         items:
           type: string
         name: service
         type: array
-      - description: Key-Value tags in key=value format to filter by
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
@@ -4921,7 +5141,8 @@ paths:
         Gets a list of all workspace cloud services and their metadata, and list of resource types.
         The results could be filtered by tags.
       parameters:
-      - description: Connector
+      - collectionFormat: csv
+        description: Connector
         in: query
         items:
           enum:
@@ -4931,7 +5152,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Key-Value tags in key=value format to filter by
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
@@ -4994,7 +5216,8 @@ paths:
         name: top
         required: true
         type: integer
-      - description: Connector types to filter by
+      - collectionFormat: csv
+        description: Connector types to filter by
         in: query
         items:
           enum:
@@ -5004,7 +5227,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5031,19 +5255,22 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Key-Value tags in key=value format to filter by
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - description: Service names to filter by
+      - collectionFormat: csv
+        description: Service names to filter by
         in: query
         items:
           type: string
         name: servicename
         type: array
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5053,7 +5280,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5100,7 +5328,8 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5182,19 +5411,22 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Key-Value tags in key=value format to filter by
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - description: Service names to filter by
+      - collectionFormat: csv
+        description: Service names to filter by
         in: query
         items:
           type: string
         name: servicename
         type: array
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5204,7 +5436,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5242,13 +5475,15 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Key-Value tags in key=value format to filter by
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - description: Connector type to filter by
+      - collectionFormat: csv
+        description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5258,7 +5493,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5310,7 +5546,8 @@ paths:
         name: serviceName
         required: true
         type: string
-      - description: Connection IDs to filter by
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5689,7 +5926,7 @@ paths:
       summary: Returns resource count of accounts
       tags:
       - connections
-  /onboard/api/v1/connectors:
+  /onboard/api/v1/connector:
     get:
       description: Getting connectors
       produces:
@@ -5706,7 +5943,7 @@ paths:
       summary: Get connectors
       tags:
       - onboard
-  /onboard/api/v1/connectors/{connectorName}:
+  /onboard/api/v1/connector/{connectorName}:
     get:
       description: Getting connector
       parameters:
@@ -6401,7 +6638,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+            items:
+              $ref: '#/definitions/describe.DescribeResourceJob'
+            type: array
       security:
       - BearerToken: []
       summary: Listing describe resource jobs
@@ -6415,7 +6654,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+            items:
+              $ref: '#/definitions/describe.DescribeSourceJob'
+            type: array
       security:
       - BearerToken: []
       summary: Listing describe source jobs
@@ -6494,7 +6735,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+            items:
+              $ref: '#/definitions/describe.InsightJob'
+            type: array
       security:
       - BearerToken: []
       summary: Listing insight jobs
@@ -6662,13 +6905,15 @@ paths:
       - application/json
       description: Get list of stacks
       parameters:
-      - description: Key-Value tags in key=value format to filter by
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - description: Account IDs to filter by
+      - collectionFormat: csv
+        description: Account IDs to filter by
         in: query
         items:
           type: string
@@ -6836,7 +7081,8 @@ paths:
         in: formData
         name: tag
         type: string
-      - description: Additional Resources
+      - collectionFormat: csv
+        description: Additional Resources
         in: formData
         items:
           type: string
@@ -6910,7 +7156,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+            items:
+              $ref: '#/definitions/describe.SummarizerJob'
+            type: array
       security:
       - BearerToken: []
       summary: Listing summarize jobs
@@ -6959,26 +7207,6 @@ paths:
       security:
       - BearerToken: []
       summary: Delete workspace for workspace service
-      tags:
-      - workspace
-    get:
-      consumes:
-      - application/json
-      description: Get workspace with workspace id
-      parameters:
-      - description: Workspace ID
-        in: path
-        name: workspace_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Get workspace for workspace service
       tags:
       - workspace
   /workspace/api/v1/workspace/{workspace_id}/name:
@@ -7144,12 +7372,33 @@ paths:
       summary: List all workspaces with owner id
       tags:
       - workspace
+  /workspace/api/v1/workspaces/{workspace_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get workspace with workspace id
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspace_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Get workspace for workspace service
+      tags:
+      - workspace
   /workspace/api/v1/workspaces/byid/{workspace_id}:
     get:
       consumes:
       - application/json
       parameters:
-      - description: Workspace Name
+      - description: Workspace ID
         in: path
         name: workspace_id
         required: true
@@ -7160,9 +7409,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits'
-            type: array
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Workspace'
       security:
       - BearerToken: []
       summary: Get workspace
@@ -7188,9 +7435,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimitsUsage'
-            type: array
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimitsUsage'
       security:
       - BearerToken: []
       summary: Get workspace limits
@@ -7201,7 +7446,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Workspace Name
+      - description: Workspace ID
         in: path
         name: workspace_id
         required: true
@@ -7212,9 +7457,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits'
-            type: array
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits'
       security:
       - BearerToken: []
       summary: Get workspace limits

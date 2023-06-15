@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -13,117 +14,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 )
-
-type FetchCostByServicesQueryResponse struct {
-	Aggregation struct {
-		ServiceGroup struct {
-			Buckets []struct {
-				Key                string `json:"key"`
-				EndTimeAggregation struct {
-					Hits struct {
-						Total keibi.SearchTotal `json:"total"`
-						Hits  []struct {
-							ID      string                        `json:"_id"`
-							Score   float64                       `json:"_score"`
-							Index   string                        `json:"_index"`
-							Type    string                        `json:"_type"`
-							Version int64                         `json:"_version,omitempty"`
-							Source  summarizer.ServiceCostSummary `json:"_source"`
-						} `json:"hits"`
-					} `json:"hits"`
-				} `json:"period_end_max"`
-			} `json:"buckets"`
-		} `json:"service_grouping"`
-	} `json:"aggregations"`
-}
-
-func FetchCostByServicesBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, before time.Time, after time.Time, size int) (map[string]summarizer.ServiceCostSummary, error) {
-	before = before.Truncate(24 * time.Hour)
-	after = after.Truncate(24 * time.Hour)
-
-	hits := make(map[string]summarizer.ServiceCostSummary)
-	res := make(map[string]any)
-	var filters []any
-
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummaryMonthly)}},
-	})
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"service_name": services},
-	})
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"period_end": map[string]string{
-				"gte": strconv.FormatInt(after.Unix(), 10),
-				"lte": strconv.FormatInt(before.Unix(), 10),
-			},
-		},
-	})
-
-	if len(connectionIDs) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"source_id": connectionIDs},
-		})
-	}
-	if len(connectors) > 0 {
-		connectorsStr := make([]string, 0, len(connectors))
-		for _, connector := range connectors {
-			connectorsStr = append(connectorsStr, string(connector))
-		}
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"source_type": connectorsStr},
-		})
-	}
-
-	res["size"] = size
-	res["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": filters,
-		},
-	}
-	res["aggs"] = map[string]any{
-		"service_grouping": map[string]any{
-			"terms": map[string]any{
-				"field": "service_name",
-			},
-			"aggs": map[string]any{
-				"period_end_max": map[string]any{
-					"top_hits": map[string]any{
-						"size": 1,
-						"sort": []map[string]any{
-							{
-								"period_end": map[string]any{
-									"order": "desc",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	b, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-
-	query := string(b)
-	fmt.Println("query=", query)
-
-	var response FetchCostByServicesQueryResponse
-	err = client.Search(context.Background(), summarizer.CostSummeryIndex, query, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, bucket := range response.Aggregation.ServiceGroup.Buckets {
-		for _, hit := range bucket.EndTimeAggregation.Hits.Hits {
-			hits[hit.Source.ServiceName] = hit.Source
-		}
-	}
-
-	return hits, nil
-}
 
 type FetchCostHistoryByServicesQueryResponse struct {
 	Hits struct {
@@ -139,196 +29,9 @@ type FetchCostHistoryByServicesQueryResponse struct {
 	} `json:"hits"`
 }
 
-func FetchCostHistoryByServicesBetween(client keibi.Client, sourceID *string, provider *source.Type, services []string, before time.Time, after time.Time, size int) (map[string][]summarizer.ServiceCostSummary, error) {
-	before = before.Truncate(24 * time.Hour)
-	after = after.Truncate(24 * time.Hour)
-
-	hits := make(map[string][]summarizer.ServiceCostSummary)
-	res := make(map[string]any)
-	var filters []any
-
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummaryMonthly)}},
-	})
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"service_name": services},
-	})
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"period_end": map[string]string{
-				"gte": strconv.FormatInt(after.Unix(), 10),
-				"lte": strconv.FormatInt(before.Unix(), 10),
-			},
-		},
-	})
-
-	if sourceID != nil {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"source_id": {*sourceID}},
-		})
-	}
-	if provider != nil && !provider.IsNull() {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"source_type": {(*provider).String()}},
-		})
-	}
-
-	res["size"] = size
-	res["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": filters,
-		},
-	}
-
-	b, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-
-	query := string(b)
-	fmt.Println("query=", query)
-
-	var response FetchCostHistoryByServicesQueryResponse
-	err = client.Search(context.Background(), summarizer.CostSummeryIndex, query, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, hit := range response.Hits.Hits {
-		if v, ok := hits[hit.Source.ServiceName]; !ok {
-			hits[hit.Source.ServiceName] = []summarizer.ServiceCostSummary{
-				hit.Source,
-			}
-		} else {
-			hits[hit.Source.ServiceName] = append(v, hit.Source)
-		}
-	}
-
-	return hits, nil
-}
-
-type FetchCostByAccountsQueryResponse struct {
-	Aggregation struct {
-		SourceIDGroup struct {
-			Buckets []struct {
-				Key                string `json:"key"`
-				EndTimeAggregation struct {
-					Hits struct {
-						Total keibi.SearchTotal `json:"total"`
-						Hits  []struct {
-							ID      string                           `json:"_id"`
-							Score   float64                          `json:"_score"`
-							Index   string                           `json:"_index"`
-							Type    string                           `json:"_type"`
-							Version int64                            `json:"_version,omitempty"`
-							Source  summarizer.ConnectionCostSummary `json:"_source"`
-						} `json:"hits"`
-					} `json:"hits"`
-				} `json:"period_end_max"`
-			} `json:"buckets"`
-		} `json:"source_id_grouping"`
-	} `json:"aggregations"`
-}
-
-func FetchCostByAccountsBetween(client keibi.Client, sourceID *string, provider *source.Type, before time.Time, after time.Time, size int) (map[string]summarizer.ConnectionCostSummary, error) {
-	before = before.Truncate(24 * time.Hour)
-	after = after.Truncate(24 * time.Hour)
-
-	hits := make(map[string]summarizer.ConnectionCostSummary)
-	res := make(map[string]any)
-	var filters []any
-
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"report_type": {string(summarizer.CostConnectionSummaryMonthly)}},
-	})
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"period_end": map[string]string{
-				"gte": strconv.FormatInt(after.Unix(), 10),
-				"lte": strconv.FormatInt(before.Unix(), 10),
-			},
-		},
-	})
-
-	if sourceID != nil {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"source_id": {*sourceID}},
-		})
-	}
-	if provider != nil && !provider.IsNull() {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"source_type": {(*provider).String()}},
-		})
-	}
-
-	res["size"] = size
-	res["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": filters,
-		},
-	}
-	res["aggs"] = map[string]any{
-		"source_id_grouping": map[string]any{
-			"terms": map[string]string{
-				"field": "source_id",
-			},
-			"aggs": map[string]any{
-				"period_end_max": map[string]any{
-					"top_hits": map[string]any{
-						"size": 1,
-						"sort": []map[string]string{
-							{
-								"period_end": "desc",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	b, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-
-	query := string(b)
-	fmt.Println("query=", query, "index=", summarizer.CostSummeryIndex)
-
-	var response FetchCostByAccountsQueryResponse
-	err = client.Search(context.Background(), summarizer.CostSummeryIndex, query, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, bucket := range response.Aggregation.SourceIDGroup.Buckets {
-		for _, hit := range bucket.EndTimeAggregation.Hits.Hits {
-			hits[bucket.Key] = hit.Source
-		}
-	}
-
-	for _, hit := range hits {
-		switch strings.ToLower(hit.ResourceType) {
-		case "aws::costexplorer::byaccountmonthly":
-			hitCostStr, err := json.Marshal(hit.Cost)
-			if err != nil {
-				return nil, err
-			}
-			var hitCost model.CostExplorerByAccountMonthlyDescription
-			err = json.Unmarshal(hitCostStr, &hitCost)
-			if err != nil {
-				return nil, err
-			}
-			hit.Cost = hitCost
-		}
-	}
-
-	return hits, nil
-}
-
-func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, before time.Time, after time.Time, size int) (map[string][]summarizer.ServiceCostSummary, error) {
-	before = before.Truncate(24 * time.Hour)
-	after = after.Truncate(24 * time.Hour)
+func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, startTime time.Time, endTime time.Time, size int) (map[string][]summarizer.ServiceCostSummary, error) {
+	endTime = endTime.Truncate(24 * time.Hour)
+	startTime = startTime.Truncate(24 * time.Hour)
 
 	hits := make(map[string][]summarizer.ServiceCostSummary)
 	res := make(map[string]any)
@@ -345,14 +48,14 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs [
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
 			"period_end": map[string]string{
-				"lte": strconv.FormatInt(before.Unix(), 10),
+				"lte": strconv.FormatInt(endTime.Unix(), 10),
 			},
 		},
 	})
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
 			"period_start": map[string]string{
-				"gte": strconv.FormatInt(after.Unix(), 10),
+				"gte": strconv.FormatInt(startTime.Unix(), 10),
 			},
 		},
 	})
@@ -510,6 +213,135 @@ func FetchDailyCostHistoryByServicesAtTime(client keibi.Client, connectionIDs []
 			for _, hit := range connectionBucket.Hits.Hits.Hits {
 				result[bucket.Key] = append(result[bucket.Key], hit.Source)
 			}
+		}
+	}
+
+	return result, nil
+}
+
+type FetchDailyCostTrendByServicesBetweenResponse struct {
+	Aggregations struct {
+		ServiceNameGroup struct {
+			Buckets []struct {
+				Key                 string `json:"key"`
+				PeriodEndRangeGroup struct {
+					Buckets []struct {
+						From         float64 `json:"from"`
+						To           float64 `json:"to"`
+						CostSumGroup struct {
+							Value float64 `json:"value"`
+						} `json:"cost_sum_group"`
+					} `json:"buckets"`
+				} `json:"period_end_range_group"`
+			} `json:"buckets"`
+		} `json:"service_name_group"`
+	} `json:"aggregations"`
+}
+
+func FetchDailyCostTrendByServicesBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, startTime, endTime time.Time, datapointCount int) (map[string]map[int]float64, error) {
+	startTime = startTime.Truncate(time.Hour * 24)
+	endTime = endTime.Truncate(time.Hour * 24)
+
+	query := make(map[string]any)
+	var filters []any
+	filters = append(filters, map[string]any{
+		"terms": map[string][]string{"report_type": {string(summarizer.CostProviderSummaryDaily)}},
+	})
+	if len(services) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"service_name": services},
+		})
+	}
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_end": map[string]string{
+				"lte": strconv.FormatInt(endTime.Unix(), 10),
+			},
+		},
+	})
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_start": map[string]string{
+				"gte": strconv.FormatInt(startTime.Unix(), 10),
+			},
+		},
+	})
+	if len(connectionIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"source_id": connectionIDs},
+		})
+	}
+	if len(connectors) > 0 {
+		connectorsStr := make([]string, 0, len(connectors))
+		for _, connector := range connectors {
+			connectorsStr = append(connectorsStr, connector.String())
+		}
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"source_type": connectorsStr},
+		})
+	}
+
+	startTimeUnix := startTime.Unix()
+	endTimeUnix := endTime.Unix()
+	step := int(math.Ceil(float64(endTimeUnix-startTimeUnix) / float64(datapointCount)))
+	ranges := make([]map[string]any, 0, datapointCount)
+	for i := 0; i < datapointCount; i++ {
+		ranges = append(ranges, map[string]any{
+			"from": startTimeUnix + int64(i*step),
+			"to":   startTimeUnix + int64((i+1)*step),
+		})
+	}
+
+	query["size"] = 0
+	query["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	query["aggs"] = map[string]any{
+		"service_name_group": map[string]any{
+			"terms": map[string]any{
+				"field": "service_name",
+				"size":  10000,
+			},
+			"aggs": map[string]any{
+				"period_end_range_group": map[string]any{
+					"range": map[string]any{
+						"field":  "period_end",
+						"ranges": ranges,
+					},
+					"aggs": map[string]any{
+						"cost_sum_group": map[string]any{
+							"sum": map[string]string{
+								"field": "cost_value",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("query=%s index=%s\n", queryJson, summarizer.CostSummeryIndex)
+
+	var response FetchDailyCostTrendByServicesBetweenResponse
+	err = client.Search(context.Background(), summarizer.CostSummeryIndex, string(queryJson), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]map[int]float64)
+	for _, serviceNameBucket := range response.Aggregations.ServiceNameGroup.Buckets {
+		if _, ok := result[serviceNameBucket.Key]; !ok {
+			result[serviceNameBucket.Key] = make(map[int]float64)
+		}
+		for _, periodEndRangeBucket := range serviceNameBucket.PeriodEndRangeGroup.Buckets {
+			rangeBucketKey := int((periodEndRangeBucket.From + periodEndRangeBucket.To) / 2)
+			result[serviceNameBucket.Key][rangeBucketKey] = periodEndRangeBucket.CostSumGroup.Value
 		}
 	}
 
