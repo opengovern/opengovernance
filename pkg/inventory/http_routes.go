@@ -528,7 +528,7 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 //	@Success	200	{object}	map[string][]string
 //	@Router		/inventory/api/v2/resources/tag [get]
 func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
-	tags, err := h.db.ListResourceTypeTagsKeysWithPossibleValues()
+	tags, err := h.db.ListResourceTypeTagsKeysWithPossibleValues(utils.GetPointer(true))
 	if err != nil {
 		return err
 	}
