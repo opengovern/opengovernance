@@ -16,24 +16,27 @@ import (
 )
 
 type FetchCostHistoryByServicesQueryResponse struct {
-	Hits struct {
-		Total keibi.SearchTotal `json:"total"`
-		Hits  []struct {
-			ID      string                        `json:"_id"`
-			Score   float64                       `json:"_score"`
-			Index   string                        `json:"_index"`
-			Type    string                        `json:"_type"`
-			Version int64                         `json:"_version,omitempty"`
-			Source  summarizer.ServiceCostSummary `json:"_source"`
-		} `json:"hits"`
-	} `json:"hits"`
+	Aggregations struct {
+		ConnectorGroup struct {
+			Buckets []struct {
+				Key              string `json:"key"`
+				ServiceNameGroup struct {
+					Buckets []struct {
+						Key               string `json:"key"`
+						CostValueSumGroup struct {
+							Value float64 `json:"value"`
+						} `json:"cost_value_sum_group"`
+					} `json:"buckets"`
+				} `json:"service_name_group"`
+			}
+		}
+	} `json:"aggregations"`
 }
 
-func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, startTime time.Time, endTime time.Time, size int) (map[string][]summarizer.ServiceCostSummary, error) {
+func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, startTime time.Time, endTime time.Time, size int) (map[string]map[string]float64, error) {
 	endTime = endTime.Truncate(24 * time.Hour)
 	startTime = startTime.Truncate(24 * time.Hour)
 
-	hits := make(map[string][]summarizer.ServiceCostSummary)
 	res := make(map[string]any)
 	var filters []any
 
@@ -75,12 +78,34 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs [
 		})
 	}
 
-	res["size"] = size
+	res["size"] = 0
 	res["query"] = map[string]any{
 		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
+	res["aggs"] = map[string]any{
+		"connector_group": map[string]any{
+			"terms": map[string]any{
+				"field": "source_type",
+			},
+			"aggs": map[string]any{
+				"service_name_group": map[string]any{
+					"terms": map[string]any{
+						"field": "service_name",
+					},
+					"aggs": map[string]any{
+						"cost_value_sum_group": map[string]any{
+							"sum": map[string]any{
+								"field": "cost_value",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
 	b, err := json.Marshal(res)
 	if err != nil {
 		return nil, err
@@ -94,13 +119,13 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs [
 		return nil, err
 	}
 
-	for _, hit := range response.Hits.Hits {
-		if v, ok := hits[hit.Source.ServiceName]; !ok {
-			hits[hit.Source.ServiceName] = []summarizer.ServiceCostSummary{
-				hit.Source,
-			}
-		} else {
-			hits[hit.Source.ServiceName] = append(v, hit.Source)
+	hits := make(map[string]map[string]float64)
+	for _, connectorBucket := range response.Aggregations.ConnectorGroup.Buckets {
+		if _, ok := hits[connectorBucket.Key]; !ok {
+			hits[connectorBucket.Key] = make(map[string]float64)
+		}
+		for _, serviceNameBucket := range connectorBucket.ServiceNameGroup.Buckets {
+			hits[connectorBucket.Key][serviceNameBucket.Key] += serviceNameBucket.CostValueSumGroup.Value
 		}
 	}
 
