@@ -15,11 +15,11 @@ func (r ComplianceResult) IsPassed() bool {
 }
 
 type ComplianceResultSummary struct {
-	OkCount    int `json:"okCount"`
-	AlarmCount int `json:"alarmCount"`
-	InfoCount  int `json:"infoCount"`
-	SkipCount  int `json:"skipCount"`
-	ErrorCount int `json:"errorCount"`
+	OkCount    int `json:"okCount" example:"1"`
+	AlarmCount int `json:"alarmCount" example:"1"`
+	InfoCount  int `json:"infoCount" example:"1"`
+	SkipCount  int `json:"skipCount" example:"1"`
+	ErrorCount int `json:"errorCount" example:"1"`
 }
 
 type ComplianceResultShortSummary struct {

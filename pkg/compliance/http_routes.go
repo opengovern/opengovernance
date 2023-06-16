@@ -174,14 +174,15 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 
 // GetTopFieldByAlarmCount godoc
 //
-//	@Summary	Returns all findings with respect to filters
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Param		request	body		api.GetTopFieldRequest	true	"Request Body"
-//	@Success	200		{object}	api.GetTopFieldResponse
-//	@Router		/compliance/api/v1/alarms/top [post]
+//		@Summary	Top field by alarm count
+//	 @Description	Returns top field by alarm count with respect to filters
+//		@Security	BearerToken
+//		@Tags		compliance
+//		@Accept		json
+//		@Produce	json
+//		@Param		request	body		api.GetTopFieldRequest	true	"Request Body"
+//		@Success	200		{object}	api.GetTopFieldResponse
+//		@Router		/compliance/api/v1/alarms/top [post]
 func (h *HttpHandler) GetTopFieldByAlarmCount(ctx echo.Context) error {
 	var req api.GetTopFieldRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -384,14 +385,15 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 
 // GetBenchmarkSummary godoc
 //
-//	@Summary	Get benchmark summary
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Param		benchmark_id	path		string	true	"BenchmarkID"
-//	@Success	200				{object}	api.BenchmarkSummary
-//	@Router		/compliance/api/v1/benchmark/{benchmark_id}/summary [get]
+//		@Summary	Get benchmark summary
+//	 @Description Retrieves the summary of benchmark and its checks and results
+//		@Security	BearerToken
+//		@Tags		compliance
+//		@Accept		json
+//		@Produce	json
+//		@Param		benchmark_id	path		string	true	"Benchmark ID"
+//		@Success	200				{object}	api.BenchmarkSummary
+//		@Router		/compliance/api/v1/benchmark/{benchmark_id}/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
 
@@ -451,16 +453,17 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 
 // GetBenchmarkResultTrend godoc
 //
-//	@Summary	Get result trend
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Param		start			query		int64	true	"Start"
-//	@Param		end				query		int64	true	"End"
-//	@Param		benchmark_id	path		string	true	"BenchmarkID"
-//	@Success	200				{object}	api.BenchmarkResultTrend
-//	@Router		/compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend [get]
+//		@Summary	Get compliance result trend
+//	 @Description Retrieve datapoints of compliance results severities over a specified time period, enabling users to keep track of and monitor changes in compliance.
+//		@Security	BearerToken
+//		@Tags		compliance
+//		@Accept		json
+//		@Produce	json
+//		@Param		start			query		int64	true	"Start time"
+//		@Param		end				query		int64	true	"End time"
+//		@Param		benchmark_id	path		string	true	"Benchmark ID"
+//		@Success	200				{object}	api.BenchmarkResultTrend
+//		@Router		/compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend [get]
 func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
 	startDateStr := ctx.QueryParam("start")
 	endDateStr := ctx.QueryParam("end")
@@ -499,11 +502,14 @@ func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
 // GetBenchmarkTree godoc
 //
 //	@Summary	Get benchmark tree
+//
+// @Description Retrieves the benchmark tree including the child benchmarks
+//
 //	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
 //	@Produce	json
-//	@Param		benchmark_id	path		string	true	"BenchmarkID"
+//	@Param		benchmark_id	path		string	true	"Benchmark ID"
 //	@Param		status			query		string	true	"Status"	Enums(passed,failed,unknown)
 //	@Success	200				{object}	api.BenchmarkTree
 //	@Router		/compliance/api/v1/benchmark/{benchmark_id}/tree [get]
@@ -781,6 +787,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 // ListBenchmarks godoc
 //
 //	@Summary	List benchmarks
+//	@Description	Returns list of all benchmarks
 //	@Security	BearerToken
 //	@Tags		compliance
 //	@Accept		json
