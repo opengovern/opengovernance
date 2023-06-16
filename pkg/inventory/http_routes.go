@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"mime"
 	"net/http"
 	"sort"
@@ -569,7 +570,12 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 		resourceTypeStrings = append(resourceTypeStrings, resourceType.ResourceType)
 	}
 
-	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+	var metricIndexed map[string]int
+	if len(connectionIDs) > 0 {
+		metricIndexed, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+	} else {
+		metricIndexed, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+	}
 	if err != nil {
 		return 0, nil, err
 	}
@@ -612,6 +618,9 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	serviceNames := ctx.QueryParams()["servicename"]
 	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
@@ -700,7 +709,12 @@ func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionID
 		return nil, err
 	}
 
-	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(timeAt, 0), []string{resourceTypeStr}, EsFetchPageSize)
+	var metricIndexed map[string]int
+	if len(connectionIDs) > 0 {
+		metricIndexed, err = es.FetchConnectionResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(timeAt, 0), []string{resourceTypeStr}, EsFetchPageSize)
+	} else {
+		metricIndexed, err = es.FetchConnectorResourceTypeCountAtTime(h.client, nil, time.Unix(timeAt, 0), []string{resourceTypeStr}, EsFetchPageSize)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -730,6 +744,9 @@ func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 	var err error
 	resourceType := ctx.Param("resourceType")
 	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
@@ -792,6 +809,9 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 	}
 	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
 	timeStr := ctx.QueryParam("time")
 	timeAt := time.Now().Unix()
 	if timeStr != "" {
@@ -809,7 +829,13 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 	for _, resourceType := range resourceTypes {
 		resourceTypeStrings = append(resourceTypeStrings, resourceType.ResourceType)
 	}
-	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+
+	var metricIndexed map[string]int
+	if len(connectionIDs) > 0 {
+		metricIndexed, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+	} else {
+		metricIndexed, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
@@ -881,20 +907,22 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 	}
 
 	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now().Unix()
+	endTime := time.Now()
 	if endTimeStr != "" {
-		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
+		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
+		endTime = time.Unix(endTimeVal, 0)
 	}
 	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).AddDate(0, -1, 0).Unix()
+	startTime := endTime.AddDate(0, -1, 0)
 	if startTimeStr != "" {
-		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
+		startTimeVal, err := strconv.ParseInt(startTimeStr, 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
+		startTime = time.Unix(startTimeVal, 0)
 	}
 
 	datapointCountStr := ctx.QueryParam("datapointCount")
@@ -916,13 +944,14 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 	}
 
 	timeToCountMap := make(map[int]int)
+	esDatapointCount := int(math.Ceil(endTime.Sub(startTime).Hours() / 24))
 	if len(connectionIDs) != 0 {
-		timeToCountMap, err = es.FetchConnectionResourceTypeTrendSummaryPage(h.client, connectionIDs, resourceTypeStrings, time.Unix(startTime, 0), time.Unix(endTime, 0), 0, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectionResourceTypeTrendSummaryPage(h.client, connectionIDs, resourceTypeStrings, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
 	} else {
-		timeToCountMap, err = es.FetchProviderResourceTypeTrendSummaryPage(h.client, connectorTypes, resourceTypeStrings, time.Unix(startTime, 0), time.Unix(endTime, 0), 0, EsFetchPageSize)
+		timeToCountMap, err = es.FetchProviderResourceTypeTrendSummaryPage(h.client, connectorTypes, resourceTypeStrings, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1003,6 +1032,9 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
 	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
@@ -1046,11 +1078,21 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 		resourceTypeNames = append(resourceTypeNames, resourceType)
 	}
 
-	resourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	var resourceTypeCounts map[string]int
+	if len(connectionIDs) > 0 {
+		resourceTypeCounts, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	} else {
+		resourceTypeCounts, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
-	oldResourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(startTime, 0), resourceTypeNames, EsFetchPageSize)
+	var oldResourceTypeCounts map[string]int
+	if len(connectionIDs) > 0 {
+		oldResourceTypeCounts, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(startTime, 0), resourceTypeNames, EsFetchPageSize)
+	} else {
+		oldResourceTypeCounts, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, time.Unix(startTime, 0), resourceTypeNames, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
@@ -1118,6 +1160,9 @@ func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 	var err error
 	serviceName := ctx.Param("serviceName")
 	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
@@ -1148,11 +1193,21 @@ func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 		resourceTypeNames = append(resourceTypeNames, resourceType)
 	}
 
-	resourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	var resourceTypeCounts map[string]int
+	if len(connectionIDs) > 0 {
+		resourceTypeCounts, err = es.FetchConnectionResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	} else {
+		resourceTypeCounts, err = es.FetchConnectorResourceTypeCountAtTime(h.client, nil, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
-	oldResourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(startTime, 0), resourceTypeNames, EsFetchPageSize)
+	var oldResourceTypeCounts map[string]int
+	if len(connectionIDs) > 0 {
+		oldResourceTypeCounts, err = es.FetchConnectionResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(startTime, 0), resourceTypeNames, EsFetchPageSize)
+	} else {
+		oldResourceTypeCounts, err = es.FetchConnectorResourceTypeCountAtTime(h.client, nil, time.Unix(startTime, 0), resourceTypeNames, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
@@ -1752,8 +1807,8 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
 
 	connectionIDs := ctx.QueryParams()["connectionId"]
-	if len(connectionIDs) == 0 {
-		connectionIDs = nil
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 
@@ -1791,7 +1846,12 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 		resourceTypeNames = append(resourceTypeNames, resourceTypeName)
 	}
 
-	resourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, connectors, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	var resourceTypeCounts map[string]int
+	if len(connectionIDs) > 0 {
+		resourceTypeCounts, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectors, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	} else {
+		resourceTypeCounts, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectors, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
@@ -1870,8 +1930,8 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	}
 
 	connectionIDs := ctx.QueryParams()["connectorId"]
-	if len(connectionIDs) == 0 {
-		connectionIDs = nil
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 
@@ -1899,7 +1959,12 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 		resourceTypeNames = append(resourceTypeNames, resourceTypeName)
 	}
 
-	resourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, connectors, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	var resourceTypeCounts map[string]int
+	if len(connectionIDs) > 0 {
+		resourceTypeCounts, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectors, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	} else {
+		resourceTypeCounts, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectors, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
