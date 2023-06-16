@@ -1081,9 +1081,9 @@ func FetchConnectorResourceTypeCountAtTime(client keibi.Client, connectors []sou
 	}
 
 	query := string(b)
-	fmt.Println("query=", query, "index=", summarizer.ConnectionSummaryIndex)
+	fmt.Println("query=", query, "index=", summarizer.ProviderSummaryIndex)
 	var response FetchConnectorResourceTypeCountAtTimeResponse
-	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
+	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}
