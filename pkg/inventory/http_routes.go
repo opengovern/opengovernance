@@ -876,6 +876,9 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 	serviceNames := ctx.QueryParams()["servicename"]
 	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
+	}
 
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
@@ -912,43 +915,22 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 		resourceTypeStrings = append(resourceTypeStrings, resourceType.ResourceType)
 	}
 
-	type countTimePair struct {
-		count int
-		time  time.Time
-	}
-
-	summarizeJobIDCountMap := make(map[uint]countTimePair)
+	timeToCountMap := make(map[int]int)
 	if len(connectionIDs) != 0 {
-		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, connectionIDs, resourceTypeStrings, time.Unix(startTime, 0), time.Unix(endTime, 0), []map[string]any{{"described_at": "asc"}}, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectionResourceTypeTrendSummaryPage(h.client, connectionIDs, resourceTypeStrings, time.Unix(startTime, 0), time.Unix(endTime, 0), 0, EsFetchPageSize)
 		if err != nil {
 			return err
-		}
-		for _, hit := range hits {
-			if v, ok := summarizeJobIDCountMap[hit.SummarizeJobID]; !ok {
-				summarizeJobIDCountMap[hit.SummarizeJobID] = countTimePair{count: hit.ResourceCount, time: time.UnixMilli(hit.DescribedAt)}
-			} else {
-				v.count += hit.ResourceCount
-				summarizeJobIDCountMap[hit.SummarizeJobID] = v
-			}
 		}
 	} else {
-		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, connectorTypes, resourceTypeStrings, time.Unix(startTime, 0), time.Unix(endTime, 0), []map[string]any{{"described_at": "asc"}}, EsFetchPageSize)
+		timeToCountMap, err = es.FetchProviderResourceTypeTrendSummaryPage(h.client, connectorTypes, resourceTypeStrings, time.Unix(startTime, 0), time.Unix(endTime, 0), 0, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
-		for _, hit := range hits {
-			if v, ok := summarizeJobIDCountMap[hit.SummarizeJobID]; !ok {
-				summarizeJobIDCountMap[hit.SummarizeJobID] = countTimePair{count: hit.ResourceCount, time: time.UnixMilli(hit.DescribedAt)}
-			} else {
-				v.count += hit.ResourceCount
-				summarizeJobIDCountMap[hit.SummarizeJobID] = v
-			}
-		}
 	}
 
-	apiDatapoints := make([]api.ResourceTypeTrendDatapoint, 0, len(summarizeJobIDCountMap))
-	for _, v := range summarizeJobIDCountMap {
-		apiDatapoints = append(apiDatapoints, api.ResourceTypeTrendDatapoint{Count: v.count, Date: v.time})
+	apiDatapoints := make([]api.ResourceTypeTrendDatapoint, 0, len(timeToCountMap))
+	for timeAt, count := range timeToCountMap {
+		apiDatapoints = append(apiDatapoints, api.ResourceTypeTrendDatapoint{Count: count, Date: time.UnixMilli(int64(timeAt))})
 	}
 	sort.Slice(apiDatapoints, func(i, j int) bool {
 		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
@@ -1242,22 +1224,16 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 		return err
 	}
 	costMetricMap := make(map[string]api.CostMetric)
-	for _, hitArr := range costHits {
-		for _, hit := range hitArr {
-			costMetricMap[hit.ServiceName] = api.CostMetric{
-				Connector:         hit.Connector,
-				CostDimensionName: hit.ServiceName,
-			}
-			break
-		}
-	}
-	aggregatedCostHits := internal.AggregateServiceCosts(costHits)
-
-	for dimension, costVal := range aggregatedCostHits {
-		if costMetric, ok := costMetricMap[dimension]; ok {
+	for connector, serviceToCostMap := range costHits {
+		for dimension, costVal := range serviceToCostMap {
+			connectorTyped, _ := source.ParseType(connector)
 			localCostVal := costVal
-			costMetric.TotalCost = utils.PAdd(costMetric.TotalCost, &localCostVal)
-			costMetricMap[dimension] = costMetric
+			costMetricMap[dimension] = api.CostMetric{
+				Connector:         connectorTyped,
+				CostDimensionName: dimension,
+				TotalCost:         &localCostVal,
+			}
+
 		}
 	}
 
@@ -1369,22 +1345,15 @@ func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 		return err
 	}
 	costMetricMap := make(map[string]api.CostMetric)
-	for _, hitArr := range costHits {
-		for _, hit := range hitArr {
-			costMetricMap[hit.ServiceName] = api.CostMetric{
-				Connector:         hit.Connector,
-				CostDimensionName: hit.ServiceName,
-			}
-			break
-		}
-	}
-	aggregatedCostHits := internal.AggregateServiceCosts(costHits)
-
-	for dimension, costVal := range aggregatedCostHits {
-		if costMetric, ok := costMetricMap[dimension]; ok {
+	for connector, serviceToCostMap := range costHits {
+		for dimension, costVal := range serviceToCostMap {
+			connectorTyped, _ := source.ParseType(connector)
 			localCostVal := costVal
-			costMetric.TotalCost = utils.PAdd(costMetric.TotalCost, &localCostVal)
-			costMetricMap[dimension] = costMetric
+			costMetricMap[dimension] = api.CostMetric{
+				Connector:         connectorTyped,
+				CostDimensionName: dimension,
+				TotalCost:         &localCostVal,
+			}
 		}
 	}
 
