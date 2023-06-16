@@ -553,7 +553,7 @@ func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
 
-	tags, err := h.db.GetResourceTypeTagPossibleValues(tagKey)
+	tags, err := h.db.GetResourceTypeTagPossibleValues(tagKey, utils.GetPointer(true))
 	if err != nil {
 		return err
 	}
@@ -1003,7 +1003,7 @@ func (h *HttpHandler) GetServiceTag(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
 
-	tags, err := h.db.GetResourceTypeTagPossibleValues(tagKey)
+	tags, err := h.db.GetServiceTagPossibleValues(tagKey)
 	if err != nil {
 		return err
 	}

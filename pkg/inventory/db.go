@@ -298,9 +298,14 @@ func (db Database) ListResourceTypeTagsKeysWithPossibleValues(doSummarize *bool)
 	return result, nil
 }
 
-func (db Database) GetResourceTypeTagPossibleValues(key string) ([]string, error) {
+func (db Database) GetResourceTypeTagPossibleValues(key string, doSummarize *bool) ([]string, error) {
 	var tags []ResourceTypeTag
-	tx := db.orm.Model(ResourceTypeTag{}).Where("key = ?", key).Find(&tags)
+	tx := db.orm.Model(ResourceTypeTag{})
+	if doSummarize != nil {
+		tx = tx.Joins("JOIN resource_types ON resource_type_tags.resource_type = resource_types.resource_type").
+			Where("resource_types.do_summarize = ?", true)
+	}
+	tx.Where("key = ?", key).Find(&tags)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -351,6 +356,20 @@ func (db Database) GetResourceType(resourceType string) (*ResourceType, error) {
 func (db Database) ListServiceTagsKeysWithPossibleValues() (map[string][]string, error) {
 	var tags []ServiceTag
 	tx := db.orm.Model(ServiceTag{}).Find(&tags)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	tagLikes := make([]model.TagLike, 0, len(tags))
+	for _, tag := range tags {
+		tagLikes = append(tagLikes, tag)
+	}
+	result := model.GetTagsMap(tagLikes)
+	return result, nil
+}
+
+func (db Database) GetServiceTagPossibleValues(key string) (map[string][]string, error) {
+	var tags []ServiceTag
+	tx := db.orm.Model(ServiceTag{}).Where("key = ?", key).Find(&tags)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
