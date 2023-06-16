@@ -28,8 +28,8 @@ type FetchCostHistoryByServicesQueryResponse struct {
 						} `json:"cost_value_sum_group"`
 					} `json:"buckets"`
 				} `json:"service_name_group"`
-			}
-		}
+			} `json:"buckets"`
+		} `json:"connector_group"`
 	} `json:"aggregations"`
 }
 
