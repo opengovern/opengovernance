@@ -135,15 +135,15 @@ type BenchmarkSummary struct {
 	Title           string                        `json:"title" example:"Azure CIS v1.4.0"`                                                                                                                                                  // Benchmark title
 	Description     string                        `json:"description" example:"The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."` // Benchmark description
 	Connectors      []source.Type                 `json:"connectors" example:"[Azure]"`                                                                                                                                                      // Cloud providers
-	Tags            map[string][]string           `json:"tags" example:"{category:[Compliance]}"`                                                                                                                                            // Tags
+	Tags            map[string][]string           `json:"tags" `                                                                                                                                                                             // Tags
 	Enabled         bool                          `json:"enabled" example:"true"`                                                                                                                                                            // Enabled
 	Result          types.ComplianceResultSummary `json:"result"`                                                                                                                                                                            // Compliance result summary
 	Checks          types.SeverityResult          `json:"checks"`                                                                                                                                                                            // Checks summary
-	Coverage        float64                       `json:"coverage"`                                                                                                                                                                          // Coverage
+	Coverage        float64                       `json:"coverage" example:"100"`                                                                                                                                                            // Coverage
 	CompliancyTrend []Datapoint                   `json:"compliancyTrend"`                                                                                                                                                                   // Compliancy trend data points
 
-	PassedResources int64 `json:"passedResources"` // Number of passed resources
-	FailedResources int64 `json:"failedResources"` // Number of failed resources
+	PassedResources int64 `json:"passedResources" example:"24"` // Number of passed resources
+	FailedResources int64 `json:"failedResources" example:"1"`  // Number of failed resources
 }
 
 type ResultDatapoint struct {
@@ -172,15 +172,15 @@ type BenchmarkTree struct {
 }
 
 type GetFindingsMetricsResponse struct {
-	TotalFindings   int64 `json:"totalFindings"`
-	FailedFindings  int64 `json:"failedFindings"`
-	PassedFindings  int64 `json:"passedFindings"`
-	UnknownFindings int64 `json:"unknownFindings"`
+	TotalFindings   int64 `json:"totalFindings" example:"100"`
+	FailedFindings  int64 `json:"failedFindings" example:"10"`
+	PassedFindings  int64 `json:"passedFindings" example:"90"`
+	UnknownFindings int64 `json:"unknownFindings" example:"0"`
 
-	LastTotalFindings   int64 `json:"lastTotalFindings"`
-	LastFailedFindings  int64 `json:"lastFailedFindings"`
-	LastPassedFindings  int64 `json:"lastPassedFindings"`
-	LastUnknownFindings int64 `json:"lastUnknownFindings"`
+	LastTotalFindings   int64 `json:"lastTotalFindings" example:"100"`
+	LastFailedFindings  int64 `json:"lastFailedFindings" example:"10"`
+	LastPassedFindings  int64 `json:"lastPassedFindings" example:"90"`
+	LastUnknownFindings int64 `json:"lastUnknownFindings" example:"0"`
 }
 
 type Alarms struct {
@@ -193,7 +193,7 @@ type GetFindingDetailsResponse struct {
 	Connection        types.FullConnection   `json:"connection"`
 	Resource          types.FullResource     `json:"resource"`
 	ResourceType      types.FullResourceType `json:"resourceType"`
-	State             types.ComplianceResult `json:"state"`
+	State             types.ComplianceResult `json:"state" example:"alarm"`
 	CreatedAt         int64                  `json:"createdAt" example:"2023-04-21T08:53:09.928Z"`
 	PolicyTags        map[string]string      `json:"policyTags"`
 	PolicyDescription string                 `json:"policyDescription"`

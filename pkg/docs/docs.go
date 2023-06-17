@@ -23,14 +23,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Creates workspace key for the defined role with the defined name.",
+                "description": "Creates workspace key for the defined role with the defined name in the workspace.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "keys"
                 ],
-                "summary": "Creates Workspace Key",
+                "summary": "Create Workspace Key",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -95,7 +95,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Gets the details of a key in a workspace with specified ID.",
+                "description": "Retrieves the details of a workspace key with specified ID.",
                 "produces": [
                     "application/json"
                 ],
@@ -106,7 +106,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID",
+                        "description": "Key ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -129,7 +129,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Activates a key in the workspace with specified ID.",
+                "description": "Activates Workspace Key by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -140,7 +140,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID",
+                        "description": "Key ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -170,11 +170,11 @@ const docTemplate = `{
                 "tags": [
                     "keys"
                 ],
-                "summary": "Deletes Workspace Key",
+                "summary": "Delete Workspace Key",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID",
+                        "description": "Key ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -194,7 +194,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Suspends a key in the workspace with specified ID.",
+                "description": "Suspends Workspace Key by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -205,7 +205,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID",
+                        "description": "Key ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -228,7 +228,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Gets a list of available keys in a workspace.",
+                "description": "Gets list of all keys in the workspace.",
                 "produces": [
                     "application/json"
                 ],
@@ -256,18 +256,18 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Returns a list of keys in a workspace for the specified role.",
+                "description": "List Workspace Keys for Specified Role.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "roles"
                 ],
-                "summary": "Get Role Keys",
+                "summary": "List Role Keys",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "roleName",
+                        "description": "Role Name",
                         "name": "roleName",
                         "in": "path",
                         "required": true
@@ -293,7 +293,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Returns a list of users in a workspace with the specified role.",
+                "description": "Returns a list of users in the workspace with the specified role.",
                 "produces": [
                     "application/json"
                 ],
@@ -304,7 +304,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "roleName",
+                        "description": "Role Name",
                         "name": "roleName",
                         "in": "path",
                         "required": true
@@ -330,14 +330,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Gets a list of roles in a workspace and their descriptions and number of users.",
+                "description": "Retrieve Role Information and User Count for Workspace.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "roles"
                 ],
-                "summary": "Get Roles",
+                "summary": "List Roles",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -358,7 +358,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Gets the details of the Role, including the description, number of users and list of those users.",
+                "description": "Retrieves Role Details, Description, User Count, and User List for Workspace.",
                 "produces": [
                     "application/json"
                 ],
@@ -369,7 +369,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "roleName",
+                        "description": "Role Name",
                         "name": "roleName",
                         "in": "path",
                         "required": true
@@ -392,7 +392,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Invites a user to a workspace with defined role.\nby sending an email to the specified email address.\nThe user will be found by the email address.",
+                "description": "Sends an invitation to a user to join the workspace with a designated role.",
                 "produces": [
                     "application/json"
                 ],
@@ -423,18 +423,18 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Deletes user access to the specified workspace.",
+                "description": "Revokes user's access to the workspace.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "users"
                 ],
-                "summary": "Delete Invitation",
+                "summary": "Revoke Invitation",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "userId",
+                        "description": "User ID",
                         "name": "userId",
                         "in": "query",
                         "required": true
@@ -454,14 +454,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "User Access defines the roles of a user.\nThere are currently three roles (admin, editor, viewer).\nUser must exist before you can update its Role.",
+                "description": "Updates the role of a user in the workspace.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "users"
                 ],
-                "summary": "Update User Access",
+                "summary": "Update User Role",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -485,18 +485,18 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Deletes user access to the specified workspace.",
+                "description": "Revokes a user's access to the workspace",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "users"
                 ],
-                "summary": "Delete User Access",
+                "summary": "Revoke User Access",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "userId",
+                        "description": "User ID",
                         "name": "userId",
                         "in": "query",
                         "required": true
@@ -516,14 +516,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Gets the roles binded to a user.\nRoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer).",
+                "description": "Retrieves the roles that the user who sent the request has in all workspaces they are a member of.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "users"
                 ],
-                "summary": "Get RoleBindings",
+                "summary": "Get User Roles",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -534,14 +534,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/api/v1/user/{user_id}": {
+        "/auth/api/v1/user/{userId}": {
             "get": {
                 "security": [
                     {
                         "BearerToken": []
                     }
                 ],
-                "description": "Get user details by user id.",
+                "description": "Returns user details by specified user id.",
                 "produces": [
                     "application/json"
                 ],
@@ -552,8 +552,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "userId",
-                        "name": "user_id",
+                        "description": "User ID",
+                        "name": "userId",
                         "in": "path",
                         "required": true
                     }
@@ -568,14 +568,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/api/v1/user/{user_id}/workspace/membership": {
+        "/auth/api/v1/user/{userId}/workspace/membership": {
             "get": {
                 "security": [
                     {
                         "BearerToken": []
                     }
                 ],
-                "description": "Returns a list of workspaces and the user role in it for the specified user.",
+                "description": "Returns a list of workspaces that the specified user belongs to, along with their role in each workspace.",
                 "produces": [
                     "application/json"
                 ],
@@ -586,8 +586,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "userId",
-                        "name": "user_id",
+                        "description": "User ID",
+                        "name": "userId",
                         "in": "path",
                         "required": true
                     }
@@ -596,7 +596,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Membership"
+                            }
                         }
                     }
                 }
@@ -609,14 +612,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Gets a list of users with specified filters (filters are optional).",
+                "description": "Retrieves a list of users who are members of the workspace.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "users"
                 ],
-                "summary": "Get Users",
+                "summary": "List Users",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -648,7 +651,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.keibi.io)",
+                "description": "Get all the RoleBindings of the workspace. RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.keibi.io)",
                 "produces": [
                     "application/json"
                 ],
@@ -676,6 +679,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "Returns top field by alarm count with respect to filters",
                 "consumes": [
                     "application/json"
                 ],
@@ -685,7 +689,7 @@ const docTemplate = `{
                 "tags": [
                     "compliance"
                 ],
-                "summary": "Returns all findings with respect to filters",
+                "summary": "Top field by alarm count",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -908,6 +912,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API enables users to retrieve a summary of a benchmark and its associated checks and results. Users can use this API to obtain an overview of the benchmark, including its name, description, and other relevant information, as well as the checks and their corresponding results.",
                 "consumes": [
                     "application/json"
                 ],
@@ -921,7 +926,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "BenchmarkID",
+                        "description": "Benchmark ID",
                         "name": "benchmark_id",
                         "in": "path",
                         "required": true
@@ -944,6 +949,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve datapoints of compliance severities over a specified time period, enabling users to keep track of and monitor changes in compliance.",
                 "consumes": [
                     "application/json"
                 ],
@@ -953,25 +959,25 @@ const docTemplate = `{
                 "tags": [
                     "compliance"
                 ],
-                "summary": "Get result trend",
+                "summary": "Get compliance result trend",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Start",
+                        "description": "Start time",
                         "name": "start",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "integer",
-                        "description": "End",
+                        "description": "End time",
                         "name": "end",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "BenchmarkID",
+                        "description": "Benchmark ID",
                         "name": "benchmark_id",
                         "in": "path",
                         "required": true
@@ -994,6 +1000,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API retrieves the benchmark tree, including all of its child benchmarks. Users can use this API to obtain a comprehensive overview of the benchmarks within a particular category or hierarchy.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1007,7 +1014,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "BenchmarkID",
+                        "description": "Benchmark ID",
                         "name": "benchmark_id",
                         "in": "path",
                         "required": true
@@ -1042,6 +1049,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API returns a comprehensive list of all available benchmarks. Users can use this API to obtain an overview of the entire set of benchmarks and their corresponding details, such as their names, descriptions, and IDs.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1072,6 +1080,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API enables users to retrieve policy details by specifying the policy ID. Users can use this API to obtain specific details about a particular policy, such as its title, description, and other relevant information.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1085,7 +1094,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "PolicyID",
+                        "description": "Policy ID",
                         "name": "policy_id",
                         "in": "path",
                         "required": true
@@ -1108,6 +1117,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API enables users to retrieve a summary of all benchmarks and their associated checks and results within a specified time interval. Users can use this API to obtain an overview of all benchmarks, including their names, descriptions, and other relevant information, as well as the checks and their corresponding results within the specified time period.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1117,18 +1127,18 @@ const docTemplate = `{
                 "tags": [
                     "compliance"
                 ],
-                "summary": "Get benchmark summary",
+                "summary": "List benchmarks summaries",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Start",
+                        "description": "Start Time",
                         "name": "start",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "integer",
-                        "description": "End",
+                        "description": "End Time",
                         "name": "end",
                         "in": "query",
                         "required": true
@@ -1151,6 +1161,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API enables users to retrieve benchmark details by specifying the benchmark ID. Users can use this API to obtain specific details about a particular benchmark, such as its name, description, and other relevant information.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1187,6 +1198,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API returns a list of all policies associated with a specific benchmark. Users can use this API to obtain a comprehensive overview of the policies related to a particular benchmark and their corresponding details, such as their names, descriptions, and IDs.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1196,11 +1208,11 @@ const docTemplate = `{
                 "tags": [
                     "compliance"
                 ],
-                "summary": "List policies",
+                "summary": "List Benchmark Policies",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "BenchmarkID",
+                        "description": "Benchmark ID",
                         "name": "benchmark_id",
                         "in": "path",
                         "required": true
@@ -1226,6 +1238,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API enables users to retrieve all compliance run findings with respect to filters. Users can use this API to obtain a list of all compliance run findings that match specific filters, such as compliance run ID, resource ID, results, and other relevant parameters.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1235,7 +1248,7 @@ const docTemplate = `{
                 "tags": [
                     "compliance"
                 ],
-                "summary": "Returns all findings with respect to filters",
+                "summary": "Get findings",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -1264,6 +1277,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API enables users to retrieve findings metrics for two given times, which includes the total number of findings, the number of passed findings, the number of failed findings, and the number of unknowns findings. Users can use this API to compare the compliance status of their resources between two different time periods.\nThe API will return the findings metrics for each time period separately, allowing users to easily compare the compliance status of their resources at each time period. This can be useful for monitoring the effectiveness of compliance measures over time and identifying any areas of improvement.\"",
                 "consumes": [
                     "application/json"
                 ],
@@ -1277,13 +1291,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Start",
+                        "description": "Start Time",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "End",
+                        "description": "End Time",
                         "name": "end",
                         "in": "query"
                     }
@@ -1305,6 +1319,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API enables users to retrieve the top field by finding count.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1314,7 +1329,7 @@ const docTemplate = `{
                 "tags": [
                     "compliance"
                 ],
-                "summary": "Returns all findings with respect to filters",
+                "summary": "Get top field by finding count",
                 "parameters": [
                     {
                         "type": "string",
@@ -1706,6 +1721,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API enables users to retrieve query details by specifying the query ID.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1719,7 +1735,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "QueryID",
+                        "description": "Query ID",
                         "name": "query_id",
                         "in": "path",
                         "required": true
@@ -5568,13 +5584,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve details of all benchmark evaluation jobs based on specified filters. The API returns information such as evaluation time, benchmark ID, connection ID, connector name, status, and failure message.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "compliance"
+                    "describe"
                 ],
-                "summary": "Lists all benchmark evaluations",
+                "summary": "Lists benchmark evaluations",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -7256,6 +7273,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "name": {
+                    "description": "Name of the key",
                     "type": "string"
                 },
                 "roleName": {
@@ -7278,16 +7296,24 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "active": {
-                    "type": "boolean"
+                    "description": "Activity state of the key",
+                    "type": "boolean",
+                    "example": true
                 },
                 "createdAt": {
-                    "type": "string"
+                    "description": "Creation timestamp in UTC",
+                    "type": "string",
+                    "example": "2023-03-31T09:36:09.855Z"
                 },
                 "id": {
-                    "type": "integer"
+                    "description": "Unique identifier for the key",
+                    "type": "integer",
+                    "example": 1
                 },
                 "name": {
-                    "type": "string"
+                    "description": "Name of the key",
+                    "type": "string",
+                    "example": "example"
                 },
                 "roleName": {
                     "description": "Name of the role",
@@ -7304,6 +7330,7 @@ const docTemplate = `{
                     "example": "admin"
                 },
                 "token": {
+                    "description": "Token of the key",
                     "type": "string"
                 }
             }
@@ -7350,7 +7377,7 @@ const docTemplate = `{
                 "email": {
                     "description": "Email address of the user",
                     "type": "string",
-                    "example": "sample@gmail.com"
+                    "example": "johndoe@example.com"
                 },
                 "emailVerified": {
                     "description": "Is email verified or not",
@@ -7387,17 +7414,17 @@ const docTemplate = `{
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
                         }
                     ],
-                    "example": "pending"
+                    "example": "accepted"
                 },
                 "userId": {
                     "description": "Unique identifier for the user",
                     "type": "string",
-                    "example": "sampleID"
+                    "example": "auth|123456789"
                 },
                 "userName": {
                     "description": "Username",
                     "type": "string",
-                    "example": "sampleName"
+                    "example": "John Doe"
                 }
             }
         },
@@ -7406,7 +7433,7 @@ const docTemplate = `{
             "properties": {
                 "email": {
                     "type": "string",
-                    "example": "sample@gmail.com"
+                    "example": "johndoe@example.com"
                 },
                 "emailVerified": {
                     "description": "Filter by",
@@ -7435,7 +7462,7 @@ const docTemplate = `{
                 "email": {
                     "description": "Email address of the user",
                     "type": "string",
-                    "example": "sample@gmail.com"
+                    "example": "johndoe@example.com"
                 },
                 "emailVerified": {
                     "description": "Is email verified or not",
@@ -7459,12 +7486,12 @@ const docTemplate = `{
                 "userId": {
                     "description": "Unique identifier for the user",
                     "type": "string",
-                    "example": "sampleID"
+                    "example": "auth|123456789"
                 },
                 "userName": {
                     "description": "Username",
                     "type": "string",
-                    "example": "sampleName"
+                    "example": "John Doe"
                 }
             }
         },
@@ -7477,7 +7504,7 @@ const docTemplate = `{
                 "email": {
                     "description": "User email address",
                     "type": "string",
-                    "example": "sample@gmail.com"
+                    "example": "johndoe@example.com"
                 },
                 "roleName": {
                     "description": "Name of the role",
@@ -7506,6 +7533,45 @@ const docTemplate = `{
                 "InviteStatus_PENDING"
             ]
         },
+        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Membership": {
+            "type": "object",
+            "properties": {
+                "assignedAt": {
+                    "description": "Assignment timestamp in UTC",
+                    "type": "string",
+                    "example": "2023-03-31T09:36:09.855Z"
+                },
+                "lastActivity": {
+                    "description": "Last activity timestamp in UTC",
+                    "type": "string",
+                    "example": "2023-04-21T08:53:09.928Z"
+                },
+                "roleName": {
+                    "description": "Name of the role",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "viewer"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                        }
+                    ],
+                    "example": "admin"
+                },
+                "workspaceID": {
+                    "description": "Unique identifier for the workspace",
+                    "type": "string",
+                    "example": "ws123456789"
+                },
+                "workspaceName": {
+                    "description": "Name of the Workspace",
+                    "type": "string",
+                    "example": "demo"
+                }
+            }
+        },
         "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest": {
             "type": "object",
             "required": [
@@ -7530,7 +7596,7 @@ const docTemplate = `{
                 "userId": {
                     "description": "Unique identifier for the User",
                     "type": "string",
-                    "example": "sampleID"
+                    "example": "auth|123456789"
                 }
             }
         },
@@ -7577,7 +7643,7 @@ const docTemplate = `{
                     "example": 1
                 },
                 "users": {
-                    "description": "List of users having this role",
+                    "description": "List of users having the role",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse"
@@ -7595,12 +7661,13 @@ const docTemplate = `{
                 },
                 "createdAt": {
                     "description": "Creation timestamp in UTC",
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-03-31T09:36:09.855Z"
                 },
                 "email": {
                     "description": "Email address of the user",
                     "type": "string",
-                    "example": "sample@gmail.com"
+                    "example": "johndoe@example.com"
                 },
                 "emailVerified": {
                     "description": "Is email verified or not",
@@ -7609,7 +7676,8 @@ const docTemplate = `{
                 },
                 "lastActivity": {
                     "description": "Last activity timestamp in UTC",
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-04-21T08:53:09.928Z"
                 },
                 "roleName": {
                     "description": "Name of the role",
@@ -7636,17 +7704,17 @@ const docTemplate = `{
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
                         }
                     ],
-                    "example": "pending"
+                    "example": "accepted"
                 },
                 "userId": {
                     "description": "Unique identifier for the user",
                     "type": "string",
-                    "example": "sampleID"
+                    "example": "auth|123456789"
                 },
                 "userName": {
                     "description": "Username",
                     "type": "string",
-                    "example": "sampleName"
+                    "example": "John Doe"
                 },
                 "workspaces": {
                     "description": "A list of workspace ids which the user has the specified role in them",
@@ -7683,7 +7751,7 @@ const docTemplate = `{
                     "example": "admin"
                 },
                 "userCount": {
-                    "description": "Number of usershaving this role",
+                    "description": "Number of users having this role in the workspace",
                     "type": "integer",
                     "example": 1
                 }
@@ -7693,6 +7761,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "id": {
+                    "description": "Unique identifier for the key",
                     "type": "integer"
                 },
                 "roleName": {
@@ -7731,7 +7800,7 @@ const docTemplate = `{
                 "workspaceID": {
                     "description": "Unique identifier for the Workspace",
                     "type": "string",
-                    "example": "sampleID"
+                    "example": "ws123456789"
                 }
             }
         },
@@ -7739,22 +7808,34 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "active": {
-                    "type": "boolean"
+                    "description": "Activity state of the key",
+                    "type": "boolean",
+                    "example": true
                 },
                 "createdAt": {
-                    "type": "string"
+                    "description": "Creation timestamp in UTC",
+                    "type": "string",
+                    "example": "2023-03-31T09:36:09.855Z"
                 },
                 "creatorUserID": {
-                    "type": "string"
+                    "description": "Unique identifier of the user who created the key",
+                    "type": "string",
+                    "example": "auth|123456789"
                 },
                 "id": {
-                    "type": "integer"
+                    "description": "Unique identifier for the key",
+                    "type": "integer",
+                    "example": 1
                 },
                 "maskedKey": {
-                    "type": "string"
+                    "description": "Masked key",
+                    "type": "string",
+                    "example": "abc...de"
                 },
                 "name": {
-                    "type": "string"
+                    "description": "Name of the key",
+                    "type": "string",
+                    "example": "example"
                 },
                 "roleName": {
                     "description": "Name of the role",
@@ -7771,7 +7852,9 @@ const docTemplate = `{
                     "example": "admin"
                 },
                 "updatedAt": {
-                    "type": "string"
+                    "description": "Last update timestamp in UTC",
+                    "type": "string",
+                    "example": "2023-04-21T08:53:09.928Z"
                 }
             }
         },
@@ -7786,7 +7869,7 @@ const docTemplate = `{
                 "email": {
                     "description": "Email address of the user",
                     "type": "string",
-                    "example": "sample@gmail.com"
+                    "example": "johndoe@example.com"
                 },
                 "lastActivity": {
                     "description": "Last activity timestamp in UTC",
@@ -7818,17 +7901,17 @@ const docTemplate = `{
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
                         }
                     ],
-                    "example": "pending"
+                    "example": "accepted"
                 },
                 "userId": {
                     "description": "Unique identifier for the user",
                     "type": "string",
-                    "example": "sampleID"
+                    "example": "auth|123456789"
                 },
                 "userName": {
                     "description": "Username",
                     "type": "string",
-                    "example": "sampleName"
+                    "example": "John Doe"
                 }
             }
         },
@@ -7836,54 +7919,87 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "autoAssign": {
-                    "type": "boolean"
+                    "description": "Whether the benchmark is auto assigned or not",
+                    "type": "boolean",
+                    "example": true
                 },
                 "baseline": {
-                    "type": "boolean"
+                    "description": "Whether the benchmark is baseline or not",
+                    "type": "boolean",
+                    "example": true
                 },
                 "category": {
+                    "description": "Benchmark category",
                     "type": "string"
                 },
                 "children": {
+                    "description": "Benchmark children",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "[azure_cis_v140_1",
+                        " azure_cis_v140_2]"
+                    ]
                 },
                 "connectors": {
+                    "description": "Benchmark connectors",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/source.Type"
-                    }
+                    },
+                    "example": [
+                        "[azure]"
+                    ]
                 },
                 "createdAt": {
-                    "type": "string"
+                    "description": "Benchmark creation date",
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
                 },
                 "description": {
-                    "type": "string"
+                    "description": "Benchmark description",
+                    "type": "string",
+                    "example": "The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."
                 },
                 "documentURI": {
-                    "type": "string"
+                    "description": "Benchmark document URI",
+                    "type": "string",
+                    "example": "benchmarks/azure_cis_v140.md"
                 },
                 "enabled": {
-                    "type": "boolean"
+                    "description": "Whether the benchmark is enabled or not",
+                    "type": "boolean",
+                    "example": true
                 },
                 "id": {
-                    "type": "string"
+                    "description": "Benchmark ID",
+                    "type": "string",
+                    "example": "azure_cis_v140"
                 },
                 "logoURI": {
+                    "description": "Benchmark logo URI",
                     "type": "string"
                 },
                 "managed": {
-                    "type": "boolean"
+                    "description": "Whether the benchmark is managed or not",
+                    "type": "boolean",
+                    "example": true
                 },
                 "policies": {
+                    "description": "Benchmark policies",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "[azure_cis_v140_1_1",
+                        " azure_cis_v140_1_2]"
+                    ]
                 },
                 "tags": {
+                    "description": "Benchmark tags",
                     "type": "object",
                     "additionalProperties": {
                         "type": "array",
@@ -7893,10 +8009,14 @@ const docTemplate = `{
                     }
                 },
                 "title": {
-                    "type": "string"
+                    "description": "Benchmark title",
+                    "type": "string",
+                    "example": "Azure CIS v1.4.0"
                 },
                 "updatedAt": {
-                    "type": "string"
+                    "description": "Benchmark last update date",
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
                 }
             }
         },
@@ -7904,16 +8024,27 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connectionID": {
-                    "type": "string"
+                    "description": "Connection ID",
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "connectionName": {
+                    "description": "Connection Name",
                     "type": "string"
                 },
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Clout Provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 },
                 "status": {
-                    "type": "boolean"
+                    "description": "Status",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
@@ -7921,13 +8052,18 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "assignedAt": {
+                    "description": "Unix timestamp",
                     "type": "integer"
                 },
                 "benchmarkId": {
-                    "type": "string"
+                    "description": "Benchmark ID",
+                    "type": "string",
+                    "example": "azure_cis_v140"
                 },
                 "sourceId": {
-                    "type": "string"
+                    "description": "Connection ID",
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 }
             }
         },
@@ -7946,42 +8082,70 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "checks": {
-                    "$ref": "#/definitions/types.SeverityResult"
+                    "description": "Checks summary",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.SeverityResult"
+                        }
+                    ]
                 },
                 "compliancyTrend": {
+                    "description": "Compliancy trend data points",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Datapoint"
                     }
                 },
                 "connectors": {
+                    "description": "Cloud providers",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/source.Type"
-                    }
+                    },
+                    "example": [
+                        "[Azure]"
+                    ]
                 },
                 "coverage": {
-                    "type": "number"
+                    "description": "Coverage",
+                    "type": "number",
+                    "example": 100
                 },
                 "description": {
-                    "type": "string"
+                    "description": "Benchmark description",
+                    "type": "string",
+                    "example": "The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."
                 },
                 "enabled": {
-                    "type": "boolean"
+                    "description": "Enabled",
+                    "type": "boolean",
+                    "example": true
                 },
                 "failedResources": {
-                    "type": "integer"
+                    "description": "Number of failed resources",
+                    "type": "integer",
+                    "example": 1
                 },
                 "id": {
-                    "type": "string"
+                    "description": "Benchmark ID",
+                    "type": "string",
+                    "example": "azure_cis_v140"
                 },
                 "passedResources": {
-                    "type": "integer"
+                    "description": "Number of passed resources",
+                    "type": "integer",
+                    "example": 24
                 },
                 "result": {
-                    "$ref": "#/definitions/types.ComplianceResultSummary"
+                    "description": "Compliance result summary",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.ComplianceResultSummary"
+                        }
+                    ]
                 },
                 "tags": {
+                    "description": "Tags",
                     "type": "object",
                     "additionalProperties": {
                         "type": "array",
@@ -7991,7 +8155,9 @@ const docTemplate = `{
                     }
                 },
                 "title": {
-                    "type": "string"
+                    "description": "Benchmark title",
+                    "type": "string",
+                    "example": "Azure CIS v1.4.0"
                 }
             }
         },
@@ -8005,7 +8171,9 @@ const docTemplate = `{
                     }
                 },
                 "id": {
-                    "type": "string"
+                    "description": "Benchmark ID",
+                    "type": "string",
+                    "example": "azure_cis_v140"
                 },
                 "policies": {
                     "type": "array",
@@ -8014,7 +8182,9 @@ const docTemplate = `{
                     }
                 },
                 "title": {
-                    "type": "string"
+                    "description": "Benchmark title",
+                    "type": "string",
+                    "example": "CIS v1.4.0"
                 }
             }
         },
@@ -8057,9 +8227,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "time": {
+                    "description": "Time",
                     "type": "integer"
                 },
                 "value": {
+                    "description": "Value",
                     "type": "integer"
                 }
             }
@@ -8079,52 +8251,84 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "benchmarkID": {
+                    "description": "Benchmark ID",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "azure_cis_v140"
+                    ]
                 },
                 "connectionID": {
+                    "description": "Connection ID",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                    ]
                 },
                 "connector": {
+                    "description": "Clout Provider",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/source.Type"
-                    }
+                    },
+                    "example": [
+                        "Azure"
+                    ]
                 },
                 "policyID": {
+                    "description": "Policy ID",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "azure_cis_v140_7_5"
+                    ]
                 },
                 "resourceID": {
+                    "description": "Resource unique identifier",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
+                    ]
                 },
                 "resourceTypeID": {
+                    "description": "Resource type",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"
+                    ]
                 },
                 "severity": {
+                    "description": "Severity",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "low"
+                    ]
                 },
                 "status": {
+                    "description": "Compliance result status",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/types.ComplianceResult"
-                    }
+                    },
+                    "example": [
+                        "alarm"
+                    ]
                 }
             }
         },
@@ -8132,6 +8336,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "direction": {
+                    "description": "Sort direction",
                     "enum": [
                         "asc",
                         "desc"
@@ -8140,9 +8345,11 @@ const docTemplate = `{
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.DirectionType"
                         }
-                    ]
+                    ],
+                    "example": "asc"
                 },
                 "field": {
+                    "description": "Field to sort by",
                     "enum": [
                         "resourceID",
                         "resourceName",
@@ -8165,7 +8372,8 @@ const docTemplate = `{
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.SortFieldType"
                         }
-                    ]
+                    ],
+                    "example": "status"
                 }
             }
         },
@@ -8193,28 +8401,36 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "failedFindings": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 10
                 },
                 "lastFailedFindings": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 10
                 },
                 "lastPassedFindings": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 90
                 },
                 "lastTotalFindings": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
                 },
                 "lastUnknownFindings": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 0
                 },
                 "passedFindings": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 90
                 },
                 "totalFindings": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
                 },
                 "unknownFindings": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 0
                 }
             }
         },
@@ -8248,7 +8464,8 @@ const docTemplate = `{
                     }
                 },
                 "totalCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
                 }
             }
         },
@@ -8256,9 +8473,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "count": {
-                    "type": "integer"
+                    "description": "Number of items to return",
+                    "type": "integer",
+                    "example": 1
                 },
                 "field": {
+                    "description": "Field to get top values for",
                     "enum": [
                         "resourceType",
                         "serviceName",
@@ -8269,7 +8489,8 @@ const docTemplate = `{
                         {
                             "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField"
                         }
-                    ]
+                    ],
+                    "example": "resourceType"
                 },
                 "filters": {
                     "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingFilters"
@@ -8439,10 +8660,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "no": {
-                    "type": "integer"
+                    "description": "Number of pages",
+                    "type": "integer",
+                    "example": 5
                 },
                 "size": {
-                    "type": "integer"
+                    "description": "Number of items per page",
+                    "type": "integer",
+                    "example": 100
                 }
             }
         },
@@ -8450,34 +8675,48 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 },
                 "createdAt": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Enable multi-factor authentication for all user credentials who have write access to Azure resources. These include roles like 'Service Co-Administrators', 'Subscription Owners', 'Contributors'."
                 },
                 "documentURI": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "benchmarks/azure_cis_v140_1_1.md"
                 },
                 "enabled": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "azure_cis_v140_1_1"
                 },
                 "managed": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "manualVerification": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "queryID": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "azure_ad_manual_control"
                 },
                 "severity": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "low"
                 },
                 "tags": {
                     "type": "object",
@@ -8489,10 +8728,12 @@ const docTemplate = `{
                     }
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "1.1 Ensure that multi-factor authentication status is enabled for all privileged users"
                 },
                 "updatedAt": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
                 }
             }
         },
@@ -8500,19 +8741,33 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "string"
+                    "description": "Policy ID",
+                    "type": "string",
+                    "example": "azure_cis_v140_7_5"
                 },
                 "lastChecked": {
-                    "type": "integer"
+                    "description": "Last checked",
+                    "type": "integer",
+                    "example": 0
                 },
                 "severity": {
-                    "type": "string"
+                    "description": "Severity",
+                    "type": "string",
+                    "example": "low"
                 },
                 "status": {
-                    "$ref": "#/definitions/types.PolicyStatus"
+                    "description": "Status",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.PolicyStatus"
+                        }
+                    ],
+                    "example": "passed"
                 },
                 "title": {
-                    "type": "string"
+                    "description": "Policy title",
+                    "type": "string",
+                    "example": "7.5 Ensure that the latest OS Patches for all Virtual Machines are applied"
                 }
             }
         },
@@ -8520,28 +8775,37 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connector": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Azure"
                 },
                 "createdAt": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-06-07T14:00:15.677558Z"
                 },
                 "engine": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "steampipe-v0.5"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "azure_ad_manual_control"
                 },
                 "listOfTables": {
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "null"
+                    ]
                 },
                 "queryToExecute": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "select\n  -- Required Columns\n  'active_directory' as resource,\n  'info' as status,\n  'Manual verification required.' as reason;\n"
                 },
                 "updatedAt": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-06-16T14:58:08.759554Z"
                 }
             }
         },
@@ -8549,9 +8813,15 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "result": {
-                    "$ref": "#/definitions/types.SeverityResult"
+                    "description": "Result",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.SeverityResult"
+                        }
+                    ]
                 },
                 "time": {
+                    "description": "Datapoint Time",
                     "type": "integer"
                 }
             }
@@ -8625,58 +8895,102 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "ID": {
-                    "type": "string"
+                    "description": "Finding ID",
+                    "type": "string",
+                    "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1-azure_cis_v140_7_5"
                 },
                 "benchmarkID": {
-                    "type": "string"
+                    "description": "Benchmark ID",
+                    "type": "string",
+                    "example": "azure_cis_v140"
                 },
                 "complianceJobID": {
-                    "type": "integer"
+                    "description": "Compliance job ID",
+                    "type": "integer",
+                    "example": 1
                 },
                 "connectionID": {
-                    "type": "string"
+                    "description": "Connection ID",
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Cloud provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 },
                 "describedAt": {
-                    "type": "integer"
+                    "description": "Timestamp of the policy description",
+                    "type": "integer",
+                    "example": 1589395200
                 },
                 "evaluatedAt": {
-                    "type": "integer"
+                    "description": "Timestamp of the policy evaluation",
+                    "type": "integer",
+                    "example": 1589395200
                 },
                 "evaluator": {
-                    "type": "string"
+                    "description": "Evaluator name",
+                    "type": "string",
+                    "example": "steampipe-v0.5"
                 },
                 "policyID": {
-                    "type": "string"
+                    "description": "Policy ID",
+                    "type": "string",
+                    "example": "azure_cis_v140_7_5"
                 },
                 "reason": {
-                    "type": "string"
+                    "description": "Reason for the policy evaluation result",
+                    "type": "string",
+                    "example": "The VM is not using managed disks"
                 },
                 "resourceID": {
-                    "type": "string"
+                    "description": "Resource ID",
+                    "type": "string",
+                    "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
                 },
                 "resourceLocation": {
-                    "type": "string"
+                    "description": "Resource location",
+                    "type": "string",
+                    "example": "eastus"
                 },
                 "resourceName": {
-                    "type": "string"
+                    "description": "Resource name",
+                    "type": "string",
+                    "example": "vm-1"
                 },
                 "resourceType": {
-                    "type": "string"
+                    "description": "Resource type",
+                    "type": "string",
+                    "example": "Microsoft.Compute/virtualMachines"
                 },
                 "result": {
-                    "$ref": "#/definitions/types.ComplianceResult"
+                    "description": "Compliance result",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.ComplianceResult"
+                        }
+                    ],
+                    "example": "alarm"
                 },
                 "scheduleJobID": {
-                    "type": "integer"
+                    "description": "Schedule job ID",
+                    "type": "integer",
+                    "example": 1
                 },
                 "severity": {
-                    "type": "string"
+                    "description": "Compliance severity",
+                    "type": "string",
+                    "example": "low"
                 },
                 "stateActive": {
-                    "type": "boolean"
+                    "description": "Whether the policy is active or not",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
@@ -11193,19 +11507,24 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "alarmCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "errorCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "infoCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "okCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "skipCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -11226,22 +11545,28 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "criticalCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "highCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "lowCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "mediumCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "passedCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "unknownCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 }
             }
         }

@@ -700,14 +700,17 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 
 // HandleListBenchmarkEvaluations godoc
 //
-//	@Summary	Lists all benchmark evaluations
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Produce	json
-//	@Success	200
-//	@Param		request	body		api.ListBenchmarkEvaluationsRequest	true	"Request Body"
-//	@Success	200		{object}	[]ComplianceReportJob
-//	@Router		/schedule/api/v1/benchmark/evaluations [get]
+//	@Summary		Lists benchmark evaluations
+//
+//	@Description	This API allows users to retrieve details of all benchmark evaluation jobs based on specified filters. The API returns information such as evaluation time, benchmark ID, connection ID, connector name, status, and failure message.
+//
+//	@Security		BearerToken
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200
+//	@Param			request	body		api.ListBenchmarkEvaluationsRequest	true	"Request Body"
+//	@Success		200		{object}	[]ComplianceReportJob
+//	@Router			/schedule/api/v1/benchmark/evaluations [get]
 func (h HttpServer) HandleListBenchmarkEvaluations(ctx echo.Context) error {
 	var req api.ListBenchmarkEvaluationsRequest
 	if err := bindValidate(ctx, &req); err != nil {
