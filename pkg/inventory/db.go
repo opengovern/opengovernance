@@ -278,15 +278,16 @@ func (db Database) ListMetrics() ([]Metric, error) {
 	return metrics, tx.Error
 }
 
-func (db Database) ListResourceTypeTagsKeysWithPossibleValues(doSummarize *bool) (map[string][]string, error) {
+func (db Database) ListResourceTypeTagsKeysWithPossibleValues(connectorTypes []source.Type, doSummarize *bool) (map[string][]string, error) {
 	var tags []ResourceTypeTag
-	// query = query.Joins("JOIN resource_type_tags AS tags ON tags.resource_type = resource_types.resource_type")
-	tx := db.orm.Model(ResourceTypeTag{})
+	tx := db.orm.Model(ResourceTypeTag{}).Joins("JOIN resource_types ON resource_type_tags.resource_type = resource_types.resource_type")
 	if doSummarize != nil {
-		tx = tx.Joins("JOIN resource_types ON resource_type_tags.resource_type = resource_types.resource_type").
-			Where("resource_types.do_summarize = ?", true)
+		tx = tx.Where("resource_types.do_summarize = ?", true)
 	}
-	tx.Distinct().Find(&tags)
+	if len(connectorTypes) > 0 {
+		tx = tx.Where("resource_types.connector in ?", connectorTypes)
+	}
+	tx.Find(&tags)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -298,12 +299,14 @@ func (db Database) ListResourceTypeTagsKeysWithPossibleValues(doSummarize *bool)
 	return result, nil
 }
 
-func (db Database) GetResourceTypeTagPossibleValues(key string, doSummarize *bool) ([]string, error) {
+func (db Database) GetResourceTypeTagPossibleValues(key string, connectorTypes []source.Type, doSummarize *bool) ([]string, error) {
 	var tags []ResourceTypeTag
-	tx := db.orm.Model(ResourceTypeTag{})
+	tx := db.orm.Model(ResourceTypeTag{}).Joins("JOIN resource_types ON resource_type_tags.resource_type = resource_types.resource_type")
 	if doSummarize != nil {
-		tx = tx.Joins("JOIN resource_types ON resource_type_tags.resource_type = resource_types.resource_type").
-			Where("resource_types.do_summarize = ?", true)
+		tx = tx.Where("resource_types.do_summarize = ?", true)
+	}
+	if len(connectorTypes) > 0 {
+		tx = tx.Where("resource_types.connector in ?", connectorTypes)
 	}
 	tx.Where("key = ?", key).Find(&tags)
 	if tx.Error != nil {
