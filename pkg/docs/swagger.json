@@ -1395,7 +1395,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter insights by connector",
                         "name": "connector",
                         "in": "query"
@@ -1405,7 +1404,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1464,7 +1462,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1520,7 +1517,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1583,7 +1579,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter by connector",
                         "name": "connector",
                         "in": "query"
@@ -1778,7 +1773,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Source ID",
                         "name": "sourceId",
                         "in": "query"
@@ -2346,7 +2340,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2356,7 +2349,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "sourceId",
                         "in": "query"
@@ -2454,7 +2446,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2464,7 +2455,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2602,7 +2592,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2612,7 +2601,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2655,7 +2643,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Source ID",
                         "name": "sourceId",
                         "in": "query"
@@ -2703,7 +2690,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs",
                         "name": "connectionId",
                         "in": "query",
@@ -2811,7 +2797,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2821,7 +2806,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2884,7 +2868,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2894,7 +2877,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2972,7 +2954,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2982,7 +2963,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3045,7 +3025,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter insights by connector",
                         "name": "connector",
                         "in": "query"
@@ -3055,7 +3034,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -3065,7 +3043,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by insight id",
                         "name": "insightId",
                         "in": "query",
@@ -3156,7 +3133,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -3209,7 +3185,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -3269,7 +3244,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Filter by Connector",
                         "name": "connector",
                         "in": "query",
@@ -3280,7 +3254,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Filter by service name",
                         "name": "service",
                         "in": "query"
@@ -3290,7 +3263,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3378,7 +3350,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector",
                         "name": "connector",
                         "in": "query"
@@ -3388,7 +3359,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3492,7 +3462,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector types to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3502,7 +3471,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3547,7 +3515,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3557,7 +3524,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Service names to filter by",
                         "name": "servicename",
                         "in": "query"
@@ -3572,7 +3538,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3582,7 +3547,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3655,7 +3619,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3707,6 +3670,26 @@
                     "inventory"
                 ],
                 "summary": "Return list of the keys with possible values for filtering resources types",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3741,6 +3724,24 @@
                 ],
                 "summary": "Return list of the possible values for filtering resources types with specified key",
                 "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
                     {
                         "type": "string",
                         "description": "Tag key",
@@ -3785,7 +3786,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3795,7 +3795,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Service names to filter by",
                         "name": "servicename",
                         "in": "query"
@@ -3810,7 +3809,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3820,7 +3818,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3880,7 +3877,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3895,7 +3891,6 @@
                             ],
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3905,7 +3900,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3985,7 +3979,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -4037,7 +4030,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter: Connection ID",
                         "name": "connectionId",
                         "in": "query"
@@ -4047,7 +4039,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter: Connector",
                         "name": "connector",
                         "in": "query"
@@ -4057,7 +4048,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "filter: tag for the services",
                         "name": "tag",
                         "in": "query"
@@ -6121,7 +6111,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -6131,7 +6120,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Account IDs to filter by",
                         "name": "accountIds",
                         "in": "query"
@@ -6228,7 +6216,6 @@
                         "items": {
                             "type": "string"
                         },
-                        "collectionFormat": "csv",
                         "description": "Additional Resources",
                         "name": "resources",
                         "in": "formData"

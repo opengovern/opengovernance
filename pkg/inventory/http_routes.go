@@ -126,6 +126,32 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	return nil
 }
 
+func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, connectorTypes []source.Type, connectionIDs []string) ([]source.Type, error) {
+	connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), connectionIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	enabledConnectors := make(map[source.Type]bool)
+	for _, connection := range connections {
+		enabledConnectors[connection.Connector] = true
+	}
+	filteredConnectorType := make([]source.Type, 0)
+	for _, connectorType := range connectorTypes {
+		if enabledConnectors[connectorType] {
+			filteredConnectorType = append(filteredConnectorType, connectorType)
+		}
+	}
+
+	if len(connectorTypes) == 0 {
+		for connectorType := range enabledConnectors {
+			filteredConnectorType = append(filteredConnectorType, connectorType)
+		}
+	}
+
+	return filteredConnectorType, nil
+}
+
 // GetTopAccountsByCost godoc
 //
 //	@Summary	Returns top n accounts of specified provider by cost
@@ -527,10 +553,21 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	map[string][]string
+//	@Param		connector		query		[]string	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Success	200				{object}	map[string][]string
 //	@Router		/inventory/api/v2/resources/tag [get]
 func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
-	tags, err := h.db.ListResourceTypeTagsKeysWithPossibleValues(utils.GetPointer(true))
+	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
+	connectorTypes, err := h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+	tags, err := h.db.ListResourceTypeTagsKeysWithPossibleValues(connectorTypes, utils.GetPointer(true))
 	if err != nil {
 		return err
 	}
@@ -545,16 +582,27 @@ func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
-//	@Param		key	path		string	true	"Tag key"
-//	@Success	200	{object}	[]string
+//	@Param		connector		query		[]string	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param		key				path		string		true	"Tag key"
+//	@Success	200				{object}	[]string
 //	@Router		/inventory/api/v2/resources/tag/{key} [get]
 func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
+	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
+	connectorTypes, err := h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
 	tagKey := ctx.Param("key")
 	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
 		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
 
-	tags, err := h.db.GetResourceTypeTagPossibleValues(tagKey, utils.GetPointer(true))
+	tags, err := h.db.GetResourceTypeTagPossibleValues(tagKey, connectorTypes, utils.GetPointer(true))
 	if err != nil {
 		return err
 	}
@@ -621,6 +669,10 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	connectionIDs := ctx.QueryParams()["connectionId"]
 	if len(connectionIDs) > 20 {
 		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
+	connectorTypes, err = h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
