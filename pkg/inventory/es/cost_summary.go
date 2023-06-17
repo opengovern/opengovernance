@@ -88,11 +88,13 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs [
 		"connector_group": map[string]any{
 			"terms": map[string]any{
 				"field": "source_type",
+				"size":  size,
 			},
 			"aggs": map[string]any{
 				"service_name_group": map[string]any{
 					"terms": map[string]any{
 						"field": "service_name",
+						"size":  size,
 					},
 					"aggs": map[string]any{
 						"cost_value_sum_group": map[string]any{
