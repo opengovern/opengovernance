@@ -18,6 +18,7 @@ x-tagGroups:
     - smart_query
     - resource
     - metadata
+    - services
   - name: onboard
     tags:
     - onboard
@@ -1081,14 +1082,20 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight:
     properties:
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
       description:
+        example: List clusters that have role-based access control (RBAC) disabled
         type: string
       enabled:
+        example: true
         type: boolean
       id:
+        example: 23
         type: integer
       internal:
+        example: false
         type: boolean
       labels:
         additionalProperties:
@@ -1103,8 +1110,10 @@ definitions:
       logoURL:
         type: string
       longTitle:
+        example: List clusters that have role-based access control (RBAC) disabled
         type: string
       oldTotalResultValue:
+        example: 0
         type: integer
       query:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query'
@@ -1113,8 +1122,10 @@ definitions:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightResult'
         type: array
       shortTitle:
+        example: Clusters with no RBAC
         type: string
       totalResultValue:
+        example: 10
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightConnection:
@@ -1140,6 +1151,7 @@ definitions:
     properties:
       connectionID:
         description: Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       connections:
         description: Connections
@@ -1152,12 +1164,15 @@ definitions:
         description: Insight Details
       executedAt:
         description: Time of Execution
+        example: "2023-04-21T08:53:09.928Z"
         type: string
       insightID:
         description: Insight ID
+        example: 23
         type: integer
       jobID:
         description: Job ID
+        example: 1
         type: integer
       locations:
         description: Locations
@@ -1166,15 +1181,18 @@ definitions:
         type: array
       result:
         description: Result
+        example: 1000
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint:
     properties:
       timestamp:
         description: Time
+        example: 1686346668
         type: integer
       value:
         description: Resource Count
+        example: 1000
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page:
@@ -1864,23 +1882,34 @@ definitions:
         allOf:
         - $ref: '#/definitions/source.Type'
         description: Source Type
+        example: azure
       connectorConnectionID:
         description: Provider Connection Id
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       connectorConnectionName:
         description: Provider Connection Name
+        example: example-account
         type: string
       lastInventory:
+        description: Last Inventory Date
+        example: "2023-05-22T12:50:22.499961Z"
         type: string
       lifecycleState:
+        description: Lifesycle State
+        example: enabled
         type: string
       onboardDate:
+        description: Onboard Date
+        example: "2023-05-22T12:50:22.499961Z"
         type: string
       resourceCount:
         description: Number of resources
+        example: 100
         type: integer
       sourceID:
         description: Source Id
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostMetric:
@@ -2138,6 +2167,7 @@ definitions:
         type: array
       totalCount:
         description: Number of services
+        example: 20
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationByProviderResponse:
@@ -2432,14 +2462,18 @@ definitions:
         allOf:
         - $ref: '#/definitions/source.Type'
         description: Cloud provider
+        example: Azure
       resourceCount:
         description: Number of Resources
+        example: 100
         type: integer
       serviceLabel:
         description: Service Label
+        example: Compute
         type: string
       serviceName:
         description: Service Name
+        example: compute
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQueryItem:
@@ -2525,18 +2559,23 @@ definitions:
     properties:
       provider:
         description: Account Provider
+        example: azure
         type: string
       providerConnectionID:
         description: Account Provider Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       providerConnectionName:
         description: Account Provider Connection Name
+        example: example-account
         type: string
       resourceCount:
         description: Last number of Resources of the account
+        example: 100
         type: integer
       sourceID:
         description: Source Id
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServiceCostResponse:
@@ -4100,11 +4139,11 @@ paths:
         This API enables users to retrieve findings metrics for two given times, which includes the total number of findings, the number of passed findings, the number of failed findings, and the number of unknowns findings. Users can use this API to compare the compliance status of their resources between two different time periods.
         The API will return the findings metrics for each time period separately, allowing users to easily compare the compliance status of their resources at each time period. This can be useful for monitoring the effectiveness of compliance measures over time and identifying any areas of improvement."
       parameters:
-      - description: Start Time
+      - description: unix seconds for the start time
         in: query
         name: start
         type: integer
-      - description: End Time
+      - description: unix seconds for the end time
         in: query
         name: end
         type: integer
@@ -4122,7 +4161,9 @@ paths:
       - compliance
   /compliance/api/v1/insight:
     get:
-      description: Listing insight with result
+      description: |-
+        This API returns a list of insights based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
+        Returns "all:provider" job results if connectionId is not defined.
       parameters:
       - description: Key-Value tags in key=value format to filter by
         in: query
@@ -4165,14 +4206,16 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: List insight with result
+      summary: List insights
       tags:
       - insights
   /compliance/api/v1/insight/{insightId}:
     get:
-      description: Get insight with result by id
+      description: |-
+        This API returns the specified insight with ID. The API provides details of the insight, including results during the specified time period for the specified connection.
+        Returns "all:provider" job results if connectionId is not defined.
       parameters:
-      - description: InsightID
+      - description: Insight ID
         in: path
         name: insightId
         required: true
@@ -4201,14 +4244,16 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
       security:
       - BearerToken: []
-      summary: Get insight with result by id
+      summary: Get insight
       tags:
       - insights
   /compliance/api/v1/insight/{insightId}/trend:
     get:
-      description: Get insight trend with result by id
+      description: |-
+        This API allows users to retrieve insight results datapoints for a specified connection during a specified time period.
+        Returns "all:provider" job results if connectionId is not defined.
       parameters:
-      - description: InsightID
+      - description: Insight ID
         in: path
         name: insightId
         required: true
@@ -4243,12 +4288,12 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Get insight trend with result by id
+      summary: Get insight trend
       tags:
       - insights
   /compliance/api/v1/metadata/insight:
     get:
-      description: Listing insight metadata
+      description: Retrieves all insights metadata.
       parameters:
       - collectionFormat: csv
         description: filter by connector
@@ -4272,14 +4317,14 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: List insight metadata
+      summary: List insights metadata
       tags:
       - insights
   /compliance/api/v1/metadata/insight/{insightId}:
     get:
       description: Get insight metadata by id
       parameters:
-      - description: InsightID
+      - description: Insight ID
         in: path
         name: insightId
         required: true
@@ -4293,13 +4338,15 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
       security:
       - BearerToken: []
-      summary: Get insight metadata by id
+      summary: Get insight metadata
       tags:
       - insights
   /compliance/api/v1/metadata/tag/insight:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a list of insights tag keys with
+        their possible values.
       produces:
       - application/json
       responses:
@@ -4313,13 +4360,15 @@ paths:
             type: object
       security:
       - BearerToken: []
-      summary: Return list of the keys with possible values for filtering insights
+      summary: List insights tag keys
       tags:
       - insights
   /compliance/api/v1/metadata/tag/insight/{key}:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve an insights tag key with the
+        possible values for it.
       parameters:
       - description: Tag key
         in: path
@@ -4337,8 +4386,7 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Return list of the possible values for filtering insights with specified
-        key
+      summary: Get insights tag key
       tags:
       - insights
   /compliance/api/v1/queries/{query_id}:
@@ -4369,6 +4417,8 @@ paths:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a list of accounts and the number
+        of resources associated with each account for the specified provider.
       parameters:
       - description: Provider
         in: query
@@ -4376,7 +4426,7 @@ paths:
         required: true
         type: string
       - collectionFormat: csv
-        description: SourceID
+        description: Source ID
         in: query
         items:
           type: string
@@ -4393,9 +4443,9 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Returns resource count of accounts
+      summary: Get accounts resource count
       tags:
-      - benchmarks
+      - resource
   /inventory/api/v1/cost/top/accounts:
     get:
       consumes:
@@ -4635,7 +4685,7 @@ paths:
       - BearerToken: []
       summary: Get resources
       tags:
-      - inventory
+      - resource
   /inventory/api/v1/resources/aws:
     post:
       consumes:
@@ -4680,7 +4730,7 @@ paths:
       - BearerToken: []
       summary: Get AWS resources
       tags:
-      - inventory
+      - resource
   /inventory/api/v1/resources/azure:
     post:
       consumes:
@@ -4725,7 +4775,7 @@ paths:
       - BearerToken: []
       summary: Get Azure resources
       tags:
-      - inventory
+      - resource
   /inventory/api/v1/resources/count:
     get:
       consumes:
@@ -4743,11 +4793,13 @@ paths:
       - BearerToken: []
       summary: Count resources
       tags:
-      - inventory
+      - resource
   /inventory/api/v1/resources/distribution:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a distribution of resources by
+        their locations. It returns the number of resources in each location.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -4765,19 +4817,8 @@ paths:
         in: query
         items:
           type: string
-        name: connectionId
+        name: sourceId
         type: array
-      - description: Time Window
-        enum:
-        - 24h
-        - 1w
-        - 3m
-        - 1y
-        - max
-        in: query
-        name: timeWindow
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -4789,9 +4830,9 @@ paths:
             type: object
       security:
       - BearerToken: []
-      summary: Returns distribution of resource for specific account
+      summary: Get resources distribution
       tags:
-      - benchmarks
+      - resource
   /inventory/api/v1/resources/filters:
     post:
       consumes:
@@ -4824,7 +4865,7 @@ paths:
       - BearerToken: []
       summary: Get resource filters
       tags:
-      - inventory
+      - resource
   /inventory/api/v1/resources/regions:
     get:
       consumes:
@@ -4878,11 +4919,13 @@ paths:
       - BearerToken: []
       summary: Returns top n regions of specified provider by resource count
       tags:
-      - inventory
+      - resource
   /inventory/api/v1/resources/top/growing/accounts:
     get:
       consumes:
       - application/json
+      description: Returns top n fastest growing accounts of specified provider in
+        the specified time window by resource count.
       parameters:
       - description: Number of top accounts returning.
         in: query
@@ -4894,7 +4937,7 @@ paths:
         name: provider
         required: true
         type: string
-      - description: TimeWindow
+      - description: Time Window
         enum:
         - 1d
         - 1w
@@ -4915,10 +4958,9 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Returns top n fastest growing accounts of specified provider in the
-        specified time window by resource count
+      summary: Get Top Fastest Growing Accounts By ResourceCount
       tags:
-      - benchmarks
+      - resource
   /inventory/api/v1/resources/top/regions:
     get:
       consumes:
@@ -4960,24 +5002,24 @@ paths:
       - BearerToken: []
       summary: Returns top n regions of specified provider by resource count
       tags:
-      - inventory
+      - resource
   /inventory/api/v1/services/distribution:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a distribution of services by
+        their locations.
       parameters:
       - collectionFormat: csv
-        description: SourceID
+        description: Source ID
         in: query
         items:
           type: string
         name: sourceId
-        required: true
         type: array
       - description: Provider
         in: query
         name: provider
-        required: true
         type: string
       produces:
       - application/json
@@ -4990,9 +5032,9 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Returns distribution of services for specific account
+      summary: Get services distribution
       tags:
-      - benchmarks
+      - services
   /inventory/api/v2/connections/data:
     get:
       consumes:
@@ -5883,9 +5925,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: Gets a summary of the services including the number of them and
-        the API filters and a list of services with more details. Including connector
-        and the resource counts.
+      description: Retrieves list of summaries of the services including the number
+        of them and the API filters and a list of services with more details. Including
+        connector and the resource counts.
       parameters:
       - collectionFormat: csv
         description: 'filter: Connection ID'
@@ -5936,15 +5978,15 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse'
       security:
       - BearerToken: []
-      summary: Get Cloud Services Summary
+      summary: List Cloud Services Summary
       tags:
-      - benchmarks
+      - services
   /inventory/api/v2/services/summary/{serviceName}:
     get:
-      description: Get Cloud Service Summary for the specified service name. Including
-        connector, the resource counts.
+      description: Retrieves Cloud Service Summary for the specified service name.
+        Including connector, the resource counts.
       parameters:
-      - description: ServiceName
+      - description: Service Name
         in: path
         name: serviceName
         required: true
@@ -5973,7 +6015,7 @@ paths:
       - BearerToken: []
       summary: Get Cloud Service Summary
       tags:
-      - benchmarks
+      - services
   /inventory/api/v2/services/tag:
     get:
       consumes:

@@ -281,16 +281,17 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 
 // GetTopFastestGrowingAccountsByResourceCount godoc
 //
-//	@Summary	Returns top n fastest growing accounts of specified provider in the specified time window by resource count
-//	@Security	BearerToken
-//	@Tags		benchmarks
-//	@Accept		json
-//	@Produce	json
-//	@Param		count		query		int		true	"Number of top accounts returning."
-//	@Param		provider	query		string	true	"Provider"
-//	@Param		timeWindow	query		string	true	"TimeWindow"	Enums(1d,1w,3m,1y)
-//	@Success	200			{object}	[]api.TopAccountResponse
-//	@Router		/inventory/api/v1/resources/top/growing/accounts [get]
+//	@Summary		Get Top Fastest Growing Accounts By ResourceCount
+//	@Description	Returns top n fastest growing accounts of specified provider in the specified time window by resource count.
+//	@Security		BearerToken
+//	@Tags			resource
+//	@Accept			json
+//	@Produce		json
+//	@Param			count		query		int		true	"Number of top accounts returning."
+//	@Param			provider	query		string	true	"Provider"
+//	@Param			timeWindow	query		string	true	"Time Window"	Enums(1d,1w,3m,1y)
+//	@Success		200			{object}	[]api.TopAccountResponse
+//	@Router			/inventory/api/v1/resources/top/growing/accounts [get]
 func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Context) error {
 	providers := source.ParseTypes(ctx.QueryParams()["provider"])
 
@@ -381,7 +382,7 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 //
 //	@Summary	Returns top n regions of specified provider by resource count
 //	@Security	BearerToken
-//	@Tags		inventory
+//	@Tags		resource
 //	@Accept		json
 //	@Produce	json
 //	@Param		count			query		int				true	"count"
@@ -434,7 +435,7 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 //
 //	@Summary	Returns top n regions of specified provider by resource count
 //	@Security	BearerToken
-//	@Tags		inventory
+//	@Tags		resource
 //	@Accept		json
 //	@Produce	json
 //	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
@@ -1535,15 +1536,16 @@ func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 
 // GetAccountsResourceCount godoc
 //
-//	@Summary	Returns resource count of accounts
-//	@Security	BearerToken
-//	@Tags		benchmarks
-//	@Accept		json
-//	@Produce	json
-//	@Param		provider	query		string		true	"Provider"
-//	@Param		sourceId	query		[]string	false	"SourceID"
-//	@Success	200			{object}	[]api.ConnectionResourceCountResponse
-//	@Router		/inventory/api/v1/accounts/resource/count [get]
+//	@Summary		Get accounts resource count
+//	@Description	This API allows users to retrieve a list of accounts and the number of resources associated with each account for the specified provider.
+//	@Security		BearerToken
+//	@Tags			resource
+//	@Accept			json
+//	@Produce		json
+//	@Param			provider	query		string		true	"Provider"
+//	@Param			sourceId	query		[]string	false	"Source ID"
+//	@Success		200			{object}	[]api.ConnectionResourceCountResponse
+//	@Router			/inventory/api/v1/accounts/resource/count [get]
 func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	connectors := source.ParseTypes(ctx.QueryParams()["provider"])
 	sourceId := ctx.QueryParams()["sourceId"]
@@ -1721,16 +1723,16 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 
 // GetResourceDistribution godoc
 //
-//	@Summary	Returns distribution of resource for specific account
-//	@Security	BearerToken
-//	@Tags		benchmarks
-//	@Accept		json
-//	@Produce	json
-//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param		timeWindow		query		string			true	"Time Window"	Enums(24h,1w,3m,1y,max)
-//	@Success	200				{object}	map[string]int
-//	@Router		/inventory/api/v1/resources/distribution [get]
+//	@Summary		Get resources distribution
+//	@Description	This API allows users to retrieve a distribution of resources by their locations. It returns the number of resources in each location.
+//	@Security		BearerToken
+//	@Tags			resource
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector	query		[]source.Type	false	"Connector type to filter by"
+//	@Param			sourceId	query		[]string		false	"Connection IDs to filter by"
+//	@Success		200			{object}	map[string]int
+//	@Router			/inventory/api/v1/resources/distribution [get]
 func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["sourceId"]
@@ -1755,15 +1757,16 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 
 // GetServiceDistribution godoc
 //
-//	@Summary	Returns distribution of services for specific account
-//	@Security	BearerToken
-//	@Tags		benchmarks
-//	@Accept		json
-//	@Produce	json
-//	@Param		sourceId	query		[]string	true	"SourceID"
-//	@Param		provider	query		string		true	"Provider"
-//	@Success	200			{object}	[]api.ServiceDistributionItem
-//	@Router		/inventory/api/v1/services/distribution [get]
+//	@Summary		Get services distribution
+//	@Description	This API allows users to retrieve a distribution of services by their locations.
+//	@Security		BearerToken
+//	@Tags			services
+//	@Accept			json
+//	@Produce		json
+//	@Param			sourceId	query		[]string	false	"Source ID"
+//	@Param			provider	query		string		false	"Provider"
+//	@Success		200			{object}	[]api.ServiceDistributionItem
+//	@Router			/inventory/api/v1/services/distribution [get]
 func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 	sourceIDs := ctx.QueryParams()["sourceId"]
 	if len(sourceIDs) == 0 {
@@ -1787,10 +1790,10 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 
 // ListServiceSummaries godoc
 //
-//	@Summary		Get Cloud Services Summary
-//	@Description	Gets a summary of the services including the number of them and the API filters and a list of services with more details. Including connector and the resource counts.
+//	@Summary		List Cloud Services Summary
+//	@Description	Retrieves list of summaries of the services including the number of them and the API filters and a list of services with more details. Including connector and the resource counts.
 //	@Security		BearerToken
-//	@Tags			benchmarks
+//	@Tags			services
 //	@Accept			json
 //	@Produce		json
 //	@Param			connectionId	query		[]string	false	"filter: Connection ID"
@@ -1911,12 +1914,12 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 // GetServiceSummary godoc
 //
 //	@Summary		Get Cloud Service Summary
-//	@Description	Get Cloud Service Summary for the specified service name. Including connector, the resource counts.
+//	@Description	Retrieves Cloud Service Summary for the specified service name. Including connector, the resource counts.
 //	@Security		BearerToken
-//	@Tags			benchmarks
+//	@Tags			services
 //	@Accepts		json
 //	@Produce		json
-//	@Param			serviceName	path		string	true	"ServiceName"
+//	@Param			serviceName	path		string	true	"Service Name"
 //	@Param			connectorId	query		string	false	"filter: connectorId"
 //	@Param			connector	query		string	false	"filter: connector"
 //	@Param			endTime		query		string	true	"time for resource count in epoch seconds"
@@ -2346,7 +2349,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 //	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
 //	@Description	If sort by is empty, result will be sorted by the first column in ascending order.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			resource
 //	@Accept			json
 //	@Produce		json,text/csv
 //	@Param			request	body		api.GetResourcesRequest	true	"Request Body"
@@ -2383,7 +2386,7 @@ func (h *HttpHandler) GetAzureResources(ctx echo.Context) error {
 //	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
 //	@Description	If sort by is empty, result will be sorted by the first column in ascending order.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			resource
 //	@Accept			json
 //	@Produce		json,text/csv
 //	@Param			request	body		api.GetResourcesRequest	true	"Request Body"
@@ -2420,7 +2423,7 @@ func (h *HttpHandler) GetAWSResources(ctx echo.Context) error {
 //	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
 //	@Description	If sort by is empty, result will be sorted by the first column in ascending order.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			resource
 //	@Accept			json
 //	@Produce		json,text/csv
 //	@Param			request	body		api.GetResourcesRequest	true	"Request Body"
@@ -2453,7 +2456,7 @@ func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 //	@Summary		Count resources
 //	@Description	Number of all resources
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			resource
 //	@Accept			json
 //	@Produce		json,text/csv
 //	@Success		200	{object}	int64
@@ -2483,7 +2486,7 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 //	@Summary		Get resource filters
 //	@Description	Getting resource filters by filters.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			resource
 //	@Accept			json
 //	@Produce		json,text/csv
 //	@Param			request	body		api.GetFiltersRequest	true	"Request Body"

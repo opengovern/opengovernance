@@ -1291,13 +1291,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Start Time",
+                        "description": "unix seconds for the start time",
                         "name": "start",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "End Time",
+                        "description": "unix seconds for the end time",
                         "name": "end",
                         "in": "query"
                     }
@@ -1376,14 +1376,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Listing insight with result",
+                "description": "This API returns a list of insights based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.\nReturns \"all:provider\" job results if connectionId is not defined.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "insights"
                 ],
-                "summary": "List insight with result",
+                "summary": "List insights",
                 "parameters": [
                     {
                         "type": "string",
@@ -1449,18 +1449,18 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Get insight with result by id",
+                "description": "This API returns the specified insight with ID. The API provides details of the insight, including results during the specified time period for the specified connection.\nReturns \"all:provider\" job results if connectionId is not defined.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "insights"
                 ],
-                "summary": "Get insight with result by id",
+                "summary": "Get insight",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "InsightID",
+                        "description": "Insight ID",
                         "name": "insightId",
                         "in": "path",
                         "required": true
@@ -1505,18 +1505,18 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Get insight trend with result by id",
+                "description": "This API allows users to retrieve insight results datapoints for a specified connection during a specified time period.\nReturns \"all:provider\" job results if connectionId is not defined.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "insights"
                 ],
-                "summary": "Get insight trend with result by id",
+                "summary": "Get insight trend",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "InsightID",
+                        "description": "Insight ID",
                         "name": "insightId",
                         "in": "path",
                         "required": true
@@ -1570,14 +1570,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Listing insight metadata",
+                "description": "Retrieves all insights metadata.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "insights"
                 ],
-                "summary": "List insight metadata",
+                "summary": "List insights metadata",
                 "parameters": [
                     {
                         "type": "array",
@@ -1622,11 +1622,11 @@ const docTemplate = `{
                 "tags": [
                     "insights"
                 ],
-                "summary": "Get insight metadata by id",
+                "summary": "Get insight metadata",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "InsightID",
+                        "description": "Insight ID",
                         "name": "insightId",
                         "in": "path",
                         "required": true
@@ -1649,6 +1649,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve a list of insights tag keys with their possible values.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1658,7 +1659,7 @@ const docTemplate = `{
                 "tags": [
                     "insights"
                 ],
-                "summary": "Return list of the keys with possible values for filtering insights",
+                "summary": "List insights tag keys",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1682,6 +1683,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve an insights tag key with the possible values for it.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1691,7 +1693,7 @@ const docTemplate = `{
                 "tags": [
                     "insights"
                 ],
-                "summary": "Return list of the possible values for filtering insights with specified key",
+                "summary": "Get insights tag key",
                 "parameters": [
                     {
                         "type": "string",
@@ -1758,6 +1760,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve a list of accounts and the number of resources associated with each account for the specified provider.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1765,9 +1768,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "benchmarks"
+                    "resource"
                 ],
-                "summary": "Returns resource count of accounts",
+                "summary": "Get accounts resource count",
                 "parameters": [
                     {
                         "type": "string",
@@ -1782,7 +1785,7 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "SourceID",
+                        "description": "Source ID",
                         "name": "sourceId",
                         "in": "query"
                     }
@@ -2121,7 +2124,7 @@ const docTemplate = `{
                     "text/csv"
                 ],
                 "tags": [
-                    "inventory"
+                    "resource"
                 ],
                 "summary": "Get resources",
                 "parameters": [
@@ -2183,7 +2186,7 @@ const docTemplate = `{
                     "text/csv"
                 ],
                 "tags": [
-                    "inventory"
+                    "resource"
                 ],
                 "summary": "Get AWS resources",
                 "parameters": [
@@ -2245,7 +2248,7 @@ const docTemplate = `{
                     "text/csv"
                 ],
                 "tags": [
-                    "inventory"
+                    "resource"
                 ],
                 "summary": "Get Azure resources",
                 "parameters": [
@@ -2307,7 +2310,7 @@ const docTemplate = `{
                     "text/csv"
                 ],
                 "tags": [
-                    "inventory"
+                    "resource"
                 ],
                 "summary": "Count resources",
                 "responses": {
@@ -2327,6 +2330,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve a distribution of resources by their locations. It returns the number of resources in each location.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2334,9 +2338,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "benchmarks"
+                    "resource"
                 ],
-                "summary": "Returns distribution of resource for specific account",
+                "summary": "Get resources distribution",
                 "parameters": [
                     {
                         "type": "array",
@@ -2360,22 +2364,8 @@ const docTemplate = `{
                         },
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
-                        "name": "connectionId",
+                        "name": "sourceId",
                         "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "24h",
-                            "1w",
-                            "3m",
-                            "1y",
-                            "max"
-                        ],
-                        "type": "string",
-                        "description": "Time Window",
-                        "name": "timeWindow",
-                        "in": "query",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -2407,7 +2397,7 @@ const docTemplate = `{
                     "text/csv"
                 ],
                 "tags": [
-                    "inventory"
+                    "resource"
                 ],
                 "summary": "Get resource filters",
                 "parameters": [
@@ -2456,7 +2446,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "resource"
                 ],
                 "summary": "Returns top n regions of specified provider by resource count",
                 "parameters": [
@@ -2530,6 +2520,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "Returns top n fastest growing accounts of specified provider in the specified time window by resource count.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2537,9 +2528,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "benchmarks"
+                    "resource"
                 ],
-                "summary": "Returns top n fastest growing accounts of specified provider in the specified time window by resource count",
+                "summary": "Get Top Fastest Growing Accounts By ResourceCount",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2563,7 +2554,7 @@ const docTemplate = `{
                             "1y"
                         ],
                         "type": "string",
-                        "description": "TimeWindow",
+                        "description": "Time Window",
                         "name": "timeWindow",
                         "in": "query",
                         "required": true
@@ -2596,7 +2587,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "resource"
                 ],
                 "summary": "Returns top n regions of specified provider by resource count",
                 "parameters": [
@@ -2653,6 +2644,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve a distribution of services by their locations.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2660,9 +2652,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "benchmarks"
+                    "services"
                 ],
-                "summary": "Returns distribution of services for specific account",
+                "summary": "Get services distribution",
                 "parameters": [
                     {
                         "type": "array",
@@ -2670,17 +2662,15 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "SourceID",
+                        "description": "Source ID",
                         "name": "sourceId",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "Provider",
                         "name": "provider",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4036,7 +4026,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Gets a summary of the services including the number of them and the API filters and a list of services with more details. Including connector and the resource counts.",
+                "description": "Retrieves list of summaries of the services including the number of them and the API filters and a list of services with more details. Including connector and the resource counts.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4044,9 +4034,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "benchmarks"
+                    "services"
                 ],
-                "summary": "Get Cloud Services Summary",
+                "summary": "List Cloud Services Summary",
                 "parameters": [
                     {
                         "type": "array",
@@ -4124,18 +4114,18 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Get Cloud Service Summary for the specified service name. Including connector, the resource counts.",
+                "description": "Retrieves Cloud Service Summary for the specified service name. Including connector, the resource counts.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "benchmarks"
+                    "services"
                 ],
                 "summary": "Get Cloud Service Summary",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ServiceName",
+                        "description": "Service Name",
                         "name": "serviceName",
                         "in": "path",
                         "required": true
@@ -8512,19 +8502,28 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "List clusters that have role-based access control (RBAC) disabled"
                 },
                 "enabled": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 23
                 },
                 "internal": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": false
                 },
                 "labels": {
                     "type": "object",
@@ -8545,10 +8544,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "longTitle": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "List clusters that have role-based access control (RBAC) disabled"
                 },
                 "oldTotalResultValue": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 0
                 },
                 "query": {
                     "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query"
@@ -8560,10 +8561,12 @@ const docTemplate = `{
                     }
                 },
                 "shortTitle": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Clusters with no RBAC"
                 },
                 "totalResultValue": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 10
                 }
             }
         },
@@ -8601,7 +8604,8 @@ const docTemplate = `{
             "properties": {
                 "connectionID": {
                     "description": "Connection ID",
-                    "type": "string"
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "connections": {
                     "description": "Connections",
@@ -8620,15 +8624,18 @@ const docTemplate = `{
                 },
                 "executedAt": {
                     "description": "Time of Execution",
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-04-21T08:53:09.928Z"
                 },
                 "insightID": {
                     "description": "Insight ID",
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 23
                 },
                 "jobID": {
                     "description": "Job ID",
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "locations": {
                     "description": "Locations",
@@ -8639,7 +8646,8 @@ const docTemplate = `{
                 },
                 "result": {
                     "description": "Result",
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1000
                 }
             }
         },
@@ -8648,11 +8656,13 @@ const docTemplate = `{
             "properties": {
                 "timestamp": {
                     "description": "Time",
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1686346668
                 },
                 "value": {
                     "description": "Resource Count",
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1000
                 }
             }
         },
@@ -9618,32 +9628,43 @@ const docTemplate = `{
                         {
                             "$ref": "#/definitions/source.Type"
                         }
-                    ]
+                    ],
+                    "example": "azure"
                 },
                 "connectorConnectionID": {
                     "description": "Provider Connection Id",
-                    "type": "string"
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "connectorConnectionName": {
                     "description": "Provider Connection Name",
-                    "type": "string"
+                    "type": "string",
+                    "example": "example-account"
                 },
                 "lastInventory": {
-                    "type": "string"
+                    "description": "Last Inventory Date",
+                    "type": "string",
+                    "example": "2023-05-22T12:50:22.499961Z"
                 },
                 "lifecycleState": {
-                    "type": "string"
+                    "description": "Lifesycle State",
+                    "type": "string",
+                    "example": "enabled"
                 },
                 "onboardDate": {
-                    "type": "string"
+                    "description": "Onboard Date",
+                    "type": "string",
+                    "example": "2023-05-22T12:50:22.499961Z"
                 },
                 "resourceCount": {
                     "description": "Number of resources",
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
                 },
                 "sourceID": {
                     "description": "Source Id",
-                    "type": "string"
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 }
             }
         },
@@ -10021,7 +10042,8 @@ const docTemplate = `{
                 },
                 "totalCount": {
                     "description": "Number of services",
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 20
                 }
             }
         },
@@ -10420,19 +10442,23 @@ const docTemplate = `{
                         {
                             "$ref": "#/definitions/source.Type"
                         }
-                    ]
+                    ],
+                    "example": "Azure"
                 },
                 "resourceCount": {
                     "description": "Number of Resources",
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
                 },
                 "serviceLabel": {
                     "description": "Service Label",
-                    "type": "string"
+                    "type": "string",
+                    "example": "Compute"
                 },
                 "serviceName": {
                     "description": "Service Name",
-                    "type": "string"
+                    "type": "string",
+                    "example": "compute"
                 }
             }
         },
@@ -10550,23 +10576,28 @@ const docTemplate = `{
             "properties": {
                 "provider": {
                     "description": "Account Provider",
-                    "type": "string"
+                    "type": "string",
+                    "example": "azure"
                 },
                 "providerConnectionID": {
                     "description": "Account Provider Connection ID",
-                    "type": "string"
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "providerConnectionName": {
                     "description": "Account Provider Connection Name",
-                    "type": "string"
+                    "type": "string",
+                    "example": "example-account"
                 },
                 "resourceCount": {
                     "description": "Last number of Resources of the account",
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
                 },
                 "sourceID": {
                     "description": "Source Id",
-                    "type": "string"
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 }
             }
         },

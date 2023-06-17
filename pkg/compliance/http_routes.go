@@ -217,8 +217,8 @@ func (h *HttpHandler) GetTopFieldByAlarmCount(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			start	query		int64	false	"Start Time"
-//	@Param			end		query		int64	false	"End Time"
+//	@Param			start	query		int64	false	"unix seconds for the start time"
+//	@Param			end		query		int64	false	"unix seconds for the end time"
 //	@Success		200		{object}	api.GetFindingsMetricsResponse
 //	@Router			/compliance/api/v1/findings/metrics [get]
 func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
@@ -948,8 +948,8 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 
 // ListInsightsMetadata godoc
 //
-//	@Summary		List insight metadata
-//	@Description	Listing insight metadata
+//	@Summary		List insights metadata
+//	@Description	Retrieves all insights metadata.
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
@@ -973,12 +973,12 @@ func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
 
 // GetInsightMetadata godoc
 //
-//	@Summary		Get insight metadata by id
+//	@Summary		Get insight metadata
 //	@Description	Get insight metadata by id
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
-//	@Param			insightId	path		string	true	"InsightID"
+//	@Param			insightId	path		string	true	"Insight ID"
 //	@Success		200			{object}	api.Insight
 //	@Router			/compliance/api/v1/metadata/insight/{insightId} [get]
 func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
@@ -1001,8 +1001,9 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 
 // ListInsights godoc
 //
-//	@Summary		List insight with result
-//	@Description	Listing insight with result
+//	@Summary		List insights
+//	@Description	This API returns a list of insights based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
+//	@Description	Returns "all:provider" job results if connectionId is not defined.
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
@@ -1088,12 +1089,13 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 
 // GetInsight godoc
 //
-//	@Summary		Get insight with result by id
-//	@Description	Get insight with result by id
+//	@Summary		Get insight
+//	@Description	This API returns the specified insight with ID. The API provides details of the insight, including results during the specified time period for the specified connection.
+//	@Description	Returns "all:provider" job results if connectionId is not defined.
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
-//	@Param			insightId		path		string		true	"InsightID"
+//	@Param			insightId		path		string		true	"Insight ID"
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
 //	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
 //	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
@@ -1195,12 +1197,13 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 
 // GetInsightTrend godoc
 //
-//	@Summary		Get insight trend with result by id
-//	@Description	Get insight trend with result by id
+//	@Summary		Get insight trend
+//	@Description	This API allows users to retrieve insight results datapoints for a specified connection during a specified time period.
+//	@Description	Returns "all:provider" job results if connectionId is not defined.
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
-//	@Param			insightId		path		string		true	"InsightID"
+//	@Param			insightId		path		string		true	"Insight ID"
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
 //	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
 //	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
@@ -1277,13 +1280,14 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 
 // ListInsightTags godoc
 //
-//	@Summary	Return list of the keys with possible values for filtering insights
-//	@Security	BearerToken
-//	@Tags		insights
-//	@Accept		json
-//	@Produce	json
-//	@Success	200	{object}	map[string][]string
-//	@Router		/compliance/api/v1/metadata/tag/insight [get]
+//	@Summary		List insights tag keys
+//	@Description	This API allows users to retrieve a list of insights tag keys with their possible values.
+//	@Security		BearerToken
+//	@Tags			insights
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	map[string][]string
+//	@Router			/compliance/api/v1/metadata/tag/insight [get]
 func (h *HttpHandler) ListInsightTags(ctx echo.Context) error {
 	tags, err := h.db.ListInsightTagKeysWithPossibleValues()
 	if err != nil {
@@ -1295,14 +1299,15 @@ func (h *HttpHandler) ListInsightTags(ctx echo.Context) error {
 
 // GetInsightTag godoc
 //
-//	@Summary	Return list of the possible values for filtering insights with specified key
-//	@Security	BearerToken
-//	@Tags		insights
-//	@Accept		json
-//	@Produce	json
-//	@Param		key	path		string	true	"Tag key"
-//	@Success	200	{object}	[]string
-//	@Router		/compliance/api/v1/metadata/tag/insight/{key} [get]
+//	@Summary		Get insights tag key
+//	@Description	This API allows users to retrieve an insights tag key with the possible values for it.
+//	@Security		BearerToken
+//	@Tags			insights
+//	@Accept			json
+//	@Produce		json
+//	@Param			key	path		string	true	"Tag key"
+//	@Success		200	{object}	[]string
+//	@Router			/compliance/api/v1/metadata/tag/insight/{key} [get]
 func (h *HttpHandler) GetInsightTag(ctx echo.Context) error {
 	tagKey := ctx.Param("key")
 	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
