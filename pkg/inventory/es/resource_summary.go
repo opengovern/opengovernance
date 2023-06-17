@@ -417,6 +417,7 @@ func FetchConnectionLocationsSummaryPage(client keibi.Client, connectors []sourc
 		"connection_id_group": map[string]any{
 			"terms": map[string]any{
 				"field": "source_id",
+				"size":  10000,
 			},
 			"aggs": map[string]any{
 				"latest": map[string]any{
