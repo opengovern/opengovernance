@@ -23,6 +23,7 @@ func (db Database) Initialize() error {
 		&BenchmarkTag{},
 		&Insight{},
 		&InsightTag{},
+		&InsightGroup{},
 		&BenchmarkAssignment{},
 	)
 	if err != nil {
@@ -297,9 +298,12 @@ func (db Database) GetInsight(id uint) (*Insight, error) {
 	return &res, nil
 }
 
-func (db Database) ListInsightsWithFilters(connectors []source.Type, enabled *bool, tags map[string][]string) ([]Insight, error) {
+func (db Database) ListInsightsWithFilters(insightIDs []uint, connectors []source.Type, enabled *bool, tags map[string][]string) ([]Insight, error) {
 	var s []Insight
 	m := db.Orm.Model(&Insight{}).Preload(clause.Associations)
+	if len(insightIDs) > 0 {
+		m = m.Where("id IN ?", insightIDs)
+	}
 	if len(connectors) > 0 {
 		m = m.Where("connector IN ?", connectors)
 	}
@@ -321,4 +325,121 @@ func (db Database) ListInsightsWithFilters(connectors []source.Type, enabled *bo
 		return nil, tx.Error
 	}
 	return s, nil
+}
+
+func (db Database) ListInsightGroups(connectors []source.Type, tags map[string][]string) ([]InsightGroup, error) {
+	var insightGroups []InsightGroup
+	m := db.Orm.Model(&InsightGroup{}).Preload(clause.Associations).Find(&insightGroups)
+	if m.Error != nil {
+		return nil, m.Error
+	}
+
+	insightIDs := make([]uint, 0)
+	for _, insightGroup := range insightGroups {
+		for _, insight := range insightGroup.Insights {
+			insightIDs = append(insightIDs, insight.ID)
+		}
+	}
+
+	var insights []Insight
+	insights, err := db.ListInsightsWithFilters(insightIDs, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	insightMap := make(map[uint]Insight)
+	for i, insight := range insights {
+		insightMap[insight.ID] = insights[i]
+	}
+
+	for i, insightGroup := range insightGroups {
+		for j, insight := range insightGroup.Insights {
+			insightGroup.Insights[j] = insightMap[insight.ID]
+		}
+		insightGroups[i] = insightGroup
+	}
+
+	filteredInsightGroups := make([]InsightGroup, 0)
+	for _, insightGroup := range insightGroups {
+		insightGroupTags := make([]model.TagLike, 0)
+		insightGroupConnectorMap := make(map[source.Type]bool)
+		for _, insight := range insightGroup.Insights {
+			insightGroupConnectorMap[insight.Connector] = true
+			for _, tag := range insight.Tags {
+				insightGroupTags = append(insightGroupTags, tag)
+			}
+		}
+
+		doAdd := true
+		for _, connector := range connectors {
+			if _, ok := insightGroupConnectorMap[connector]; !ok {
+				doAdd = false
+				break
+			}
+		}
+		if !doAdd {
+			continue
+		}
+		insightGroupTagsMap := model.GetTagsMap(insightGroupTags)
+		for key, values := range tags {
+			v, ok := insightGroupTagsMap[key]
+			if !ok {
+				doAdd = false
+				break
+			}
+			if len(values) == 0 {
+				continue
+			}
+			for _, value := range values {
+				found := false
+				for _, vv := range v {
+					if vv == value {
+						found = true
+						break
+					}
+				}
+				if !found {
+					doAdd = false
+					break
+				}
+			}
+			if !doAdd {
+				break
+			}
+		}
+		if doAdd {
+			filteredInsightGroups = append(filteredInsightGroups, insightGroup)
+		}
+	}
+	insightGroups = filteredInsightGroups
+
+	return insightGroups, nil
+}
+
+func (db Database) GetInsightGroup(id uint) (*InsightGroup, error) {
+	var res InsightGroup
+	tx := db.Orm.Model(&InsightGroup{}).Preload(clause.Associations).
+		Where("id = ?", id).
+		First(&res)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	insightIDs := make([]uint, 0, len(res.Insights))
+	for _, insight := range res.Insights {
+		insightIDs = append(insightIDs, insight.ID)
+	}
+	insights, err := db.ListInsightsWithFilters(insightIDs, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	insightMap := make(map[uint]Insight)
+	for i, insight := range insights {
+		insightMap[insight.ID] = insights[i]
+	}
+
+	for i, insight := range res.Insights {
+		res.Insights[i] = insightMap[insight.ID]
+	}
+
+	return &res, nil
 }

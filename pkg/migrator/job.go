@@ -3,6 +3,9 @@ package migrator
 import (
 	"crypto/tls"
 	"fmt"
+	"net/http"
+	"os"
+
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/prometheus/client_golang/prometheus/push"
@@ -14,8 +17,6 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/inventory"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/workspace"
 	"go.uber.org/zap"
-	"net/http"
-	"os"
 )
 
 type Job struct {
@@ -96,23 +97,29 @@ func (w *Job) Run() error {
 
 	// compliance=# truncate benchmark_assignments, benchmark_children, benchmark_policies, benchmark_tag_rels, benchmark_tags, benchmarks, policies, policy_tags, policy_tag_rels, queries cascade;
 	w.logger.Info("Starting migrator job")
+
+	w.logger.Info("Starting AWS compliance migration")
 	if err := compliance.Run(w.db, w.AWSComplianceGitURL, w.QueryGitURL, w.githubToken); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running aws compliance migration: %v", err))
 	}
 
+	w.logger.Info("Starting Azure compliance migration")
 	if err := compliance.Run(w.db, w.AzureComplianceGitURL, w.QueryGitURL, w.githubToken); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running azure compliance migration: %v", err))
 	}
 
 	// run elasticsearch
+	w.logger.Info("Starting elasticsearch migration")
 	if err := elasticsearch.Run(w.elastic, w.logger, "/elasticsearch-index-config"); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running elasticsearch migration: %v", err))
 	}
 
+	w.logger.Info("Starting insight migration")
 	if err := insight.Run(w.db, w.InsightGitURL, w.githubToken); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running insight migration: %v", err))
 	}
 
+	w.logger.Info("Starting inventory migration")
 	if err := inventory.Run(w.db, w.logger, "/inventory-data-config"); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running inventory migration: %v", err))
 	}
@@ -126,6 +133,7 @@ func (w *Job) Run() error {
 		SSLMode: w.conf.PostgreSQL.SSLMode,
 	}
 
+	w.logger.Info("Starting workspace migration")
 	if err := workspace.Run(cfg, w.logger, "/workspace-migration"); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running workspace migration: %v", err))
 	}

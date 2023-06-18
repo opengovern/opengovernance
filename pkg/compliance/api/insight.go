@@ -35,7 +35,7 @@ type Insight struct {
 	LongTitle   string              `json:"longTitle" example:"List clusters that have role-based access control (RBAC) disabled"`
 	Description string              `json:"description" example:"List clusters that have role-based access control (RBAC) disabled"`
 	LogoURL     *string             `json:"logoURL"`
-	Tags        map[string][]string `json:"labels"`
+	Tags        map[string][]string `json:"tags"`
 	Links       []string            `json:"links"`
 	Enabled     bool                `json:"enabled" example:"true"`
 	Internal    bool                `json:"internal" example:"false"`
@@ -45,7 +45,27 @@ type Insight struct {
 	Results             []InsightResult `json:"result,omitempty"`
 }
 
+type InsightGroup struct {
+	ID          uint                `json:"id" example:"23"`
+	Connectors  []source.Type       `json:"connectors" example:"[\"Azure\", \"AWS\"]"`
+	ShortTitle  string              `json:"shortTitle" example:"Clusters with no RBAC"`
+	LongTitle   string              `json:"longTitle" example:"List clusters that have role-based access control (RBAC) disabled"`
+	Description string              `json:"description" example:"List clusters that have role-based access control (RBAC) disabled"`
+	LogoURL     *string             `json:"logoURL" example:"https://kaytu.io/logo.png"`
+	Tags        map[string][]string `json:"tags"`
+
+	Insights map[uint]Insight `json:"insights"`
+
+	TotalResultValue    *int64 `json:"totalResultValue,omitempty" example:"10"`
+	OldTotalResultValue *int64 `json:"oldTotalResultValue,omitempty" example:"0"`
+}
+
 type InsightTrendDatapoint struct {
 	Timestamp int `json:"timestamp" example:"1686346668"` // Time
 	Value     int `json:"value" example:"1000"`           // Resource Count
+}
+
+type InsightGroupTrendResponse struct {
+	Trend           []InsightTrendDatapoint          `json:"trend"`
+	TrendPerInsight map[uint][]InsightTrendDatapoint `json:"trendPerInsight"`
 }
