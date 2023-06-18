@@ -245,7 +245,7 @@ type Insight struct {
 	tagsMap map[string][]string `gorm:"-:all"`
 
 	Links    pq.StringArray `gorm:"type:text[]"`
-	Enabled  bool           `gorm:"default:true"`
+	Enabled  bool
 	Internal bool
 }
 
