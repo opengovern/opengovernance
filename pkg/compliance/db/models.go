@@ -283,6 +283,45 @@ type InsightTag struct {
 	InsightID uint `gorm:"primaryKey"`
 }
 
+type InsightGroup struct {
+	gorm.Model
+	ShortTitle  string
+	LongTitle   string
+	Description string
+	LogoURL     *string
+
+	Insights []Insight `gorm:"many2many:insight_group_insights;"`
+}
+
+func (i InsightGroup) ToApi() api.InsightGroup {
+	ia := api.InsightGroup{
+		ID:          i.ID,
+		ShortTitle:  i.ShortTitle,
+		LongTitle:   i.LongTitle,
+		Description: i.Description,
+		LogoURL:     i.LogoURL,
+		Insights:    make(map[uint]api.Insight),
+	}
+	connectorsMap := make(map[source.Type]bool)
+	for _, insight := range i.Insights {
+		ia.Insights[insight.ID] = insight.ToApi()
+		connectorsMap[insight.Connector] = true
+	}
+	ia.Connectors = make([]source.Type, 0, len(connectorsMap))
+	for connector := range connectorsMap {
+		ia.Connectors = append(ia.Connectors, connector)
+	}
+	tags := make([]model.TagLike, 0)
+	for _, insight := range i.Insights {
+		for _, v := range insight.Tags {
+			tags = append(tags, v)
+		}
+	}
+	ia.Tags = model.GetTagsMap(tags)
+
+	return ia
+}
+
 type Query struct {
 	ID             string `gorm:"primaryKey"`
 	QueryToExecute string
