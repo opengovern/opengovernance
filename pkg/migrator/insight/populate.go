@@ -18,7 +18,18 @@ func PopulateDatabase(dbc *gorm.DB, insightsPath string) error {
 			Columns: []clause.Column{{Name: "id"}}, // key column
 			DoUpdates: clause.AssignmentColumns([]string{"query_id", "connector", "short_title", "long_title",
 				"description", "logo_url", "links", "enabled", "internal"}), // column needed to be updated
-		}).Create(&obj).Error
+		}).Create(map[string]any{
+			"id":          obj.ID,
+			"query_id":    obj.QueryID,
+			"connector":   obj.Connector,
+			"short_title": obj.ShortTitle,
+			"long_title":  obj.LongTitle,
+			"description": obj.Description,
+			"logo_url":    obj.LogoURL,
+			"links":       obj.Links,
+			"enabled":     obj.Enabled,
+			"internal":    obj.Internal,
+		}).Error
 		if err != nil {
 			return fmt.Errorf("failure in insert: %v", err)
 		}
