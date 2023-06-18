@@ -11,12 +11,12 @@ const (
 )
 
 type SeverityResult struct {
-	UnknownCount  int `json:"unknownCount"`
-	PassedCount   int `json:"passedCount"`
-	LowCount      int `json:"lowCount"`
-	MediumCount   int `json:"mediumCount"`
-	HighCount     int `json:"highCount"`
-	CriticalCount int `json:"criticalCount"`
+	UnknownCount  int `json:"unknownCount" example:"1"`
+	PassedCount   int `json:"passedCount" example:"1"`
+	LowCount      int `json:"lowCount" example:"1"`
+	MediumCount   int `json:"mediumCount" example:"1"`
+	HighCount     int `json:"highCount" example:"1"`
+	CriticalCount int `json:"criticalCount" example:"1"`
 }
 
 func (r *SeverityResult) IncreaseBySeverity(severity Severity) {

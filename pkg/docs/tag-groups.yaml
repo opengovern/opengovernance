@@ -18,6 +18,7 @@ x-tagGroups:
     - smart_query
     - resource
     - metadata
+    - services
   - name: onboard
     tags:
     - onboard

@@ -18,6 +18,7 @@ x-tagGroups:
     - smart_query
     - resource
     - metadata
+    - services
   - name: onboard
     tags:
     - onboard
@@ -201,6 +202,7 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest:
     properties:
       name:
+        description: Name of the key
         type: string
       roleName:
         allOf:
@@ -215,12 +217,20 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse:
     properties:
       active:
+        description: Activity state of the key
+        example: true
         type: boolean
       createdAt:
+        description: Creation timestamp in UTC
+        example: "2023-03-31T09:36:09.855Z"
         type: string
       id:
+        description: Unique identifier for the key
+        example: 1
         type: integer
       name:
+        description: Name of the key
+        example: example
         type: string
       roleName:
         allOf:
@@ -232,6 +242,7 @@ definitions:
         - viewer
         example: admin
       token:
+        description: Token of the key
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse:
@@ -263,7 +274,7 @@ definitions:
         type: string
       email:
         description: Email address of the user
-        example: sample@gmail.com
+        example: johndoe@example.com
         type: string
       emailVerified:
         description: Is email verified or not
@@ -289,20 +300,20 @@ definitions:
         enum:
         - accepted
         - pending
-        example: pending
+        example: accepted
       userId:
         description: Unique identifier for the user
-        example: sampleID
+        example: auth|123456789
         type: string
       userName:
         description: Username
-        example: sampleName
+        example: John Doe
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersRequest:
     properties:
       email:
-        example: sample@gmail.com
+        example: johndoe@example.com
         type: string
       emailVerified:
         description: Filter by
@@ -322,7 +333,7 @@ definitions:
     properties:
       email:
         description: Email address of the user
-        example: sample@gmail.com
+        example: johndoe@example.com
         type: string
       emailVerified:
         description: Is email verified or not
@@ -339,18 +350,18 @@ definitions:
         example: admin
       userId:
         description: Unique identifier for the user
-        example: sampleID
+        example: auth|123456789
         type: string
       userName:
         description: Username
-        example: sampleName
+        example: John Doe
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest:
     properties:
       email:
         description: User email address
-        example: sample@gmail.com
+        example: johndoe@example.com
         type: string
       roleName:
         allOf:
@@ -372,6 +383,34 @@ definitions:
     x-enum-varnames:
     - InviteStatus_ACCEPTED
     - InviteStatus_PENDING
+  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Membership:
+    properties:
+      assignedAt:
+        description: Assignment timestamp in UTC
+        example: "2023-03-31T09:36:09.855Z"
+        type: string
+      lastActivity:
+        description: Last activity timestamp in UTC
+        example: "2023-04-21T08:53:09.928Z"
+        type: string
+      roleName:
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        description: Name of the role
+        enum:
+        - admin
+        - editor
+        - viewer
+        example: admin
+      workspaceID:
+        description: Unique identifier for the workspace
+        example: ws123456789
+        type: string
+      workspaceName:
+        description: Name of the Workspace
+        example: demo
+        type: string
+    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest:
     properties:
       roleName:
@@ -385,7 +424,7 @@ definitions:
         example: admin
       userId:
         description: Unique identifier for the User
-        example: sampleID
+        example: auth|123456789
         type: string
     required:
     - roleName
@@ -423,7 +462,7 @@ definitions:
         example: 1
         type: integer
       users:
-        description: List of users having this role
+        description: List of users having the role
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse'
         type: array
@@ -436,10 +475,11 @@ definitions:
         type: boolean
       createdAt:
         description: Creation timestamp in UTC
+        example: "2023-03-31T09:36:09.855Z"
         type: string
       email:
         description: Email address of the user
-        example: sample@gmail.com
+        example: johndoe@example.com
         type: string
       emailVerified:
         description: Is email verified or not
@@ -447,6 +487,7 @@ definitions:
         type: boolean
       lastActivity:
         description: Last activity timestamp in UTC
+        example: "2023-04-21T08:53:09.928Z"
         type: string
       roleName:
         allOf:
@@ -464,14 +505,14 @@ definitions:
         enum:
         - accepted
         - pending
-        example: pending
+        example: accepted
       userId:
         description: Unique identifier for the user
-        example: sampleID
+        example: auth|123456789
         type: string
       userName:
         description: Username
-        example: sampleName
+        example: John Doe
         type: string
       workspaces:
         description: A list of workspace ids which the user has the specified role
@@ -500,13 +541,14 @@ definitions:
         - viewer
         example: admin
       userCount:
-        description: Number of usershaving this role
+        description: Number of users having this role in the workspace
         example: 1
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UpdateKeyRoleRequest:
     properties:
       id:
+        description: Unique identifier for the key
         type: integer
       roleName:
         allOf:
@@ -531,22 +573,34 @@ definitions:
         example: admin
       workspaceID:
         description: Unique identifier for the Workspace
-        example: sampleID
+        example: ws123456789
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey:
     properties:
       active:
+        description: Activity state of the key
+        example: true
         type: boolean
       createdAt:
+        description: Creation timestamp in UTC
+        example: "2023-03-31T09:36:09.855Z"
         type: string
       creatorUserID:
+        description: Unique identifier of the user who created the key
+        example: auth|123456789
         type: string
       id:
+        description: Unique identifier for the key
+        example: 1
         type: integer
       maskedKey:
+        description: Masked key
+        example: abc...de
         type: string
       name:
+        description: Name of the key
+        example: example
         type: string
       roleName:
         allOf:
@@ -558,6 +612,8 @@ definitions:
         - viewer
         example: admin
       updatedAt:
+        description: Last update timestamp in UTC
+        example: "2023-04-21T08:53:09.928Z"
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding:
@@ -568,7 +624,7 @@ definitions:
         type: string
       email:
         description: Email address of the user
-        example: sample@gmail.com
+        example: johndoe@example.com
         type: string
       lastActivity:
         description: Last activity timestamp in UTC
@@ -590,47 +646,78 @@ definitions:
         enum:
         - accepted
         - pending
-        example: pending
+        example: accepted
       userId:
         description: Unique identifier for the user
-        example: sampleID
+        example: auth|123456789
         type: string
       userName:
         description: Username
-        example: sampleName
+        example: John Doe
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Benchmark:
     properties:
       autoAssign:
+        description: Whether the benchmark is auto assigned or not
+        example: true
         type: boolean
       baseline:
+        description: Whether the benchmark is baseline or not
+        example: true
         type: boolean
       category:
+        description: Benchmark category
         type: string
       children:
+        description: Benchmark children
+        example:
+        - '[azure_cis_v140_1'
+        - ' azure_cis_v140_2]'
         items:
           type: string
         type: array
       connectors:
+        description: Benchmark connectors
+        example:
+        - '[azure]'
         items:
           $ref: '#/definitions/source.Type'
         type: array
       createdAt:
+        description: Benchmark creation date
+        example: "2020-01-01T00:00:00Z"
         type: string
       description:
+        description: Benchmark description
+        example: The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive
+          guidance for establishing a secure baseline configuration for Microsoft
+          Azure.
         type: string
       documentURI:
+        description: Benchmark document URI
+        example: benchmarks/azure_cis_v140.md
         type: string
       enabled:
+        description: Whether the benchmark is enabled or not
+        example: true
         type: boolean
       id:
+        description: Benchmark ID
+        example: azure_cis_v140
         type: string
       logoURI:
+        description: Benchmark logo URI
         type: string
       managed:
+        description: Whether the benchmark is managed or not
+        example: true
         type: boolean
       policies:
+        description: Benchmark policies
+        example:
+        - '[azure_cis_v140_1_1'
+        - ' azure_cis_v140_1_2]'
         items:
           type: string
         type: array
@@ -639,30 +726,48 @@ definitions:
           items:
             type: string
           type: array
+        description: Benchmark tags
         type: object
       title:
+        description: Benchmark title
+        example: Azure CIS v1.4.0
         type: string
       updatedAt:
+        description: Benchmark last update date
+        example: "2020-01-01T00:00:00Z"
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignedSource:
     properties:
       connectionID:
+        description: Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       connectionName:
+        description: Connection Name
         type: string
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Clout Provider
+        example: Azure
       status:
+        description: Status
+        example: true
         type: boolean
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment:
     properties:
       assignedAt:
+        description: Unix timestamp
         type: integer
       benchmarkId:
+        description: Benchmark ID
+        example: azure_cis_v140
         type: string
       sourceId:
+        description: Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkResultTrend:
@@ -675,36 +780,61 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary:
     properties:
       checks:
-        $ref: '#/definitions/types.SeverityResult'
+        allOf:
+        - $ref: '#/definitions/types.SeverityResult'
+        description: Checks summary
       compliancyTrend:
+        description: Compliancy trend data points
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Datapoint'
         type: array
       connectors:
+        description: Cloud providers
+        example:
+        - '[Azure]'
         items:
           $ref: '#/definitions/source.Type'
         type: array
       coverage:
+        description: Coverage
+        example: 100
         type: number
       description:
+        description: Benchmark description
+        example: The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive
+          guidance for establishing a secure baseline configuration for Microsoft
+          Azure.
         type: string
       enabled:
+        description: Enabled
+        example: true
         type: boolean
       failedResources:
+        description: Number of failed resources
+        example: 1
         type: integer
       id:
+        description: Benchmark ID
+        example: azure_cis_v140
         type: string
       passedResources:
+        description: Number of passed resources
+        example: 24
         type: integer
       result:
-        $ref: '#/definitions/types.ComplianceResultSummary'
+        allOf:
+        - $ref: '#/definitions/types.ComplianceResultSummary'
+        description: Compliance result summary
       tags:
         additionalProperties:
           items:
             type: string
           type: array
+        description: Tags
         type: object
       title:
+        description: Benchmark title
+        example: Azure CIS v1.4.0
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree:
@@ -714,12 +844,16 @@ definitions:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree'
         type: array
       id:
+        description: Benchmark ID
+        example: azure_cis_v140
         type: string
       policies:
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.PolicyTree'
         type: array
       title:
+        description: Benchmark title
+        example: CIS v1.4.0
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReport:
@@ -750,8 +884,10 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Datapoint:
     properties:
       time:
+        description: Time
         type: integer
       value:
+        description: Value
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.DirectionType:
@@ -765,34 +901,58 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingFilters:
     properties:
       benchmarkID:
+        description: Benchmark ID
+        example:
+        - azure_cis_v140
         items:
           type: string
         type: array
       connectionID:
+        description: Connection ID
+        example:
+        - 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         items:
           type: string
         type: array
       connector:
+        description: Clout Provider
+        example:
+        - Azure
         items:
           $ref: '#/definitions/source.Type'
         type: array
       policyID:
+        description: Policy ID
+        example:
+        - azure_cis_v140_7_5
         items:
           type: string
         type: array
       resourceID:
+        description: Resource unique identifier
+        example:
+        - /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         items:
           type: string
         type: array
       resourceTypeID:
+        description: Resource type
+        example:
+        - /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines
         items:
           type: string
         type: array
       severity:
+        description: Severity
+        example:
+        - low
         items:
           type: string
         type: array
       status:
+        description: Compliance result status
+        example:
+        - alarm
         items:
           $ref: '#/definitions/types.ComplianceResult'
         type: array
@@ -802,12 +962,15 @@ definitions:
       direction:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.DirectionType'
+        description: Sort direction
         enum:
         - asc
         - desc
+        example: asc
       field:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.SortFieldType'
+        description: Field to sort by
         enum:
         - resourceID
         - resourceName
@@ -825,6 +988,7 @@ definitions:
         - benchmarkID
         - policyID
         - policySeverity
+        example: status
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetBenchmarksSummaryResponse:
     properties:
@@ -842,20 +1006,28 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsMetricsResponse:
     properties:
       failedFindings:
+        example: 10
         type: integer
       lastFailedFindings:
+        example: 10
         type: integer
       lastPassedFindings:
+        example: 90
         type: integer
       lastTotalFindings:
+        example: 100
         type: integer
       lastUnknownFindings:
+        example: 0
         type: integer
       passedFindings:
+        example: 90
         type: integer
       totalFindings:
+        example: 100
         type: integer
       unknownFindings:
+        example: 0
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsRequest:
@@ -878,20 +1050,25 @@ definitions:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_es.Finding'
         type: array
       totalCount:
+        example: 100
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldRequest:
     properties:
       count:
+        description: Number of items to return
+        example: 1
         type: integer
       field:
         allOf:
         - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField'
+        description: Field to get top values for
         enum:
         - resourceType
         - serviceName
         - sourceID
         - resourceID
+        example: resourceType
       filters:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingFilters'
     type: object
@@ -905,14 +1082,20 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight:
     properties:
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
       description:
+        example: List clusters that have role-based access control (RBAC) disabled
         type: string
       enabled:
+        example: true
         type: boolean
       id:
+        example: 23
         type: integer
       internal:
+        example: false
         type: boolean
       labels:
         additionalProperties:
@@ -927,8 +1110,10 @@ definitions:
       logoURL:
         type: string
       longTitle:
+        example: List clusters that have role-based access control (RBAC) disabled
         type: string
       oldTotalResultValue:
+        example: 0
         type: integer
       query:
         $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query'
@@ -937,8 +1122,10 @@ definitions:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightResult'
         type: array
       shortTitle:
+        example: Clusters with no RBAC
         type: string
       totalResultValue:
+        example: 10
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightConnection:
@@ -964,6 +1151,7 @@ definitions:
     properties:
       connectionID:
         description: Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       connections:
         description: Connections
@@ -976,12 +1164,15 @@ definitions:
         description: Insight Details
       executedAt:
         description: Time of Execution
+        example: "2023-04-21T08:53:09.928Z"
         type: string
       insightID:
         description: Insight ID
+        example: 23
         type: integer
       jobID:
         description: Job ID
+        example: 1
         type: integer
       locations:
         description: Locations
@@ -990,45 +1181,65 @@ definitions:
         type: array
       result:
         description: Result
+        example: 1000
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint:
     properties:
       timestamp:
         description: Time
+        example: 1686346668
         type: integer
       value:
         description: Resource Count
+        example: 1000
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page:
     properties:
       "no":
+        description: Number of pages
+        example: 5
         type: integer
       size:
+        description: Number of items per page
+        example: 100
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Policy:
     properties:
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
       createdAt:
+        example: "2020-01-01T00:00:00Z"
         type: string
       description:
+        example: Enable multi-factor authentication for all user credentials who have
+          write access to Azure resources. These include roles like 'Service Co-Administrators',
+          'Subscription Owners', 'Contributors'.
         type: string
       documentURI:
+        example: benchmarks/azure_cis_v140_1_1.md
         type: string
       enabled:
+        example: true
         type: boolean
       id:
+        example: azure_cis_v140_1_1
         type: string
       managed:
+        example: true
         type: boolean
       manualVerification:
+        example: true
         type: boolean
       queryID:
+        example: azure_ad_manual_control
         type: string
       severity:
+        example: low
         type: string
       tags:
         additionalProperties:
@@ -1037,47 +1248,78 @@ definitions:
           type: array
         type: object
       title:
+        example: 1.1 Ensure that multi-factor authentication status is enabled for
+          all privileged users
         type: string
       updatedAt:
+        example: "2020-01-01T00:00:00Z"
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.PolicyTree:
     properties:
       id:
+        description: Policy ID
+        example: azure_cis_v140_7_5
         type: string
       lastChecked:
+        description: Last checked
+        example: 0
         type: integer
       severity:
+        description: Severity
+        example: low
         type: string
       status:
-        $ref: '#/definitions/types.PolicyStatus'
+        allOf:
+        - $ref: '#/definitions/types.PolicyStatus'
+        description: Status
+        example: passed
       title:
+        description: Policy title
+        example: 7.5 Ensure that the latest OS Patches for all Virtual Machines are
+          applied
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query:
     properties:
       connector:
+        example: Azure
         type: string
       createdAt:
+        example: "2023-06-07T14:00:15.677558Z"
         type: string
       engine:
+        example: steampipe-v0.5
         type: string
       id:
+        example: azure_ad_manual_control
         type: string
       listOfTables:
+        example:
+        - "null"
         items:
           type: string
         type: array
       queryToExecute:
+        example: |
+          select
+            -- Required Columns
+            'active_directory' as resource,
+            'info' as status,
+            'Manual verification required.' as reason;
         type: string
       updatedAt:
+        example: "2023-06-16T14:58:08.759554Z"
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ResultDatapoint:
     properties:
       result:
-        $ref: '#/definitions/types.SeverityResult'
+        allOf:
+        - $ref: '#/definitions/types.SeverityResult'
+        description: Result
       time:
+        description: Datapoint Time
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.SortFieldType:
@@ -1138,40 +1380,78 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_es.Finding:
     properties:
       ID:
+        description: Finding ID
+        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1-azure_cis_v140_7_5
         type: string
       benchmarkID:
+        description: Benchmark ID
+        example: azure_cis_v140
         type: string
       complianceJobID:
+        description: Compliance job ID
+        example: 1
         type: integer
       connectionID:
+        description: Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Cloud provider
+        example: Azure
       describedAt:
+        description: Timestamp of the policy description
+        example: 1589395200
         type: integer
       evaluatedAt:
+        description: Timestamp of the policy evaluation
+        example: 1589395200
         type: integer
       evaluator:
+        description: Evaluator name
+        example: steampipe-v0.5
         type: string
       policyID:
+        description: Policy ID
+        example: azure_cis_v140_7_5
         type: string
       reason:
+        description: Reason for the policy evaluation result
+        example: The VM is not using managed disks
         type: string
       resourceID:
+        description: Resource ID
+        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
         type: string
       resourceLocation:
+        description: Resource location
+        example: eastus
         type: string
       resourceName:
+        description: Resource name
+        example: vm-1
         type: string
       resourceType:
+        description: Resource type
+        example: Microsoft.Compute/virtualMachines
         type: string
       result:
-        $ref: '#/definitions/types.ComplianceResult'
+        allOf:
+        - $ref: '#/definitions/types.ComplianceResult'
+        description: Compliance result
+        example: alarm
       scheduleJobID:
+        description: Schedule job ID
+        example: 1
         type: integer
       severity:
+        description: Compliance severity
+        example: low
         type: string
       stateActive:
+        description: Whether the policy is active or not
+        example: true
         type: boolean
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource:
@@ -1602,23 +1882,34 @@ definitions:
         allOf:
         - $ref: '#/definitions/source.Type'
         description: Source Type
+        example: azure
       connectorConnectionID:
         description: Provider Connection Id
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       connectorConnectionName:
         description: Provider Connection Name
+        example: example-account
         type: string
       lastInventory:
+        description: Last Inventory Date
+        example: "2023-05-22T12:50:22.499961Z"
         type: string
       lifecycleState:
+        description: Lifesycle State
+        example: enabled
         type: string
       onboardDate:
+        description: Onboard Date
+        example: "2023-05-22T12:50:22.499961Z"
         type: string
       resourceCount:
         description: Number of resources
+        example: 100
         type: integer
       sourceID:
         description: Source Id
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostMetric:
@@ -1876,6 +2167,7 @@ definitions:
         type: array
       totalCount:
         description: Number of services
+        example: 20
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationByProviderResponse:
@@ -2170,14 +2462,18 @@ definitions:
         allOf:
         - $ref: '#/definitions/source.Type'
         description: Cloud provider
+        example: Azure
       resourceCount:
         description: Number of Resources
+        example: 100
         type: integer
       serviceLabel:
         description: Service Label
+        example: Compute
         type: string
       serviceName:
         description: Service Name
+        example: compute
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQueryItem:
@@ -2263,18 +2559,23 @@ definitions:
     properties:
       provider:
         description: Account Provider
+        example: azure
         type: string
       providerConnectionID:
         description: Account Provider Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       providerConnectionName:
         description: Account Provider Connection Name
+        example: example-account
         type: string
       resourceCount:
         description: Last number of Resources of the account
+        example: 100
         type: integer
       sourceID:
         description: Source Id
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServiceCostResponse:
@@ -2930,14 +3231,19 @@ definitions:
   types.ComplianceResultSummary:
     properties:
       alarmCount:
+        example: 1
         type: integer
       errorCount:
+        example: 1
         type: integer
       infoCount:
+        example: 1
         type: integer
       okCount:
+        example: 1
         type: integer
       skipCount:
+        example: 1
         type: integer
     type: object
   types.PolicyStatus:
@@ -2953,16 +3259,22 @@ definitions:
   types.SeverityResult:
     properties:
       criticalCount:
+        example: 1
         type: integer
       highCount:
+        example: 1
         type: integer
       lowCount:
+        example: 1
         type: integer
       mediumCount:
+        example: 1
         type: integer
       passedCount:
+        example: 1
         type: integer
       unknownCount:
+        example: 1
         type: integer
     type: object
 host: dev-cluster.keibi.io
@@ -2973,9 +3285,9 @@ info:
 paths:
   /auth/api/v1/key/{id}:
     get:
-      description: Gets the details of a key in a workspace with specified ID.
+      description: Retrieves the details of a workspace key with specified ID.
       parameters:
-      - description: ID
+      - description: Key ID
         in: path
         name: id
         required: true
@@ -2994,9 +3306,9 @@ paths:
       - keys
   /auth/api/v1/key/{id}/activate:
     post:
-      description: Activates a key in the workspace with specified ID.
+      description: Activates Workspace Key by ID
       parameters:
-      - description: ID
+      - description: Key ID
         in: path
         name: id
         required: true
@@ -3017,7 +3329,7 @@ paths:
     delete:
       description: Deletes the specified workspace key by ID.
       parameters:
-      - description: ID
+      - description: Key ID
         in: path
         name: id
         required: true
@@ -3029,14 +3341,14 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Deletes Workspace Key
+      summary: Delete Workspace Key
       tags:
       - keys
   /auth/api/v1/key/{id}/suspend:
     post:
-      description: Suspends a key in the workspace with specified ID.
+      description: Suspends Workspace Key by ID
       parameters:
-      - description: ID
+      - description: Key ID
         in: path
         name: id
         required: true
@@ -3055,7 +3367,8 @@ paths:
       - keys
   /auth/api/v1/key/create:
     post:
-      description: Creates workspace key for the defined role with the defined name.
+      description: Creates workspace key for the defined role with the defined name
+        in the workspace.
       parameters:
       - description: Request Body
         in: body
@@ -3072,7 +3385,7 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse'
       security:
       - BearerToken: []
-      summary: Creates Workspace Key
+      summary: Create Workspace Key
       tags:
       - keys
   /auth/api/v1/key/role:
@@ -3099,7 +3412,7 @@ paths:
       - keys
   /auth/api/v1/keys:
     get:
-      description: Gets a list of available keys in a workspace.
+      description: Gets list of all keys in the workspace.
       produces:
       - application/json
       responses:
@@ -3116,9 +3429,9 @@ paths:
       - keys
   /auth/api/v1/role/{roleName}/keys:
     get:
-      description: Returns a list of keys in a workspace for the specified role.
+      description: List Workspace Keys for Specified Role.
       parameters:
-      - description: roleName
+      - description: Role Name
         in: path
         name: roleName
         required: true
@@ -3134,14 +3447,14 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Get Role Keys
+      summary: List Role Keys
       tags:
       - roles
   /auth/api/v1/role/{roleName}/users:
     get:
-      description: Returns a list of users in a workspace with the specified role.
+      description: Returns a list of users in the workspace with the specified role.
       parameters:
-      - description: roleName
+      - description: Role Name
         in: path
         name: roleName
         required: true
@@ -3162,8 +3475,7 @@ paths:
       - roles
   /auth/api/v1/roles:
     get:
-      description: Gets a list of roles in a workspace and their descriptions and
-        number of users.
+      description: Retrieve Role Information and User Count for Workspace.
       produces:
       - application/json
       responses:
@@ -3175,15 +3487,15 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Get Roles
+      summary: List Roles
       tags:
       - roles
   /auth/api/v1/roles/{roleName}:
     get:
-      description: Gets the details of the Role, including the description, number
-        of users and list of those users.
+      description: Retrieves Role Details, Description, User Count, and User List
+        for Workspace.
       parameters:
-      - description: roleName
+      - description: Role Name
         in: path
         name: roleName
         required: true
@@ -3200,13 +3512,13 @@ paths:
       summary: Get Role Details
       tags:
       - roles
-  /auth/api/v1/user/{user_id}:
+  /auth/api/v1/user/{userId}:
     get:
-      description: Get user details by user id.
+      description: Returns user details by specified user id.
       parameters:
-      - description: userId
+      - description: User ID
         in: path
-        name: user_id
+        name: userId
         required: true
         type: string
       produces:
@@ -3221,14 +3533,14 @@ paths:
       summary: Get User details
       tags:
       - users
-  /auth/api/v1/user/{user_id}/workspace/membership:
+  /auth/api/v1/user/{userId}/workspace/membership:
     get:
-      description: Returns a list of workspaces and the user role in it for the specified
-        user.
+      description: Returns a list of workspaces that the specified user belongs to,
+        along with their role in each workspace.
       parameters:
-      - description: userId
+      - description: User ID
         in: path
-        name: user_id
+        name: userId
         required: true
         type: string
       produces:
@@ -3237,7 +3549,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Membership'
+            type: array
       security:
       - BearerToken: []
       summary: User Workspaces
@@ -3245,9 +3559,9 @@ paths:
       - users
   /auth/api/v1/user/invite:
     delete:
-      description: Deletes user access to the specified workspace.
+      description: Revokes user's access to the workspace.
       parameters:
-      - description: userId
+      - description: User ID
         in: query
         name: userId
         required: true
@@ -3259,14 +3573,12 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Delete Invitation
+      summary: Revoke Invitation
       tags:
       - users
     post:
-      description: |-
-        Invites a user to a workspace with defined role.
-        by sending an email to the specified email address.
-        The user will be found by the email address.
+      description: Sends an invitation to a user to join the workspace with a designated
+        role.
       parameters:
       - description: Request Body
         in: body
@@ -3286,9 +3598,9 @@ paths:
       - users
   /auth/api/v1/user/role/binding:
     delete:
-      description: Deletes user access to the specified workspace.
+      description: Revokes a user's access to the workspace
       parameters:
-      - description: userId
+      - description: User ID
         in: query
         name: userId
         required: true
@@ -3300,14 +3612,11 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Delete User Access
+      summary: Revoke User Access
       tags:
       - users
     put:
-      description: |-
-        User Access defines the roles of a user.
-        There are currently three roles (admin, editor, viewer).
-        User must exist before you can update its Role.
+      description: Updates the role of a user in the workspace.
       parameters:
       - description: Request Body
         in: body
@@ -3322,14 +3631,13 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Update User Access
+      summary: Update User Role
       tags:
       - users
   /auth/api/v1/user/role/bindings:
     get:
-      description: |-
-        Gets the roles binded to a user.
-        RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer).
+      description: Retrieves the roles that the user who sent the request has in all
+        workspaces they are a member of.
       produces:
       - application/json
       responses:
@@ -3339,12 +3647,12 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
       security:
       - BearerToken: []
-      summary: Get RoleBindings
+      summary: Get User Roles
       tags:
       - users
   /auth/api/v1/users:
     get:
-      description: Gets a list of users with specified filters (filters are optional).
+      description: Retrieves a list of users who are members of the workspace.
       parameters:
       - description: Request Body
         in: body
@@ -3363,14 +3671,14 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Get Users
+      summary: List Users
       tags:
       - users
   /auth/api/v1/workspace/role/bindings:
     get:
-      description: RoleBinding defines the roles and actions a user can perform. There
-        are currently three roles (admin, editor, viewer). The workspace path is based
-        on the DNS such as (workspace1.app.keibi.io)
+      description: Get all the RoleBindings of the workspace. RoleBinding defines
+        the roles and actions a user can perform. There are currently three roles
+        (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
       produces:
       - application/json
       responses:
@@ -3389,6 +3697,7 @@ paths:
     post:
       consumes:
       - application/json
+      description: Returns top field by alarm count with respect to filters
       parameters:
       - description: Request Body
         in: body
@@ -3405,7 +3714,7 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse'
       security:
       - BearerToken: []
-      summary: Returns all findings with respect to filters
+      summary: Top field by alarm count
       tags:
       - compliance
   /compliance/api/v1/assignments:
@@ -3534,8 +3843,12 @@ paths:
     get:
       consumes:
       - application/json
+      description: This API enables users to retrieve a summary of a benchmark and
+        its associated checks and results. Users can use this API to obtain an overview
+        of the benchmark, including its name, description, and other relevant information,
+        as well as the checks and their corresponding results.
       parameters:
-      - description: BenchmarkID
+      - description: Benchmark ID
         in: path
         name: benchmark_id
         required: true
@@ -3556,18 +3869,21 @@ paths:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve datapoints of compliance severities
+        over a specified time period, enabling users to keep track of and monitor
+        changes in compliance.
       parameters:
-      - description: Start
+      - description: Start time
         in: query
         name: start
         required: true
         type: integer
-      - description: End
+      - description: End time
         in: query
         name: end
         required: true
         type: integer
-      - description: BenchmarkID
+      - description: Benchmark ID
         in: path
         name: benchmark_id
         required: true
@@ -3581,15 +3897,18 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkResultTrend'
       security:
       - BearerToken: []
-      summary: Get result trend
+      summary: Get compliance result trend
       tags:
       - compliance
   /compliance/api/v1/benchmark/{benchmark_id}/tree:
     get:
       consumes:
       - application/json
+      description: This API retrieves the benchmark tree, including all of its child
+        benchmarks. Users can use this API to obtain a comprehensive overview of the
+        benchmarks within a particular category or hierarchy.
       parameters:
-      - description: BenchmarkID
+      - description: Benchmark ID
         in: path
         name: benchmark_id
         required: true
@@ -3619,6 +3938,9 @@ paths:
     get:
       consumes:
       - application/json
+      description: This API returns a comprehensive list of all available benchmarks.
+        Users can use this API to obtain an overview of the entire set of benchmarks
+        and their corresponding details, such as their names, descriptions, and IDs.
       produces:
       - application/json
       responses:
@@ -3637,6 +3959,10 @@ paths:
     get:
       consumes:
       - application/json
+      description: This API enables users to retrieve benchmark details by specifying
+        the benchmark ID. Users can use this API to obtain specific details about
+        a particular benchmark, such as its name, description, and other relevant
+        information.
       parameters:
       - description: BenchmarkID
         in: path
@@ -3659,8 +3985,12 @@ paths:
     get:
       consumes:
       - application/json
+      description: This API returns a list of all policies associated with a specific
+        benchmark. Users can use this API to obtain a comprehensive overview of the
+        policies related to a particular benchmark and their corresponding details,
+        such as their names, descriptions, and IDs.
       parameters:
-      - description: BenchmarkID
+      - description: Benchmark ID
         in: path
         name: benchmark_id
         required: true
@@ -3676,15 +4006,18 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: List policies
+      summary: List Benchmark Policies
       tags:
       - compliance
   /compliance/api/v1/benchmarks/policies/{policy_id}:
     get:
       consumes:
       - application/json
+      description: This API enables users to retrieve policy details by specifying
+        the policy ID. Users can use this API to obtain specific details about a particular
+        policy, such as its title, description, and other relevant information.
       parameters:
-      - description: PolicyID
+      - description: Policy ID
         in: path
         name: policy_id
         required: true
@@ -3705,13 +4038,18 @@ paths:
     get:
       consumes:
       - application/json
+      description: This API enables users to retrieve a summary of all benchmarks
+        and their associated checks and results within a specified time interval.
+        Users can use this API to obtain an overview of all benchmarks, including
+        their names, descriptions, and other relevant information, as well as the
+        checks and their corresponding results within the specified time period.
       parameters:
-      - description: Start
+      - description: Start Time
         in: query
         name: start
         required: true
         type: integer
-      - description: End
+      - description: End Time
         in: query
         name: end
         required: true
@@ -3725,13 +4063,17 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetBenchmarksSummaryResponse'
       security:
       - BearerToken: []
-      summary: Get benchmark summary
+      summary: List benchmarks summaries
       tags:
       - compliance
   /compliance/api/v1/findings:
     post:
       consumes:
       - application/json
+      description: This API enables users to retrieve all compliance run findings
+        with respect to filters. Users can use this API to obtain a list of all compliance
+        run findings that match specific filters, such as compliance run ID, resource
+        ID, results, and other relevant parameters.
       parameters:
       - description: Request Body
         in: body
@@ -3748,13 +4090,14 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse'
       security:
       - BearerToken: []
-      summary: Returns all findings with respect to filters
+      summary: Get findings
       tags:
       - compliance
   /compliance/api/v1/findings/{benchmarkId}/{field}/top/{count}:
     get:
       consumes:
       - application/json
+      description: This API enables users to retrieve the top field by finding count.
       parameters:
       - description: BenchmarkID
         in: path
@@ -3785,19 +4128,22 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse'
       security:
       - BearerToken: []
-      summary: Returns all findings with respect to filters
+      summary: Get top field by finding count
       tags:
       - compliance
   /compliance/api/v1/findings/metrics:
     get:
       consumes:
       - application/json
+      description: |-
+        This API enables users to retrieve findings metrics for two given times, which includes the total number of findings, the number of passed findings, the number of failed findings, and the number of unknowns findings. Users can use this API to compare the compliance status of their resources between two different time periods.
+        The API will return the findings metrics for each time period separately, allowing users to easily compare the compliance status of their resources at each time period. This can be useful for monitoring the effectiveness of compliance measures over time and identifying any areas of improvement."
       parameters:
-      - description: Start
+      - description: unix seconds for the start time
         in: query
         name: start
         type: integer
-      - description: End
+      - description: unix seconds for the end time
         in: query
         name: end
         type: integer
@@ -3815,14 +4161,15 @@ paths:
       - compliance
   /compliance/api/v1/insight:
     get:
-      description: Listing insight with result
+      description: |-
+        This API returns a list of insights based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
+        Returns "all:provider" job results if connectionId is not defined.
       parameters:
       - description: Key-Value tags in key=value format to filter by
         in: query
         name: tag
         type: string
-      - collectionFormat: csv
-        description: filter insights by connector
+      - description: filter insights by connector
         in: query
         items:
           enum:
@@ -3832,8 +4179,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -3858,20 +4204,21 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: List insight with result
+      summary: List insights
       tags:
       - insights
   /compliance/api/v1/insight/{insightId}:
     get:
-      description: Get insight with result by id
+      description: |-
+        This API returns the specified insight with ID. The API provides details of the insight, including results during the specified time period for the specified connection.
+        Returns "all:provider" job results if connectionId is not defined.
       parameters:
-      - description: InsightID
+      - description: Insight ID
         in: path
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -3894,20 +4241,21 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
       security:
       - BearerToken: []
-      summary: Get insight with result by id
+      summary: Get insight
       tags:
       - insights
   /compliance/api/v1/insight/{insightId}/trend:
     get:
-      description: Get insight trend with result by id
+      description: |-
+        This API allows users to retrieve insight results datapoints for a specified connection during a specified time period.
+        Returns "all:provider" job results if connectionId is not defined.
       parameters:
-      - description: InsightID
+      - description: Insight ID
         in: path
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -3936,15 +4284,14 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Get insight trend with result by id
+      summary: Get insight trend
       tags:
       - insights
   /compliance/api/v1/metadata/insight:
     get:
-      description: Listing insight metadata
+      description: Retrieves all insights metadata.
       parameters:
-      - collectionFormat: csv
-        description: filter by connector
+      - description: filter by connector
         in: query
         items:
           enum:
@@ -3965,14 +4312,14 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: List insight metadata
+      summary: List insights metadata
       tags:
       - insights
   /compliance/api/v1/metadata/insight/{insightId}:
     get:
       description: Get insight metadata by id
       parameters:
-      - description: InsightID
+      - description: Insight ID
         in: path
         name: insightId
         required: true
@@ -3986,13 +4333,15 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
       security:
       - BearerToken: []
-      summary: Get insight metadata by id
+      summary: Get insight metadata
       tags:
       - insights
   /compliance/api/v1/metadata/tag/insight:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a list of insights tag keys with
+        their possible values.
       produces:
       - application/json
       responses:
@@ -4006,13 +4355,15 @@ paths:
             type: object
       security:
       - BearerToken: []
-      summary: Return list of the keys with possible values for filtering insights
+      summary: List insights tag keys
       tags:
       - insights
   /compliance/api/v1/metadata/tag/insight/{key}:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve an insights tag key with the
+        possible values for it.
       parameters:
       - description: Tag key
         in: path
@@ -4030,16 +4381,17 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Return list of the possible values for filtering insights with specified
-        key
+      summary: Get insights tag key
       tags:
       - insights
   /compliance/api/v1/queries/{query_id}:
     get:
       consumes:
       - application/json
+      description: This API enables users to retrieve query details by specifying
+        the query ID.
       parameters:
-      - description: QueryID
+      - description: Query ID
         in: path
         name: query_id
         required: true
@@ -4060,14 +4412,15 @@ paths:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a list of accounts and the number
+        of resources associated with each account for the specified provider.
       parameters:
       - description: Provider
         in: query
         name: provider
         required: true
         type: string
-      - collectionFormat: csv
-        description: SourceID
+      - description: Source ID
         in: query
         items:
           type: string
@@ -4084,9 +4437,9 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Returns resource count of accounts
+      summary: Get accounts resource count
       tags:
-      - benchmarks
+      - resource
   /inventory/api/v1/cost/top/accounts:
     get:
       consumes:
@@ -4326,7 +4679,7 @@ paths:
       - BearerToken: []
       summary: Get resources
       tags:
-      - inventory
+      - resource
   /inventory/api/v1/resources/aws:
     post:
       consumes:
@@ -4371,7 +4724,7 @@ paths:
       - BearerToken: []
       summary: Get AWS resources
       tags:
-      - inventory
+      - resource
   /inventory/api/v1/resources/azure:
     post:
       consumes:
@@ -4416,7 +4769,7 @@ paths:
       - BearerToken: []
       summary: Get Azure resources
       tags:
-      - inventory
+      - resource
   /inventory/api/v1/resources/count:
     get:
       consumes:
@@ -4434,14 +4787,15 @@ paths:
       - BearerToken: []
       summary: Count resources
       tags:
-      - inventory
+      - resource
   /inventory/api/v1/resources/distribution:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a distribution of resources by
+        their locations. It returns the number of resources in each location.
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4451,24 +4805,12 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
-        name: connectionId
+        name: sourceId
         type: array
-      - description: Time Window
-        enum:
-        - 24h
-        - 1w
-        - 3m
-        - 1y
-        - max
-        in: query
-        name: timeWindow
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -4480,9 +4822,9 @@ paths:
             type: object
       security:
       - BearerToken: []
-      summary: Returns distribution of resource for specific account
+      summary: Get resources distribution
       tags:
-      - benchmarks
+      - resource
   /inventory/api/v1/resources/filters:
     post:
       consumes:
@@ -4515,14 +4857,13 @@ paths:
       - BearerToken: []
       summary: Get resource filters
       tags:
-      - inventory
+      - resource
   /inventory/api/v1/resources/regions:
     get:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4532,8 +4873,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4569,11 +4909,13 @@ paths:
       - BearerToken: []
       summary: Returns top n regions of specified provider by resource count
       tags:
-      - inventory
+      - resource
   /inventory/api/v1/resources/top/growing/accounts:
     get:
       consumes:
       - application/json
+      description: Returns top n fastest growing accounts of specified provider in
+        the specified time window by resource count.
       parameters:
       - description: Number of top accounts returning.
         in: query
@@ -4585,7 +4927,7 @@ paths:
         name: provider
         required: true
         type: string
-      - description: TimeWindow
+      - description: Time Window
         enum:
         - 1d
         - 1w
@@ -4606,10 +4948,9 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Returns top n fastest growing accounts of specified provider in the
-        specified time window by resource count
+      summary: Get Top Fastest Growing Accounts By ResourceCount
       tags:
-      - benchmarks
+      - resource
   /inventory/api/v1/resources/top/regions:
     get:
       consumes:
@@ -4620,8 +4961,7 @@ paths:
         name: count
         required: true
         type: integer
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4631,8 +4971,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4651,24 +4990,23 @@ paths:
       - BearerToken: []
       summary: Returns top n regions of specified provider by resource count
       tags:
-      - inventory
+      - resource
   /inventory/api/v1/services/distribution:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a distribution of services by
+        their locations.
       parameters:
-      - collectionFormat: csv
-        description: SourceID
+      - description: Source ID
         in: query
         items:
           type: string
         name: sourceId
-        required: true
         type: array
       - description: Provider
         in: query
         name: provider
-        required: true
         type: string
       produces:
       - application/json
@@ -4681,16 +5019,15 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Returns distribution of services for specific account
+      summary: Get services distribution
       tags:
-      - benchmarks
+      - services
   /inventory/api/v2/connections/data:
     get:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connection IDs
+      - description: Connection IDs
         in: query
         items:
           type: string
@@ -4756,8 +5093,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4767,8 +5103,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4804,8 +5139,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4815,8 +5149,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4862,8 +5195,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -4873,8 +5205,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -4912,8 +5243,7 @@ paths:
       description: List all insight results for the given insightIds - this mostly
         for internal usage, use compliance api for full api
       parameters:
-      - collectionFormat: csv
-        description: filter insights by connector
+      - description: filter insights by connector
         in: query
         items:
           enum:
@@ -4923,15 +5253,13 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
         name: connectionId
         type: array
-      - collectionFormat: csv
-        description: filter the result by insight id
+      - description: filter the result by insight id
         in: query
         items:
           type: string
@@ -4968,8 +5296,7 @@ paths:
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -5003,8 +5330,7 @@ paths:
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -5064,8 +5390,7 @@ paths:
         Gets a list of all resource types in workspace and their metadata including service name.
         The results could be filtered by provider name and service name.
       parameters:
-      - collectionFormat: csv
-        description: Filter by Connector
+      - description: Filter by Connector
         in: query
         items:
           enum:
@@ -5076,15 +5401,13 @@ paths:
         name: connector
         required: true
         type: array
-      - collectionFormat: csv
-        description: Filter by service name
+      - description: Filter by service name
         in: query
         items:
           type: string
         name: service
         type: array
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
@@ -5138,8 +5461,7 @@ paths:
         Gets a list of all workspace cloud services and their metadata, and list of resource types.
         The results could be filtered by tags.
       parameters:
-      - collectionFormat: csv
-        description: Connector
+      - description: Connector
         in: query
         items:
           enum:
@@ -5149,8 +5471,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
@@ -5213,8 +5534,7 @@ paths:
         name: top
         required: true
         type: integer
-      - collectionFormat: csv
-        description: Connector types to filter by
+      - description: Connector types to filter by
         in: query
         items:
           enum:
@@ -5224,8 +5544,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5252,22 +5571,19 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Service names to filter by
+      - description: Service names to filter by
         in: query
         items:
           type: string
         name: servicename
         type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5277,8 +5593,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5325,8 +5640,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5361,6 +5675,19 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: Connector type to filter by
+        in: query
+        items:
+          type: string
+        name: connector
+        type: array
+      - description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
       produces:
       - application/json
       responses:
@@ -5383,6 +5710,18 @@ paths:
       consumes:
       - application/json
       parameters:
+      - description: Connector type to filter by
+        in: query
+        items:
+          type: string
+        name: connector
+        type: array
+      - description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
       - description: Tag key
         in: path
         name: key
@@ -5408,22 +5747,19 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Service names to filter by
+      - description: Service names to filter by
         in: query
         items:
           type: string
         name: servicename
         type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5433,8 +5769,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5472,15 +5807,13 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5490,8 +5823,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5543,8 +5875,7 @@ paths:
         name: serviceName
         required: true
         type: string
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5574,26 +5905,23 @@ paths:
     get:
       consumes:
       - application/json
-      description: Gets a summary of the services including the number of them and
-        the API filters and a list of services with more details. Including connector
-        and the resource counts.
+      description: Retrieves list of summaries of the services including the number
+        of them and the API filters and a list of services with more details. Including
+        connector and the resource counts.
       parameters:
-      - collectionFormat: csv
-        description: 'filter: Connection ID'
+      - description: 'filter: Connection ID'
         in: query
         items:
           type: string
         name: connectionId
         type: array
-      - collectionFormat: csv
-        description: 'filter: Connector'
+      - description: 'filter: Connector'
         in: query
         items:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: 'filter: tag for the services'
+      - description: 'filter: tag for the services'
         in: query
         items:
           type: string
@@ -5627,15 +5955,15 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse'
       security:
       - BearerToken: []
-      summary: Get Cloud Services Summary
+      summary: List Cloud Services Summary
       tags:
-      - benchmarks
+      - services
   /inventory/api/v2/services/summary/{serviceName}:
     get:
-      description: Get Cloud Service Summary for the specified service name. Including
-        connector, the resource counts.
+      description: Retrieves Cloud Service Summary for the specified service name.
+        Including connector, the resource counts.
       parameters:
-      - description: ServiceName
+      - description: Service Name
         in: path
         name: serviceName
         required: true
@@ -5664,7 +5992,7 @@ paths:
       - BearerToken: []
       summary: Get Cloud Service Summary
       tags:
-      - benchmarks
+      - services
   /inventory/api/v2/services/tag:
     get:
       consumes:
@@ -6545,6 +6873,9 @@ paths:
       - describe
   /schedule/api/v1/benchmark/evaluations:
     get:
+      description: This API allows users to retrieve details of all benchmark evaluation
+        jobs based on specified filters. The API returns information such as evaluation
+        time, benchmark ID, connection ID, connector name, status, and failure message.
       parameters:
       - description: Request Body
         in: body
@@ -6563,9 +6894,9 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Lists all benchmark evaluations
+      summary: Lists benchmark evaluations
       tags:
-      - compliance
+      - describe
   /schedule/api/v1/compliance/report/last/completed:
     get:
       produces:
@@ -6876,15 +7207,13 @@ paths:
       - application/json
       description: Get list of stacks
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Account IDs to filter by
+      - description: Account IDs to filter by
         in: query
         items:
           type: string
@@ -7052,8 +7381,7 @@ paths:
         in: formData
         name: tag
         type: string
-      - collectionFormat: csv
-        description: Additional Resources
+      - description: Additional Resources
         in: formData
         items:
           type: string

@@ -18,9 +18,9 @@ type InventoryServiceClient interface {
 	GetAccountsResourceCount(ctx *httpclient.Context, provider source.Type, sourceId *string) ([]api.ConnectionResourceCountResponse, error)
 	ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error)
 	GetInsightResult(ctx *httpclient.Context, connectionIds []string, insightId uint, timeAt *time.Time) ([]insight.InsightResource, error)
-	GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, timeStart, timeEnd *time.Time) (map[int][]insight.InsightResource, error)
-	ListConnectionsData(ctx *httpclient.Context, connectionIds []string, timeStart, timeEnd *time.Time) (map[string]api.ConnectionData, error)
-	GetConnectionData(ctx *httpclient.Context, connectionId string, timeStart, timeEnd *time.Time) (*api.ConnectionData, error)
+	GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, startTime, endTime *time.Time) (map[int][]insight.InsightResource, error)
+	ListConnectionsData(ctx *httpclient.Context, connectionIds []string, startTime, endTime *time.Time) (map[string]api.ConnectionData, error)
+	GetConnectionData(ctx *httpclient.Context, connectionId string, startTime, endTime *time.Time) (*api.ConnectionData, error)
 }
 
 type inventoryClient struct {
@@ -147,7 +147,7 @@ func (s *inventoryClient) GetInsightResult(ctx *httpclient.Context, connectionId
 	return response, nil
 }
 
-func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, timeStart, timeEnd *time.Time) (map[int][]insight.InsightResource, error) {
+func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, startTime, endTime *time.Time) (map[int][]insight.InsightResource, error) {
 	url := fmt.Sprintf("%s/api/v2/insights/%d/trend", s.baseURL, insightId)
 	firstParamAttached := false
 	if len(connectionIds) > 0 {
@@ -161,23 +161,23 @@ func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connec
 			url += fmt.Sprintf("connectionId=%s", connectionId)
 		}
 	}
-	if timeStart != nil {
+	if startTime != nil {
 		if !firstParamAttached {
 			url += "?"
 			firstParamAttached = true
 		} else {
 			url += "&"
 		}
-		url += fmt.Sprintf("timeStart=%d", timeStart.Unix())
+		url += fmt.Sprintf("startTime=%d", startTime.Unix())
 	}
-	if timeEnd != nil {
+	if endTime != nil {
 		if !firstParamAttached {
 			url += "?"
 			firstParamAttached = true
 		} else {
 			url += "&"
 		}
-		url += fmt.Sprintf("timeEnd=%d", timeEnd.Unix())
+		url += fmt.Sprintf("endTime=%d", endTime.Unix())
 	}
 
 	var response map[int][]insight.InsightResource
@@ -190,7 +190,7 @@ func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connec
 	return response, nil
 }
 
-func (s *inventoryClient) ListConnectionsData(ctx *httpclient.Context, connectionIds []string, timeStart, timeEnd *time.Time) (map[string]api.ConnectionData, error) {
+func (s *inventoryClient) ListConnectionsData(ctx *httpclient.Context, connectionIds []string, startTime, endTime *time.Time) (map[string]api.ConnectionData, error) {
 	url := fmt.Sprintf("%s/api/v2/connections/data", s.baseURL)
 	firstParamAttached := false
 	if len(connectionIds) > 0 {
@@ -204,23 +204,23 @@ func (s *inventoryClient) ListConnectionsData(ctx *httpclient.Context, connectio
 			url += fmt.Sprintf("connectionId=%s", connectionId)
 		}
 	}
-	if timeStart != nil {
+	if startTime != nil {
 		if !firstParamAttached {
 			url += "?"
 			firstParamAttached = true
 		} else {
 			url += "&"
 		}
-		url += fmt.Sprintf("startTime=%d", timeStart.Unix())
+		url += fmt.Sprintf("startTime=%d", startTime.Unix())
 	}
-	if timeEnd != nil {
+	if endTime != nil {
 		if !firstParamAttached {
 			url += "?"
 			firstParamAttached = true
 		} else {
 			url += "&"
 		}
-		url += fmt.Sprintf("endTime=%d", timeEnd.Unix())
+		url += fmt.Sprintf("endTime=%d", endTime.Unix())
 	}
 
 	var response map[string]api.ConnectionData
@@ -233,26 +233,26 @@ func (s *inventoryClient) ListConnectionsData(ctx *httpclient.Context, connectio
 	return response, nil
 }
 
-func (s *inventoryClient) GetConnectionData(ctx *httpclient.Context, connectionId string, timeStart, timeEnd *time.Time) (*api.ConnectionData, error) {
+func (s *inventoryClient) GetConnectionData(ctx *httpclient.Context, connectionId string, startTime, endTime *time.Time) (*api.ConnectionData, error) {
 	url := fmt.Sprintf("%s/api/v2/connections/data/%s", s.baseURL, connectionId)
 	firstParamAttached := false
-	if timeStart != nil {
+	if startTime != nil {
 		if !firstParamAttached {
 			url += "?"
 			firstParamAttached = true
 		} else {
 			url += "&"
 		}
-		url += fmt.Sprintf("startTime=%d", timeStart.Unix())
+		url += fmt.Sprintf("startTime=%d", startTime.Unix())
 	}
-	if timeEnd != nil {
+	if endTime != nil {
 		if !firstParamAttached {
 			url += "?"
 			firstParamAttached = true
 		} else {
 			url += "&"
 		}
-		url += fmt.Sprintf("endTime=%d", timeEnd.Unix())
+		url += fmt.Sprintf("endTime=%d", endTime.Unix())
 	}
 
 	var response api.ConnectionData

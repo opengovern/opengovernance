@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"mime"
 	"net/http"
 	"sort"
@@ -123,6 +124,32 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	}
 
 	return nil
+}
+
+func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, connectorTypes []source.Type, connectionIDs []string) ([]source.Type, error) {
+	connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), connectionIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	enabledConnectors := make(map[source.Type]bool)
+	for _, connection := range connections {
+		enabledConnectors[connection.Connector] = true
+	}
+	filteredConnectorType := make([]source.Type, 0)
+	for _, connectorType := range connectorTypes {
+		if enabledConnectors[connectorType] {
+			filteredConnectorType = append(filteredConnectorType, connectorType)
+		}
+	}
+
+	if len(connectorTypes) == 0 {
+		for connectorType := range enabledConnectors {
+			filteredConnectorType = append(filteredConnectorType, connectorType)
+		}
+	}
+
+	return filteredConnectorType, nil
 }
 
 // GetTopAccountsByCost godoc
@@ -280,16 +307,17 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 
 // GetTopFastestGrowingAccountsByResourceCount godoc
 //
-//	@Summary	Returns top n fastest growing accounts of specified provider in the specified time window by resource count
-//	@Security	BearerToken
-//	@Tags		benchmarks
-//	@Accept		json
-//	@Produce	json
-//	@Param		count		query		int		true	"Number of top accounts returning."
-//	@Param		provider	query		string	true	"Provider"
-//	@Param		timeWindow	query		string	true	"TimeWindow"	Enums(1d,1w,3m,1y)
-//	@Success	200			{object}	[]api.TopAccountResponse
-//	@Router		/inventory/api/v1/resources/top/growing/accounts [get]
+//	@Summary		Get Top Fastest Growing Accounts By ResourceCount
+//	@Description	Returns top n fastest growing accounts of specified provider in the specified time window by resource count.
+//	@Security		BearerToken
+//	@Tags			resource
+//	@Accept			json
+//	@Produce		json
+//	@Param			count		query		int		true	"Number of top accounts returning."
+//	@Param			provider	query		string	true	"Provider"
+//	@Param			timeWindow	query		string	true	"Time Window"	Enums(1d,1w,3m,1y)
+//	@Success		200			{object}	[]api.TopAccountResponse
+//	@Router			/inventory/api/v1/resources/top/growing/accounts [get]
 func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Context) error {
 	providers := source.ParseTypes(ctx.QueryParams()["provider"])
 
@@ -380,7 +408,7 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 //
 //	@Summary	Returns top n regions of specified provider by resource count
 //	@Security	BearerToken
-//	@Tags		inventory
+//	@Tags		resource
 //	@Accept		json
 //	@Produce	json
 //	@Param		count			query		int				true	"count"
@@ -433,7 +461,7 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 //
 //	@Summary	Returns top n regions of specified provider by resource count
 //	@Security	BearerToken
-//	@Tags		inventory
+//	@Tags		resource
 //	@Accept		json
 //	@Produce	json
 //	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
@@ -525,10 +553,21 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
-//	@Success	200	{object}	map[string][]string
+//	@Param		connector		query		[]string	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Success	200				{object}	map[string][]string
 //	@Router		/inventory/api/v2/resources/tag [get]
 func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
-	tags, err := h.db.ListResourceTypeTagsKeysWithPossibleValues()
+	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
+	connectorTypes, err := h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+	tags, err := h.db.ListResourceTypeTagsKeysWithPossibleValues(connectorTypes, utils.GetPointer(true))
 	if err != nil {
 		return err
 	}
@@ -543,16 +582,27 @@ func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
-//	@Param		key	path		string	true	"Tag key"
-//	@Success	200	{object}	[]string
+//	@Param		connector		query		[]string	false	"Connector type to filter by"
+//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param		key				path		string		true	"Tag key"
+//	@Success	200				{object}	[]string
 //	@Router		/inventory/api/v2/resources/tag/{key} [get]
 func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
+	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
+	connectorTypes, err := h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
 	tagKey := ctx.Param("key")
 	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
 		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
 
-	tags, err := h.db.GetResourceTypeTagPossibleValues(tagKey)
+	tags, err := h.db.GetResourceTypeTagPossibleValues(tagKey, connectorTypes, utils.GetPointer(true))
 	if err != nil {
 		return err
 	}
@@ -569,7 +619,12 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 		resourceTypeStrings = append(resourceTypeStrings, resourceType.ResourceType)
 	}
 
-	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+	var metricIndexed map[string]int
+	if len(connectionIDs) > 0 {
+		metricIndexed, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+	} else {
+		metricIndexed, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+	}
 	if err != nil {
 		return 0, nil, err
 	}
@@ -612,6 +667,13 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	serviceNames := ctx.QueryParams()["servicename"]
 	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
+	connectorTypes, err = h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
@@ -700,7 +762,12 @@ func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionID
 		return nil, err
 	}
 
-	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(timeAt, 0), []string{resourceTypeStr}, EsFetchPageSize)
+	var metricIndexed map[string]int
+	if len(connectionIDs) > 0 {
+		metricIndexed, err = es.FetchConnectionResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(timeAt, 0), []string{resourceTypeStr}, EsFetchPageSize)
+	} else {
+		metricIndexed, err = es.FetchConnectorResourceTypeCountAtTime(h.client, nil, time.Unix(timeAt, 0), []string{resourceTypeStr}, EsFetchPageSize)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -730,6 +797,9 @@ func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 	var err error
 	resourceType := ctx.Param("resourceType")
 	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
@@ -792,6 +862,9 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 	}
 	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
 	timeStr := ctx.QueryParam("time")
 	timeAt := time.Now().Unix()
 	if timeStr != "" {
@@ -809,7 +882,13 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 	for _, resourceType := range resourceTypes {
 		resourceTypeStrings = append(resourceTypeStrings, resourceType.ResourceType)
 	}
-	metricIndexed, err := es.FetchResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+
+	var metricIndexed map[string]int
+	if len(connectionIDs) > 0 {
+		metricIndexed, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+	} else {
+		metricIndexed, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
@@ -876,22 +955,27 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 	serviceNames := ctx.QueryParams()["servicename"]
 	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
+	}
 
 	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now().Unix()
+	endTime := time.Now()
 	if endTimeStr != "" {
-		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
+		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
+		endTime = time.Unix(endTimeVal, 0)
 	}
 	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).AddDate(0, -1, 0).Unix()
+	startTime := endTime.AddDate(0, -1, 0)
 	if startTimeStr != "" {
-		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
+		startTimeVal, err := strconv.ParseInt(startTimeStr, 10, 64)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
+		startTime = time.Unix(startTimeVal, 0)
 	}
 
 	datapointCountStr := ctx.QueryParam("datapointCount")
@@ -912,43 +996,23 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 		resourceTypeStrings = append(resourceTypeStrings, resourceType.ResourceType)
 	}
 
-	type countTimePair struct {
-		count int
-		time  time.Time
-	}
-
-	summarizeJobIDCountMap := make(map[uint]countTimePair)
+	timeToCountMap := make(map[int]int)
+	esDatapointCount := int(math.Ceil(endTime.Sub(startTime).Hours() / 24))
 	if len(connectionIDs) != 0 {
-		hits, err := es.FetchConnectionResourceTypeTrendSummaryPage(h.client, connectionIDs, resourceTypeStrings, time.Unix(startTime, 0), time.Unix(endTime, 0), []map[string]any{{"described_at": "asc"}}, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectionResourceTypeTrendSummaryPage(h.client, connectionIDs, resourceTypeStrings, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
-		}
-		for _, hit := range hits {
-			if v, ok := summarizeJobIDCountMap[hit.SummarizeJobID]; !ok {
-				summarizeJobIDCountMap[hit.SummarizeJobID] = countTimePair{count: hit.ResourceCount, time: time.UnixMilli(hit.DescribedAt)}
-			} else {
-				v.count += hit.ResourceCount
-				summarizeJobIDCountMap[hit.SummarizeJobID] = v
-			}
 		}
 	} else {
-		hits, err := es.FetchProviderResourceTypeTrendSummaryPage(h.client, connectorTypes, resourceTypeStrings, time.Unix(startTime, 0), time.Unix(endTime, 0), []map[string]any{{"described_at": "asc"}}, EsFetchPageSize)
+		timeToCountMap, err = es.FetchProviderResourceTypeTrendSummaryPage(h.client, connectorTypes, resourceTypeStrings, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
-		for _, hit := range hits {
-			if v, ok := summarizeJobIDCountMap[hit.SummarizeJobID]; !ok {
-				summarizeJobIDCountMap[hit.SummarizeJobID] = countTimePair{count: hit.ResourceCount, time: time.UnixMilli(hit.DescribedAt)}
-			} else {
-				v.count += hit.ResourceCount
-				summarizeJobIDCountMap[hit.SummarizeJobID] = v
-			}
-		}
 	}
 
-	apiDatapoints := make([]api.ResourceTypeTrendDatapoint, 0, len(summarizeJobIDCountMap))
-	for _, v := range summarizeJobIDCountMap {
-		apiDatapoints = append(apiDatapoints, api.ResourceTypeTrendDatapoint{Count: v.count, Date: v.time})
+	apiDatapoints := make([]api.ResourceTypeTrendDatapoint, 0, len(timeToCountMap))
+	for timeAt, count := range timeToCountMap {
+		apiDatapoints = append(apiDatapoints, api.ResourceTypeTrendDatapoint{Count: count, Date: time.UnixMilli(int64(timeAt))})
 	}
 	sort.Slice(apiDatapoints, func(i, j int) bool {
 		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
@@ -992,7 +1056,7 @@ func (h *HttpHandler) GetServiceTag(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
 
-	tags, err := h.db.GetResourceTypeTagPossibleValues(tagKey)
+	tags, err := h.db.GetServiceTagPossibleValues(tagKey)
 	if err != nil {
 		return err
 	}
@@ -1021,6 +1085,9 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
 	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
@@ -1064,11 +1131,21 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 		resourceTypeNames = append(resourceTypeNames, resourceType)
 	}
 
-	resourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	var resourceTypeCounts map[string]int
+	if len(connectionIDs) > 0 {
+		resourceTypeCounts, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	} else {
+		resourceTypeCounts, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
-	oldResourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(startTime, 0), resourceTypeNames, EsFetchPageSize)
+	var oldResourceTypeCounts map[string]int
+	if len(connectionIDs) > 0 {
+		oldResourceTypeCounts, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(startTime, 0), resourceTypeNames, EsFetchPageSize)
+	} else {
+		oldResourceTypeCounts, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, time.Unix(startTime, 0), resourceTypeNames, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
@@ -1136,6 +1213,9 @@ func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 	var err error
 	serviceName := ctx.Param("serviceName")
 	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
@@ -1166,11 +1246,21 @@ func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 		resourceTypeNames = append(resourceTypeNames, resourceType)
 	}
 
-	resourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	var resourceTypeCounts map[string]int
+	if len(connectionIDs) > 0 {
+		resourceTypeCounts, err = es.FetchConnectionResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	} else {
+		resourceTypeCounts, err = es.FetchConnectorResourceTypeCountAtTime(h.client, nil, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
-	oldResourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(startTime, 0), resourceTypeNames, EsFetchPageSize)
+	var oldResourceTypeCounts map[string]int
+	if len(connectionIDs) > 0 {
+		oldResourceTypeCounts, err = es.FetchConnectionResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(startTime, 0), resourceTypeNames, EsFetchPageSize)
+	} else {
+		oldResourceTypeCounts, err = es.FetchConnectorResourceTypeCountAtTime(h.client, nil, time.Unix(startTime, 0), resourceTypeNames, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
@@ -1242,22 +1332,16 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 		return err
 	}
 	costMetricMap := make(map[string]api.CostMetric)
-	for _, hitArr := range costHits {
-		for _, hit := range hitArr {
-			costMetricMap[hit.ServiceName] = api.CostMetric{
-				Connector:         hit.Connector,
-				CostDimensionName: hit.ServiceName,
-			}
-			break
-		}
-	}
-	aggregatedCostHits := internal.AggregateServiceCosts(costHits)
-
-	for dimension, costVal := range aggregatedCostHits {
-		if costMetric, ok := costMetricMap[dimension]; ok {
+	for connector, serviceToCostMap := range costHits {
+		for dimension, costVal := range serviceToCostMap {
+			connectorTyped, _ := source.ParseType(connector)
 			localCostVal := costVal
-			costMetric.TotalCost = utils.PAdd(costMetric.TotalCost, &localCostVal)
-			costMetricMap[dimension] = costMetric
+			costMetricMap[dimension] = api.CostMetric{
+				Connector:         connectorTyped,
+				CostDimensionName: dimension,
+				TotalCost:         &localCostVal,
+			}
+
 		}
 	}
 
@@ -1369,22 +1453,15 @@ func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 		return err
 	}
 	costMetricMap := make(map[string]api.CostMetric)
-	for _, hitArr := range costHits {
-		for _, hit := range hitArr {
-			costMetricMap[hit.ServiceName] = api.CostMetric{
-				Connector:         hit.Connector,
-				CostDimensionName: hit.ServiceName,
-			}
-			break
-		}
-	}
-	aggregatedCostHits := internal.AggregateServiceCosts(costHits)
-
-	for dimension, costVal := range aggregatedCostHits {
-		if costMetric, ok := costMetricMap[dimension]; ok {
+	for connector, serviceToCostMap := range costHits {
+		for dimension, costVal := range serviceToCostMap {
+			connectorTyped, _ := source.ParseType(connector)
 			localCostVal := costVal
-			costMetric.TotalCost = utils.PAdd(costMetric.TotalCost, &localCostVal)
-			costMetricMap[dimension] = costMetric
+			costMetricMap[dimension] = api.CostMetric{
+				Connector:         connectorTyped,
+				CostDimensionName: dimension,
+				TotalCost:         &localCostVal,
+			}
 		}
 	}
 
@@ -1511,15 +1588,16 @@ func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 
 // GetAccountsResourceCount godoc
 //
-//	@Summary	Returns resource count of accounts
-//	@Security	BearerToken
-//	@Tags		benchmarks
-//	@Accept		json
-//	@Produce	json
-//	@Param		provider	query		string		true	"Provider"
-//	@Param		sourceId	query		[]string	false	"SourceID"
-//	@Success	200			{object}	[]api.ConnectionResourceCountResponse
-//	@Router		/inventory/api/v1/accounts/resource/count [get]
+//	@Summary		Get accounts resource count
+//	@Description	This API allows users to retrieve a list of accounts and the number of resources associated with each account for the specified provider.
+//	@Security		BearerToken
+//	@Tags			resource
+//	@Accept			json
+//	@Produce		json
+//	@Param			provider	query		string		true	"Provider"
+//	@Param			sourceId	query		[]string	false	"Source ID"
+//	@Success		200			{object}	[]api.ConnectionResourceCountResponse
+//	@Router			/inventory/api/v1/accounts/resource/count [get]
 func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 	connectors := source.ParseTypes(ctx.QueryParams()["provider"])
 	sourceId := ctx.QueryParams()["sourceId"]
@@ -1697,16 +1775,16 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 
 // GetResourceDistribution godoc
 //
-//	@Summary	Returns distribution of resource for specific account
-//	@Security	BearerToken
-//	@Tags		benchmarks
-//	@Accept		json
-//	@Produce	json
-//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param		timeWindow		query		string			true	"Time Window"	Enums(24h,1w,3m,1y,max)
-//	@Success	200				{object}	map[string]int
-//	@Router		/inventory/api/v1/resources/distribution [get]
+//	@Summary		Get resources distribution
+//	@Description	This API allows users to retrieve a distribution of resources by their locations. It returns the number of resources in each location.
+//	@Security		BearerToken
+//	@Tags			resource
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector	query		[]source.Type	false	"Connector type to filter by"
+//	@Param			sourceId	query		[]string		false	"Connection IDs to filter by"
+//	@Success		200			{object}	map[string]int
+//	@Router			/inventory/api/v1/resources/distribution [get]
 func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 	connectionIDs := ctx.QueryParams()["sourceId"]
@@ -1731,15 +1809,16 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 
 // GetServiceDistribution godoc
 //
-//	@Summary	Returns distribution of services for specific account
-//	@Security	BearerToken
-//	@Tags		benchmarks
-//	@Accept		json
-//	@Produce	json
-//	@Param		sourceId	query		[]string	true	"SourceID"
-//	@Param		provider	query		string		true	"Provider"
-//	@Success	200			{object}	[]api.ServiceDistributionItem
-//	@Router		/inventory/api/v1/services/distribution [get]
+//	@Summary		Get services distribution
+//	@Description	This API allows users to retrieve a distribution of services by their locations.
+//	@Security		BearerToken
+//	@Tags			services
+//	@Accept			json
+//	@Produce		json
+//	@Param			sourceId	query		[]string	false	"Source ID"
+//	@Param			provider	query		string		false	"Provider"
+//	@Success		200			{object}	[]api.ServiceDistributionItem
+//	@Router			/inventory/api/v1/services/distribution [get]
 func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 	sourceIDs := ctx.QueryParams()["sourceId"]
 	if len(sourceIDs) == 0 {
@@ -1763,10 +1842,10 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 
 // ListServiceSummaries godoc
 //
-//	@Summary		Get Cloud Services Summary
-//	@Description	Gets a summary of the services including the number of them and the API filters and a list of services with more details. Including connector and the resource counts.
+//	@Summary		List Cloud Services Summary
+//	@Description	Retrieves list of summaries of the services including the number of them and the API filters and a list of services with more details. Including connector and the resource counts.
 //	@Security		BearerToken
-//	@Tags			benchmarks
+//	@Tags			services
 //	@Accept			json
 //	@Produce		json
 //	@Param			connectionId	query		[]string	false	"filter: Connection ID"
@@ -1783,8 +1862,8 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
 
 	connectionIDs := ctx.QueryParams()["connectionId"]
-	if len(connectionIDs) == 0 {
-		connectionIDs = nil
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 
@@ -1822,7 +1901,12 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 		resourceTypeNames = append(resourceTypeNames, resourceTypeName)
 	}
 
-	resourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, connectors, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	var resourceTypeCounts map[string]int
+	if len(connectionIDs) > 0 {
+		resourceTypeCounts, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectors, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	} else {
+		resourceTypeCounts, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectors, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
@@ -1882,12 +1966,12 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 // GetServiceSummary godoc
 //
 //	@Summary		Get Cloud Service Summary
-//	@Description	Get Cloud Service Summary for the specified service name. Including connector, the resource counts.
+//	@Description	Retrieves Cloud Service Summary for the specified service name. Including connector, the resource counts.
 //	@Security		BearerToken
-//	@Tags			benchmarks
+//	@Tags			services
 //	@Accepts		json
 //	@Produce		json
-//	@Param			serviceName	path		string	true	"ServiceName"
+//	@Param			serviceName	path		string	true	"Service Name"
 //	@Param			connectorId	query		string	false	"filter: connectorId"
 //	@Param			connector	query		string	false	"filter: connector"
 //	@Param			endTime		query		string	true	"time for resource count in epoch seconds"
@@ -1901,8 +1985,8 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	}
 
 	connectionIDs := ctx.QueryParams()["connectorId"]
-	if len(connectionIDs) == 0 {
-		connectionIDs = nil
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 
@@ -1930,7 +2014,12 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 		resourceTypeNames = append(resourceTypeNames, resourceTypeName)
 	}
 
-	resourceTypeCounts, err := es.FetchResourceTypeCountAtTime(h.client, connectors, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	var resourceTypeCounts map[string]int
+	if len(connectionIDs) > 0 {
+		resourceTypeCounts, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectors, connectionIDs, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	} else {
+		resourceTypeCounts, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectors, time.Unix(endTime, 0), resourceTypeNames, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
@@ -2312,7 +2401,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 //	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
 //	@Description	If sort by is empty, result will be sorted by the first column in ascending order.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			resource
 //	@Accept			json
 //	@Produce		json,text/csv
 //	@Param			request	body		api.GetResourcesRequest	true	"Request Body"
@@ -2349,7 +2438,7 @@ func (h *HttpHandler) GetAzureResources(ctx echo.Context) error {
 //	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
 //	@Description	If sort by is empty, result will be sorted by the first column in ascending order.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			resource
 //	@Accept			json
 //	@Produce		json,text/csv
 //	@Param			request	body		api.GetResourcesRequest	true	"Request Body"
@@ -2386,7 +2475,7 @@ func (h *HttpHandler) GetAWSResources(ctx echo.Context) error {
 //	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
 //	@Description	If sort by is empty, result will be sorted by the first column in ascending order.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			resource
 //	@Accept			json
 //	@Produce		json,text/csv
 //	@Param			request	body		api.GetResourcesRequest	true	"Request Body"
@@ -2419,7 +2508,7 @@ func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 //	@Summary		Count resources
 //	@Description	Number of all resources
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			resource
 //	@Accept			json
 //	@Produce		json,text/csv
 //	@Success		200	{object}	int64
@@ -2449,7 +2538,7 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 //	@Summary		Get resource filters
 //	@Description	Getting resource filters by filters.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			resource
 //	@Accept			json
 //	@Produce		json,text/csv
 //	@Param			request	body		api.GetFiltersRequest	true	"Request Body"

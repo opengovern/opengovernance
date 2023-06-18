@@ -84,14 +84,15 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 // GetFindings godoc
 //
-//	@Summary	Returns all findings with respect to filters
-//	@Tags		compliance
-//	@Security	BearerToken
-//	@Accept		json
-//	@Produce	json
-//	@Param		request	body		api.GetFindingsRequest	true	"Request Body"
-//	@Success	200		{object}	api.GetFindingsResponse
-//	@Router		/compliance/api/v1/findings [post]
+//	@Summary		Get findings
+//	@Description	This API enables users to retrieve all compliance run findings with respect to filters. Users can use this API to obtain a list of all compliance run findings that match specific filters, such as compliance run ID, resource ID, results, and other relevant parameters.
+//	@Tags			compliance
+//	@Security		BearerToken
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		api.GetFindingsRequest	true	"Request Body"
+//	@Success		200		{object}	api.GetFindingsResponse
+//	@Router			/compliance/api/v1/findings [post]
 func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	var req api.GetFindingsRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -132,16 +133,17 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 
 // GetTopFieldByFindingCount godoc
 //
-//	@Summary	Returns all findings with respect to filters
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Param		benchmarkId	path		string	true	"BenchmarkID"
-//	@Param		field		path		string	true	"Field"	Enums(resourceType,serviceName,sourceID,resourceID)
-//	@Param		count		path		int		true	"Count"
-//	@Success	200			{object}	api.GetTopFieldResponse
-//	@Router		/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count} [get]
+//	@Summary		Get top field by finding count
+//	@Description	This API enables users to retrieve the top field by finding count.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			benchmarkId	path		string	true	"BenchmarkID"
+//	@Param			field		path		string	true	"Field"	Enums(resourceType,serviceName,sourceID,resourceID)
+//	@Param			count		path		int		true	"Count"
+//	@Success		200			{object}	api.GetTopFieldResponse
+//	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 	field := ctx.Param("field")
@@ -174,14 +176,15 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 
 // GetTopFieldByAlarmCount godoc
 //
-//	@Summary	Returns all findings with respect to filters
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Param		request	body		api.GetTopFieldRequest	true	"Request Body"
-//	@Success	200		{object}	api.GetTopFieldResponse
-//	@Router		/compliance/api/v1/alarms/top [post]
+//	@Summary		Top field by alarm count
+//	@Description	Returns top field by alarm count with respect to filters
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		api.GetTopFieldRequest	true	"Request Body"
+//	@Success		200		{object}	api.GetTopFieldResponse
+//	@Router			/compliance/api/v1/alarms/top [post]
 func (h *HttpHandler) GetTopFieldByAlarmCount(ctx echo.Context) error {
 	var req api.GetTopFieldRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -207,15 +210,17 @@ func (h *HttpHandler) GetTopFieldByAlarmCount(ctx echo.Context) error {
 
 // GetFindingsMetrics godoc
 //
-//	@Summary	Returns findings metrics
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Param		start	query		int64	false	"Start"
-//	@Param		end		query		int64	false	"End"
-//	@Success	200		{object}	api.GetFindingsMetricsResponse
-//	@Router		/compliance/api/v1/findings/metrics [get]
+//	@Summary		Returns findings metrics
+//	@Description	This API enables users to retrieve findings metrics for two given times, which includes the total number of findings, the number of passed findings, the number of failed findings, and the number of unknowns findings. Users can use this API to compare the compliance status of their resources between two different time periods.
+//	@Description	The API will return the findings metrics for each time period separately, allowing users to easily compare the compliance status of their resources at each time period. This can be useful for monitoring the effectiveness of compliance measures over time and identifying any areas of improvement."
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			start	query		int64	false	"unix seconds for the start time"
+//	@Param			end		query		int64	false	"unix seconds for the end time"
+//	@Success		200		{object}	api.GetFindingsMetricsResponse
+//	@Router			/compliance/api/v1/findings/metrics [get]
 func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
 	startDateStr := ctx.QueryParam("start")
 	endDateStr := ctx.QueryParam("end")
@@ -266,15 +271,16 @@ func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
 
 // GetBenchmarksSummary godoc
 //
-//	@Summary	Get benchmark summary
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Param		start	query		int64	true	"Start"
-//	@Param		end		query		int64	true	"End"
-//	@Success	200		{object}	api.GetBenchmarksSummaryResponse
-//	@Router		/compliance/api/v1/benchmarks/summary [get]
+//	@Summary		List benchmarks summaries
+//	@Description	This API enables users to retrieve a summary of all benchmarks and their associated checks and results within a specified time interval. Users can use this API to obtain an overview of all benchmarks, including their names, descriptions, and other relevant information, as well as the checks and their corresponding results within the specified time period.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			start	query		int64	true	"Start Time"
+//	@Param			end		query		int64	true	"End Time"
+//	@Success		200		{object}	api.GetBenchmarksSummaryResponse
+//	@Router			/compliance/api/v1/benchmarks/summary [get]
 func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 	startDateStr := ctx.QueryParam("start")
 	endDateStr := ctx.QueryParam("end")
@@ -384,14 +390,15 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 
 // GetBenchmarkSummary godoc
 //
-//	@Summary	Get benchmark summary
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Param		benchmark_id	path		string	true	"BenchmarkID"
-//	@Success	200				{object}	api.BenchmarkSummary
-//	@Router		/compliance/api/v1/benchmark/{benchmark_id}/summary [get]
+//	@Summary		Get benchmark summary
+//	@Description	This API enables users to retrieve a summary of a benchmark and its associated checks and results. Users can use this API to obtain an overview of the benchmark, including its name, description, and other relevant information, as well as the checks and their corresponding results.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			benchmark_id	path		string	true	"Benchmark ID"
+//	@Success		200				{object}	api.BenchmarkSummary
+//	@Router			/compliance/api/v1/benchmark/{benchmark_id}/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
 
@@ -451,16 +458,17 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 
 // GetBenchmarkResultTrend godoc
 //
-//	@Summary	Get result trend
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Param		start			query		int64	true	"Start"
-//	@Param		end				query		int64	true	"End"
-//	@Param		benchmark_id	path		string	true	"BenchmarkID"
-//	@Success	200				{object}	api.BenchmarkResultTrend
-//	@Router		/compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend [get]
+//	@Summary		Get compliance result trend
+//	@Description	This API allows users to retrieve datapoints of compliance severities over a specified time period, enabling users to keep track of and monitor changes in compliance.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			start			query		int64	true	"Start time"
+//	@Param			end				query		int64	true	"End time"
+//	@Param			benchmark_id	path		string	true	"Benchmark ID"
+//	@Success		200				{object}	api.BenchmarkResultTrend
+//	@Router			/compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend [get]
 func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
 	startDateStr := ctx.QueryParam("start")
 	endDateStr := ctx.QueryParam("end")
@@ -498,15 +506,16 @@ func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
 
 // GetBenchmarkTree godoc
 //
-//	@Summary	Get benchmark tree
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Param		benchmark_id	path		string	true	"BenchmarkID"
-//	@Param		status			query		string	true	"Status"	Enums(passed,failed,unknown)
-//	@Success	200				{object}	api.BenchmarkTree
-//	@Router		/compliance/api/v1/benchmark/{benchmark_id}/tree [get]
+//	@Summary		Get benchmark tree
+//	@Description	This API retrieves the benchmark tree, including all of its child benchmarks. Users can use this API to obtain a comprehensive overview of the benchmarks within a particular category or hierarchy.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			benchmark_id	path		string	true	"Benchmark ID"
+//	@Param			status			query		string	true	"Status"	Enums(passed,failed,unknown)
+//	@Success		200				{object}	api.BenchmarkTree
+//	@Router			/compliance/api/v1/benchmark/{benchmark_id}/tree [get]
 func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
 	var status []types.PolicyStatus
 	benchmarkID := ctx.Param("benchmark_id")
@@ -780,13 +789,14 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 
 // ListBenchmarks godoc
 //
-//	@Summary	List benchmarks
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Success	200	{object}	[]api.Benchmark
-//	@Router		/compliance/api/v1/benchmarks [get]
+//	@Summary		List benchmarks
+//	@Description	This API returns a comprehensive list of all available benchmarks. Users can use this API to obtain an overview of the entire set of benchmarks and their corresponding details, such as their names, descriptions, and IDs.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	[]api.Benchmark
+//	@Router			/compliance/api/v1/benchmarks [get]
 func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 	var response []api.Benchmark
 
@@ -809,14 +819,15 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 
 // GetBenchmark godoc
 //
-//	@Summary	Get benchmark
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Success	200				{object}	api.Benchmark
-//	@Param		benchmark_id	path		string	true	"BenchmarkID"
-//	@Router		/compliance/api/v1/benchmarks/{benchmark_id} [get]
+//	@Summary		Get benchmark
+//	@Description	This API enables users to retrieve benchmark details by specifying the benchmark ID. Users can use this API to obtain specific details about a particular benchmark, such as its name, description, and other relevant information.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Success		200				{object}	api.Benchmark
+//	@Param			benchmark_id	path		string	true	"BenchmarkID"
+//	@Router			/compliance/api/v1/benchmarks/{benchmark_id} [get]
 func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 	benchmarkId := ctx.Param("benchmark_id")
 	benchmark, err := h.db.GetBenchmark(benchmarkId)
@@ -838,14 +849,16 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 
 // ListPolicies godoc
 //
-//	@Summary	List policies
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Success	200				{object}	[]api.Policy
-//	@Param		benchmark_id	path		string	true	"BenchmarkID"
-//	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies [get]
+//	@Summary		List Benchmark Policies
+//	@Description	This API returns a list of all policies associated with a specific benchmark. Users can use this API to obtain a comprehensive overview of the policies related to a particular benchmark and their corresponding details, such as their names, descriptions, and IDs.
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Success		200				{object}	[]api.Policy
+//	@Param			benchmark_id	path		string	true	"Benchmark ID"
+//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/policies [get]
 func (h *HttpHandler) ListPolicies(ctx echo.Context) error {
 	var response []api.Policy
 
@@ -877,14 +890,15 @@ func (h *HttpHandler) ListPolicies(ctx echo.Context) error {
 
 // GetPolicy godoc
 //
-//	@Summary	Get policy
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Param		policy_id	path		string	true	"PolicyID"
-//	@Success	200			{object}	api.Policy
-//	@Router		/compliance/api/v1/benchmarks/policies/{policy_id} [get]
+//	@Summary		Get policy
+//	@Description	This API enables users to retrieve policy details by specifying the policy ID. Users can use this API to obtain specific details about a particular policy, such as its title, description, and other relevant information.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			policy_id	path		string	true	"Policy ID"
+//	@Success		200			{object}	api.Policy
+//	@Router			/compliance/api/v1/benchmarks/policies/{policy_id} [get]
 func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 	policyId := ctx.Param("policy_id")
 	policy, err := h.db.GetPolicy(policyId)
@@ -907,14 +921,17 @@ func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 
 // GetQuery godoc
 //
-//	@Summary	Get query
-//	@Security	BearerToken
-//	@Tags		compliance
-//	@Accept		json
-//	@Produce	json
-//	@Success	200			{object}	api.Query
-//	@Param		query_id	path		string	true	"QueryID"
-//	@Router		/compliance/api/v1/queries/{query_id} [get]
+//	@Summary		Get query
+//
+//	@Description	This API enables users to retrieve query details by specifying the query ID.
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Success		200			{object}	api.Query
+//	@Param			query_id	path		string	true	"Query ID"
+//	@Router			/compliance/api/v1/queries/{query_id} [get]
 func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	queryID := ctx.Param("query_id")
 	q, err := h.db.GetQuery(queryID)
@@ -931,8 +948,8 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 
 // ListInsightsMetadata godoc
 //
-//	@Summary		List insight metadata
-//	@Description	Listing insight metadata
+//	@Summary		List insights metadata
+//	@Description	Retrieves all insights metadata.
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
@@ -956,12 +973,12 @@ func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
 
 // GetInsightMetadata godoc
 //
-//	@Summary		Get insight metadata by id
+//	@Summary		Get insight metadata
 //	@Description	Get insight metadata by id
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
-//	@Param			insightId	path		string	true	"InsightID"
+//	@Param			insightId	path		string	true	"Insight ID"
 //	@Success		200			{object}	api.Insight
 //	@Router			/compliance/api/v1/metadata/insight/{insightId} [get]
 func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
@@ -984,8 +1001,9 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 
 // ListInsights godoc
 //
-//	@Summary		List insight with result
-//	@Description	Listing insight with result
+//	@Summary		List insights
+//	@Description	This API returns a list of insights based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
+//	@Description	Returns "all:provider" job results if connectionId is not defined.
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
@@ -1071,12 +1089,13 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 
 // GetInsight godoc
 //
-//	@Summary		Get insight with result by id
-//	@Description	Get insight with result by id
+//	@Summary		Get insight
+//	@Description	This API returns the specified insight with ID. The API provides details of the insight, including results during the specified time period for the specified connection.
+//	@Description	Returns "all:provider" job results if connectionId is not defined.
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
-//	@Param			insightId		path		string		true	"InsightID"
+//	@Param			insightId		path		string		true	"Insight ID"
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
 //	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
 //	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
@@ -1178,12 +1197,13 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 
 // GetInsightTrend godoc
 //
-//	@Summary		Get insight trend with result by id
-//	@Description	Get insight trend with result by id
+//	@Summary		Get insight trend
+//	@Description	This API allows users to retrieve insight results datapoints for a specified connection during a specified time period.
+//	@Description	Returns "all:provider" job results if connectionId is not defined.
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
-//	@Param			insightId		path		string		true	"InsightID"
+//	@Param			insightId		path		string		true	"Insight ID"
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
 //	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
 //	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
@@ -1260,13 +1280,14 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 
 // ListInsightTags godoc
 //
-//	@Summary	Return list of the keys with possible values for filtering insights
-//	@Security	BearerToken
-//	@Tags		insights
-//	@Accept		json
-//	@Produce	json
-//	@Success	200	{object}	map[string][]string
-//	@Router		/compliance/api/v1/metadata/tag/insight [get]
+//	@Summary		List insights tag keys
+//	@Description	This API allows users to retrieve a list of insights tag keys with their possible values.
+//	@Security		BearerToken
+//	@Tags			insights
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	map[string][]string
+//	@Router			/compliance/api/v1/metadata/tag/insight [get]
 func (h *HttpHandler) ListInsightTags(ctx echo.Context) error {
 	tags, err := h.db.ListInsightTagKeysWithPossibleValues()
 	if err != nil {
@@ -1278,14 +1299,15 @@ func (h *HttpHandler) ListInsightTags(ctx echo.Context) error {
 
 // GetInsightTag godoc
 //
-//	@Summary	Return list of the possible values for filtering insights with specified key
-//	@Security	BearerToken
-//	@Tags		insights
-//	@Accept		json
-//	@Produce	json
-//	@Param		key	path		string	true	"Tag key"
-//	@Success	200	{object}	[]string
-//	@Router		/compliance/api/v1/metadata/tag/insight/{key} [get]
+//	@Summary		Get insights tag key
+//	@Description	This API allows users to retrieve an insights tag key with the possible values for it.
+//	@Security		BearerToken
+//	@Tags			insights
+//	@Accept			json
+//	@Produce		json
+//	@Param			key	path		string	true	"Tag key"
+//	@Success		200	{object}	[]string
+//	@Router			/compliance/api/v1/metadata/tag/insight/{key} [get]
 func (h *HttpHandler) GetInsightTag(ctx echo.Context) error {
 	tagKey := ctx.Param("key")
 	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {

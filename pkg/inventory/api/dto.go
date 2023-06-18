@@ -318,14 +318,14 @@ type ListQueryRequest struct {
 }
 
 type ConnectionResourceCountResponse struct {
-	SourceID                string      `json:"sourceID"`                // Source Id
-	Connector               source.Type `json:"connector"`               // Source Type
-	ConnectorConnectionName string      `json:"connectorConnectionName"` // Provider Connection Name
-	ConnectorConnectionID   string      `json:"connectorConnectionID"`   // Provider Connection Id
-	LifecycleState          string      `json:"lifecycleState"`
-	ResourceCount           int         `json:"resourceCount"` // Number of resources
-	OnboardDate             time.Time   `json:"onboardDate"`
-	LastInventory           time.Time   `json:"lastInventory"`
+	SourceID                string      `json:"sourceID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`              // Source Id
+	Connector               source.Type `json:"connector" example:"azure"`                                            // Source Type
+	ConnectorConnectionName string      `json:"connectorConnectionName" example:"example-account"`                    // Provider Connection Name
+	ConnectorConnectionID   string      `json:"connectorConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Provider Connection Id
+	LifecycleState          string      `json:"lifecycleState" example:"enabled"`                                     // Lifesycle State
+	ResourceCount           int         `json:"resourceCount" example:"100"`                                          // Number of resources
+	OnboardDate             time.Time   `json:"onboardDate" example:"2023-05-22T12:50:22.499961Z"`                    // Onboard Date
+	LastInventory           time.Time   `json:"lastInventory" example:"2023-05-22T12:50:22.499961Z"`                  // Last Inventory Date
 }
 
 type ConnectionData struct {
@@ -336,11 +336,11 @@ type ConnectionData struct {
 }
 
 type TopAccountResponse struct {
-	SourceID               string `json:"sourceID"`               // Source Id
-	Provider               string `json:"provider"`               // Account Provider
-	ProviderConnectionName string `json:"providerConnectionName"` // Account Provider Connection Name
-	ProviderConnectionID   string `json:"providerConnectionID"`   // Account Provider Connection ID
-	ResourceCount          int    `json:"resourceCount"`          // Last number of Resources of the account
+	SourceID               string `json:"sourceID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`             // Source Id
+	Provider               string `json:"provider" example:"azure"`                                            // Account Provider
+	ProviderConnectionName string `json:"providerConnectionName" example:"example-account"`                    // Account Provider Connection Name
+	ProviderConnectionID   string `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Account Provider Connection ID
+	ResourceCount          int    `json:"resourceCount" example:"100"`                                         // Last number of Resources of the account
 }
 
 type TopAccountCostResponse struct {
@@ -443,15 +443,15 @@ type ConnectionSummaryResponse struct {
 }
 
 type ListServiceSummariesResponse struct {
-	TotalCount int              `json:"totalCount"` // Number of services
-	Services   []ServiceSummary `json:"services"`   // A list of service summeries
+	TotalCount int              `json:"totalCount" example:"20"` // Number of services
+	Services   []ServiceSummary `json:"services"`                // A list of service summeries
 }
 
 type ServiceSummary struct {
-	Connector     source.Type `json:"connector"`               // Cloud provider
-	ServiceLabel  string      `json:"serviceLabel"`            // Service Label
-	ServiceName   string      `json:"serviceName"`             // Service Name
-	ResourceCount *int        `json:"resourceCount,omitempty"` // Number of Resources
+	Connector     source.Type `json:"connector" example:"Azure"`             // Cloud provider
+	ServiceLabel  string      `json:"serviceLabel" example:"Compute"`        // Service Label
+	ServiceName   string      `json:"serviceName" example:"compute"`         // Service Name
+	ResourceCount *int        `json:"resourceCount,omitempty" example:"100"` // Number of Resources
 }
 
 type ListResourceTypesResponse struct {

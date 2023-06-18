@@ -66,7 +66,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/jedib0t/go-pretty/v6 v6.4.6
-	github.com/kaytu-io/kaytu-aws-describer v0.0.20
+	github.com/kaytu-io/kaytu-aws-describer v0.0.22
 	github.com/kaytu-io/kaytu-azure-describer v0.0.44
 	github.com/kaytu-io/kaytu-util v0.0.0-20230612111112-f01681c34d0f
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
@@ -401,9 +401,9 @@ require (
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/zclconf/go-cty v1.12.1 // indirect
 	github.com/zclconf/go-cty-yaml v1.0.3 // indirect
-	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230614094127-aaece2d067be // indirect
-	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230614094134-9a7e750f95ba // indirect
-	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230614094139-cb568a5a01a2 // indirect
+	gitlab.com/keibiengine/steampipe-plugin-aws v0.0.0-20230618070908-32e0a32b5e82 // indirect
+	gitlab.com/keibiengine/steampipe-plugin-azure v0.23.2-0.20230618070927-6601831a3670 // indirect
+	gitlab.com/keibiengine/steampipe-plugin-azuread v0.1.1-0.20230618070954-1c35484749de // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/otel v1.8.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.7.0 // indirect
