@@ -6558,6 +6558,37 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspace/api/v1/workspace/current": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns all workspaces with owner id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "List all workspaces with owner id",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/workspace/api/v1/workspace/{workspace_id}": {
             "delete": {
                 "security": [
@@ -11266,6 +11297,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

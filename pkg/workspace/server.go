@@ -149,6 +149,7 @@ func (s *Server) Register(e *echo.Echo) {
 	v1.GET("/workspaces/limits/byid/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspaceLimitsByID, authapi.ViewerRole))
 	v1.GET("/workspaces/byid/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspaceByID, authapi.ViewerRole))
 	v1.GET("/workspaces", httpserver2.AuthorizeHandler(s.ListWorkspaces, authapi.ViewerRole))
+	v1.GET("/workspace/current", httpserver2.AuthorizeHandler(s.GetCurrentWorkspace, authapi.ViewerRole))
 	v1.GET("/workspaces/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspace, authapi.ViewerRole))
 	v1.POST("/workspace/:workspace_id/owner", httpserver2.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
 	v1.POST("/workspace/:workspace_id/name", httpserver2.AuthorizeHandler(s.ChangeName, authapi.KeibiAdminRole))
@@ -916,6 +917,49 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 		})
 	}
 	return c.JSON(http.StatusOK, workspaces)
+}
+
+// GetCurrentWorkspace godoc
+//
+//	@Summary		List all workspaces with owner id
+//	@Description	Returns all workspaces with owner id
+//	@Security		BearerToken
+//	@Tags			workspace
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{array}	api.WorkspaceResponse
+//	@Router			/workspace/api/v1/workspace/current [get]
+func (s *Server) GetCurrentWorkspace(c echo.Context) error {
+	wsName := httpserver2.GetWorkspaceName(c)
+
+	workspace, err := s.db.GetWorkspaceByName(wsName)
+	if err != nil {
+		return fmt.Errorf("ListWorkspaces: %v", err)
+	}
+
+	version := "unspecified"
+	var keibiVersionConfig corev1.ConfigMap
+	err = s.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
+		Namespace: workspace.ID,
+		Name:      "keibi-version",
+	}, &keibiVersionConfig)
+	if err == nil {
+		version = keibiVersionConfig.Data["version"]
+	} else {
+		fmt.Printf("failed to load version due to %v\n", err)
+	}
+
+	return c.JSON(http.StatusOK, api.WorkspaceResponse{
+		ID:          workspace.ID,
+		OwnerId:     workspace.OwnerId,
+		URI:         workspace.URI,
+		Name:        workspace.Name,
+		Tier:        string(workspace.Tier),
+		Version:     version,
+		Status:      workspace.Status,
+		Description: workspace.Description,
+		CreatedAt:   workspace.CreatedAt,
+	})
 }
 
 // ChangeOwnership godoc

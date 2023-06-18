@@ -7324,6 +7324,25 @@ paths:
       summary: Change Tier of workspace
       tags:
       - workspace
+  /workspace/api/v1/workspace/current:
+    get:
+      consumes:
+      - application/json
+      description: Returns all workspaces with owner id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceResponse'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List all workspaces with owner id
+      tags:
+      - workspace
   /workspace/api/v1/workspaces:
     get:
       consumes:
