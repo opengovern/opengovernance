@@ -1938,42 +1938,6 @@ definitions:
       name:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionResourceCountResponse:
-    properties:
-      connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        description: Source Type
-        example: azure
-      connectorConnectionID:
-        description: Provider Connection Id
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
-      connectorConnectionName:
-        description: Provider Connection Name
-        example: example-account
-        type: string
-      lastInventory:
-        description: Last Inventory Date
-        example: "2023-05-22T12:50:22.499961Z"
-        type: string
-      lifecycleState:
-        description: Lifesycle State
-        example: enabled
-        type: string
-      onboardDate:
-        description: Onboard Date
-        example: "2023-05-22T12:50:22.499961Z"
-        type: string
-      resourceCount:
-        description: Number of resources
-        example: 100
-        type: integer
-      sourceID:
-        description: Source Id
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostMetric:
     properties:
       connector:
@@ -2537,17 +2501,6 @@ definitions:
           type: array
         type: object
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceDistributionItem:
-    properties:
-      distribution:
-        additionalProperties:
-          type: integer
-        description: Distribution name
-        type: object
-      serviceName:
-        description: Service name
-        type: string
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary:
     properties:
       connector:
@@ -2632,59 +2585,6 @@ definitions:
     x-enum-varnames:
     - SourceCloudAWS
     - SourceCloudAzure
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountCostResponse:
-    properties:
-      cost:
-        description: Account costs
-        example: 100
-        type: number
-      providerConnectionID:
-        description: Account Provider Connection ID
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
-      providerConnectionName:
-        description: Account Provider Connection Name
-        example: example-account
-        type: string
-      sourceID:
-        description: Source Id
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountResponse:
-    properties:
-      provider:
-        description: Account Provider
-        example: azure
-        type: string
-      providerConnectionID:
-        description: Account Provider Connection ID
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
-      providerConnectionName:
-        description: Account Provider Connection Name
-        example: example-account
-        type: string
-      resourceCount:
-        description: Last number of Resources of the account
-        example: 100
-        type: integer
-      sourceID:
-        description: Source Id
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
-    type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServiceCostResponse:
-    properties:
-      cost:
-        description: Service Cost
-        example: 100
-        type: number
-      serviceName:
-        description: Service Name
-        example: compute
-        type: string
-    type: object
   gitlab_com_keibiengine_keibi-engine_pkg_metadata_api.SetConfigMetadataRequest:
     properties:
       key:
@@ -4017,8 +3917,7 @@ paths:
         name: benchmark_id
         required: true
         type: string
-      - collectionFormat: csv
-        description: Status
+      - description: Status
         in: query
         items:
           enum:
@@ -4272,15 +4171,13 @@ paths:
         This API returns a list of insights based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
         Returns "all:provider" job results if connectionId is not defined.
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: filter insights by connector
+      - description: filter insights by connector
         in: query
         items:
           enum:
@@ -4290,8 +4187,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4330,8 +4226,7 @@ paths:
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4368,8 +4263,7 @@ paths:
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4409,15 +4303,13 @@ paths:
         This API returns a list of insight groups based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
         Returns "all:provider" job results if connectionId is not defined.
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: filter insights by connector
+      - description: filter insights by connector
         in: query
         items:
           enum:
@@ -4427,8 +4319,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4469,8 +4360,7 @@ paths:
         name: insightGroupId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4507,8 +4397,7 @@ paths:
         name: insightGroupId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -4542,8 +4431,7 @@ paths:
     get:
       description: Retrieves all insights metadata.
       parameters:
-      - collectionFormat: csv
-        description: filter by connector
+      - description: filter by connector
         in: query
         items:
           enum:
@@ -4660,104 +4548,6 @@ paths:
       summary: Get query
       tags:
       - compliance
-  /inventory/api/v1/accounts/resource/count:
-    get:
-      consumes:
-      - application/json
-      description: This API allows users to retrieve a list of accounts and the number
-        of resources associated with each account for the specified provider.
-      parameters:
-      - collectionFormat: csv
-        description: Provider
-        in: query
-        items:
-          type: string
-        name: provider
-        required: true
-        type: array
-      - collectionFormat: csv
-        description: Source ID
-        in: query
-        items:
-          type: string
-        name: sourceId
-        type: array
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionResourceCountResponse'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Get accounts resource count
-      tags:
-      - resource
-  /inventory/api/v1/cost/top/accounts:
-    get:
-      consumes:
-      - application/json
-      description: This API allows users to retrieve top n accounts by cost.
-      parameters:
-      - description: Number of top accounts returning.
-        in: query
-        name: count
-        required: true
-        type: integer
-      - description: Provider
-        in: query
-        name: provider
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountCostResponse'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Top accounts by cost
-      tags:
-      - cost
-  /inventory/api/v1/cost/top/services:
-    get:
-      consumes:
-      - application/json
-      description: This API allows users to retrieve top n services by cost.
-      parameters:
-      - description: Number of top services returning.
-        in: query
-        name: count
-        required: true
-        type: integer
-      - description: Provider
-        in: query
-        name: provider
-        type: string
-      - description: Source ID
-        in: query
-        name: sourceId
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopServiceCostResponse'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Top services by cost
-      tags:
-      - cost
   /inventory/api/v1/locations/{connector}:
     get:
       description: Getting locations by provider
@@ -5043,45 +4833,6 @@ paths:
       summary: Count resources
       tags:
       - resource
-  /inventory/api/v1/resources/distribution:
-    get:
-      consumes:
-      - application/json
-      description: This API allows users to retrieve a distribution of resources by
-        their locations. It returns the number of resources in each location.
-      parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
-        type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: sourceId
-        type: array
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: integer
-            type: object
-      security:
-      - BearerToken: []
-      summary: Get resources distribution
-      tags:
-      - resource
   /inventory/api/v1/resources/filters:
     post:
       consumes:
@@ -5120,8 +4871,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5131,8 +4881,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5169,50 +4918,6 @@ paths:
       summary: Returns top n regions of specified provider by resource count
       tags:
       - resource
-  /inventory/api/v1/resources/top/growing/accounts:
-    get:
-      consumes:
-      - application/json
-      description: Returns top n fastest growing accounts of specified provider in
-        the specified time window by resource count.
-      parameters:
-      - description: Number of top accounts returning.
-        in: query
-        name: count
-        required: true
-        type: integer
-      - collectionFormat: csv
-        description: Provider
-        in: query
-        items:
-          type: string
-        name: provider
-        required: true
-        type: array
-      - description: Time Window
-        enum:
-        - 1d
-        - 1w
-        - 3m
-        - 1y
-        in: query
-        name: timeWindow
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountResponse'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Get Top Fastest Growing Accounts By ResourceCount
-      tags:
-      - resource
   /inventory/api/v1/resources/top/regions:
     get:
       consumes:
@@ -5223,8 +4928,7 @@ paths:
         name: count
         required: true
         type: integer
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5234,8 +4938,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5255,45 +4958,12 @@ paths:
       summary: Returns top n regions of specified provider by resource count
       tags:
       - resource
-  /inventory/api/v1/services/distribution:
-    get:
-      consumes:
-      - application/json
-      description: This API allows users to retrieve a distribution of services by
-        their locations.
-      parameters:
-      - collectionFormat: csv
-        description: Source ID
-        in: query
-        items:
-          type: string
-        name: sourceId
-        type: array
-      - description: Provider
-        in: query
-        name: provider
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceDistributionItem'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Get services distribution
-      tags:
-      - services
   /inventory/api/v2/connections/data:
     get:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connection IDs
+      - description: Connection IDs
         in: query
         items:
           type: string
@@ -5362,8 +5032,7 @@ paths:
         to specified filters. The API returns information such as the total cost for
         the given time range, and the top services by cost.
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5373,8 +5042,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5412,8 +5080,7 @@ paths:
         specified filters. The API returns information such as the total cost and
         costs per each service based on the specified filters.
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5423,8 +5090,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5473,8 +5139,7 @@ paths:
         of the specified time frame based on the given input filters. If startTime
         and endTime are empty, the API returns the last month trend.
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5484,8 +5149,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5522,8 +5186,7 @@ paths:
       description: List all insight results for the given insightIds - this mostly
         for internal usage, use compliance api for full api
       parameters:
-      - collectionFormat: csv
-        description: filter insights by connector
+      - description: filter insights by connector
         in: query
         items:
           enum:
@@ -5533,15 +5196,13 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
         name: connectionId
         type: array
-      - collectionFormat: csv
-        description: filter the result by insight id
+      - description: filter the result by insight id
         in: query
         items:
           type: string
@@ -5578,8 +5239,7 @@ paths:
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -5613,8 +5273,7 @@ paths:
         name: insightId
         required: true
         type: string
-      - collectionFormat: csv
-        description: filter the result by source id
+      - description: filter the result by source id
         in: query
         items:
           type: string
@@ -5674,8 +5333,7 @@ paths:
         Gets a list of all resource types in workspace and their metadata including service name.
         The results could be filtered by provider name and service name.
       parameters:
-      - collectionFormat: csv
-        description: Filter by Connector
+      - description: Filter by Connector
         in: query
         items:
           enum:
@@ -5686,15 +5344,13 @@ paths:
         name: connector
         required: true
         type: array
-      - collectionFormat: csv
-        description: Filter by service name
+      - description: Filter by service name
         in: query
         items:
           type: string
         name: service
         type: array
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
@@ -5748,8 +5404,7 @@ paths:
         Gets a list of all workspace cloud services and their metadata, and list of resource types.
         The results could be filtered by tags.
       parameters:
-      - collectionFormat: csv
-        description: Connector
+      - description: Connector
         in: query
         items:
           enum:
@@ -5759,8 +5414,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
@@ -5825,8 +5479,7 @@ paths:
         name: top
         required: true
         type: integer
-      - collectionFormat: csv
-        description: Connector types to filter by
+      - description: Connector types to filter by
         in: query
         items:
           enum:
@@ -5836,8 +5489,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5866,22 +5518,19 @@ paths:
       description: This API allows users to retrieve a list of resource types with
         metrics of each type based on the given input filters.
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Service names to filter by
+      - description: Service names to filter by
         in: query
         items:
           type: string
         name: servicename
         type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -5891,8 +5540,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5940,8 +5588,7 @@ paths:
       description: This API allows users to retrieve metrics for a specific resource
         type.
       parameters:
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -5979,15 +5626,13 @@ paths:
       description: This API allows users to retrieve a list of tag keys with their
         possible values for all resource types.
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -6016,15 +5661,13 @@ paths:
       description: This API allows users to retrieve a list of possible values for
         a given tag key for all resource types.
       parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -6056,22 +5699,19 @@ paths:
       description: This API allows users to retrieve a list of resource counts over
         the course of the specified time frame based on the given input filters
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Service names to filter by
+      - description: Service names to filter by
         in: query
         items:
           type: string
         name: servicename
         type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -6081,8 +5721,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -6121,15 +5760,13 @@ paths:
       description: This API allows users to retrieve a list of services with metrics
         of each type based on the given input filters.
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
+      - description: Connector type to filter by
         in: query
         items:
           enum:
@@ -6139,8 +5776,7 @@ paths:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -6192,8 +5828,7 @@ paths:
         name: serviceName
         required: true
         type: string
-      - collectionFormat: csv
-        description: Connection IDs to filter by
+      - description: Connection IDs to filter by
         in: query
         items:
           type: string
@@ -6225,22 +5860,19 @@ paths:
         of them and the API filters and a list of services with more details. Including
         connector and the resource counts.
       parameters:
-      - collectionFormat: csv
-        description: 'filter: Connection ID'
+      - description: 'filter: Connection ID'
         in: query
         items:
           type: string
         name: connectionId
         type: array
-      - collectionFormat: csv
-        description: 'filter: Connector'
+      - description: 'filter: Connector'
         in: query
         items:
           type: string
         name: connector
         type: array
-      - collectionFormat: csv
-        description: 'filter: tag for the services'
+      - description: 'filter: tag for the services'
         in: query
         items:
           type: string
@@ -6287,15 +5919,13 @@ paths:
         name: serviceName
         required: true
         type: string
-      - collectionFormat: csv
-        description: 'filter: connectorId'
+      - description: 'filter: connectorId'
         in: query
         items:
           type: string
         name: connectorId
         type: array
-      - collectionFormat: csv
-        description: 'filter: connector'
+      - description: 'filter: connector'
         in: query
         items:
           type: string
@@ -6504,8 +6134,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - collectionFormat: csv
-        description: Connector
+      - description: Connector
         in: query
         items:
           enum:
@@ -6516,8 +6145,7 @@ paths:
         name: connector
         required: true
         type: array
-      - collectionFormat: csv
-        description: Connection IDs
+      - description: Connection IDs
         in: query
         items:
           type: string
@@ -7048,8 +6676,7 @@ paths:
       description: Returning a list of sources including both AWS and Azure unless
         filtered by Type.
       parameters:
-      - collectionFormat: csv
-        description: filter by source type
+      - description: filter by source type
         in: query
         items:
           enum:
@@ -7551,15 +7178,13 @@ paths:
       - application/json
       description: Get list of stacks
       parameters:
-      - collectionFormat: csv
-        description: Key-Value tags in key=value format to filter by
+      - description: Key-Value tags in key=value format to filter by
         in: query
         items:
           type: string
         name: tag
         type: array
-      - collectionFormat: csv
-        description: Account IDs to filter by
+      - description: Account IDs to filter by
         in: query
         items:
           type: string
@@ -7727,8 +7352,7 @@ paths:
         in: formData
         name: tag
         type: string
-      - collectionFormat: csv
-        description: Additional Resources
+      - description: Additional Resources
         in: formData
         items:
           type: string
