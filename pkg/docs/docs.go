@@ -1442,6 +1442,199 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/insight/group": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "This API returns a list of insight groups based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.\nReturns \"all:provider\" job results if connectionId is not defined.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "List insight groups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key-Value tags in key=value format to filter by",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "description": "filter insights by connector",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter the result by source id",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the start time of the trend",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the end time of the trend",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroup"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/insight/group/{insightGroupId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "This API returns the specified insight group with ID. The API provides details of the insight, including results during the specified time period for the specified connection.\nReturns \"all:provider\" job results if connectionId is not defined.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "Get insight group",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Insight Group ID",
+                        "name": "insightGroupId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter the result by source id",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the start time of the trend",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the end time of the trend",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroup"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/insight/group/{insightGroupId}/trend": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "This API allows users to retrieve insight group results datapoints for a specified connection during a specified time period.\nReturns \"all:provider\" job results if connectionId is not defined.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "Get insight group trend",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Insight ID",
+                        "name": "insightGroupId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter the result by source id",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the start time of the trend",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the end time of the trend",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of datapoints to return",
+                        "name": "datapointCount",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroupTrendResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/insight/{insightId}": {
             "get": {
                 "security": [
@@ -8595,15 +8788,6 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
-                "labels": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                },
                 "links": {
                     "type": "array",
                     "items": {
@@ -8633,6 +8817,15 @@ const docTemplate = `{
                 "shortTitle": {
                     "type": "string",
                     "example": "Clusters with no RBAC"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
                 },
                 "totalResultValue": {
                     "type": "integer",
@@ -8665,6 +8858,84 @@ const docTemplate = `{
                     "items": {
                         "type": "array",
                         "items": {}
+                    }
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroup": {
+            "type": "object",
+            "properties": {
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    },
+                    "example": [
+                        "[\"Azure\"",
+                        " \"AWS\"]"
+                    ]
+                },
+                "description": {
+                    "type": "string",
+                    "example": "List clusters that have role-based access control (RBAC) disabled"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 23
+                },
+                "insights": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
+                    }
+                },
+                "logoURL": {
+                    "type": "string",
+                    "example": "https://kaytu.io/logo.png"
+                },
+                "longTitle": {
+                    "type": "string",
+                    "example": "List clusters that have role-based access control (RBAC) disabled"
+                },
+                "oldTotalResultValue": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "shortTitle": {
+                    "type": "string",
+                    "example": "Clusters with no RBAC"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "totalResultValue": {
+                    "type": "integer",
+                    "example": 10
+                }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroupTrendResponse": {
+            "type": "object",
+            "properties": {
+                "trend": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint"
+                    }
+                },
+                "trendPerInsight": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint"
+                        }
                     }
                 }
             }

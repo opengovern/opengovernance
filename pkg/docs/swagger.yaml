@@ -1097,12 +1097,6 @@ definitions:
       internal:
         example: false
         type: boolean
-      labels:
-        additionalProperties:
-          items:
-            type: string
-          type: array
-        type: object
       links:
         items:
           type: string
@@ -1124,6 +1118,12 @@ definitions:
       shortTitle:
         example: Clusters with no RBAC
         type: string
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
       totalResultValue:
         example: 10
         type: integer
@@ -1146,6 +1146,60 @@ definitions:
           items: {}
           type: array
         type: array
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroup:
+    properties:
+      connectors:
+        example:
+        - '["Azure"'
+        - ' "AWS"]'
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
+      description:
+        example: List clusters that have role-based access control (RBAC) disabled
+        type: string
+      id:
+        example: 23
+        type: integer
+      insights:
+        additionalProperties:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
+        type: object
+      logoURL:
+        example: https://kaytu.io/logo.png
+        type: string
+      longTitle:
+        example: List clusters that have role-based access control (RBAC) disabled
+        type: string
+      oldTotalResultValue:
+        example: 0
+        type: integer
+      shortTitle:
+        example: Clusters with no RBAC
+        type: string
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      totalResultValue:
+        example: 10
+        type: integer
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroupTrendResponse:
+    properties:
+      trend:
+        items:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint'
+        type: array
+      trendPerInsight:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint'
+          type: array
+        type: object
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightResult:
     properties:
@@ -4289,6 +4343,136 @@ paths:
       security:
       - BearerToken: []
       summary: Get insight trend
+      tags:
+      - insights
+  /compliance/api/v1/insight/group:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        This API returns a list of insight groups based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
+        Returns "all:provider" job results if connectionId is not defined.
+      parameters:
+      - description: Key-Value tags in key=value format to filter by
+        in: query
+        name: tag
+        type: string
+      - description: filter insights by connector
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - description: filter the result by source id
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: unix seconds for the start time of the trend
+        in: query
+        name: startTime
+        type: integer
+      - description: unix seconds for the end time of the trend
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroup'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List insight groups
+      tags:
+      - insights
+  /compliance/api/v1/insight/group/{insightGroupId}:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        This API returns the specified insight group with ID. The API provides details of the insight, including results during the specified time period for the specified connection.
+        Returns "all:provider" job results if connectionId is not defined.
+      parameters:
+      - description: Insight Group ID
+        in: path
+        name: insightGroupId
+        required: true
+        type: string
+      - description: filter the result by source id
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: unix seconds for the start time of the trend
+        in: query
+        name: startTime
+        type: integer
+      - description: unix seconds for the end time of the trend
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroup'
+      security:
+      - BearerToken: []
+      summary: Get insight group
+      tags:
+      - insights
+  /compliance/api/v1/insight/group/{insightGroupId}/trend:
+    get:
+      description: |-
+        This API allows users to retrieve insight group results datapoints for a specified connection during a specified time period.
+        Returns "all:provider" job results if connectionId is not defined.
+      parameters:
+      - description: Insight ID
+        in: path
+        name: insightGroupId
+        required: true
+        type: string
+      - description: filter the result by source id
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: unix seconds for the start time of the trend
+        in: query
+        name: startTime
+        type: integer
+      - description: unix seconds for the end time of the trend
+        in: query
+        name: endTime
+        type: integer
+      - description: number of datapoints to return
+        in: query
+        name: datapointCount
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroupTrendResponse'
+      security:
+      - BearerToken: []
+      summary: Get insight group trend
       tags:
       - insights
   /compliance/api/v1/metadata/insight:

@@ -54,9 +54,14 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	metadata.GET("/insight", httpserver.AuthorizeHandler(h.ListInsightsMetadata, api3.ViewerRole))
 	metadata.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsightMetadata, api3.ViewerRole))
 
-	v1.GET("/insight", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
-	v1.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
-	v1.GET("/insight/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, api3.ViewerRole))
+	insights := v1.Group("/insight")
+	insightGroups := insights.Group("/group")
+	insightGroups.GET("", httpserver.AuthorizeHandler(h.ListInsightGroups, api3.ViewerRole))
+	insightGroups.GET("/:insightGroupId", httpserver.AuthorizeHandler(h.GetInsightGroup, api3.ViewerRole))
+	insightGroups.GET("/:insightGroupId/trend", httpserver.AuthorizeHandler(h.GetInsightGroupTrend, api3.ViewerRole))
+	insights.GET("", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
+	insights.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
+	insights.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, api3.ViewerRole))
 
 	v1.GET("/benchmarks/summary", httpserver.AuthorizeHandler(h.GetBenchmarksSummary, api3.ViewerRole))
 	v1.GET("/benchmark/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
@@ -946,6 +951,49 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, q.ToApi())
 }
 
+// ListInsightTags godoc
+//
+//	@Summary		List insights tag keys
+//	@Description	This API allows users to retrieve a list of insights tag keys with their possible values.
+//	@Security		BearerToken
+//	@Tags			insights
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	map[string][]string
+//	@Router			/compliance/api/v1/metadata/tag/insight [get]
+func (h *HttpHandler) ListInsightTags(ctx echo.Context) error {
+	tags, err := h.db.ListInsightTagKeysWithPossibleValues()
+	if err != nil {
+		return err
+	}
+	tags = model.TrimPrivateTags(tags)
+	return ctx.JSON(http.StatusOK, tags)
+}
+
+// GetInsightTag godoc
+//
+//	@Summary		Get insights tag key
+//	@Description	This API allows users to retrieve an insights tag key with the possible values for it.
+//	@Security		BearerToken
+//	@Tags			insights
+//	@Accept			json
+//	@Produce		json
+//	@Param			key	path		string	true	"Tag key"
+//	@Success		200	{object}	[]string
+//	@Router			/compliance/api/v1/metadata/tag/insight/{key} [get]
+func (h *HttpHandler) GetInsightTag(ctx echo.Context) error {
+	tagKey := ctx.Param("key")
+	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
+		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
+	}
+
+	tags, err := h.db.GetInsightTagTagPossibleValues(tagKey)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, tags)
+}
+
 // ListInsightsMetadata godoc
 //
 //	@Summary		List insights metadata
@@ -959,7 +1007,7 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 	enabled := true
-	insightRows, err := h.db.ListInsightsWithFilters(connectors, &enabled, nil)
+	insightRows, err := h.db.ListInsightsWithFilters(nil, connectors, &enabled, nil)
 	if err != nil {
 		return err
 	}
@@ -1036,7 +1084,7 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	}
 
 	enabled := true
-	insightRows, err := h.db.ListInsightsWithFilters(connectors, &enabled, tagMap)
+	insightRows, err := h.db.ListInsightsWithFilters(nil, connectors, &enabled, tagMap)
 	if err != nil {
 		return err
 	}
@@ -1278,45 +1326,321 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	return ctx.JSON(200, result)
 }
 
-// ListInsightTags godoc
+// ListInsightGroups godoc
 //
-//	@Summary		List insights tag keys
-//	@Description	This API allows users to retrieve a list of insights tag keys with their possible values.
+//	@Summary		List insight groups
+//	@Description	This API returns a list of insight groups based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
+//	@Description	Returns "all:provider" job results if connectionId is not defined.
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	map[string][]string
-//	@Router			/compliance/api/v1/metadata/tag/insight [get]
-func (h *HttpHandler) ListInsightTags(ctx echo.Context) error {
-	tags, err := h.db.ListInsightTagKeysWithPossibleValues()
+//	@Param			tag				query		string			false	"Key-Value tags in key=value format to filter by"
+//	@Param			connector		query		[]source.Type	false	"filter insights by connector"
+//	@Param			connectionId	query		[]string		false	"filter the result by source id"
+//	@Param			startTime		query		int				false	"unix seconds for the start time of the trend"
+//	@Param			endTime			query		int				false	"unix seconds for the end time of the trend"
+//	@Success		200				{object}	[]api.InsightGroup
+//	@Router			/compliance/api/v1/insight/group [get]
+func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
+	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
+	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	endTime := time.Now()
+	if ctx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		endTime = time.Unix(t, 0)
+	}
+	startTime := endTime.Add(-1 * 7 * 24 * time.Hour)
+	if ctx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		startTime = time.Unix(t, 0)
+	}
+
+	insightGroupRows, err := h.db.ListInsightGroups(connectors, tagMap)
 	if err != nil {
 		return err
 	}
-	tags = model.TrimPrivateTags(tags)
-	return ctx.JSON(http.StatusOK, tags)
+
+	insightIDMap := make(map[uint]bool)
+	for _, insightGroupRow := range insightGroupRows {
+		for _, insightRow := range insightGroupRow.Insights {
+			insightIDMap[insightRow.ID] = true
+		}
+	}
+	insightIDsList := make([]uint, 0, len(insightIDMap))
+	for insightID := range insightIDMap {
+		insightIDsList = append(insightIDsList, insightID)
+	}
+
+	insightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), connectors, connectionIDs, insightIDsList, &endTime)
+	if err != nil {
+		return err
+	}
+
+	oldInsightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), connectors, connectionIDs, insightIDsList, &startTime)
+	if err != nil {
+		h.logger.Warn("failed to get old insight results", zap.Error(err))
+		oldInsightIdToResults = make(map[uint][]insight.InsightResource)
+	}
+
+	var result []api.InsightGroup
+	for _, insightGroupRow := range insightGroupRows {
+		apiRes := insightGroupRow.ToApi()
+		apiRes.Insights = make(map[uint]api.Insight)
+		for _, insightRow := range insightGroupRow.Insights {
+			insightApiRes := insightRow.ToApi()
+			insightApiRes.TotalResultValue = utils.GetPointer(int64(0))
+			var totalOldResultValue *int64
+			if insightResults, ok := insightIdToResults[insightRow.ID]; ok {
+				for _, insightResult := range insightResults {
+					insightApiRes.Results = append(insightApiRes.Results, api.InsightResult{
+						JobID:        insightResult.JobID,
+						InsightID:    insightRow.ID,
+						ConnectionID: insightResult.SourceID,
+						ExecutedAt:   time.UnixMilli(insightResult.ExecutedAt),
+						Result:       insightResult.Result,
+						Locations:    insightResult.Locations,
+					})
+					insightApiRes.TotalResultValue = utils.PAdd(insightApiRes.TotalResultValue, &insightResult.Result)
+				}
+			}
+			if oldInsightResults, ok := oldInsightIdToResults[insightRow.ID]; ok {
+				for _, oldInsightResult := range oldInsightResults {
+					localOldInsightResult := oldInsightResult.Result
+					totalOldResultValue = utils.PAdd(totalOldResultValue, &localOldInsightResult)
+				}
+			}
+			insightApiRes.OldTotalResultValue = totalOldResultValue
+
+			apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, insightApiRes.TotalResultValue)
+			apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, insightApiRes.OldTotalResultValue)
+			apiRes.Insights[insightRow.ID] = insightApiRes
+		}
+		result = append(result, apiRes)
+	}
+
+	return ctx.JSON(200, result)
 }
 
-// GetInsightTag godoc
+// GetInsightGroup godoc
 //
-//	@Summary		Get insights tag key
-//	@Description	This API allows users to retrieve an insights tag key with the possible values for it.
+//	@Summary		Get insight group
+//	@Description	This API returns the specified insight group with ID. The API provides details of the insight, including results during the specified time period for the specified connection.
+//	@Description	Returns "all:provider" job results if connectionId is not defined.
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Accept			json
 //	@Produce		json
-//	@Param			key	path		string	true	"Tag key"
-//	@Success		200	{object}	[]string
-//	@Router			/compliance/api/v1/metadata/tag/insight/{key} [get]
-func (h *HttpHandler) GetInsightTag(ctx echo.Context) error {
-	tagKey := ctx.Param("key")
-	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
-		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
+//	@Param			insightGroupId	path		string		true	"Insight Group ID"
+//	@Param			connectionId	query		[]string	false	"filter the result by source id"
+//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
+//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
+//	@Success		200				{object}	api.InsightGroup
+//	@Router			/compliance/api/v1/insight/group/{insightGroupId} [get]
+func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
+	insightGroupIdStr := ctx.Param("insightGroupId")
+	insightGroupId, err := strconv.ParseUint(insightGroupIdStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	endTime := time.Now()
+	if ctx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		endTime = time.Unix(t, 0)
+	}
+	startTime := endTime.Add(-1 * 7 * 24 * time.Hour)
+	if ctx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		startTime = time.Unix(t, 0)
 	}
 
-	tags, err := h.db.GetInsightTagTagPossibleValues(tagKey)
+	insightGroupRow, err := h.db.GetInsightGroup(uint(insightGroupId))
 	if err != nil {
 		return err
 	}
-	return ctx.JSON(http.StatusOK, tags)
+	apiRes := insightGroupRow.ToApi()
+	for _, insightRow := range insightGroupRow.Insights {
+		insightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, &endTime)
+		if err != nil {
+			return err
+		}
+
+		oldInsightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, &startTime)
+		if err != nil {
+			h.logger.Warn("failed to get old insight results", zap.Error(err))
+			oldInsightResults = make([]insight.InsightResource, 0)
+		}
+		insightApiRes := insightRow.ToApi()
+		insightApiRes.TotalResultValue = utils.GetPointer(int64(0))
+		var totalOldResultValue *int64
+		for _, insightResult := range insightResults {
+			connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
+			for _, connection := range insightResult.IncludedConnections {
+				connections = append(connections, api.InsightConnection{
+					ConnectionID: connection.ConnectionID,
+					OriginalID:   connection.OriginalID,
+				})
+			}
+
+			bucket, key, err := utils.ParseHTTPSubpathS3URIToBucketAndKey(insightResult.S3Location)
+			getObjectOutput, err := h.s3Client.GetObject(ctx.Request().Context(), &s3.GetObjectInput{
+				Bucket: aws.String(bucket),
+				Key:    aws.String(key),
+			})
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			objectBuffer, err := io.ReadAll(getObjectOutput.Body)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			var steampipeResults steampipe.Result
+			err = json.Unmarshal(objectBuffer, &steampipeResults)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+
+			insightApiRes.Results = append(insightApiRes.Results, api.InsightResult{
+				JobID:        insightResult.JobID,
+				InsightID:    insightRow.ID,
+				ConnectionID: insightResult.SourceID,
+				ExecutedAt:   time.UnixMilli(insightResult.ExecutedAt),
+				Result:       insightResult.Result,
+				Locations:    insightResult.Locations,
+				Connections:  connections,
+				Details: &api.InsightDetail{
+					Headers: steampipeResults.Headers,
+					Rows:    steampipeResults.Data,
+				},
+			})
+			insightApiRes.TotalResultValue = utils.PAdd(insightApiRes.TotalResultValue, &insightResult.Result)
+		}
+		for _, oldInsightResult := range oldInsightResults {
+			localOldInsightResult := oldInsightResult.Result
+			totalOldResultValue = utils.PAdd(totalOldResultValue, &localOldInsightResult)
+		}
+		insightApiRes.OldTotalResultValue = totalOldResultValue
+
+		apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, insightApiRes.TotalResultValue)
+		apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, insightApiRes.OldTotalResultValue)
+		apiRes.Insights[insightRow.ID] = insightApiRes
+	}
+
+	return ctx.JSON(200, apiRes)
+}
+
+// GetInsightGroupTrend godoc
+//
+//	@Summary		Get insight group trend
+//	@Description	This API allows users to retrieve insight group results datapoints for a specified connection during a specified time period.
+//	@Description	Returns "all:provider" job results if connectionId is not defined.
+//	@Security		BearerToken
+//	@Tags			insights
+//	@Produce		json
+//	@Param			insightGroupId	path		string		true	"Insight ID"
+//	@Param			connectionId	query		[]string	false	"filter the result by source id"
+//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
+//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
+//	@Param			datapointCount	query		int			false	"number of datapoints to return"
+//	@Success		200				{object}	api.InsightGroupTrendResponse
+//	@Router			/compliance/api/v1/insight/group/{insightGroupId}/trend [get]
+func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
+	insightGroupIdStr := ctx.Param("insightGroupId")
+	insightGroupId, err := strconv.ParseUint(insightGroupIdStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	var startTime *time.Time
+	if ctx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		tt := time.Unix(t, 0)
+		startTime = &tt
+	}
+	var endTime *time.Time
+	if ctx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		tt := time.Unix(t, 0)
+		endTime = &tt
+	}
+	var datapointCount *int
+	if ctx.QueryParam("datapointCount") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("datapointCount"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
+		}
+		tt := int(t)
+		datapointCount = &tt
+	}
+
+	insightGroupRow, err := h.db.GetInsightGroup(uint(insightGroupId))
+	if err != nil {
+		return err
+	}
+
+	result := api.InsightGroupTrendResponse{
+		TrendPerInsight: make(map[uint][]api.InsightTrendDatapoint),
+	}
+	trendMap := make(map[int]int)
+	for _, insightRow := range insightGroupRow.Insights {
+		timeAtToInsightResults, err := h.inventoryClient.GetInsightTrendResults(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, startTime, endTime)
+		if err != nil {
+			return err
+		}
+		perInsightResult := make([]api.InsightTrendDatapoint, 0, len(timeAtToInsightResults))
+		for timeAt, insightResults := range timeAtToInsightResults {
+			datapoint := api.InsightTrendDatapoint{
+				Timestamp: timeAt,
+				Value:     0,
+			}
+			for _, insightResult := range insightResults {
+				datapoint.Value += int(insightResult.Result)
+			}
+			perInsightResult = append(perInsightResult, datapoint)
+		}
+
+		if datapointCount != nil {
+			perInsightResult = internal.DownSampleInsightTrendDatapoints(perInsightResult, *datapointCount)
+		}
+		for _, datapoint := range perInsightResult {
+			trendMap[datapoint.Timestamp] += datapoint.Value
+		}
+
+		sort.Slice(perInsightResult, func(i, j int) bool {
+			return perInsightResult[i].Timestamp < perInsightResult[j].Timestamp
+		})
+		result.TrendPerInsight[insightRow.ID] = perInsightResult
+	}
+	for timestamp, value := range trendMap {
+		result.Trend = append(result.Trend, api.InsightTrendDatapoint{
+			Timestamp: timestamp,
+			Value:     value,
+		})
+	}
+	sort.Slice(result.Trend, func(i, j int) bool {
+		return result.Trend[i].Timestamp < result.Trend[j].Timestamp
+	})
+	result.Trend = internal.DownSampleInsightTrendDatapoints(result.Trend, *datapointCount)
+
+	return ctx.JSON(200, result)
 }
