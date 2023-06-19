@@ -1020,12 +1020,16 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "enum": [
-                            "passed",
-                            "failed",
-                            "unknown"
-                        ],
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "passed",
+                                "failed",
+                                "unknown"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Status",
                         "name": "status",
                         "in": "query",
@@ -1386,7 +1390,11 @@ const docTemplate = `{
                 "summary": "List insights",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -1462,7 +1470,11 @@ const docTemplate = `{
                 "summary": "List insight groups",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -1970,7 +1982,11 @@ const docTemplate = `{
                 "summary": "Get accounts resource count",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Provider",
                         "name": "provider",
                         "in": "query",
@@ -2737,7 +2753,11 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Provider",
                         "name": "provider",
                         "in": "query",
@@ -4370,13 +4390,21 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "filter: connectorId",
                         "name": "connectorId",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "filter: connector",
                         "name": "connector",
                         "in": "query"
@@ -4658,12 +4686,16 @@ const docTemplate = `{
                 "summary": "Returns resource count of accounts",
                 "parameters": [
                     {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connector",
                         "name": "connector",
                         "in": "query",
@@ -5555,12 +5587,16 @@ const docTemplate = `{
                 "summary": "Returns a list of sources",
                 "parameters": [
                     {
-                        "enum": [
-                            "",
-                            "AWS",
-                            "Azure"
-                        ],
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "filter by source type",
                         "name": "connector",
                         "in": "query"
@@ -11971,6 +12007,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

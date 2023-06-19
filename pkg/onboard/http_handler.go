@@ -3,7 +3,6 @@ package onboard
 import (
 	"context"
 	"fmt"
-
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"

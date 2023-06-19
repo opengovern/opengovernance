@@ -3967,15 +3967,18 @@ paths:
         name: benchmark_id
         required: true
         type: string
-      - description: Status
-        enum:
-        - passed
-        - failed
-        - unknown
+      - collectionFormat: csv
+        description: Status
         in: query
+        items:
+          enum:
+          - passed
+          - failed
+          - unknown
+          type: string
         name: status
         required: true
-        type: string
+        type: array
       produces:
       - application/json
       responses:
@@ -4219,10 +4222,13 @@ paths:
         This API returns a list of insights based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
         Returns "all:provider" job results if connectionId is not defined.
       parameters:
-      - description: Key-Value tags in key=value format to filter by
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
         in: query
+        items:
+          type: string
         name: tag
-        type: string
+        type: array
       - collectionFormat: csv
         description: filter insights by connector
         in: query
@@ -4353,10 +4359,13 @@ paths:
         This API returns a list of insight groups based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
         Returns "all:provider" job results if connectionId is not defined.
       parameters:
-      - description: Key-Value tags in key=value format to filter by
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
         in: query
+        items:
+          type: string
         name: tag
-        type: string
+        type: array
       - collectionFormat: csv
         description: filter insights by connector
         in: query
@@ -4608,11 +4617,14 @@ paths:
       description: This API allows users to retrieve a list of accounts and the number
         of resources associated with each account for the specified provider.
       parameters:
-      - description: Provider
+      - collectionFormat: csv
+        description: Provider
         in: query
+        items:
+          type: string
         name: provider
         required: true
-        type: string
+        type: array
       - collectionFormat: csv
         description: Source ID
         in: query
@@ -5120,11 +5132,14 @@ paths:
         name: count
         required: true
         type: integer
-      - description: Provider
+      - collectionFormat: csv
+        description: Provider
         in: query
+        items:
+          type: string
         name: provider
         required: true
-        type: string
+        type: array
       - description: Time Window
         enum:
         - 1d
@@ -6208,14 +6223,20 @@ paths:
         name: serviceName
         required: true
         type: string
-      - description: 'filter: connectorId'
+      - collectionFormat: csv
+        description: 'filter: connectorId'
         in: query
+        items:
+          type: string
         name: connectorId
-        type: string
-      - description: 'filter: connector'
+        type: array
+      - collectionFormat: csv
+        description: 'filter: connector'
         in: query
+        items:
+          type: string
         name: connector
-        type: string
+        type: array
       - description: time for resource count in epoch seconds
         in: query
         name: endTime
@@ -6409,15 +6430,18 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Connector
-        enum:
-        - ""
-        - AWS
-        - Azure
+      - collectionFormat: csv
+        description: Connector
         in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
         name: connector
         required: true
-        type: string
+        type: array
       - collectionFormat: csv
         description: Connection IDs
         in: query
@@ -6950,14 +6974,17 @@ paths:
       description: Returning a list of sources including both AWS and Azure unless
         filtered by Type.
       parameters:
-      - description: filter by source type
-        enum:
-        - ""
-        - AWS
-        - Azure
+      - collectionFormat: csv
+        description: filter by source type
         in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
         name: connector
-        type: string
+        type: array
       produces:
       - application/json
       responses:

@@ -517,15 +517,15 @@ func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id	path		string	true	"Benchmark ID"
-//	@Param			status			query		string	true	"Status"	Enums(passed,failed,unknown)
+//	@Param			benchmark_id	path		string		true	"Benchmark ID"
+//	@Param			status			query		[]string	true	"Status"	Enums(passed,failed,unknown)
 //	@Success		200				{object}	api.BenchmarkTree
 //	@Router			/compliance/api/v1/benchmark/{benchmark_id}/tree [get]
 func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
 	var status []types.PolicyStatus
 	benchmarkID := ctx.Param("benchmark_id")
 	for k, va := range ctx.QueryParams() {
-		if k == "status" {
+		if k == "status" || k == "status[]" {
 			for _, v := range va {
 				status = append(status, types.PolicyStatus(v))
 			}
@@ -1005,7 +1005,7 @@ func (h *HttpHandler) GetInsightTag(ctx echo.Context) error {
 //	@Success		200			{object}	[]api.Insight
 //	@Router			/compliance/api/v1/metadata/insight [get]
 func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	enabled := true
 	insightRows, err := h.db.ListInsightsWithFilters(nil, connectors, &enabled, nil)
 	if err != nil {
@@ -1055,7 +1055,7 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
-//	@Param			tag				query		string			false	"Key-Value tags in key=value format to filter by"
+//	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			connector		query		[]source.Type	false	"filter insights by connector"
 //	@Param			connectionId	query		[]string		false	"filter the result by source id"
 //	@Param			startTime		query		int				false	"unix seconds for the start time of the trend"
@@ -1063,9 +1063,9 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 //	@Success		200				{object}	[]api.Insight
 //	@Router			/compliance/api/v1/insight [get]
 func (h *HttpHandler) ListInsights(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
@@ -1155,7 +1155,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
@@ -1264,7 +1264,7 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	var startTime *time.Time
 	if ctx.QueryParam("startTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
@@ -1335,7 +1335,7 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 //	@Tags			insights
 //	@Accept			json
 //	@Produce		json
-//	@Param			tag				query		string			false	"Key-Value tags in key=value format to filter by"
+//	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			connector		query		[]source.Type	false	"filter insights by connector"
 //	@Param			connectionId	query		[]string		false	"filter the result by source id"
 //	@Param			startTime		query		int				false	"unix seconds for the start time of the trend"
@@ -1343,9 +1343,9 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 //	@Success		200				{object}	[]api.InsightGroup
 //	@Router			/compliance/api/v1/insight/group [get]
 func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
@@ -1454,7 +1454,7 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
@@ -1581,7 +1581,7 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	var startTime *time.Time
 	if ctx.QueryParam("startTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)

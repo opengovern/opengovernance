@@ -923,8 +923,8 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 //	@Success		200			{object}	[]api.Stack
 //	@Router			/schedule/api/v1/stacks [get]
 func (h HttpServer) ListStack(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
-	accountIds := ctx.QueryParams()["accountIds"]
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	accountIds := httpserver.QueryArrayParam(ctx, "accountIds")
 	stacksRecord, err := h.DB.ListStacks(tagMap, accountIds)
 	if err != nil {
 		return err

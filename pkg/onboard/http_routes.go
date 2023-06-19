@@ -1943,12 +1943,12 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
-//	@Param			connector	query		source.Type	false	"filter by source type"
+//	@Param			connector	query		[]source.Type	false	"filter by source type"
 //	@Success		200			{object}	api.GetSourcesResponse
 //	@Router			/onboard/api/v1/sources [get]
 func (h HttpHandler) ListSources(ctx echo.Context) error {
 	var err error
-	sType := ctx.QueryParams()["connector"]
+	sType := httpserver.QueryArrayParam(ctx, "connector")
 	var sources []Source
 	if len(sType) > 0 {
 		st := source.ParseTypes(sType)
@@ -2291,20 +2291,20 @@ func (h HttpHandler) CountConnections(ctx echo.Context) error {
 //	@Tags		connections
 //	@Accept		json
 //	@Produce	json
-//	@Param		connector		query		source.Type	true	"Connector"
-//	@Param		connectionId	query		[]string	false	"Connection IDs"
-//	@Param		healthState		query		string		false	"Source Healthstate"	Enums(healthy,unhealthy)
-//	@Param		lifecycleState	query		string		false	"lifecycle state filter"
-//	@Param		pageSize		query		int			false	"page size - default is 20"
-//	@Param		pageNumber		query		int			false	"page number - default is 1"
-//	@Param		startTime		query		int			false	"start time in unix seconds"
-//	@Param		endTime			query		int			false	"end time in unix seconds"
-//	@Param		sortBy			query		string		false	"column to sort by - default is cost"	Enums(onboard_date,resource_count,cost)
+//	@Param		connector		query		[]source.Type	true	"Connector"
+//	@Param		connectionId	query		[]string		false	"Connection IDs"
+//	@Param		healthState		query		string			false	"Source Healthstate"	Enums(healthy,unhealthy)
+//	@Param		lifecycleState	query		string			false	"lifecycle state filter"
+//	@Param		pageSize		query		int				false	"page size - default is 20"
+//	@Param		pageNumber		query		int				false	"page number - default is 1"
+//	@Param		startTime		query		int				false	"start time in unix seconds"
+//	@Param		endTime			query		int				false	"end time in unix seconds"
+//	@Param		sortBy			query		string			false	"column to sort by - default is cost"	Enums(onboard_date,resource_count,cost)
 //	@Success	200				{object}	api.ListConnectionSummaryResponse
 //	@Router		/onboard/api/v1/connections/summary [get]
 func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
 	if endTimeStr != "" {

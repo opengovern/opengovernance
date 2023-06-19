@@ -45,3 +45,13 @@ type customValidator struct {
 func (v customValidator) Validate(i interface{}) error {
 	return v.validate.Struct(i)
 }
+
+func QueryArrayParam(ctx echo.Context, paramName string) []string {
+	var values []string
+	for k, v := range ctx.QueryParams() {
+		if k == paramName || k == paramName+"[]" {
+			values = append(values, v...)
+		}
+	}
+	return values
+}

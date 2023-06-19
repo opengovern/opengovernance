@@ -313,13 +313,13 @@ func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 //	@Tags			resource
 //	@Accept			json
 //	@Produce		json
-//	@Param			count		query		int		true	"Number of top accounts returning."
-//	@Param			provider	query		string	true	"Provider"
-//	@Param			timeWindow	query		string	true	"Time Window"	Enums(1d,1w,3m,1y)
+//	@Param			count		query		int			true	"Number of top accounts returning."
+//	@Param			provider	query		[]string	true	"Provider"
+//	@Param			timeWindow	query		string		true	"Time Window"	Enums(1d,1w,3m,1y)
 //	@Success		200			{object}	[]api.TopAccountResponse
 //	@Router			/inventory/api/v1/resources/top/growing/accounts [get]
 func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Context) error {
-	providers := source.ParseTypes(ctx.QueryParams()["provider"])
+	providers := source.ParseTypes(httpserver.QueryArrayParam(ctx, "provider"))
 
 	timeWindow := ctx.QueryParam("timeWindow")
 	switch timeWindow {
@@ -417,13 +417,13 @@ func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Conte
 //	@Success	200				{object}	[]api.LocationResponse
 //	@Router		/inventory/api/v1/resources/top/regions [get]
 func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	count, err := strconv.Atoi(ctx.QueryParam("count"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
 	}
 
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) == 0 {
 		connectionIDs = nil
 	}
@@ -474,8 +474,8 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 //	@Router		/inventory/api/v1/resources/regions [get]
 func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 	var err error
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) == 0 {
 		connectionIDs = nil
 	}
@@ -558,8 +558,8 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 //	@Success	200				{object}	map[string][]string
 //	@Router		/inventory/api/v2/resources/tag [get]
 func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
-	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) > 20 {
 		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
@@ -588,8 +588,8 @@ func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 //	@Success	200				{object}	[]string
 //	@Router		/inventory/api/v2/resources/tag/{key} [get]
 func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
-	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) > 20 {
 		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
@@ -663,10 +663,10 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 //	@Router		/inventory/api/v2/resources/metric [get]
 func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	var err error
-	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
-	serviceNames := ctx.QueryParams()["servicename"]
-	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	serviceNames := httpserver.QueryArrayParam(ctx, "servicename")
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) > 20 {
 		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
@@ -796,7 +796,7 @@ func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionID
 func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 	var err error
 	resourceType := ctx.Param("resourceType")
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) > 20 {
 		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
@@ -860,8 +860,8 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 		}
 
 	}
-	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) > 20 {
 		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
@@ -951,10 +951,10 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 //	@Router		/inventory/api/v2/resources/trend [get]
 func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 	var err error
-	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
-	serviceNames := ctx.QueryParams()["servicename"]
-	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	serviceNames := httpserver.QueryArrayParam(ctx, "servicename")
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) > 20 {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
@@ -1082,9 +1082,9 @@ func (h *HttpHandler) GetServiceTag(ctx echo.Context) error {
 //	@Router		/inventory/api/v2/services/metric [get]
 func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 	var err error
-	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
-	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) > 20 {
 		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
@@ -1212,7 +1212,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 	var err error
 	serviceName := ctx.Param("serviceName")
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) > 20 {
 		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
@@ -1297,8 +1297,8 @@ func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 //	@Router		/inventory/api/v2/cost/metric [get]
 func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 	var err error
-	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
@@ -1421,8 +1421,8 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 //	@Router		/inventory/api/v2/cost/composition [get]
 func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 	var err error
-	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
@@ -1529,8 +1529,8 @@ func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 //	@Router		/inventory/api/v2/cost/trend [get]
 func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 	var err error
-	connectorTypes := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
@@ -1594,13 +1594,13 @@ func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 //	@Tags			resource
 //	@Accept			json
 //	@Produce		json
-//	@Param			provider	query		string		true	"Provider"
+//	@Param			provider	query		[]string	true	"Provider"
 //	@Param			sourceId	query		[]string	false	"Source ID"
 //	@Success		200			{object}	[]api.ConnectionResourceCountResponse
 //	@Router			/inventory/api/v1/accounts/resource/count [get]
 func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
-	connectors := source.ParseTypes(ctx.QueryParams()["provider"])
-	sourceId := ctx.QueryParams()["sourceId"]
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "provider"))
+	sourceId := httpserver.QueryArrayParam(ctx, "sourceId")
 
 	res := map[string]api.ConnectionResourceCountResponse{}
 
@@ -1655,7 +1655,7 @@ func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
 //	@Router		/inventory/api/v2/connections/data [get]
 func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	var err error
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
 	if endTimeStr != "" {
@@ -1786,8 +1786,8 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 //	@Success		200			{object}	map[string]int
 //	@Router			/inventory/api/v1/resources/distribution [get]
 func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	connectionIDs := ctx.QueryParams()["sourceId"]
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "sourceId")
 
 	if len(connectionIDs) != 0 {
 		connectionIDs = nil
@@ -1820,7 +1820,7 @@ func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
 //	@Success		200			{object}	[]api.ServiceDistributionItem
 //	@Router			/inventory/api/v1/services/distribution [get]
 func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
-	sourceIDs := ctx.QueryParams()["sourceId"]
+	sourceIDs := httpserver.QueryArrayParam(ctx, "sourceId")
 	if len(sourceIDs) == 0 {
 		sourceIDs = nil
 	}
@@ -1859,13 +1859,13 @@ func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
 //	@Router			/inventory/api/v2/services/summary [get]
 func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 	var err error
-	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
 
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) > 20 {
 		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
@@ -1971,10 +1971,10 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 //	@Tags			services
 //	@Accepts		json
 //	@Produce		json
-//	@Param			serviceName	path		string	true	"Service Name"
-//	@Param			connectorId	query		string	false	"filter: connectorId"
-//	@Param			connector	query		string	false	"filter: connector"
-//	@Param			endTime		query		string	true	"time for resource count in epoch seconds"
+//	@Param			serviceName	path		string		true	"Service Name"
+//	@Param			connectorId	query		[]string	false	"filter: connectorId"
+//	@Param			connector	query		[]string	false	"filter: connector"
+//	@Param			endTime		query		string		true	"time for resource count in epoch seconds"
 //	@Success		200			{object}	api.ServiceSummary
 //	@Router			/inventory/api/v2/services/summary/{serviceName} [get]
 func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
@@ -1984,11 +1984,11 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "service_name is required")
 	}
 
-	connectionIDs := ctx.QueryParams()["connectorId"]
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectorId")
 	if len(connectionIDs) > 20 {
 		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
@@ -2872,7 +2872,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 //	@Router			/inventory/api/v2/insights [get]
 func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 	var err error
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	timeStr := ctx.QueryParam("time")
 	timeAt := time.Now().Unix()
 	if timeStr != "" {
@@ -2881,9 +2881,9 @@ func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
 	}
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 
-	insightIdListStr := ctx.QueryParams()["insightId"]
+	insightIdListStr := httpserver.QueryArrayParam(ctx, "insightId")
 	if len(insightIdListStr) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "insight id is required")
 	}
@@ -2934,7 +2934,7 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
 		}
 	}
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) == 0 {
 		connectionIDs = nil
 	}
@@ -3029,7 +3029,7 @@ func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 		startTime = endTime.Add(-time.Hour * 24 * 30)
 	}
 
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 
 	dataPointCount := int(endTime.Sub(startTime).Hours() / 24)
 	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(h.client, startTime, endTime, dataPointCount, nil, connectionIDs, []uint{uint(insightId)})
@@ -3058,8 +3058,8 @@ func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 //	@Success		200			{object}	api.ListServiceMetadataResponse
 //	@Router			/inventory/api/v2/metadata/services [get]
 func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
@@ -3124,9 +3124,9 @@ func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 //	@Success		200			{object}	api.ListResourceTypeMetadataResponse
 //	@Router			/inventory/api/v2/metadata/resourcetype [get]
 func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
-	tagMap := model.TagStringsToTagMap(ctx.QueryParams()["tag"])
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	serviceNames := ctx.QueryParams()["service"]
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	serviceNames := httpserver.QueryArrayParam(ctx, "service")
 	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
