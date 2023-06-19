@@ -3,17 +3,19 @@ package insight
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/model"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
-	"gorm.io/gorm"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
+	"gorm.io/gorm"
 )
 
 type GitParser struct {
-	insights []db.Insight
+	insights      []db.Insight
+	insightGroups []db.InsightGroup
 }
 
 func (g *GitParser) ExtractInsights(queryPath string) error {
@@ -55,6 +57,45 @@ func (g *GitParser) ExtractInsights(queryPath string) error {
 				Links:       insight.Links,
 				Enabled:     insight.Enabled,
 				Internal:    insight.Internal,
+			})
+		}
+
+		return nil
+	})
+}
+
+func (g *GitParser) ExtractInsightGroups(queryPath string) error {
+	return filepath.WalkDir(queryPath, func(path string, d fs.DirEntry, err error) error {
+		if strings.HasSuffix(path, ".json") {
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return fmt.Errorf("failure in reading file: %v", err)
+			}
+
+			var insightGroup InsightGroup
+			err = json.Unmarshal(content, &insightGroup)
+			if err != nil {
+				return err
+			}
+
+			insights := make([]db.Insight, 0, len(insightGroup.InsightIDs))
+			for _, insightID := range insightGroup.InsightIDs {
+				insights = append(insights, db.Insight{
+					Model: gorm.Model{
+						ID: insightID,
+					},
+				})
+			}
+
+			g.insightGroups = append(g.insightGroups, db.InsightGroup{
+				Model: gorm.Model{
+					ID: insightGroup.ID,
+				},
+				ShortTitle:  insightGroup.ShortTitle,
+				LongTitle:   insightGroup.LongTitle,
+				Description: insightGroup.Description,
+				LogoURL:     insightGroup.LogoURL,
+				Insights:    insights,
 			})
 		}
 

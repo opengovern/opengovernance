@@ -16,3 +16,13 @@ type Insight struct {
 	Enabled  bool
 	Internal bool
 }
+
+type InsightGroup struct {
+	ID          uint
+	ShortTitle  string
+	LongTitle   string
+	Description string
+	LogoURL     *string
+
+	InsightIDs []uint
+}
