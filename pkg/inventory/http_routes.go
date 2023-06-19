@@ -16,18 +16,16 @@ import (
 	"strings"
 	"time"
 
-	keibiaws "github.com/kaytu-io/kaytu-aws-describer/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 	"gorm.io/gorm"
 
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/internal"
 	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	apiOnboard "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
-
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	insight "gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
 
@@ -39,14 +37,11 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
 const EsFetchPageSize = 10000
-const DefaultCurrency = "USD"
-const InventorySummaryIndex = "inventory_summary"
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
@@ -62,13 +57,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/regions", httpserver.AuthorizeHandler(h.GetRegionsByResourceCount, api3.ViewerRole))
-
-	v1.GET("/accounts/resource/count", httpserver.AuthorizeHandler(h.GetAccountsResourceCount, api3.ViewerRole))
-	v1.GET("/resources/distribution", httpserver.AuthorizeHandler(h.GetResourceDistribution, api3.ViewerRole))
-	v1.GET("/services/distribution", httpserver.AuthorizeHandler(h.GetServiceDistribution, api3.ViewerRole))
-
-	v1.GET("/cost/top/accounts", httpserver.AuthorizeHandler(h.GetTopAccountsByCost, api3.ViewerRole))
-	v1.GET("/cost/top/services", httpserver.AuthorizeHandler(h.GetTopServicesByCost, api3.ViewerRole))
 
 	v1.GET("/query", httpserver.AuthorizeHandler(h.ListQueries, api3.ViewerRole))
 	v1.GET("/query/count", httpserver.AuthorizeHandler(h.CountQueries, api3.ViewerRole))
@@ -150,260 +138,6 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 	}
 
 	return filteredConnectorType, nil
-}
-
-// GetTopAccountsByCost godoc
-//
-//	@Summary		Top accounts by cost
-//	@Description	This API allows users to retrieve top n accounts by cost.
-//	@Security		BearerToken
-//	@Tags			cost
-//	@Accept			json
-//	@Produce		json
-//	@Param			count		query		int		true	"Number of top accounts returning."
-//	@Param			provider	query		string	false	"Provider"
-//	@Success		200			{object}	[]api.TopAccountCostResponse
-//	@Router			/inventory/api/v1/cost/top/accounts [get]
-func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	count, err := strconv.Atoi(ctx.QueryParam("count"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
-	}
-
-	if provider != source.CloudAWS {
-		return ctx.JSON(http.StatusNotImplemented, nil)
-	}
-
-	accountCostMap := map[string]float64{}
-	var searchAfter []interface{}
-	for {
-		query, err := es.FindAWSCostQuery(nil, EsFetchPageSize, searchAfter)
-		if err != nil {
-			return err
-		}
-
-		var response keibiaws.CostExplorerByAccountMonthlySearchResponse
-		err = h.client.Search(context.Background(), "aws_costexplorer_byaccountmonthly", query, &response)
-		if err != nil {
-			return err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			accountId := hit.Source.SourceID
-			cost := *hit.Source.Description.UnblendedCostAmount
-
-			if v, ok := accountCostMap[accountId]; ok {
-				cost += v
-			}
-			accountCostMap[accountId] = cost
-
-			searchAfter = hit.Sort
-		}
-	}
-
-	var accountCost []api.TopAccountCostResponse
-	for key, value := range accountCostMap {
-		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), key)
-		if err != nil {
-			if err.Error() == "source not found" { //source has been deleted
-				continue
-			}
-			return err
-		}
-		accountCost = append(accountCost, api.TopAccountCostResponse{
-			SourceID:               key,
-			ProviderConnectionName: src.ConnectionName,
-			ProviderConnectionID:   src.ConnectionID,
-			Cost:                   value,
-		})
-	}
-
-	if len(accountCost) > count {
-		accountCost = accountCost[:count]
-	}
-	return ctx.JSON(http.StatusOK, accountCost)
-}
-
-// GetTopServicesByCost godoc
-//
-//	@Summary		Top services by cost
-//	@Description	This API allows users to retrieve top n services by cost.
-//	@Security		BearerToken
-//	@Tags			cost
-//	@Accept			json
-//	@Produce		json
-//	@Param			count		query		int		true	"Number of top services returning."
-//	@Param			provider	query		string	false	"Provider"
-//	@Param			sourceId	query		string	false	"Source ID"
-//	@Success		200			{object}	[]api.TopServiceCostResponse
-//	@Router			/inventory/api/v1/cost/top/services [get]
-func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
-	provider, _ := source.ParseType(ctx.QueryParam("provider"))
-	count, err := strconv.Atoi(ctx.QueryParam("count"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
-	}
-
-	if provider != source.CloudAWS {
-		return ctx.JSON(http.StatusNotImplemented, nil)
-	}
-
-	var sourceUUID *uuid.UUID
-	sourceId := ctx.QueryParam("sourceId")
-	if len(sourceId) > 0 {
-		suuid, err := uuid.Parse(sourceId)
-		if err != nil {
-			return err
-		}
-		sourceUUID = &suuid
-	}
-
-	serviceCostMap := map[string]float64{}
-	var searchAfter []interface{}
-	for {
-		query, err := es.FindAWSCostQuery(sourceUUID, EsFetchPageSize, searchAfter)
-		if err != nil {
-			return err
-		}
-
-		var response keibiaws.CostExplorerByServiceMonthlySearchResponse
-		err = h.client.Search(context.Background(), "aws_costexplorer_byservicemonthly", query, &response)
-		if err != nil {
-			return err
-		}
-
-		if len(response.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range response.Hits.Hits {
-			serviceName := *hit.Source.Description.Dimension1
-			cost := *hit.Source.Description.UnblendedCostAmount
-
-			if v, ok := serviceCostMap[serviceName]; ok {
-				cost += v
-			}
-			serviceCostMap[serviceName] = cost
-			searchAfter = hit.Sort
-		}
-	}
-
-	var serviceCost []api.TopServiceCostResponse
-	for key, value := range serviceCostMap {
-		serviceCost = append(serviceCost, api.TopServiceCostResponse{
-			ServiceName: key,
-			Cost:        value,
-		})
-	}
-
-	if len(serviceCost) > count {
-		serviceCost = serviceCost[:count]
-	}
-	return ctx.JSON(http.StatusOK, serviceCost)
-}
-
-// GetTopFastestGrowingAccountsByResourceCount godoc
-//
-//	@Summary		Get Top Fastest Growing Accounts By ResourceCount
-//	@Description	Returns top n fastest growing accounts of specified provider in the specified time window by resource count.
-//	@Security		BearerToken
-//	@Tags			resource
-//	@Accept			json
-//	@Produce		json
-//	@Param			count		query		int			true	"Number of top accounts returning."
-//	@Param			provider	query		[]string	true	"Provider"
-//	@Param			timeWindow	query		string		true	"Time Window"	Enums(1d,1w,3m,1y)
-//	@Success		200			{object}	[]api.TopAccountResponse
-//	@Router			/inventory/api/v1/resources/top/growing/accounts [get]
-func (h *HttpHandler) GetTopFastestGrowingAccountsByResourceCount(ctx echo.Context) error {
-	providers := source.ParseTypes(httpserver.QueryArrayParam(ctx, "provider"))
-
-	timeWindow := ctx.QueryParam("timeWindow")
-	switch timeWindow {
-	case "1d", "1w", "3m", "1y":
-	default:
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid timeWindow")
-	}
-
-	count, err := strconv.Atoi(ctx.QueryParam("count"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
-	}
-
-	summaryList, err := es.FetchConnectionResourcesSummaryPage(h.client, providers, nil, nil, EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-
-	sort.Slice(summaryList, func(i, j int) bool {
-		var lastValueI, lastValueJ *int
-		switch timeWindow {
-		case "1d":
-			lastValueI = summaryList[i].LastDayCount
-			lastValueJ = summaryList[j].LastDayCount
-		case "1w":
-			lastValueI = summaryList[i].LastWeekCount
-			lastValueJ = summaryList[j].LastWeekCount
-		case "3m":
-			lastValueI = summaryList[i].LastQuarterCount
-			lastValueJ = summaryList[j].LastQuarterCount
-		case "1y":
-			lastValueI = summaryList[i].LastYearCount
-			lastValueJ = summaryList[j].LastYearCount
-		}
-
-		if zero := 0; lastValueI == nil {
-			lastValueI = &zero
-		}
-		if zero := 0; lastValueJ == nil {
-			lastValueJ = &zero
-		}
-
-		diffI := summaryList[i].ResourceCount - *lastValueI
-		diffJ := summaryList[j].ResourceCount - *lastValueJ
-
-		return diffI > diffJ
-	})
-
-	if len(summaryList) > count {
-		summaryList = summaryList[:count]
-	}
-
-	var sourceIds []string
-	for _, r := range summaryList {
-		sourceIds = append(sourceIds, r.SourceID)
-	}
-	srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceIds)
-	if err != nil {
-		return err
-	}
-
-	var res []api.TopAccountResponse
-	for _, hit := range summaryList {
-		connName := ""
-		connID := ""
-		for _, src := range srcs {
-			if hit.SourceID == src.ID.String() {
-				connID = src.ConnectionID
-				connName = src.ConnectionName
-				break
-			}
-		}
-
-		res = append(res, api.TopAccountResponse{
-			SourceID:               hit.SourceID,
-			Provider:               string(hit.SourceType),
-			ProviderConnectionName: connName,
-			ProviderConnectionID:   connID,
-			ResourceCount:          hit.ResourceCount,
-		})
-	}
-	return ctx.JSON(http.StatusOK, res)
 }
 
 // GetTopRegionsByResourceCount godoc
@@ -1601,61 +1335,6 @@ func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, apiDatapoints)
 }
 
-// GetAccountsResourceCount godoc
-//
-//	@Summary		Get accounts resource count
-//	@Description	This API allows users to retrieve a list of accounts and the number of resources associated with each account for the specified provider.
-//	@Security		BearerToken
-//	@Tags			resource
-//	@Accept			json
-//	@Produce		json
-//	@Param			provider	query		[]string	true	"Provider"
-//	@Param			sourceId	query		[]string	false	"Source ID"
-//	@Success		200			{object}	[]api.ConnectionResourceCountResponse
-//	@Router			/inventory/api/v1/accounts/resource/count [get]
-func (h *HttpHandler) GetAccountsResourceCount(ctx echo.Context) error {
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "provider"))
-	sourceId := httpserver.QueryArrayParam(ctx, "sourceId")
-
-	res := map[string]api.ConnectionResourceCountResponse{}
-
-	var err error
-	var allSources []apiOnboard.Connection
-	if sourceId == nil || len(sourceId) == 0 {
-		allSources, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), connectors)
-	} else {
-		allSources, err = h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceId)
-	}
-	if err != nil {
-		return err
-	}
-
-	for _, src := range allSources {
-		res[src.ID.String()] = api.ConnectionResourceCountResponse{
-			SourceID:                src.ID.String(),
-			Connector:               src.Connector,
-			ConnectorConnectionName: src.ConnectionName,
-			ConnectorConnectionID:   src.ConnectionID,
-			LifecycleState:          string(src.LifecycleState),
-			OnboardDate:             src.OnboardDate,
-		}
-	}
-
-	hits, err := es.FetchConnectionResourcesSummaryPage(h.client, connectors, sourceId, nil, EsFetchPageSize)
-	for _, hit := range hits {
-		if v, ok := res[hit.SourceID]; ok {
-			v.ResourceCount += hit.ResourceCount
-			v.LastInventory = time.UnixMilli(hit.DescribedAt)
-			res[hit.SourceID] = v
-		}
-	}
-	var response []api.ConnectionResourceCountResponse
-	for _, v := range res {
-		response = append(response, v)
-	}
-	return ctx.JSON(http.StatusOK, response)
-}
-
 // ListConnectionsData godoc
 //
 //	@Summary	Returns cost and resource count data of the specified accounts at the specified time - internal use api,  for full result use onboard api
@@ -1783,73 +1462,6 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 		res.Cost += costValue
 	}
 
-	return ctx.JSON(http.StatusOK, res)
-}
-
-// GetResourceDistribution godoc
-//
-//	@Summary		Get resources distribution
-//	@Description	This API allows users to retrieve a distribution of resources by their locations. It returns the number of resources in each location.
-//	@Security		BearerToken
-//	@Tags			resource
-//	@Accept			json
-//	@Produce		json
-//	@Param			connector	query		[]source.Type	false	"Connector type to filter by"
-//	@Param			sourceId	query		[]string		false	"Connection IDs to filter by"
-//	@Success		200			{object}	map[string]int
-//	@Router			/inventory/api/v1/resources/distribution [get]
-func (h *HttpHandler) GetResourceDistribution(ctx echo.Context) error {
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(ctx, "sourceId")
-
-	if len(connectionIDs) != 0 {
-		connectionIDs = nil
-	}
-	locationDistribution := map[string]int{}
-
-	hits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, time.Now())
-	if err != nil {
-		return err
-	}
-
-	for _, hit := range hits {
-		for k, v := range hit.LocationDistribution {
-			locationDistribution[k] += v
-		}
-	}
-	return ctx.JSON(http.StatusOK, locationDistribution)
-}
-
-// GetServiceDistribution godoc
-//
-//	@Summary		Get services distribution
-//	@Description	This API allows users to retrieve a distribution of services by their locations.
-//	@Security		BearerToken
-//	@Tags			services
-//	@Accept			json
-//	@Produce		json
-//	@Param			sourceId	query		[]string	false	"Source ID"
-//	@Param			provider	query		string		false	"Provider"
-//	@Success		200			{object}	[]api.ServiceDistributionItem
-//	@Router			/inventory/api/v1/services/distribution [get]
-func (h *HttpHandler) GetServiceDistribution(ctx echo.Context) error {
-	sourceIDs := httpserver.QueryArrayParam(ctx, "sourceId")
-	if len(sourceIDs) == 0 {
-		sourceIDs = nil
-	}
-
-	hits, err := es.FetchConnectionServiceLocationsSummaryPage(h.client, source.Nil, sourceIDs, nil, EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-
-	var res []api.ServiceDistributionItem
-	for _, hit := range hits {
-		res = append(res, api.ServiceDistributionItem{
-			ServiceName:  hit.ServiceName,
-			Distribution: hit.LocationDistribution,
-		})
-	}
 	return ctx.JSON(http.StatusOK, res)
 }
 
@@ -2580,7 +2192,7 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	}
 
 	var response es.LookupResourceAggregationResponse
-	err = h.client.Search(context.Background(), InventorySummaryIndex,
+	err = h.client.Search(context.Background(), summarizer.InventorySummaryIndex,
 		query, &response)
 	if err != nil {
 		return err
