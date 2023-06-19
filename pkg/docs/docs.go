@@ -4198,13 +4198,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "Returns the list of connectors for catalog page.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Returns the list of connectors for catalog page.",
+                "summary": "Get catalog connectors",
                 "parameters": [
                     {
                         "type": "string",
@@ -4251,13 +4252,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "Returns the list of metrics for catalog page.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Returns the list of metrics for catalog page.",
+                "summary": "Get catalog metrics",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -4275,13 +4277,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "Returns a count of connections",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Returns a count of connections",
+                "summary": "Connections count",
                 "parameters": [
                     {
                         "description": "Request",
@@ -4310,6 +4313,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "Returns a list of connections summaries",
                 "consumes": [
                     "application/json"
                 ],
@@ -4319,7 +4323,7 @@ const docTemplate = `{
                 "tags": [
                     "connections"
                 ],
-                "summary": "Returns resource count of accounts",
+                "summary": "List connections summaries",
                 "parameters": [
                     {
                         "type": "array",
@@ -4414,6 +4418,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "Returns a connections summaries",
                 "consumes": [
                     "application/json"
                 ],
@@ -4423,7 +4428,7 @@ const docTemplate = `{
                 "tags": [
                     "connections"
                 ],
-                "summary": "Returns resource count of accounts",
+                "summary": "Get connection summary",
                 "parameters": [
                     {
                         "type": "integer",
@@ -4462,6 +4467,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "Enabling a single source either with connection ID.",
                 "produces": [
                     "application/json"
                 ],
@@ -4501,14 +4507,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Getting connectors",
+                "description": "Returns list of all connectors",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Get connectors",
+                "summary": "List connectors",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -4529,7 +4535,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Getting connector",
+                "description": "Returns connector details by name",
                 "produces": [
                     "application/json"
                 ],
@@ -4563,7 +4569,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "List credentials",
+                "description": "Retrieving list of credentials with their details",
                 "produces": [
                     "application/json"
                 ],
@@ -4718,18 +4724,18 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "List credentials",
+                "description": "Retrieving credential details by credential ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "List credentials",
+                "summary": "Get Credential",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "CredentialID",
+                        "description": "Credential ID",
                         "name": "credentialId",
                         "in": "path",
                         "required": true
@@ -4757,11 +4763,11 @@ const docTemplate = `{
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Edit a credential by Id",
+                "summary": "Edit credential",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "CredentialID",
+                        "description": "Credential ID",
                         "name": "credentialId",
                         "in": "path",
                         "required": true
@@ -4788,7 +4794,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Delete credential",
+                "description": "Remove a credential by Id",
                 "produces": [
                     "application/json"
                 ],
@@ -4955,11 +4961,11 @@ const docTemplate = `{
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Returns source by account id",
+                "summary": "List account sources",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "SourceID",
+                        "description": "Source ID",
                         "name": "account_id",
                         "in": "path",
                         "required": true
@@ -5061,11 +5067,11 @@ const docTemplate = `{
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Returns a single source",
+                "summary": "Get source",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "SourceID",
+                        "description": "Source ID",
                         "name": "sourceId",
                         "in": "path",
                         "required": true
@@ -5086,18 +5092,18 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Deleting a single source either AWS / Azure.",
+                "description": "Deleting a single source either AWS / Azure for the given source id.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Delete a single source",
+                "summary": "Delete source",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "SourceID",
+                        "description": "Source ID",
                         "name": "sourceId",
                         "in": "path",
                         "required": true
@@ -5117,6 +5123,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "Returns credential for a source with given source ID.\nThe responses are different for different source types.",
                 "produces": [
                     "application/json"
                 ],
@@ -5148,13 +5155,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "Update source credential",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Put source credential",
+                "summary": "Update source credential",
                 "parameters": [
                     {
                         "type": "string",
@@ -5178,13 +5186,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "Get live source health status with given source ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Get live source health status",
+                "summary": "Get source health",
                 "parameters": [
                     {
                         "type": "string",
@@ -5218,7 +5227,7 @@ const docTemplate = `{
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Returns a list of sources",
+                "summary": "List all sources",
                 "parameters": [
                     {
                         "type": "array",
@@ -5260,7 +5269,7 @@ const docTemplate = `{
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Returns a list of sources",
+                "summary": "Get filtered sources",
                 "parameters": [
                     {
                         "enum": [
@@ -5301,14 +5310,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Returning a count of sources including both AWS and Azure unless filtered by Type.",
+                "description": "Returning number of sources including both AWS and Azure unless filtered by Type.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Returns a count of sources",
+                "summary": "Count sources",
                 "parameters": [
                     {
                         "enum": [
@@ -5448,13 +5457,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "Triggers a benchmark evaluation job to run immediately",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "describe"
                 ],
-                "summary": "Triggers a benchmark evaluation job to run immediately",
+                "summary": "Trigger benchmark evaluation",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -5669,13 +5679,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "Trigger an insight evaluation to run immediately with given details",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "describe"
                 ],
-                "summary": "Triggers a insight evaluation job to run immediately",
+                "summary": "Trigger insight evaluation",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -5721,7 +5732,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "JobId",
+                        "description": "Job Id",
                         "name": "jobId",
                         "in": "path",
                         "required": true
@@ -5812,7 +5823,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Getting all of Keibi sources",
+                "description": "Retrieves list of all of Keibi sources",
                 "produces": [
                     "application/json"
                 ],
@@ -5840,14 +5851,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Getting Keibi source by id",
+                "description": "Retrieves Keibi source details by id\nGetting Keibi source by id",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "schedule"
                 ],
-                "summary": "Get Source by id",
+                "summary": "Get source",
                 "parameters": [
                     {
                         "type": "string",
@@ -5874,7 +5885,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "List source compliance reports",
+                "description": "Retrieves list of source compliance reports for a source by the given source id",
                 "produces": [
                     "application/json"
                 ],
@@ -5954,7 +5965,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "List source describe jobs",
+                "description": "Retrieves list of source describe jobs for a source by the given source id",
                 "produces": [
                     "application/json"
                 ],
@@ -6166,13 +6177,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "Trigger an insight evaluation to run immediately on a stack with given details",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "describe"
                 ],
-                "summary": "Triggers an insight evaluation job to run immediately",
+                "summary": "Trigger stack insight evaluation",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -6359,7 +6371,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Get benchmark results for a stack",
+                "description": "Get Insight results for a stack in the given time period",
                 "consumes": [
                     "application/json"
                 ],
@@ -6980,7 +6992,7 @@ const docTemplate = `{
                 "BenchmarkId": {
                     "description": "Not the primary key but should be a unique identifier",
                     "type": "string",
-                    "example": "cis-azure-v1.1.0"
+                    "example": "azure_cis_v1"
                 },
                 "ReportCreatedAt": {
                     "type": "integer",
@@ -8133,19 +8145,28 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "failureMessage": {
-                    "type": "string"
+                    "type": "string",
+                    "example": ""
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "reportCreatedAt": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1619510400
                 },
                 "status": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus"
+                        }
+                    ],
+                    "example": "InProgress"
                 },
                 "updatedAt": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2021-01-01T00:00:00Z"
                 }
             }
         },
@@ -8453,6 +8474,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connector": {
+                    "description": "Cloud Provider",
                     "allOf": [
                         {
                             "$ref": "#/definitions/source.Type"
@@ -8461,6 +8483,7 @@ const docTemplate = `{
                     "example": "Azure"
                 },
                 "description": {
+                    "description": "Description",
                     "type": "string",
                     "example": "List clusters that have role-based access control (RBAC) disabled"
                 },
@@ -8469,6 +8492,7 @@ const docTemplate = `{
                     "example": true
                 },
                 "id": {
+                    "description": "Insight ID",
                     "type": "integer",
                     "example": 23
                 },
@@ -8477,36 +8501,48 @@ const docTemplate = `{
                     "example": false
                 },
                 "links": {
+                    "description": "Links",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "logoURL": {
+                    "description": "Logo URL",
                     "type": "string"
                 },
                 "longTitle": {
+                    "description": "Long Title",
                     "type": "string",
                     "example": "List clusters that have role-based access control (RBAC) disabled"
                 },
                 "oldTotalResultValue": {
+                    "description": "Number of Old Total Result Value",
                     "type": "integer",
                     "example": 0
                 },
                 "query": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query"
+                    "description": "Query",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query"
+                        }
+                    ]
                 },
                 "result": {
+                    "description": "Insight Results",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightResult"
                     }
                 },
                 "shortTitle": {
+                    "description": "Short Title",
                     "type": "string",
                     "example": "Clusters with no RBAC"
                 },
                 "tags": {
+                    "description": "Tags",
                     "type": "object",
                     "additionalProperties": {
                         "type": "array",
@@ -8516,6 +8552,7 @@ const docTemplate = `{
                     }
                 },
                 "totalResultValue": {
+                    "description": "Number of Total Result Value",
                     "type": "integer",
                     "example": 10
                 }
@@ -9040,10 +9077,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resourceType": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Microsoft.Compute/virtualMachines"
                 },
                 "status": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus"
+                    "description": "CREATED, QUEUED, IN_PROGRESS, TIMEOUT, FAILED, SUCCEEDED",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus"
+                        }
+                    ],
+                    "example": "IN_PROGRESS"
                 }
             }
         },
@@ -9102,7 +9146,13 @@ const docTemplate = `{
                     }
                 },
                 "status": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSourceJobStatus"
+                    "description": "CREATED, QUEUED, IN_PROGRESS, TIMEOUT, FAILED, SUCCEEDED",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSourceJobStatus"
+                        }
+                    ],
+                    "example": "IN_PROGRESS"
                 }
             }
         },
@@ -9128,15 +9178,25 @@ const docTemplate = `{
             ],
             "properties": {
                 "benchmarkIds": {
+                    "description": "Benchmark IDs to filter",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "azure_cis_v140"
+                    ]
                 },
                 "page": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page"
+                    "description": "Pages count to retrieve",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page"
+                        }
+                    ]
                 },
                 "sorts": {
+                    "description": "Sorts to apply",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingSortItem"
@@ -9148,31 +9208,59 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "FailureMessage": {
-                    "type": "string"
+                    "description": "Failure Message",
+                    "type": "string",
+                    "example": ""
                 },
                 "accountId": {
-                    "type": "string"
+                    "description": "Account ID",
+                    "type": "string",
+                    "example": "0123456789"
                 },
                 "createdAt": {
-                    "type": "string"
+                    "description": "Insight Job creation timestamp",
+                    "type": "string",
+                    "example": "2021-04-27T15:04:05Z"
                 },
                 "id": {
-                    "type": "integer"
+                    "description": "Insight Job Unique ID",
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 1
                 },
                 "insightId": {
-                    "type": "integer"
+                    "description": "Insight ID",
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 1
                 },
                 "sourceId": {
-                    "type": "string"
+                    "description": "Source ID",
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "sourceType": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Cloud provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 },
                 "status": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus"
+                    "description": "Insight Job Status",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus"
+                        }
+                    ],
+                    "example": "InProgress"
                 },
                 "updatedAt": {
-                    "type": "string"
+                    "description": "Insight Job last update timestamp",
+                    "type": "string",
+                    "example": "2021-04-27T15:04:05Z"
                 }
             }
         },
@@ -9180,19 +9268,33 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "benchmarkID": {
-                    "type": "string"
+                    "description": "Filter evaluations for this benchmark",
+                    "type": "string",
+                    "example": "azure_cis_v1"
                 },
                 "connectionID": {
-                    "type": "string"
+                    "description": "Filter evaluations for this connection",
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Filter evaluations for this connector",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 },
                 "evaluatedAtAfter": {
-                    "type": "integer"
+                    "description": "Filter evaluations created after this timestamp",
+                    "type": "integer",
+                    "example": 1619510400
                 },
                 "evaluatedAtBefore": {
-                    "type": "integer"
+                    "description": "Filter evaluations created before this timestamp",
+                    "type": "integer",
+                    "example": 1619610400
                 }
             }
         },
@@ -9211,19 +9313,28 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "lastComplianceReportAt": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2021-01-01T00:00:00Z"
                 },
                 "lastDescribeJobStatus": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "COMPLETED"
                 },
                 "lastDescribedAt": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2021-01-01T00:00:00Z"
                 },
                 "type": {
-                    "$ref": "#/definitions/source.Type"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 }
             }
         },
@@ -9234,30 +9345,44 @@ const docTemplate = `{
             ],
             "properties": {
                 "accountIds": {
+                    "description": "Accounts included in the stack",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "[0123456789]"
+                    ]
                 },
                 "createdAt": {
-                    "type": "string"
+                    "description": "Stack creation date",
+                    "type": "string",
+                    "example": "2023-06-01T17:00:00.000000Z"
                 },
                 "evaluations": {
+                    "description": "Stack evaluations history, including insight evaluations and compliance evaluations",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackEvaluation"
                     }
                 },
                 "resources": {
+                    "description": "Stack resources list",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "[/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1]"
+                    ]
                 },
                 "stackId": {
-                    "type": "string"
+                    "description": "Stack unique identifier",
+                    "type": "string",
+                    "example": "stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0"
                 },
                 "tags": {
+                    "description": "Stack tags",
                     "type": "object",
                     "additionalProperties": {
                         "type": "array",
@@ -9267,7 +9392,9 @@ const docTemplate = `{
                     }
                 },
                 "updatedAt": {
-                    "type": "string"
+                    "description": "Stack last update date",
+                    "type": "string",
+                    "example": "2023-06-01T17:00:00.000000Z"
                 }
             }
         },
@@ -9279,13 +9406,21 @@ const docTemplate = `{
             ],
             "properties": {
                 "benchmarks": {
+                    "description": "Benchmarks to add to the stack",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "[azure_cis_v140",
+                        " azure_cis_v140_1",
+                        " azure_cis_v140_1_1]"
+                    ]
                 },
                 "stackId": {
-                    "type": "string"
+                    "description": "Stack unique identifier",
+                    "type": "string",
+                    "example": "stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0"
                 }
             }
         },
@@ -9293,51 +9428,52 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "createdAt": {
-                    "type": "string"
+                    "description": "Evaluation creation date",
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
                 },
-                "evaluatorID": {
-                    "type": "string"
+                "evaluatorId": {
+                    "description": "Benchmark ID or Insight ID",
+                    "type": "string",
+                    "example": "azure_cis_v140"
                 },
-                "jobID": {
-                    "type": "integer"
+                "jobId": {
+                    "description": "Evaluation Job ID to find the job results",
+                    "type": "integer",
+                    "example": 1
                 },
                 "type": {
-                    "type": "string"
+                    "description": "BENCHMARK or INSIGHT",
+                    "type": "string",
+                    "example": "BENCHMARK"
                 }
             }
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackInsightRequest": {
-            "type": "object",
-            "required": [
-                "insights",
-                "stackId"
-            ],
-            "properties": {
-                "insights": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "stackId": {
-                    "type": "string"
-                }
-            }
+            "type": "object"
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest": {
             "type": "object",
             "properties": {
                 "benchmarkID": {
-                    "type": "string"
+                    "description": "Benchmark ID to evaluate",
+                    "type": "string",
+                    "example": "azure_cis_v1"
                 },
                 "connectionID": {
-                    "type": "string"
+                    "description": "Connection ID to evaluate",
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "resourceIDs": {
+                    "description": "Resource IDs to evaluate",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "/subscriptions/123/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm1"
+                    ]
                 }
             }
         },
@@ -9345,16 +9481,24 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connectionID": {
-                    "type": "string"
+                    "description": "Connection ID to evaluate",
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "insightID": {
-                    "type": "integer"
+                    "description": "Insight ID to evaluate",
+                    "type": "integer",
+                    "example": 1
                 },
                 "resourceIDs": {
+                    "description": "Resource IDs to evaluate",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "/subscriptions/123/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm1"
+                    ]
                 }
             }
         },
@@ -10682,13 +10826,15 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "allowNewConnections": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "category": {
                     "type": "string"
                 },
                 "connectionCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "connectionFederator": {
                     "type": "string"
@@ -10703,16 +10849,33 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "maxConnectionsLimit": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 10
                 },
                 "name": {
                     "type": "string"
                 },
                 "sourceType": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Cloud provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 },
                 "state": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState"
+                    "description": "ACTIVE, NOT_SETUP",
+                    "enum": [
+                        "ACTIVE",
+                        "NOT_SETUP"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState"
+                        }
+                    ],
+                    "example": "ACTIVE"
                 }
             }
         },
@@ -10720,16 +10883,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connectionsEnabled": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 20
                 },
                 "healthyConnections": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 15
                 },
                 "totalConnections": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 20
                 },
                 "unhealthyConnections": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 5
                 }
             }
         },
@@ -10745,59 +10912,90 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "assetDiscoveryMethod": {
-                    "$ref": "#/definitions/source.AssetDiscoveryMethodType"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.AssetDiscoveryMethodType"
+                        }
+                    ],
+                    "example": "scheduled"
                 },
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 },
                 "cost": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 1000
                 },
                 "credentialID": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "7r6123ac-ca1c-434f-b1a3-91w2w9d277c8"
                 },
                 "credentialName": {
                     "type": "string"
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "This is an example connection"
                 },
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "johndoe@example.com"
                 },
                 "healthReason": {
                     "type": "string"
                 },
                 "healthState": {
-                    "$ref": "#/definitions/source.HealthStatus"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.HealthStatus"
+                        }
+                    ],
+                    "example": "healthy"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "lastHealthCheckTime": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-05-07T00:00:00Z"
                 },
                 "lastInventory": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-05-07T00:00:00Z"
                 },
                 "lifecycleState": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState"
+                        }
+                    ],
+                    "example": "enabled"
                 },
                 "metadata": {
                     "type": "object",
                     "additionalProperties": {}
                 },
                 "onboardDate": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2023-05-07T00:00:00Z"
                 },
                 "providerConnectionID": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "providerConnectionName": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "example-connection"
                 },
                 "resourceCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
                 }
             }
         },
@@ -10851,7 +11049,8 @@ const docTemplate = `{
                     "$ref": "#/definitions/source.ConnectorDirectionType"
                 },
                 "label": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Azure"
                 },
                 "logo": {
                     "type": "string"
@@ -10860,7 +11059,12 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "name": {
-                    "$ref": "#/definitions/source.Type"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 },
                 "shortDescription": {
                     "type": "string"
@@ -10893,7 +11097,8 @@ const docTemplate = `{
                     "$ref": "#/definitions/source.ConnectorDirectionType"
                 },
                 "label": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Azure"
                 },
                 "logo": {
                     "type": "string"
@@ -10902,7 +11107,12 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "name": {
-                    "$ref": "#/definitions/source.Type"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 },
                 "shortDescription": {
                     "type": "string"
@@ -10935,7 +11145,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "source_type": {
-                    "$ref": "#/definitions/source.Type"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 }
             }
         },
@@ -11021,10 +11236,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "TotalResourceCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
                 },
                 "connectionCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 10
                 },
                 "connections": {
                     "type": "array",
@@ -11033,13 +11250,16 @@ const docTemplate = `{
                     }
                 },
                 "totalCost": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 1000
                 },
                 "totalDisabledCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 10
                 },
                 "totalUnhealthyCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 10
                 }
             }
         },
@@ -11133,7 +11353,12 @@ const docTemplate = `{
             "properties": {
                 "config": {},
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 },
                 "name": {
                     "type": "string"

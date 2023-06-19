@@ -153,15 +153,15 @@ func (h HttpServer) HandleListSources(ctx echo.Context) error {
 
 // HandleGetSource godoc
 //
-//		@Summary		Get source
-//	 @Description	Retrieves Keibi source details by id
-//		@Security		BearerToken
-//		@Description	Getting Keibi source by id
-//		@Tags			schedule
-//		@Produce		json
-//		@Param			source_id	path		string	true	"SourceID"
-//		@Success		200			{object}	api.Source
-//		@Router			/schedule/api/v1/sources/{source_id} [get]
+//	@Summary		Get source
+//	@Description	Retrieves Keibi source details by id
+//	@Security		BearerToken
+//	@Description	Getting Keibi source by id
+//	@Tags			schedule
+//	@Produce		json
+//	@Param			source_id	path		string	true	"SourceID"
+//	@Success		200			{object}	api.Source
+//	@Router			/schedule/api/v1/sources/{source_id} [get]
 func (h HttpServer) HandleGetSource(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
@@ -630,14 +630,14 @@ func (h HttpServer) TriggerComplianceSummarizerJob(ctx echo.Context) error {
 
 // TriggerBenchmarkEvaluation godoc
 //
-//	@Summary	Trigger benchmark evaluation
+//	@Summary		Trigger benchmark evaluation
 //	@Description	Triggers a benchmark evaluation job to run immediately
-//	@Security	BearerToken
-//	@Tags		describe
-//	@Produce	json
-//	@Param		request	body		api.TriggerBenchmarkEvaluationRequest	true	"Request Body"
-//	@Success	200		{object}	[]ComplianceReportJob
-//	@Router		/schedule/api/v1/benchmark/evaluation/trigger [put]
+//	@Security		BearerToken
+//	@Tags			describe
+//	@Produce		json
+//	@Param			request	body		api.TriggerBenchmarkEvaluationRequest	true	"Request Body"
+//	@Success		200		{object}	[]ComplianceReportJob
+//	@Router			/schedule/api/v1/benchmark/evaluation/trigger [put]
 func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 	var req api.TriggerBenchmarkEvaluationRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -1243,14 +1243,14 @@ func (h HttpServer) ListResourceStack(ctx echo.Context) error {
 
 // TriggerInsightEvaluation godoc
 //
-//	@Summary	Trigger insight evaluation
+//	@Summary		Trigger insight evaluation
 //	@Description	Trigger an insight evaluation to run immediately with given details
-//	@Security	BearerToken
-//	@Tags		describe
-//	@Produce	json
-//	@Param		request	body		api.TriggerInsightEvaluationRequest	true	"Request Body"
-//	@Success	200		{object}	[]InsightJob
-//	@Router		/schedule/api/v1/insight/evaluation/trigger [put]
+//	@Security		BearerToken
+//	@Tags			describe
+//	@Produce		json
+//	@Param			request	body		api.TriggerInsightEvaluationRequest	true	"Request Body"
+//	@Success		200		{object}	[]InsightJob
+//	@Router			/schedule/api/v1/insight/evaluation/trigger [put]
 func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
 	var req api.TriggerInsightEvaluationRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -1298,14 +1298,14 @@ func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
 
 // TriggerInsightEvaluation godoc
 //
-//	@Summary	Trigger stack insight evaluation
+//	@Summary		Trigger stack insight evaluation
 //	@Description	Trigger an insight evaluation to run immediately on a stack with given details
-//	@Security	BearerToken
-//	@Tags		describe
-//	@Produce	json
-//	@Param		request	body		api.StackInsightRequest	true	"Request Body"
-//	@Success	200		{object}	[]api.InsightJob
-//	@Router		/schedule/api/v1/stacks/insight/trigger [post]
+//	@Security		BearerToken
+//	@Tags			describe
+//	@Produce		json
+//	@Param			request	body		api.StackInsightRequest	true	"Request Body"
+//	@Success		200		{object}	[]api.InsightJob
+//	@Router			/schedule/api/v1/stacks/insight/trigger [post]
 func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 	var req api.StackInsightRequest
 	if err := bindValidate(ctx, &req); err != nil {

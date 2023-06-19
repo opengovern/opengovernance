@@ -51,7 +51,7 @@ definitions:
     properties:
       BenchmarkId:
         description: Not the primary key but should be a unique identifier
-        example: cis-azure-v1.1.0
+        example: azure_cis_v1
         type: string
       ReportCreatedAt:
         example: 1619510400
@@ -867,14 +867,20 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReport:
     properties:
       failureMessage:
+        example: ""
         type: string
       id:
+        example: 1
         type: integer
       reportCreatedAt:
+        example: 1619510400
         type: integer
       status:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus'
+        example: InProgress
       updatedAt:
+        example: "2021-01-01T00:00:00Z"
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus:
@@ -1092,38 +1098,49 @@ definitions:
       connector:
         allOf:
         - $ref: '#/definitions/source.Type'
+        description: Cloud Provider
         example: Azure
       description:
+        description: Description
         example: List clusters that have role-based access control (RBAC) disabled
         type: string
       enabled:
         example: true
         type: boolean
       id:
+        description: Insight ID
         example: 23
         type: integer
       internal:
         example: false
         type: boolean
       links:
+        description: Links
         items:
           type: string
         type: array
       logoURL:
+        description: Logo URL
         type: string
       longTitle:
+        description: Long Title
         example: List clusters that have role-based access control (RBAC) disabled
         type: string
       oldTotalResultValue:
+        description: Number of Old Total Result Value
         example: 0
         type: integer
       query:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query'
+        description: Query
       result:
+        description: Insight Results
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightResult'
         type: array
       shortTitle:
+        description: Short Title
         example: Clusters with no RBAC
         type: string
       tags:
@@ -1131,8 +1148,10 @@ definitions:
           items:
             type: string
           type: array
+        description: Tags
         type: object
       totalResultValue:
+        description: Number of Total Result Value
         example: 10
         type: integer
     type: object
@@ -1521,9 +1540,13 @@ definitions:
       failureMessage:
         type: string
       resourceType:
+        example: Microsoft.Compute/virtualMachines
         type: string
       status:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus'
+        description: CREATED, QUEUED, IN_PROGRESS, TIMEOUT, FAILED, SUCCEEDED
+        example: IN_PROGRESS
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus:
     enum:
@@ -1565,7 +1588,10 @@ definitions:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource'
         type: array
       status:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSourceJobStatus'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSourceJobStatus'
+        description: CREATED, QUEUED, IN_PROGRESS, TIMEOUT, FAILED, SUCCEEDED
+        example: IN_PROGRESS
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSourceJobStatus:
     enum:
@@ -1582,12 +1608,18 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetStackFindings:
     properties:
       benchmarkIds:
+        description: Benchmark IDs to filter
+        example:
+        - azure_cis_v140
         items:
           type: string
         type: array
       page:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page'
+        description: Pages count to retrieve
       sorts:
+        description: Sorts to apply
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingSortItem'
         type: array
@@ -1597,35 +1629,68 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightJob:
     properties:
       FailureMessage:
+        description: Failure Message
+        example: ""
         type: string
       accountId:
+        description: Account ID
+        example: "0123456789"
         type: string
       createdAt:
+        description: Insight Job creation timestamp
+        example: "2021-04-27T15:04:05Z"
         type: string
       id:
+        description: Insight Job Unique ID
+        example: 1
+        format: int64
         type: integer
       insightId:
+        description: Insight ID
+        example: 1
+        format: int64
         type: integer
       sourceId:
+        description: Source ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       sourceType:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Cloud provider
+        example: Azure
       status:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus'
+        description: Insight Job Status
+        example: InProgress
       updatedAt:
+        description: Insight Job last update timestamp
+        example: "2021-04-27T15:04:05Z"
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest:
     properties:
       benchmarkID:
+        description: Filter evaluations for this benchmark
+        example: azure_cis_v1
         type: string
       connectionID:
+        description: Filter evaluations for this connection
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Filter evaluations for this connector
+        example: Azure
       evaluatedAtAfter:
+        description: Filter evaluations created after this timestamp
+        example: 1619510400
         type: integer
       evaluatedAtBefore:
+        description: Filter evaluations created before this timestamp
+        example: 1619610400
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ResourceTypeDetail:
@@ -1638,41 +1703,62 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source:
     properties:
       id:
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       lastComplianceReportAt:
+        example: "2021-01-01T00:00:00Z"
         type: string
       lastDescribeJobStatus:
+        example: COMPLETED
         type: string
       lastDescribedAt:
+        example: "2021-01-01T00:00:00Z"
         type: string
       type:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack:
     properties:
       accountIds:
+        description: Accounts included in the stack
+        example:
+        - '[0123456789]'
         items:
           type: string
         type: array
       createdAt:
+        description: Stack creation date
+        example: "2023-06-01T17:00:00.000000Z"
         type: string
       evaluations:
+        description: Stack evaluations history, including insight evaluations and
+          compliance evaluations
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackEvaluation'
         type: array
       resources:
+        description: Stack resources list
+        example:
+        - '[/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1]'
         items:
           type: string
         type: array
       stackId:
+        description: Stack unique identifier
+        example: stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0
         type: string
       tags:
         additionalProperties:
           items:
             type: string
           type: array
+        description: Stack tags
         type: object
       updatedAt:
+        description: Stack last update date
+        example: "2023-06-01T17:00:00.000000Z"
         type: string
     required:
     - stackId
@@ -1680,10 +1766,17 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackBenchmarkRequest:
     properties:
       benchmarks:
+        description: Benchmarks to add to the stack
+        example:
+        - '[azure_cis_v140'
+        - ' azure_cis_v140_1'
+        - ' azure_cis_v140_1_1]'
         items:
           type: string
         type: array
       stackId:
+        description: Stack unique identifier
+        example: stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0
         type: string
     required:
     - benchmarks
@@ -1692,33 +1785,38 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackEvaluation:
     properties:
       createdAt:
+        description: Evaluation creation date
+        example: "2020-01-01T00:00:00Z"
         type: string
-      evaluatorID:
+      evaluatorId:
+        description: Benchmark ID or Insight ID
+        example: azure_cis_v140
         type: string
-      jobID:
+      jobId:
+        description: Evaluation Job ID to find the job results
+        example: 1
         type: integer
       type:
+        description: BENCHMARK or INSIGHT
+        example: BENCHMARK
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackInsightRequest:
-    properties:
-      insights:
-        items:
-          type: integer
-        type: array
-      stackId:
-        type: string
-    required:
-    - insights
-    - stackId
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest:
     properties:
       benchmarkID:
+        description: Benchmark ID to evaluate
+        example: azure_cis_v1
         type: string
       connectionID:
+        description: Connection ID to evaluate
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       resourceIDs:
+        description: Resource IDs to evaluate
+        example:
+        - /subscriptions/123/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm1
         items:
           type: string
         type: array
@@ -1726,10 +1824,17 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerInsightEvaluationRequest:
     properties:
       connectionID:
+        description: Connection ID to evaluate
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       insightID:
+        description: Insight ID to evaluate
+        example: 1
         type: integer
       resourceIDs:
+        description: Resource IDs to evaluate
+        example:
+        - /subscriptions/123/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm1
         items:
           type: string
         type: array
@@ -2689,10 +2794,12 @@ definitions:
       ID:
         type: integer
       allowNewConnections:
+        example: true
         type: boolean
       category:
         type: string
       connectionCount:
+        example: 1
         type: integer
       connectionFederator:
         type: string
@@ -2703,23 +2810,37 @@ definitions:
       logo:
         type: string
       maxConnectionsLimit:
+        example: 10
         type: integer
       name:
         type: string
       sourceType:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Cloud provider
+        example: Azure
       state:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState'
+        description: ACTIVE, NOT_SETUP
+        enum:
+        - ACTIVE
+        - NOT_SETUP
+        example: ACTIVE
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogMetrics:
     properties:
       connectionsEnabled:
+        example: 20
         type: integer
       healthyConnections:
+        example: 15
         type: integer
       totalConnections:
+        example: 20
         type: integer
       unhealthyConnections:
+        example: 5
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest:
@@ -2730,41 +2851,60 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection:
     properties:
       assetDiscoveryMethod:
-        $ref: '#/definitions/source.AssetDiscoveryMethodType'
+        allOf:
+        - $ref: '#/definitions/source.AssetDiscoveryMethodType'
+        example: scheduled
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
       cost:
+        example: 1000
         type: number
       credentialID:
+        example: 7r6123ac-ca1c-434f-b1a3-91w2w9d277c8
         type: string
       credentialName:
         type: string
       description:
+        example: This is an example connection
         type: string
       email:
+        example: johndoe@example.com
         type: string
       healthReason:
         type: string
       healthState:
-        $ref: '#/definitions/source.HealthStatus'
+        allOf:
+        - $ref: '#/definitions/source.HealthStatus'
+        example: healthy
       id:
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       lastHealthCheckTime:
+        example: "2023-05-07T00:00:00Z"
         type: string
       lastInventory:
+        example: "2023-05-07T00:00:00Z"
         type: string
       lifecycleState:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState'
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState'
+        example: enabled
       metadata:
         additionalProperties: {}
         type: object
       onboardDate:
+        example: "2023-05-07T00:00:00Z"
         type: string
       providerConnectionID:
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       providerConnectionName:
+        example: example-connection
         type: string
       resourceCount:
+        example: 100
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest:
@@ -2803,13 +2943,16 @@ definitions:
       direction:
         $ref: '#/definitions/source.ConnectorDirectionType'
       label:
+        example: Azure
         type: string
       logo:
         type: string
       maxConnectionLimit:
         type: integer
       name:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
       shortDescription:
         type: string
       status:
@@ -2831,13 +2974,16 @@ definitions:
       direction:
         $ref: '#/definitions/source.ConnectorDirectionType'
       label:
+        example: Azure
         type: string
       logo:
         type: string
       maxConnectionLimit:
         type: integer
       name:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
       shortDescription:
         type: string
       status:
@@ -2860,7 +3006,9 @@ definitions:
       name:
         type: string
       source_type:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialResponse:
     properties:
@@ -2916,18 +3064,23 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ListConnectionSummaryResponse:
     properties:
       TotalResourceCount:
+        example: 100
         type: integer
       connectionCount:
+        example: 10
         type: integer
       connections:
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
         type: array
       totalCost:
+        example: 1000
         type: number
       totalDisabledCount:
+        example: 10
         type: integer
       totalUnhealthyCount:
+        example: 10
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAwsRequest:
@@ -2991,7 +3144,9 @@ definitions:
     properties:
       config: {}
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
       name:
         type: string
     type: object
@@ -6039,6 +6194,7 @@ paths:
       - metadata
   /onboard/api/v1/catalog/connectors:
     get:
+      description: Returns the list of connectors for catalog page.
       parameters:
       - description: Category filter
         in: query
@@ -6067,11 +6223,12 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Returns the list of connectors for catalog page.
+      summary: Get catalog connectors
       tags:
       - onboard
   /onboard/api/v1/catalog/metrics:
     get:
+      description: Returns the list of metrics for catalog page.
       produces:
       - application/json
       responses:
@@ -6081,11 +6238,12 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogMetrics'
       security:
       - BearerToken: []
-      summary: Returns the list of metrics for catalog page.
+      summary: Get catalog metrics
       tags:
       - onboard
   /onboard/api/v1/connections/{connectionId}/state:
     post:
+      description: Enabling a single source either with connection ID.
       parameters:
       - description: ConnectionID
         in: path
@@ -6110,6 +6268,7 @@ paths:
       - onboard
   /onboard/api/v1/connections/count:
     get:
+      description: Returns a count of connections
       parameters:
       - description: Request
         in: body
@@ -6126,13 +6285,14 @@ paths:
             type: integer
       security:
       - BearerToken: []
-      summary: Returns a count of connections
+      summary: Connections count
       tags:
       - onboard
   /onboard/api/v1/connections/summary:
     get:
       consumes:
       - application/json
+      description: Returns a list of connections summaries
       parameters:
       - description: Connector
         in: query
@@ -6195,13 +6355,14 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ListConnectionSummaryResponse'
       security:
       - BearerToken: []
-      summary: Returns resource count of accounts
+      summary: List connections summaries
       tags:
       - connections
   /onboard/api/v1/connections/summary/{connectionId}:
     get:
       consumes:
       - application/json
+      description: Returns a connections summaries
       parameters:
       - description: start time in unix seconds
         in: query
@@ -6225,12 +6386,12 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
       security:
       - BearerToken: []
-      summary: Returns resource count of accounts
+      summary: Get connection summary
       tags:
       - connections
   /onboard/api/v1/connector:
     get:
-      description: Getting connectors
+      description: Returns list of all connectors
       produces:
       - application/json
       responses:
@@ -6242,12 +6403,12 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Get connectors
+      summary: List connectors
       tags:
       - onboard
   /onboard/api/v1/connector/{connectorName}:
     get:
-      description: Getting connector
+      description: Returns connector details by name
       parameters:
       - description: Connector name
         in: path
@@ -6268,7 +6429,7 @@ paths:
       - onboard
   /onboard/api/v1/credential:
     get:
-      description: List credentials
+      description: Retrieving list of credentials with their details
       parameters:
       - description: filter by connector type
         enum:
@@ -6333,7 +6494,7 @@ paths:
       - onboard
   /onboard/api/v1/credential/{credentialId}:
     delete:
-      description: Delete credential
+      description: Remove a credential by Id
       parameters:
       - description: CredentialID
         in: path
@@ -6351,9 +6512,9 @@ paths:
       tags:
       - onboard
     get:
-      description: List credentials
+      description: Retrieving credential details by credential ID
       parameters:
-      - description: CredentialID
+      - description: Credential ID
         in: path
         name: credentialId
         required: true
@@ -6367,13 +6528,13 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential'
       security:
       - BearerToken: []
-      summary: List credentials
+      summary: Get Credential
       tags:
       - onboard
     put:
       description: Edit a credential by Id
       parameters:
-      - description: CredentialID
+      - description: Credential ID
         in: path
         name: credentialId
         required: true
@@ -6391,7 +6552,7 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Edit a credential by Id
+      summary: Edit credential
       tags:
       - onboard
   /onboard/api/v1/credential/{credentialId}/autoonboard:
@@ -6512,9 +6673,10 @@ paths:
       - onboard
   /onboard/api/v1/source/{sourceId}:
     delete:
-      description: Deleting a single source either AWS / Azure.
+      description: Deleting a single source either AWS / Azure for the given source
+        id.
       parameters:
-      - description: SourceID
+      - description: Source ID
         in: path
         name: sourceId
         required: true
@@ -6526,13 +6688,13 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Delete a single source
+      summary: Delete source
       tags:
       - onboard
     get:
       description: Returning single source either AWS / Azure.
       parameters:
-      - description: SourceID
+      - description: Source ID
         in: path
         name: sourceId
         required: true
@@ -6546,11 +6708,14 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
       security:
       - BearerToken: []
-      summary: Returns a single source
+      summary: Get source
       tags:
       - onboard
   /onboard/api/v1/source/{sourceId}/credentials:
     get:
+      description: |-
+        Returns credential for a source with given source ID.
+        The responses are different for different source types.
       parameters:
       - description: Source ID
         in: path
@@ -6570,6 +6735,7 @@ paths:
       tags:
       - onboard
     put:
+      description: Update source credential
       parameters:
       - description: Source ID
         in: path
@@ -6583,11 +6749,12 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Put source credential
+      summary: Update source credential
       tags:
       - onboard
   /onboard/api/v1/source/{sourceId}/healthcheck:
     post:
+      description: Get live source health status with given source ID.
       parameters:
       - description: Source ID
         in: path
@@ -6603,14 +6770,14 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
       security:
       - BearerToken: []
-      summary: Get live source health status
+      summary: Get source health
       tags:
       - onboard
   /onboard/api/v1/source/account/{account_id}:
     get:
       description: Returning account source either AWS / Azure.
       parameters:
-      - description: SourceID
+      - description: Source ID
         in: path
         name: account_id
         required: true
@@ -6624,7 +6791,7 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
       security:
       - BearerToken: []
-      summary: Returns source by account id
+      summary: List account sources
       tags:
       - onboard
   /onboard/api/v1/source/aws:
@@ -6697,7 +6864,7 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Returns a list of sources
+      summary: List all sources
       tags:
       - onboard
     post:
@@ -6727,12 +6894,12 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Returns a list of sources
+      summary: Get filtered sources
       tags:
       - onboard
   /onboard/api/v1/sources/count:
     get:
-      description: Returning a count of sources including both AWS and Azure unless
+      description: Returning number of sources including both AWS and Azure unless
         filtered by Type.
       parameters:
       - description: filter by source type
@@ -6752,7 +6919,7 @@ paths:
             type: integer
       security:
       - BearerToken: []
-      summary: Returns a count of sources
+      summary: Count sources
       tags:
       - onboard
   /schedule/api/v0/compliance/summarizer/trigger:
@@ -6821,6 +6988,7 @@ paths:
       - describe
   /schedule/api/v1/benchmark/evaluation/trigger:
     put:
+      description: Triggers a benchmark evaluation job to run immediately
       parameters:
       - description: Request Body
         in: body
@@ -6839,7 +7007,7 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Triggers a benchmark evaluation job to run immediately
+      summary: Trigger benchmark evaluation
       tags:
       - describe
   /schedule/api/v1/benchmark/evaluations:
@@ -6956,6 +7124,7 @@ paths:
       - describe
   /schedule/api/v1/insight/evaluation/trigger:
     put:
+      description: Trigger an insight evaluation to run immediately with given details
       parameters:
       - description: Request Body
         in: body
@@ -6974,7 +7143,7 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Triggers a insight evaluation job to run immediately
+      summary: Trigger insight evaluation
       tags:
       - describe
   /schedule/api/v1/insight/job/{jobId}:
@@ -6983,7 +7152,7 @@ paths:
       - application/json
       description: Get an Insight Job details by ID
       parameters:
-      - description: JobId
+      - description: Job Id
         in: path
         name: jobId
         required: true
@@ -7044,7 +7213,7 @@ paths:
       - schedule
   /schedule/api/v1/sources:
     get:
-      description: Getting all of Keibi sources
+      description: Retrieves list of all of Keibi sources
       produces:
       - application/json
       responses:
@@ -7061,7 +7230,9 @@ paths:
       - schedule
   /schedule/api/v1/sources/{source_id}:
     get:
-      description: Getting Keibi source by id
+      description: |-
+        Retrieves Keibi source details by id
+        Getting Keibi source by id
       parameters:
       - description: SourceID
         in: path
@@ -7077,12 +7248,13 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
       security:
       - BearerToken: []
-      summary: Get Source by id
+      summary: Get source
       tags:
       - schedule
   /schedule/api/v1/sources/{source_id}/jobs/compliance:
     get:
-      description: List source compliance reports
+      description: Retrieves list of source compliance reports for a source by the
+        given source id
       parameters:
       - description: SourceID
         in: path
@@ -7132,7 +7304,8 @@ paths:
       - schedule
   /schedule/api/v1/sources/{source_id}/jobs/describe:
     get:
-      description: List source describe jobs
+      description: Retrieves list of source describe jobs for a source by the given
+        source id
       parameters:
       - description: SourceID
         in: path
@@ -7280,7 +7453,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get benchmark results for a stack
+      description: Get Insight results for a stack in the given time period
       parameters:
       - description: InsightID
         in: query
@@ -7372,6 +7545,8 @@ paths:
       - stack
   /schedule/api/v1/stacks/insight/trigger:
     post:
+      description: Trigger an insight evaluation to run immediately on a stack with
+        given details
       parameters:
       - description: Request Body
         in: body
@@ -7390,7 +7565,7 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Triggers an insight evaluation job to run immediately
+      summary: Trigger stack insight evaluation
       tags:
       - describe
   /schedule/api/v1/stacks/resource:

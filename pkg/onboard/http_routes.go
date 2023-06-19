@@ -1461,16 +1461,16 @@ func (h HttpHandler) EnableCredential(ctx echo.Context) error {
 
 // GetSourceCred godoc
 //
-//	@Summary	Get source credential
+//	@Summary		Get source credential
 //	@Description	Returns credential for a source with given source ID.
 //	@Description	The responses are different for different source types.
-//	@Security	BearerToken
-//	@Tags		onboard
-//	@Produce	json
-//	@Param		sourceId	path		string	true	"Source ID"
-//	@Success	200			{object}	api.AWSCredential
-//	@Success	200			{object}	api.AzureCredential
-//	@Router		/onboard/api/v1/source/{sourceId}/credentials [get]
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Param			sourceId	path		string	true	"Source ID"
+//	@Success		200			{object}	api.AWSCredential
+//	@Success		200			{object}	api.AzureCredential
+//	@Router			/onboard/api/v1/source/{sourceId}/credentials [get]
 func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
@@ -1553,14 +1553,14 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 
 // GetSourceHealth godoc
 //
-//	@Summary	Get source health
+//	@Summary		Get source health
 //	@Description	Get live source health status with given source ID.
-//	@Security	BearerToken
-//	@Tags		onboard
-//	@Produce	json
-//	@Param		sourceId	path		string	true	"Source ID"
-//	@Success	200			{object}	api.Connection
-//	@Router		/onboard/api/v1/source/{sourceId}/healthcheck [post]
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Param			sourceId	path		string	true	"Source ID"
+//	@Success		200			{object}	api.Connection
+//	@Router			/onboard/api/v1/source/{sourceId}/healthcheck [post]
 func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
@@ -1699,14 +1699,14 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 
 // PutSourceCred godoc
 //
-//	@Summary	Update source credential
+//	@Summary		Update source credential
 //	@Description	Update source credential
-//	@Security	BearerToken
-//	@Tags		onboard
-//	@Produce	json
-//	@Param		sourceId	path	string	true	"Source ID"
-//	@Success	200
-//	@Router		/onboard/api/v1/source/{sourceId}/credentials [put]
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Param			sourceId	path	string	true	"Source ID"
+//	@Success		200
+//	@Router			/onboard/api/v1/source/{sourceId}/credentials [put]
 func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
@@ -1874,15 +1874,15 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 
 // ChangeConnectionLifecycleState godoc
 //
-//	@Summary	Enable a single source
+//	@Summary		Enable a single source
 //	@Description	Enabling a single source either with connection ID.
-//	@Security	BearerToken
-//	@Tags		onboard
-//	@Produce	json
-//	@Success	200
-//	@Param		connectionId	path	integer										true	"ConnectionID"
-//	@Param		request			body	api.ChangeConnectionLifecycleStateRequest	true	"Request"
-//	@Router		/onboard/api/v1/connections/{connectionId}/state [post]
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200
+//	@Param			connectionId	path	integer										true	"ConnectionID"
+//	@Param			request			body	api.ChangeConnectionLifecycleStateRequest	true	"Request"
+//	@Router			/onboard/api/v1/connections/{connectionId}/state [post]
 func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 	connectionId, err := uuid.Parse(ctx.Param("connectionId"))
 	if err != nil {
@@ -2123,13 +2123,13 @@ func (h HttpHandler) CountSources(ctx echo.Context) error {
 
 // CatalogMetrics godoc
 //
-//	@Summary	Get catalog metrics
+//	@Summary		Get catalog metrics
 //	@Description	Returns the list of metrics for catalog page.
-//	@Security	BearerToken
-//	@Tags		onboard
-//	@Produce	json
-//	@Success	200	{object}	api.CatalogMetrics
-//	@Router		/onboard/api/v1/catalog/metrics [get]
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200	{object}	api.CatalogMetrics
+//	@Router			/onboard/api/v1/catalog/metrics [get]
 func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 	var metrics api.CatalogMetrics
 
@@ -2159,17 +2159,17 @@ var catalogsJSON string
 
 // CatalogConnectors godoc
 //
-//	@Summary	Get catalog connectors
+//	@Summary		Get catalog connectors
 //	@Description	Returns the list of connectors for catalog page.
-//	@Security	BearerToken
-//	@Tags		onboard
-//	@Produce	json
-//	@Param		category		query		string	false	"Category filter"
-//	@Param		state			query		string	false	"State filter"
-//	@Param		minConnection	query		string	false	"Minimum connection filter"
-//	@Param		id				query		string	false	"ID filter"
-//	@Success	200				{object}	[]api.CatalogConnector
-//	@Router		/onboard/api/v1/catalog/connectors [get]
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Param			category		query		string	false	"Category filter"
+//	@Param			state			query		string	false	"State filter"
+//	@Param			minConnection	query		string	false	"Minimum connection filter"
+//	@Param			id				query		string	false	"ID filter"
+//	@Success		200				{object}	[]api.CatalogConnector
+//	@Router			/onboard/api/v1/catalog/connectors [get]
 func (h HttpHandler) CatalogConnectors(ctx echo.Context) error {
 	categoryFilter := ctx.QueryParam("category")
 	stateFilter := ctx.QueryParam("state")
@@ -2228,14 +2228,14 @@ func (h HttpHandler) CatalogConnectors(ctx echo.Context) error {
 
 // CountConnections godoc
 //
-//	@Summary	Connections count
+//	@Summary		Connections count
 //	@Description	Returns a count of connections
-//	@Security	BearerToken
-//	@Tags		onboard
-//	@Produce	json
-//	@Param		type	body		api.ConnectionCountRequest	true	"Request"
-//	@Success	200		{object}	int64
-//	@Router		/onboard/api/v1/connections/count [get]
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Param			type	body		api.ConnectionCountRequest	true	"Request"
+//	@Success		200		{object}	int64
+//	@Router			/onboard/api/v1/connections/count [get]
 func (h HttpHandler) CountConnections(ctx echo.Context) error {
 	var request api.ConnectionCountRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -2294,23 +2294,23 @@ func (h HttpHandler) CountConnections(ctx echo.Context) error {
 
 // ListConnectionsSummaries godoc
 //
-//	@Summary	List connections summaries
+//	@Summary		List connections summaries
 //	@Description	Returns a list of connections summaries
-//	@Security	BearerToken
-//	@Tags		connections
-//	@Accept		json
-//	@Produce	json
-//	@Param		connector		query		[]source.Type	true	"Connector"
-//	@Param		connectionId	query		[]string		false	"Connection IDs"
-//	@Param		healthState		query		string			false	"Source Healthstate"	Enums(healthy,unhealthy)
-//	@Param		lifecycleState	query		string			false	"lifecycle state filter"
-//	@Param		pageSize		query		int				false	"page size - default is 20"
-//	@Param		pageNumber		query		int				false	"page number - default is 1"
-//	@Param		startTime		query		int				false	"start time in unix seconds"
-//	@Param		endTime			query		int				false	"end time in unix seconds"
-//	@Param		sortBy			query		string			false	"column to sort by - default is cost"	Enums(onboard_date,resource_count,cost)
-//	@Success	200				{object}	api.ListConnectionSummaryResponse
-//	@Router		/onboard/api/v1/connections/summary [get]
+//	@Security		BearerToken
+//	@Tags			connections
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector		query		[]source.Type	true	"Connector"
+//	@Param			connectionId	query		[]string		false	"Connection IDs"
+//	@Param			healthState		query		string			false	"Source Healthstate"	Enums(healthy,unhealthy)
+//	@Param			lifecycleState	query		string			false	"lifecycle state filter"
+//	@Param			pageSize		query		int				false	"page size - default is 20"
+//	@Param			pageNumber		query		int				false	"page number - default is 1"
+//	@Param			startTime		query		int				false	"start time in unix seconds"
+//	@Param			endTime			query		int				false	"end time in unix seconds"
+//	@Param			sortBy			query		string			false	"column to sort by - default is cost"	Enums(onboard_date,resource_count,cost)
+//	@Success		200				{object}	api.ListConnectionSummaryResponse
+//	@Router			/onboard/api/v1/connections/summary [get]
 func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
@@ -2429,17 +2429,17 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 
 // GetConnectionSummary godoc
 //
-//	@Summary	Get connection summary
+//	@Summary		Get connection summary
 //	@Description	Returns a connections summaries
-//	@Security	BearerToken
-//	@Tags		connections
-//	@Accept		json
-//	@Produce	json
-//	@Param		startTime		query		int		false	"start time in unix seconds"
-//	@Param		endTime			query		int		false	"end time in unix seconds"
-//	@Param		connectionId	path		string	true	"ConnectionID"
-//	@Success	200				{object}	api.Connection
-//	@Router		/onboard/api/v1/connections/summary/{connectionId} [get]
+//	@Security		BearerToken
+//	@Tags			connections
+//	@Accept			json
+//	@Produce		json
+//	@Param			startTime		query		int		false	"start time in unix seconds"
+//	@Param			endTime			query		int		false	"end time in unix seconds"
+//	@Param			connectionId	path		string	true	"ConnectionID"
+//	@Success		200				{object}	api.Connection
+//	@Router			/onboard/api/v1/connections/summary/{connectionId} [get]
 func (h HttpHandler) GetConnectionSummary(ctx echo.Context) error {
 	connectionId, err := uuid.Parse(ctx.Param("connectionId"))
 	if err != nil {
