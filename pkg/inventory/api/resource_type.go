@@ -7,15 +7,15 @@ import (
 )
 
 type ResourceType struct {
-	Connector     source.Type         `json:"connector"`
-	ResourceType  string              `json:"resource_type"`
-	ResourceLabel string              `json:"resource_name"`
-	ServiceName   string              `json:"service_name"`
-	Tags          map[string][]string `json:"tags,omitempty"`
-	LogoURI       *string             `json:"logo_uri,omitempty"`
+	Connector     source.Type         `json:"connector" example:"Azure"`                                 // Cloud Provider
+	ResourceType  string              `json:"resource_type" example:"Microsoft.Compute/virtualMachines"` // Resource Type
+	ResourceLabel string              `json:"resource_name" example:"VM"`                                // Resource Name
+	ServiceName   string              `json:"service_name" example:"compute"`                            // Service Name
+	Tags          map[string][]string `json:"tags,omitempty"`                                            // Tags
+	LogoURI       *string             `json:"logo_uri,omitempty"`                                        // Logo URI
 
-	Count    *int `json:"count"`     // Number of Resources of this Resource Type - Metric
-	OldCount *int `json:"old_count"` // Number of Resources of this Resource Type in the past - Metric
+	Count    *int `json:"count" example:"100"`    // Number of Resources of this Resource Type - Metric
+	OldCount *int `json:"old_count" example:"90"` // Number of Resources of this Resource Type in the past - Metric
 
 	InsightsCount   *int     `json:"insights_count"`   // Number of Insights that use this Resource Type - Metadata
 	ComplianceCount *int     `json:"compliance_count"` // Number of Compliance that use this Resource Type - Metadata
@@ -25,7 +25,7 @@ type ResourceType struct {
 }
 
 type ListResourceTypeMetadataResponse struct {
-	TotalResourceTypeCount int            `json:"total_resource_type_count"`
+	TotalResourceTypeCount int            `json:"total_resource_type_count" example:"100"`
 	ResourceTypes          []ResourceType `json:"resource_types"`
 }
 

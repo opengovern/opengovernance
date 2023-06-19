@@ -154,13 +154,14 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 
 // GetTopAccountsByCost godoc
 //
-//	@Summary	Returns top n accounts of specified provider by cost
+//	@Summary	Top accounts by cost
+//	@Description	This API allows users to retrieve top n accounts by cost.
 //	@Security	BearerToken
 //	@Tags		cost
 //	@Accept		json
 //	@Produce	json
 //	@Param		count		query		int		true	"Number of top accounts returning."
-//	@Param		provider	query		string	true	"Provider"
+//	@Param		provider	query		string	false	"Provider"
 //	@Success	200			{object}	[]api.TopAccountCostResponse
 //	@Router		/inventory/api/v1/cost/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
@@ -230,14 +231,15 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 
 // GetTopServicesByCost godoc
 //
-//	@Summary	Returns top n services of specified provider by cost
+//	@Summary	Top services by cost
+//	@Description	This API allows users to retrieve top n services by cost.
 //	@Security	BearerToken
 //	@Tags		cost
 //	@Accept		json
 //	@Produce	json
 //	@Param		count		query		int		true	"Number of top services returning."
-//	@Param		provider	query		string	true	"Provider"
-//	@Param		sourceId	query		string	true	"SourceID"
+//	@Param		provider	query		string	false	"Provider"
+//	@Param		sourceId	query		string	false	"Source ID"
 //	@Success	200			{object}	[]api.TopServiceCostResponse
 //	@Router		/inventory/api/v1/cost/top/services [get]
 func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
@@ -548,7 +550,8 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 
 // ListResourceTypeTags godoc
 //
-//	@Summary	Return list of the keys with possible values for filtering resources types
+//	@Summary	List resourcetype tags
+//	@Description	This API allows users to retrieve a list of tag keys with their possible values for all resource types.
 //	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
@@ -577,7 +580,8 @@ func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 
 // GetResourceTypeTag godoc
 //
-//	@Summary	Return list of the possible values for filtering resources types with specified key
+//	@Summary	Get resourcetype tag
+//	@Description	This API allows users to retrieve a list of possible values for a given tag key for all resource types.
 //	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
@@ -645,7 +649,8 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 
 // ListResourceTypeMetricsHandler godoc
 //
-//	@Summary	Returns list of resource types with metrics of each type based on the given input filters
+//	@Summary	List resource metrics
+//	@Description	This API allows users to retrieve a list of resource types with metrics of each type based on the given input filters.
 //	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
@@ -782,7 +787,8 @@ func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionID
 
 // GetResourceTypeMetricsHandler godoc
 //
-//	@Summary	Returns resource type with metrics
+//	@Summary	Get resource metrics
+//	@Description	This API allows users to retrieve metrics for a specific resource type.
 //	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
@@ -833,7 +839,8 @@ func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 
 // ListResourceTypeComposition godoc
 //
-//	@Summary	Return tag values with most resources for the given key
+//	@Summary	List resource type composition
+//	@Description	 This API allows users to retrieve tag values with the most resources for the given key.
 //	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
@@ -935,7 +942,9 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 
 // ListResourceTypeTrend godoc
 //
-//	@Summary	Returns list of resource counts over the course of the specified time frame based on the given input filters
+// @Summary	Get resource type trend
+//
+//	@Description	This API allows users to retrieve a list of resource counts over the course of the specified time frame based on the given input filters
 //	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
@@ -1024,7 +1033,8 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 
 // ListServiceTags godoc
 //
-//	@Summary	Return list of the keys with possible values for filtering services
+//	@Summary	List resourcetype tags
+//	@Description	This API allows users to retrieve a list of possible values for a given tag key for all services.
 //	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
@@ -1042,7 +1052,8 @@ func (h *HttpHandler) ListServiceTags(ctx echo.Context) error {
 
 // GetServiceTag godoc
 //
-//	@Summary	Return list of the possible values for filtering services with specified key
+//	@Summary	Get resourcetype tag
+//	@Description	This API allows users to retrieve a list of possible values for a given tag key for all resource types.
 //	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
@@ -1065,7 +1076,8 @@ func (h *HttpHandler) GetServiceTag(ctx echo.Context) error {
 
 // ListServiceMetricsHandler godoc
 //
-//	@Summary	Returns list of services with their metrics based on the given input filters
+//	@Summary	List services metrics
+//	@Description	This API allows users to retrieve a list of services with metrics of each type based on the given input filters.
 //	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
@@ -1198,8 +1210,8 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 
 // GetServiceMetricsHandler godoc
 //
-//	@Summary	Returns the service with metrics for the given service name
-//	@Security	BearerToken
+//	@Summary	Get service metrics
+//	@Description	This API allows users to retrieve a service with metrics.
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
@@ -1281,7 +1293,8 @@ func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 
 // ListCostMetricsHandler godoc
 //
-//	@Summary	Returns list of cost metrics
+//	@Summary	List cost metrics
+//	@Description	This API allows users to retrieve cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.
 //	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
@@ -1407,14 +1420,15 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 
 // ListCostComposition godoc
 //
-//	@Summary	Returns cost composition for a given time range
+//	@Summary	List cost composition
+//	@Description	This API allows users to retrieve the cost composition with respect to specified filters. The API returns information such as the total cost for the given time range, and the top services by cost.
 //	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json
 //	@Produce	json
 //	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param		top				query		int				true	"How many top values to return default is 5"
+//	@Param		top				query		int				false	"How many top values to return default is 5"
 //	@Param		startTime		query		string			false	"timestamp for start in epoch seconds"
 //	@Param		endTime			query		string			false	"timestamp for end in epoch seconds"
 //	@Success	200				{object}	api.ListCostCompositionResponse
@@ -1515,7 +1529,8 @@ func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 
 // GetCostTrend godoc
 //
-//	@Summary	Returns list of costs over the course of the specified time frame based on the given input filters
+//	@Summary	Get Cost Trend
+//	@Description This API allows users to retrieve a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.
 //	@Security	BearerToken
 //	@Tags		inventory
 //	@Accept		json

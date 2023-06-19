@@ -344,10 +344,10 @@ type TopAccountResponse struct {
 }
 
 type TopAccountCostResponse struct {
-	SourceID               string  `json:"sourceID"`               // Source Id
-	ProviderConnectionName string  `json:"providerConnectionName"` // Account Provider Connection Name
-	ProviderConnectionID   string  `json:"providerConnectionID"`   // Account Provider Connection ID
-	Cost                   float64 `json:"cost"`                   // Account costs
+	SourceID               string  `json:"sourceID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`             // Source Id
+	ProviderConnectionName string  `json:"providerConnectionName" example:"example-account"`                    // Account Provider Connection Name
+	ProviderConnectionID   string  `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Account Provider Connection ID
+	Cost                   float64 `json:"cost" example:"100"`                                                  // Account costs
 }
 
 type TopServicesResponse struct {
@@ -361,8 +361,8 @@ type TopServicesResponse struct {
 }
 
 type TopServiceCostResponse struct {
-	ServiceName string  `json:"serviceName"` // Service Name
-	Cost        float64 `json:"cost"`        // Service Cost
+	ServiceName string  `json:"serviceName" example:"compute"` // Service Name
+	Cost        float64 `json:"cost" example:"100"`            // Service Cost
 }
 
 type ResourceTypeResponse struct {

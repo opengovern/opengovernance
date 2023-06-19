@@ -1,8 +1,9 @@
 package metadata
 
 import (
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"net/http"
+
+	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
 	"github.com/labstack/echo/v4"
 	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
@@ -57,6 +58,7 @@ func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
+//	@Param			req	body		api.SetConfigMetadataRequest	true	"Request Body"
 //	@Success		200
 //	@Router			/metadata/api/v1/metadata [post]
 func (h HttpHandler) SetConfigMetadata(ctx echo.Context) error {

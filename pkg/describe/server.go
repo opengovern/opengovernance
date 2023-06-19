@@ -972,7 +972,7 @@ func (h HttpServer) DeleteStack(ctx echo.Context) error {
 
 // TriggerStackBenchmark godoc
 //
-//	@Summary		Evaluate Stack
+//	@Summary		Trigger Stack benchmark
 //	@Description	Trigger defined benchmarks for a stack and save in the history
 //	@Security		BearerToken
 //	@Tags			stack

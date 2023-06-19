@@ -57,13 +57,13 @@ type Source struct {
 
 type ComplianceReportJob struct {
 	gorm.Model
-	ScheduleJobID   uint
-	SourceID        string // Not the primary key but should be a unique identifier
-	SourceType      source.Type
-	BenchmarkID     string // Not the primary key but should be a unique identifier
-	ReportCreatedAt int64
-	Status          api2.ComplianceReportJobStatus
-	FailureMessage  string // Should be NULLSTRING
+	ScheduleJobID   uint                           `json:"scheduleJobId" example:"1"`
+	SourceID        string                         `json:"SourceId" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Not the primary key but should be a unique identifier
+	SourceType      source.Type                    `json:"SourceType" example:"Azure"`
+	BenchmarkID     string                         `json:"BenchmarkId" example:"cis-azure-v1.1.0"` // Not the primary key but should be a unique identifier
+	ReportCreatedAt int64                          `json:"ReportCreatedAt" example:"1619510400"`
+	Status          api2.ComplianceReportJobStatus `json:"Status" example:"InProgress"`
+	FailureMessage  string                         // Should be NULLSTRING
 }
 
 type ScheduleJob struct {
