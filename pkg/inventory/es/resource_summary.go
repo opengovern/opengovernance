@@ -208,7 +208,7 @@ func FetchConnectionResourcesSummaryPage(client keibi.Client, connectors []sourc
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceSummary)}},
 	})
 
-	if len(connectors) > 0 {
+	if connectors != nil {
 		connectorsStr := make([]string, 0, len(connectors))
 		for _, c := range connectors {
 			connectorsStr = append(connectorsStr, c.String())
@@ -287,7 +287,7 @@ func FetchConnectionResourcesCountAtTime(client keibi.Client, connectors []sourc
 		},
 	})
 
-	if len(connectors) > 0 {
+	if connectors != nil {
 		connectorsStr := make([]string, 0, len(connectors))
 		for _, c := range connectors {
 			connectorsStr = append(connectorsStr, c.String())
@@ -375,7 +375,7 @@ func FetchConnectionLocationsSummaryPage(client keibi.Client, connectors []sourc
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.LocationConnectionSummaryHistory)}},
 	})
-	if len(connectors) > 0 {
+	if connectors != nil {
 		connectorStr := make([]string, 0, len(connectors))
 		for _, connector := range connectors {
 			connectorStr = append(connectorStr, connector.String())
@@ -661,7 +661,7 @@ func FetchProviderTrendSummaryPage(client keibi.Client, connectors []source.Type
 		"terms": map[string][]string{"report_type": {string(summarizer.TrendProviderSummary)}},
 	})
 
-	if len(connectors) > 0 {
+	if connectors != nil {
 		connectorsStr := make([]string, 0, len(connectors))
 		for _, connector := range connectors {
 			connectorsStr = append(connectorsStr, string(connector))
@@ -746,7 +746,7 @@ func FetchProviderResourceTypeTrendSummaryPage(client keibi.Client, connectors [
 		"terms": map[string][]string{"resource_type": resourceTypes},
 	})
 
-	if len(connectors) > 0 {
+	if connectors != nil {
 		connectorsStr := make([]string, 0, len(connectors))
 		for _, connector := range connectors {
 			connectorsStr = append(connectorsStr, string(connector))
@@ -834,76 +834,6 @@ func FetchProviderResourceTypeTrendSummaryPage(client keibi.Client, connectors [
 	return hits, nil
 }
 
-type ConnectionServiceLocationsSummaryQueryResponse struct {
-	Hits ConnectionServiceLocationsSummaryQueryHits `json:"hits"`
-}
-type ConnectionServiceLocationsSummaryQueryHits struct {
-	Total keibi.SearchTotal                           `json:"total"`
-	Hits  []ConnectionServiceLocationsSummaryQueryHit `json:"hits"`
-}
-type ConnectionServiceLocationsSummaryQueryHit struct {
-	ID      string                                      `json:"_id"`
-	Score   float64                                     `json:"_score"`
-	Index   string                                      `json:"_index"`
-	Type    string                                      `json:"_type"`
-	Version int64                                       `json:"_version,omitempty"`
-	Source  summarizer.ConnectionServiceLocationSummary `json:"_source"`
-	Sort    []any                                       `json:"sort"`
-}
-
-func FetchConnectionServiceLocationsSummaryPage(client keibi.Client, provider source.Type, connectionIDs []string, sort []map[string]any, size int) ([]summarizer.ConnectionServiceLocationSummary, error) {
-	var hits []summarizer.ConnectionServiceLocationSummary
-	res := make(map[string]any)
-	var filters []any
-
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"report_type": {string(summarizer.ServiceLocationConnectionSummary)}},
-	})
-
-	if !provider.IsNull() {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"source_type": {provider.String()}},
-		})
-	}
-
-	if len(connectionIDs) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"source_id": connectionIDs},
-		})
-	}
-
-	sort = append(sort,
-		map[string]any{
-			"_id": "desc",
-		},
-	)
-	res["size"] = size
-	res["sort"] = sort
-	res["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": filters,
-		},
-	}
-	b, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-
-	query := string(b)
-
-	fmt.Println("query=", query, "index=", summarizer.ConnectionSummaryIndex)
-	var response ConnectionServiceLocationsSummaryQueryResponse
-	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, hit := range response.Hits.Hits {
-		hits = append(hits, hit.Source)
-	}
-	return hits, nil
-}
-
 type FetchConnectionResourceTypeCountAtTimeResponse struct {
 	Aggregations struct {
 		ResourceTypeGroup struct {
@@ -932,10 +862,10 @@ func FetchConnectionResourceTypeCountAtTime(client keibi.Client, connectors []so
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"resource_type": resourceTypes},
 	})
-	if len(connectors) > 0 {
+	if connectors != nil {
 		connectorStrings := make([]string, 0, len(connectors))
-		for _, provider := range connectors {
-			connectorStrings = append(connectorStrings, provider.String())
+		for _, connector := range connectors {
+			connectorStrings = append(connectorStrings, connector.String())
 		}
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": connectorStrings},
@@ -1028,10 +958,10 @@ func FetchConnectorResourceTypeCountAtTime(client keibi.Client, connectors []sou
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"resource_type": resourceTypes},
 	})
-	if len(connectors) > 0 {
+	if connectors != nil {
 		connectorStrings := make([]string, 0, len(connectors))
-		for _, provider := range connectors {
-			connectorStrings = append(connectorStrings, provider.String())
+		for _, connector := range connectors {
+			connectorStrings = append(connectorStrings, connector.String())
 		}
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"source_type": connectorStrings},

@@ -115,6 +115,12 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 }
 
 func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, connectorTypes []source.Type, connectionIDs []string) ([]source.Type, error) {
+	if len(connectionIDs) == 0 {
+		return connectorTypes, nil
+	}
+	if len(connectorTypes) != 0 {
+		return connectorTypes, nil
+	}
 	connections, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), connectionIDs)
 	if err != nil {
 		return nil, err
@@ -124,20 +130,12 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 	for _, connection := range connections {
 		enabledConnectors[connection.Connector] = true
 	}
-	filteredConnectorType := make([]source.Type, 0)
-	for _, connectorType := range connectorTypes {
-		if enabledConnectors[connectorType] {
-			filteredConnectorType = append(filteredConnectorType, connectorType)
-		}
+	connectorTypes = make([]source.Type, 0, len(enabledConnectors))
+	for connectorType := range enabledConnectors {
+		connectorTypes = append(connectorTypes, connectorType)
 	}
 
-	if len(connectorTypes) == 0 {
-		for connectorType := range enabledConnectors {
-			filteredConnectorType = append(filteredConnectorType, connectorType)
-		}
-	}
-
-	return filteredConnectorType, nil
+	return connectorTypes, nil
 }
 
 // GetTopRegionsByResourceCount godoc
