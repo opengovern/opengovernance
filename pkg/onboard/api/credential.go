@@ -8,7 +8,7 @@ import (
 
 type CreateCredentialRequest struct {
 	Name       string      `json:"name"`
-	SourceType source.Type `json:"source_type"`
+	SourceType source.Type `json:"source_type" example:"Azure"`
 	Config     any         `json:"config"`
 }
 
@@ -17,7 +17,7 @@ type CreateCredentialResponse struct {
 }
 
 type UpdateCredentialRequest struct {
-	Connector source.Type `json:"connector"`
+	Connector source.Type `json:"connector" example:"Azure"`
 	Name      *string     `json:"name"`
 	Config    any         `json:"config"`
 }

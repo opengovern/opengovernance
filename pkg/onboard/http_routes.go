@@ -176,8 +176,8 @@ func (h HttpHandler) GetProviders(ctx echo.Context) error {
 
 // ListConnectors godoc
 //
-//	@Summary		Get connectors
-//	@Description	Getting connectors
+//	@Summary		List connectors
+//	@Description	Returns list of all connectors
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
@@ -224,7 +224,7 @@ func (h HttpHandler) ListConnectors(ctx echo.Context) error {
 // GetConnector godoc
 //
 //	@Summary		Get connector
-//	@Description	Getting connector
+//	@Description	Returns connector details by name
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
@@ -687,7 +687,7 @@ func (h HttpHandler) PostCredentials(ctx echo.Context) error {
 // ListCredentials godoc
 //
 //	@Summary		List credentials
-//	@Description	List credentials
+//	@Description	Retrieving list of credentials with their details
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
@@ -746,13 +746,13 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 
 // GetCredential godoc
 //
-//	@Summary		List credentials
-//	@Description	List credentials
+//	@Summary		Get Credential
+//	@Description	Retrieving credential details by credential ID
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200				{object}	api.Credential
-//	@Param			credentialId	path		string	true	"CredentialID"
+//	@Param			credentialId	path		string	true	"Credential ID"
 //	@Router			/onboard/api/v1/credential/{credentialId} [get]
 func (h HttpHandler) GetCredential(ctx echo.Context) error {
 	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
@@ -1278,13 +1278,13 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 
 // PutCredentials godoc
 //
-//	@Summary		Edit a credential by Id
+//	@Summary		Edit credential
 //	@Description	Edit a credential by Id
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
-//	@Param			credentialId	path	string						true	"CredentialID"
+//	@Param			credentialId	path	string						true	"Credential ID"
 //	@Param			config			body	api.UpdateCredentialRequest	true	"config"
 //	@Router			/onboard/api/v1/credential/{credentialId} [put]
 func (h HttpHandler) PutCredentials(ctx echo.Context) error {
@@ -1306,7 +1306,7 @@ func (h HttpHandler) PutCredentials(ctx echo.Context) error {
 // DeleteCredential godoc
 //
 //	@Summary		Delete credential
-//	@Description	Delete credential
+//	@Description	Remove a credential by Id
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
@@ -1462,6 +1462,8 @@ func (h HttpHandler) EnableCredential(ctx echo.Context) error {
 // GetSourceCred godoc
 //
 //	@Summary	Get source credential
+//	@Description	Returns credential for a source with given source ID.
+//	@Description	The responses are different for different source types.
 //	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
@@ -1551,7 +1553,8 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 
 // GetSourceHealth godoc
 //
-//	@Summary	Get live source health status
+//	@Summary	Get source health
+//	@Description	Get live source health status with given source ID.
 //	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
@@ -1696,7 +1699,8 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 
 // PutSourceCred godoc
 //
-//	@Summary	Put source credential
+//	@Summary	Update source credential
+//	@Description	Update source credential
 //	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
@@ -1765,13 +1769,13 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 
 // GetSource godoc
 //
-//	@Summary		Returns a single source
+//	@Summary		Get source
 //	@Description	Returning single source either AWS / Azure.
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200			{object}	api.Connection
-//	@Param			sourceId	path		integer	true	"SourceID"
+//	@Param			sourceId	path		integer	true	"Source ID"
 //	@Router			/onboard/api/v1/source/{sourceId} [get]
 func (h HttpHandler) GetSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
@@ -1816,13 +1820,13 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 
 // DeleteSource godoc
 //
-//	@Summary		Delete a single source
-//	@Description	Deleting a single source either AWS / Azure.
+//	@Summary		Delete source
+//	@Description	Deleting a single source either AWS / Azure for the given source id.
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
-//	@Param			sourceId	path	integer	true	"SourceID"
+//	@Param			sourceId	path	integer	true	"Source ID"
 //	@Router			/onboard/api/v1/source/{sourceId} [delete]
 func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
@@ -1871,6 +1875,7 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 // ChangeConnectionLifecycleState godoc
 //
 //	@Summary	Enable a single source
+//	@Description	Enabling a single source either with connection ID.
 //	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
@@ -1938,7 +1943,7 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 
 // ListSources godoc
 //
-//	@Summary		Returns a list of sources
+//	@Summary		List all sources
 //	@Description	Returning a list of sources including both AWS and Azure unless filtered by Type.
 //	@Security		BearerToken
 //	@Tags			onboard
@@ -1997,7 +2002,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 
 // GetSources godoc
 //
-//	@Summary		Returns a list of sources
+//	@Summary		Get filtered sources
 //	@Description	Returning a list of sources including both AWS and Azure unless filtered by Type.
 //	@Security		BearerToken
 //	@Tags			onboard
@@ -2060,13 +2065,13 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 
 // GetSourcesByAccount godoc
 //
-//	@Summary		Returns source by account id
+//	@Summary		List account sources
 //	@Description	Returning account source either AWS / Azure.
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200			{object}	api.Connection
-//	@Param			account_id	path		integer	true	"SourceID"
+//	@Param			account_id	path		integer	true	"Source ID"
 //	@Router			/onboard/api/v1/source/account/{account_id} [get]
 func (h HttpHandler) GetSourcesByAccount(ctx echo.Context) error {
 	accId := ctx.Param("accountId")
@@ -2084,8 +2089,8 @@ func (h HttpHandler) GetSourcesByAccount(ctx echo.Context) error {
 
 // CountSources godoc
 //
-//	@Summary		Returns a count of sources
-//	@Description	Returning a count of sources including both AWS and Azure unless filtered by Type.
+//	@Summary		Count sources
+//	@Description	Returning number of sources including both AWS and Azure unless filtered by Type.
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
@@ -2118,7 +2123,8 @@ func (h HttpHandler) CountSources(ctx echo.Context) error {
 
 // CatalogMetrics godoc
 //
-//	@Summary	Returns the list of metrics for catalog page.
+//	@Summary	Get catalog metrics
+//	@Description	Returns the list of metrics for catalog page.
 //	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
@@ -2153,7 +2159,8 @@ var catalogsJSON string
 
 // CatalogConnectors godoc
 //
-//	@Summary	Returns the list of connectors for catalog page.
+//	@Summary	Get catalog connectors
+//	@Description	Returns the list of connectors for catalog page.
 //	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
@@ -2221,7 +2228,8 @@ func (h HttpHandler) CatalogConnectors(ctx echo.Context) error {
 
 // CountConnections godoc
 //
-//	@Summary	Returns a count of connections
+//	@Summary	Connections count
+//	@Description	Returns a count of connections
 //	@Security	BearerToken
 //	@Tags		onboard
 //	@Produce	json
@@ -2286,7 +2294,8 @@ func (h HttpHandler) CountConnections(ctx echo.Context) error {
 
 // ListConnectionsSummaries godoc
 //
-//	@Summary	Returns resource count of accounts
+//	@Summary	List connections summaries
+//	@Description	Returns a list of connections summaries
 //	@Security	BearerToken
 //	@Tags		connections
 //	@Accept		json
@@ -2420,7 +2429,8 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 
 // GetConnectionSummary godoc
 //
-//	@Summary	Returns resource count of accounts
+//	@Summary	Get connection summary
+//	@Description	Returns a connections summaries
 //	@Security	BearerToken
 //	@Tags		connections
 //	@Accept		json

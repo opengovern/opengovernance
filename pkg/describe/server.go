@@ -105,7 +105,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 // HandleListSources godoc
 //
 //	@Summary		List Sources
-//	@Description	Getting all of Keibi sources
+//	@Description	Retrieves list of all of Keibi sources
 //	@Security		BearerToken
 //	@Tags			schedule
 //	@Produce		json
@@ -153,14 +153,15 @@ func (h HttpServer) HandleListSources(ctx echo.Context) error {
 
 // HandleGetSource godoc
 //
-//	@Summary		Get Source by id
-//	@Security		BearerToken
-//	@Description	Getting Keibi source by id
-//	@Tags			schedule
-//	@Produce		json
-//	@Param			source_id	path		string	true	"SourceID"
-//	@Success		200			{object}	api.Source
-//	@Router			/schedule/api/v1/sources/{source_id} [get]
+//		@Summary		Get source
+//	 @Description	Retrieves Keibi source details by id
+//		@Security		BearerToken
+//		@Description	Getting Keibi source by id
+//		@Tags			schedule
+//		@Produce		json
+//		@Param			source_id	path		string	true	"SourceID"
+//		@Success		200			{object}	api.Source
+//		@Router			/schedule/api/v1/sources/{source_id} [get]
 func (h HttpServer) HandleGetSource(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
 	sourceUUID, err := uuid.Parse(sourceID)
@@ -273,7 +274,7 @@ func (h HttpServer) HandleListPendingInsightJobs(ctx echo.Context) error {
 // HandleListSourceDescribeJobs godoc
 //
 //	@Summary		List source describe jobs
-//	@Description	List source describe jobs
+//	@Description	Retrieves list of source describe jobs for a source by the given source id
 //	@Security		BearerToken
 //	@Tags			schedule
 //	@Produce		json
@@ -317,7 +318,7 @@ func (h HttpServer) HandleListSourceDescribeJobs(ctx echo.Context) error {
 // HandleListSourceComplianceReports godoc
 //
 //	@Summary		List source compliance reports
-//	@Description	List source compliance reports
+//	@Description	Retrieves list of source compliance reports for a source by the given source id
 //	@Security		BearerToken
 //	@Tags			schedule
 //	@Produce		json
@@ -629,7 +630,8 @@ func (h HttpServer) TriggerComplianceSummarizerJob(ctx echo.Context) error {
 
 // TriggerBenchmarkEvaluation godoc
 //
-//	@Summary	Triggers a benchmark evaluation job to run immediately
+//	@Summary	Trigger benchmark evaluation
+//	@Description	Triggers a benchmark evaluation job to run immediately
 //	@Security	BearerToken
 //	@Tags		describe
 //	@Produce	json
@@ -1118,7 +1120,7 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 // GetStackInsight godoc
 //
 //	@Summary		Get Stack Insight
-//	@Description	Get benchmark results for a stack
+//	@Description	Get Insight results for a stack in the given time period
 //	@Security		BearerToken
 //	@Tags			stack
 //	@Accept			json
@@ -1241,7 +1243,8 @@ func (h HttpServer) ListResourceStack(ctx echo.Context) error {
 
 // TriggerInsightEvaluation godoc
 //
-//	@Summary	Triggers a insight evaluation job to run immediately
+//	@Summary	Trigger insight evaluation
+//	@Description	Trigger an insight evaluation to run immediately with given details
 //	@Security	BearerToken
 //	@Tags		describe
 //	@Produce	json
@@ -1295,7 +1298,8 @@ func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
 
 // TriggerInsightEvaluation godoc
 //
-//	@Summary	Triggers an insight evaluation job to run immediately
+//	@Summary	Trigger stack insight evaluation
+//	@Description	Trigger an insight evaluation to run immediately on a stack with given details
 //	@Security	BearerToken
 //	@Tags		describe
 //	@Produce	json
@@ -1382,7 +1386,7 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 //	@Tags			describe
 //	@Accept			json
 //	@Produce		json
-//	@Param			jobId	path		string	true	"JobId"
+//	@Param			jobId	path		string	true	"Job Id"
 //	@Success		200		{object}	api.InsightJob
 //	@Router			/schedule/api/v1/insight/job/{jobId} [get]
 func (h HttpServer) GetInsightJob(ctx echo.Context) error {

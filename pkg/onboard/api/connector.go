@@ -5,8 +5,8 @@ import (
 )
 
 type Connector struct {
-	Name                source.Type                   `json:"name"`
-	Label               string                        `json:"label"`
+	Name                source.Type                   `json:"name" example:"Azure"`
+	Label               string                        `json:"label" example:"Azure"`
 	ShortDescription    string                        `json:"shortDescription"`
 	Description         string                        `json:"description"`
 	Direction           source.ConnectorDirectionType `json:"direction"`

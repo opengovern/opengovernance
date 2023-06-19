@@ -10,10 +10,10 @@ const (
 )
 
 type CatalogMetrics struct {
-	TotalConnections     int `json:"totalConnections"`
-	ConnectionsEnabled   int `json:"connectionsEnabled"`
-	HealthyConnections   int `json:"healthyConnections"`
-	UnhealthyConnections int `json:"unhealthyConnections"`
+	TotalConnections     int `json:"totalConnections" example:"20"`
+	ConnectionsEnabled   int `json:"connectionsEnabled" example:"20"`
+	HealthyConnections   int `json:"healthyConnections" example:"15"`
+	UnhealthyConnections int `json:"unhealthyConnections" example:"5"`
 }
 
 type CatalogConnector struct {
@@ -23,10 +23,10 @@ type CatalogConnector struct {
 	Name                string         `json:"name"`
 	Category            string         `json:"category"`
 	Description         string         `json:"description"`
-	ConnectionCount     int64          `json:"connectionCount"`
-	State               ConnectorState `json:"state"`
-	SourceType          source.Type    `json:"sourceType"`
-	AllowNewConnections bool           `json:"allowNewConnections"`
-	MaxConnectionsLimit int            `json:"maxConnectionsLimit"`
+	ConnectionCount     int64          `json:"connectionCount" example:"1"`
+	State               ConnectorState `json:"state" enums:"ACTIVE,NOT_SETUP" example:"ACTIVE"` // ACTIVE, NOT_SETUP
+	SourceType          source.Type    `json:"sourceType" example:"Azure"`                      // Cloud provider
+	AllowNewConnections bool           `json:"allowNewConnections" example:"true"`
+	MaxConnectionsLimit int            `json:"maxConnectionsLimit" example:"10"`
 	ConnectionFederator string         `json:"connectionFederator"`
 }

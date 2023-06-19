@@ -24,21 +24,21 @@ func IsValidSourceType(t SourceType) bool {
 }
 
 type Source struct {
-	ID                     uuid.UUID   `json:"id"`
-	Type                   source.Type `json:"type"`
-	LastDescribedAt        time.Time   `json:"lastDescribedAt"`
-	LastDescribeJobStatus  string      `json:"lastDescribeJobStatus"`
-	LastComplianceReportAt time.Time   `json:"lastComplianceReportAt"`
+	ID                     uuid.UUID   `json:"id" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	Type                   source.Type `json:"type" example:"Azure"`
+	LastDescribedAt        time.Time   `json:"lastDescribedAt" example:"2021-01-01T00:00:00Z"`
+	LastDescribeJobStatus  string      `json:"lastDescribeJobStatus" example:"COMPLETED"`
+	LastComplianceReportAt time.Time   `json:"lastComplianceReportAt" example:"2021-01-01T00:00:00Z"`
 }
 
 type DescribeSource struct {
 	DescribeResourceJobs []DescribeResource      `json:"describeResourceJobs"`
-	Status               DescribeSourceJobStatus `json:"status"`
+	Status               DescribeSourceJobStatus `json:"status" example:"IN_PROGRESS"` // CREATED, QUEUED, IN_PROGRESS, TIMEOUT, FAILED, SUCCEEDED
 }
 
 type DescribeResource struct {
-	ResourceType   string                    `json:"resourceType"`
-	Status         DescribeResourceJobStatus `json:"status"`
+	ResourceType   string                    `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
+	Status         DescribeResourceJobStatus `json:"status" example:"IN_PROGRESS"` // CREATED, QUEUED, IN_PROGRESS, TIMEOUT, FAILED, SUCCEEDED
 	FailureMessage string                    `json:"failureMessage"`
 }
 

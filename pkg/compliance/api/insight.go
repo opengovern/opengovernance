@@ -28,21 +28,21 @@ type InsightResult struct {
 }
 
 type Insight struct {
-	ID          uint                `json:"id" example:"23"`
-	Query       Query               `json:"query"`
-	Connector   source.Type         `json:"connector" example:"Azure"`
-	ShortTitle  string              `json:"shortTitle" example:"Clusters with no RBAC"`
-	LongTitle   string              `json:"longTitle" example:"List clusters that have role-based access control (RBAC) disabled"`
-	Description string              `json:"description" example:"List clusters that have role-based access control (RBAC) disabled"`
-	LogoURL     *string             `json:"logoURL"`
-	Tags        map[string][]string `json:"tags"`
-	Links       []string            `json:"links"`
+	ID          uint                `json:"id" example:"23"`                                                                         // Insight ID
+	Query       Query               `json:"query"`                                                                                   // Query
+	Connector   source.Type         `json:"connector" example:"Azure"`                                                               // Cloud Provider
+	ShortTitle  string              `json:"shortTitle" example:"Clusters with no RBAC"`                                              // Short Title
+	LongTitle   string              `json:"longTitle" example:"List clusters that have role-based access control (RBAC) disabled"`   // Long Title
+	Description string              `json:"description" example:"List clusters that have role-based access control (RBAC) disabled"` // Description
+	LogoURL     *string             `json:"logoURL"`                                                                                 // Logo URL
+	Tags        map[string][]string `json:"tags"`                                                                                    // Tags
+	Links       []string            `json:"links"`                                                                                   // Links
 	Enabled     bool                `json:"enabled" example:"true"`
 	Internal    bool                `json:"internal" example:"false"`
 
-	TotalResultValue    *int64          `json:"totalResultValue,omitempty" example:"10"`
-	OldTotalResultValue *int64          `json:"oldTotalResultValue,omitempty" example:"0"`
-	Results             []InsightResult `json:"result,omitempty"`
+	TotalResultValue    *int64          `json:"totalResultValue,omitempty" example:"10"`   // Number of Total Result Value
+	OldTotalResultValue *int64          `json:"oldTotalResultValue,omitempty" example:"0"` // Number of Old Total Result Value
+	Results             []InsightResult `json:"result,omitempty"`                          // Insight Results
 }
 
 type InsightGroup struct {
