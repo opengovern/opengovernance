@@ -2,14 +2,20 @@ package insight
 
 import (
 	"fmt"
+	"path"
 
+	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
+	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/internal"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 func PopulateDatabase(dbc *gorm.DB, insightsPath string) error {
 	p := GitParser{}
-	if err := p.ExtractInsights(insightsPath); err != nil {
+	if err := p.ExtractInsights(path.Join(insightsPath, internal.InsightsSubPath)); err != nil {
+		return err
+	}
+	if err := p.ExtractInsightGroups(path.Join(insightsPath, internal.InsightGroupsSubPath)); err != nil {
 		return err
 	}
 
@@ -41,6 +47,24 @@ func PopulateDatabase(dbc *gorm.DB, insightsPath string) error {
 		}
 		if err != nil {
 			return fmt.Errorf("failure in tag insert: %v", err)
+		}
+	}
+
+	for _, obj := range p.insightGroups {
+		err := dbc.Model(&db.InsightGroupInsight{}).Where("insight_group_id = ?", obj.ID).Delete(&db.InsightGroupInsight{}).Error
+		if err != nil {
+			return fmt.Errorf("failure in delete: %v", err)
+		}
+		err = dbc.Model(&db.InsightGroup{}).Where("id = ?", obj.ID).Delete(&db.InsightGroup{}).Error
+		if err != nil {
+			return fmt.Errorf("failure in delete: %v", err)
+		}
+		err = dbc.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "id"}},                                                              // key column
+			DoUpdates: clause.AssignmentColumns([]string{"short_title", "long_title", "description", "logo_url"}), // column needed to be updated
+		}).Create(&obj).Error
+		if err != nil {
+			return fmt.Errorf("failure in insert: %v", err)
 		}
 	}
 

@@ -322,6 +322,11 @@ func (i InsightGroup) ToApi() api.InsightGroup {
 	return ia
 }
 
+type InsightGroupInsight struct {
+	InsightGroupID uint `gorm:"primaryKey"`
+	InsightID      uint `gorm:"primaryKey"`
+}
+
 type Query struct {
 	ID             string `gorm:"primaryKey"`
 	QueryToExecute string
