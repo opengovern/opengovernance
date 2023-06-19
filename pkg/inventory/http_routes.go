@@ -154,16 +154,16 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 
 // GetTopAccountsByCost godoc
 //
-//	@Summary	Top accounts by cost
+//	@Summary		Top accounts by cost
 //	@Description	This API allows users to retrieve top n accounts by cost.
-//	@Security	BearerToken
-//	@Tags		cost
-//	@Accept		json
-//	@Produce	json
-//	@Param		count		query		int		true	"Number of top accounts returning."
-//	@Param		provider	query		string	false	"Provider"
-//	@Success	200			{object}	[]api.TopAccountCostResponse
-//	@Router		/inventory/api/v1/cost/top/accounts [get]
+//	@Security		BearerToken
+//	@Tags			cost
+//	@Accept			json
+//	@Produce		json
+//	@Param			count		query		int		true	"Number of top accounts returning."
+//	@Param			provider	query		string	false	"Provider"
+//	@Success		200			{object}	[]api.TopAccountCostResponse
+//	@Router			/inventory/api/v1/cost/top/accounts [get]
 func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	count, err := strconv.Atoi(ctx.QueryParam("count"))
@@ -231,17 +231,17 @@ func (h *HttpHandler) GetTopAccountsByCost(ctx echo.Context) error {
 
 // GetTopServicesByCost godoc
 //
-//	@Summary	Top services by cost
+//	@Summary		Top services by cost
 //	@Description	This API allows users to retrieve top n services by cost.
-//	@Security	BearerToken
-//	@Tags		cost
-//	@Accept		json
-//	@Produce	json
-//	@Param		count		query		int		true	"Number of top services returning."
-//	@Param		provider	query		string	false	"Provider"
-//	@Param		sourceId	query		string	false	"Source ID"
-//	@Success	200			{object}	[]api.TopServiceCostResponse
-//	@Router		/inventory/api/v1/cost/top/services [get]
+//	@Security		BearerToken
+//	@Tags			cost
+//	@Accept			json
+//	@Produce		json
+//	@Param			count		query		int		true	"Number of top services returning."
+//	@Param			provider	query		string	false	"Provider"
+//	@Param			sourceId	query		string	false	"Source ID"
+//	@Success		200			{object}	[]api.TopServiceCostResponse
+//	@Router			/inventory/api/v1/cost/top/services [get]
 func (h *HttpHandler) GetTopServicesByCost(ctx echo.Context) error {
 	provider, _ := source.ParseType(ctx.QueryParam("provider"))
 	count, err := strconv.Atoi(ctx.QueryParam("count"))
@@ -550,16 +550,16 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 
 // ListResourceTypeTags godoc
 //
-//	@Summary	List resourcetype tags
+//	@Summary		List resourcetype tags
 //	@Description	This API allows users to retrieve a list of tag keys with their possible values for all resource types.
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		connector		query		[]string	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Success	200				{object}	map[string][]string
-//	@Router		/inventory/api/v2/resources/tag [get]
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector		query		[]string	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Success		200				{object}	map[string][]string
+//	@Router			/inventory/api/v2/resources/tag [get]
 func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
@@ -580,17 +580,17 @@ func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 
 // GetResourceTypeTag godoc
 //
-//	@Summary	Get resourcetype tag
+//	@Summary		Get resourcetype tag
 //	@Description	This API allows users to retrieve a list of possible values for a given tag key for all resource types.
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		connector		query		[]string	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		key				path		string		true	"Tag key"
-//	@Success	200				{object}	[]string
-//	@Router		/inventory/api/v2/resources/tag/{key} [get]
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector		query		[]string	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param			key				path		string		true	"Tag key"
+//	@Success		200				{object}	[]string
+//	@Router			/inventory/api/v2/resources/tag/{key} [get]
 func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
@@ -649,23 +649,23 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 
 // ListResourceTypeMetricsHandler godoc
 //
-//	@Summary	List resource metrics
+//	@Summary		List resource metrics
 //	@Description	This API allows users to retrieve a list of resource types with metrics of each type based on the given input filters.
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
-//	@Param		servicename		query		[]string		false	"Service names to filter by"
-//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param		endTime			query		string			false	"timestamp for resource count in epoch seconds"
-//	@Param		startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
-//	@Param		sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count)
-//	@Param		pageSize		query		int				false	"page size - default is 20"
-//	@Param		pageNumber		query		int				false	"page number - default is 1"
-//	@Success	200				{object}	api.ListResourceTypeMetricsResponse
-//	@Router		/inventory/api/v2/resources/metric [get]
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			servicename		query		[]string		false	"Service names to filter by"
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
+//	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
+//	@Param			sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count)
+//	@Param			pageSize		query		int				false	"page size - default is 20"
+//	@Param			pageNumber		query		int				false	"page number - default is 1"
+//	@Success		200				{object}	api.ListResourceTypeMetricsResponse
+//	@Router			/inventory/api/v2/resources/metric [get]
 func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	var err error
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
@@ -787,18 +787,18 @@ func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionID
 
 // GetResourceTypeMetricsHandler godoc
 //
-//	@Summary	Get resource metrics
+//	@Summary		Get resource metrics
 //	@Description	This API allows users to retrieve metrics for a specific resource type.
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		endTime			query		string		false	"timestamp for resource count in epoch seconds"
-//	@Param		startTime		query		string		false	"timestamp for resource count change comparison in epoch seconds"
-//	@Param		resourceType	path		string		true	"ResourceType"
-//	@Success	200				{object}	api.ResourceType
-//	@Router		/inventory/api/v2/resources/metric/{resourceType} [get]
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param			endTime			query		string		false	"timestamp for resource count in epoch seconds"
+//	@Param			startTime		query		string		false	"timestamp for resource count change comparison in epoch seconds"
+//	@Param			resourceType	path		string		true	"ResourceType"
+//	@Success		200				{object}	api.ResourceType
+//	@Router			/inventory/api/v2/resources/metric/{resourceType} [get]
 func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 	var err error
 	resourceType := ctx.Param("resourceType")
@@ -839,19 +839,19 @@ func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 
 // ListResourceTypeComposition godoc
 //
-//	@Summary	List resource type composition
-//	@Description	 This API allows users to retrieve tag values with the most resources for the given key.
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		key				path		string			true	"Tag key"
-//	@Param		top				query		int				true	"How many top values to return default is 5"
-//	@Param		connector		query		[]source.Type	false	"Connector types to filter by"
-//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param		time			query		string			false	"timestamp for resource count in epoch seconds"
-//	@Success	200				{object}	api.ListResourceTypeCompositionResponse
-//	@Router		/inventory/api/v2/resources/composition/{key} [get]
+//	@Summary		List resource type composition
+//	@Description	This API allows users to retrieve tag values with the most resources for the given key.
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			key				path		string			true	"Tag key"
+//	@Param			top				query		int				true	"How many top values to return default is 5"
+//	@Param			connector		query		[]source.Type	false	"Connector types to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			time			query		string			false	"timestamp for resource count in epoch seconds"
+//	@Success		200				{object}	api.ListResourceTypeCompositionResponse
+//	@Router			/inventory/api/v2/resources/composition/{key} [get]
 func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 	var err error
 	tagKey := ctx.Param("key")
@@ -942,22 +942,22 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 
 // ListResourceTypeTrend godoc
 //
-// @Summary	Get resource type trend
+//	@Summary		Get resource type trend
 //
 //	@Description	This API allows users to retrieve a list of resource counts over the course of the specified time frame based on the given input filters
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
-//	@Param		servicename		query		[]string		false	"Service names to filter by"
-//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param		startTime		query		string			false	"timestamp for start in epoch seconds"
-//	@Param		endTime			query		string			false	"timestamp for end in epoch seconds"
-//	@Param		datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
-//	@Success	200				{object}	[]api.ResourceTypeTrendDatapoint
-//	@Router		/inventory/api/v2/resources/trend [get]
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			servicename		query		[]string		false	"Service names to filter by"
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
+//	@Success		200				{object}	[]api.ResourceTypeTrendDatapoint
+//	@Router			/inventory/api/v2/resources/trend [get]
 func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 	var err error
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
@@ -1033,14 +1033,14 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 
 // ListServiceTags godoc
 //
-//	@Summary	List resourcetype tags
+//	@Summary		List resourcetype tags
 //	@Description	This API allows users to retrieve a list of possible values for a given tag key for all services.
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Success	200	{object}	map[string][]string
-//	@Router		/inventory/api/v2/services/tag [get]
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	map[string][]string
+//	@Router			/inventory/api/v2/services/tag [get]
 func (h *HttpHandler) ListServiceTags(ctx echo.Context) error {
 	tags, err := h.db.ListServiceTagsKeysWithPossibleValues()
 	if err != nil {
@@ -1052,15 +1052,15 @@ func (h *HttpHandler) ListServiceTags(ctx echo.Context) error {
 
 // GetServiceTag godoc
 //
-//	@Summary	Get resourcetype tag
+//	@Summary		Get resourcetype tag
 //	@Description	This API allows users to retrieve a list of possible values for a given tag key for all resource types.
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		key	path		string	true	"Tag key"
-//	@Success	200	{object}	[]string
-//	@Router		/inventory/api/v2/services/tag/{key} [get]
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			key	path		string	true	"Tag key"
+//	@Success		200	{object}	[]string
+//	@Router			/inventory/api/v2/services/tag/{key} [get]
 func (h *HttpHandler) GetServiceTag(ctx echo.Context) error {
 	tagKey := ctx.Param("key")
 	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
@@ -1076,22 +1076,22 @@ func (h *HttpHandler) GetServiceTag(ctx echo.Context) error {
 
 // ListServiceMetricsHandler godoc
 //
-//	@Summary	List services metrics
+//	@Summary		List services metrics
 //	@Description	This API allows users to retrieve a list of services with metrics of each type based on the given input filters.
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
-//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param		startTime		query		string			false	"timestamp for old values in epoch seconds"
-//	@Param		endTime			query		string			false	"timestamp for current values in epoch seconds"
-//	@Param		sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count)
-//	@Param		pageSize		query		int				false	"page size - default is 20"
-//	@Param		pageNumber		query		int				false	"page number - default is 1"
-//	@Success	200				{object}	api.ListServiceMetricsResponse
-//	@Router		/inventory/api/v2/services/metric [get]
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			startTime		query		string			false	"timestamp for old values in epoch seconds"
+//	@Param			endTime			query		string			false	"timestamp for current values in epoch seconds"
+//	@Param			sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count)
+//	@Param			pageSize		query		int				false	"page size - default is 20"
+//	@Param			pageNumber		query		int				false	"page number - default is 1"
+//	@Success		200				{object}	api.ListServiceMetricsResponse
+//	@Router			/inventory/api/v2/services/metric [get]
 func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 	var err error
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
@@ -1210,17 +1210,17 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 
 // GetServiceMetricsHandler godoc
 //
-//	@Summary	Get service metrics
+//	@Summary		Get service metrics
 //	@Description	This API allows users to retrieve a service with metrics.
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		serviceName		path		string		true	"ServiceName"
-//	@Param		connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Param		startTime		query		string		false	"timestamp for old values in epoch seconds"
-//	@Param		endTime			query		string		false	"timestamp for current values in epoch seconds"
-//	@Success	200				{object}	api.Service
-//	@Router		/inventory/api/v2/services/metric/{serviceName} [get]
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			serviceName		path		string		true	"ServiceName"
+//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param			startTime		query		string		false	"timestamp for old values in epoch seconds"
+//	@Param			endTime			query		string		false	"timestamp for current values in epoch seconds"
+//	@Success		200				{object}	api.Service
+//	@Router			/inventory/api/v2/services/metric/{serviceName} [get]
 func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 	var err error
 	serviceName := ctx.Param("serviceName")
@@ -1293,21 +1293,21 @@ func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 
 // ListCostMetricsHandler godoc
 //
-//	@Summary	List cost metrics
+//	@Summary		List cost metrics
 //	@Description	This API allows users to retrieve cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param		startTime		query		string			false	"timestamp for start in epoch seconds"
-//	@Param		endTime			query		string			false	"timestamp for end in epoch seconds"
-//	@Param		sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost)
-//	@Param		pageSize		query		int				false	"page size - default is 20"
-//	@Param		pageNumber		query		int				false	"page number - default is 1"
-//	@Success	200				{object}	api.ListCostMetricsResponse
-//	@Router		/inventory/api/v2/cost/metric [get]
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param			sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost)
+//	@Param			pageSize		query		int				false	"page size - default is 20"
+//	@Param			pageNumber		query		int				false	"page number - default is 1"
+//	@Success		200				{object}	api.ListCostMetricsResponse
+//	@Router			/inventory/api/v2/cost/metric [get]
 func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 	var err error
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
@@ -1420,19 +1420,19 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 
 // ListCostComposition godoc
 //
-//	@Summary	List cost composition
+//	@Summary		List cost composition
 //	@Description	This API allows users to retrieve the cost composition with respect to specified filters. The API returns information such as the total cost for the given time range, and the top services by cost.
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param		top				query		int				false	"How many top values to return default is 5"
-//	@Param		startTime		query		string			false	"timestamp for start in epoch seconds"
-//	@Param		endTime			query		string			false	"timestamp for end in epoch seconds"
-//	@Success	200				{object}	api.ListCostCompositionResponse
-//	@Router		/inventory/api/v2/cost/composition [get]
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			top				query		int				false	"How many top values to return default is 5"
+//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Success		200				{object}	api.ListCostCompositionResponse
+//	@Router			/inventory/api/v2/cost/composition [get]
 func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 	var err error
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
@@ -1529,19 +1529,19 @@ func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 
 // GetCostTrend godoc
 //
-//	@Summary	Get Cost Trend
-//	@Description This API allows users to retrieve a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.
-//	@Security	BearerToken
-//	@Tags		inventory
-//	@Accept		json
-//	@Produce	json
-//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param		startTime		query		string			false	"timestamp for start in epoch seconds"
-//	@Param		endTime			query		string			false	"timestamp for end in epoch seconds"
-//	@Param		datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
-//	@Success	200				{object}	[]api.CostTrendDatapoint
-//	@Router		/inventory/api/v2/cost/trend [get]
+//	@Summary		Get Cost Trend
+//	@Description	This API allows users to retrieve a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
+//	@Success		200				{object}	[]api.CostTrendDatapoint
+//	@Router			/inventory/api/v2/cost/trend [get]
 func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 	var err error
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))

@@ -2023,6 +2023,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve top n accounts by cost.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2032,7 +2033,7 @@ const docTemplate = `{
                 "tags": [
                     "cost"
                 ],
-                "summary": "Returns top n accounts of specified provider by cost",
+                "summary": "Top accounts by cost",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2045,8 +2046,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Provider",
                         "name": "provider",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2069,6 +2069,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve top n services by cost.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2078,7 +2079,7 @@ const docTemplate = `{
                 "tags": [
                     "cost"
                 ],
-                "summary": "Returns top n services of specified provider by cost",
+                "summary": "Top services by cost",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2091,15 +2092,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Provider",
                         "name": "provider",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "SourceID",
+                        "description": "Source ID",
                         "name": "sourceId",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3013,6 +3012,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve the cost composition with respect to specified filters. The API returns information such as the total cost for the given time range, and the top services by cost.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3022,7 +3022,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Returns cost composition for a given time range",
+                "summary": "List cost composition",
                 "parameters": [
                     {
                         "type": "array",
@@ -3053,8 +3053,7 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "How many top values to return default is 5",
                         "name": "top",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -3086,6 +3085,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3095,7 +3095,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Returns list of cost metrics",
+                "summary": "List cost metrics",
                 "parameters": [
                     {
                         "type": "array",
@@ -3174,6 +3174,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3183,7 +3184,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Returns list of costs over the course of the specified time frame based on the given input filters",
+                "summary": "Get Cost Trend",
                 "parameters": [
                     {
                         "type": "array",
@@ -3680,6 +3681,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve tag values with the most resources for the given key.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3689,7 +3691,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Return tag values with most resources for the given key",
+                "summary": "List resource type composition",
                 "parameters": [
                     {
                         "type": "string",
@@ -3754,6 +3756,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve a list of resource types with metrics of each type based on the given input filters.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3763,7 +3766,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Returns list of resource types with metrics of each type based on the given input filters",
+                "summary": "List resource metrics",
                 "parameters": [
                     {
                         "type": "array",
@@ -3862,6 +3865,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve metrics for a specific resource type.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3871,7 +3875,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Returns resource type with metrics",
+                "summary": "Get resource metrics",
                 "parameters": [
                     {
                         "type": "array",
@@ -3920,6 +3924,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve a list of tag keys with their possible values for all resource types.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3929,7 +3934,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Return list of the keys with possible values for filtering resources types",
+                "summary": "List resourcetype tags",
                 "parameters": [
                     {
                         "type": "array",
@@ -3975,6 +3980,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve a list of possible values for a given tag key for all resource types.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3984,7 +3990,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Return list of the possible values for filtering resources types with specified key",
+                "summary": "Get resourcetype tag",
                 "parameters": [
                     {
                         "type": "array",
@@ -4034,6 +4040,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve a list of resource counts over the course of the specified time frame based on the given input filters",
                 "consumes": [
                     "application/json"
                 ],
@@ -4043,7 +4050,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Returns list of resource counts over the course of the specified time frame based on the given input filters",
+                "summary": "Get resource type trend",
                 "parameters": [
                     {
                         "type": "array",
@@ -4129,6 +4136,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve a list of services with metrics of each type based on the given input filters.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4138,7 +4146,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Returns list of services with their metrics based on the given input filters",
+                "summary": "List services metrics",
                 "parameters": [
                     {
                         "type": "array",
@@ -4222,11 +4230,7 @@ const docTemplate = `{
         },
         "/inventory/api/v2/services/metric/{serviceName}": {
             "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
+                "description": "This API allows users to retrieve a service with metrics.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4236,7 +4240,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Returns the service with metrics for the given service name",
+                "summary": "Get service metrics",
                 "parameters": [
                     {
                         "type": "string",
@@ -4434,6 +4438,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve a list of possible values for a given tag key for all services.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4443,7 +4448,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Return list of the keys with possible values for filtering services",
+                "summary": "List resourcetype tags",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -4467,6 +4472,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
+                "description": "This API allows users to retrieve a list of possible values for a given tag key for all resource types.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4476,7 +4482,7 @@ const docTemplate = `{
                 "tags": [
                     "inventory"
                 ],
-                "summary": "Return list of the possible values for filtering services with specified key",
+                "summary": "Get resourcetype tag",
                 "parameters": [
                     {
                         "type": "string",
@@ -4514,6 +4520,17 @@ const docTemplate = `{
                     "metadata"
                 ],
                 "summary": "Sets the config metadata for the given key",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_api.SetConfigMetadataRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -6452,7 +6469,7 @@ const docTemplate = `{
                 "tags": [
                     "stack"
                 ],
-                "summary": "Evaluate Stack",
+                "summary": "Trigger Stack benchmark",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -7347,9 +7364,35 @@ const docTemplate = `{
         "describe.ComplianceReportJob": {
             "type": "object",
             "properties": {
-                "benchmarkID": {
+                "BenchmarkId": {
                     "description": "Not the primary key but should be a unique identifier",
-                    "type": "string"
+                    "type": "string",
+                    "example": "cis-azure-v1.1.0"
+                },
+                "ReportCreatedAt": {
+                    "type": "integer",
+                    "example": 1619510400
+                },
+                "SourceId": {
+                    "description": "Not the primary key but should be a unique identifier",
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                },
+                "SourceType": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
+                },
+                "Status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus"
+                        }
+                    ],
+                    "example": "InProgress"
                 },
                 "createdAt": {
                     "type": "string"
@@ -7364,21 +7407,9 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "reportCreatedAt": {
-                    "type": "integer"
-                },
-                "scheduleJobID": {
-                    "type": "integer"
-                },
-                "sourceID": {
-                    "description": "Not the primary key but should be a unique identifier",
-                    "type": "string"
-                },
-                "sourceType": {
-                    "$ref": "#/definitions/source.Type"
-                },
-                "status": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus"
+                "scheduleJobId": {
+                    "type": "integer",
+                    "example": 1
                 },
                 "updatedAt": {
                     "type": "string"
@@ -10057,7 +10088,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "azure"
                 },
                 "cost_dimension_name": {
                     "type": "string"
@@ -10276,7 +10312,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "others": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 100
                 },
                 "top_values": {
                     "type": "object",
@@ -10285,10 +10322,12 @@ const docTemplate = `{
                     }
                 },
                 "total_cost_value": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 1000
                 },
                 "total_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 10
                 }
             }
         },
@@ -10302,10 +10341,12 @@ const docTemplate = `{
                     }
                 },
                 "total_cost": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 1000
                 },
                 "total_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 10
                 }
             }
         },
@@ -10363,7 +10404,8 @@ const docTemplate = `{
                     }
                 },
                 "total_resource_type_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
                 }
             }
         },
@@ -10394,7 +10436,8 @@ const docTemplate = `{
                     }
                 },
                 "total_service_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
                 }
             }
         },
@@ -10408,10 +10451,12 @@ const docTemplate = `{
                     }
                 },
                 "total_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 10000
                 },
                 "total_services": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 50
                 }
             }
         },
@@ -10652,11 +10697,18 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "description": "Cloud Provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 },
                 "count": {
                     "description": "Number of Resources of this Resource Type - Metric",
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
                 },
                 "insights": {
                     "description": "List of Insights that support this Resource Type - Metadata (GET only)",
@@ -10670,22 +10722,31 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "logo_uri": {
+                    "description": "Logo URI",
                     "type": "string"
                 },
                 "old_count": {
                     "description": "Number of Resources of this Resource Type in the past - Metric",
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 90
                 },
                 "resource_name": {
-                    "type": "string"
+                    "description": "Resource Name",
+                    "type": "string",
+                    "example": "VM"
                 },
                 "resource_type": {
-                    "type": "string"
+                    "description": "Resource Type",
+                    "type": "string",
+                    "example": "Microsoft.Compute/virtualMachines"
                 },
                 "service_name": {
-                    "type": "string"
+                    "description": "Service Name",
+                    "type": "string",
+                    "example": "compute"
                 },
                 "tags": {
+                    "description": "Tags",
                     "type": "object",
                     "additionalProperties": {
                         "type": "array",
@@ -10768,16 +10829,23 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connector": {
-                    "$ref": "#/definitions/source.Type"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 },
                 "logo_uri": {
                     "type": "string"
                 },
                 "old_resource_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 90
                 },
                 "resource_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
                 },
                 "resource_types": {
                     "type": "array",
@@ -10786,10 +10854,12 @@ const docTemplate = `{
                     }
                 },
                 "service_label": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Compute"
                 },
                 "service_name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "compute"
                 },
                 "tags": {
                     "type": "object",
@@ -10940,19 +11010,23 @@ const docTemplate = `{
             "properties": {
                 "cost": {
                     "description": "Account costs",
-                    "type": "number"
+                    "type": "number",
+                    "example": 100
                 },
                 "providerConnectionID": {
                     "description": "Account Provider Connection ID",
-                    "type": "string"
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
                 "providerConnectionName": {
                     "description": "Account Provider Connection Name",
-                    "type": "string"
+                    "type": "string",
+                    "example": "example-account"
                 },
                 "sourceID": {
                     "description": "Source Id",
-                    "type": "string"
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 }
             }
         },
@@ -10991,12 +11065,23 @@ const docTemplate = `{
             "properties": {
                 "cost": {
                     "description": "Service Cost",
-                    "type": "number"
+                    "type": "number",
+                    "example": 100
                 },
                 "serviceName": {
                     "description": "Service Name",
-                    "type": "string"
+                    "type": "string",
+                    "example": "compute"
                 }
+            }
+        },
+        "gitlab_com_keibiengine_keibi-engine_pkg_metadata_api.SetConfigMetadataRequest": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {}
             }
         },
         "gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadata": {
@@ -12007,8 +12092,6 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {

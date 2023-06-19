@@ -49,9 +49,25 @@ definitions:
     type: object
   describe.ComplianceReportJob:
     properties:
-      benchmarkID:
+      BenchmarkId:
         description: Not the primary key but should be a unique identifier
+        example: cis-azure-v1.1.0
         type: string
+      ReportCreatedAt:
+        example: 1619510400
+        type: integer
+      SourceId:
+        description: Not the primary key but should be a unique identifier
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      SourceType:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
+      Status:
+        allOf:
+        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus'
+        example: InProgress
       createdAt:
         type: string
       deletedAt:
@@ -61,17 +77,9 @@ definitions:
         type: string
       id:
         type: integer
-      reportCreatedAt:
+      scheduleJobId:
+        example: 1
         type: integer
-      scheduleJobID:
-        type: integer
-      sourceID:
-        description: Not the primary key but should be a unique identifier
-        type: string
-      sourceType:
-        $ref: '#/definitions/source.Type'
-      status:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus'
       updatedAt:
         type: string
     type: object
@@ -1969,7 +1977,9 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostMetric:
     properties:
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: azure
       cost_dimension_name:
         type: string
       daily_cost_at_end_time:
@@ -2123,14 +2133,17 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostCompositionResponse:
     properties:
       others:
+        example: 100
         type: number
       top_values:
         additionalProperties:
           type: number
         type: object
       total_cost_value:
+        example: 1000
         type: number
       total_count:
+        example: 10
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostMetricsResponse:
@@ -2140,8 +2153,10 @@ definitions:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostMetric'
         type: array
       total_cost:
+        example: 1000
         type: number
       total_count:
+        example: 10
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest:
@@ -2179,6 +2194,7 @@ definitions:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
         type: array
       total_resource_type_count:
+        example: 100
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse:
@@ -2199,6 +2215,7 @@ definitions:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service'
         type: array
       total_service_count:
+        example: 100
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse:
@@ -2208,8 +2225,10 @@ definitions:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service'
         type: array
       total_count:
+        example: 10000
         type: integer
       total_services:
+        example: 50
         type: integer
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse:
@@ -2395,9 +2414,13 @@ definitions:
         description: Number of Compliance that use this Resource Type - Metadata
         type: integer
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Cloud Provider
+        example: Azure
       count:
         description: Number of Resources of this Resource Type - Metric
+        example: 100
         type: integer
       insights:
         description: List of Insights that support this Resource Type - Metadata (GET
@@ -2409,21 +2432,30 @@ definitions:
         description: Number of Insights that use this Resource Type - Metadata
         type: integer
       logo_uri:
+        description: Logo URI
         type: string
       old_count:
         description: Number of Resources of this Resource Type in the past - Metric
+        example: 90
         type: integer
       resource_name:
+        description: Resource Name
+        example: VM
         type: string
       resource_type:
+        description: Resource Type
+        example: Microsoft.Compute/virtualMachines
         type: string
       service_name:
+        description: Service Name
+        example: compute
         type: string
       tags:
         additionalProperties:
           items:
             type: string
           type: array
+        description: Tags
         type: object
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeFull:
@@ -2477,20 +2509,26 @@ definitions:
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service:
     properties:
       connector:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
       logo_uri:
         type: string
       old_resource_count:
+        example: 90
         type: integer
       resource_count:
+        example: 100
         type: integer
       resource_types:
         items:
           $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
         type: array
       service_label:
+        example: Compute
         type: string
       service_name:
+        example: compute
         type: string
       tags:
         additionalProperties:
@@ -2598,15 +2636,19 @@ definitions:
     properties:
       cost:
         description: Account costs
+        example: 100
         type: number
       providerConnectionID:
         description: Account Provider Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
       providerConnectionName:
         description: Account Provider Connection Name
+        example: example-account
         type: string
       sourceID:
         description: Source Id
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.TopAccountResponse:
@@ -2636,10 +2678,18 @@ definitions:
     properties:
       cost:
         description: Service Cost
+        example: 100
         type: number
       serviceName:
         description: Service Name
+        example: compute
         type: string
+    type: object
+  gitlab_com_keibiengine_keibi-engine_pkg_metadata_api.SetConfigMetadataRequest:
+    properties:
+      key:
+        type: string
+      value: {}
     type: object
   gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadata:
     properties:
@@ -4650,6 +4700,7 @@ paths:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve top n accounts by cost.
       parameters:
       - description: Number of top accounts returning.
         in: query
@@ -4659,7 +4710,6 @@ paths:
       - description: Provider
         in: query
         name: provider
-        required: true
         type: string
       produces:
       - application/json
@@ -4672,13 +4722,14 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Returns top n accounts of specified provider by cost
+      summary: Top accounts by cost
       tags:
       - cost
   /inventory/api/v1/cost/top/services:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve top n services by cost.
       parameters:
       - description: Number of top services returning.
         in: query
@@ -4688,12 +4739,10 @@ paths:
       - description: Provider
         in: query
         name: provider
-        required: true
         type: string
-      - description: SourceID
+      - description: Source ID
         in: query
         name: sourceId
-        required: true
         type: string
       produces:
       - application/json
@@ -4706,7 +4755,7 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Returns top n services of specified provider by cost
+      summary: Top services by cost
       tags:
       - cost
   /inventory/api/v1/locations/{connector}:
@@ -5309,6 +5358,9 @@ paths:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve the cost composition with respect
+        to specified filters. The API returns information such as the total cost for
+        the given time range, and the top services by cost.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -5331,7 +5383,6 @@ paths:
       - description: How many top values to return default is 5
         in: query
         name: top
-        required: true
         type: integer
       - description: timestamp for start in epoch seconds
         in: query
@@ -5350,13 +5401,16 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostCompositionResponse'
       security:
       - BearerToken: []
-      summary: Returns cost composition for a given time range
+      summary: List cost composition
       tags:
       - inventory
   /inventory/api/v2/cost/metric:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve cost metrics with respect to
+        specified filters. The API returns information such as the total cost and
+        costs per each service based on the specified filters.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -5408,13 +5462,16 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostMetricsResponse'
       security:
       - BearerToken: []
-      summary: Returns list of cost metrics
+      summary: List cost metrics
       tags:
       - inventory
   /inventory/api/v2/cost/trend:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a list of costs over the course
+        of the specified time frame based on the given input filters. If startTime
+        and endTime are empty, the API returns the last month trend.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -5457,8 +5514,7 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Returns list of costs over the course of the specified time frame based
-        on the given input filters
+      summary: Get Cost Trend
       tags:
       - inventory
   /inventory/api/v2/insights:
@@ -5756,6 +5812,8 @@ paths:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve tag values with the most resources
+        for the given key.
       parameters:
       - description: Tag key
         in: path
@@ -5798,13 +5856,15 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeCompositionResponse'
       security:
       - BearerToken: []
-      summary: Return tag values with most resources for the given key
+      summary: List resource type composition
       tags:
       - inventory
   /inventory/api/v2/resources/metric:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a list of resource types with
+        metrics of each type based on the given input filters.
       parameters:
       - collectionFormat: csv
         description: Key-Value tags in key=value format to filter by
@@ -5870,14 +5930,15 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse'
       security:
       - BearerToken: []
-      summary: Returns list of resource types with metrics of each type based on the
-        given input filters
+      summary: List resource metrics
       tags:
       - inventory
   /inventory/api/v2/resources/metric/{resourceType}:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve metrics for a specific resource
+        type.
       parameters:
       - collectionFormat: csv
         description: Connection IDs to filter by
@@ -5908,13 +5969,15 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
       security:
       - BearerToken: []
-      summary: Returns resource type with metrics
+      summary: Get resource metrics
       tags:
       - inventory
   /inventory/api/v2/resources/tag:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a list of tag keys with their
+        possible values for all resource types.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -5943,14 +6006,15 @@ paths:
             type: object
       security:
       - BearerToken: []
-      summary: Return list of the keys with possible values for filtering resources
-        types
+      summary: List resourcetype tags
       tags:
       - inventory
   /inventory/api/v2/resources/tag/{key}:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a list of possible values for
+        a given tag key for all resource types.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -5982,14 +6046,15 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Return list of the possible values for filtering resources types with
-        specified key
+      summary: Get resourcetype tag
       tags:
       - inventory
   /inventory/api/v2/resources/trend:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a list of resource counts over
+        the course of the specified time frame based on the given input filters
       parameters:
       - collectionFormat: csv
         description: Key-Value tags in key=value format to filter by
@@ -6046,14 +6111,15 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Returns list of resource counts over the course of the specified time
-        frame based on the given input filters
+      summary: Get resource type trend
       tags:
       - inventory
   /inventory/api/v2/services/metric:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a list of services with metrics
+        of each type based on the given input filters.
       parameters:
       - collectionFormat: csv
         description: Key-Value tags in key=value format to filter by
@@ -6112,14 +6178,14 @@ paths:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse'
       security:
       - BearerToken: []
-      summary: Returns list of services with their metrics based on the given input
-        filters
+      summary: List services metrics
       tags:
       - inventory
   /inventory/api/v2/services/metric/{serviceName}:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a service with metrics.
       parameters:
       - description: ServiceName
         in: path
@@ -6148,9 +6214,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service'
-      security:
-      - BearerToken: []
-      summary: Returns the service with metrics for the given service name
+      summary: Get service metrics
       tags:
       - inventory
   /inventory/api/v2/services/summary:
@@ -6258,6 +6322,8 @@ paths:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a list of possible values for
+        a given tag key for all services.
       produces:
       - application/json
       responses:
@@ -6271,13 +6337,15 @@ paths:
             type: object
       security:
       - BearerToken: []
-      summary: Return list of the keys with possible values for filtering services
+      summary: List resourcetype tags
       tags:
       - inventory
   /inventory/api/v2/services/tag/{key}:
     get:
       consumes:
       - application/json
+      description: This API allows users to retrieve a list of possible values for
+        a given tag key for all resource types.
       parameters:
       - description: Tag key
         in: path
@@ -6295,13 +6363,19 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Return list of the possible values for filtering services with specified
-        key
+      summary: Get resourcetype tag
       tags:
       - inventory
   /metadata/api/v1/metadata:
     post:
       description: Sets the config metadata for the given key
+      parameters:
+      - description: Request Body
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_api.SetConfigMetadataRequest'
       produces:
       - application/json
       responses:
@@ -7636,7 +7710,7 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Evaluate Stack
+      summary: Trigger Stack benchmark
       tags:
       - stack
   /schedule/api/v1/stacks/create:

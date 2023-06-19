@@ -58,7 +58,7 @@ func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
-//	@Param			req	body		api.SetConfigMetadataRequest	true	"Request Body"
+//	@Param			req	body	api.SetConfigMetadataRequest	true	"Request Body"
 //	@Success		200
 //	@Router			/metadata/api/v1/metadata [post]
 func (h HttpHandler) SetConfigMetadata(ctx echo.Context) error {
