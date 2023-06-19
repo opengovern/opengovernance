@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
@@ -376,24 +374,23 @@ func FetchDailyCostTrendByServicesBetween(client keibi.Client, connectionIDs []s
 }
 
 type FetchCostHistoryByAccountsQueryResponse struct {
-	Hits struct {
-		Total keibi.SearchTotal `json:"total"`
-		Hits  []struct {
-			ID      string                           `json:"_id"`
-			Score   float64                          `json:"_score"`
-			Index   string                           `json:"_index"`
-			Type    string                           `json:"_type"`
-			Version int64                            `json:"_version,omitempty"`
-			Source  summarizer.ConnectionCostSummary `json:"_source"`
-		} `json:"hits"`
-	} `json:"hits"`
+	Aggregations struct {
+		ConnectionIDGroup struct {
+			Buckets []struct {
+				Key          string `json:"key"`
+				CostSumGroup struct {
+					Value float64 `json:"value"`
+				} `json:"cost_sum_group"`
+			} `json:"buckets"`
+		} `json:"connection_id_group"`
+	} `json:"aggregations"`
 }
 
-func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, connectors []source.Type, connectionIDs []string, before time.Time, after time.Time, size int) (map[string][]summarizer.ConnectionCostSummary, error) {
+func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, connectors []source.Type, connectionIDs []string, before time.Time, after time.Time, size int) (map[string]float64, error) {
 	before = before.Truncate(24 * time.Hour)
 	after = after.Truncate(24 * time.Hour)
 
-	hits := make(map[string][]summarizer.ConnectionCostSummary)
+	hits := make(map[string]float64)
 	res := make(map[string]any)
 	var filters []any
 
@@ -430,12 +427,28 @@ func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, connectors []so
 		})
 	}
 
-	res["size"] = size
+	res["size"] = 0
 	res["query"] = map[string]any{
 		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
+	res["aggs"] = map[string]any{
+		"connection_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "source_id",
+				"size":  size,
+			},
+			"aggs": map[string]any{
+				"cost_sum_group": map[string]any{
+					"sum": map[string]string{
+						"field": "cost_value",
+					},
+				},
+			},
+		},
+	}
+
 	b, err := json.Marshal(res)
 	if err != nil {
 		return nil, err
@@ -449,32 +462,8 @@ func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, connectors []so
 		return nil, err
 	}
 
-	for _, hit := range response.Hits.Hits {
-		if v, ok := hits[hit.Source.SourceID]; !ok {
-			hits[hit.Source.SourceID] = []summarizer.ConnectionCostSummary{
-				hit.Source,
-			}
-		} else {
-			hits[hit.Source.SourceID] = append(v, hit.Source)
-		}
-	}
-
-	for _, hitArr := range hits {
-		for _, hit := range hitArr {
-			switch strings.ToLower(hit.ResourceType) {
-			case "aws::costexplorer::byaccountdaily":
-				hitCostStr, err := json.Marshal(hit.Cost)
-				if err != nil {
-					return nil, err
-				}
-				var hitCost model.CostExplorerByServiceDailyDescription
-				err = json.Unmarshal(hitCostStr, &hitCost)
-				if err != nil {
-					return nil, err
-				}
-				hit.Cost = hitCost
-			}
-		}
+	for _, connectionIDGroup := range response.Aggregations.ConnectionIDGroup.Buckets {
+		hits[connectionIDGroup.Key] = connectionIDGroup.CostSumGroup.Value
 	}
 
 	return hits, nil
