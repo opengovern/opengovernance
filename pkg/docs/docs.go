@@ -1477,6 +1477,7 @@ const docTemplate = `{
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter insights by connector",
                         "name": "connector",
                         "in": "query"
@@ -1486,6 +1487,7 @@ const docTemplate = `{
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1547,6 +1549,7 @@ const docTemplate = `{
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1602,6 +1605,7 @@ const docTemplate = `{
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -4666,7 +4670,11 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs",
                         "name": "connectionId",
                         "in": "query"

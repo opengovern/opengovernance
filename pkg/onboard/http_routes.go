@@ -2292,7 +2292,7 @@ func (h HttpHandler) CountConnections(ctx echo.Context) error {
 //	@Accept		json
 //	@Produce	json
 //	@Param		connector		query		source.Type	true	"Connector"
-//	@Param		connectionId	query		string		false	"Connection IDs"
+//	@Param		connectionId	query		[]string	false	"Connection IDs"
 //	@Param		healthState		query		string		false	"Source Healthstate"	Enums(healthy,unhealthy)
 //	@Param		lifecycleState	query		string		false	"lifecycle state filter"
 //	@Param		pageSize		query		int			false	"page size - default is 20"

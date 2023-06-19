@@ -4357,7 +4357,8 @@ paths:
         in: query
         name: tag
         type: string
-      - description: filter insights by connector
+      - collectionFormat: csv
+        description: filter insights by connector
         in: query
         items:
           enum:
@@ -4367,7 +4368,8 @@ paths:
           type: string
         name: connector
         type: array
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -4408,7 +4410,8 @@ paths:
         name: insightGroupId
         required: true
         type: string
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -4445,7 +4448,8 @@ paths:
         name: insightGroupId
         required: true
         type: string
-      - description: filter the result by source id
+      - collectionFormat: csv
+        description: filter the result by source id
         in: query
         items:
           type: string
@@ -6414,10 +6418,13 @@ paths:
         name: connector
         required: true
         type: string
-      - description: Connection IDs
+      - collectionFormat: csv
+        description: Connection IDs
         in: query
+        items:
+          type: string
         name: connectionId
-        type: string
+        type: array
       - description: Source Healthstate
         enum:
         - healthy

@@ -1471,6 +1471,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter insights by connector",
                         "name": "connector",
                         "in": "query"
@@ -1480,6 +1481,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1541,6 +1543,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1596,6 +1599,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -4660,7 +4664,11 @@
                         "required": true
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs",
                         "name": "connectionId",
                         "in": "query"
