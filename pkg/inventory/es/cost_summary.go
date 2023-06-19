@@ -66,7 +66,7 @@ func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs [
 			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
-	if connectors != nil {
+	if len(connectors) > 0 {
 		connectorsStr := make([]string, 0, len(connectors))
 		for _, connector := range connectors {
 			connectorsStr = append(connectorsStr, connector.String())
@@ -176,7 +176,7 @@ func FetchDailyCostHistoryByServicesAtTime(client keibi.Client, connectionIDs []
 			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
-	if connectors != nil {
+	if len(connectors) > 0 {
 		connectorsStr := make([]string, 0, len(connectors))
 		for _, connector := range connectors {
 			connectorsStr = append(connectorsStr, connector.String())
@@ -296,7 +296,7 @@ func FetchDailyCostTrendByServicesBetween(client keibi.Client, connectionIDs []s
 			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
-	if connectors != nil {
+	if len(connectors) > 0 {
 		connectorsStr := make([]string, 0, len(connectors))
 		for _, connector := range connectors {
 			connectorsStr = append(connectorsStr, connector.String())
@@ -417,7 +417,7 @@ func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, connectors []so
 			"terms": map[string][]string{"source_id": connectionIDs},
 		})
 	}
-	if connectors != nil {
+	if len(connectors) > 0 {
 		connectorsStr := make([]string, 0, len(connectors))
 		for _, connector := range connectors {
 			connectorsStr = append(connectorsStr, connector.String())
