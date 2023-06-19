@@ -59,12 +59,27 @@ func PopulateDatabase(dbc *gorm.DB, insightsPath string) error {
 		if err != nil {
 			return fmt.Errorf("failure in delete: %v", err)
 		}
+		insightIDsList := make([]uint, 0, len(obj.Insights))
+		for _, insight := range obj.Insights {
+			insightIDsList = append(insightIDsList, insight.ID)
+		}
+		obj.Insights = nil
 		err = dbc.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}},                                                              // key column
 			DoUpdates: clause.AssignmentColumns([]string{"short_title", "long_title", "description", "logo_url"}), // column needed to be updated
 		}).Create(&obj).Error
 		if err != nil {
 			return fmt.Errorf("failure in insert: %v", err)
+		}
+
+		for _, insightID := range insightIDsList {
+			err = dbc.Clauses(clause.OnConflict{DoNothing: true}).Create(&db.InsightGroupInsight{
+				InsightGroupID: obj.ID,
+				InsightID:      insightID,
+			}).Error
+			if err != nil {
+				return fmt.Errorf("failure in insert: %v", err)
+			}
 		}
 	}
 
