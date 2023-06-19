@@ -257,17 +257,18 @@ func FetchConnectionResourcesSummaryPage(client keibi.Client, connectors []sourc
 
 type FetchConnectionResourcesCountAtResponse struct {
 	Aggregations struct {
-		SummarizeJobIDGroup struct {
+		ConnectionIDGroup struct {
+			Key     string `json:"key"`
 			Buckets []struct {
-				SourceIDGroup struct {
+				Latest struct {
 					Hits ConnectionResourcesSummaryQueryHits `json:"hits"`
-				} `json:"source_id_group"`
+				} `json:"latest"`
 			} `json:"buckets"`
-		} `json:"summarize_job_id_group"`
+		} `json:"connection_id_group"`
 	} `json:"aggregations"`
 }
 
-func FetchConnectionResourcesCountAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, t time.Time, sort []map[string]any, size int) ([]summarizer.ConnectionResourcesSummary, error) {
+func FetchConnectionResourcesCountAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, t time.Time, size int) ([]summarizer.ConnectionResourcesSummary, error) {
 	var hits []summarizer.ConnectionResourcesSummary
 	res := make(map[string]any)
 	var filters []any
@@ -302,13 +303,7 @@ func FetchConnectionResourcesCountAtTime(client keibi.Client, connectors []sourc
 		})
 	}
 
-	sort = append(sort,
-		map[string]any{
-			"_id": "desc",
-		},
-	)
 	res["size"] = 0
-	res["sort"] = sort
 	res["query"] = map[string]any{
 		"bool": map[string]any{
 			"filter": filters,
@@ -316,19 +311,18 @@ func FetchConnectionResourcesCountAtTime(client keibi.Client, connectors []sourc
 	}
 
 	res["aggs"] = map[string]any{
-		"summarize_job_id_group": map[string]any{
+		"connection_id_group": map[string]any{
 			"terms": map[string]any{
-				"field": "summarize_job_id",
-				"size":  1,
-				"order": map[string]string{
-					"_term": "desc",
-				},
+				"field": "source_id",
+				"size":  size,
 			},
 			"aggs": map[string]any{
-				"source_id_group": map[string]any{
+				"latest": map[string]any{
 					"top_hits": map[string]any{
-						"size": size,
-						"sort": sort,
+						"size": 1,
+						"sort": map[string]string{
+							"described_at": "desc",
+						},
 					},
 				},
 			},
@@ -341,18 +335,17 @@ func FetchConnectionResourcesCountAtTime(client keibi.Client, connectors []sourc
 	}
 
 	query := string(b)
-
+	fmt.Println("query=", query, "index=", summarizer.ConnectionSummaryIndex)
 	var response FetchConnectionResourcesCountAtResponse
 	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(response.Aggregations.SummarizeJobIDGroup.Buckets) == 0 {
-		return hits, nil
-	}
-	for _, hit := range response.Aggregations.SummarizeJobIDGroup.Buckets[0].SourceIDGroup.Hits.Hits {
-		hits = append(hits, hit.Source)
+	for _, connectionIdBucket := range response.Aggregations.ConnectionIDGroup.Buckets {
+		for _, hit := range connectionIdBucket.Latest.Hits.Hits {
+			hits = append(hits, hit.Source)
+		}
 	}
 	return hits, nil
 }

@@ -1685,7 +1685,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 		}
 	}
 
-	hits, err := es.FetchConnectionResourcesCountAtTime(h.client, nil, connectionIDs, endTime, []map[string]any{{"described_at": "asc"}}, EsFetchPageSize)
+	hits, err := es.FetchConnectionResourcesCountAtTime(h.client, nil, connectionIDs, endTime, EsFetchPageSize)
 	for _, hit := range hits {
 		if v, ok := res[hit.SourceID]; ok {
 			v.Count += hit.ResourceCount
@@ -1697,11 +1697,10 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	}
 
 	costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, nil, connectionIDs, endTime, startTime, EsFetchPageSize)
-	aggregatedCostHits := internal.AggregateConnectionCosts(costs)
 	if err != nil {
 		return err
 	}
-	for connectionId, costValue := range aggregatedCostHits {
+	for connectionId, costValue := range costs {
 		if v, ok := res[connectionId]; ok {
 			v.Cost += costValue
 			res[connectionId] = v
@@ -1748,7 +1747,7 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 		ConnectionID: connectionId,
 	}
 
-	hits, err := es.FetchConnectionResourcesCountAtTime(h.client, nil, []string{connectionId}, endTime, []map[string]any{{"described_at": "asc"}}, EsFetchPageSize)
+	hits, err := es.FetchConnectionResourcesCountAtTime(h.client, nil, []string{connectionId}, endTime, EsFetchPageSize)
 	for _, hit := range hits {
 		if hit.SourceID == connectionId {
 			res.Count += hit.ResourceCount
@@ -1759,11 +1758,10 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 	}
 
 	costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, nil, []string{connectionId}, endTime, startTime, EsFetchPageSize)
-	aggregatedCostHits := internal.AggregateConnectionCosts(costs)
 	if err != nil {
 		return err
 	}
-	for costConnectionId, costValue := range aggregatedCostHits {
+	for costConnectionId, costValue := range costs {
 		if costConnectionId != connectionId {
 			continue
 		}
