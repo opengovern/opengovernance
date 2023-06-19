@@ -158,8 +158,8 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 		serviceCostSummary := &ServiceCostSummary{
 			ServiceName: *desc.Dimension1,
 			Cost:        desc,
-			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Unix(),
-			PeriodEnd:   getTimeFromTimestring(*desc.PeriodEnd).Unix(),
+			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Truncate(24 * time.Hour).Unix(),
+			PeriodEnd:   getTimeFromTimestring(*desc.PeriodEnd).Truncate(24 * time.Hour).Unix(),
 			ReportType:  CostProviderSummaryMonthly,
 		}
 		if serviceCostSummary.ServiceName == "" {
@@ -180,8 +180,8 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 		serviceCostSummary := &ServiceCostSummary{
 			ServiceName: *desc.Dimension1,
 			Cost:        desc,
-			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Unix(),
-			PeriodEnd:   getTimeFromTimestring(*desc.PeriodEnd).Unix(),
+			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Truncate(24 * time.Hour).Unix(),
+			PeriodEnd:   getTimeFromTimestring(*desc.PeriodEnd).Truncate(24 * time.Hour).Unix(),
 			ReportType:  CostProviderSummaryDaily,
 		}
 		if serviceCostSummary.ServiceName == "" {
@@ -202,8 +202,8 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 		connectionCostSummary := &ConnectionCostSummary{
 			AccountID:   *desc.Dimension1,
 			Cost:        desc,
-			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Unix(),
-			PeriodEnd:   getTimeFromTimestring(*desc.PeriodEnd).Unix(),
+			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Truncate(24 * time.Hour).Unix(),
+			PeriodEnd:   getTimeFromTimestring(*desc.PeriodEnd).Truncate(24 * time.Hour).Unix(),
 			ReportType:  CostConnectionSummaryMonthly,
 		}
 		return connectionCostSummary, key, nil
@@ -221,8 +221,8 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 		connectionCostSummary := &ConnectionCostSummary{
 			AccountID:   *desc.Dimension1,
 			Cost:        desc,
-			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Unix(),
-			PeriodEnd:   getTimeFromTimestring(*desc.PeriodEnd).Unix(),
+			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Truncate(24 * time.Hour).Unix(),
+			PeriodEnd:   getTimeFromTimestring(*desc.PeriodEnd).Truncate(24 * time.Hour).Unix(),
 			ReportType:  CostConnectionSummaryDaily,
 		}
 		return connectionCostSummary, key, nil
@@ -246,8 +246,8 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 		serviceCostSummary := &ServiceCostSummary{
 			ServiceName: string(CostResourceTypeAWSEBSVolume),
 			Cost:        desc,
-			PeriodStart: lookupResource.CreatedAt / 1000,
-			PeriodEnd:   lookupResource.CreatedAt / 1000,
+			PeriodStart: time.UnixMilli(lookupResource.CreatedAt).Truncate(24 * time.Hour).Unix(),
+			PeriodEnd:   time.UnixMilli(lookupResource.CreatedAt).Truncate(24 * time.Hour).Unix(),
 			ReportType:  CostProviderSummaryDaily,
 			Region:      &region,
 		}
@@ -266,8 +266,8 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 		serviceCostSummary := &ServiceCostSummary{
 			ServiceName: *desc.CostManagementCostByResourceType.ResourceType,
 			Cost:        desc.CostManagementCostByResourceType,
-			PeriodStart: getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Unix(),
-			PeriodEnd:   getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Unix(),
+			PeriodStart: getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Truncate(24 * time.Hour).Unix(),
+			PeriodEnd:   getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Truncate(24 * time.Hour).Unix(),
 			ReportType:  CostProviderSummaryDaily,
 		}
 		if serviceCostSummary.ServiceName == "" {
@@ -288,8 +288,8 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 		connectionCostSummary := &ConnectionCostSummary{
 			AccountID:   *desc.CostManagementCostBySubscription.SubscriptionID,
 			Cost:        desc.CostManagementCostBySubscription,
-			PeriodStart: getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Unix(),
-			PeriodEnd:   getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Unix(),
+			PeriodStart: getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Truncate(24 * time.Hour).Unix(),
+			PeriodEnd:   getTimeFromTimeInt(desc.CostManagementCostBySubscription.UsageDate).Truncate(24 * time.Hour).Unix(),
 			ReportType:  CostConnectionSummaryDaily,
 		}
 		return connectionCostSummary, key, nil
