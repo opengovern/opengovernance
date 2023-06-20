@@ -290,6 +290,8 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]string	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param			minCount		query		int			false "Minimum number of resources with this tag value, default 1"
+//	@Param 			endTime 		query 		int false "End time in unix timestamp format, default now"
 //	@Success		200				{object}	map[string][]string
 //	@Router			/inventory/api/v2/resources/tag [get]
 func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
@@ -302,11 +304,50 @@ func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
+	minCount := 1
+	if minCountStr := ctx.QueryParam("minCount"); minCountStr != "" {
+		minCountVal, err := strconv.ParseInt(minCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "minCount must be a number")
+		}
+		minCount = int(minCountVal)
+	}
+	endTime := time.Now()
+	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
+		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "endTime must be a number")
+		}
+		endTime = time.Unix(endTimeVal, 0)
+	}
+
 	tags, err := h.db.ListResourceTypeTagsKeysWithPossibleValues(connectorTypes, utils.GetPointer(true))
 	if err != nil {
 		return err
 	}
 	tags = model.TrimPrivateTags(tags)
+
+	resourceTypeCount, err := es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, endTime, nil, EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+
+	filteredTags := map[string][]string{}
+	for key, values := range tags {
+		for _, tagValue := range values {
+			resourceTypes, err := h.db.ListFilteredResourceTypes(map[string][]string{key: {tagValue}}, nil, connectorTypes, true)
+			if err != nil {
+				return err
+			}
+			for _, resourceType := range resourceTypes {
+				if resourceTypeCount[resourceType.ResourceType] >= minCount {
+					filteredTags[key] = append(filteredTags[key], tagValue)
+					break
+				}
+			}
+		}
+	}
+
 	return ctx.JSON(http.StatusOK, tags)
 }
 
@@ -320,6 +361,8 @@ func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]string	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param			minCount		query		int			false "Minimum number of resources with this tag value, default 1"
+//	@Param 			endTime 		query 		int false "End time in unix timestamp format, default now"
 //	@Param			key				path		string		true	"Tag key"
 //	@Success		200				{object}	[]string
 //	@Router			/inventory/api/v2/resources/tag/{key} [get]
@@ -337,15 +380,52 @@ func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
 	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
 		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
+	minCount := 1
+	if minCountStr := ctx.QueryParam("minCount"); minCountStr != "" {
+		minCountVal, err := strconv.ParseInt(minCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "minCount must be a number")
+		}
+		minCount = int(minCountVal)
+	}
+	endTime := time.Now()
+	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
+		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "endTime must be a number")
+		}
+		endTime = time.Unix(endTimeVal, 0)
+	}
 
 	tags, err := h.db.GetResourceTypeTagPossibleValues(tagKey, connectorTypes, utils.GetPointer(true))
 	if err != nil {
 		return err
 	}
+
+	resourceTypeCount, err := es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, endTime, nil, EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+
+	filteredTags := make([]string, 0, len(tags))
+	for _, tagValue := range tags {
+		resourceTypes, err := h.db.ListFilteredResourceTypes(map[string][]string{tagKey: {tagValue}}, nil, connectorTypes, true)
+		if err != nil {
+			return err
+		}
+		for _, resourceType := range resourceTypes {
+			if resourceTypeCount[resourceType.ResourceType] >= minCount {
+				filteredTags = append(filteredTags, tagValue)
+				break
+			}
+		}
+	}
+	tags = filteredTags
+
 	return ctx.JSON(http.StatusOK, tags)
 }
 
-func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, serviceNames []string, connectorTypes []source.Type, connectionIDs []string, timeAt int64) (int, []api.ResourceType, error) {
+func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, serviceNames []string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []api.ResourceType, error) {
 	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, serviceNames, connectorTypes, true)
 	if err != nil {
 		return 0, nil, err
@@ -357,9 +437,9 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 
 	var metricIndexed map[string]int
 	if len(connectionIDs) > 0 {
-		metricIndexed, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, timeAt, resourceTypeStrings, EsFetchPageSize)
 	} else {
-		metricIndexed, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, timeAt, resourceTypeStrings, EsFetchPageSize)
 	}
 	if err != nil {
 		return 0, nil, err
@@ -369,11 +449,13 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 	totalCount := 0
 	for _, resourceType := range resourceTypes {
 		apiResourceType := resourceType.ToApi()
-		if count, ok := metricIndexed[strings.ToLower(resourceType.ResourceType)]; ok {
+		if count, ok := metricIndexed[strings.ToLower(resourceType.ResourceType)]; ok && count >= minCount {
 			apiResourceType.Count = &count
 			totalCount += count
 		}
-		apiResourceTypes = append(apiResourceTypes, apiResourceType)
+		if (minCount == 0) || (apiResourceType.Count != nil && *apiResourceType.Count >= minCount) {
+			apiResourceTypes = append(apiResourceTypes, apiResourceType)
+		}
 	}
 
 	return totalCount, apiResourceTypes, nil
@@ -393,6 +475,7 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
 //	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
+//	@Param			minCount		query		int				false 	"Minimum number of resources with this tag value, default 1"
 //	@Param			sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
@@ -411,21 +494,29 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now().Unix()
-	if endTimeStr != "" {
-		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
+	endTime := time.Now()
+	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
+		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "invalid endTime value")
 		}
+		endTime = time.Unix(endTimeVal, 0)
 	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
-	if startTimeStr != "" {
-		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
+	startTime := endTime.AddDate(0, 0, -7)
+	if startTimeStr := ctx.QueryParam("startTime"); startTimeStr != "" {
+		startTimeVal, err := strconv.ParseInt(startTimeStr, 10, 64)
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "invalid startTime value")
 		}
+		startTime = time.Unix(startTimeVal, 0)
+	}
+	minCount := 1
+	if minCountStr := ctx.QueryParam("minCount"); minCountStr != "" {
+		minCountVal, err := strconv.ParseInt(minCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "minCount must be a number")
+		}
+		minCount = int(minCountVal)
 	}
 	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
 	if err != nil {
@@ -439,7 +530,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
 	}
 
-	totalCount, apiResourceTypes, err := h.ListResourceTypeMetrics(tagMap, serviceNames, connectorTypes, connectionIDs, endTime)
+	totalCount, apiResourceTypes, err := h.ListResourceTypeMetrics(tagMap, serviceNames, connectorTypes, connectionIDs, minCount, endTime)
 	if err != nil {
 		return err
 	}
@@ -448,7 +539,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 		apiResourceTypesMap[apiResourceType.ResourceType] = apiResourceType
 	}
 
-	_, oldApiResourceTypes, err := h.ListResourceTypeMetrics(tagMap, serviceNames, connectorTypes, connectionIDs, startTime)
+	_, oldApiResourceTypes, err := h.ListResourceTypeMetrics(tagMap, serviceNames, connectorTypes, connectionIDs, 0, startTime)
 	if err != nil {
 		return err
 	}
