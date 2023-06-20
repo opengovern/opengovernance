@@ -5709,6 +5709,10 @@ paths:
         in: query
         name: startTime
         type: string
+      - description: Minimum number of resources with this tag value, default 1
+        in: query
+        name: minCount
+        type: integer
       - description: Sort by field - default is count
         enum:
         - name
@@ -5793,6 +5797,14 @@ paths:
           type: string
         name: connectionId
         type: array
+      - description: Minimum number of resources with this tag value, default 1
+        in: query
+        name: minCount
+        type: integer
+      - description: End time in unix timestamp format, default now
+        in: query
+        name: endTime
+        type: integer
       produces:
       - application/json
       responses:
@@ -5828,6 +5840,14 @@ paths:
           type: string
         name: connectionId
         type: array
+      - description: Minimum number of resources with this tag value, default 1
+        in: query
+        name: minCount
+        type: integer
+      - description: End time in unix timestamp format, default now
+        in: query
+        name: endTime
+        type: integer
       - description: Tag key
         in: path
         name: key

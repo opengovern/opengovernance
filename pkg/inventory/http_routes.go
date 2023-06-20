@@ -290,8 +290,8 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]string	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Param			minCount		query		int			false "Minimum number of resources with this tag value, default 1"
-//	@Param 			endTime 		query 		int false "End time in unix timestamp format, default now"
+//	@Param			minCount		query		int			false	"Minimum number of resources with this tag value, default 1"
+//	@Param			endTime			query		int			false	"End time in unix timestamp format, default now"
 //	@Success		200				{object}	map[string][]string
 //	@Router			/inventory/api/v2/resources/tag [get]
 func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
@@ -361,8 +361,8 @@ func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]string	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
-//	@Param			minCount		query		int			false "Minimum number of resources with this tag value, default 1"
-//	@Param 			endTime 		query 		int false "End time in unix timestamp format, default now"
+//	@Param			minCount		query		int			false	"Minimum number of resources with this tag value, default 1"
+//	@Param			endTime			query		int			false	"End time in unix timestamp format, default now"
 //	@Param			key				path		string		true	"Tag key"
 //	@Success		200				{object}	[]string
 //	@Router			/inventory/api/v2/resources/tag/{key} [get]
@@ -475,7 +475,7 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
 //	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
-//	@Param			minCount		query		int				false 	"Minimum number of resources with this tag value, default 1"
+//	@Param			minCount		query		int				false	"Minimum number of resources with this tag value, default 1"
 //	@Param			sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
