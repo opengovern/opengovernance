@@ -925,15 +925,20 @@ func FetchConnectionResourceTypeCountAtTime(client keibi.Client, connectors []so
 	res := make(map[string]any)
 	var filters []any
 
+	if len(connectionIDs) == 0 {
+		return nil, fmt.Errorf("no connection IDs provided")
+	}
+
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendConnectionSummary)}},
 	})
-	if resourceTypes != nil {
+	if len(resourceTypes) > 0 {
 		resourceTypes = utils.ToLowerStringSlice(resourceTypes)
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"resource_type": resourceTypes},
 		})
 	}
+
 	if len(connectors) > 0 {
 		connectorStrings := make([]string, 0, len(connectors))
 		for _, provider := range connectors {
@@ -1026,10 +1031,12 @@ func FetchConnectorResourceTypeCountAtTime(client keibi.Client, connectors []sou
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendProviderSummary)}},
 	})
-	resourceTypes = utils.ToLowerStringSlice(resourceTypes)
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"resource_type": resourceTypes},
-	})
+	if len(resourceTypes) > 0 {
+		resourceTypes = utils.ToLowerStringSlice(resourceTypes)
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"resource_type": resourceTypes},
+		})
+	}
 	if len(connectors) > 0 {
 		connectorStrings := make([]string, 0, len(connectors))
 		for _, provider := range connectors {
