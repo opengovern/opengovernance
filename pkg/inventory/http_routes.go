@@ -327,7 +327,12 @@ func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 	}
 	tags = model.TrimPrivateTags(tags)
 
-	resourceTypeCount, err := es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, endTime, nil, EsFetchPageSize)
+	var resourceTypeCount map[string]int
+	if len(connectionIDs) > 0 {
+		resourceTypeCount, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, endTime, nil, EsFetchPageSize)
+	} else {
+		resourceTypeCount, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, endTime, nil, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
@@ -403,7 +408,12 @@ func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
 		return err
 	}
 
-	resourceTypeCount, err := es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, endTime, nil, EsFetchPageSize)
+	var resourceTypeCount map[string]int
+	if len(connectionIDs) > 0 {
+		resourceTypeCount, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, endTime, nil, EsFetchPageSize)
+	} else {
+		resourceTypeCount, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, endTime, nil, EsFetchPageSize)
+	}
 	if err != nil {
 		return err
 	}
