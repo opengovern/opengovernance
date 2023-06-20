@@ -340,13 +340,14 @@ func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 				return err
 			}
 			for _, resourceType := range resourceTypes {
-				if resourceTypeCount[resourceType.ResourceType] >= minCount {
+				if resourceTypeCount[strings.ToLower(resourceType.ResourceType)] >= minCount {
 					filteredTags[key] = append(filteredTags[key], tagValue)
 					break
 				}
 			}
 		}
 	}
+	tags = filteredTags
 
 	return ctx.JSON(http.StatusOK, tags)
 }
@@ -414,7 +415,7 @@ func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
 			return err
 		}
 		for _, resourceType := range resourceTypes {
-			if resourceTypeCount[resourceType.ResourceType] >= minCount {
+			if resourceTypeCount[strings.ToLower(resourceType.ResourceType)] >= minCount {
 				filteredTags = append(filteredTags, tagValue)
 				break
 			}
