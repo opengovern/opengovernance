@@ -3463,6 +3463,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "description": "Minimum number of resources with this tag value, default 1",
+                        "name": "minCount",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "name",
                             "count"
@@ -3589,6 +3595,18 @@ const docTemplate = `{
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum number of resources with this tag value, default 1",
+                        "name": "minCount",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "End time in unix timestamp format, default now",
+                        "name": "endTime",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3642,6 +3660,18 @@ const docTemplate = `{
                         },
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Minimum number of resources with this tag value, default 1",
+                        "name": "minCount",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "End time in unix timestamp format, default now",
+                        "name": "endTime",
                         "in": "query"
                     },
                     {
