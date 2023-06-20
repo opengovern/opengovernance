@@ -928,10 +928,12 @@ func FetchConnectionResourceTypeCountAtTime(client keibi.Client, connectors []so
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendConnectionSummary)}},
 	})
-	resourceTypes = utils.ToLowerStringSlice(resourceTypes)
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"resource_type": resourceTypes},
-	})
+	if resourceTypes != nil {
+		resourceTypes = utils.ToLowerStringSlice(resourceTypes)
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"resource_type": resourceTypes},
+		})
+	}
 	if len(connectors) > 0 {
 		connectorStrings := make([]string, 0, len(connectors))
 		for _, provider := range connectors {
