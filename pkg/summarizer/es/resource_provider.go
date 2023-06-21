@@ -21,8 +21,8 @@ const (
 	LocationProviderSummary          ProviderReportType = "LocationPerProvider"
 	TrendProviderSummary             ProviderReportType = "TrendPerProviderHistory"
 	ResourceTypeTrendProviderSummary ProviderReportType = "ResourceTypeTrendPerProviderHistory"
-	CostProviderSummaryMonthly       ProviderReportType = "CostPerService"
-	CostProviderSummaryDaily         ProviderReportType = "CostPerServiceDaily"
+	CostServiceSummaryMonthly        ProviderReportType = "CostPerService"
+	CostServiceSummaryDaily          ProviderReportType = "CostPerServiceDaily"
 )
 
 type ProviderServiceSummary struct {

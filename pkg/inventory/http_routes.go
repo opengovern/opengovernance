@@ -1410,17 +1410,9 @@ func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 	}
 
 	esDataPointCount := int(endTime.Sub(startTime).Hours() / 24)
-	costTrendHits, err := es.FetchDailyCostTrendByServicesBetween(h.client, connectionIDs, connectorTypes, nil, startTime, endTime, esDataPointCount)
+	timepointToCost, err := es.FetchDailyCostTrendBetween(h.client, connectionIDs, connectorTypes, startTime, endTime, esDataPointCount)
 	if err != nil {
 		return err
-	}
-
-	timepointToCost := make(map[int]float64)
-
-	for _, serviceCosts := range costTrendHits {
-		for timeAt, costAtTime := range serviceCosts {
-			timepointToCost[timeAt] += costAtTime
-		}
 	}
 
 	apiDatapoints := make([]api.CostTrendDatapoint, 0, len(timepointToCost))

@@ -79,11 +79,11 @@ func GetCostResourceTypeFromString(resourceType string) CostResourceType {
 func (c CostResourceType) GetProviderReportType() ProviderReportType {
 	switch c {
 	case CostResourceTypeAWSCostExplorerServiceCostMonthly, CostResourceTypeAWSCostExplorerAccountCostMonthly:
-		return CostProviderSummaryMonthly
+		return CostServiceSummaryMonthly
 	case CostResourceTypeAWSCostExplorerServiceCostDaily, CostResourceTypeAWSCostExplorerAccountCostDaily, CostResourceTypeAWSEBSVolume:
-		return CostProviderSummaryDaily
+		return CostServiceSummaryDaily
 	case CostResourceTypeAzureCostManagementCostByResourceType, CostResourceTypeAzureCostManagementCostBySubscription:
-		return CostProviderSummaryDaily
+		return CostServiceSummaryDaily
 	}
 	return ""
 }
@@ -160,7 +160,7 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			Cost:        desc,
 			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Truncate(24 * time.Hour).Unix(),
 			PeriodEnd:   getTimeFromTimestring(*desc.PeriodEnd).Truncate(24 * time.Hour).Unix(),
-			ReportType:  CostProviderSummaryMonthly,
+			ReportType:  CostServiceSummaryMonthly,
 		}
 		if serviceCostSummary.ServiceName == "" {
 			serviceCostSummary.ServiceName = "AWS Uncategorized"
@@ -182,7 +182,7 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			Cost:        desc,
 			PeriodStart: getTimeFromTimestring(*desc.PeriodStart).Truncate(24 * time.Hour).Unix(),
 			PeriodEnd:   getTimeFromTimestring(*desc.PeriodEnd).Truncate(24 * time.Hour).Unix(),
-			ReportType:  CostProviderSummaryDaily,
+			ReportType:  CostServiceSummaryDaily,
 		}
 		if serviceCostSummary.ServiceName == "" {
 			serviceCostSummary.ServiceName = "AWS Uncategorized"
@@ -248,7 +248,7 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			Cost:        desc,
 			PeriodStart: time.UnixMilli(lookupResource.CreatedAt).Truncate(24 * time.Hour).Unix(),
 			PeriodEnd:   time.UnixMilli(lookupResource.CreatedAt).Truncate(24 * time.Hour).Unix(),
-			ReportType:  CostProviderSummaryDaily,
+			ReportType:  CostServiceSummaryDaily,
 			Region:      &region,
 		}
 		return serviceCostSummary, key, nil
@@ -268,7 +268,7 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			Cost:        desc.CostManagementCostByResourceType,
 			PeriodStart: getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Truncate(24 * time.Hour).Unix(),
 			PeriodEnd:   getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Truncate(24 * time.Hour).Unix(),
-			ReportType:  CostProviderSummaryDaily,
+			ReportType:  CostServiceSummaryDaily,
 		}
 		if serviceCostSummary.ServiceName == "" {
 			serviceCostSummary.ServiceName = "Azure Uncategorized"
