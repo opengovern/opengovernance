@@ -119,18 +119,17 @@ func (w *Job) Run() error {
 		w.logger.Error(fmt.Sprintf("Failure while running insight migration: %v", err))
 	}
 
-	w.logger.Info("Starting inventory migration")
-	if err := inventory.Run(w.db, w.logger, "/inventory-data-config"); err != nil {
-		w.logger.Error(fmt.Sprintf("Failure while running inventory migration: %v", err))
-	}
-
 	cfg := postgres.Config{
 		Host:    w.conf.PostgreSQL.Host,
 		Port:    w.conf.PostgreSQL.Port,
 		User:    w.conf.PostgreSQL.Username,
 		Passwd:  w.conf.PostgreSQL.Password,
-		DB:      w.conf.PostgreSQL.DB,
 		SSLMode: w.conf.PostgreSQL.SSLMode,
+	}
+
+	w.logger.Info("Starting inventory migration")
+	if err := inventory.Run(cfg, w.logger, "/inventory-data-config"); err != nil {
+		w.logger.Error(fmt.Sprintf("Failure while running inventory migration: %v", err))
 	}
 
 	w.logger.Info("Starting workspace migration")

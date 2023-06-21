@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/db"
@@ -32,7 +33,15 @@ type ResourceType struct {
 	Model                string
 }
 
-func Run(db db.Database, logger *zap.Logger, folder string) error {
+func Run(conf postgres.Config, logger *zap.Logger, folder string) error {
+	conf.DB = "inventory"
+	orm, err := postgres.NewClient(&conf, logger)
+	if err != nil {
+		logger.Error("failed to create postgres client", zap.Error(err))
+		return fmt.Errorf("new postgres client: %w", err)
+	}
+	dbm := db.Database{ORM: orm}
+
 	awsResourceTypesContent, err := os.ReadFile(path.Join(folder, "aws-resource-types.json"))
 	if err != nil {
 		return err
@@ -50,7 +59,7 @@ func Run(db db.Database, logger *zap.Logger, folder string) error {
 		return err
 	}
 
-	err = db.ORM.Transaction(func(tx *gorm.DB) error {
+	err = dbm.ORM.Transaction(func(tx *gorm.DB) error {
 		err := tx.Model(&inventory.ResourceTypeTag{}).Joins("JOIN resource_types ON resource_types.resource_type = resource_type_tags.resource_type").Where("resource_types.connector = ?", source.CloudAWS).Delete(&inventory.ResourceTypeTag{}).Error
 		if err != nil {
 			logger.Error("failed to delete aws resource type tags", zap.Error(err))
@@ -112,7 +121,7 @@ func Run(db db.Database, logger *zap.Logger, folder string) error {
 		return fmt.Errorf("failure in aws transaction: %v", err)
 	}
 
-	err = db.ORM.Transaction(func(tx *gorm.DB) error {
+	err = dbm.ORM.Transaction(func(tx *gorm.DB) error {
 		err := tx.Model(&inventory.ResourceTypeTag{}).Joins("JOIN resource_types ON resource_types.resource_type = resource_type_tags.resource_type").Where("resource_types.connector = ?", source.CloudAzure).Delete(&inventory.ResourceTypeTag{}).Error
 		if err != nil {
 			logger.Error("failed to delete azure resource type tags", zap.Error(err))
@@ -173,6 +182,6 @@ func Run(db db.Database, logger *zap.Logger, folder string) error {
 	if err != nil {
 		return fmt.Errorf("failure in azure transaction: %v", err)
 	}
-	
+
 	return nil
 }
