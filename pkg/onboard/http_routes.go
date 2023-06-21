@@ -1551,6 +1551,18 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 	}
 }
 
+func (h HttpHandler) updateConnectionHealth(connection Source, healthStatus source.HealthStatus, reason *string) (Source, error) {
+	connection.HealthState = healthStatus
+	connection.HealthReason = reason
+	connection.LastHealthCheckTime = time.Now()
+	_, err := h.db.UpdateSource(&connection)
+	if err != nil {
+		return Source{}, err
+	}
+	//TODO Mahan: record state change in elastic search
+	return connection, nil
+}
+
 // GetSourceHealth godoc
 //
 //	@Summary		Get source health
@@ -1577,97 +1589,96 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		return err
 	}
 	if !isHealthy {
-		return echo.NewHTTPError(http.StatusBadRequest, "credential is not healthy")
-	}
-
-	cnf, err := h.kms.Decrypt(src.Credential.Secret, h.keyARN)
-	if err != nil {
-		return err
-	}
-
-	var isAttached bool
-	switch src.Type {
-	case source.CloudAWS:
-		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+		src, err = h.updateConnectionHealth(src, source.HealthStatusUnhealthy, utils.GetPointer("Credential is not healthy"))
 		if err != nil {
+			h.logger.Error("failed to update source health", zap.Error(err))
 			return err
 		}
-		isAttached, err = keibiaws.CheckAttachedPolicy(awsCnf.AccessKey, awsCnf.SecretKey, keibiaws.SecurityAuditPolicyARN)
-		if err == nil && isAttached {
-			cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", "")
-			if err != nil {
-				return err
-			}
-			if cfg.Region == "" {
-				cfg.Region = "us-east-1"
-			}
-			awsAccount, err := currentAwsAccount(ctx.Request().Context(), cfg)
-			if err != nil {
-				return err
-			}
-			metadata := NewAWSConnectionMetadata(*awsAccount)
-			jsonMetadata, err := json.Marshal(metadata)
-			if err != nil {
-				return err
-			}
-			src.Metadata = jsonMetadata
-		}
-	case source.CloudAzure:
-		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
-		if err != nil {
-			return err
-		}
-		authCnf := keibiazure.AuthConfig{
-			TenantID:            azureCnf.TenantID,
-			ClientID:            azureCnf.ClientID,
-			ObjectID:            azureCnf.ObjectID,
-			SecretID:            azureCnf.SecretID,
-			ClientSecret:        azureCnf.ClientSecret,
-			CertificatePath:     azureCnf.CertificatePath,
-			CertificatePassword: azureCnf.CertificatePass,
-			Username:            azureCnf.Username,
-			Password:            azureCnf.Password,
-		}
-		isAttached, err = keibiazure.CheckRole(authCnf, src.SourceId, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
-
-		if err == nil && isAttached {
-			azSub, err := currentAzureSubscription(ctx.Request().Context(), src.SourceId, authCnf)
-			if err != nil {
-				return err
-			}
-			metadata := NewAzureConnectionMetadata(*azSub)
-			jsonMetadata, err := json.Marshal(metadata)
-			if err != nil {
-				return err
-			}
-			src.Metadata = jsonMetadata
-		}
-	}
-
-	if !isAttached {
-		src.HealthState = source.HealthStatusUnhealthy
-		if err != nil {
-			healthMessage := err.Error()
-			src.HealthReason = &healthMessage
-		} else {
-			src.HealthReason = utils.GetPointer("Failed to find read permission")
-		}
-		src.LastHealthCheckTime = time.Now()
-		src.UpdatedAt = time.Now()
-		_, err = h.db.UpdateSource(&src)
-		if err != nil {
-			return err
-		}
-		//TODO Mahan: record state change in elastic search
 	} else {
-		src.HealthState = source.HealthStatusHealthy
-		src.HealthReason = nil
-		src.LastHealthCheckTime = time.Now()
-		_, err = h.db.UpdateSource(&src)
+		cnf, err := h.kms.Decrypt(src.Credential.Secret, h.keyARN)
 		if err != nil {
 			return err
 		}
-		//TODO Mahan: record state change in elastic search
+
+		var isAttached bool
+		switch src.Type {
+		case source.CloudAWS:
+			awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+			if err != nil {
+				return err
+			}
+			isAttached, err = keibiaws.CheckAttachedPolicy(awsCnf.AccessKey, awsCnf.SecretKey, keibiaws.SecurityAuditPolicyARN)
+			if err == nil && isAttached {
+				cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", "")
+				if err != nil {
+					return err
+				}
+				if cfg.Region == "" {
+					cfg.Region = "us-east-1"
+				}
+				awsAccount, err := currentAwsAccount(ctx.Request().Context(), cfg)
+				if err != nil {
+					return err
+				}
+				metadata := NewAWSConnectionMetadata(*awsAccount)
+				jsonMetadata, err := json.Marshal(metadata)
+				if err != nil {
+					return err
+				}
+				src.Metadata = jsonMetadata
+			}
+		case source.CloudAzure:
+			azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+			if err != nil {
+				return err
+			}
+			authCnf := keibiazure.AuthConfig{
+				TenantID:            azureCnf.TenantID,
+				ClientID:            azureCnf.ClientID,
+				ObjectID:            azureCnf.ObjectID,
+				SecretID:            azureCnf.SecretID,
+				ClientSecret:        azureCnf.ClientSecret,
+				CertificatePath:     azureCnf.CertificatePath,
+				CertificatePassword: azureCnf.CertificatePass,
+				Username:            azureCnf.Username,
+				Password:            azureCnf.Password,
+			}
+			isAttached, err = keibiazure.CheckRole(authCnf, src.SourceId, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
+
+			if err == nil && isAttached {
+				azSub, err := currentAzureSubscription(ctx.Request().Context(), src.SourceId, authCnf)
+				if err != nil {
+					return err
+				}
+				metadata := NewAzureConnectionMetadata(*azSub)
+				jsonMetadata, err := json.Marshal(metadata)
+				if err != nil {
+					return err
+				}
+				src.Metadata = jsonMetadata
+			}
+		}
+		if err != nil {
+			h.logger.Warn("failed to check read permission", zap.Error(err))
+		}
+
+		if !isAttached {
+			healthMessage := err.Error()
+			if err == nil {
+				healthMessage = "Failed to find read permission"
+			}
+			src, err = h.updateConnectionHealth(src, source.HealthStatusUnhealthy, &healthMessage)
+			if err != nil {
+				h.logger.Warn("failed to update source health", zap.Error(err))
+				return err
+			}
+		} else {
+			src, err = h.updateConnectionHealth(src, source.HealthStatusHealthy, nil)
+			if err != nil {
+				h.logger.Warn("failed to update source health", zap.Error(err))
+				return err
+			}
+		}
 	}
 
 	metadata := make(map[string]any)
