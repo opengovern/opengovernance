@@ -90,6 +90,7 @@ func Run(conf postgres.Config, logger *zap.Logger, folder string) error {
 				ResourceType:  resourceType.ResourceName,
 				ResourceLabel: resourceType.ResourceLabel,
 				ServiceName:   strings.ToLower(resourceType.ServiceName),
+				DoSummarize:   !resourceType.IgnoreSummarize,
 			}).Error
 			if err != nil {
 				logger.Error("failed to create aws resource type", zap.Error(err))
@@ -147,6 +148,7 @@ func Run(conf postgres.Config, logger *zap.Logger, folder string) error {
 				ResourceType:  resourceType.ResourceName,
 				ResourceLabel: resourceType.ResourceLabel,
 				ServiceName:   strings.ToLower(resourceType.ServiceName),
+				DoSummarize:   !resourceType.IgnoreSummarize,
 			}).Error
 			if err != nil {
 				logger.Error("failed to create azure resource type", zap.Error(err))
