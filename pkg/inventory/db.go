@@ -1,11 +1,7 @@
 package inventory
 
 import (
-	"strings"
-
 	"github.com/jackc/pgx/v4"
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
-	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/lib/pq"
@@ -33,91 +29,6 @@ func (db Database) Initialize() error {
 	)
 	if err != nil {
 		return err
-	}
-
-	awsResourceTypes := aws.GetResourceTypesMap()
-	for _, resourceType := range awsResourceTypes {
-		err = db.orm.Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "service_name"}},
-			DoUpdates: clause.AssignmentColumns([]string{"connector", "service_label"}),
-		}).Create(&Service{
-			ServiceName:  strings.ToLower(resourceType.ServiceName),
-			ServiceLabel: resourceType.ServiceName,
-			Connector:    source.CloudAWS,
-		}).Error
-		if err != nil {
-			return err
-		}
-		err = db.orm.Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "resource_type"}},
-			DoUpdates: clause.AssignmentColumns([]string{"connector", "resource_label", "service_name", "do_summarize"}),
-		}).Create(&ResourceType{
-			Connector:     source.CloudAWS,
-			ResourceType:  resourceType.ResourceName,
-			ResourceLabel: resourceType.ResourceLabel,
-			DoSummarize:   resourceType.Summarize,
-			ServiceName:   strings.ToLower(resourceType.ServiceName),
-		}).Error
-		if err != nil {
-			return err
-		}
-		for tagKey, tagValue := range resourceType.Tags {
-			err = db.orm.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "key"}, {Name: "resource_type"}},
-				DoUpdates: clause.AssignmentColumns([]string{"value"}),
-			}).Create(&ResourceTypeTag{
-				ResourceType: resourceType.ResourceName,
-				Tag: model.Tag{
-					Key:   tagKey,
-					Value: tagValue,
-				},
-			}).Error
-			if err != nil {
-				return err
-			}
-		}
-	}
-	azureResourceTypes := azure.GetResourceTypesMap()
-	for _, resourceType := range azureResourceTypes {
-		err = db.orm.Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "service_name"}},
-			DoUpdates: clause.AssignmentColumns([]string{"connector", "service_label"}),
-		}).Create(&Service{
-			ServiceName:  strings.ToLower(resourceType.ServiceName),
-			ServiceLabel: resourceType.ServiceName,
-			Connector:    source.CloudAzure,
-		}).Error
-		if err != nil {
-			return err
-		}
-		err = db.orm.Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "resource_type"}},
-			DoUpdates: clause.AssignmentColumns([]string{"connector", "resource_label", "service_name", "do_summarize"}),
-		}).Create(&ResourceType{
-			Connector:     source.CloudAzure,
-			ResourceType:  resourceType.ResourceName,
-			ResourceLabel: resourceType.ResourceLabel,
-			DoSummarize:   resourceType.Summarize,
-			ServiceName:   strings.ToLower(resourceType.ServiceName),
-		}).Error
-		if err != nil {
-			return err
-		}
-		for tagKey, tagValue := range resourceType.Tags {
-			err = db.orm.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "key"}, {Name: "resource_type"}},
-				DoUpdates: clause.AssignmentColumns([]string{"value"}),
-			}).Create(&ResourceTypeTag{
-				ResourceType: resourceType.ResourceName,
-				Tag: model.Tag{
-					Key:   tagKey,
-					Value: tagValue,
-				},
-			}).Error
-			if err != nil {
-				return err
-			}
-		}
 	}
 
 	return nil

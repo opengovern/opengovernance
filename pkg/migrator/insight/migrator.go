@@ -2,15 +2,17 @@ package insight
 
 import (
 	"fmt"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/db"
 	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/internal"
+	"go.uber.org/zap"
 
 	"os"
 )
 
-func Run(db db.Database, insightsInputGitURL, githubToken string) error {
+func Run(logger *zap.Logger, db db.Database, insightsInputGitURL, githubToken string) error {
 	os.RemoveAll(internal.InsightsGitPath)
 	_, err := git.PlainClone(internal.InsightsGitPath, false, &git.CloneOptions{
 		Auth: &http.BasicAuth{
@@ -24,7 +26,7 @@ func Run(db db.Database, insightsInputGitURL, githubToken string) error {
 		return fmt.Errorf("failure in clone: %v", err)
 	}
 
-	err = PopulateDatabase(db.ORM, internal.InsightsGitPath)
+	err = PopulateDatabase(logger, db.ORM, internal.InsightsGitPath)
 	if err != nil {
 		return err
 	}

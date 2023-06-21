@@ -8,44 +8,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
-
-	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
-
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
-
-	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
+	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 )
-
-func FindAWSCostQuery(sourceID *uuid.UUID, fetchSize int, searchAfter []any) (string, error) {
-	res := make(map[string]any)
-
-	res["size"] = fetchSize
-	res["sort"] = []map[string]any{
-		{
-			"_id": "asc",
-		},
-	}
-	if searchAfter != nil {
-		res["search_after"] = searchAfter
-	}
-
-	if sourceID != nil {
-		var filters []any
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"source_id": {sourceID.String()}},
-		})
-		res["query"] = map[string]any{
-			"bool": map[string]any{
-				"filter": filters,
-			},
-		}
-	}
-	b, err := json.Marshal(res)
-	return string(b), err
-}
 
 type LookupResourceAggregationResponse struct {
 	Aggregations LookupResourceAggregations `json:"aggregations"`
