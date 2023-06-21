@@ -60,17 +60,12 @@ func Run(conf postgres.Config, logger *zap.Logger, folder string) error {
 	}
 
 	err = dbm.ORM.Transaction(func(tx *gorm.DB) error {
-		err := tx.Model(&inventory.ResourceTypeTag{}).Joins("JOIN resource_types ON resource_types.resource_type = resource_type_tags.resource_type").Where("resource_types.connector = ?", source.CloudAWS).Delete(&inventory.ResourceTypeTag{}).Error
-		if err != nil {
-			logger.Error("failed to delete aws resource type tags", zap.Error(err))
-			return err
-		}
-		err = tx.Model(&inventory.ResourceType{}).Where("connector = ?", source.CloudAWS).Delete(&inventory.ResourceType{}).Error
+		err := tx.Model(&inventory.ResourceType{}).Where("connector = ?", source.CloudAWS).Unscoped().Delete(&inventory.ResourceType{}).Error
 		if err != nil {
 			logger.Error("failed to delete aws resource types", zap.Error(err))
 			return err
 		}
-		err = tx.Model(&inventory.Service{}).Where("connector = ?", source.CloudAWS).Delete(&inventory.Service{}).Error
+		err = tx.Model(&inventory.Service{}).Where("connector = ?", source.CloudAWS).Unscoped().Delete(&inventory.Service{}).Error
 		if err != nil {
 			logger.Error("failed to delete aws services", zap.Error(err))
 			return err
@@ -122,17 +117,12 @@ func Run(conf postgres.Config, logger *zap.Logger, folder string) error {
 	}
 
 	err = dbm.ORM.Transaction(func(tx *gorm.DB) error {
-		err := tx.Model(&inventory.ResourceTypeTag{}).Joins("JOIN resource_types ON resource_types.resource_type = resource_type_tags.resource_type").Where("resource_types.connector = ?", source.CloudAzure).Delete(&inventory.ResourceTypeTag{}).Error
-		if err != nil {
-			logger.Error("failed to delete azure resource type tags", zap.Error(err))
-			return err
-		}
-		err = tx.Model(&inventory.ResourceType{}).Where("connector = ?", source.CloudAzure).Delete(&inventory.ResourceType{}).Error
+		err := tx.Model(&inventory.ResourceType{}).Where("connector = ?", source.CloudAzure).Unscoped().Delete(&inventory.ResourceType{}).Error
 		if err != nil {
 			logger.Error("failed to delete azure resource types", zap.Error(err))
 			return err
 		}
-		err = tx.Model(&inventory.Service{}).Where("connector = ?", source.CloudAzure).Delete(&inventory.Service{}).Error
+		err = tx.Model(&inventory.Service{}).Where("connector = ?", source.CloudAzure).Unscoped().Delete(&inventory.Service{}).Error
 		if err != nil {
 			logger.Error("failed to delete azure services", zap.Error(err))
 			return err

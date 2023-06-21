@@ -21,12 +21,12 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, insightsPath string) err
 	}
 
 	err := dbc.Transaction(func(tx *gorm.DB) error {
-		err := tx.Model(&db.Insight{}).Where("1=1").Delete(&db.Insight{}).Error
+		err := tx.Model(&db.Insight{}).Where("1=1").Unscoped().Delete(&db.Insight{}).Error
 		if err != nil {
 			logger.Error("failure in delete insights", zap.Error(err))
 			return err
 		}
-		err = tx.Model(&db.InsightTag{}).Where("1=1").Delete(&db.InsightTag{}).Error
+		err = tx.Model(&db.InsightTag{}).Where("1=1").Unscoped().Delete(&db.InsightTag{}).Error
 		if err != nil {
 			logger.Error("failure in delete insight tags", zap.Error(err))
 			return err
@@ -70,12 +70,12 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, insightsPath string) err
 	}
 
 	err = dbc.Transaction(func(tx *gorm.DB) error {
-		err := tx.Model(&db.InsightGroupInsight{}).Where("1=1").Delete(&db.InsightGroupInsight{}).Error
+		err := tx.Model(&db.InsightGroupInsight{}).Where("1=1").Unscoped().Delete(&db.InsightGroupInsight{}).Error
 		if err != nil {
 			logger.Error("failure in delete", zap.Error(err))
 			return err
 		}
-		err = tx.Model(&db.InsightGroup{}).Where("1=1").Delete(&db.InsightGroup{}).Error
+		err = tx.Model(&db.InsightGroup{}).Where("1=1").Unscoped().Delete(&db.InsightGroup{}).Error
 		if err != nil {
 			logger.Error("failure in delete", zap.Error(err))
 			return err
