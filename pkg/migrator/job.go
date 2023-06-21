@@ -115,7 +115,7 @@ func (w *Job) Run() error {
 	}
 
 	w.logger.Info("Starting insight migration")
-	if err := insight.Run(w.db, w.InsightGitURL, w.githubToken); err != nil {
+	if err := insight.Run(w.logger, w.db, w.InsightGitURL, w.githubToken); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running insight migration: %v", err))
 	}
 
