@@ -1586,7 +1586,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 
 	isHealthy, err := h.checkCredentialHealth(src.Credential)
 	if err != nil {
-		return err
+		h.logger.Warn("failed to check credential health", zap.Error(err))
 	}
 	if !isHealthy {
 		src, err = h.updateConnectionHealth(src, source.HealthStatusUnhealthy, utils.GetPointer("Credential is not healthy"))
