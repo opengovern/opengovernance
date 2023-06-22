@@ -165,8 +165,8 @@ type StackEvaluation struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
-type StackCredentials struct {
-	StackID string `gorm:"primarykey"`
+type StackCredential struct {
+	StackID uuid.UUID `gorm:"primarykey"`
 	Secret  string
 }
 

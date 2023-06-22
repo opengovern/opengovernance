@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
+	apiDescribe "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
 
 	"github.com/kaytu-io/kaytu-util/pkg/model"
@@ -888,7 +890,7 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		Tags:       trimPrivateTags(stackRecord.GetTagsMap()),
 		AccountIDs: accs,
 	}
-	err = h.triggerStackDescriberJob(ctx, resourceTypes, provider, configStr, stack.StackID)
+	err = h.triggerStackDescriberJob(ctx, resourceTypes, provider, configStr, stack.StackID, accs[0]) // assume we have one account
 	if err != nil {
 		return err
 	}
@@ -1433,7 +1435,7 @@ func (h HttpServer) GetInsightJob(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, result)
 }
 
-func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []string, provider api.SourceType, configStr string, stackId string) error {
+func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []string, provider api.SourceType, configStr string, stackId string, accountId string) error {
 	var secretBytes []byte
 	switch provider {
 	case api.SourceCloudAzure:
@@ -1457,7 +1459,36 @@ func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []s
 			return err
 		}
 	}
-	err := h.DB.CreateStackCredential(&StackCredentials{StackID: stackId, Secret: string(secretBytes)})
+	sourceId, err := uuid.Parse(stackId[6:])
+	if err != nil {
+		return err
+	}
+	err = h.DB.CreateStackCredential(&StackCredentials{StackID: sourceId, Secret: string(secretBytes)})
+	if err != nil {
+		return err
+	}
+
+	describedAt := time.Now()
+
+	dsj := DescribeSourceJob{
+		DescribedAt:          describedAt,
+		SourceID:             sourceId,
+		SourceType:           source.Type(provider),
+		AccountID:            accountId,
+		DescribeResourceJobs: []DescribeResourceJob{},
+		Status:               apiDescribe.DescribeSourceJobCreated,
+		TriggerType:          enums.DescribeTriggerTypeStack,
+		FullDiscovery:        false,
+	}
+
+	rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
+	for _, rType := range resourceTypes {
+		dsj.DescribeResourceJobs = append(dsj.DescribeResourceJobs, DescribeResourceJob{
+			ResourceType: rType,
+			Status:       apiDescribe.DescribeResourceJobCreated,
+		})
+	}
+	err = h.Scheduler.db.CreateDescribeSourceJob(&dsj)
 	if err != nil {
 		return err
 	}

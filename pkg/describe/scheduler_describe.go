@@ -102,34 +102,50 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 				return err
 			}
-
-			src, err = s.db.GetSourceByUUID(ds.SourceID)
-			if err != nil {
-				s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dr.ID))
-				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-				return err
+			if ds.TriggerType != enums.DescribeTriggerTypeStack {
+				src, err = s.db.GetSourceByUUID(ds.SourceID)
+				if err != nil {
+					s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dr.ID))
+					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+					return err
+				}
+				srcMap[dr.ParentJobID] = src
 			}
-
-			srcMap[dr.ParentJobID] = src
 			parentMap[dr.ParentJobID] = ds
 		}
 
-		c := CloudNativeCall{
-			dr:  dr,
-			ds:  ds,
-			src: src,
-		}
-
-		wp.AddJob(func() (interface{}, error) {
-			err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, c.src, s.WorkspaceName)
+		if ds.TriggerType == enums.DescribeTriggerTypeStack {
+			cred, err := s.db.GetStackCredential(ds.SourceID)
 			if err != nil {
-				s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dr.ID))
-				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-				return nil, err
+				return err
 			}
-			DescribeResourceJobsCount.WithLabelValues("successful").Inc()
-			return nil, nil
-		})
+			wp.AddJob(func() (interface{}, error) {
+				err := s.enqueueCloudNativeDescribeJob(dr, ds, cred.Secret, s.WorkspaceName)
+				if err != nil {
+					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dr.ID))
+					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+					return nil, err
+				}
+				DescribeResourceJobsCount.WithLabelValues("successful").Inc()
+				return nil, nil
+			})
+		} else {
+			c := CloudNativeCall{
+				dr:  dr,
+				ds:  ds,
+				src: src,
+			}
+			wp.AddJob(func() (interface{}, error) {
+				err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, c.src.ConfigRef, s.WorkspaceName)
+				if err != nil {
+					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dr.ID))
+					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+					return nil, err
+				}
+				DescribeResourceJobsCount.WithLabelValues("successful").Inc()
+				return nil, nil
+			})
+		}
 
 		jobCount++
 	}
@@ -277,7 +293,7 @@ func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.Des
 	return daj
 }
 
-func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *DescribeSourceJob, src *Source, workspaceName string) error {
+func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *DescribeSourceJob, cipherText string, workspaceName string) error {
 	s.logger.Debug("enqueueCloudNativeDescribeJob",
 		zap.Uint("sourceJobID", ds.ID),
 		zap.Uint("jobID", dr.ID),
@@ -299,7 +315,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *Des
 			AccountID:    ds.AccountID,
 			DescribedAt:  ds.DescribedAt.UnixMilli(),
 			SourceType:   ds.SourceType,
-			CipherText:   src.ConfigRef,
+			CipherText:   cipherText,
 			TriggerType:  ds.TriggerType,
 			RetryCounter: 0,
 		},
