@@ -13,6 +13,7 @@ import (
 	"time"
 
 	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"github.com/lib/pq"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
@@ -1437,6 +1438,10 @@ func (h HttpServer) GetInsightJob(ctx echo.Context) error {
 
 func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []string, provider api.SourceType, configStr string, stackId string, accountId string) error {
 	var secretBytes []byte
+	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), KMSAccessKey, KMSSecretKey, KeyRegion)
+	if err != nil {
+		return err
+	}
 	switch provider {
 	case api.SourceCloudAzure:
 		config := onboardapi.SourceConfigAzure{}
@@ -1444,7 +1449,7 @@ func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []s
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "invalid config")
 		}
-		secretBytes, err = h.kms.Encrypt(config.AsMap(), h.keyARN)
+		secretBytes, err = kms.Encrypt(config.AsMap(), KeyARN)
 		if err != nil {
 			return err
 		}
@@ -1454,7 +1459,7 @@ func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []s
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "invalid config")
 		}
-		secretBytes, err = h.kms.Encrypt(config.AsMap(), h.keyARN)
+		secretBytes, err = kms.Encrypt(config.AsMap(), KeyARN)
 		if err != nil {
 			return err
 		}
@@ -1463,7 +1468,7 @@ func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []s
 	if err != nil {
 		return err
 	}
-	err = h.DB.CreateStackCredential(&StackCredentials{StackID: sourceId, Secret: string(secretBytes)})
+	err = h.DB.CreateStackCredential(&StackCredential{StackID: sourceId, Secret: string(secretBytes)})
 	if err != nil {
 		return err
 	}
