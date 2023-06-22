@@ -25,6 +25,7 @@ import (
 	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
 	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
+	onboardapi "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
 	"gorm.io/gorm"
 
@@ -100,6 +101,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/stacks/:stackId/insight", httpserver.AuthorizeHandler(h.GetStackInsight, api3.ViewerRole))
 	v1.GET("/stacks/resource", httpserver.AuthorizeHandler(h.ListResourceStack, api3.ViewerRole))
 	v1.POST("/stacks/insight/trigger", httpserver.AuthorizeHandler(h.TriggerStackInsight, api3.AdminRole))
+
 }
 
 // HandleListSources godoc
@@ -781,17 +783,18 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 // CreateStack godoc
 //
-//	@Summary		Create stack
-//	@Description	Create a stack by giving terraform statefile and additional resources
-//	@Security		BearerToken
-//	@Tags			stack
-//	@Accept			json
-//	@Produce		json
-//	@Param			terrafromFile	formData	file		false	"File to upload"
-//	@Param			tag				formData	string		false	"Tags Map[string][]string"
-//	@Param			resources		formData	[]string	false	"Additional Resources"
-//	@Success		200				{object}	api.Stack
-//	@Router			/schedule/api/v1/stacks/create [post]
+//		@Summary		Create stack
+//		@Description	Create a stack by giving terraform statefile and additional resources
+//		@Security		BearerToken
+//		@Tags			stack
+//		@Accept			json
+//		@Produce		json
+//		@Param			terrafromFile	formData	file		false	"File to upload"
+//		@Param			tag				formData	string		false	"Tags Map[string][]string"
+//		@Param			resources		formData	[]string	false	"Additional Resources"
+//	 @Param			config			formData	string		false	"Config json structure"
+//		@Success		200				{object}	api.Stack
+//		@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
 	var tags map[string][]string
 	tagsData := ctx.FormValue("tag")
@@ -845,6 +848,22 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		}
 	}
 
+	var provider api.SourceType
+	for _, resource := range resources {
+		if strings.Contains(resource, "aws") {
+			provider = api.SourceCloudAWS
+		} else if strings.Contains(resource, "subscriptions") {
+			provider = api.SourceCloudAzure
+		}
+	}
+	configStr := ctx.FormValue("config")
+	if configStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Please provide the credentials")
+	}
+	resourceTypes, err := internal.GetTypes(configStr)
+	if err != nil {
+		return err
+	}
 	accs, err := internal.ParseAccountsFromArns(resources)
 	if err != nil {
 		return err
@@ -868,6 +887,10 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		Resources:  []string(stackRecord.Resources),
 		Tags:       trimPrivateTags(stackRecord.GetTagsMap()),
 		AccountIDs: accs,
+	}
+	err = h.triggerStackDescriberJob(ctx, resourceTypes, provider, configStr, stack.StackID)
+	if err != nil {
+		return err
 	}
 	return ctx.JSON(http.StatusOK, stack)
 }
@@ -1408,4 +1431,35 @@ func (h HttpServer) GetInsightJob(ctx echo.Context) error {
 		UpdatedAt:      job.UpdatedAt,
 	}
 	return ctx.JSON(http.StatusOK, result)
+}
+
+func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []string, provider api.SourceType, configStr string, stackId string) error {
+	var secretBytes []byte
+	switch provider {
+	case api.SourceCloudAzure:
+		config := onboardapi.SourceConfigAzure{}
+		err := json.Unmarshal([]byte(configStr), &config)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid config")
+		}
+		secretBytes, err = h.kms.Encrypt(config.AsMap(), h.keyARN)
+		if err != nil {
+			return err
+		}
+	case api.SourceCloudAWS:
+		config := onboardapi.SourceConfigAWS{}
+		err := json.Unmarshal([]byte(configStr), &config)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid config")
+		}
+		secretBytes, err = h.kms.Encrypt(config.AsMap(), h.keyARN)
+		if err != nil {
+			return err
+		}
+	}
+	err := h.DB.CreateStackCredential(&StackCredentials{StackID: stackId, Secret: string(secretBytes)})
+	if err != nil {
+		return err
+	}
+	return nil
 }

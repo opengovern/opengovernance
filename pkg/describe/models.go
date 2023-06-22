@@ -165,6 +165,11 @@ type StackEvaluation struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
+type StackCredentials struct {
+	StackID string `gorm:"primarykey"`
+	Secret  string
+}
+
 type TagLike interface {
 	GetKey() string
 	GetValue() []string
