@@ -2174,19 +2174,6 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 //go:embed api/catalogs.json
 var catalogsJSON string
 
-// CatalogConnectors godoc
-//
-//	@Summary		Get catalog connectors
-//	@Description	Returns the list of connectors for catalog page.
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Param			category		query		string	false	"Category filter"
-//	@Param			state			query		string	false	"State filter"
-//	@Param			minConnection	query		string	false	"Minimum connection filter"
-//	@Param			id				query		string	false	"ID filter"
-//	@Success		200				{object}	[]api.CatalogConnector
-//	@Router			/onboard/api/v1/catalog/connectors [get]
 func (h HttpHandler) CatalogConnectors(ctx echo.Context) error {
 	categoryFilter := ctx.QueryParam("category")
 	stateFilter := ctx.QueryParam("state")
