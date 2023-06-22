@@ -22,13 +22,14 @@ type UpdateStackResourcesRequest struct {
 }
 
 type Stack struct {
-	StackID     string              `json:"stackId" validate:"required" example:"stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0"`                              // Stack unique identifier
-	CreatedAt   time.Time           `json:"createdAt" example:"2023-06-01T17:00:00.000000Z"`                                                               // Stack creation date
-	UpdatedAt   time.Time           `json:"updatedAt" example:"2023-06-01T17:00:00.000000Z"`                                                               // Stack last update date
-	Resources   []string            `json:"resources" example:"[/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1]"` // Stack resources list
-	Tags        map[string][]string `json:"tags"`                                                                                                          // Stack tags
-	Evaluations []StackEvaluation   `json:"evaluations,omitempty"`                                                                                         // Stack evaluations history, including insight evaluations and compliance evaluations
-	AccountIDs  []string            `json:"accountIds" example:"[0123456789]"`                                                                             // Accounts included in the stack
+	StackID       string              `json:"stackId" validate:"required" example:"stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0"`                              // Stack unique identifier
+	CreatedAt     time.Time           `json:"createdAt" example:"2023-06-01T17:00:00.000000Z"`                                                               // Stack creation date
+	UpdatedAt     time.Time           `json:"updatedAt" example:"2023-06-01T17:00:00.000000Z"`                                                               // Stack last update date
+	Resources     []string            `json:"resources" example:"[/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1]"` // Stack resources list
+	ResourceTypes []string            `json:"resourceTypes" example:"[Microsoft.Compute/virtualMachines]"`                                                   // Stack resource types
+	Tags          map[string][]string `json:"tags"`                                                                                                          // Stack tags
+	Evaluations   []StackEvaluation   `json:"evaluations,omitempty"`                                                                                         // Stack evaluations history, including insight evaluations and compliance evaluations
+	AccountIDs    []string            `json:"accountIds" example:"[0123456789]"`                                                                             // Accounts included in the stack
 }
 
 type StackEvaluation struct {
@@ -42,4 +43,9 @@ type GetStackFindings struct {
 	BenchmarkIDs []string                        `json:"benchmarkIds" example:"azure_cis_v140"` // Benchmark IDs to filter
 	Sorts        []complianceapi.FindingSortItem `json:"sorts"`                                 // Sorts to apply
 	Page         complianceapi.Page              `json:"page" validate:"required"`              // Pages count to retrieve
+}
+
+type DescribeStackRequest struct {
+	StackID string `json:"stackId" example:"stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0"`
+	Config  any    `json:"config"`
 }
