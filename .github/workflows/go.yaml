@@ -127,7 +127,7 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         push: true
-        tags: ${{ vars.DOCKER_REGISTRY }}/steampipe-service:${{ steps.build_services.outputs. }}
+        tags: ${{ vars.DOCKER_REGISTRY }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}
         file: docker/SteampipeServiceDockerfile
         context: .
   deploy-auth-service:
@@ -160,7 +160,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/auth-service:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/auth-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/AuthServiceDockerfile
           context: .
   deploy-checkup-worker:
@@ -193,7 +193,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/checkup-worker:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/CheckupWorkerDockerfile
           context: .
   deploy-compliance-report-worker:
@@ -226,7 +226,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/compliance-report-worker:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/ComplianceReportWorkerDockerfile
           context: .
   deploy-compliance-service:
@@ -259,7 +259,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/compliance-service:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/compliance-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/ComplianceServiceDockerfile
           context: .
   deploy-describe-scheduler:
@@ -292,7 +292,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/describe-scheduler:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/describe-scheduler:${{ needs.tag.outputs.latest_tag }}
           file: docker/DescribeSchedulerDockerfile
           context: .
   deploy-hopper:
@@ -325,7 +325,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/hopper:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/hopper:${{ needs.tag.outputs.latest_tag }}
           file: docker/HopperDockerfile
           context: .
   deploy-reporter:
@@ -358,7 +358,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/reporter:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/reporter:${{ needs.tag.outputs.latest_tag }}
           file: docker/ReporterDockerfile
           context: .
   deploy-insight-worker:
@@ -391,7 +391,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/insight-worker:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/insight-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/InsightWorkerDockerfile
           context: .
   deploy-inventory-service:
@@ -424,7 +424,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/inventory-service:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/inventory-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/InventoryServiceDockerfile
           context: .
   deploy-metadata-service:
@@ -457,7 +457,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/metadata-service:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/metadata-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/MetadataServiceDockerfile
           context: .
   deploy-migrator-worker:
@@ -490,7 +490,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/migrator:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/migrator:${{ needs.tag.outputs.latest_tag }}
           file: docker/MigratorDockerfile
           context: .
   deploy-onboard-service:
@@ -523,7 +523,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/onboard-service:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/onboard-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/OnboardServiceDockerfile
           context: .
   deploy-summarizer-worker:
@@ -556,7 +556,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/summarizer-worker:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/summarizer-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/SummarizerWorkerDockerfile
           context: .
   deploy-swagger-ui:
@@ -589,7 +589,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/swagger-ui:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}
           file: docker/SwaggerUIDockerfile
           context: .
   deploy-redoc:
@@ -622,7 +622,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/redoc:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/redoc:${{ needs.tag.outputs.latest_tag }}
           file: docker/RedocDockerfile
           context: .
   deploy-workspace-service:
@@ -655,6 +655,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/workspace-service:${{ steps.build_services.outputs. }}
+          tags: ${{ vars.DOCKER_REGISTRY }}/workspace-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/WorkspaceServiceDockerfile
           context: .
