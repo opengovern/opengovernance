@@ -72,14 +72,6 @@ jobs:
       with:
         name: build
         path: build
-  test-output:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-    environment: golang
-    steps:
-      - name: Test output
-        run: echo ${{ needs.build.outputs.describe-scheduler }}
   tag:
     runs-on: ubuntu-latest
     needs:
