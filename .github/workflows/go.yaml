@@ -67,7 +67,6 @@ jobs:
         cat ./services | grep -v "steampipe" | grep -v "redoc" | xargs -P 4 -I{} bash -c "CC=/usr/bin/musl-gcc GOPRIVATE=\"github.com/kaytu-io\" GOOS=linux GOARCH=amd64 go build -v -ldflags \"-linkmode external -extldflags '-static' -s -w\" -tags musl -o ./build/ ./cmd/{}"
         for f in $(cat ./services | grep -v "steampipe" | grep -v "redoc"); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
     - name: Upload artifact
-      if: 1 != 1
       uses: actions/upload-artifact@v3
       with:
         name: build
