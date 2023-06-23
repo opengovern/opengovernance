@@ -9,11 +9,11 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
 
-	client2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
+	client2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 
 	"github.com/prometheus/client_golang/prometheus/push"
 

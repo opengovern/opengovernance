@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
-	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/internal/cache"
-	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/internal/database"
-	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/cache"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/database"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 )
 
 const (

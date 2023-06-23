@@ -3,8 +3,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/cli"
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
 )
 
 // workspacesCmd represents the workspaces command

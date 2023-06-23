@@ -8,16 +8,16 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/lib/pq"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer"
 
-	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
+	summarizerapi "github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
 
-	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
-	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
+	checkupapi "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
+	insightapi "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 
-	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

@@ -2,12 +2,12 @@ package compliancebuilder
 
 import (
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	es2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+	es2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/query"
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 )
 
 type alarmsBuilder struct {

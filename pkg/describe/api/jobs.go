@@ -3,8 +3,8 @@ package api
 import (
 	"time"
 
+	insightapi "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
 )
 
 type GetCredsForJobRequest struct {

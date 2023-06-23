@@ -3,9 +3,9 @@ package onboard
 import (
 	"context"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/connector"
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/connector"
 	"go.uber.org/zap"
 	"os"
 )

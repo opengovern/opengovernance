@@ -7,11 +7,11 @@ import (
 	"path"
 	"strings"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
+	"github.com/kaytu-io/kaytu-engine/pkg/migrator/db"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
-	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/db"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

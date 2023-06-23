@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 )
 
 type MetadataServiceClient interface {

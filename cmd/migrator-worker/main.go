@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/migrator"
+	"github.com/kaytu-io/kaytu-engine/pkg/migrator"
 )
 
 func main() {

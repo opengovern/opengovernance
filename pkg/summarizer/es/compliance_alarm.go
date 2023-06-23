@@ -5,7 +5,7 @@ import (
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 )
 
 const (

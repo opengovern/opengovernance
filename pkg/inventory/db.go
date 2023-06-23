@@ -5,7 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/lib/pq"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

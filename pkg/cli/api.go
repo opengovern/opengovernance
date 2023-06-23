@@ -12,11 +12,11 @@ import (
 
 	"github.com/golang-jwt/jwt"
 	_ "github.com/golang-jwt/jwt/v4"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	urls "github.com/kaytu-io/kaytu-engine/pkg/cli/consts"
+	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	workspace "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	urls "gitlab.com/keibiengine/keibi-engine/pkg/cli/consts"
-	apiOnboard "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
-	workspace "gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 )
 
 func GetConfig(cmd *cobra.Command, workspaceNameRequired bool) (*Config, error) {

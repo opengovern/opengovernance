@@ -7,9 +7,9 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
-	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
+	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 )
 
 type serviceLocationSummaryBuilder struct {

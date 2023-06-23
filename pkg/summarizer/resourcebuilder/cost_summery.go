@@ -11,10 +11,10 @@ import (
 	ec2 "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	awsModel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/helpers"
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
+	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/helpers"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/query"
 )
 
 type costSummaryBuilder struct {

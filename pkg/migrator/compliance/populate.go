@@ -3,7 +3,7 @@ package compliance
 import (
 	"fmt"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

@@ -3,7 +3,7 @@ package cmd
 import (
 	"errors"
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
+	"github.com/kaytu-io/kaytu-engine/pkg/cli"
 )
 
 // onboard command :

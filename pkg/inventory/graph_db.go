@@ -10,7 +10,7 @@ import (
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 )
 
 type CategoryRootType string

@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight"
+	"github.com/kaytu-io/kaytu-engine/pkg/insight"
 )
 
 func main() {

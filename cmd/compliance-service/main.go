@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance"
 )
 
 func main() {

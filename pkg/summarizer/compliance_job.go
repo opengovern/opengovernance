@@ -8,13 +8,13 @@ import (
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/compliancebuilder"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/compliancebuilder"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
 
 	"github.com/go-errors/errors"
 	"github.com/prometheus/client_golang/prometheus"

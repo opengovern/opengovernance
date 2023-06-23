@@ -16,21 +16,21 @@ import (
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/email"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-	metadataClient "gitlab.com/keibiengine/keibi-engine/pkg/metadata/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
 
 	"github.com/golang-jwt/jwt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 
 	"github.com/labstack/echo/v4"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"go.uber.org/zap"
 )
 

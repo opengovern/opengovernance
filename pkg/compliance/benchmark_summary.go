@@ -3,11 +3,11 @@ package compliance
 import (
 	"sort"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/query"
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/query"
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 )
 
 type ShortSummary struct {

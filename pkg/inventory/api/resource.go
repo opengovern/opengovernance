@@ -9,11 +9,11 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"strings"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
+	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
 
 	awsmodel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"

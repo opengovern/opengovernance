@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 

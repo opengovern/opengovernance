@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
+	"github.com/kaytu-io/kaytu-engine/pkg/cli"
 )
 
 // logoutCmd represents the logout command

@@ -9,14 +9,14 @@ import (
 	"testing"
 	"time"
 
-	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )

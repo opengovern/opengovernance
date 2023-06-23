@@ -11,16 +11,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
 	"github.com/labstack/echo/v4"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/db"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )

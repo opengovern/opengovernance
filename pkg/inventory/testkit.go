@@ -8,7 +8,7 @@ package inventory
 //	"encoding/json"
 //	"errors"
 //	"fmt"
-//	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
+//	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 //	"io/ioutil"
 //	"math/rand"
 //	"net/http"
@@ -18,17 +18,17 @@ package inventory
 //	"strings"
 //	"time"
 //
-//	onboardapi "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
+//	onboardapi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 //
-//	es2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/es"
+//	es2 "github.com/kaytu-io/kaytu-engine/pkg/compliance-report/es"
 //
 //	"github.com/kaytu-io/kaytu-util/pkg/source"
 //
-//	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
+//	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
 //
-//	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report/api"
-//	describeES "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
-//	insightkafka "gitlab.com/keibiengine/keibi-engine/pkg/insight/kafka"
+//	api2 "github.com/kaytu-io/kaytu-engine/pkg/compliance-report/api"
+//	describeES "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+//	insightkafka "github.com/kaytu-io/kaytu-engine/pkg/insight/kafka"
 //	"gorm.io/gorm"
 //
 //	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2020-05-01/network"
@@ -40,9 +40,9 @@ package inventory
 //	awsmodel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 //	azuredescriber "github.com/kaytu-io/kaytu-azure-describer/azure/describer"
 //	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
-//	compliance_report "gitlab.com/keibiengine/keibi-engine/pkg/compliance-report"
-//	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
-//	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+//	compliance_report "github.com/kaytu-io/kaytu-engine/pkg/compliance-report"
+//	"github.com/kaytu-io/kaytu-engine/pkg/describe"
+//	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 //)
 //
 //func PopulateElastic(address string, d *DescribeMock) error {

@@ -3,7 +3,7 @@ package auth0
 import (
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 )
 
 type TokenRequest struct {

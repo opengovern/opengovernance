@@ -3,12 +3,12 @@ package metadata
 import (
 	"context"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"os"
 	"strconv"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/connector"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/connector"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
