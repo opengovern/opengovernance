@@ -26,6 +26,23 @@ jobs:
   build:
     runs-on: ubuntu-latest-16-cores
     environment: golang
+    outputs:
+        steampipe: ${{ steps.build_services.outputs.steampipe }}
+        auth-service: ${{ steps.build_services.outputs.auth-service }}
+        checkup-worker: ${{ steps.build_services.outputs.checkup-worker }}
+        compliance-report-worker: ${{ steps.build_services.outputs.compliance-report-worker }}
+        compliance-service: ${{ steps.build_services.outputs.compliance-service }}
+        describe-scheduler: ${{ steps.build_services.outputs.describe-scheduler }}
+        hopper: ${{ steps.build_services.outputs.hopper }}
+        reporter: ${{ steps.build_services.outputs.reporter }}
+        insight-worker: ${{ steps.build_services.outputs.insight-worker }}
+        inventory-service: ${{ steps.build_services.outputs.inventory-service }}
+        metadata-service: ${{ steps.build_services.outputs.metadata-service }}
+        migrator-worker: ${{ steps.build_services.outputs.migrator-worker }}
+        onboard-service: ${{ steps.build_services.outputs.onboard-service }}
+        summarizer-worker: ${{ steps.build_services.outputs.summarizer-worker }}
+        swagger-ui: ${{ steps.build_services.outputs.swagger-ui }}
+        workspace-service: ${{ steps.build_services.outputs.workspace-service }}
     env:
       SERVICE_LIST: ${{ github.event.inputs.servicesList }}
       GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
@@ -43,6 +60,7 @@ jobs:
         go-version-file: './go.mod'
     - run: git config --global url.https://$GH_ACCESS_TOKEN@github.com/kaytu-io.insteadOf https://github.com/kaytu-io
     - name: Build services
+      id: build_services
       run: |
         ./scripts/list_services > ./services
         cat ./services
@@ -58,6 +76,8 @@ jobs:
     needs:
       - build
     environment: golang
+    outputs:
+        latest_tag: ${{ steps.set_latest_tag.outputs.latest_tag }}
     if: github.event_name != 'pull_request'
     steps:
       - name: Checkout code
@@ -70,6 +90,7 @@ jobs:
           release_branches: main
           tag_prefix: v
       - name: Set latest tag output
+        id: set_latest_tag
         run: |
           if [[ -z "${{ steps.tag_version.outputs.new_tag }}" ]]; then
             echo "latest_tag=${{ steps.tag_version.outputs.new_tag }}" >> "$GITHUB_OUTPUT"
