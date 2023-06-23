@@ -1,6 +1,7 @@
-FROM registry.digitalocean.com/keibi/steampipe-plugin-aws:0.0.1 as aws
-FROM registry.digitalocean.com/keibi/steampipe-plugin-azure:0.0.1 as azure
-FROM registry.digitalocean.com/keibi/steampipe-plugin-azuread:0.0.1 as azuread
+ARG PLUGIN_REGISTRY
+FROM ${PLUGIN_REGISTRY}/steampipe-plugin-aws:0.0.1 as aws
+FROM ${PLUGIN_REGISTRY}/steampipe-plugin-azure:0.0.1 as azure
+FROM ${PLUGIN_REGISTRY}/steampipe-plugin-azuread:0.0.1 as azuread
 
 FROM ghcr.io/turbot/steampipe:0.20.2
 

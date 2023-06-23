@@ -16,12 +16,6 @@ on:
   pull_request:
     branches: [ "main" ]
 
-env:
-  # Use docker.io for Docker Hub if empty
-  REGISTRY: registry.digitalocean.com
-  # github.repository as <account>/<repo>
-  IMAGE_NAME: keibi/temp
-
 jobs:
   build:
     runs-on: ubuntu-latest-16-cores
@@ -129,6 +123,8 @@ jobs:
         push: true
         tags: ${{ vars.DOCKER_REGISTRY }}/steampipe-service:${{ needs.tag.outputs.latest_tag }}
         file: docker/SteampipeServiceDockerfile
+        build-args: |
+          PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
         context: .
   deploy-auth-service:
     runs-on: ubuntu-latest
@@ -228,6 +224,8 @@ jobs:
           push: true
           tags: ${{ vars.DOCKER_REGISTRY }}/compliance-report-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/ComplianceReportWorkerDockerfile
+          build-args: |
+            PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
           context: .
   deploy-compliance-service:
     runs-on: ubuntu-latest
