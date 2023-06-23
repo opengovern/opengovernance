@@ -1,7 +1,7 @@
 package main
 
 import (
-	"gitlab.com/keibiengine/keibi-engine/pkg/hopper"
+	"github.com/kaytu-io/kaytu-engine/pkg/hopper"
 	"os"
 )
 

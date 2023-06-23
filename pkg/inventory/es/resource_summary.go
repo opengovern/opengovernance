@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
+	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
-	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 )
 
 type LookupResourceAggregationResponse struct {

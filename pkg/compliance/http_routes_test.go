@@ -15,11 +15,11 @@ import (
 	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/ory/dockertest/v3"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/suite"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"go.uber.org/zap"
 )
 

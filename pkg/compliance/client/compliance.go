@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 
 	"github.com/google/uuid"
+	compliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	compliance "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
 )
 
 type ComplianceServiceClient interface {

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
-	apis "gitlab.com/keibiengine/keibi-engine/pkg/cli"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/cli"
+	apis "github.com/kaytu-io/kaytu-engine/pkg/cli"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 )
 
 var Get = &cobra.Command{

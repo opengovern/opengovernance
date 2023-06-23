@@ -1,6 +1,6 @@
 package api
 
-import "gitlab.com/keibiengine/keibi-engine/pkg/types"
+import "github.com/kaytu-io/kaytu-engine/pkg/types"
 
 type SummaryStatus struct {
 	Alarm int `json:"alarm"`

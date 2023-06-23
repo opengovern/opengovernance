@@ -3,7 +3,7 @@ package internal
 import (
 	"fmt"
 
-	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 )
 
 func AggregateServiceCosts(costs map[string][]summarizer.ServiceCostSummary) map[string]float64 {

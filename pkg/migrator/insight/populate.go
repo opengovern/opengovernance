@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
-	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/internal"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/migrator/internal"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

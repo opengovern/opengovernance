@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/go-playground/validator.v9"
 
-	inventory "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
+	inventory "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 )
 
 type HttpHandler struct {

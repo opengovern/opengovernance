@@ -8,10 +8,10 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/email"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"io/ioutil"
 	"net"
 	"os"
@@ -20,12 +20,12 @@ import (
 
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/db"
-	"gitlab.com/keibiengine/keibi-engine/pkg/config"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/config"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/spf13/cobra"

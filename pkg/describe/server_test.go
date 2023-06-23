@@ -12,14 +12,14 @@ import (
 	"testing"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/labstack/echo/v4"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/suite"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )

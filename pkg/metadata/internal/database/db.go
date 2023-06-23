@@ -1,7 +1,7 @@
 package database
 
 import (
-	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"gorm.io/gorm"
 )
 

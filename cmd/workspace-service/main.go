@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/workspace"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace"
 )
 
 func main() {

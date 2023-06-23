@@ -2,14 +2,14 @@ package checkup
 
 import (
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"strconv"
 	"time"
 
-	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"

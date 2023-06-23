@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/labstack/echo/v4"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 )
 
 type EchoError struct {

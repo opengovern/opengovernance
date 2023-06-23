@@ -5,8 +5,8 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"net/http"
 	"strings"
 	"time"
@@ -15,11 +15,11 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	api2 "gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"

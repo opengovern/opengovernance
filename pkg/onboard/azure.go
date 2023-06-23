@@ -7,11 +7,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/subscription/mgmt/subscription"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	absauth "github.com/microsoft/kiota-abstractions-go/authentication"
 	authentication "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 type azureSubscription struct {

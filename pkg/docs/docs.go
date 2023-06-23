@@ -37,7 +37,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyRequest"
                         }
                     }
                 ],
@@ -45,7 +45,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyResponse"
                         }
                     }
                 }
@@ -73,7 +73,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UpdateKeyRoleRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.UpdateKeyRoleRequest"
                         }
                     }
                 ],
@@ -81,7 +81,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceApiKey"
                         }
                     }
                 }
@@ -115,7 +115,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceApiKey"
                         }
                     }
                 }
@@ -149,7 +149,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceApiKey"
                         }
                     }
                 }
@@ -214,7 +214,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceApiKey"
                         }
                     }
                 }
@@ -241,7 +241,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceApiKey"
                             }
                         }
                     }
@@ -278,7 +278,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceApiKey"
                             }
                         }
                     }
@@ -315,7 +315,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleUser"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.RoleUser"
                             }
                         }
                     }
@@ -343,7 +343,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RolesListResponse"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.RolesListResponse"
                             }
                         }
                     }
@@ -378,7 +378,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleDetailsResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.RoleDetailsResponse"
                         }
                     }
                 }
@@ -406,7 +406,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteRequest"
                         }
                     }
                 ],
@@ -468,7 +468,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.PutRoleBindingRequest"
                         }
                     }
                 ],
@@ -527,7 +527,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetRoleBindingsResponse"
                         }
                     }
                 }
@@ -561,7 +561,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUserResponse"
                         }
                     }
                 }
@@ -597,7 +597,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Membership"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Membership"
                             }
                         }
                     }
@@ -626,7 +626,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUsersRequest"
                         }
                     }
                 ],
@@ -636,7 +636,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUsersResponse"
                             }
                         }
                     }
@@ -664,7 +664,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceRoleBinding"
                             }
                         }
                     }
@@ -696,7 +696,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldRequest"
                         }
                     }
                 ],
@@ -704,7 +704,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse"
                         }
                     }
                 }
@@ -734,7 +734,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment"
                             }
                         }
                     }
@@ -774,7 +774,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignedSource"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedSource"
                             }
                         }
                     }
@@ -814,7 +814,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment"
                             }
                         }
                     }
@@ -859,7 +859,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment"
                         }
                     }
                 }
@@ -935,7 +935,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSummary"
                         }
                     }
                 }
@@ -986,7 +986,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkResultTrend"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend"
                         }
                     }
                 }
@@ -1038,7 +1038,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree"
                         }
                     }
                 }
@@ -1068,7 +1068,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Benchmark"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark"
                             }
                         }
                     }
@@ -1106,7 +1106,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Policy"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy"
                         }
                     }
                 }
@@ -1150,7 +1150,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetBenchmarksSummaryResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarksSummaryResponse"
                         }
                     }
                 }
@@ -1187,7 +1187,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Benchmark"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark"
                         }
                     }
                 }
@@ -1226,7 +1226,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Policy"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy"
                             }
                         }
                     }
@@ -1258,7 +1258,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequest"
                         }
                     }
                 ],
@@ -1266,7 +1266,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse"
                         }
                     }
                 }
@@ -1308,7 +1308,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsMetricsResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsMetricsResponse"
                         }
                     }
                 }
@@ -1365,7 +1365,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse"
                         }
                     }
                 }
@@ -1438,7 +1438,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight"
                             }
                         }
                     }
@@ -1515,7 +1515,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroup"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup"
                             }
                         }
                     }
@@ -1574,7 +1574,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroup"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup"
                         }
                     }
                 }
@@ -1635,7 +1635,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroupTrendResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroupTrendResponse"
                         }
                     }
                 }
@@ -1690,7 +1690,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight"
                         }
                     }
                 }
@@ -1753,7 +1753,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint"
                             }
                         }
                     }
@@ -1797,7 +1797,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight"
                             }
                         }
                     }
@@ -1832,7 +1832,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight"
                         }
                     }
                 }
@@ -1943,7 +1943,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query"
                         }
                     }
                 }
@@ -1979,7 +1979,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationByProviderResponse"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationByProviderResponse"
                             }
                         }
                     }
@@ -2008,7 +2008,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest"
                         }
                     }
                 ],
@@ -2018,7 +2018,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQueryItem"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItem"
                             }
                         }
                     }
@@ -2047,7 +2047,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest"
                         }
                     }
                 ],
@@ -2091,7 +2091,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryRequest"
                         }
                     },
                     {
@@ -2110,7 +2110,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryResponse"
                         }
                     }
                 }
@@ -2138,7 +2138,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourceRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourceRequest"
                         }
                     }
                 ],
@@ -2181,7 +2181,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourcesRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesRequest"
                         }
                     },
                     {
@@ -2211,7 +2211,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourcesResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesResponse"
                         }
                     }
                 }
@@ -2243,7 +2243,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourcesRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesRequest"
                         }
                     },
                     {
@@ -2273,7 +2273,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetAWSResourceResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAWSResourceResponse"
                         }
                     }
                 }
@@ -2305,7 +2305,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourcesRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesRequest"
                         }
                     },
                     {
@@ -2335,7 +2335,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetAzureResourceResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAzureResourceResponse"
                         }
                     }
                 }
@@ -2396,7 +2396,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetFiltersRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetFiltersRequest"
                         }
                     },
                     {
@@ -2415,7 +2415,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetFiltersResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetFiltersResponse"
                         }
                     }
                 }
@@ -2493,7 +2493,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationResponse"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse"
                             }
                         }
                     }
@@ -2555,7 +2555,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationResponse"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse"
                             }
                         }
                     }
@@ -2609,7 +2609,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionData"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ConnectionData"
                             }
                         }
                     }
@@ -2658,7 +2658,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionData"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ConnectionData"
                         }
                     }
                 }
@@ -2729,7 +2729,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostCompositionResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostCompositionResponse"
                         }
                     }
                 }
@@ -2816,7 +2816,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostMetricsResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostMetricsResponse"
                         }
                     }
                 }
@@ -2889,7 +2889,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostTrendDatapoint"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostTrendDatapoint"
                             }
                         }
                     }
@@ -2960,7 +2960,7 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "array",
                                 "items": {
-                                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource"
+                                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightResource"
                                 }
                             }
                         }
@@ -2996,7 +2996,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightResource"
                         }
                     }
                 }
@@ -3047,7 +3047,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightResource"
                             }
                         }
                     }
@@ -3107,7 +3107,7 @@ const docTemplate = `{
                             "additionalProperties": {
                                 "type": "array",
                                 "items": {
-                                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource"
+                                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightResource"
                                 }
                             }
                         }
@@ -3181,7 +3181,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetadataResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeMetadataResponse"
                         }
                     }
                 }
@@ -3215,7 +3215,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType"
                         }
                     }
                 }
@@ -3277,7 +3277,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetadataResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceMetadataResponse"
                         }
                     }
                 }
@@ -3311,7 +3311,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Service"
                         }
                     }
                 }
@@ -3384,7 +3384,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeCompositionResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeCompositionResponse"
                         }
                     }
                 }
@@ -3495,7 +3495,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeMetricsResponse"
                         }
                     }
                 }
@@ -3553,7 +3553,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType"
                         }
                     }
                 }
@@ -3780,7 +3780,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeTrendDatapoint"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTrendDatapoint"
                             }
                         }
                     }
@@ -3877,7 +3877,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceMetricsResponse"
                         }
                     }
                 }
@@ -3930,7 +3930,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Service"
                         }
                     }
                 }
@@ -4015,7 +4015,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceSummariesResponse"
                         }
                     }
                 }
@@ -4074,7 +4074,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ServiceSummary"
                         }
                     }
                 }
@@ -4176,7 +4176,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_api.SetConfigMetadataRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetConfigMetadataRequest"
                         }
                     }
                 ],
@@ -4215,7 +4215,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadata"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_models.ConfigMetadata"
                         }
                     }
                 }
@@ -4268,7 +4268,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogConnector"
                             }
                         }
                     }
@@ -4294,7 +4294,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogMetrics"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogMetrics"
                         }
                     }
                 }
@@ -4322,7 +4322,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionCountRequest"
                         }
                     }
                 ],
@@ -4435,7 +4435,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ListConnectionSummaryResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ListConnectionSummaryResponse"
                         }
                     }
                 }
@@ -4484,7 +4484,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
                         }
                     }
                 }
@@ -4519,7 +4519,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest"
                         }
                     }
                 ],
@@ -4551,7 +4551,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectorCount"
                             }
                         }
                     }
@@ -4586,7 +4586,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connector"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connector"
                         }
                     }
                 }
@@ -4651,7 +4651,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential"
                             }
                         }
                     }
@@ -4678,7 +4678,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateCredentialRequest"
                         }
                     }
                 ],
@@ -4686,7 +4686,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateCredentialResponse"
                         }
                     }
                 }
@@ -4740,7 +4740,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential"
                             }
                         }
                     }
@@ -4775,7 +4775,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential"
                         }
                     }
                 }
@@ -4808,7 +4808,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.UpdateCredentialRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.UpdateCredentialRequest"
                         }
                     }
                 ],
@@ -4878,7 +4878,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
                             }
                         }
                     }
@@ -5005,7 +5005,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
                         }
                     }
                 }
@@ -5033,7 +5033,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAwsRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceAwsRequest"
                         }
                     }
                 ],
@@ -5041,7 +5041,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSourceResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateSourceResponse"
                         }
                     }
                 }
@@ -5069,7 +5069,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAzureRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceAzureRequest"
                         }
                     }
                 ],
@@ -5077,7 +5077,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSourceResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateSourceResponse"
                         }
                     }
                 }
@@ -5111,7 +5111,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
                         }
                     }
                 }
@@ -5174,7 +5174,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.AzureCredential"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredential"
                         }
                     }
                 }
@@ -5237,7 +5237,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
                         }
                     }
                 }
@@ -5280,7 +5280,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
                             }
                         }
                     }
@@ -5316,7 +5316,7 @@ const docTemplate = `{
                         "name": "request",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.GetSourcesRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.GetSourcesRequest"
                         }
                     }
                 ],
@@ -5326,7 +5326,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
                             }
                         }
                     }
@@ -5502,7 +5502,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest"
                         }
                     }
                 ],
@@ -5541,7 +5541,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest"
                         }
                     }
                 ],
@@ -5603,7 +5603,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSingleResourceRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSingleResourceRequest"
                         }
                     }
                 ],
@@ -5724,7 +5724,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerInsightEvaluationRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.TriggerInsightEvaluationRequest"
                         }
                     }
                 ],
@@ -5772,7 +5772,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightJob"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.InsightJob"
                         }
                     }
                 }
@@ -5839,7 +5839,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ResourceTypeDetail"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ResourceTypeDetail"
                             }
                         }
                     }
@@ -5867,7 +5867,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Source"
                             }
                         }
                     }
@@ -5902,7 +5902,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Source"
                         }
                     }
                 }
@@ -5950,7 +5950,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReport"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ComplianceReport"
                             }
                         }
                     }
@@ -6018,7 +6018,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSource"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSource"
                             }
                         }
                     }
@@ -6100,7 +6100,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack"
                             }
                         }
                     }
@@ -6132,7 +6132,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackBenchmarkRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackBenchmarkRequest"
                         }
                     }
                 ],
@@ -6194,7 +6194,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack"
                         }
                     }
                 }
@@ -6222,7 +6222,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackInsightRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackInsightRequest"
                         }
                     }
                 ],
@@ -6232,7 +6232,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightJob"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.InsightJob"
                             }
                         }
                     }
@@ -6272,7 +6272,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack"
                             }
                         }
                     }
@@ -6310,7 +6310,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack"
                         }
                     }
                 }
@@ -6380,7 +6380,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetStackFindings"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetStackFindings"
                         }
                     }
                 ],
@@ -6388,7 +6388,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse"
                         }
                     }
                 }
@@ -6444,7 +6444,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight"
                         }
                     }
                 }
@@ -6502,7 +6502,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.CreateWorkspaceRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceRequest"
                         }
                     }
                 ],
@@ -6510,7 +6510,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.CreateWorkspaceResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceResponse"
                         }
                     }
                 }
@@ -6538,7 +6538,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceResponse"
                         }
                     }
                 }
@@ -6602,7 +6602,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest"
                         }
                     },
                     {
@@ -6644,7 +6644,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest"
                         }
                     },
                     {
@@ -6686,7 +6686,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest"
                         }
                     },
                     {
@@ -6794,7 +6794,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceTierRequest"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceTierRequest"
                         }
                     },
                     {
@@ -6836,7 +6836,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceResponse"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceResponse"
                             }
                         }
                     }
@@ -6873,7 +6873,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Workspace"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Workspace"
                         }
                     }
                 }
@@ -6909,7 +6909,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceLimits"
                         }
                     }
                 }
@@ -6951,7 +6951,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimitsUsage"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceLimitsUsage"
                         }
                     }
                 }
@@ -7044,7 +7044,7 @@ const docTemplate = `{
                 "Status": {
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ComplianceReportJobStatus"
                         }
                     ],
                     "example": "InProgress"
@@ -7104,7 +7104,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "status": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeResourceJobStatus"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -7146,10 +7146,10 @@ const docTemplate = `{
                     "$ref": "#/definitions/source.Type"
                 },
                 "status": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSourceJobStatus"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSourceJobStatus"
                 },
                 "triggerType": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_enums.DescribeTriggerType"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_enums.DescribeTriggerType"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -7187,7 +7187,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/source.Type"
                 },
                 "status": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_api.InsightJobStatus"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -7216,7 +7216,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "status": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_summarizer_api.SummarizerJobStatus"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_summarizer_api.SummarizerJobStatus"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -7252,7 +7252,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyRequest": {
             "type": "object",
             "properties": {
                 "name": {
@@ -7268,14 +7268,14 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyResponse": {
             "type": "object",
             "properties": {
                 "active": {
@@ -7307,7 +7307,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
@@ -7318,7 +7318,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetRoleBindingsResponse": {
             "type": "object",
             "properties": {
                 "globalRoles": {
@@ -7330,7 +7330,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
@@ -7339,12 +7339,12 @@ const docTemplate = `{
                     "description": "List of user roles in each workspace",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.UserRoleBinding"
                     }
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUserResponse": {
             "type": "object",
             "properties": {
                 "blocked": {
@@ -7381,7 +7381,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
@@ -7394,7 +7394,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteStatus"
                         }
                     ],
                     "example": "accepted"
@@ -7411,7 +7411,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUsersRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -7432,14 +7432,14 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUsersResponse": {
             "type": "object",
             "properties": {
                 "email": {
@@ -7461,7 +7461,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
@@ -7478,7 +7478,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteRequest": {
             "type": "object",
             "required": [
                 "email"
@@ -7498,14 +7498,14 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteStatus": {
             "type": "string",
             "enum": [
                 "accepted",
@@ -7516,7 +7516,7 @@ const docTemplate = `{
                 "InviteStatus_PENDING"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Membership": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.Membership": {
             "type": "object",
             "properties": {
                 "assignedAt": {
@@ -7538,7 +7538,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
@@ -7555,7 +7555,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.PutRoleBindingRequest": {
             "type": "object",
             "required": [
                 "roleName",
@@ -7571,7 +7571,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
@@ -7583,7 +7583,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role": {
             "type": "string",
             "enum": [
                 "keibi-admin",
@@ -7598,7 +7598,7 @@ const docTemplate = `{
                 "ViewerRole"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleDetailsResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.RoleDetailsResponse": {
             "type": "object",
             "properties": {
                 "description": {
@@ -7615,7 +7615,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
@@ -7629,12 +7629,12 @@ const docTemplate = `{
                     "description": "List of users having the role",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUsersResponse"
                     }
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleUser": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.RoleUser": {
             "type": "object",
             "properties": {
                 "blocked": {
@@ -7671,7 +7671,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
@@ -7684,7 +7684,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteStatus"
                         }
                     ],
                     "example": "accepted"
@@ -7711,7 +7711,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RolesListResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.RolesListResponse": {
             "type": "object",
             "properties": {
                 "description": {
@@ -7728,7 +7728,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
@@ -7740,7 +7740,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UpdateKeyRoleRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.UpdateKeyRoleRequest": {
             "type": "object",
             "properties": {
                 "id": {
@@ -7756,14 +7756,14 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.UserRoleBinding": {
             "type": "object",
             "properties": {
                 "roleName": {
@@ -7775,7 +7775,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
@@ -7787,7 +7787,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceApiKey": {
             "type": "object",
             "properties": {
                 "active": {
@@ -7829,7 +7829,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
@@ -7841,7 +7841,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding": {
+        "github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceRoleBinding": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -7868,7 +7868,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role"
                         }
                     ],
                     "example": "admin"
@@ -7881,7 +7881,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteStatus"
                         }
                     ],
                     "example": "accepted"
@@ -7898,7 +7898,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Benchmark": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark": {
             "type": "object",
             "properties": {
                 "autoAssign": {
@@ -8003,7 +8003,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignedSource": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedSource": {
             "type": "object",
             "properties": {
                 "connectionID": {
@@ -8031,7 +8031,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment": {
             "type": "object",
             "properties": {
                 "assignedAt": {
@@ -8050,18 +8050,18 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkResultTrend": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend": {
             "type": "object",
             "properties": {
                 "resultTrend": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ResultDatapoint"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResultDatapoint"
                     }
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSummary": {
             "type": "object",
             "properties": {
                 "checks": {
@@ -8076,7 +8076,7 @@ const docTemplate = `{
                     "description": "Compliancy trend data points",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Datapoint"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Datapoint"
                     }
                 },
                 "connectors": {
@@ -8144,13 +8144,13 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree": {
             "type": "object",
             "properties": {
                 "children": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree"
                     }
                 },
                 "id": {
@@ -8161,7 +8161,7 @@ const docTemplate = `{
                 "policies": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.PolicyTree"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree"
                     }
                 },
                 "title": {
@@ -8171,7 +8171,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReport": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ComplianceReport": {
             "type": "object",
             "properties": {
                 "failureMessage": {
@@ -8189,7 +8189,7 @@ const docTemplate = `{
                 "status": {
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ComplianceReportJobStatus"
                         }
                     ],
                     "example": "InProgress"
@@ -8200,7 +8200,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ComplianceReportJobStatus": {
             "type": "string",
             "enum": [
                 "CREATED",
@@ -8215,7 +8215,7 @@ const docTemplate = `{
                 "ComplianceReportJobCompleted"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Datapoint": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Datapoint": {
             "type": "object",
             "properties": {
                 "time": {
@@ -8228,7 +8228,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.DirectionType": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType": {
             "type": "string",
             "enum": [
                 "asc",
@@ -8239,7 +8239,7 @@ const docTemplate = `{
                 "DirectionDescending"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingFilters": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters": {
             "type": "object",
             "properties": {
                 "benchmarkID": {
@@ -8324,7 +8324,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingSortItem": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem": {
             "type": "object",
             "properties": {
                 "direction": {
@@ -8335,7 +8335,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.DirectionType"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType"
                         }
                     ],
                     "example": "asc"
@@ -8362,20 +8362,20 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.SortFieldType"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType"
                         }
                     ],
                     "example": "status"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetBenchmarksSummaryResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarksSummaryResponse": {
             "type": "object",
             "properties": {
                 "benchmarkSummary": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSummary"
                     }
                 },
                 "failedResources": {
@@ -8389,7 +8389,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsMetricsResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsMetricsResponse": {
             "type": "object",
             "properties": {
                 "failedFindings": {
@@ -8426,33 +8426,33 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequest": {
             "type": "object",
             "required": [
                 "page"
             ],
             "properties": {
                 "filters": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingFilters"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters"
                 },
                 "page": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page"
                 },
                 "sorts": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingSortItem"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem"
                     }
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse": {
             "type": "object",
             "properties": {
                 "findings": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_es.Finding"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_es.Finding"
                     }
                 },
                 "totalCount": {
@@ -8461,7 +8461,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldRequest": {
             "type": "object",
             "properties": {
                 "count": {
@@ -8479,28 +8479,28 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopField"
                         }
                     ],
                     "example": "resourceType"
                 },
                 "filters": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingFilters"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse": {
             "type": "object",
             "properties": {
                 "records": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopFieldRecord"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord"
                     }
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight": {
             "type": "object",
             "properties": {
                 "connector": {
@@ -8555,7 +8555,7 @@ const docTemplate = `{
                     "description": "Query",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query"
                         }
                     ]
                 },
@@ -8563,7 +8563,7 @@ const docTemplate = `{
                     "description": "Insight Results",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightResult"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightResult"
                     }
                 },
                 "shortTitle": {
@@ -8588,7 +8588,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightConnection": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightConnection": {
             "type": "object",
             "properties": {
                 "connection_id": {
@@ -8599,7 +8599,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightDetail": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightDetail": {
             "type": "object",
             "properties": {
                 "headers": {
@@ -8617,7 +8617,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroup": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup": {
             "type": "object",
             "properties": {
                 "connectors": {
@@ -8641,7 +8641,7 @@ const docTemplate = `{
                 "insights": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight"
                     }
                 },
                 "logoURL": {
@@ -8675,13 +8675,13 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroupTrendResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroupTrendResponse": {
             "type": "object",
             "properties": {
                 "trend": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint"
                     }
                 },
                 "trendPerInsight": {
@@ -8689,13 +8689,13 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint"
                         }
                     }
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightResult": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightResult": {
             "type": "object",
             "properties": {
                 "connectionID": {
@@ -8707,14 +8707,14 @@ const docTemplate = `{
                     "description": "Connections",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightConnection"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightConnection"
                     }
                 },
                 "details": {
                     "description": "Insight Details",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightDetail"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightDetail"
                         }
                     ]
                 },
@@ -8747,7 +8747,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint": {
             "type": "object",
             "properties": {
                 "timestamp": {
@@ -8762,7 +8762,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page": {
             "type": "object",
             "properties": {
                 "no": {
@@ -8777,7 +8777,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Policy": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy": {
             "type": "object",
             "properties": {
                 "connector": {
@@ -8843,7 +8843,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.PolicyTree": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree": {
             "type": "object",
             "properties": {
                 "id": {
@@ -8877,7 +8877,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query": {
             "type": "object",
             "properties": {
                 "connector": {
@@ -8915,7 +8915,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ResultDatapoint": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResultDatapoint": {
             "type": "object",
             "properties": {
                 "result": {
@@ -8932,7 +8932,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.SortFieldType": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType": {
             "type": "string",
             "enum": [
                 "resourceID",
@@ -8971,7 +8971,7 @@ const docTemplate = `{
                 "FieldPolicySeverity"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopField": {
             "type": "string",
             "enum": [
                 "resourceType",
@@ -8986,7 +8986,7 @@ const docTemplate = `{
                 "TopField_Resources"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopFieldRecord": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord": {
             "type": "object",
             "properties": {
                 "count": {
@@ -8997,7 +8997,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_compliance_es.Finding": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_es.Finding": {
             "type": "object",
             "properties": {
                 "ID": {
@@ -9100,7 +9100,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeResource": {
             "type": "object",
             "properties": {
                 "failureMessage": {
@@ -9114,14 +9114,14 @@ const docTemplate = `{
                     "description": "CREATED, QUEUED, IN_PROGRESS, TIMEOUT, FAILED, SUCCEEDED",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeResourceJobStatus"
                         }
                     ],
                     "example": "IN_PROGRESS"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeResourceJobStatus": {
             "type": "string",
             "enum": [
                 "CREATED",
@@ -9140,7 +9140,7 @@ const docTemplate = `{
                 "DescribeResourceJobSucceeded"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSingleResourceRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSingleResourceRequest": {
             "type": "object",
             "properties": {
                 "accessKey": {
@@ -9166,27 +9166,27 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSource": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSource": {
             "type": "object",
             "properties": {
                 "describeResourceJobs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeResource"
                     }
                 },
                 "status": {
                     "description": "CREATED, QUEUED, IN_PROGRESS, TIMEOUT, FAILED, SUCCEEDED",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSourceJobStatus"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSourceJobStatus"
                         }
                     ],
                     "example": "IN_PROGRESS"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSourceJobStatus": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSourceJobStatus": {
             "type": "string",
             "enum": [
                 "CREATED",
@@ -9201,7 +9201,7 @@ const docTemplate = `{
                 "DescribeSourceJobCompleted"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetStackFindings": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetStackFindings": {
             "type": "object",
             "required": [
                 "page"
@@ -9221,7 +9221,7 @@ const docTemplate = `{
                     "description": "Pages count to retrieve",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page"
                         }
                     ]
                 },
@@ -9229,12 +9229,12 @@ const docTemplate = `{
                     "description": "Sorts to apply",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingSortItem"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem"
                     }
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightJob": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.InsightJob": {
             "type": "object",
             "properties": {
                 "FailureMessage": {
@@ -9282,7 +9282,7 @@ const docTemplate = `{
                     "description": "Insight Job Status",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_api.InsightJobStatus"
                         }
                     ],
                     "example": "InProgress"
@@ -9294,7 +9294,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest": {
             "type": "object",
             "properties": {
                 "benchmarkID": {
@@ -9328,7 +9328,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ResourceTypeDetail": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.ResourceTypeDetail": {
             "type": "object",
             "properties": {
                 "resourceTypeARN": {
@@ -9339,7 +9339,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.Source": {
             "type": "object",
             "properties": {
                 "id": {
@@ -9368,7 +9368,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack": {
             "type": "object",
             "required": [
                 "stackId"
@@ -9393,7 +9393,7 @@ const docTemplate = `{
                     "description": "Stack evaluations history, including insight evaluations and compliance evaluations",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackEvaluation"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackEvaluation"
                     }
                 },
                 "resources": {
@@ -9428,7 +9428,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackBenchmarkRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackBenchmarkRequest": {
             "type": "object",
             "required": [
                 "benchmarks",
@@ -9454,7 +9454,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackEvaluation": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackEvaluation": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -9479,10 +9479,10 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackInsightRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackInsightRequest": {
             "type": "object"
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest": {
             "type": "object",
             "properties": {
                 "benchmarkID": {
@@ -9507,7 +9507,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerInsightEvaluationRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.TriggerInsightEvaluationRequest": {
             "type": "object",
             "properties": {
                 "connectionID": {
@@ -9532,7 +9532,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_describe_enums.DescribeTriggerType": {
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_enums.DescribeTriggerType": {
             "type": "string",
             "enum": [
                 "initial_discovery",
@@ -9548,7 +9548,7 @@ const docTemplate = `{
                 "DescribeTriggerTypeManual"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus": {
+        "github_com_kaytu-io_kaytu-engine_pkg_insight_api.InsightJobStatus": {
             "type": "string",
             "enum": [
                 "IN_PROGRESS",
@@ -9561,7 +9561,7 @@ const docTemplate = `{
                 "InsightJobSucceeded"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightConnection": {
+        "github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightConnection": {
             "type": "object",
             "properties": {
                 "connection_id": {
@@ -9572,7 +9572,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource": {
+        "github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightResource": {
             "type": "object",
             "properties": {
                 "account_id": {
@@ -9591,7 +9591,7 @@ const docTemplate = `{
                     "description": "IncludedConnections list of the connections ids of the resources included in this insight",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightConnection"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightConnection"
                     }
                 },
                 "insight_id": {
@@ -9629,7 +9629,7 @@ const docTemplate = `{
                     "description": "ResourceType shows which collection of docs this resource belongs to",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResourceType"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightResourceType"
                         }
                     ]
                 },
@@ -9646,7 +9646,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResourceType": {
+        "github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightResourceType": {
             "type": "string",
             "enum": [
                 "history",
@@ -9661,7 +9661,7 @@ const docTemplate = `{
                 "InsightResourceProviderLast"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AWSResource": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AWSResource": {
             "type": "object",
             "properties": {
                 "attributes": {
@@ -9696,7 +9696,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AllResource": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AllResource": {
             "type": "object",
             "properties": {
                 "attributes": {
@@ -9713,7 +9713,7 @@ const docTemplate = `{
                     "description": "Resource Provider",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SourceType"
                         }
                     ]
                 },
@@ -9747,7 +9747,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AzureResource": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AzureResource": {
             "type": "object",
             "properties": {
                 "attributes": {
@@ -9794,7 +9794,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionData": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ConnectionData": {
             "type": "object",
             "properties": {
                 "connectionID": {
@@ -9811,7 +9811,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionFull": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ConnectionFull": {
             "type": "object",
             "properties": {
                 "id": {
@@ -9822,7 +9822,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostMetric": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostMetric": {
             "type": "object",
             "properties": {
                 "connector": {
@@ -9847,7 +9847,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostTrendDatapoint": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostTrendDatapoint": {
             "type": "object",
             "properties": {
                 "count": {
@@ -9858,7 +9858,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.DirectionType": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.DirectionType": {
             "type": "string",
             "enum": [
                 "asc",
@@ -9869,7 +9869,7 @@ const docTemplate = `{
                 "DirectionDescending"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Filters": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Filters": {
             "description": "if you provide two values for same filter OR operation would be used if you provide value for two filters AND operation would be used",
             "type": "object",
             "properties": {
@@ -9917,14 +9917,14 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetAWSResourceResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAWSResourceResponse": {
             "type": "object",
             "properties": {
                 "resources": {
                     "description": "A list of AWS resources with details",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AWSResource"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AWSResource"
                     }
                 },
                 "totalCount": {
@@ -9933,14 +9933,14 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetAzureResourceResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAzureResourceResponse": {
             "type": "object",
             "properties": {
                 "resources": {
                     "description": "A list of Azure resources with details",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AzureResource"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AzureResource"
                     }
                 },
                 "totalCount": {
@@ -9949,7 +9949,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetFiltersRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetFiltersRequest": {
             "type": "object",
             "required": [
                 "filters"
@@ -9959,7 +9959,7 @@ const docTemplate = `{
                     "description": "search filters",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceFilters"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceFilters"
                         }
                     ]
                 },
@@ -9969,20 +9969,20 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetFiltersResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetFiltersResponse": {
             "type": "object",
             "properties": {
                 "filters": {
                     "description": "search filters",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceFiltersResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceFiltersResponse"
                         }
                     ]
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourceRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourceRequest": {
             "type": "object",
             "required": [
                 "ID",
@@ -9999,7 +9999,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourcesRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesRequest": {
             "type": "object",
             "required": [
                 "filters",
@@ -10010,12 +10010,12 @@ const docTemplate = `{
                     "description": "search filters",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Filters"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Filters"
                         }
                     ]
                 },
                 "page": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Page"
                 },
                 "query": {
                     "description": "search query",
@@ -10025,19 +10025,19 @@ const docTemplate = `{
                     "description": "NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceSortItem"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceSortItem"
                     }
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourcesResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesResponse": {
             "type": "object",
             "properties": {
                 "resources": {
                     "description": "A list of AWS resources with details",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AllResource"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AllResource"
                     }
                 },
                 "totalCount": {
@@ -10046,7 +10046,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostCompositionResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostCompositionResponse": {
             "type": "object",
             "properties": {
                 "others": {
@@ -10069,13 +10069,13 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostMetricsResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostMetricsResponse": {
             "type": "object",
             "properties": {
                 "metrics": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostMetric"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostMetric"
                     }
                 },
                 "total_cost": {
@@ -10088,7 +10088,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest": {
             "type": "object",
             "properties": {
                 "labels": {
@@ -10102,7 +10102,7 @@ const docTemplate = `{
                     "description": "Specifies the Provider",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SourceType"
                         }
                     ]
                 },
@@ -10112,7 +10112,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeCompositionResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeCompositionResponse": {
             "type": "object",
             "properties": {
                 "others": {
@@ -10132,13 +10132,13 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetadataResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeMetadataResponse": {
             "type": "object",
             "properties": {
                 "resource_types": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType"
                     }
                 },
                 "total_resource_type_count": {
@@ -10147,13 +10147,13 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeMetricsResponse": {
             "type": "object",
             "properties": {
                 "resource_types": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType"
                     }
                 },
                 "total_count": {
@@ -10164,13 +10164,13 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetadataResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceMetadataResponse": {
             "type": "object",
             "properties": {
                 "services": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Service"
                     }
                 },
                 "total_service_count": {
@@ -10179,13 +10179,13 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceMetricsResponse": {
             "type": "object",
             "properties": {
                 "services": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Service"
                     }
                 },
                 "total_count": {
@@ -10198,14 +10198,14 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceSummariesResponse": {
             "type": "object",
             "properties": {
                 "services": {
                     "description": "A list of service summeries",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ServiceSummary"
                     }
                 },
                 "totalCount": {
@@ -10215,7 +10215,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationByProviderResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationByProviderResponse": {
             "type": "object",
             "properties": {
                 "name": {
@@ -10224,7 +10224,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse": {
             "type": "object",
             "properties": {
                 "location": {
@@ -10241,7 +10241,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Page": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Page": {
             "type": "object",
             "properties": {
                 "no": {
@@ -10252,7 +10252,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceFilters": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceFilters": {
             "description": "if you provide two values for same filter OR operation would be used if you provide value for two filters AND operation would be used",
             "type": "object",
             "properties": {
@@ -10317,7 +10317,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceFiltersResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceFiltersResponse": {
             "type": "object",
             "properties": {
                 "category": {
@@ -10331,7 +10331,7 @@ const docTemplate = `{
                     "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionFull"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ConnectionFull"
                     }
                 },
                 "location": {
@@ -10352,7 +10352,7 @@ const docTemplate = `{
                     "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeFull"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeFull"
                     }
                 },
                 "service": {
@@ -10381,7 +10381,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceSortItem": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceSortItem": {
             "type": "object",
             "properties": {
                 "direction": {
@@ -10391,7 +10391,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.DirectionType"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.DirectionType"
                         }
                     ]
                 },
@@ -10407,13 +10407,13 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SortFieldType"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SortFieldType"
                         }
                     ]
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType": {
             "type": "object",
             "properties": {
                 "attributes": {
@@ -10495,7 +10495,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeFull": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeFull": {
             "type": "object",
             "properties": {
                 "resource_type_arn": {
@@ -10506,7 +10506,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeTrendDatapoint": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTrendDatapoint": {
             "type": "object",
             "properties": {
                 "count": {
@@ -10517,25 +10517,25 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryRequest": {
             "type": "object",
             "required": [
                 "page"
             ],
             "properties": {
                 "page": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Page"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Page"
                 },
                 "sorts": {
                     "description": "NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQuerySortItem"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQuerySortItem"
                     }
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryResponse": {
             "type": "object",
             "properties": {
                 "headers": {
@@ -10563,7 +10563,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Service": {
             "type": "object",
             "properties": {
                 "connector": {
@@ -10588,7 +10588,7 @@ const docTemplate = `{
                 "resource_types": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType"
                     }
                 },
                 "service_label": {
@@ -10610,7 +10610,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ServiceSummary": {
             "type": "object",
             "properties": {
                 "connector": {
@@ -10639,7 +10639,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQueryItem": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItem": {
             "type": "object",
             "properties": {
                 "category": {
@@ -10675,7 +10675,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQuerySortItem": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQuerySortItem": {
             "type": "object",
             "properties": {
                 "direction": {
@@ -10685,7 +10685,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.DirectionType"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.DirectionType"
                         }
                     ]
                 },
@@ -10695,7 +10695,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SortFieldType": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SortFieldType": {
             "type": "string",
             "enum": [
                 "resourceID",
@@ -10716,7 +10716,7 @@ const docTemplate = `{
                 "SortFieldSourceID"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType": {
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SourceType": {
             "type": "string",
             "enum": [
                 "AWS",
@@ -10727,7 +10727,7 @@ const docTemplate = `{
                 "SourceCloudAzure"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_metadata_api.SetConfigMetadataRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetConfigMetadataRequest": {
             "type": "object",
             "properties": {
                 "key": {
@@ -10736,21 +10736,21 @@ const docTemplate = `{
                 "value": {}
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadata": {
+        "github_com_kaytu-io_kaytu-engine_pkg_metadata_models.ConfigMetadata": {
             "type": "object",
             "properties": {
                 "key": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.MetadataKey"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_models.MetadataKey"
                 },
                 "type": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadataType"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_models.ConfigMetadataType"
                 },
                 "value": {
                     "type": "string"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadataType": {
+        "github_com_kaytu-io_kaytu-engine_pkg_metadata_models.ConfigMetadataType": {
             "type": "string",
             "enum": [
                 "string",
@@ -10765,7 +10765,7 @@ const docTemplate = `{
                 "ConfigMetadataTypeJSON"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.MetadataKey": {
+        "github_com_kaytu-io_kaytu-engine_pkg_metadata_models.MetadataKey": {
             "type": "string",
             "enum": [
                 "workspace_ownership",
@@ -10824,7 +10824,7 @@ const docTemplate = `{
                 "MetadataKeyDataRetention"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.AWSCredential": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredential": {
             "type": "object",
             "properties": {
                 "accessKey": {
@@ -10835,7 +10835,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.AzureCredential": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredential": {
             "type": "object",
             "properties": {
                 "clientID": {
@@ -10849,7 +10849,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogConnector": {
             "type": "object",
             "properties": {
                 "ID": {
@@ -10902,14 +10902,14 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectorState"
                         }
                     ],
                     "example": "ACTIVE"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogMetrics": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogMetrics": {
             "type": "object",
             "properties": {
                 "connectionsEnabled": {
@@ -10930,15 +10930,15 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest": {
             "type": "object",
             "properties": {
                 "state": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection": {
             "type": "object",
             "properties": {
                 "assetDiscoveryMethod": {
@@ -11002,7 +11002,7 @@ const docTemplate = `{
                 "lifecycleState": {
                     "allOf": [
                         {
-                            "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState"
                         }
                     ],
                     "example": "enabled"
@@ -11029,7 +11029,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionCountRequest": {
             "type": "object",
             "properties": {
                 "connectors": {
@@ -11042,11 +11042,11 @@ const docTemplate = `{
                     "$ref": "#/definitions/source.HealthStatus"
                 },
                 "state": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState": {
             "type": "string",
             "enum": [
                 "pending",
@@ -11063,7 +11063,7 @@ const docTemplate = `{
                 "ConnectionLifecycleStateDeleted"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connector": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connector": {
             "type": "object",
             "properties": {
                 "allowNewConnections": {
@@ -11108,7 +11108,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectorCount": {
             "type": "object",
             "properties": {
                 "allowNewConnections": {
@@ -11156,7 +11156,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectorState": {
             "type": "string",
             "enum": [
                 "ACTIVE",
@@ -11167,7 +11167,7 @@ const docTemplate = `{
                 "ConnectorState_NotSetup"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateCredentialRequest": {
             "type": "object",
             "properties": {
                 "config": {},
@@ -11184,7 +11184,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateCredentialResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -11192,7 +11192,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSourceResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateSourceResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -11200,13 +11200,13 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential": {
             "type": "object",
             "properties": {
                 "connections": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
                     }
                 },
                 "connectorType": {
@@ -11251,7 +11251,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.GetSourcesRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.GetSourcesRequest": {
             "type": "object",
             "properties": {
                 "source_ids": {
@@ -11262,7 +11262,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ListConnectionSummaryResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ListConnectionSummaryResponse": {
             "type": "object",
             "properties": {
                 "TotalResourceCount": {
@@ -11276,7 +11276,7 @@ const docTemplate = `{
                 "connections": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
                     }
                 },
                 "totalCost": {
@@ -11293,11 +11293,11 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAwsRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceAwsRequest": {
             "type": "object",
             "properties": {
                 "config": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAWS"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAWS"
                 },
                 "description": {
                     "type": "string"
@@ -11310,11 +11310,11 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAzureRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceAzureRequest": {
             "type": "object",
             "properties": {
                 "config": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAzure"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAzure"
                 },
                 "description": {
                     "type": "string"
@@ -11324,7 +11324,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAWS": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAWS": {
             "type": "object",
             "required": [
                 "accessKey",
@@ -11348,7 +11348,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAzure": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAzure": {
             "type": "object",
             "required": [
                 "clientId",
@@ -11378,7 +11378,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.UpdateCredentialRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.UpdateCredentialRequest": {
             "type": "object",
             "properties": {
                 "config": {},
@@ -11395,7 +11395,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_summarizer_api.SummarizerJobStatus": {
+        "github_com_kaytu-io_kaytu-engine_pkg_summarizer_api.SummarizerJobStatus": {
             "type": "string",
             "enum": [
                 "IN_PROGRESS",
@@ -11408,7 +11408,7 @@ const docTemplate = `{
                 "SummarizerJobSucceeded"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest": {
             "type": "object",
             "properties": {
                 "newName": {
@@ -11416,7 +11416,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest": {
             "type": "object",
             "properties": {
                 "newOrgID": {
@@ -11424,7 +11424,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest": {
             "type": "object",
             "properties": {
                 "newOwnerUserID": {
@@ -11432,15 +11432,15 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceTierRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceTierRequest": {
             "type": "object",
             "properties": {
                 "newName": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Tier"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.CreateWorkspaceRequest": {
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -11454,7 +11454,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.CreateWorkspaceResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -11462,7 +11462,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.OrganizationResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.OrganizationResponse": {
             "type": "object",
             "properties": {
                 "addressLine1": {
@@ -11503,7 +11503,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Tier": {
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier": {
             "type": "string",
             "enum": [
                 "FREE",
@@ -11516,7 +11516,7 @@ const docTemplate = `{
                 "Tier_Enterprise"
             ]
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Workspace": {
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Workspace": {
             "type": "object",
             "properties": {
                 "description": {
@@ -11538,14 +11538,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "tier": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Tier"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier"
                 },
                 "uri": {
                     "type": "string"
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits": {
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceLimits": {
             "type": "object",
             "properties": {
                 "maxConnections": {
@@ -11559,7 +11559,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimitsUsage": {
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceLimitsUsage": {
             "type": "object",
             "properties": {
                 "currentConnections": {
@@ -11588,7 +11588,7 @@ const docTemplate = `{
                 }
             }
         },
-        "gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceResponse": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -11604,7 +11604,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "organization": {
-                    "$ref": "#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.OrganizationResponse"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.OrganizationResponse"
                 },
                 "ownerId": {
                     "type": "string"

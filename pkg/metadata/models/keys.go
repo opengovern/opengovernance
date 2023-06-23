@@ -3,8 +3,8 @@ package models
 import (
 	"strings"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/errors"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/errors"
 )
 
 type ConfigMetadataType string

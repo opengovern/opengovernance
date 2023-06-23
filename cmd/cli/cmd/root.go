@@ -5,7 +5,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	iam "gitlab.com/keibiengine/keibi-engine/cmd/cli/cmd/iam"
+	iam "github.com/kaytu-io/kaytu-engine/cmd/cli/cmd/iam"
 	"os"
 )
 

@@ -11,29 +11,29 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/lib/pq"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
-	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
-	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
-	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
-	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
+	api3 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
+	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	insightapi "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
+	summarizerapi "github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
 	"gorm.io/gorm"
 
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/internal"
 	"github.com/labstack/echo/v4"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/internal"
 )
 
 type HttpServer struct {

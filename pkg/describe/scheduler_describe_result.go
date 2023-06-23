@@ -9,8 +9,8 @@ import (
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"go.uber.org/zap"
 )
 

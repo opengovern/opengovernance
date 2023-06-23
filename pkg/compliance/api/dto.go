@@ -2,8 +2,8 @@ package api
 
 import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 )
 
 type BenchmarkAssignment struct {

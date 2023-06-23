@@ -12,13 +12,13 @@ import (
 
 	"github.com/go-redis/cache/v8"
 
-	complianceClient "gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
-	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 
 	"github.com/go-redis/redis/v8"
 
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	describeClient "gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
+	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/pkg/keibi-es-sdk"
 	keibiazure "github.com/kaytu-io/kaytu-azure-describer/pkg/keibi-es-sdk"

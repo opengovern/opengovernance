@@ -16,29 +16,29 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
-	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 	"gorm.io/gorm"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/internal"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory/internal"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 
-	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
-	insight "gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
+	api3 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
+	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/es"
 
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/labstack/echo/v4"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
 )
 
 const EsFetchPageSize = 10000

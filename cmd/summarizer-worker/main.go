@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer"
 )
 
 func main() {

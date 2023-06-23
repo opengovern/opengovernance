@@ -15,11 +15,11 @@ package inventory
 //	"github.com/labstack/echo/v4"
 //	"github.com/ory/dockertest/v3"
 //	"github.com/stretchr/testify/suite"
-//	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
-//	"gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
-//	idocker "gitlab.com/keibiengine/keibi-engine/pkg/internal/dockertest"
-//	"gitlab.com/keibiengine/keibi-engine/pkg/internal/postgres"
-//	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
+//	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+//	"github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+//	idocker "github.com/kaytu-io/kaytu-engine/pkg/internal/dockertest"
+//	"github.com/kaytu-io/kaytu-engine/pkg/internal/postgres"
+//	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 //	"go.uber.org/zap"
 //)
 //

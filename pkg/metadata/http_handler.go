@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/internal/cache"
-	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/internal/database"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/cache"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/database"
 	"go.uber.org/zap"
 )
 

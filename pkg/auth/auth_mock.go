@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/auth0"
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
 )
 
 type tokenStruct struct {

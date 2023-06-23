@@ -10,9 +10,9 @@ import (
 
 	awsModel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	azureModel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/helpers"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/helpers"
 )
 
 func getTimeFromTimestring(timestring string) time.Time {

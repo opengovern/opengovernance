@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/cloudservice"
+	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )

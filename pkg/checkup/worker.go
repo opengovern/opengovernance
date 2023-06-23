@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 
 	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"

@@ -8,12 +8,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 
-	describeClient "gitlab.com/keibiengine/keibi-engine/pkg/describe/client"
-	inventoryClient "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
-	onboardClient "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
 
 	"go.uber.org/zap"
 )

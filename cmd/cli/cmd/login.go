@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/cli"
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
 )
 
 // loginCmd represents the login command

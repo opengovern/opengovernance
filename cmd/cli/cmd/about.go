@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/cli"
+	"github.com/kaytu-io/kaytu-engine/pkg/cli"
 )
 
 var outputAbout string

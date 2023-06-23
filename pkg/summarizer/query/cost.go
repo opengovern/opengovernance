@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
+	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 )
 
 type ResourceQueryResponse struct {

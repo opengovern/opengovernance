@@ -11,7 +11,7 @@ import (
 	"github.com/aws/smithy-go"
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 

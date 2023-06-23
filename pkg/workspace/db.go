@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"

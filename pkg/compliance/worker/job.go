@@ -9,18 +9,18 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/config"
+	client2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/client"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/config"
-	client2 "gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
 	"go.uber.org/zap"
 )
 

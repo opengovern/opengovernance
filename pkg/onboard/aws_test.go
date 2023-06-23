@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/stretchr/testify/require"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
 )
 
 func TestDiscoverAwsAccounts(t *testing.T) {

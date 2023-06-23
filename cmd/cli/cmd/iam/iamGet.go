@@ -3,7 +3,7 @@ package cmd
 import (
 	"errors"
 	"github.com/spf13/cobra"
-	apis "gitlab.com/keibiengine/keibi-engine/pkg/cli"
+	apis "github.com/kaytu-io/kaytu-engine/pkg/cli"
 )
 
 var KeyID string

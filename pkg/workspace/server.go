@@ -14,16 +14,16 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	aws2 "github.com/kaytu-io/kaytu-aws-describer/aws"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	httpserver2 "gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client/pipedrive"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/client/pipedrive"
 
 	"github.com/go-redis/cache/v8"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 
-	client2 "gitlab.com/keibiengine/keibi-engine/pkg/inventory/client"
+	client2 "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 
 	v1 "k8s.io/api/apps/v1"
 
@@ -39,10 +39,10 @@ import (
 
 	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"github.com/go-redis/redis/v8"
+	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	authclient "github.com/kaytu-io/kaytu-engine/pkg/auth/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 	"github.com/labstack/echo/v4"
-	authapi "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	authclient "gitlab.com/keibiengine/keibi-engine/pkg/auth/client"
-	"gitlab.com/keibiengine/keibi-engine/pkg/workspace/api"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"k8s.io/apimachinery/pkg/api/meta"
