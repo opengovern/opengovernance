@@ -53,15 +53,6 @@ jobs:
       with:
         name: build
         path: build
-  test-output:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-    environment: golang
-    steps:
-      - name: print env
-        run: |
-          printenv
   tag:
     runs-on: ubuntu-latest
     needs:
