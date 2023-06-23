@@ -54,7 +54,6 @@ jobs:
     needs:
       - build
     environment: golang
-    env: {{ needs.build.outputs }}
     steps:
       - name: print env
         run: |
