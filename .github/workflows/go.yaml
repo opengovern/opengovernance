@@ -63,12 +63,12 @@ jobs:
         chmod +x ./build/*
     - name: Pack build
       run: |
-        tar -czvf build.tar.gz build
+        tar -czvf build.tar build
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
         name: build
-        path: build.tar.gz
+        path: build.tar
   tag:
     runs-on: ubuntu-latest
     needs:
@@ -112,10 +112,10 @@ jobs:
       uses: actions/download-artifact@v3
       with:
           name: build
-          path: build.tar.gz
+          path: .
     - name: Unpack artifact
       run: |
-        tar -xzvf build.tar.gz
+        tar -xzvf build.tar
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
@@ -150,10 +150,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz.tar.gz
+          tar -xzvf build.tar.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -186,10 +186,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz
+          tar -xzvf build.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -222,10 +222,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz
+          tar -xzvf build.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -260,10 +260,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz
+          tar -xzvf build.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -296,10 +296,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz
+          tar -xzvf build.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -332,10 +332,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz
+          tar -xzvf build.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -368,10 +368,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz
+          tar -xzvf build.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -404,10 +404,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz
+          tar -xzvf build.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -440,10 +440,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz
+          tar -xzvf build.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -476,10 +476,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz
+          tar -xzvf build.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -512,10 +512,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz
+          tar -xzvf build.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -548,10 +548,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz
+          tar -xzvf build.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -584,10 +584,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz
+          tar -xzvf build.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -620,10 +620,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz
+          tar -xzvf build.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -663,10 +663,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build.tar.gz
+          path: build.tar
       - name: Unpack artifact
         run: |
-          tar -xzvf build.tar.gz
+          tar -xzvf build.tar
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
