@@ -69,6 +69,7 @@ jobs:
       with:
         name: build
         path: build.tar
+        retention-days: 2
   tag:
     runs-on: ubuntu-latest
     needs:
