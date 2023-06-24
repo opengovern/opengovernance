@@ -28,11 +28,10 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
 	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	insightapi "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
+	onboardapi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	summarizerapi "github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
-  onboardapi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 
-
-  "gorm.io/gorm"
+	"gorm.io/gorm"
 
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -811,10 +810,10 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 	}
 
 	var resources []string
-	resourcesData := ctx.FormValue("resources")
-	if resourcesData != "" {
-		json.Unmarshal([]byte(resourcesData), &resources)
-	}
+	// resourcesData := ctx.FormValue("resources")
+	// if resourcesData != "" {
+	// 	json.Unmarshal([]byte(resourcesData), &resources)
+	// }
 
 	file, err := ctx.FormFile("terrafromFile")
 	if err != nil {
@@ -822,35 +821,28 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 			return err
 		}
 	}
-	var resourceTypes []string
-	if file != nil {
-		src, err := file.Open()
-		if err != nil {
-			return err
-		}
-		defer src.Close()
-
-		data, err := ioutil.ReadAll(src)
-		if err != nil {
-			return err
-		}
-		if !strings.HasSuffix(file.Filename, ".tfstate") {
-			echo.NewHTTPError(http.StatusBadRequest, "File must have a .tfstate suffix")
-		}
-		arns, err := internal.GetArns(string(data))
-		if err != nil {
-			return err
-		}
-		resourceTypes, err = internal.GetTypes(string(data))
-		if err != nil {
-			return err
-		}
-		resources = append(resources, arns...)
-	}
-
-	if len(resources) == 0 {
+	if file == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "No resource provided")
 	}
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	data, err := ioutil.ReadAll(src)
+	if err != nil {
+		return err
+	}
+	if !strings.HasSuffix(file.Filename, ".tfstate") {
+		echo.NewHTTPError(http.StatusBadRequest, "File must have a .tfstate suffix")
+	}
+	arns, err := internal.GetArns(string(data))
+	if err != nil {
+		return err
+	}
+	resources = append(resources, arns...)
+
 	var recordTags []*StackTag
 	if len(tags) != 0 {
 		for key, value := range tags {
@@ -869,6 +861,29 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 			provider = api.SourceCloudAzure
 		}
 	}
+
+	terraformResourceTypes, err := internal.GetTypes(string(data))
+	terraformResourceTypes = removeDuplicates(terraformResourceTypes)
+	if err != nil {
+		return err
+	}
+	var resourceTypes []string
+	if provider == api.SourceCloudAWS {
+		for _, trt := range terraformResourceTypes {
+			rt := aws.GetResourceTypeByTerraform(trt)
+			if rt != "" {
+				resourceTypes = append(resourceTypes, rt)
+			}
+		}
+	} else if provider == api.SourceCloudAzure {
+		for _, trt := range terraformResourceTypes {
+			rt := azure.GetResourceTypeByTerraform(trt)
+			if rt != "" {
+				resourceTypes = append(resourceTypes, rt)
+			}
+		}
+	}
+
 	configStr := ctx.FormValue("config")
 	if configStr == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Please provide the credentials")
@@ -879,6 +894,11 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		return err
 	}
 	id := "stack-" + uuid.New().String()
+
+	err = h.triggerStackDescriberJob(ctx, resourceTypes, provider, []byte(configStr), id, accs[0]) // assume we have one account
+	if err != nil {
+		return err
+	}
 	stackRecord := Stack{
 		StackID:       id,
 		Resources:     pq.StringArray(resources),
@@ -899,10 +919,6 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		ResourceTypes: []string(stackRecord.ResourceTypes),
 		Tags:          trimPrivateTags(stackRecord.GetTagsMap()),
 		AccountIDs:    accs,
-	}
-	err = h.triggerStackDescriberJob(ctx, resourceTypes, provider, []byte(configStr), stack.StackID, accs[0]) // assume we have one account
-	if err != nil {
-		return err
 	}
 	return ctx.JSON(http.StatusOK, stack)
 }
@@ -1569,4 +1585,17 @@ func (h HttpServer) TriggerStackDescriber(ctx echo.Context) error {
 	}
 	err = h.triggerStackDescriberJob(ctx, stack.ResourceTypes, provider, configStr, stack.StackID, stack.AccountIDs[0]) // assume we have one account
 	return ctx.NoContent(http.StatusOK)
+}
+
+// function to remove duplicate values
+func removeDuplicates(s []string) []string {
+	bucket := make(map[string]bool)
+	var result []string
+	for _, str := range s {
+		if _, ok := bucket[str]; !ok {
+			bucket[str] = true
+			result = append(result, str)
+		}
+	}
+	return result
 }
