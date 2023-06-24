@@ -3376,7 +3376,13 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "timestamp for resource count in epoch seconds",
-                        "name": "time",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for resource count change comparison in epoch seconds",
+                        "name": "startTime",
                         "in": "query"
                     }
                 ],
@@ -9868,6 +9874,17 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "old_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.DirectionType": {
             "type": "string",
             "enum": [
@@ -10126,12 +10143,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "others": {
-                    "type": "integer"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair"
                 },
                 "top_values": {
                     "type": "object",
                     "additionalProperties": {
-                        "type": "integer"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair"
                     }
                 },
                 "total_count": {
@@ -10167,6 +10184,9 @@ const docTemplate = `{
                     }
                 },
                 "total_count": {
+                    "type": "integer"
+                },
+                "total_old_count": {
                     "type": "integer"
                 },
                 "total_resource_types": {

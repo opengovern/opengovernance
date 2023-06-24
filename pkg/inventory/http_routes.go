@@ -550,7 +550,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 		apiResourceTypesMap[apiResourceType.ResourceType] = apiResourceType
 	}
 
-	_, oldApiResourceTypes, err := h.ListResourceTypeMetrics(tagMap, serviceNames, connectorTypes, connectionIDs, 0, startTime)
+	totalOldCount, oldApiResourceTypes, err := h.ListResourceTypeMetrics(tagMap, serviceNames, connectorTypes, connectionIDs, 0, startTime)
 	if err != nil {
 		return err
 	}
@@ -585,6 +585,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 
 	result := api.ListResourceTypeMetricsResponse{
 		TotalCount:         totalCount,
+		TotalOldCount:      totalOldCount,
 		TotalResourceTypes: len(apiResourceTypes),
 		ResourceTypes:      utils.Paginate(pageNumber, pageSize, apiResourceTypes),
 	}
@@ -683,7 +684,8 @@ func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 //	@Param			top				query		int				true	"How many top values to return default is 5"
 //	@Param			connector		query		[]source.Type	false	"Connector types to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param			time			query		string			false	"timestamp for resource count in epoch seconds"
+//	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
+//	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
 //	@Success		200				{object}	api.ListResourceTypeCompositionResponse
 //	@Router			/inventory/api/v2/resources/composition/{key} [get]
 func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
@@ -706,13 +708,22 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 	if len(connectionIDs) > 20 {
 		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
-	timeStr := ctx.QueryParam("time")
-	timeAt := time.Now().Unix()
-	if timeStr != "" {
-		timeAt, err = strconv.ParseInt(timeStr, 10, 64)
+
+	endTime := time.Now()
+	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
+		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+			return ctx.JSON(http.StatusBadRequest, "invalid endTime value")
 		}
+		endTime = time.Unix(endTimeVal, 0)
+	}
+	startTime := endTime.AddDate(0, 0, -7)
+	if startTimeStr := ctx.QueryParam("startTime"); startTimeStr != "" {
+		startTimeVal, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid startTime value")
+		}
+		startTime = time.Unix(startTimeVal, 0)
 	}
 
 	resourceTypes, err := h.db.ListFilteredResourceTypes(map[string][]string{tagKey: nil}, nil, connectorTypes, true)
@@ -726,48 +737,75 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 
 	var metricIndexed map[string]int
 	if len(connectionIDs) > 0 {
-		metricIndexed, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, endTime, resourceTypeStrings, EsFetchPageSize)
 	} else {
-		metricIndexed, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, time.Unix(timeAt, 0), resourceTypeStrings, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, endTime, resourceTypeStrings, EsFetchPageSize)
 	}
 	if err != nil {
 		return err
 	}
 
-	valueCountMap := make(map[string]int)
+	var oldMetricIndexed map[string]int
+	if len(connectionIDs) > 0 {
+		oldMetricIndexed, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, startTime, resourceTypeStrings, EsFetchPageSize)
+	} else {
+		oldMetricIndexed, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, startTime, resourceTypeStrings, EsFetchPageSize)
+	}
+	if err != nil {
+		return err
+	}
+
+	type currentAndOldCount struct {
+		current int
+		old     int
+	}
+
+	valueCountMap := make(map[string]currentAndOldCount)
 	totalCount := 0
+	totalOldCount := 0
 	for _, resourceType := range resourceTypes {
 		for _, tagValue := range resourceType.GetTagsMap()[tagKey] {
-			valueCountMap[tagValue] += metricIndexed[strings.ToLower(resourceType.ResourceType)]
+			if _, ok := valueCountMap[tagValue]; !ok {
+				valueCountMap[tagValue] = currentAndOldCount{}
+			}
+			v := valueCountMap[tagValue]
+			v.current += metricIndexed[strings.ToLower(resourceType.ResourceType)]
+			v.old += oldMetricIndexed[strings.ToLower(resourceType.ResourceType)]
 			totalCount += metricIndexed[strings.ToLower(resourceType.ResourceType)]
+			totalOldCount += oldMetricIndexed[strings.ToLower(resourceType.ResourceType)]
+			valueCountMap[tagValue] = v
 			break
 		}
 	}
 
 	type strIntPair struct {
-		str     string
-		integer int
+		str    string
+		counts currentAndOldCount
 	}
 	valueCountPairs := make([]strIntPair, 0, len(valueCountMap))
 	for value, count := range valueCountMap {
-		valueCountPairs = append(valueCountPairs, strIntPair{str: value, integer: count})
+		valueCountPairs = append(valueCountPairs, strIntPair{str: value, counts: count})
 	}
 	sort.Slice(valueCountPairs, func(i, j int) bool {
-		return valueCountPairs[i].integer > valueCountPairs[j].integer
+		return valueCountPairs[i].counts.current > valueCountPairs[j].counts.current
 	})
 
 	apiResult := api.ListResourceTypeCompositionResponse{
 		TotalCount:      totalCount,
 		TotalValueCount: len(valueCountMap),
-		TopValues:       make(map[string]int),
-		Others:          0,
+		TopValues:       make(map[string]api.CountPair),
+		Others:          api.CountPair{},
 	}
 
 	for i, pair := range valueCountPairs {
 		if i < int(top) {
-			apiResult.TopValues[pair.str] = pair.integer
+			apiResult.TopValues[pair.str] = api.CountPair{
+				Count:    pair.counts.current,
+				OldCount: pair.counts.old,
+			}
 		} else {
-			apiResult.Others += pair.integer
+			apiResult.Others.Count += pair.counts.current
+			apiResult.Others.OldCount += pair.counts.old
 		}
 	}
 
