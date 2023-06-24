@@ -13,13 +13,13 @@ import (
 
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	apiDescribe "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 )
 
@@ -129,6 +129,10 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				DescribeResourceJobsCount.WithLabelValues("successful").Inc()
 				return nil, nil
 			})
+			err = s.db.RemoveStackCredential(ds.SourceID)
+			if err != nil {
+				return err
+			}
 		} else {
 			c := CloudNativeCall{
 				dr:  dr,

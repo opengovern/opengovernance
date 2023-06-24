@@ -1520,6 +1520,7 @@ func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []s
 			Status:       apiDescribe.DescribeResourceJobCreated,
 		})
 	}
+	fmt.Println(dsj)
 	err = h.Scheduler.db.CreateDescribeSourceJob(&dsj)
 	if err != nil {
 		return err
