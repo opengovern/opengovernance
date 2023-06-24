@@ -49,9 +49,10 @@ type Connection struct {
 	LastHealthCheckTime  time.Time                       `json:"lastHealthCheckTime" example:"2023-05-07T00:00:00Z"`
 	HealthReason         *string                         `json:"healthReason,omitempty"`
 
-	LastInventory *time.Time `json:"lastInventory" example:"2023-05-07T00:00:00Z"`
-	Cost          *float64   `json:"cost" example:"1000.00"`
-	ResourceCount *int       `json:"resourceCount" example:"100"`
+	LastInventory    *time.Time `json:"lastInventory" example:"2023-05-07T00:00:00Z"`
+	Cost             *float64   `json:"cost" example:"1000.00"`
+	ResourceCount    *int       `json:"resourceCount" example:"100"`
+	OldResourceCount *int       `json:"oldResourceCount" example:"100"`
 
 	Metadata map[string]any `json:"metadata"`
 }
@@ -61,10 +62,12 @@ type ChangeConnectionLifecycleStateRequest struct {
 }
 
 type ListConnectionSummaryResponse struct {
-	ConnectionCount     int          `json:"connectionCount" example:"10"`
-	TotalCost           float64      `json:"totalCost" example:"1000.00"`
-	TotalResourceCount  int          `json:"TotalResourceCount" example:"100"`
-	TotalUnhealthyCount int          `json:"totalUnhealthyCount" example:"10"`
-	TotalDisabledCount  int          `json:"totalDisabledCount" example:"10"`
-	Connections         []Connection `json:"connections"`
+	ConnectionCount       int          `json:"connectionCount" example:"10"`
+	OldConnectionCount    int          `json:"oldConnectionCount" example:"10"`
+	TotalCost             float64      `json:"totalCost" example:"1000.00"`
+	TotalResourceCount    int          `json:"totalResourceCount" example:"100"`
+	TotalOldResourceCount int          `json:"totalOldResourceCount" example:"100"`
+	TotalUnhealthyCount   int          `json:"totalUnhealthyCount" example:"10"`
+	TotalDisabledCount    int          `json:"totalDisabledCount" example:"10"`
+	Connections           []Connection `json:"connections"`
 }

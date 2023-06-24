@@ -2360,35 +2360,41 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		return err
 	}
 
-	connectionIDStrs := make([]string, 0, len(connections))
-	for _, connection := range connections {
-		connectionIDStrs = append(connectionIDStrs, connection.ID.String())
-	}
-
-	connectionData, err := h.inventoryClient.ListConnectionsData(httpclient.FromEchoContext(ctx), connectionIDStrs, &startTime, &endTime)
+	connectionData, err := h.inventoryClient.ListConnectionsData(httpclient.FromEchoContext(ctx), nil, &startTime, &endTime)
 	if err != nil {
 		return err
 	}
 
 	result := api.ListConnectionSummaryResponse{
-		ConnectionCount:     len(connections),
-		TotalCost:           0,
-		TotalResourceCount:  0,
-		TotalUnhealthyCount: 0,
-		TotalDisabledCount:  0,
-		Connections:         make([]api.Connection, 0, len(connections)),
+		ConnectionCount:       len(connections),
+		OldConnectionCount:    0,
+		TotalCost:             0,
+		TotalResourceCount:    0,
+		TotalOldResourceCount: 0,
+		TotalUnhealthyCount:   0,
+		TotalDisabledCount:    0,
+		Connections:           make([]api.Connection, 0, len(connections)),
 	}
 
 	for _, connection := range connections {
 		if data, ok := connectionData[connection.ID.String()]; ok {
 			localData := data
 			apiConn := connection.toApi()
-			apiConn.Cost = &localData.Cost
-			apiConn.ResourceCount = &localData.Count
+			apiConn.Cost = localData.Cost
+			apiConn.ResourceCount = localData.Count
+			apiConn.OldResourceCount = localData.OldCount
 			apiConn.LastInventory = localData.LastInventory
 
-			result.TotalCost += localData.Cost
-			result.TotalResourceCount += localData.Count
+			if localData.Cost != nil {
+				result.TotalCost += *localData.Cost
+			}
+			if localData.Count != nil {
+				result.TotalResourceCount += *localData.Count
+			}
+			if localData.OldCount != nil {
+				result.OldConnectionCount++
+				result.TotalOldResourceCount += *localData.OldCount
+			}
 			if connection.HealthState == source.HealthStatusUnhealthy {
 				result.TotalUnhealthyCount++
 			}
@@ -2479,8 +2485,9 @@ func (h HttpHandler) GetConnectionSummary(ctx echo.Context) error {
 	}
 
 	result := connection.toApi()
-	result.Cost = &connectionData.Cost
-	result.ResourceCount = &connectionData.Count
+	result.Cost = connectionData.Cost
+	result.ResourceCount = connectionData.Count
+	result.OldResourceCount = connectionData.OldCount
 	result.LastInventory = connectionData.LastInventory
 
 	return ctx.JSON(http.StatusOK, result)

@@ -4221,60 +4221,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/onboard/api/v1/catalog/connectors": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Returns the list of connectors for catalog page.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Get catalog connectors",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Category filter",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "State filter",
-                        "name": "state",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Minimum connection filter",
-                        "name": "minConnection",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "ID filter",
-                        "name": "id",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogConnector"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/onboard/api/v1/catalog/metrics": {
             "get": {
                 "security": [
@@ -6156,7 +6102,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Create a stack by giving terraform statefile and additional resources",
+                "description": "Create a stack by giving terraform statefile and additional resources\nConfig structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}\nConfig structure for aws: {accessKey: string, secretKey: string}",
                 "consumes": [
                     "application/json"
                 ],
@@ -6188,6 +6134,12 @@ const docTemplate = `{
                         "description": "Additional Resources",
                         "name": "resources",
                         "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Config json structure",
+                        "name": "config",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -6196,6 +6148,39 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack"
                         }
+                    }
+                }
+            }
+        },
+        "/schedule/api/v1/stacks/describer/trigger": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Describe stack resources. This is needed before triggering insights and benchmarks\nConfig structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}\nConfig structure for aws: {accessKey: string, secretKey: string}",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stack"
+                ],
+                "summary": "Trigger Stack Describer",
+                "parameters": [
+                    {
+                        "description": "request",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeStackRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -9201,6 +9186,16 @@ const docTemplate = `{
                 "DescribeSourceJobCompleted"
             ]
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeStackRequest": {
+            "type": "object",
+            "properties": {
+                "config": {},
+                "stackId": {
+                    "type": "string",
+                    "example": "stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetStackFindings": {
             "type": "object",
             "required": [
@@ -9396,6 +9391,16 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackEvaluation"
                     }
                 },
+                "resourceTypes": {
+                    "description": "Stack resource types",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[Microsoft.Compute/virtualMachines]"
+                    ]
+                },
                 "resources": {
                     "description": "Stack resources list",
                     "type": "array",
@@ -9537,7 +9542,8 @@ const docTemplate = `{
             "enum": [
                 "initial_discovery",
                 "scheduled",
-                "manual"
+                "manual",
+                "stack"
             ],
             "x-enum-comments": {
                 "DescribeTriggerTypeScheduled": "default"
@@ -9545,7 +9551,8 @@ const docTemplate = `{
             "x-enum-varnames": [
                 "DescribeTriggerTypeInitialDiscovery",
                 "DescribeTriggerTypeScheduled",
-                "DescribeTriggerTypeManual"
+                "DescribeTriggerTypeManual",
+                "DescribeTriggerTypeStack"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_insight_api.InsightJobStatus": {
@@ -9808,6 +9815,9 @@ const docTemplate = `{
                 },
                 "lastInventory": {
                     "type": "string"
+                },
+                "oldCount": {
+                    "type": "integer"
                 }
             }
         },
@@ -10191,6 +10201,10 @@ const docTemplate = `{
                 "total_count": {
                     "type": "integer",
                     "example": 10000
+                },
+                "total_old_count": {
+                    "type": "integer",
+                    "example": 9000
                 },
                 "total_services": {
                     "type": "integer",
@@ -10849,66 +10863,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogConnector": {
-            "type": "object",
-            "properties": {
-                "ID": {
-                    "type": "integer"
-                },
-                "allowNewConnections": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "category": {
-                    "type": "string"
-                },
-                "connectionCount": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "connectionFederator": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "displayName": {
-                    "type": "string"
-                },
-                "logo": {
-                    "type": "string"
-                },
-                "maxConnectionsLimit": {
-                    "type": "integer",
-                    "example": 10
-                },
-                "name": {
-                    "type": "string"
-                },
-                "sourceType": {
-                    "description": "Cloud provider",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
-                    "example": "Azure"
-                },
-                "state": {
-                    "description": "ACTIVE, NOT_SETUP",
-                    "enum": [
-                        "ACTIVE",
-                        "NOT_SETUP"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectorState"
-                        }
-                    ],
-                    "example": "ACTIVE"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogMetrics": {
             "type": "object",
             "properties": {
@@ -11010,6 +10964,10 @@ const docTemplate = `{
                 "metadata": {
                     "type": "object",
                     "additionalProperties": {}
+                },
+                "oldResourceCount": {
+                    "type": "integer",
+                    "example": 100
                 },
                 "onboardDate": {
                     "type": "string",
@@ -11156,17 +11114,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectorState": {
-            "type": "string",
-            "enum": [
-                "ACTIVE",
-                "NOT_SETUP"
-            ],
-            "x-enum-varnames": [
-                "ConnectorState_Active",
-                "ConnectorState_NotSetup"
-            ]
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateCredentialRequest": {
             "type": "object",
             "properties": {
@@ -11265,10 +11212,6 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ListConnectionSummaryResponse": {
             "type": "object",
             "properties": {
-                "TotalResourceCount": {
-                    "type": "integer",
-                    "example": 100
-                },
                 "connectionCount": {
                     "type": "integer",
                     "example": 10
@@ -11279,6 +11222,10 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
                     }
                 },
+                "oldConnectionCount": {
+                    "type": "integer",
+                    "example": 10
+                },
                 "totalCost": {
                     "type": "number",
                     "example": 1000
@@ -11286,6 +11233,14 @@ const docTemplate = `{
                 "totalDisabledCount": {
                     "type": "integer",
                     "example": 10
+                },
+                "totalOldResourceCount": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "totalResourceCount": {
+                    "type": "integer",
+                    "example": 100
                 },
                 "totalUnhealthyCount": {
                     "type": "integer",

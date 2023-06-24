@@ -330,9 +330,10 @@ type ConnectionResourceCountResponse struct {
 
 type ConnectionData struct {
 	ConnectionID  string     `json:"connectionID"`
-	Count         int        `json:"count"`
+	Count         *int       `json:"count"`
+	OldCount      *int       `json:"oldCount"`
 	LastInventory *time.Time `json:"lastInventory"`
-	Cost          float64    `json:"cost"`
+	Cost          *float64   `json:"cost"`
 }
 
 type TopAccountResponse struct {

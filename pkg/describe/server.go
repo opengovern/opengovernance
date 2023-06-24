@@ -789,20 +789,20 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 // CreateStack godoc
 //
-//		@Summary		Create stack
-//		@Description	Create a stack by giving terraform statefile and additional resources
-//		@Description	Config structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}
-//		@Description 	Config structure for aws: {accessKey: string, secretKey: string}
-//		@Security		BearerToken
-//		@Tags			stack
-//		@Accept			json
-//		@Produce		json
-//		@Param			terrafromFile	formData	file		false	"File to upload"
-//		@Param			tag				formData	string		false	"Tags Map[string][]string"
-//		@Param			resources		formData	[]string	false	"Additional Resources"
-//	 	@Param			config			formData	string		false	"Config json structure"
-//		@Success		200				{object}	api.Stack
-//		@Router			/schedule/api/v1/stacks/create [post]
+//	@Summary		Create stack
+//	@Description	Create a stack by giving terraform statefile and additional resources
+//	@Description	Config structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}
+//	@Description	Config structure for aws: {accessKey: string, secretKey: string}
+//	@Security		BearerToken
+//	@Tags			stack
+//	@Accept			json
+//	@Produce		json
+//	@Param			terrafromFile	formData	file		false	"File to upload"
+//	@Param			tag				formData	string		false	"Tags Map[string][]string"
+//	@Param			resources		formData	[]string	false	"Additional Resources"
+//	@Param			config			formData	string		false	"Config json structure"
+//	@Success		200				{object}	api.Stack
+//	@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
 	var tags map[string][]string
 	tagsData := ctx.FormValue("tag")
@@ -1516,12 +1516,12 @@ func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []s
 //	@Summary		Trigger Stack Describer
 //	@Description	Describe stack resources. This is needed before triggering insights and benchmarks
 //	@Description	Config structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}
-//	@Description 	Config structure for aws: {accessKey: string, secretKey: string}
+//	@Description	Config structure for aws: {accessKey: string, secretKey: string}
 //	@Security		BearerToken
 //	@Tags			stack
 //	@Produce		json
 //	@Success		200
-//	@Param			req		body		api.DescribeStackRequest	true	"request"
+//	@Param			req	body	api.DescribeStackRequest	true	"request"
 //	@Router			/schedule/api/v1/stacks/describer/trigger [post]
 func (h HttpServer) TriggerStackDescriber(ctx echo.Context) error {
 	var req api.DescribeStackRequest
