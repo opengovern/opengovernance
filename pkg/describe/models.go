@@ -75,7 +75,7 @@ type ScheduleJob struct {
 type DescribeSourceJob struct {
 	gorm.Model
 	DescribedAt          time.Time
-	SourceID             uuid.UUID // Not the primary key but should be a unique identifier
+	SourceID             uuid.UUID `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"` // Not the primary key but should be a unique identifier
 	SourceType           source.Type
 	AccountID            string
 	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
