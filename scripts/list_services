@@ -29,7 +29,7 @@ SERVICES=""
 while read -r SVC; do
 	cd cmd/$SVC
 	while read -r PKG; do
-		if [[ $PKG == *"keibi"* ]]; then
+		if [[ $PKG == *"kaytu"* ]]; then
 			PKGN=$(echo "$PKG" | sed 's;github.com/kaytu-io/kaytu-engine/;;g')
 			SEARCH="0"
 			while read -r CHANGE; do
