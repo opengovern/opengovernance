@@ -60,11 +60,15 @@ jobs:
         cat ./services
         cat ./services | grep -v "steampipe" | grep -v "redoc" | xargs -P 4 -I{} bash -c "CC=/usr/bin/musl-gcc GOPRIVATE=\"github.com/kaytu-io\" GOOS=linux GOARCH=amd64 go build -v -ldflags \"-linkmode external -extldflags '-static' -s -w\" -tags musl -o ./build/ ./cmd/{}"
         for f in $(cat ./services); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
+        chmod +x ./build/*
+    - name: Pack build
+      run: |
+        tar -czvf build.tar.gz build
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
         name: build
-        path: build
+        path: build.tar.gz
   tag:
     runs-on: ubuntu-latest
     needs:
@@ -108,7 +112,10 @@ jobs:
       uses: actions/download-artifact@v3
       with:
           name: build
-          path: build
+          path: build.tar.gz
+    - name: Unpack artifact
+      run: |
+        tar -xzvf build.tar.gz
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
@@ -143,7 +150,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -176,7 +186,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -209,7 +222,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -244,7 +260,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -277,7 +296,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -310,7 +332,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -343,7 +368,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -376,7 +404,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -409,7 +440,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -442,7 +476,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -475,7 +512,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -508,7 +548,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -541,7 +584,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -557,7 +603,7 @@ jobs:
           tags: ${{ vars.DOCKER_REGISTRY }}/summarizer-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/SummarizerWorkerDockerfile
           context: .
-  deploy-swagger-ui:
+  deploy-swagger-ui-and-redoc:
     runs-on: ubuntu-latest
     needs:
       - build
@@ -574,7 +620,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -583,40 +632,14 @@ jobs:
       - uses: docker/login-action@v2
         with:
           registry: ${{ vars.DOCKER_REGISTRY }}
-      - name: Build and push Docker images
+      - name: Build and push Docker images - swagger-ui
         uses: docker/build-push-action@v4
         with:
           push: true
           tags: ${{ vars.DOCKER_REGISTRY }}/swagger-ui:${{ needs.tag.outputs.latest_tag }}
           file: docker/SwaggerUIDockerfile
           context: .
-  deploy-redoc:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-      - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
-    if: needs.build.outputs.swagger-ui == 'true' && github.event_name != 'pull_request'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: build
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
-      - name: Build and push Docker images
+      - name: Build and push Docker images - redoc
         uses: docker/build-push-action@v4
         with:
           push: true
@@ -640,7 +663,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: build
-          path: build
+          path: build.tar.gz
+      - name: Unpack artifact
+        run: |
+          tar -xzvf build.tar.gz
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
