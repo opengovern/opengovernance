@@ -1605,6 +1605,13 @@ definitions:
     - DescribeSourceJobInProgress
     - DescribeSourceJobCompletedWithFailure
     - DescribeSourceJobCompleted
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeStackRequest:
+    properties:
+      config: {}
+      stackId:
+        example: stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetStackFindings:
     properties:
       benchmarkIds:
@@ -1738,6 +1745,13 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackEvaluation'
         type: array
+      resourceTypes:
+        description: Stack resource types
+        example:
+        - '[Microsoft.Compute/virtualMachines]'
+        items:
+          type: string
+        type: array
       resources:
         description: Stack resources list
         example:
@@ -1844,6 +1858,7 @@ definitions:
     - initial_discovery
     - scheduled
     - manual
+    - stack
     type: string
     x-enum-comments:
       DescribeTriggerTypeScheduled: default
@@ -1851,6 +1866,7 @@ definitions:
     - DescribeTriggerTypeInitialDiscovery
     - DescribeTriggerTypeScheduled
     - DescribeTriggerTypeManual
+    - DescribeTriggerTypeStack
   github_com_kaytu-io_kaytu-engine_pkg_insight_api.InsightJobStatus:
     enum:
     - IN_PROGRESS
@@ -2035,6 +2051,8 @@ definitions:
         type: integer
       lastInventory:
         type: string
+      oldCount:
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ConnectionFull:
     properties:
@@ -2295,6 +2313,9 @@ definitions:
         type: array
       total_count:
         example: 10000
+        type: integer
+      total_old_count:
+        example: 9000
         type: integer
       total_services:
         example: 50
@@ -2789,45 +2810,6 @@ definitions:
       tenantID:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogConnector:
-    properties:
-      ID:
-        type: integer
-      allowNewConnections:
-        example: true
-        type: boolean
-      category:
-        type: string
-      connectionCount:
-        example: 1
-        type: integer
-      connectionFederator:
-        type: string
-      description:
-        type: string
-      displayName:
-        type: string
-      logo:
-        type: string
-      maxConnectionsLimit:
-        example: 10
-        type: integer
-      name:
-        type: string
-      sourceType:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        description: Cloud provider
-        example: Azure
-      state:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectorState'
-        description: ACTIVE, NOT_SETUP
-        enum:
-        - ACTIVE
-        - NOT_SETUP
-        example: ACTIVE
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogMetrics:
     properties:
       connectionsEnabled:
@@ -2894,6 +2876,9 @@ definitions:
       metadata:
         additionalProperties: {}
         type: object
+      oldResourceCount:
+        example: 100
+        type: integer
       onboardDate:
         example: "2023-05-07T00:00:00Z"
         type: string
@@ -2992,14 +2977,6 @@ definitions:
         additionalProperties: {}
         type: object
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectorState:
-    enum:
-    - ACTIVE
-    - NOT_SETUP
-    type: string
-    x-enum-varnames:
-    - ConnectorState_Active
-    - ConnectorState_NotSetup
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateCredentialRequest:
     properties:
       config: {}
@@ -3063,9 +3040,6 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ListConnectionSummaryResponse:
     properties:
-      TotalResourceCount:
-        example: 100
-        type: integer
       connectionCount:
         example: 10
         type: integer
@@ -3073,11 +3047,20 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
         type: array
+      oldConnectionCount:
+        example: 10
+        type: integer
       totalCost:
         example: 1000
         type: number
       totalDisabledCount:
         example: 10
+        type: integer
+      totalOldResourceCount:
+        example: 100
+        type: integer
+      totalResourceCount:
+        example: 100
         type: integer
       totalUnhealthyCount:
         example: 10
@@ -6212,40 +6195,6 @@ paths:
       summary: Returns the config metadata for the given key
       tags:
       - metadata
-  /onboard/api/v1/catalog/connectors:
-    get:
-      description: Returns the list of connectors for catalog page.
-      parameters:
-      - description: Category filter
-        in: query
-        name: category
-        type: string
-      - description: State filter
-        in: query
-        name: state
-        type: string
-      - description: Minimum connection filter
-        in: query
-        name: minConnection
-        type: string
-      - description: ID filter
-        in: query
-        name: id
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogConnector'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Get catalog connectors
-      tags:
-      - onboard
   /onboard/api/v1/catalog/metrics:
     get:
       description: Returns the list of metrics for catalog page.
@@ -7535,7 +7484,10 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a stack by giving terraform statefile and additional resources
+      description: |-
+        Create a stack by giving terraform statefile and additional resources
+        Config structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}
+        Config structure for aws: {accessKey: string, secretKey: string}
       parameters:
       - description: File to upload
         in: formData
@@ -7551,6 +7503,10 @@ paths:
           type: string
         name: resources
         type: array
+      - description: Config json structure
+        in: formData
+        name: config
+        type: string
       produces:
       - application/json
       responses:
@@ -7561,6 +7517,29 @@ paths:
       security:
       - BearerToken: []
       summary: Create stack
+      tags:
+      - stack
+  /schedule/api/v1/stacks/describer/trigger:
+    post:
+      description: |-
+        Describe stack resources. This is needed before triggering insights and benchmarks
+        Config structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}
+        Config structure for aws: {accessKey: string, secretKey: string}
+      parameters:
+      - description: request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeStackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Trigger Stack Describer
       tags:
       - stack
   /schedule/api/v1/stacks/insight/trigger:

@@ -18,6 +18,7 @@ type Service struct {
 
 type ListServiceMetricsResponse struct {
 	TotalCount    int       `json:"total_count" example:"10000"`
+	TotalOldCount int       `json:"total_old_count" example:"9000"`
 	TotalServices int       `json:"total_services" example:"50"`
 	Services      []Service `json:"services"`
 }
