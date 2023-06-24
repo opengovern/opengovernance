@@ -12,21 +12,21 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 
+	api3 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
-	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/utils"
 
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	keibiazure "github.com/kaytu-io/kaytu-azure-describer/azure"
 
 	"github.com/google/uuid"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"gorm.io/gorm"
 )
 

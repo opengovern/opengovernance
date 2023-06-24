@@ -3,14 +3,14 @@ package describe
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"time"
 
-	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
-	complianceworker "gitlab.com/keibiengine/keibi-engine/pkg/compliance/worker"
+	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	complianceworker "github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
 	"go.uber.org/zap"
 
-	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 

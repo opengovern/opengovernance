@@ -10,18 +10,18 @@ import (
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/resourcebuilder"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/resourcebuilder"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
 
 	"github.com/go-errors/errors"
 	"go.uber.org/zap"

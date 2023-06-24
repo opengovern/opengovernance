@@ -3,7 +3,7 @@ package api
 import (
 	"time"
 
-	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 )
 
 type StackBenchmarkRequest struct {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
 )
 
 func main() {

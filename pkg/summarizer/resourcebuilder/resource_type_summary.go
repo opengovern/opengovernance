@@ -7,10 +7,10 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	describe "gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
+	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"go.uber.org/zap"
 )
 

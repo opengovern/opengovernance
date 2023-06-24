@@ -1,11 +1,11 @@
 package hopper
 
 import (
+	"github.com/kaytu-io/kaytu-engine/pkg/config"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/describe"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
-	"gitlab.com/keibiengine/keibi-engine/pkg/config"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
 	"net/http"
 

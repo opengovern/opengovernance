@@ -10,7 +10,7 @@ import (
 	url2 "net/url"
 	"strconv"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 )
 
 type Service struct {

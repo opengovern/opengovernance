@@ -15,11 +15,11 @@ import (
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	apiAuth "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	apiDescribe "gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	apiOnboard "gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
+	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	apiDescribe "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"go.uber.org/zap"
 )
 

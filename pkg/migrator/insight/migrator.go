@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/db"
-	"gitlab.com/keibiengine/keibi-engine/pkg/migrator/internal"
+	"github.com/kaytu-io/kaytu-engine/pkg/migrator/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/migrator/internal"
 	"go.uber.org/zap"
 
 	"os"

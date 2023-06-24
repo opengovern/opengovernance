@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/config"
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 	"go.uber.org/zap"
 )
 

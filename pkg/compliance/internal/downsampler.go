@@ -2,7 +2,7 @@ package internal
 
 import (
 	"github.com/haoel/downsampling/core"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 )
 
 func insightTrendDataPointsToPoints(trendDataPoints []api.InsightTrendDatapoint) []core.Point {

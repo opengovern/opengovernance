@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
 )
 
 const MAX_INT64 = 9223372036854775807

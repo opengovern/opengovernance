@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
-	apies "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	apis "gitlab.com/keibiengine/keibi-engine/pkg/cli"
+	apies "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	apis "github.com/kaytu-io/kaytu-engine/pkg/cli"
 )
 
 var IamUpdate = &cobra.Command{

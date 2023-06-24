@@ -5,15 +5,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/insight"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight"
 
-	api2 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	insightapi "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 
-	complianceapi "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 
 	"go.uber.org/zap"
 )

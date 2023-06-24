@@ -7,8 +7,8 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/types"
+	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 )
 
 type FindingAlarmsQueryResponse struct {

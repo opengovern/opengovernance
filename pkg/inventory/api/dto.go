@@ -3,8 +3,8 @@ package api
 import (
 	"time"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/es"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )

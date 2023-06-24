@@ -8,9 +8,9 @@ import (
 	"time"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/managedgrafana"
@@ -21,11 +21,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	awsmodel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
+	"github.com/kaytu-io/kaytu-engine/pkg/insight/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/insight/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/client"
 	"go.uber.org/zap"
 )
 

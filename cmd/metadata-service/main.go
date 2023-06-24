@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/metadata"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata"
 )
 
 func main() {

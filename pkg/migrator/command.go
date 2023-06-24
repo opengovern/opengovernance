@@ -1,9 +1,9 @@
 package migrator
 
 import (
+	"github.com/kaytu-io/kaytu-engine/pkg/config"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
-	"gitlab.com/keibiengine/keibi-engine/pkg/config"
 	"go.uber.org/zap"
 )
 

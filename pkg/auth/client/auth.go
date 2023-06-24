@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 )
 
 type AuthServiceClient interface {

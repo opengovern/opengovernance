@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/kaytu-io/kaytu-util/pkg/model"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 )
 
 type GitParser struct {

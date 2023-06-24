@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	insight "gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
+	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 )
 
 type InventoryServiceClient interface {

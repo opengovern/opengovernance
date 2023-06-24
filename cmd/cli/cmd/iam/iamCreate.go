@@ -3,8 +3,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	apis "github.com/kaytu-io/kaytu-engine/pkg/cli"
 	"github.com/spf13/cobra"
-	apis "gitlab.com/keibiengine/keibi-engine/pkg/cli"
 )
 
 var workspacesNameCreate string

@@ -3,7 +3,7 @@ package insight
 import (
 	"encoding/json"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )

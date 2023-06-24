@@ -9,15 +9,15 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/labstack/echo/v4"
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpclient"
 
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 )
 
 type OnboardServiceClient interface {

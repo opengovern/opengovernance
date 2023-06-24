@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"gitlab.com/keibiengine/keibi-engine/pkg/onboard/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"gorm.io/datatypes"
 )
 

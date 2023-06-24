@@ -1,7 +1,7 @@
 package main
 
 import (
-	"gitlab.com/keibiengine/keibi-engine/pkg/reporter"
+	"github.com/kaytu-io/kaytu-engine/pkg/reporter"
 	"os"
 )
 

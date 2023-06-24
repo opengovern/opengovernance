@@ -2,7 +2,7 @@ package compliancebuilder
 
 import (
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"gitlab.com/keibiengine/keibi-engine/pkg/compliance/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 )
 
 type Builder interface {

@@ -6,20 +6,20 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/enums"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 
+	insightapi "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/lib/pq"
-	insightapi "gitlab.com/keibiengine/keibi-engine/pkg/insight/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/summarizer"
 
-	checkupapi "gitlab.com/keibiengine/keibi-engine/pkg/checkup/api"
-	summarizerapi "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/api"
+	checkupapi "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
+	summarizerapi "github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
 
-	api2 "gitlab.com/keibiengine/keibi-engine/pkg/compliance/api"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 
 	"github.com/google/uuid"
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"gorm.io/gorm"
 )
 

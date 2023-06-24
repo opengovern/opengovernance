@@ -66,7 +66,7 @@ definitions:
         example: Azure
       Status:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ComplianceReportJobStatus'
         example: InProgress
       createdAt:
         type: string
@@ -106,7 +106,7 @@ definitions:
       retryCount:
         type: integer
       status:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeResourceJobStatus'
       updatedAt:
         type: string
     type: object
@@ -134,9 +134,9 @@ definitions:
       sourceType:
         $ref: '#/definitions/source.Type'
       status:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSourceJobStatus'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSourceJobStatus'
       triggerType:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_enums.DescribeTriggerType'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_enums.DescribeTriggerType'
       updatedAt:
         type: string
     type: object
@@ -161,7 +161,7 @@ definitions:
       sourceType:
         $ref: '#/definitions/source.Type'
       status:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_api.InsightJobStatus'
       updatedAt:
         type: string
     type: object
@@ -180,7 +180,7 @@ definitions:
       scheduleJobID:
         type: integer
       status:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_summarizer_api.SummarizerJobStatus'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_summarizer_api.SummarizerJobStatus'
       updatedAt:
         type: string
     type: object
@@ -207,14 +207,14 @@ definitions:
       type:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyRequest:
     properties:
       name:
         description: Name of the key
         type: string
       roleName:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
@@ -222,7 +222,7 @@ definitions:
         - viewer
         example: admin
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyResponse:
     properties:
       active:
         description: Activity state of the key
@@ -242,7 +242,7 @@ definitions:
         type: string
       roleName:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
@@ -253,11 +253,11 @@ definitions:
         description: Token of the key
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetRoleBindingsResponse:
     properties:
       globalRoles:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Global Access
         enum:
         - admin
@@ -267,10 +267,10 @@ definitions:
       roleBindings:
         description: List of user roles in each workspace
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.UserRoleBinding'
         type: array
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUserResponse:
     properties:
       blocked:
         description: Is the user blocked or not
@@ -294,7 +294,7 @@ definitions:
         type: string
       roleName:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
@@ -303,7 +303,7 @@ definitions:
         example: admin
       status:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteStatus'
         description: Invite status
         enum:
         - accepted
@@ -318,7 +318,7 @@ definitions:
         example: John Doe
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUsersRequest:
     properties:
       email:
         example: johndoe@example.com
@@ -329,7 +329,7 @@ definitions:
         type: boolean
       roleName:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Filter by role name
         enum:
         - admin
@@ -337,7 +337,7 @@ definitions:
         - viewer
         example: admin
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUsersResponse:
     properties:
       email:
         description: Email address of the user
@@ -349,7 +349,7 @@ definitions:
         type: boolean
       roleName:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
@@ -365,7 +365,7 @@ definitions:
         example: John Doe
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteRequest:
     properties:
       email:
         description: User email address
@@ -373,7 +373,7 @@ definitions:
         type: string
       roleName:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
@@ -383,7 +383,7 @@ definitions:
     required:
     - email
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteStatus:
     enum:
     - accepted
     - pending
@@ -391,7 +391,7 @@ definitions:
     x-enum-varnames:
     - InviteStatus_ACCEPTED
     - InviteStatus_PENDING
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Membership:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.Membership:
     properties:
       assignedAt:
         description: Assignment timestamp in UTC
@@ -403,7 +403,7 @@ definitions:
         type: string
       roleName:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
@@ -419,11 +419,11 @@ definitions:
         example: demo
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.PutRoleBindingRequest:
     properties:
       roleName:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
@@ -438,7 +438,7 @@ definitions:
     - roleName
     - userId
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role:
     enum:
     - admin
     - editor
@@ -448,7 +448,7 @@ definitions:
     - AdminRole
     - EditorRole
     - ViewerRole
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleDetailsResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.RoleDetailsResponse:
     properties:
       description:
         description: Role Description and accesses
@@ -458,7 +458,7 @@ definitions:
         type: string
       role:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
@@ -472,10 +472,10 @@ definitions:
       users:
         description: List of users having the role
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUsersResponse'
         type: array
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleUser:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.RoleUser:
     properties:
       blocked:
         description: Is the user blocked or not
@@ -499,7 +499,7 @@ definitions:
         type: string
       roleName:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
@@ -508,7 +508,7 @@ definitions:
         example: admin
       status:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteStatus'
         description: Invite status
         enum:
         - accepted
@@ -531,7 +531,7 @@ definitions:
           type: string
         type: array
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RolesListResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.RolesListResponse:
     properties:
       description:
         description: Role Description and accesses
@@ -541,7 +541,7 @@ definitions:
         type: string
       roleName:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
@@ -553,14 +553,14 @@ definitions:
         example: 1
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UpdateKeyRoleRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.UpdateKeyRoleRequest:
     properties:
       id:
         description: Unique identifier for the key
         type: integer
       roleName:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
@@ -568,11 +568,11 @@ definitions:
         - viewer
         example: admin
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UserRoleBinding:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.UserRoleBinding:
     properties:
       roleName:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the binding Role
         enum:
         - admin
@@ -584,7 +584,7 @@ definitions:
         example: ws123456789
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceApiKey:
     properties:
       active:
         description: Activity state of the key
@@ -612,7 +612,7 @@ definitions:
         type: string
       roleName:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
@@ -624,7 +624,7 @@ definitions:
         example: "2023-04-21T08:53:09.928Z"
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding:
+  github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceRoleBinding:
     properties:
       createdAt:
         description: Creation timestamp in UTC
@@ -640,7 +640,7 @@ definitions:
         type: string
       roleName:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Role'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Role'
         description: Name of the role
         enum:
         - admin
@@ -649,7 +649,7 @@ definitions:
         example: admin
       status:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteStatus'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteStatus'
         description: Invite status
         enum:
         - accepted
@@ -664,7 +664,7 @@ definitions:
         example: John Doe
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Benchmark:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark:
     properties:
       autoAssign:
         description: Whether the benchmark is auto assigned or not
@@ -745,7 +745,7 @@ definitions:
         example: "2020-01-01T00:00:00Z"
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignedSource:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedSource:
     properties:
       connectionID:
         description: Connection ID
@@ -764,7 +764,7 @@ definitions:
         example: true
         type: boolean
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment:
     properties:
       assignedAt:
         description: Unix timestamp
@@ -778,14 +778,14 @@ definitions:
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkResultTrend:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend:
     properties:
       resultTrend:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ResultDatapoint'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResultDatapoint'
         type: array
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSummary:
     properties:
       checks:
         allOf:
@@ -794,7 +794,7 @@ definitions:
       compliancyTrend:
         description: Compliancy trend data points
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Datapoint'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Datapoint'
         type: array
       connectors:
         description: Cloud providers
@@ -845,11 +845,11 @@ definitions:
         example: Azure CIS v1.4.0
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree:
     properties:
       children:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
         type: array
       id:
         description: Benchmark ID
@@ -857,14 +857,14 @@ definitions:
         type: string
       policies:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.PolicyTree'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree'
         type: array
       title:
         description: Benchmark title
         example: CIS v1.4.0
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReport:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ComplianceReport:
     properties:
       failureMessage:
         example: ""
@@ -877,13 +877,13 @@ definitions:
         type: integer
       status:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ComplianceReportJobStatus'
         example: InProgress
       updatedAt:
         example: "2021-01-01T00:00:00Z"
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReportJobStatus:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ComplianceReportJobStatus:
     enum:
     - CREATED
     - IN_PROGRESS
@@ -895,7 +895,7 @@ definitions:
     - ComplianceReportJobInProgress
     - ComplianceReportJobCompletedWithFailure
     - ComplianceReportJobCompleted
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Datapoint:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Datapoint:
     properties:
       time:
         description: Time
@@ -904,7 +904,7 @@ definitions:
         description: Value
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.DirectionType:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType:
     enum:
     - asc
     - desc
@@ -912,7 +912,7 @@ definitions:
     x-enum-varnames:
     - DirectionAscending
     - DirectionDescending
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingFilters:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters:
     properties:
       benchmarkID:
         description: Benchmark ID
@@ -971,11 +971,11 @@ definitions:
           $ref: '#/definitions/types.ComplianceResult'
         type: array
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingSortItem:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem:
     properties:
       direction:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.DirectionType'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType'
         description: Sort direction
         enum:
         - asc
@@ -983,7 +983,7 @@ definitions:
         example: asc
       field:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.SortFieldType'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType'
         description: Field to sort by
         enum:
         - resourceID
@@ -1004,11 +1004,11 @@ definitions:
         - policySeverity
         example: status
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetBenchmarksSummaryResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarksSummaryResponse:
     properties:
       benchmarkSummary:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSummary'
         type: array
       failedResources:
         type: integer
@@ -1017,7 +1017,7 @@ definitions:
       totalAssets:
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsMetricsResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsMetricsResponse:
     properties:
       failedFindings:
         example: 10
@@ -1044,30 +1044,30 @@ definitions:
         example: 0
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequest:
     properties:
       filters:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingFilters'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
       page:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page'
       sorts:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingSortItem'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem'
         type: array
     required:
     - page
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse:
     properties:
       findings:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_es.Finding'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_es.Finding'
         type: array
       totalCount:
         example: 100
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldRequest:
     properties:
       count:
         description: Number of items to return
@@ -1075,7 +1075,7 @@ definitions:
         type: integer
       field:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopField'
         description: Field to get top values for
         enum:
         - resourceType
@@ -1084,16 +1084,16 @@ definitions:
         - resourceID
         example: resourceType
       filters:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingFilters'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse:
     properties:
       records:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopFieldRecord'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord'
         type: array
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight:
     properties:
       connector:
         allOf:
@@ -1132,12 +1132,12 @@ definitions:
         type: integer
       query:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query'
         description: Query
       result:
         description: Insight Results
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightResult'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightResult'
         type: array
       shortTitle:
         description: Short Title
@@ -1155,14 +1155,14 @@ definitions:
         example: 10
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightConnection:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightConnection:
     properties:
       connection_id:
         type: string
       original_id:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightDetail:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightDetail:
     properties:
       headers:
         items:
@@ -1174,7 +1174,7 @@ definitions:
           type: array
         type: array
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroup:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup:
     properties:
       connectors:
         example:
@@ -1191,7 +1191,7 @@ definitions:
         type: integer
       insights:
         additionalProperties:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight'
         type: object
       logoURL:
         example: https://kaytu.io/logo.png
@@ -1215,20 +1215,20 @@ definitions:
         example: 10
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroupTrendResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroupTrendResponse:
     properties:
       trend:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint'
         type: array
       trendPerInsight:
         additionalProperties:
           items:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint'
           type: array
         type: object
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightResult:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightResult:
     properties:
       connectionID:
         description: Connection ID
@@ -1237,11 +1237,11 @@ definitions:
       connections:
         description: Connections
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightConnection'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightConnection'
         type: array
       details:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightDetail'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightDetail'
         description: Insight Details
       executedAt:
         description: Time of Execution
@@ -1265,7 +1265,7 @@ definitions:
         example: 1000
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint:
     properties:
       timestamp:
         description: Time
@@ -1276,7 +1276,7 @@ definitions:
         example: 1000
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page:
     properties:
       "no":
         description: Number of pages
@@ -1287,7 +1287,7 @@ definitions:
         example: 100
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Policy:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy:
     properties:
       connector:
         allOf:
@@ -1336,7 +1336,7 @@ definitions:
         example: "2020-01-01T00:00:00Z"
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.PolicyTree:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree:
     properties:
       id:
         description: Policy ID
@@ -1361,7 +1361,7 @@ definitions:
           applied
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query:
     properties:
       connector:
         example: Azure
@@ -1393,7 +1393,7 @@ definitions:
         example: "2023-06-16T14:58:08.759554Z"
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ResultDatapoint:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResultDatapoint:
     properties:
       result:
         allOf:
@@ -1403,7 +1403,7 @@ definitions:
         description: Datapoint Time
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.SortFieldType:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType:
     enum:
     - resourceID
     - resourceName
@@ -1439,7 +1439,7 @@ definitions:
     - FieldBenchmarkID
     - FieldPolicyID
     - FieldPolicySeverity
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopField:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopField:
     enum:
     - resourceType
     - serviceName
@@ -1451,14 +1451,14 @@ definitions:
     - TopField_CloudService
     - TopField_CloudAccount
     - TopField_Resources
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.TopFieldRecord:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord:
     properties:
       count:
         type: integer
       value:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_compliance_es.Finding:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_es.Finding:
     properties:
       ID:
         description: Finding ID
@@ -1535,7 +1535,7 @@ definitions:
         example: true
         type: boolean
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeResource:
     properties:
       failureMessage:
         type: string
@@ -1544,11 +1544,11 @@ definitions:
         type: string
       status:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeResourceJobStatus'
         description: CREATED, QUEUED, IN_PROGRESS, TIMEOUT, FAILED, SUCCEEDED
         example: IN_PROGRESS
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResourceJobStatus:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeResourceJobStatus:
     enum:
     - CREATED
     - QUEUED
@@ -1564,7 +1564,7 @@ definitions:
     - DescribeResourceJobTimeout
     - DescribeResourceJobFailed
     - DescribeResourceJobSucceeded
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSingleResourceRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSingleResourceRequest:
     properties:
       accessKey:
         type: string
@@ -1581,19 +1581,19 @@ definitions:
       secretKey:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSource:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSource:
     properties:
       describeResourceJobs:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeResource'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeResource'
         type: array
       status:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSourceJobStatus'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSourceJobStatus'
         description: CREATED, QUEUED, IN_PROGRESS, TIMEOUT, FAILED, SUCCEEDED
         example: IN_PROGRESS
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSourceJobStatus:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSourceJobStatus:
     enum:
     - CREATED
     - IN_PROGRESS
@@ -1605,7 +1605,7 @@ definitions:
     - DescribeSourceJobInProgress
     - DescribeSourceJobCompletedWithFailure
     - DescribeSourceJobCompleted
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetStackFindings:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetStackFindings:
     properties:
       benchmarkIds:
         description: Benchmark IDs to filter
@@ -1616,17 +1616,17 @@ definitions:
         type: array
       page:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Page'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page'
         description: Pages count to retrieve
       sorts:
         description: Sorts to apply
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.FindingSortItem'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem'
         type: array
     required:
     - page
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightJob:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.InsightJob:
     properties:
       FailureMessage:
         description: Failure Message
@@ -1661,7 +1661,7 @@ definitions:
         example: Azure
       status:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_api.InsightJobStatus'
         description: Insight Job Status
         example: InProgress
       updatedAt:
@@ -1669,7 +1669,7 @@ definitions:
         example: "2021-04-27T15:04:05Z"
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest:
     properties:
       benchmarkID:
         description: Filter evaluations for this benchmark
@@ -1693,14 +1693,14 @@ definitions:
         example: 1619610400
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ResourceTypeDetail:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.ResourceTypeDetail:
     properties:
       resourceTypeARN:
         type: string
       resourceTypeName:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.Source:
     properties:
       id:
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
@@ -1719,7 +1719,7 @@ definitions:
         - $ref: '#/definitions/source.Type'
         example: Azure
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack:
     properties:
       accountIds:
         description: Accounts included in the stack
@@ -1736,7 +1736,7 @@ definitions:
         description: Stack evaluations history, including insight evaluations and
           compliance evaluations
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackEvaluation'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackEvaluation'
         type: array
       resources:
         description: Stack resources list
@@ -1763,7 +1763,7 @@ definitions:
     required:
     - stackId
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackBenchmarkRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackBenchmarkRequest:
     properties:
       benchmarks:
         description: Benchmarks to add to the stack
@@ -1782,7 +1782,7 @@ definitions:
     - benchmarks
     - stackId
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackEvaluation:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackEvaluation:
     properties:
       createdAt:
         description: Evaluation creation date
@@ -1801,9 +1801,9 @@ definitions:
         example: BENCHMARK
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackInsightRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackInsightRequest:
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest:
     properties:
       benchmarkID:
         description: Benchmark ID to evaluate
@@ -1821,7 +1821,7 @@ definitions:
           type: string
         type: array
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerInsightEvaluationRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.TriggerInsightEvaluationRequest:
     properties:
       connectionID:
         description: Connection ID to evaluate
@@ -1839,7 +1839,7 @@ definitions:
           type: string
         type: array
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_describe_enums.DescribeTriggerType:
+  github_com_kaytu-io_kaytu-engine_pkg_describe_enums.DescribeTriggerType:
     enum:
     - initial_discovery
     - scheduled
@@ -1851,7 +1851,7 @@ definitions:
     - DescribeTriggerTypeInitialDiscovery
     - DescribeTriggerTypeScheduled
     - DescribeTriggerTypeManual
-  gitlab_com_keibiengine_keibi-engine_pkg_insight_api.InsightJobStatus:
+  github_com_kaytu-io_kaytu-engine_pkg_insight_api.InsightJobStatus:
     enum:
     - IN_PROGRESS
     - FAILED
@@ -1861,14 +1861,14 @@ definitions:
     - InsightJobInProgress
     - InsightJobFailed
     - InsightJobSucceeded
-  gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightConnection:
+  github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightConnection:
     properties:
       connection_id:
         type: string
       original_id:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource:
+  github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightResource:
     properties:
       account_id:
         description: AccountID
@@ -1883,7 +1883,7 @@ definitions:
         description: IncludedConnections list of the connections ids of the resources
           included in this insight
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightConnection'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightConnection'
         type: array
       insight_id:
         description: InsightID is the ID of insight which has been executed
@@ -1909,7 +1909,7 @@ definitions:
         type: string
       resource_type:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResourceType'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightResourceType'
         description: ResourceType shows which collection of docs this resource belongs
           to
       result:
@@ -1921,7 +1921,7 @@ definitions:
         description: SourceID
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResourceType:
+  github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightResourceType:
     enum:
     - history
     - last
@@ -1933,7 +1933,7 @@ definitions:
     - InsightResourceLast
     - InsightResourceProviderHistory
     - InsightResourceProviderLast
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AWSResource:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AWSResource:
     properties:
       attributes:
         additionalProperties:
@@ -1956,7 +1956,7 @@ definitions:
       resourceTypeName:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AllResource:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AllResource:
     properties:
       attributes:
         additionalProperties:
@@ -1967,7 +1967,7 @@ definitions:
         type: string
       provider:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SourceType'
         description: Resource Provider
       providerConnectionID:
         description: Provider Connection Id
@@ -1991,7 +1991,7 @@ definitions:
         description: Resource Type Name
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AzureResource:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AzureResource:
     properties:
       attributes:
         additionalProperties:
@@ -2025,7 +2025,7 @@ definitions:
         description: Resource Type Name
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionData:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ConnectionData:
     properties:
       connectionID:
         type: string
@@ -2036,14 +2036,14 @@ definitions:
       lastInventory:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionFull:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ConnectionFull:
     properties:
       id:
         type: string
       name:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostMetric:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostMetric:
     properties:
       connector:
         allOf:
@@ -2058,14 +2058,14 @@ definitions:
       total_cost:
         type: number
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostTrendDatapoint:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostTrendDatapoint:
     properties:
       count:
         type: number
       date:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.DirectionType:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.DirectionType:
     enum:
     - asc
     - desc
@@ -2073,7 +2073,7 @@ definitions:
     x-enum-varnames:
     - DirectionAscending
     - DirectionDescending
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Filters:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Filters:
     description: if you provide two values for same filter OR operation would be used
       if you provide value for two filters AND operation would be used
     properties:
@@ -2114,33 +2114,33 @@ definitions:
           {})
         type: object
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetAWSResourceResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAWSResourceResponse:
     properties:
       resources:
         description: A list of AWS resources with details
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AWSResource'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AWSResource'
         type: array
       totalCount:
         description: Number of returned resources
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetAzureResourceResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAzureResourceResponse:
     properties:
       resources:
         description: A list of Azure resources with details
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AzureResource'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AzureResource'
         type: array
       totalCount:
         description: Number of returned resources
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetFiltersRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetFiltersRequest:
     properties:
       filters:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceFilters'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceFilters'
         description: search filters
       query:
         description: search query
@@ -2148,14 +2148,14 @@ definitions:
     required:
     - filters
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetFiltersResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetFiltersResponse:
     properties:
       filters:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceFiltersResponse'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceFiltersResponse'
         description: search filters
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourceRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourceRequest:
     properties:
       ID:
         description: Resource ID
@@ -2167,14 +2167,14 @@ definitions:
     - ID
     - resourceType
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourcesRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesRequest:
     properties:
       filters:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Filters'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Filters'
         description: search filters
       page:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Page'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Page'
       query:
         description: search query
         type: string
@@ -2182,24 +2182,24 @@ definitions:
         description: 'NOTE: we don''t support multi-field sort for now, if sort is
           empty, results would be sorted by first column'
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceSortItem'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceSortItem'
         type: array
     required:
     - filters
     - page
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourcesResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesResponse:
     properties:
       resources:
         description: A list of AWS resources with details
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.AllResource'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AllResource'
         type: array
       totalCount:
         description: Number of returned resources
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostCompositionResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostCompositionResponse:
     properties:
       others:
         example: 100
@@ -2215,11 +2215,11 @@ definitions:
         example: 10
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostMetricsResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostMetricsResponse:
     properties:
       metrics:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostMetric'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostMetric'
         type: array
       total_cost:
         example: 1000
@@ -2228,7 +2228,7 @@ definitions:
         example: 10
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest:
     properties:
       labels:
         description: Labels
@@ -2237,13 +2237,13 @@ definitions:
         type: array
       providerFilter:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SourceType'
         description: Specifies the Provider
       titleFilter:
         description: Specifies the Title
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeCompositionResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeCompositionResponse:
     properties:
       others:
         type: integer
@@ -2256,42 +2256,42 @@ definitions:
       total_value_count:
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetadataResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeMetadataResponse:
     properties:
       resource_types:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType'
         type: array
       total_resource_type_count:
         example: 100
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeMetricsResponse:
     properties:
       resource_types:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType'
         type: array
       total_count:
         type: integer
       total_resource_types:
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetadataResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceMetadataResponse:
     properties:
       services:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Service'
         type: array
       total_service_count:
         example: 100
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceMetricsResponse:
     properties:
       services:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Service'
         type: array
       total_count:
         example: 10000
@@ -2300,25 +2300,25 @@ definitions:
         example: 50
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceSummariesResponse:
     properties:
       services:
         description: A list of service summeries
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ServiceSummary'
         type: array
       totalCount:
         description: Number of services
         example: 20
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationByProviderResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationByProviderResponse:
     properties:
       name:
         description: Name of the region
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse:
     properties:
       location:
         description: Region
@@ -2330,14 +2330,14 @@ definitions:
         description: Change in number of resources in the region
         type: number
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Page:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Page:
     properties:
       "no":
         type: integer
       size:
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceFilters:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceFilters:
     description: if you provide two values for same filter OR operation would be used
       if you provide value for two filters AND operation would be used
     properties:
@@ -2392,7 +2392,7 @@ definitions:
           [])
         type: object
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceFiltersResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceFiltersResponse:
     properties:
       category:
         additionalProperties:
@@ -2404,7 +2404,7 @@ definitions:
         description: if you dont need to use this filter, leave them empty. (e.g.
           [])
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionFull'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ConnectionFull'
         type: array
       location:
         description: if you dont need to use this filter, leave them empty. (e.g.
@@ -2422,7 +2422,7 @@ definitions:
         description: if you dont need to use this filter, leave them empty. (e.g.
           [])
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeFull'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeFull'
         type: array
       service:
         additionalProperties:
@@ -2445,17 +2445,17 @@ definitions:
           [])
         type: object
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceSortItem:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceSortItem:
     properties:
       direction:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.DirectionType'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.DirectionType'
         enum:
         - asc
         - desc
       field:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SortFieldType'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SortFieldType'
         enum:
         - resourceID
         - resourceName
@@ -2465,7 +2465,7 @@ definitions:
         - location
         - connectionID
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType:
     properties:
       attributes:
         description: List supported steampipe Attributes (columns) for this resource
@@ -2527,34 +2527,34 @@ definitions:
         description: Tags
         type: object
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeFull:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeFull:
     properties:
       resource_type_arn:
         type: string
       resource_type_name:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeTrendDatapoint:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTrendDatapoint:
     properties:
       count:
         type: integer
       date:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryRequest:
     properties:
       page:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Page'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Page'
       sorts:
         description: 'NOTE: we don''t support multi-field sort for now, if sort is
           empty, results would be sorted by first column'
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQuerySortItem'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQuerySortItem'
         type: array
     required:
     - page
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryResponse:
     properties:
       headers:
         description: Column names
@@ -2575,7 +2575,7 @@ definitions:
         description: Query Title
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Service:
     properties:
       connector:
         allOf:
@@ -2591,7 +2591,7 @@ definitions:
         type: integer
       resource_types:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType'
         type: array
       service_label:
         example: Compute
@@ -2606,7 +2606,7 @@ definitions:
           type: array
         type: object
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ServiceSummary:
     properties:
       connector:
         allOf:
@@ -2626,7 +2626,7 @@ definitions:
         example: compute
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQueryItem:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItem:
     properties:
       category:
         description: Category (Tags[category])
@@ -2652,11 +2652,11 @@ definitions:
         description: Title
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQuerySortItem:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQuerySortItem:
     properties:
       direction:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.DirectionType'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.DirectionType'
         enum:
         - asc
         - desc
@@ -2664,7 +2664,7 @@ definitions:
         description: fill this with column name
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SortFieldType:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SortFieldType:
     enum:
     - resourceID
     - resourceName
@@ -2682,7 +2682,7 @@ definitions:
     - SortFieldResourceGroup
     - SortFieldLocation
     - SortFieldSourceID
-  gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SourceType:
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SourceType:
     enum:
     - AWS
     - Azure
@@ -2690,22 +2690,22 @@ definitions:
     x-enum-varnames:
     - SourceCloudAWS
     - SourceCloudAzure
-  gitlab_com_keibiengine_keibi-engine_pkg_metadata_api.SetConfigMetadataRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetConfigMetadataRequest:
     properties:
       key:
         type: string
       value: {}
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadata:
+  github_com_kaytu-io_kaytu-engine_pkg_metadata_models.ConfigMetadata:
     properties:
       key:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.MetadataKey'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_models.MetadataKey'
       type:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadataType'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_models.ConfigMetadataType'
       value:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadataType:
+  github_com_kaytu-io_kaytu-engine_pkg_metadata_models.ConfigMetadataType:
     enum:
     - string
     - int
@@ -2717,7 +2717,7 @@ definitions:
     - ConfigMetadataTypeInt
     - ConfigMetadataTypeBool
     - ConfigMetadataTypeJSON
-  gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.MetadataKey:
+  github_com_kaytu-io_kaytu-engine_pkg_metadata_models.MetadataKey:
     enum:
     - workspace_ownership
     - workspace_id
@@ -2773,14 +2773,14 @@ definitions:
     - MetadataKeyInsightJobInterval
     - MetadataKeyMetricsJobInterval
     - MetadataKeyDataRetention
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.AWSCredential:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredential:
     properties:
       accessKey:
         type: string
       secretKey:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.AzureCredential:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredential:
     properties:
       clientID:
         type: string
@@ -2789,7 +2789,7 @@ definitions:
       tenantID:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogConnector:
     properties:
       ID:
         type: integer
@@ -2821,14 +2821,14 @@ definitions:
         example: Azure
       state:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectorState'
         description: ACTIVE, NOT_SETUP
         enum:
         - ACTIVE
         - NOT_SETUP
         example: ACTIVE
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogMetrics:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogMetrics:
     properties:
       connectionsEnabled:
         example: 20
@@ -2843,12 +2843,12 @@ definitions:
         example: 5
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest:
     properties:
       state:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState'
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection:
     properties:
       assetDiscoveryMethod:
         allOf:
@@ -2889,7 +2889,7 @@ definitions:
         type: string
       lifecycleState:
         allOf:
-        - $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState'
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState'
         example: enabled
       metadata:
         additionalProperties: {}
@@ -2907,7 +2907,7 @@ definitions:
         example: 100
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionCountRequest:
     properties:
       connectors:
         items:
@@ -2916,9 +2916,9 @@ definitions:
       health:
         $ref: '#/definitions/source.HealthStatus'
       state:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState'
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionLifecycleState:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState:
     enum:
     - pending
     - initial-discovery
@@ -2932,7 +2932,7 @@ definitions:
     - ConnectionLifecycleStateEnabled
     - ConnectionLifecycleStateDisabled
     - ConnectionLifecycleStateDeleted
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connector:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connector:
     properties:
       allowNewConnections:
         type: boolean
@@ -2961,7 +2961,7 @@ definitions:
         additionalProperties: {}
         type: object
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectorCount:
     properties:
       allowNewConnections:
         type: boolean
@@ -2992,7 +2992,7 @@ definitions:
         additionalProperties: {}
         type: object
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorState:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectorState:
     enum:
     - ACTIVE
     - NOT_SETUP
@@ -3000,7 +3000,7 @@ definitions:
     x-enum-varnames:
     - ConnectorState_Active
     - ConnectorState_NotSetup
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateCredentialRequest:
     properties:
       config: {}
       name:
@@ -3010,21 +3010,21 @@ definitions:
         - $ref: '#/definitions/source.Type'
         example: Azure
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateCredentialResponse:
     properties:
       id:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSourceResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateSourceResponse:
     properties:
       id:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential:
     properties:
       connections:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
         type: array
       connectorType:
         $ref: '#/definitions/source.Type'
@@ -3054,14 +3054,14 @@ definitions:
       unhealthy_connections:
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.GetSourcesRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.GetSourcesRequest:
     properties:
       source_ids:
         items:
           type: string
         type: array
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ListConnectionSummaryResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ListConnectionSummaryResponse:
     properties:
       TotalResourceCount:
         example: 100
@@ -3071,7 +3071,7 @@ definitions:
         type: integer
       connections:
         items:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
         type: array
       totalCost:
         example: 1000
@@ -3083,10 +3083,10 @@ definitions:
         example: 10
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAwsRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceAwsRequest:
     properties:
       config:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAWS'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAWS'
       description:
         type: string
       email:
@@ -3094,16 +3094,16 @@ definitions:
       name:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAzureRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceAzureRequest:
     properties:
       config:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAzure'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAzure'
       description:
         type: string
       name:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAWS:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAWS:
     properties:
       accessKey:
         type: string
@@ -3119,7 +3119,7 @@ definitions:
     - accessKey
     - secretKey
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceConfigAzure:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAzure:
     properties:
       clientId:
         type: string
@@ -3140,7 +3140,7 @@ definitions:
     - secretId
     - tenantId
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.UpdateCredentialRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.UpdateCredentialRequest:
     properties:
       config: {}
       connector:
@@ -3150,7 +3150,7 @@ definitions:
       name:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_summarizer_api.SummarizerJobStatus:
+  github_com_kaytu-io_kaytu-engine_pkg_summarizer_api.SummarizerJobStatus:
     enum:
     - IN_PROGRESS
     - FAILED
@@ -3160,27 +3160,27 @@ definitions:
     - SummarizerJobInProgress
     - SummarizerJobFailed
     - SummarizerJobSucceeded
-  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest:
     properties:
       newName:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest:
     properties:
       newOrgID:
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest:
     properties:
       newOwnerUserID:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceTierRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceTierRequest:
     properties:
       newName:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Tier'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier'
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.CreateWorkspaceRequest:
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceRequest:
     properties:
       description:
         type: string
@@ -3189,12 +3189,12 @@ definitions:
       tier:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.CreateWorkspaceResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceResponse:
     properties:
       id:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.OrganizationResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.OrganizationResponse:
     properties:
       addressLine1:
         type: string
@@ -3221,7 +3221,7 @@ definitions:
       url:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Tier:
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier:
     enum:
     - FREE
     - TEAMS
@@ -3231,7 +3231,7 @@ definitions:
     - Tier_Free
     - Tier_Teams
     - Tier_Enterprise
-  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Workspace:
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Workspace:
     properties:
       description:
         type: string
@@ -3246,11 +3246,11 @@ definitions:
       status:
         type: string
       tier:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Tier'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier'
       uri:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits:
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceLimits:
     properties:
       maxConnections:
         type: integer
@@ -3259,7 +3259,7 @@ definitions:
       maxUsers:
         type: integer
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimitsUsage:
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceLimitsUsage:
     properties:
       currentConnections:
         type: integer
@@ -3278,7 +3278,7 @@ definitions:
       name:
         type: string
     type: object
-  gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceResponse:
     properties:
       createdAt:
         type: string
@@ -3289,7 +3289,7 @@ definitions:
       name:
         type: string
       organization:
-        $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.OrganizationResponse'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.OrganizationResponse'
       ownerId:
         type: string
       status:
@@ -3457,7 +3457,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceApiKey'
       security:
       - BearerToken: []
       summary: Get Workspace Key Details
@@ -3478,7 +3478,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceApiKey'
       security:
       - BearerToken: []
       summary: Activate Workspace Key
@@ -3518,7 +3518,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceApiKey'
       security:
       - BearerToken: []
       summary: Suspend Workspace Key
@@ -3534,14 +3534,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.CreateAPIKeyResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyResponse'
       security:
       - BearerToken: []
       summary: Create Workspace Key
@@ -3556,14 +3556,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.UpdateKeyRoleRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.UpdateKeyRoleRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceApiKey'
       security:
       - BearerToken: []
       summary: Update Workspace Key Role
@@ -3579,7 +3579,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceApiKey'
             type: array
       security:
       - BearerToken: []
@@ -3602,7 +3602,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceApiKey'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceApiKey'
             type: array
       security:
       - BearerToken: []
@@ -3625,7 +3625,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleUser'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.RoleUser'
             type: array
       security:
       - BearerToken: []
@@ -3642,7 +3642,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RolesListResponse'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.RolesListResponse'
             type: array
       security:
       - BearerToken: []
@@ -3665,7 +3665,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.RoleDetailsResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.RoleDetailsResponse'
       security:
       - BearerToken: []
       summary: Get Role Details
@@ -3686,7 +3686,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUserResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUserResponse'
       security:
       - BearerToken: []
       summary: Get User details
@@ -3709,7 +3709,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.Membership'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.Membership'
             type: array
       security:
       - BearerToken: []
@@ -3744,7 +3744,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.InviteRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.InviteRequest'
       produces:
       - application/json
       responses:
@@ -3782,7 +3782,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.PutRoleBindingRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.PutRoleBindingRequest'
       produces:
       - application/json
       responses:
@@ -3803,7 +3803,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetRoleBindingsResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetRoleBindingsResponse'
       security:
       - BearerToken: []
       summary: Get User Roles
@@ -3818,7 +3818,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUsersRequest'
       produces:
       - application/json
       responses:
@@ -3826,7 +3826,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.GetUsersResponse'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUsersResponse'
             type: array
       security:
       - BearerToken: []
@@ -3845,7 +3845,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_auth_api.WorkspaceRoleBinding'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.WorkspaceRoleBinding'
             type: array
       security:
       - BearerToken: []
@@ -3863,14 +3863,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
       security:
       - BearerToken: []
       summary: Top field by alarm count
@@ -3888,7 +3888,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment'
             type: array
       security:
       - BearerToken: []
@@ -3942,7 +3942,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment'
       security:
       - BearerToken: []
       summary: Create benchmark assignment for inventory service
@@ -3966,7 +3966,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignedSource'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedSource'
             type: array
       security:
       - BearerToken: []
@@ -3991,7 +3991,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkAssignment'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment'
             type: array
       security:
       - BearerToken: []
@@ -4018,7 +4018,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkSummary'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSummary'
       security:
       - BearerToken: []
       summary: Get benchmark summary
@@ -4053,7 +4053,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkResultTrend'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend'
       security:
       - BearerToken: []
       summary: Get compliance result trend
@@ -4089,7 +4089,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.BenchmarkTree'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
       security:
       - BearerToken: []
       summary: Get benchmark tree
@@ -4109,7 +4109,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Benchmark'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark'
             type: array
       security:
       - BearerToken: []
@@ -4136,7 +4136,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Benchmark'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Benchmark'
       security:
       - BearerToken: []
       summary: Get benchmark
@@ -4163,7 +4163,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Policy'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy'
             type: array
       security:
       - BearerToken: []
@@ -4189,7 +4189,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Policy'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy'
       security:
       - BearerToken: []
       summary: Get policy
@@ -4221,7 +4221,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetBenchmarksSummaryResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarksSummaryResponse'
       security:
       - BearerToken: []
       summary: List benchmarks summaries
@@ -4241,14 +4241,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse'
       security:
       - BearerToken: []
       summary: Get findings
@@ -4286,7 +4286,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetTopFieldResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
       security:
       - BearerToken: []
       summary: Get top field by finding count
@@ -4314,7 +4314,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsMetricsResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsMetricsResponse'
       security:
       - BearerToken: []
       summary: Returns findings metrics
@@ -4363,7 +4363,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight'
             type: array
       security:
       - BearerToken: []
@@ -4401,7 +4401,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight'
       security:
       - BearerToken: []
       summary: Get insight
@@ -4443,7 +4443,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightTrendDatapoint'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint'
             type: array
       security:
       - BearerToken: []
@@ -4495,7 +4495,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroup'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup'
             type: array
       security:
       - BearerToken: []
@@ -4535,7 +4535,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroup'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup'
       security:
       - BearerToken: []
       summary: Get insight group
@@ -4576,7 +4576,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.InsightGroupTrendResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroupTrendResponse'
       security:
       - BearerToken: []
       summary: Get insight group trend
@@ -4603,7 +4603,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight'
             type: array
       security:
       - BearerToken: []
@@ -4625,7 +4625,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight'
       security:
       - BearerToken: []
       summary: Get insight metadata
@@ -4697,7 +4697,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Query'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query'
       security:
       - BearerToken: []
       summary: Get query
@@ -4719,7 +4719,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationByProviderResponse'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationByProviderResponse'
             type: array
       security:
       - BearerToken: []
@@ -4735,7 +4735,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest'
       produces:
       - application/json
       responses:
@@ -4743,7 +4743,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.SmartQueryItem'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryItem'
             type: array
       security:
       - BearerToken: []
@@ -4767,7 +4767,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryRequest'
       - description: Accept header
         enum:
         - application/json
@@ -4783,7 +4783,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.RunQueryResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryResponse'
       security:
       - BearerToken: []
       summary: Run a specific smart query
@@ -4798,7 +4798,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListQueryRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest'
       produces:
       - application/json
       responses:
@@ -4820,7 +4820,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourceRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourceRequest'
       produces:
       - application/json
       responses:
@@ -4850,7 +4850,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourcesRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesRequest'
       - description: Accept header
         enum:
         - application/json
@@ -4874,7 +4874,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourcesResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesResponse'
       security:
       - BearerToken: []
       summary: Get resources
@@ -4895,7 +4895,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourcesRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesRequest'
       - description: Accept header
         enum:
         - application/json
@@ -4919,7 +4919,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetAWSResourceResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAWSResourceResponse'
       security:
       - BearerToken: []
       summary: Get AWS resources
@@ -4940,7 +4940,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetResourcesRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesRequest'
       - description: Accept header
         enum:
         - application/json
@@ -4964,7 +4964,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetAzureResourceResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAzureResourceResponse'
       security:
       - BearerToken: []
       summary: Get Azure resources
@@ -4999,7 +4999,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetFiltersRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetFiltersRequest'
       - description: Common filter
         enum:
         - "true"
@@ -5015,7 +5015,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.GetFiltersResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetFiltersResponse'
       security:
       - BearerToken: []
       summary: Get resource filters
@@ -5066,7 +5066,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationResponse'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse'
             type: array
       security:
       - BearerToken: []
@@ -5106,7 +5106,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.LocationResponse'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse'
             type: array
       security:
       - BearerToken: []
@@ -5140,7 +5140,7 @@ paths:
           description: OK
           schema:
             additionalProperties:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionData'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ConnectionData'
             type: object
       security:
       - BearerToken: []
@@ -5172,7 +5172,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ConnectionData'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ConnectionData'
       security:
       - BearerToken: []
       summary: Returns cost and resource count data of the specified account at the
@@ -5221,7 +5221,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostCompositionResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostCompositionResponse'
       security:
       - BearerToken: []
       summary: List cost composition
@@ -5280,7 +5280,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListCostMetricsResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostMetricsResponse'
       security:
       - BearerToken: []
       summary: List cost metrics
@@ -5329,7 +5329,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.CostTrendDatapoint'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostTrendDatapoint'
             type: array
       security:
       - BearerToken: []
@@ -5376,7 +5376,7 @@ paths:
           schema:
             additionalProperties:
               items:
-                $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource'
+                $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightResource'
               type: array
             type: object
       security:
@@ -5411,7 +5411,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightResource'
             type: array
       security:
       - BearerToken: []
@@ -5452,7 +5452,7 @@ paths:
           schema:
             additionalProperties:
               items:
-                $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource'
+                $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightResource'
               type: array
             type: object
       security:
@@ -5476,7 +5476,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_insight_es.InsightResource'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_insight_es.InsightResource'
       security:
       - BearerToken: []
       summary: Get insight result by Job ID
@@ -5525,7 +5525,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetadataResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeMetadataResponse'
       security:
       - BearerToken: []
       summary: Get List of Resource Types
@@ -5547,7 +5547,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType'
       security:
       - BearerToken: []
       summary: Get Resource Type
@@ -5589,7 +5589,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetadataResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceMetadataResponse'
       security:
       - BearerToken: []
       summary: Get List of Cloud Services
@@ -5611,7 +5611,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Service'
       security:
       - BearerToken: []
       summary: Get Cloud Service Details
@@ -5660,7 +5660,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeCompositionResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeCompositionResponse'
       security:
       - BearerToken: []
       summary: List resource type composition
@@ -5734,7 +5734,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListResourceTypeMetricsResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeMetricsResponse'
       security:
       - BearerToken: []
       summary: List resource metrics
@@ -5772,7 +5772,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceType'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType'
       security:
       - BearerToken: []
       summary: Get resource metrics
@@ -5921,7 +5921,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ResourceTypeTrendDatapoint'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTrendDatapoint'
             type: array
       security:
       - BearerToken: []
@@ -5986,7 +5986,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceMetricsResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceMetricsResponse'
       security:
       - BearerToken: []
       summary: List services metrics
@@ -6023,7 +6023,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.Service'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Service'
       summary: Get service metrics
       tags:
       - inventory
@@ -6078,7 +6078,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ListServiceSummariesResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceSummariesResponse'
       security:
       - BearerToken: []
       summary: List Cloud Services Summary
@@ -6117,7 +6117,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_inventory_api.ServiceSummary'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ServiceSummary'
       security:
       - BearerToken: []
       summary: Get Cloud Service Summary
@@ -6180,7 +6180,7 @@ paths:
         name: req
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_api.SetConfigMetadataRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetConfigMetadataRequest'
       produces:
       - application/json
       responses:
@@ -6206,7 +6206,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_metadata_models.ConfigMetadata'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_models.ConfigMetadata'
       security:
       - BearerToken: []
       summary: Returns the config metadata for the given key
@@ -6239,7 +6239,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogConnector'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogConnector'
             type: array
       security:
       - BearerToken: []
@@ -6255,7 +6255,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CatalogMetrics'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogMetrics'
       security:
       - BearerToken: []
       summary: Get catalog metrics
@@ -6275,7 +6275,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest'
       produces:
       - application/json
       responses:
@@ -6295,7 +6295,7 @@ paths:
         name: type
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectionCountRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionCountRequest'
       produces:
       - application/json
       responses:
@@ -6372,7 +6372,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ListConnectionSummaryResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ListConnectionSummaryResponse'
       security:
       - BearerToken: []
       summary: List connections summaries
@@ -6403,7 +6403,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
       security:
       - BearerToken: []
       summary: Get connection summary
@@ -6419,7 +6419,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.ConnectorCount'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectorCount'
             type: array
       security:
       - BearerToken: []
@@ -6441,7 +6441,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connector'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connector'
       security:
       - BearerToken: []
       summary: Get connector
@@ -6484,7 +6484,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential'
             type: array
       security:
       - BearerToken: []
@@ -6499,14 +6499,14 @@ paths:
         name: config
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateCredentialRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateCredentialResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateCredentialResponse'
       security:
       - BearerToken: []
       summary: Create connection credentials
@@ -6545,7 +6545,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential'
       security:
       - BearerToken: []
       summary: Get Credential
@@ -6564,7 +6564,7 @@ paths:
         name: config
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.UpdateCredentialRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.UpdateCredentialRequest'
       produces:
       - application/json
       responses:
@@ -6591,7 +6591,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
             type: array
       security:
       - BearerToken: []
@@ -6684,7 +6684,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Credential'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential'
             type: array
       security:
       - BearerToken: []
@@ -6725,7 +6725,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
       security:
       - BearerToken: []
       summary: Get source
@@ -6748,7 +6748,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.AzureCredential'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredential'
       security:
       - BearerToken: []
       summary: Get source credential
@@ -6787,7 +6787,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
       security:
       - BearerToken: []
       summary: Get source health
@@ -6808,7 +6808,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
       security:
       - BearerToken: []
       summary: List account sources
@@ -6823,14 +6823,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAwsRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceAwsRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSourceResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateSourceResponse'
       security:
       - BearerToken: []
       summary: Create AWS source
@@ -6845,14 +6845,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.SourceAzureRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceAzureRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.CreateSourceResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateSourceResponse'
       security:
       - BearerToken: []
       summary: Create Azure source
@@ -6880,7 +6880,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
             type: array
       security:
       - BearerToken: []
@@ -6902,7 +6902,7 @@ paths:
         in: body
         name: request
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.GetSourcesRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.GetSourcesRequest'
       produces:
       - application/json
       responses:
@@ -6910,7 +6910,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_onboard_api.Connection'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
             type: array
       security:
       - BearerToken: []
@@ -7015,7 +7015,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest'
       produces:
       - application/json
       responses:
@@ -7041,7 +7041,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ListBenchmarkEvaluationsRequest'
       produces:
       - application/json
       responses:
@@ -7078,7 +7078,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSingleResourceRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSingleResourceRequest'
       produces:
       - application/json
       responses:
@@ -7151,7 +7151,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.TriggerInsightEvaluationRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.TriggerInsightEvaluationRequest'
       produces:
       - application/json
       responses:
@@ -7183,7 +7183,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightJob'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.InsightJob'
       security:
       - BearerToken: []
       summary: Get an Insight Job
@@ -7224,7 +7224,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.ResourceTypeDetail'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.ResourceTypeDetail'
             type: array
       security:
       - BearerToken: []
@@ -7241,7 +7241,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Source'
             type: array
       security:
       - BearerToken: []
@@ -7265,7 +7265,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Source'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Source'
       security:
       - BearerToken: []
       summary: Get source
@@ -7296,7 +7296,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.ComplianceReport'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ComplianceReport'
             type: array
       security:
       - BearerToken: []
@@ -7339,7 +7339,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.DescribeSource'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSource'
             type: array
       security:
       - BearerToken: []
@@ -7390,7 +7390,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack'
             type: array
       security:
       - BearerToken: []
@@ -7434,7 +7434,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack'
       security:
       - BearerToken: []
       summary: Get a Stack
@@ -7456,14 +7456,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.GetStackFindings'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetStackFindings'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.GetFindingsResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse'
       security:
       - BearerToken: []
       summary: Get Stack Findings
@@ -7499,7 +7499,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_compliance_api.Insight'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight'
       security:
       - BearerToken: []
       summary: Get Stack Insight
@@ -7516,7 +7516,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackBenchmarkRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackBenchmarkRequest'
       produces:
       - application/json
       responses:
@@ -7557,7 +7557,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack'
       security:
       - BearerToken: []
       summary: Create stack
@@ -7573,7 +7573,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.StackInsightRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackInsightRequest'
       produces:
       - application/json
       responses:
@@ -7581,7 +7581,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.InsightJob'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.InsightJob'
             type: array
       security:
       - BearerToken: []
@@ -7606,7 +7606,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_describe_api.Stack'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack'
             type: array
       security:
       - BearerToken: []
@@ -7640,14 +7640,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.CreateWorkspaceRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.CreateWorkspaceResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.CreateWorkspaceResponse'
       security:
       - BearerToken: []
       summary: Create workspace for workspace service
@@ -7684,7 +7684,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceNameRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceNameRequest'
       - description: WorkspaceID
         in: path
         name: workspace_id
@@ -7710,7 +7710,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceOrganizationRequest'
       - description: WorkspaceID
         in: path
         name: workspace_id
@@ -7736,7 +7736,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceOwnershipRequest'
       - description: WorkspaceID
         in: path
         name: workspace_id
@@ -7802,7 +7802,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.ChangeWorkspaceTierRequest'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.ChangeWorkspaceTierRequest'
       - description: WorkspaceID
         in: path
         name: workspace_id
@@ -7829,7 +7829,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceResponse'
       security:
       - BearerToken: []
       summary: List all workspaces with owner id
@@ -7847,7 +7847,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceResponse'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceResponse'
             type: array
       security:
       - BearerToken: []
@@ -7891,7 +7891,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.Workspace'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Workspace'
       security:
       - BearerToken: []
       summary: Get workspace
@@ -7917,7 +7917,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimitsUsage'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceLimitsUsage'
       security:
       - BearerToken: []
       summary: Get workspace limits
@@ -7939,7 +7939,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/gitlab_com_keibiengine_keibi-engine_pkg_workspace_api.WorkspaceLimits'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceLimits'
       security:
       - BearerToken: []
       summary: Get workspace limits

@@ -3,7 +3,7 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
-	"gitlab.com/keibiengine/keibi-engine/pkg/insight"
+	"github.com/kaytu-io/kaytu-engine/pkg/insight"
 	"time"
 
 	"go.uber.org/zap"

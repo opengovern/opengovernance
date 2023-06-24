@@ -3,13 +3,13 @@ package metadata
 import (
 	"net/http"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 
+	api3 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/src"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"github.com/labstack/echo/v4"
-	api3 "gitlab.com/keibiengine/keibi-engine/pkg/auth/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/api"
-	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/internal/src"
-	"gitlab.com/keibiengine/keibi-engine/pkg/metadata/models"
 )
 
 func (h HttpHandler) Register(r *echo.Echo) {

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"strconv"
 
+	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	summarizer "gitlab.com/keibiengine/keibi-engine/pkg/summarizer/es"
 )
 
 type BenchmarkSummaryQueryResponse struct {

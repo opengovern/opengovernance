@@ -9,7 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/inventory"
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 

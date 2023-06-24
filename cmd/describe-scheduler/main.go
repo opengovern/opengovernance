@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"gitlab.com/keibiengine/keibi-engine/pkg/describe"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 )
 
 func main() {
