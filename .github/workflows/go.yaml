@@ -179,7 +179,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-     && github.event_name != 'pull_request'
+    if: needs.build.outputs.checkup-worker == 'true' && github.event_name != 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -199,7 +199,13 @@ jobs:
       - uses: docker/login-action@v2
         with:
           registry: ${{ vars.DOCKER_REGISTRY }}
-
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: ${{ vars.DOCKER_REGISTRY }}/checkup-worker:${{ needs.tag.outputs.latest_tag }}
+          file: docker/CheckupWorkerDockerfile
+          context: .
   deploy-compliance-report-worker:
     runs-on: ubuntu-latest
     needs:
