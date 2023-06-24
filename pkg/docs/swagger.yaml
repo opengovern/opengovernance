@@ -2083,6 +2083,13 @@ definitions:
       date:
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair:
+    properties:
+      count:
+        type: integer
+      old_count:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.DirectionType:
     enum:
     - asc
@@ -2264,10 +2271,10 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeCompositionResponse:
     properties:
       others:
-        type: integer
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair'
       top_values:
         additionalProperties:
-          type: integer
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair'
         type: object
       total_count:
         type: integer
@@ -2291,6 +2298,8 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType'
         type: array
       total_count:
+        type: integer
+      total_old_count:
         type: integer
       total_resource_types:
         type: integer
@@ -5635,7 +5644,11 @@ paths:
         type: array
       - description: timestamp for resource count in epoch seconds
         in: query
-        name: time
+        name: endTime
+        type: string
+      - description: timestamp for resource count change comparison in epoch seconds
+        in: query
+        name: startTime
         type: string
       produces:
       - application/json

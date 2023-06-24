@@ -31,15 +31,21 @@ type ListResourceTypeMetadataResponse struct {
 
 type ListResourceTypeMetricsResponse struct {
 	TotalCount         int            `json:"total_count"`
+	TotalOldCount      int            `json:"total_old_count"`
 	TotalResourceTypes int            `json:"total_resource_types"`
 	ResourceTypes      []ResourceType `json:"resource_types"`
 }
 
+type CountPair struct {
+	OldCount int `json:"old_count"`
+	Count    int `json:"count"`
+}
+
 type ListResourceTypeCompositionResponse struct {
-	TotalCount      int            `json:"total_count"`
-	TotalValueCount int            `json:"total_value_count"`
-	TopValues       map[string]int `json:"top_values"`
-	Others          int            `json:"others"`
+	TotalCount      int                  `json:"total_count"`
+	TotalValueCount int                  `json:"total_value_count"`
+	TopValues       map[string]CountPair `json:"top_values"`
+	Others          CountPair            `json:"others"`
 }
 
 type ResourceTypeTrendDatapoint struct {
