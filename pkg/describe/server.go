@@ -1502,24 +1502,27 @@ func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []s
 
 	describedAt := time.Now()
 
+	var describeResourceJobs []DescribeResourceJob
+	rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
+	for _, rType := range resourceTypes {
+		describeResourceJobs = append(describeResourceJobs, DescribeResourceJob{
+			ResourceType: rType,
+			Status:       apiDescribe.DescribeResourceJobCreated,
+		})
+	}
+
 	dsj := DescribeSourceJob{
 		DescribedAt:          describedAt,
 		SourceID:             sourceId,
 		SourceType:           source.Type(provider),
 		AccountID:            accountId,
-		DescribeResourceJobs: []DescribeResourceJob{},
+		DescribeResourceJobs: describeResourceJobs,
 		Status:               apiDescribe.DescribeSourceJobCreated,
 		TriggerType:          enums.DescribeTriggerTypeStack,
 		FullDiscovery:        false,
 	}
 
-	rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
-	for _, rType := range resourceTypes {
-		dsj.DescribeResourceJobs = append(dsj.DescribeResourceJobs, DescribeResourceJob{
-			ResourceType: rType,
-			Status:       apiDescribe.DescribeResourceJobCreated,
-		})
-	}
+	fmt.Println(dsj)
 	err = h.Scheduler.db.CreateDescribeSourceJob(&dsj)
 	if err != nil {
 		return err

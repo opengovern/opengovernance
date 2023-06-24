@@ -1363,3 +1363,13 @@ func (db Database) GetStackCredential(stackId uuid.UUID) (StackCredential, error
 	}
 	return stackCredential, nil
 }
+
+func (db Database) RemoveStackCredential(stackId uuid.UUID) error {
+	tx := db.orm.Model(&StackCredential{}).
+		Where("stack_id = ?", stackId).
+		Delete(&StackCredential{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
