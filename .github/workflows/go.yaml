@@ -87,7 +87,7 @@ jobs:
     environment: golang
     outputs:
         latest_tag: ${{ steps.set_latest_tag.outputs.latest_tag }}
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -115,7 +115,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.steampipe == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.steampipe == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -153,7 +153,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.auth-service == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.auth-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -189,7 +189,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.checkup-worker == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.checkup-worker == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -225,7 +225,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.compliance-report-worker == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.compliance-report-worker == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -263,7 +263,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.compliance-service == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.compliance-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -299,7 +299,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.describe-scheduler == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.describe-scheduler == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -335,7 +335,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.hopper == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.hopper == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -371,7 +371,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.reporter == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.reporter == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -407,7 +407,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.insight-worker == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.insight-worker == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -443,7 +443,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.inventory-service == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.inventory-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -479,7 +479,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.metadata-service == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.metadata-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -515,7 +515,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.migrator-worker == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.migrator-worker == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -551,7 +551,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.onboard-service == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.onboard-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -587,7 +587,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.summarizer-worker == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.summarizer-worker == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -623,7 +623,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.swagger-ui == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.swagger-ui == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -666,7 +666,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.workspace-service == 'true' && github.event_name != 'pull_request'
+    if: needs.build.outputs.workspace-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
