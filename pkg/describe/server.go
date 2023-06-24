@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,8 +15,10 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"github.com/lib/pq"
 
+	apiDescribe "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 
 	"github.com/kaytu-io/kaytu-util/pkg/model"
@@ -26,7 +29,10 @@ import (
 	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	insightapi "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	summarizerapi "github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
-	"gorm.io/gorm"
+  onboardapi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+
+
+  "gorm.io/gorm"
 
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -91,15 +97,17 @@ func (h HttpServer) Register(e *echo.Echo) {
 
 	v1.POST("/describe/resource", httpserver.AuthorizeHandler(h.DescribeSingleResource, api3.AdminRole))
 
-	v1.POST("/stacks/benchmark/trigger", httpserver.AuthorizeHandler(h.TriggerStackBenchmark, api3.AdminRole))
-	v1.GET("/stacks", httpserver.AuthorizeHandler(h.ListStack, api3.ViewerRole))
-	v1.GET("/stacks/:stackId", httpserver.AuthorizeHandler(h.GetStack, api3.ViewerRole))
-	v1.POST("/stacks/create", httpserver.AuthorizeHandler(h.CreateStack, api3.AdminRole))
-	v1.DELETE("/stacks/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, api3.AdminRole))
-	v1.POST("/stacks/:stackId/findings", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
-	v1.GET("/stacks/:stackId/insight", httpserver.AuthorizeHandler(h.GetStackInsight, api3.ViewerRole))
-	v1.GET("/stacks/resource", httpserver.AuthorizeHandler(h.ListResourceStack, api3.ViewerRole))
-	v1.POST("/stacks/insight/trigger", httpserver.AuthorizeHandler(h.TriggerStackInsight, api3.AdminRole))
+	stacks := v1.Group("/stacks")
+	stacks.POST("/benchmark/trigger", httpserver.AuthorizeHandler(h.TriggerStackBenchmark, api3.AdminRole))
+	stacks.GET("", httpserver.AuthorizeHandler(h.ListStack, api3.ViewerRole))
+	stacks.GET("/:stackId", httpserver.AuthorizeHandler(h.GetStack, api3.ViewerRole))
+	stacks.POST("/create", httpserver.AuthorizeHandler(h.CreateStack, api3.AdminRole))
+	stacks.DELETE("/:stackId", httpserver.AuthorizeHandler(h.DeleteStack, api3.AdminRole))
+	stacks.POST("/:stackId/findings", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
+	stacks.GET("/:stackId/insight", httpserver.AuthorizeHandler(h.GetStackInsight, api3.ViewerRole))
+	stacks.GET("/resource", httpserver.AuthorizeHandler(h.ListResourceStack, api3.ViewerRole))
+	stacks.POST("/insight/trigger", httpserver.AuthorizeHandler(h.TriggerStackInsight, api3.AdminRole))
+	stacks.POST("/describer/trigger", httpserver.AuthorizeHandler(h.TriggerStackDescriber, api3.AdminRole))
 }
 
 // HandleListSources godoc
@@ -781,17 +789,20 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 // CreateStack godoc
 //
-//	@Summary		Create stack
-//	@Description	Create a stack by giving terraform statefile and additional resources
-//	@Security		BearerToken
-//	@Tags			stack
-//	@Accept			json
-//	@Produce		json
-//	@Param			terrafromFile	formData	file		false	"File to upload"
-//	@Param			tag				formData	string		false	"Tags Map[string][]string"
-//	@Param			resources		formData	[]string	false	"Additional Resources"
-//	@Success		200				{object}	api.Stack
-//	@Router			/schedule/api/v1/stacks/create [post]
+//		@Summary		Create stack
+//		@Description	Create a stack by giving terraform statefile and additional resources
+//		@Description	Config structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}
+//		@Description 	Config structure for aws: {accessKey: string, secretKey: string}
+//		@Security		BearerToken
+//		@Tags			stack
+//		@Accept			json
+//		@Produce		json
+//		@Param			terrafromFile	formData	file		false	"File to upload"
+//		@Param			tag				formData	string		false	"Tags Map[string][]string"
+//		@Param			resources		formData	[]string	false	"Additional Resources"
+//	 	@Param			config			formData	string		false	"Config json structure"
+//		@Success		200				{object}	api.Stack
+//		@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
 	var tags map[string][]string
 	tagsData := ctx.FormValue("tag")
@@ -811,6 +822,7 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 			return err
 		}
 	}
+	var resourceTypes []string
 	if file != nil {
 		src, err := file.Open()
 		if err != nil {
@@ -826,6 +838,10 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 			echo.NewHTTPError(http.StatusBadRequest, "File must have a .tfstate suffix")
 		}
 		arns, err := internal.GetArns(string(data))
+		if err != nil {
+			return err
+		}
+		resourceTypes, err = internal.GetTypes(string(data))
 		if err != nil {
 			return err
 		}
@@ -845,16 +861,30 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		}
 	}
 
+	var provider api.SourceType
+	for _, resource := range resources {
+		if strings.Contains(resource, "aws") {
+			provider = api.SourceCloudAWS
+		} else if strings.Contains(resource, "subscriptions") {
+			provider = api.SourceCloudAzure
+		}
+	}
+	configStr := ctx.FormValue("config")
+	if configStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Please provide the credentials")
+	}
+
 	accs, err := internal.ParseAccountsFromArns(resources)
 	if err != nil {
 		return err
 	}
 	id := "stack-" + uuid.New().String()
 	stackRecord := Stack{
-		StackID:    id,
-		Resources:  pq.StringArray(resources),
-		Tags:       recordTags,
-		AccountIDs: accs,
+		StackID:       id,
+		Resources:     pq.StringArray(resources),
+		Tags:          recordTags,
+		AccountIDs:    accs,
+		ResourceTypes: pq.StringArray(resourceTypes),
 	}
 	err = h.DB.AddStack(&stackRecord)
 	if err != nil {
@@ -862,12 +892,17 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 	}
 
 	stack := api.Stack{
-		StackID:    stackRecord.StackID,
-		CreatedAt:  stackRecord.CreatedAt,
-		UpdatedAt:  stackRecord.UpdatedAt,
-		Resources:  []string(stackRecord.Resources),
-		Tags:       trimPrivateTags(stackRecord.GetTagsMap()),
-		AccountIDs: accs,
+		StackID:       stackRecord.StackID,
+		CreatedAt:     stackRecord.CreatedAt,
+		UpdatedAt:     stackRecord.UpdatedAt,
+		Resources:     []string(stackRecord.Resources),
+		ResourceTypes: []string(stackRecord.ResourceTypes),
+		Tags:          trimPrivateTags(stackRecord.GetTagsMap()),
+		AccountIDs:    accs,
+	}
+	err = h.triggerStackDescriberJob(ctx, resourceTypes, provider, []byte(configStr), stack.StackID, accs[0]) // assume we have one account
+	if err != nil {
+		return err
 	}
 	return ctx.JSON(http.StatusOK, stack)
 }
@@ -901,13 +936,14 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 	}
 
 	stack := api.Stack{
-		StackID:     stackRecord.StackID,
-		CreatedAt:   stackRecord.CreatedAt,
-		UpdatedAt:   stackRecord.UpdatedAt,
-		Resources:   []string(stackRecord.Resources),
-		Tags:        trimPrivateTags(stackRecord.GetTagsMap()),
-		Evaluations: evaluations,
-		AccountIDs:  stackRecord.AccountIDs,
+		StackID:       stackRecord.StackID,
+		CreatedAt:     stackRecord.CreatedAt,
+		UpdatedAt:     stackRecord.UpdatedAt,
+		Resources:     []string(stackRecord.Resources),
+		ResourceTypes: []string(stackRecord.ResourceTypes),
+		Tags:          trimPrivateTags(stackRecord.GetTagsMap()),
+		Evaluations:   evaluations,
+		AccountIDs:    stackRecord.AccountIDs,
 	}
 	return ctx.JSON(http.StatusOK, stack)
 }
@@ -935,12 +971,13 @@ func (h HttpServer) ListStack(ctx echo.Context) error {
 	for _, sr := range stacksRecord {
 
 		stack := api.Stack{
-			StackID:    sr.StackID,
-			CreatedAt:  sr.CreatedAt,
-			UpdatedAt:  sr.UpdatedAt,
-			Resources:  []string(sr.Resources),
-			Tags:       trimPrivateTags(sr.GetTagsMap()),
-			AccountIDs: sr.AccountIDs,
+			StackID:       sr.StackID,
+			CreatedAt:     sr.CreatedAt,
+			UpdatedAt:     sr.UpdatedAt,
+			Resources:     []string(sr.Resources),
+			ResourceTypes: []string(sr.ResourceTypes),
+			Tags:          trimPrivateTags(sr.GetTagsMap()),
+			AccountIDs:    sr.AccountIDs,
 		}
 		stacks = append(stacks, stack)
 	}
@@ -1408,4 +1445,128 @@ func (h HttpServer) GetInsightJob(ctx echo.Context) error {
 		UpdatedAt:      job.UpdatedAt,
 	}
 	return ctx.JSON(http.StatusOK, result)
+}
+
+func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []string, provider api.SourceType, configStr []byte, stackId string, accountId string) error {
+	var secretBytes []byte
+	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), KMSAccessKey, KMSSecretKey, KeyRegion)
+	if err != nil {
+		return err
+	}
+	switch provider {
+	case api.SourceCloudAzure:
+		config := onboardapi.SourceConfigAzure{}
+		err := json.Unmarshal([]byte(configStr), &config)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid config")
+		}
+		secretBytes, err = kms.Encrypt(config.AsMap(), KeyARN)
+		if err != nil {
+			return err
+		}
+	case api.SourceCloudAWS:
+		config := onboardapi.SourceConfigAWS{}
+		err := json.Unmarshal([]byte(configStr), &config)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid config")
+		}
+		secretBytes, err = kms.Encrypt(config.AsMap(), KeyARN)
+		if err != nil {
+			return err
+		}
+	}
+	sourceId, err := uuid.Parse(stackId[6:])
+	if err != nil {
+		return err
+	}
+	err = h.DB.CreateStackCredential(&StackCredential{StackID: sourceId, Secret: string(secretBytes)})
+	if err != nil {
+		return err
+	}
+
+	describedAt := time.Now()
+
+	dsj := DescribeSourceJob{
+		DescribedAt:          describedAt,
+		SourceID:             sourceId,
+		SourceType:           source.Type(provider),
+		AccountID:            accountId,
+		DescribeResourceJobs: []DescribeResourceJob{},
+		Status:               apiDescribe.DescribeSourceJobCreated,
+		TriggerType:          enums.DescribeTriggerTypeStack,
+		FullDiscovery:        false,
+	}
+
+	rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
+	for _, rType := range resourceTypes {
+		dsj.DescribeResourceJobs = append(dsj.DescribeResourceJobs, DescribeResourceJob{
+			ResourceType: rType,
+			Status:       apiDescribe.DescribeResourceJobCreated,
+		})
+	}
+	err = h.Scheduler.db.CreateDescribeSourceJob(&dsj)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// TriggerStackDescriber godoc
+//
+//	@Summary		Trigger Stack Describer
+//	@Description	Describe stack resources. This is needed before triggering insights and benchmarks
+//	@Description	Config structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}
+//	@Description 	Config structure for aws: {accessKey: string, secretKey: string}
+//	@Security		BearerToken
+//	@Tags			stack
+//	@Produce		json
+//	@Success		200
+//	@Param			req		body		api.DescribeStackRequest	true	"request"
+//	@Router			/schedule/api/v1/stacks/describer/trigger [post]
+func (h HttpServer) TriggerStackDescriber(ctx echo.Context) error {
+	var req api.DescribeStackRequest
+
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+
+	stackRecord, err := h.DB.GetStack(req.StackID)
+	if err != nil {
+		return err
+	}
+
+	var evaluations []api.StackEvaluation
+	for _, e := range stackRecord.Evaluations {
+		evaluations = append(evaluations, api.StackEvaluation{
+			Type:        e.Type,
+			EvaluatorID: e.EvaluatorID,
+			JobID:       e.JobID,
+			CreatedAt:   e.CreatedAt,
+		})
+	}
+
+	stack := api.Stack{
+		StackID:       stackRecord.StackID,
+		CreatedAt:     stackRecord.CreatedAt,
+		UpdatedAt:     stackRecord.UpdatedAt,
+		Resources:     []string(stackRecord.Resources),
+		Tags:          trimPrivateTags(stackRecord.GetTagsMap()),
+		ResourceTypes: []string(stackRecord.ResourceTypes),
+		Evaluations:   evaluations,
+		AccountIDs:    stackRecord.AccountIDs,
+	}
+	var provider api.SourceType
+	for _, resource := range stack.Resources {
+		if strings.Contains(resource, "aws") {
+			provider = api.SourceCloudAWS
+		} else if strings.Contains(resource, "subscriptions") {
+			provider = api.SourceCloudAzure
+		}
+	}
+	configStr, err := json.Marshal(req.Config)
+	if err != nil {
+		return err
+	}
+	err = h.triggerStackDescriberJob(ctx, stack.ResourceTypes, provider, configStr, stack.StackID, stack.AccountIDs[0]) // assume we have one account
+	return ctx.NoContent(http.StatusOK)
 }

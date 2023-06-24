@@ -31,6 +31,7 @@ type Database struct {
 func (db Database) Initialize() error {
 	return db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &CloudNativeDescribeSourceJob{}, &DescribeResourceJob{},
 		&ComplianceReportJob{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &ScheduleJob{}, &Stack{}, &StackTag{}, &StackEvaluation{},
+		&StackCredential{},
 	)
 }
 
@@ -1339,4 +1340,26 @@ func (db Database) GetResourceStacks(resourceID string) ([]Stack, error) {
 		return nil, tx.Error
 	}
 	return stacks, nil
+}
+
+func (db Database) CreateStackCredential(a *StackCredential) error {
+	tx := db.orm.
+		Model(&StackCredential{}).
+		Clauses(clause.OnConflict{DoNothing: true}). // Don't update an existing source
+		Create(a)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) GetStackCredential(stackId uuid.UUID) (StackCredential, error) {
+	var stackCredential StackCredential
+	tx := db.orm.Model(&StackCredential{}).
+		Where("stack_id = ?", stackId).
+		Find(&stackCredential)
+	if tx.Error != nil {
+		return StackCredential{}, tx.Error
+	}
+	return stackCredential, nil
 }

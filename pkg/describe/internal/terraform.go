@@ -13,7 +13,7 @@ func GetArns(content string) ([]string, error) {
 	return arns, nil
 }
 
-func getTypes(content string) ([]string, error) {
+func GetTypes(content string) ([]string, error) {
 	reader := io.Reader(strings.NewReader(content))
 	types := statefile.GetResourcesTypes(reader)
 	return types, nil
