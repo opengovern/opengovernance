@@ -183,9 +183,9 @@ func (s Server) GetWorkspaceLimits(rb api.RoleBinding, workspaceName string) (ap
 }
 
 type userClaim struct {
-	WorkspaceAccess map[string]api.Role `json:"https://app.keibi.io/workspaceAccess"`
-	GlobalAccess    *api.Role           `json:"https://app.keibi.io/globalAccess"`
-	Email           string              `json:"https://app.keibi.io/email"`
+	WorkspaceAccess map[string]api.Role `json:"https://app.kaytu.io/workspaceAccess"`
+	GlobalAccess    *api.Role           `json:"https://app.kaytu.io/globalAccess"`
+	Email           string              `json:"https://app.kaytu.io/email"`
 	ExternalUserID  string              `json:"sub"`
 }
 
