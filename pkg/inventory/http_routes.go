@@ -487,7 +487,7 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 //	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
 //	@Param			minCount		query		int				false	"Minimum number of resources with this tag value, default 1"
-//	@Param			sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count)
+//	@Param			sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count,growth,growth_rate)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
 //	@Success		200				{object}	api.ListResourceTypeMetricsResponse
@@ -537,7 +537,8 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	if sortBy == "" {
 		sortBy = "count"
 	}
-	if sortBy != "name" && sortBy != "count" {
+	if sortBy != "name" && sortBy != "count" &&
+		sortBy != "growth" && sortBy != "growth_rate" {
 		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
 	}
 
@@ -566,22 +567,74 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 		apiResourceTypes = append(apiResourceTypes, apiResourceType)
 	}
 
-	switch sortBy {
-	case "name":
-		sort.Slice(apiResourceTypes, func(i, j int) bool {
+	sort.Slice(apiResourceTypes, func(i, j int) bool {
+		switch sortBy {
+		case "name":
 			return apiResourceTypes[i].ResourceType < apiResourceTypes[j].ResourceType
-		})
-	case "count":
-		sort.Slice(apiResourceTypes, func(i, j int) bool {
+		case "count":
+			if apiResourceTypes[i].Count == nil && apiResourceTypes[j].Count == nil {
+				break
+			}
 			if apiResourceTypes[i].Count == nil {
 				return false
 			}
 			if apiResourceTypes[j].Count == nil {
 				return true
 			}
-			return *apiResourceTypes[i].Count > *apiResourceTypes[j].Count
-		})
-	}
+			if *apiResourceTypes[i].Count != *apiResourceTypes[j].Count {
+				return *apiResourceTypes[i].Count > *apiResourceTypes[j].Count
+			}
+		case "growth":
+			diffi := utils.PSub(apiResourceTypes[i].Count, apiResourceTypes[i].OldCount)
+			diffj := utils.PSub(apiResourceTypes[j].Count, apiResourceTypes[j].OldCount)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if *diffi != *diffj {
+				return *diffi > *diffj
+			}
+		case "growth_rate":
+			diffi := utils.PSub(apiResourceTypes[i].Count, apiResourceTypes[i].OldCount)
+			diffj := utils.PSub(apiResourceTypes[j].Count, apiResourceTypes[j].OldCount)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if apiResourceTypes[i].OldCount == nil && apiResourceTypes[j].OldCount == nil {
+				break
+			}
+			if apiResourceTypes[i].OldCount == nil {
+				return true
+			}
+			if apiResourceTypes[j].OldCount == nil {
+				return false
+			}
+			if *apiResourceTypes[i].OldCount == 0 && *apiResourceTypes[j].OldCount == 0 {
+				break
+			}
+			if *apiResourceTypes[i].OldCount == 0 {
+				return false
+			}
+			if *apiResourceTypes[j].OldCount == 0 {
+				return true
+			}
+			if *diffi/(*apiResourceTypes[i].OldCount) != *diffj/(*apiResourceTypes[j].OldCount) {
+				return *diffi/(*apiResourceTypes[i].OldCount) > *diffj/(*apiResourceTypes[j].OldCount)
+			}
+		}
+		return apiResourceTypes[i].ResourceType < apiResourceTypes[j].ResourceType
+	})
 
 	result := api.ListResourceTypeMetricsResponse{
 		TotalCount:         totalCount,
@@ -959,7 +1012,7 @@ func (h *HttpHandler) GetServiceTag(ctx echo.Context) error {
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
 //	@Param			startTime		query		string			false	"timestamp for old values in epoch seconds"
 //	@Param			endTime			query		string			false	"timestamp for current values in epoch seconds"
-//	@Param			sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count)
+//	@Param			sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count,growth,growth_rate)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
 //	@Success		200				{object}	api.ListServiceMetricsResponse
@@ -996,7 +1049,8 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 	if sortBy == "" {
 		sortBy = "count"
 	}
-	if sortBy != "name" && sortBy != "count" {
+	if sortBy != "name" && sortBy != "count" &&
+		sortBy != "growth" && sortBy != "growth_rate" {
 		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
 	}
 
@@ -1054,13 +1108,14 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 		apiServices = append(apiServices, apiService)
 	}
 
-	switch sortBy {
-	case "name":
-		sort.Slice(apiServices, func(i, j int) bool {
+	sort.Slice(apiServices, func(i, j int) bool {
+		switch sortBy {
+		case "name":
 			return apiServices[i].ServiceName < apiServices[j].ServiceName
-		})
-	case "count":
-		sort.Slice(apiServices, func(i, j int) bool {
+		case "count":
+			if apiServices[i].ResourceCount == nil && apiServices[j].ResourceCount == nil {
+				break
+			}
 			if apiServices[i].ResourceCount == nil {
 				return false
 			}
@@ -1070,9 +1125,57 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 			if *apiServices[i].ResourceCount == *apiServices[j].ResourceCount {
 				return apiServices[i].ServiceName < apiServices[j].ServiceName
 			}
-			return *apiServices[i].ResourceCount > *apiServices[j].ResourceCount
-		})
-	}
+		case "growth":
+			diffi := utils.PSub(apiServices[i].ResourceCount, apiServices[i].OldResourceCount)
+			diffj := utils.PSub(apiServices[j].ResourceCount, apiServices[j].OldResourceCount)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if *diffi != *diffj {
+				return *diffi > *diffj
+			}
+		case "growth_rate":
+			diffi := utils.PSub(apiServices[i].ResourceCount, apiServices[i].OldResourceCount)
+			diffj := utils.PSub(apiServices[j].ResourceCount, apiServices[j].OldResourceCount)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if apiServices[i].OldResourceCount == nil && apiServices[j].OldResourceCount == nil {
+				break
+			}
+			if apiServices[i].OldResourceCount == nil {
+				return true
+			}
+			if apiServices[j].OldResourceCount == nil {
+				return false
+			}
+			if *apiServices[i].OldResourceCount == 0 && *apiServices[j].OldResourceCount == 0 {
+				break
+			}
+			if *apiServices[i].OldResourceCount == 0 {
+				return false
+			}
+			if *apiServices[j].OldResourceCount == 0 {
+				return true
+			}
+			if *diffi/(*apiServices[i].OldResourceCount) != *diffj/(*apiServices[j].OldResourceCount) {
+				return *diffi/(*apiServices[i].OldResourceCount) > *diffj/(*apiServices[j].OldResourceCount)
+			}
+		}
+		return *apiServices[i].ResourceCount > *apiServices[j].ResourceCount
+	})
 
 	result := api.ListServiceMetricsResponse{
 		TotalCount:    totalCount,
@@ -1178,7 +1281,7 @@ func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
 //	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
-//	@Param			sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost)
+//	@Param			sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost,growth,growth_rate)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
 //	@Success		200				{object}	api.ListCostMetricsResponse
@@ -1211,7 +1314,8 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 	if sortBy == "" {
 		sortBy = "cost"
 	}
-	if sortBy != "dimension" && sortBy != "cost" {
+	if sortBy != "dimension" && sortBy != "cost" &&
+		sortBy != "growth" && sortBy != "growth_rate" {
 		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
 	}
 
@@ -1273,6 +1377,9 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 		case "dimension":
 			return costMetrics[i].CostDimensionName < costMetrics[j].CostDimensionName
 		case "cost":
+			if costMetrics[i].TotalCost == nil && costMetrics[j].TotalCost == nil {
+				break
+			}
 			if costMetrics[i].TotalCost == nil {
 				return false
 			}
@@ -1281,6 +1388,54 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 			}
 			if *costMetrics[i].TotalCost != *costMetrics[j].TotalCost {
 				return *costMetrics[i].TotalCost > *costMetrics[j].TotalCost
+			}
+		case "growth":
+			diffi := utils.PSub(costMetrics[i].DailyCostAtEndTime, costMetrics[i].DailyCostAtStartTime)
+			diffj := utils.PSub(costMetrics[j].DailyCostAtEndTime, costMetrics[j].DailyCostAtStartTime)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if *diffi != *diffj {
+				return *diffi > *diffj
+			}
+		case "growth_rate":
+			diffi := utils.PSub(costMetrics[i].DailyCostAtEndTime, costMetrics[i].DailyCostAtStartTime)
+			diffj := utils.PSub(costMetrics[j].DailyCostAtEndTime, costMetrics[j].DailyCostAtStartTime)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if costMetrics[i].DailyCostAtStartTime == nil && costMetrics[j].DailyCostAtStartTime == nil {
+				break
+			}
+			if costMetrics[i].DailyCostAtStartTime == nil {
+				return true
+			}
+			if costMetrics[j].DailyCostAtStartTime == nil {
+				return false
+			}
+			if *costMetrics[i].DailyCostAtStartTime == 0 && *costMetrics[j].DailyCostAtStartTime == 0 {
+				break
+			}
+			if *costMetrics[i].DailyCostAtStartTime == 0 {
+				return false
+			}
+			if *costMetrics[j].DailyCostAtStartTime == 0 {
+				return true
+			}
+			if *diffi/(*costMetrics[i].DailyCostAtStartTime) != *diffj/(*costMetrics[j].DailyCostAtStartTime) {
+				return *diffi/(*costMetrics[i].DailyCostAtStartTime) > *diffj/(*costMetrics[j].DailyCostAtStartTime)
 			}
 		}
 		return costMetrics[i].CostDimensionName < costMetrics[j].CostDimensionName
@@ -1483,6 +1638,10 @@ func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	var err error
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectors, err := h.getConnectorTypesFromConnectionIDs(ctx, nil, connectionIDs)
+	if err != nil {
+		return err
+	}
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
 	if endTimeStr != "" {
@@ -1503,7 +1662,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	}
 
 	res := map[string]api.ConnectionData{}
-	resourceCounts, err := es.FetchConnectionResourcesCountAtTime(h.client, nil, connectionIDs, endTime, EsFetchPageSize)
+	resourceCounts, err := es.FetchConnectionResourcesCountAtTime(h.client, connectors, connectionIDs, endTime, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -1521,7 +1680,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 		}
 		res[localHit.SourceID] = v
 	}
-	oldResourceCount, err := es.FetchConnectionResourcesCountAtTime(h.client, nil, connectionIDs, startTime, EsFetchPageSize)
+	oldResourceCount, err := es.FetchConnectionResourcesCountAtTime(h.client, connectors, connectionIDs, startTime, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
@@ -1541,14 +1700,38 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 		res[localHit.SourceID] = v
 	}
 
-	costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, nil, connectionIDs, endTime, startTime, EsFetchPageSize)
+	costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, connectors, connectionIDs, endTime, startTime, EsFetchPageSize)
 	if err != nil {
 		return err
 	}
+
+	startTimeCosts, err := es.FetchDailyCostHistoryByAccountsAtTime(h.client, connectors, connectionIDs, startTime)
+	if err != nil {
+		return err
+	}
+	endTimeCosts, err := es.FetchDailyCostHistoryByAccountsAtTime(h.client, connectors, connectionIDs, endTime)
+	if err != nil {
+		return err
+	}
+
 	for connectionId, costValue := range costs {
 		localValue := costValue
 		if v, ok := res[connectionId]; ok {
-			v.Cost = utils.PAdd(v.Cost, &localValue)
+			v.TotalCost = utils.PAdd(v.TotalCost, &localValue)
+			res[connectionId] = v
+		}
+	}
+	for connectionId, costValue := range startTimeCosts {
+		localValue := costValue
+		if v, ok := res[connectionId]; ok {
+			v.DailyCostAtStartTime = utils.PAdd(v.DailyCostAtStartTime, &localValue)
+			res[connectionId] = v
+		}
+	}
+	for connectionId, costValue := range endTimeCosts {
+		localValue := costValue
+		if v, ok := res[connectionId]; ok {
+			v.DailyCostAtEndTime = utils.PAdd(v.DailyCostAtEndTime, &localValue)
 			res[connectionId] = v
 		}
 	}
@@ -1621,12 +1804,35 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	startTimeCosts, err := es.FetchDailyCostHistoryByAccountsAtTime(h.client, nil, []string{connectionId}, startTime)
+	if err != nil {
+		return err
+	}
+	endTimeCosts, err := es.FetchDailyCostHistoryByAccountsAtTime(h.client, nil, []string{connectionId}, endTime)
+	if err != nil {
+		return err
+	}
+
 	for costConnectionId, costValue := range costs {
 		if costConnectionId != connectionId {
 			continue
 		}
 		localValue := costValue
-		res.Cost = utils.PAdd(res.Cost, &localValue)
+		res.TotalCost = utils.PAdd(res.TotalCost, &localValue)
+	}
+	for costConnectionId, costValue := range startTimeCosts {
+		if costConnectionId != connectionId {
+			continue
+		}
+		localValue := costValue
+		res.DailyCostAtStartTime = utils.PAdd(res.DailyCostAtStartTime, &localValue)
+	}
+	for costConnectionId, costValue := range endTimeCosts {
+		if costConnectionId != connectionId {
+			continue
+		}
+		localValue := costValue
+		res.DailyCostAtEndTime = utils.PAdd(res.DailyCostAtEndTime, &localValue)
 	}
 
 	return ctx.JSON(http.StatusOK, res)
@@ -1634,6 +1840,7 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 
 // ListServiceSummaries godoc
 //
+//	@Deprecated		use /inventory/api/v2/services/metric instead
 //	@Summary		List Cloud Services Summary
 //	@Description	Retrieves list of summaries of the services including the number of them and the API filters and a list of services with more details. Including connector and the resource counts.
 //	@Security		BearerToken
@@ -1757,6 +1964,7 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 
 // GetServiceSummary godoc
 //
+//	@Deprecated		use /inventory/api/v2/services/metric/{serviceName} instead
 //	@Summary		Get Cloud Service Summary
 //	@Description	Retrieves Cloud Service Summary for the specified service name. Including connector, the resource counts.
 //	@Security		BearerToken

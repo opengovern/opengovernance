@@ -49,10 +49,12 @@ type Connection struct {
 	LastHealthCheckTime  time.Time                       `json:"lastHealthCheckTime" example:"2023-05-07T00:00:00Z"`
 	HealthReason         *string                         `json:"healthReason,omitempty"`
 
-	LastInventory    *time.Time `json:"lastInventory" example:"2023-05-07T00:00:00Z"`
-	Cost             *float64   `json:"cost" example:"1000.00"`
-	ResourceCount    *int       `json:"resourceCount" example:"100"`
-	OldResourceCount *int       `json:"oldResourceCount" example:"100"`
+	LastInventory        *time.Time `json:"lastInventory" example:"2023-05-07T00:00:00Z"`
+	Cost                 *float64   `json:"cost" example:"1000.00"`
+	DailyCostAtStartTime *float64   `json:"dailyCostAtStartTime" example:"1000.00"`
+	DailyCostAtEndTime   *float64   `json:"dailyCostAtEndTime" example:"1000.00"`
+	ResourceCount        *int       `json:"resourceCount" example:"100"`
+	OldResourceCount     *int       `json:"oldResourceCount" example:"100"`
 
 	Metadata map[string]any `json:"metadata"`
 }

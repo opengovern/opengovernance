@@ -2792,7 +2792,9 @@ const docTemplate = `{
                     {
                         "enum": [
                             "dimension",
-                            "cost"
+                            "cost",
+                            "growth",
+                            "growth_rate"
                         ],
                         "type": "string",
                         "description": "Sort by field - default is cost",
@@ -3477,7 +3479,9 @@ const docTemplate = `{
                     {
                         "enum": [
                             "name",
-                            "count"
+                            "count",
+                            "growth",
+                            "growth_rate"
                         ],
                         "type": "string",
                         "description": "Sort by field - default is count",
@@ -3859,7 +3863,9 @@ const docTemplate = `{
                     {
                         "enum": [
                             "name",
-                            "count"
+                            "count",
+                            "growth",
+                            "growth_rate"
                         ],
                         "type": "string",
                         "description": "Sort by field - default is count",
@@ -3960,6 +3966,7 @@ const docTemplate = `{
                     "services"
                 ],
                 "summary": "List Cloud Services Summary",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "array",
@@ -4042,6 +4049,7 @@ const docTemplate = `{
                     "services"
                 ],
                 "summary": "Get Cloud Service Summary",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -4375,7 +4383,11 @@ const docTemplate = `{
                         "enum": [
                             "onboard_date",
                             "resource_count",
-                            "cost"
+                            "cost",
+                            "growth",
+                            "growth_rate",
+                            "cost_growth",
+                            "cost_growth_rate"
                         ],
                         "type": "string",
                         "description": "column to sort by - default is cost",
@@ -9819,6 +9831,12 @@ const docTemplate = `{
                 "count": {
                     "type": "integer"
                 },
+                "dailyCostAtEndTime": {
+                    "type": "number"
+                },
+                "dailyCostAtStartTime": {
+                    "type": "number"
+                },
                 "lastInventory": {
                     "type": "string"
                 },
@@ -10941,6 +10959,14 @@ const docTemplate = `{
                 },
                 "credentialName": {
                     "type": "string"
+                },
+                "dailyCostAtEndTime": {
+                    "type": "number",
+                    "example": 1000
+                },
+                "dailyCostAtStartTime": {
+                    "type": "number",
+                    "example": 1000
                 },
                 "description": {
                     "type": "string",
