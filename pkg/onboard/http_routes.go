@@ -2475,8 +2475,8 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 			if *result.Connections[j].OldResourceCount == 0 {
 				return true
 			}
-			if *diffi/(*result.Connections[i].OldResourceCount) != *diffj/(*result.Connections[j].OldResourceCount) {
-				return *diffi/(*result.Connections[i].OldResourceCount) > *diffj/(*result.Connections[j].OldResourceCount)
+			if float64(*diffi)/float64(*result.Connections[i].OldResourceCount) != float64(*diffj)/float64(*result.Connections[j].OldResourceCount) {
+				return float64(*diffi)/float64(*result.Connections[i].OldResourceCount) > float64(*diffj)/float64(*result.Connections[j].OldResourceCount))
 			}
 		case "cost_growth":
 			diffi := utils.PSub(result.Connections[i].DailyCostAtEndTime, result.Connections[i].DailyCostAtStartTime)
