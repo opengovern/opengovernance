@@ -629,8 +629,8 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 			if *apiResourceTypes[j].OldCount == 0 {
 				return true
 			}
-			if *diffi/(*apiResourceTypes[i].OldCount) != *diffj/(*apiResourceTypes[j].OldCount) {
-				return *diffi/(*apiResourceTypes[i].OldCount) > *diffj/(*apiResourceTypes[j].OldCount)
+			if float64(*diffi)/float64(*apiResourceTypes[i].OldCount) != float64(*diffj)/float64(*apiResourceTypes[j].OldCount) {
+				return float64(*diffi)/float64(*apiResourceTypes[i].OldCount) > float64(*diffj)/float64(*apiResourceTypes[j].OldCount)
 			}
 		}
 		return apiResourceTypes[i].ResourceType < apiResourceTypes[j].ResourceType
@@ -1170,8 +1170,8 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 			if *apiServices[j].OldResourceCount == 0 {
 				return true
 			}
-			if *diffi/(*apiServices[i].OldResourceCount) != *diffj/(*apiServices[j].OldResourceCount) {
-				return *diffi/(*apiServices[i].OldResourceCount) > *diffj/(*apiServices[j].OldResourceCount)
+			if float64(*diffi)/float64(*apiServices[i].OldResourceCount) != float64(*diffj)/float64(*apiServices[j].OldResourceCount) {
+				return float64(*diffi)/float64(*apiServices[i].OldResourceCount) > float64(*diffj)/float64(*apiServices[j].OldResourceCount)
 			}
 		}
 		return *apiServices[i].ResourceCount > *apiServices[j].ResourceCount
