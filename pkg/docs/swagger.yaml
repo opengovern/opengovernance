@@ -2049,6 +2049,10 @@ definitions:
         type: number
       count:
         type: integer
+      dailyCostAtEndTime:
+        type: number
+      dailyCostAtStartTime:
+        type: number
       lastInventory:
         type: string
       oldCount:
@@ -2857,6 +2861,12 @@ definitions:
         type: string
       credentialName:
         type: string
+      dailyCostAtEndTime:
+        example: 1000
+        type: number
+      dailyCostAtStartTime:
+        example: 1000
+        type: number
       description:
         example: This is an example connection
         type: string
@@ -5255,6 +5265,8 @@ paths:
         enum:
         - dimension
         - cost
+        - growth
+        - growth_rate
         in: query
         name: sortBy
         type: string
@@ -5713,6 +5725,8 @@ paths:
         enum:
         - name
         - count
+        - growth
+        - growth_rate
         in: query
         name: sortBy
         type: string
@@ -5965,6 +5979,8 @@ paths:
         enum:
         - name
         - count
+        - growth
+        - growth_rate
         in: query
         name: sortBy
         type: string
@@ -6027,6 +6043,7 @@ paths:
     get:
       consumes:
       - application/json
+      deprecated: true
       description: Retrieves list of summaries of the services including the number
         of them and the API filters and a list of services with more details. Including
         connector and the resource counts.
@@ -6082,6 +6099,7 @@ paths:
       - services
   /inventory/api/v2/services/summary/{serviceName}:
     get:
+      deprecated: true
       description: Retrieves Cloud Service Summary for the specified service name.
         Including connector, the resource counts.
       parameters:
@@ -6325,6 +6343,10 @@ paths:
         - onboard_date
         - resource_count
         - cost
+        - growth
+        - growth_rate
+        - cost_growth
+        - cost_growth_rate
         in: query
         name: sortBy
         type: string

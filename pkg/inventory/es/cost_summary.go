@@ -574,3 +574,108 @@ func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, connectors []so
 
 	return hits, nil
 }
+
+type FetchDailyCostHistoryByAccountsAtTimeResponse struct {
+	Aggregations struct {
+		ConnectionIDGroup struct {
+			Buckets []struct {
+				Key    string `json:"key"`
+				Latest struct {
+					Hits struct {
+						Hits []struct {
+							CostSummary summarizer.ConnectionCostSummary `json:"_source"`
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func FetchDailyCostHistoryByAccountsAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, at time.Time) (map[string]float64, error) {
+	at = at.Truncate(24 * time.Hour)
+
+	res := make(map[string]any)
+	var filters []any
+
+	filters = append(filters, map[string]any{
+		"terms": map[string][]string{"report_type": {string(summarizer.CostConnectionSummaryDaily)}},
+	})
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_end": map[string]string{
+				"lte": strconv.FormatInt(at.Unix(), 10),
+			},
+		},
+	})
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_start": map[string]string{
+				"gte": strconv.FormatInt(at.AddDate(0, 0, -7).Unix(), 10),
+			},
+		},
+	})
+
+	if len(connectionIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"source_id": connectionIDs},
+		})
+	}
+	if len(connectors) > 0 {
+		connectorsStr := make([]string, 0, len(connectors))
+		for _, connector := range connectors {
+			connectorsStr = append(connectorsStr, connector.String())
+		}
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"source_type": connectorsStr},
+		})
+	}
+
+	res["size"] = 0
+	res["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+
+	res["aggs"] = map[string]any{
+		"connection_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "source_id",
+				"size":  10000,
+			},
+			"aggs": map[string]any{
+				"latest": map[string]any{
+					"top_hits": map[string]any{
+						"size": 1,
+						"sort": map[string]any{
+							"period_end": "desc",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("query=", string(b), "index=", summarizer.CostSummeryIndex)
+
+	var response FetchDailyCostHistoryByAccountsAtTimeResponse
+	err = client.Search(context.Background(), summarizer.CostSummeryIndex, string(b), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	hits := make(map[string]float64)
+	for _, connectionIDGroup := range response.Aggregations.ConnectionIDGroup.Buckets {
+		for _, hit := range connectionIDGroup.Latest.Hits.Hits {
+			hits[connectionIDGroup.Key] += hit.CostSummary.CostValue
+		}
+	}
+
+	return hits, nil
+}

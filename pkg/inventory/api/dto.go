@@ -329,11 +329,13 @@ type ConnectionResourceCountResponse struct {
 }
 
 type ConnectionData struct {
-	ConnectionID  string     `json:"connectionID"`
-	Count         *int       `json:"count"`
-	OldCount      *int       `json:"oldCount"`
-	LastInventory *time.Time `json:"lastInventory"`
-	Cost          *float64   `json:"cost"`
+	ConnectionID         string     `json:"connectionID"`
+	Count                *int       `json:"count"`
+	OldCount             *int       `json:"oldCount"`
+	LastInventory        *time.Time `json:"lastInventory"`
+	TotalCost            *float64   `json:"cost"`
+	DailyCostAtStartTime *float64   `json:"dailyCostAtStartTime"`
+	DailyCostAtEndTime   *float64   `json:"dailyCostAtEndTime"`
 }
 
 type TopAccountResponse struct {

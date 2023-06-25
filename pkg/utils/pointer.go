@@ -13,6 +13,20 @@ func PAdd[T int | int64 | int32 | float64](a, b *T) *T {
 	}
 }
 
+func PSub[T int | int64 | int32 | float64](a, b *T) *T {
+	if a == nil && b == nil {
+		return nil
+	} else if a == nil {
+		v := -*b
+		return &v
+	} else if b == nil {
+		return a
+	} else {
+		v := *a - *b
+		return &v
+	}
+}
+
 func GetPointer[T any](a T) *T {
 	v := a
 	return &v

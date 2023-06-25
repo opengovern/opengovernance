@@ -2312,7 +2312,7 @@ func (h HttpHandler) CountConnections(ctx echo.Context) error {
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
 //	@Param			startTime		query		int				false	"start time in unix seconds"
 //	@Param			endTime			query		int				false	"end time in unix seconds"
-//	@Param			sortBy			query		string			false	"column to sort by - default is cost"	Enums(onboard_date,resource_count,cost)
+//	@Param			sortBy			query		string			false	"column to sort by - default is cost"	Enums(onboard_date,resource_count,cost,growth,growth_rate,cost_growth,cost_growth_rate)
 //	@Success		200				{object}	api.ListConnectionSummaryResponse
 //	@Router			/onboard/api/v1/connections/summary [get]
 func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
@@ -2380,13 +2380,14 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		if data, ok := connectionData[connection.ID.String()]; ok {
 			localData := data
 			apiConn := connection.toApi()
-			apiConn.Cost = localData.Cost
+			apiConn.Cost = localData.TotalCost
+			apiConn.DailyCostAtStartTime = localData.DailyCostAtStartTime
+			apiConn.DailyCostAtEndTime = localData.DailyCostAtEndTime
 			apiConn.ResourceCount = localData.Count
 			apiConn.OldResourceCount = localData.OldCount
 			apiConn.LastInventory = localData.LastInventory
-
-			if localData.Cost != nil {
-				result.TotalCost += *localData.Cost
+			if localData.TotalCost != nil {
+				result.TotalCost += *localData.TotalCost
 			}
 			if localData.Count != nil {
 				result.TotalResourceCount += *localData.Count
@@ -2428,6 +2429,102 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 			}
 			if *result.Connections[i].Cost != *result.Connections[j].Cost {
 				return *result.Connections[i].Cost > *result.Connections[j].Cost
+			}
+		case "growth":
+			diffi := utils.PSub(result.Connections[i].ResourceCount, result.Connections[i].OldResourceCount)
+			diffj := utils.PSub(result.Connections[j].ResourceCount, result.Connections[j].OldResourceCount)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if *diffi != *diffj {
+				return *diffi > *diffj
+			}
+		case "growth_rate":
+			diffi := utils.PSub(result.Connections[i].ResourceCount, result.Connections[i].OldResourceCount)
+			diffj := utils.PSub(result.Connections[j].ResourceCount, result.Connections[j].OldResourceCount)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if result.Connections[i].OldResourceCount == nil && result.Connections[j].OldResourceCount == nil {
+				break
+			}
+			if result.Connections[i].OldResourceCount == nil {
+				return true
+			}
+			if result.Connections[j].OldResourceCount == nil {
+				return false
+			}
+			if *result.Connections[i].OldResourceCount == 0 && *result.Connections[j].OldResourceCount == 0 {
+				break
+			}
+			if *result.Connections[i].OldResourceCount == 0 {
+				return false
+			}
+			if *result.Connections[j].OldResourceCount == 0 {
+				return true
+			}
+			if *diffi/(*result.Connections[i].OldResourceCount) != *diffj/(*result.Connections[j].OldResourceCount) {
+				return *diffi/(*result.Connections[i].OldResourceCount) > *diffj/(*result.Connections[j].OldResourceCount)
+			}
+		case "cost_growth":
+			diffi := utils.PSub(result.Connections[i].DailyCostAtEndTime, result.Connections[i].DailyCostAtStartTime)
+			diffj := utils.PSub(result.Connections[j].DailyCostAtEndTime, result.Connections[j].DailyCostAtStartTime)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if *diffi != *diffj {
+				return *diffi > *diffj
+			}
+		case "cost_growth_rate":
+			diffi := utils.PSub(result.Connections[i].DailyCostAtEndTime, result.Connections[i].DailyCostAtStartTime)
+			diffj := utils.PSub(result.Connections[j].DailyCostAtEndTime, result.Connections[j].DailyCostAtStartTime)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if result.Connections[i].DailyCostAtStartTime == nil && result.Connections[j].DailyCostAtStartTime == nil {
+				break
+			}
+			if result.Connections[i].DailyCostAtStartTime == nil {
+				return true
+			}
+			if result.Connections[j].DailyCostAtStartTime == nil {
+				return false
+			}
+			if *result.Connections[i].DailyCostAtStartTime == 0 && *result.Connections[j].DailyCostAtStartTime == 0 {
+				break
+			}
+			if *result.Connections[i].DailyCostAtStartTime == 0 {
+				return false
+			}
+			if *result.Connections[j].DailyCostAtStartTime == 0 {
+				return true
+			}
+			if *diffi/(*result.Connections[i].DailyCostAtStartTime) != *diffj/(*result.Connections[j].DailyCostAtStartTime) {
+				return *diffi/(*result.Connections[i].DailyCostAtStartTime) > *diffj/(*result.Connections[j].DailyCostAtStartTime)
 			}
 		}
 		return result.Connections[i].ID.String() < result.Connections[j].ID.String()
@@ -2485,7 +2582,7 @@ func (h HttpHandler) GetConnectionSummary(ctx echo.Context) error {
 	}
 
 	result := connection.toApi()
-	result.Cost = connectionData.Cost
+	result.Cost = connectionData.TotalCost
 	result.ResourceCount = connectionData.Count
 	result.OldResourceCount = connectionData.OldCount
 	result.LastInventory = connectionData.LastInventory
