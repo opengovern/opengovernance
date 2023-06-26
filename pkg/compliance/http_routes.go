@@ -13,10 +13,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/kaytu-io/kaytu-util/pkg/model"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	"github.com/labstack/echo/v4"
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
@@ -29,6 +25,10 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/query"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -1108,8 +1108,6 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	var result []api.Insight
 	for _, insightRow := range insightRows {
 		apiRes := insightRow.ToApi()
-		apiRes.TotalResultValue = utils.GetPointer(int64(0))
-		var totalOldResultValue *int64
 		if insightResults, ok := insightIdToResults[insightRow.ID]; ok {
 			for _, insightResult := range insightResults {
 				apiRes.Results = append(apiRes.Results, api.InsightResult{
@@ -1126,10 +1124,9 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		if oldInsightResults, ok := oldInsightIdToResults[insightRow.ID]; ok {
 			for _, oldInsightResult := range oldInsightResults {
 				localOldInsightResult := oldInsightResult.Result
-				totalOldResultValue = utils.PAdd(totalOldResultValue, &localOldInsightResult)
+				apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, &localOldInsightResult)
 			}
 		}
-		apiRes.OldTotalResultValue = totalOldResultValue
 		result = append(result, apiRes)
 	}
 	return ctx.JSON(200, result)
@@ -1190,8 +1187,6 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	}
 
 	apiRes := insightRow.ToApi()
-	apiRes.TotalResultValue = utils.GetPointer(int64(0))
-	var totalOldResultValue *int64
 	for _, insightResult := range insightResults {
 		connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
 		for _, connection := range insightResult.IncludedConnections {
@@ -1236,9 +1231,8 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	}
 	for _, oldInsightResult := range oldInsightResults {
 		localOldInsightResult := oldInsightResult.Result
-		totalOldResultValue = utils.PAdd(totalOldResultValue, &localOldInsightResult)
+		apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, &localOldInsightResult)
 	}
-	apiRes.OldTotalResultValue = totalOldResultValue
 
 	return ctx.JSON(200, apiRes)
 }
