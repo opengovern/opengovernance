@@ -53,9 +53,7 @@ type Connection struct {
 	OnboardDate          time.Time                       `json:"onboardDate" example:"2023-05-07T00:00:00Z"`
 	AssetDiscoveryMethod source.AssetDiscoveryMethodType `json:"assetDiscoveryMethod" example:"scheduled"`
 
-	LifecycleState         ConnectionLifecycleState `json:"lifecycleState" example:"enabled"`
-	LastLifecycleCheckTime time.Time                `json:"lastLifecycleCheckTime" example:"2023-05-07T00:00:00Z"`
-	LifecycleReason        *string                  `json:"lifecycleReason,omitempty"`
+	LifecycleState ConnectionLifecycleState `json:"lifecycleState" example:"enabled"`
 
 	HealthState         source.HealthStatus `json:"healthState" example:"healthy"`
 	LastHealthCheckTime time.Time           `json:"lastHealthCheckTime" example:"2023-05-07T00:00:00Z"`

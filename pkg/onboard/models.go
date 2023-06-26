@@ -58,9 +58,7 @@ type Source struct {
 	Description  string
 	CredentialID uuid.UUID
 
-	LastLifecycleCheckTime time.Time                `gorm:"not null;default:now()"`
-	LifecycleState         ConnectionLifecycleState `gorm:"not null;default:'enabled'"`
-	LifecycleReason        *string
+	LifecycleState ConnectionLifecycleState `gorm:"not null;default:'enabled'"`
 
 	AssetDiscoveryMethod source.AssetDiscoveryMethodType `gorm:"not null;default:'scheduled'"`
 
