@@ -1394,8 +1394,6 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 		apiRes.Insights = make(map[uint]api.Insight)
 		for _, insightRow := range insightGroupRow.Insights {
 			insightApiRes := insightRow.ToApi()
-			insightApiRes.TotalResultValue = utils.GetPointer(int64(0))
-			var totalOldResultValue *int64
 			if insightResults, ok := insightIdToResults[insightRow.ID]; ok {
 				for _, insightResult := range insightResults {
 					insightApiRes.Results = append(insightApiRes.Results, api.InsightResult{
@@ -1412,10 +1410,9 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 			if oldInsightResults, ok := oldInsightIdToResults[insightRow.ID]; ok {
 				for _, oldInsightResult := range oldInsightResults {
 					localOldInsightResult := oldInsightResult.Result
-					totalOldResultValue = utils.PAdd(totalOldResultValue, &localOldInsightResult)
+					insightApiRes.OldTotalResultValue = utils.PAdd(insightApiRes.OldTotalResultValue, &localOldInsightResult)
 				}
 			}
-			insightApiRes.OldTotalResultValue = totalOldResultValue
 
 			apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, insightApiRes.TotalResultValue)
 			apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, insightApiRes.OldTotalResultValue)
@@ -1492,8 +1489,6 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 	apiRes := insightGroupRow.ToApi()
 	for _, insightRow := range insightGroupRow.Insights {
 		insightApiRes := insightRow.ToApi()
-		insightApiRes.TotalResultValue = utils.GetPointer(int64(0))
-		var totalOldResultValue *int64
 		if insightResults, ok := insightResultsMap[insightRow.ID]; ok {
 			for _, insightResult := range insightResults {
 				connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
@@ -1541,10 +1536,9 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 		if oldInsightResults, ok := oldInsightResultsMap[insightRow.ID]; ok {
 			for _, oldInsightResult := range oldInsightResults {
 				localOldInsightResult := oldInsightResult.Result
-				totalOldResultValue = utils.PAdd(totalOldResultValue, &localOldInsightResult)
+				insightApiRes.OldTotalResultValue = utils.PAdd(insightApiRes.OldTotalResultValue, &localOldInsightResult)
 			}
 		}
-		insightApiRes.OldTotalResultValue = totalOldResultValue
 
 		apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, insightApiRes.TotalResultValue)
 		apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, insightApiRes.OldTotalResultValue)
