@@ -10,8 +10,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/subscription/mgmt/subscription"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"gorm.io/datatypes"
 )
 
@@ -23,10 +23,16 @@ const (
 	ConnectionLifecycleStateEnabled          ConnectionLifecycleState = "enabled"
 	ConnectionLifecycleStateDisabled         ConnectionLifecycleState = "disabled"
 	ConnectionLifecycleStateDeleted          ConnectionLifecycleState = "deleted"
+
+	ConnectionLifecycleStateNotOnboard ConnectionLifecycleState = "NOT_ONBOARD"
+	ConnectionLifecycleStateInProgress ConnectionLifecycleState = "IN_PROGRESS"
+	ConnectionLifecycleStateOnboard    ConnectionLifecycleState = "ONBOARD"
+	ConnectionLifecycleStateUnhealthy  ConnectionLifecycleState = "UNHEALTHY"
+	ConnectionLifecycleStateArchived   ConnectionLifecycleState = "ARCHIVED"
 )
 
 func (c ConnectionLifecycleState) IsEnabled() bool {
-	enabledStates := []ConnectionLifecycleState{ConnectionLifecycleStateEnabled, ConnectionLifecycleStateInitialDiscovery}
+	enabledStates := []ConnectionLifecycleState{ConnectionLifecycleStateEnabled, ConnectionLifecycleStateInitialDiscovery, ConnectionLifecycleStateOnboard, ConnectionLifecycleStateInProgress, ConnectionLifecycleStateUnhealthy}
 	for _, state := range enabledStates {
 		if c == state {
 			return true
@@ -44,14 +50,17 @@ func ConnectionLifecycleStateFromApi(state api.ConnectionLifecycleState) Connect
 }
 
 type Source struct {
-	ID             uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"` // Auto-generated UUID
-	SourceId       string    `gorm:"index:idx_source_id,unique"`                      // AWS Account ID, Azure Subscription ID, ...
-	Name           string    `gorm:"not null"`
-	Email          string
-	Type           source.Type `gorm:"not null"`
-	Description    string
-	CredentialID   uuid.UUID
-	LifecycleState ConnectionLifecycleState `gorm:"not null;default:'enabled'"`
+	ID           uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"` // Auto-generated UUID
+	SourceId     string    `gorm:"index:idx_source_id,unique"`                      // AWS Account ID, Azure Subscription ID, ...
+	Name         string    `gorm:"not null"`
+	Email        string
+	Type         source.Type `gorm:"not null"`
+	Description  string
+	CredentialID uuid.UUID
+
+	LastLifecycleCheckTime time.Time                `gorm:"not null;default:now()"`
+	LifecycleState         ConnectionLifecycleState `gorm:"not null;default:'enabled'"`
+	LifecycleReason        *string
 
 	AssetDiscoveryMethod source.AssetDiscoveryMethodType `gorm:"not null;default:'scheduled'"`
 
@@ -155,7 +164,7 @@ func NewAWSSource(account awsAccount, description string) Source {
 		Description:          description,
 		CredentialID:         creds.ID,
 		Credential:           creds,
-		LifecycleState:       ConnectionLifecycleStateInitialDiscovery,
+		LifecycleState:       ConnectionLifecycleStateInProgress,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		HealthState:          source.HealthStatusHealthy,
 		LastHealthCheckTime:  time.Now(),
@@ -206,7 +215,7 @@ func NewAzureSourceWithCredentials(sub azureSubscription, creationMethod source.
 		Type:                 source.CloudAzure,
 		CredentialID:         creds.ID,
 		Credential:           creds,
-		LifecycleState:       ConnectionLifecycleStateInitialDiscovery,
+		LifecycleState:       ConnectionLifecycleStateInProgress,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		HealthState:          source.HealthStatusHealthy,
 		LastHealthCheckTime:  time.Now(),

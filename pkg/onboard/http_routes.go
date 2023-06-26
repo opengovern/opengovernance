@@ -1338,7 +1338,7 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 		}
 
 		for _, src := range sources {
-			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateDisabled); err != nil {
+			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateNotOnboard); err != nil {
 				return err
 			}
 
@@ -1400,7 +1400,7 @@ func (h HttpHandler) DisableCredential(ctx echo.Context) error {
 		}
 
 		for _, src := range sources {
-			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateDisabled); err != nil {
+			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateNotOnboard); err != nil {
 				return err
 			}
 
@@ -2399,8 +2399,12 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 			if connection.HealthState == source.HealthStatusUnhealthy {
 				result.TotalUnhealthyCount++
 			}
-			if connection.LifecycleState == ConnectionLifecycleStateDisabled {
+			switch connection.LifecycleState {
+			case ConnectionLifecycleStateDisabled, ConnectionLifecycleStateNotOnboard:
 				result.TotalDisabledCount++
+			case ConnectionLifecycleStateUnhealthy:
+				result.TotalUnhealthyCount++
+
 			}
 			result.Connections = append(result.Connections, apiConn)
 		}

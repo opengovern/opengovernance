@@ -214,14 +214,14 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 			return errors.New("asset discovery is not scheduled")
 		}
 
-		if healthCheckedSrc.HealthState == source.HealthStatusUnhealthy {
+		if healthCheckedSrc.LifecycleState == apiOnboard.ConnectionLifecycleStateUnhealthy {
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			return errors.New("connection is not healthy")
 		}
 
 		describedAt := time.Now()
 		triggerType := enums.DescribeTriggerTypeScheduled
-		if healthCheckedSrc.LifecycleState == apiOnboard.ConnectionLifecycleStateInitialDiscovery {
+		if healthCheckedSrc.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
 			triggerType = enums.DescribeTriggerTypeInitialDiscovery
 		}
 		s.logger.Debug("Source is due for a describe. Creating a job now", zap.String("sourceId", connection.ID.String()))
@@ -246,10 +246,10 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 		}
 		DescribeSourceJobsCount.WithLabelValues("successful").Inc()
 
-		if healthCheckedSrc.LifecycleState == apiOnboard.ConnectionLifecycleStateInitialDiscovery {
+		if healthCheckedSrc.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
 			_, err = s.onboardClient.SetConnectionLifecycleState(&httpclient.Context{
 				UserRole: apiAuth.EditorRole,
-			}, connection.ID.String(), apiOnboard.ConnectionLifecycleStateEnabled)
+			}, connection.ID.String(), apiOnboard.ConnectionLifecycleStateOnboard)
 			if err != nil {
 				s.logger.Warn("Failed to set connection lifecycle state", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 			}

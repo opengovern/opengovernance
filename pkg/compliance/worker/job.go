@@ -17,6 +17,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/config"
+	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
@@ -135,7 +136,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return err
 	}
 
-	if src.HealthState != source.HealthStatusHealthy {
+	if src.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard {
 		return errors.New("connection not healthy")
 	}
 
