@@ -55,7 +55,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/resources/filters", httpserver.AuthorizeHandler(h.GetResourcesFilters, api3.ViewerRole))
 	v1.POST("/resource", httpserver.AuthorizeHandler(h.GetResource, api3.ViewerRole))
 
-	v1.GET("/resources/regions/summary", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, api3.ViewerRole))
+	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, api3.ViewerRole))
 	v1.GET("/resources/regions", httpserver.AuthorizeHandler(h.GetRegionsByResourceCount, api3.ViewerRole))
 
 	v1.GET("/query", httpserver.AuthorizeHandler(h.ListQueries, api3.ViewerRole))
