@@ -296,7 +296,7 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 //	@Param		endTime			query		int				false	"end time in unix seconds - default is one week ago"
 //	@Param 		sortBy			query		string			false	"column to sort by - default is resource_count"	Enums(resource_count,resource_growth, old_resource_count)
 //	@Success	200				{object}	[]api.LocationResponse
-//	@Router		/inventory/api/v1/resources/regions/summary [get]
+//	@Router		/inventory/api/v2/resources/regions/summary [get]
 func (h *HttpHandler) ListRegionsSummary(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	count, err := strconv.Atoi(ctx.QueryParam("count"))
