@@ -17,6 +17,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/config"
+	client3 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
@@ -48,6 +49,7 @@ type JobResult struct {
 func (j *Job) Do(
 	complianceClient client.ComplianceServiceClient,
 	onboardClient client2.OnboardServiceClient,
+	scheduleClient client3.SchedulerServiceClient,
 	elasticSearchConfig config.ElasticSearch,
 	kfkProducer *confluent_kafka.Producer,
 	kfkTopic string,
@@ -60,7 +62,7 @@ func (j *Job) Do(
 		Error:           "",
 	}
 
-	if err := j.Run(complianceClient, onboardClient, elasticSearchConfig, kfkProducer, kfkTopic, logger); err != nil {
+	if err := j.Run(complianceClient, onboardClient, scheduleClient, elasticSearchConfig, kfkProducer, kfkTopic, logger); err != nil {
 		result.Error = err.Error()
 		result.Status = api.ComplianceReportJobCompletedWithFailure
 	}
@@ -124,20 +126,31 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 	return findings, nil
 }
 
-func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient client2.OnboardServiceClient,
+func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient client2.OnboardServiceClient, schedulerClient client3.SchedulerServiceClient,
 	elasticSearchConfig config.ElasticSearch, kfkProducer *confluent_kafka.Producer, kfkTopic string, logger *zap.Logger) error {
 
 	ctx := &httpclient.Context{
 		UserRole: api2.AdminRole,
 	}
-
-	src, err := onboardClient.GetSource(ctx, j.ConnectionID)
+	var accountId string
+	var connector source.Type
+	src1, err := onboardClient.GetSource(ctx, j.ConnectionID)
 	if err != nil {
+		if err.Error() == "source not found" {
+			src2, err := schedulerClient.GetSource(ctx, j.ConnectionID)
+			if err != nil {
+				return err
+			}
+			accountId = src2.AccountID
+			connector = src2.Type
+		}
 		return err
-	}
-
-	if src.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard {
-		return errors.New("connection not healthy")
+	} else {
+		accountId = src1.ConnectionID
+		connector = src1.Connector
+		if src1.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard {
+			return errors.New("connection not healthy")
+		}
 	}
 
 	//defaultAccountID := "default"
@@ -145,7 +158,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		Addresses: []string{elasticSearchConfig.Address},
 		Username:  &elasticSearchConfig.Username,
 		Password:  &elasticSearchConfig.Password,
-		AccountID: &src.ConnectionID,
+		AccountID: &accountId,
 	})
 	if err != nil {
 		return err
@@ -153,7 +166,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	fmt.Println("+++++ New elasticSearch Client created")
 
-	err = j.PopulateSteampipeConfig(elasticSearchConfig, src.ConnectionID)
+	err = j.PopulateSteampipeConfig(elasticSearchConfig, accountId)
 	if err != nil {
 		return err
 	}
@@ -204,7 +217,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	fmt.Println("+++++ Steampipe database created")
 
-	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, src.Connector)
+	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, connector)
 	if err != nil {
 		return err
 	}

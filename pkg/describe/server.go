@@ -203,6 +203,7 @@ func (h HttpServer) HandleGetSource(ctx echo.Context) error {
 
 	return ctx.JSON(http.StatusOK, api.Source{
 		ID:                     source.ID,
+		AccountID:              source.AccountID,
 		Type:                   source.Type,
 		LastDescribedAt:        lastDescribeAt,
 		LastComplianceReportAt: lastComplianceReportAt,
@@ -853,12 +854,12 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		}
 	}
 
-	var provider api.SourceType
+	var provider source.Type
 	for _, resource := range resources {
 		if strings.Contains(resource, "aws") {
-			provider = api.SourceCloudAWS
+			provider = source.CloudAWS
 		} else if strings.Contains(resource, "subscriptions") {
-			provider = api.SourceCloudAzure
+			provider = source.CloudAzure
 		}
 	}
 
@@ -868,14 +869,14 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		return err
 	}
 	var resourceTypes []string
-	if provider == api.SourceCloudAWS {
+	if provider == source.CloudAWS {
 		for _, trt := range terraformResourceTypes {
 			rt := aws.GetResourceTypeByTerraform(trt)
 			if rt != "" {
 				resourceTypes = append(resourceTypes, rt)
 			}
 		}
-	} else if provider == api.SourceCloudAzure {
+	} else if provider == source.CloudAzure {
 		for _, trt := range terraformResourceTypes {
 			rt := azure.GetResourceTypeByTerraform(trt)
 			if rt != "" {
@@ -893,14 +894,14 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	id := "stack-" + uuid.New().String()
+	id := uuid.New()
 
 	err = h.triggerStackDescriberJob(ctx, resourceTypes, provider, []byte(configStr), id, accs[0]) // assume we have one account
 	if err != nil {
 		return err
 	}
 	stackRecord := Stack{
-		StackID:       id,
+		StackID:       "stack-" + id.String(),
 		Resources:     pq.StringArray(resources),
 		Tags:          recordTags,
 		AccountIDs:    accs,
@@ -910,6 +911,17 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	stackSource := Source{
+		ID:        id,
+		AccountID: accs[0],
+		Type:      provider,
+		ConfigRef: "",
+	}
+	if err != nil {
+		return err
+	}
+	err = h.DB.CreateSource(&stackSource)
 
 	stack := api.Stack{
 		StackID:       stackRecord.StackID,
@@ -1050,14 +1062,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	var connectionIDs []string
-	for _, acc := range []string(stackRecord.AccountIDs) {
-		source, err := h.Scheduler.onboardClient.GetSourcesByAccount(httpclient.FromEchoContext(ctx), acc)
-		if err != nil {
-			return err
-		}
-		connectionIDs = append(connectionIDs, source.ID.String())
-	}
+
 	job := ScheduleJob{
 		Model:          gorm.Model{},
 		Status:         summarizerapi.SummarizerJobInProgress,
@@ -1068,49 +1073,48 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 		errMsg := fmt.Sprintf("error adding schedule job: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
 	}
-
+	connectionId := stackRecord.StackID[6:]
 	scheduleJob, err := h.DB.FetchLastScheduleJob()
 	if err != nil {
 		return err
 	}
 	var complianceJobs []ComplianceReportJob
 	for _, benchmarkID := range req.Benchmarks {
-		for _, connectionID := range connectionIDs {
-			src, err := h.DB.GetSourceByID(connectionID)
-			if err != nil {
-				return err
-			}
-
-			crj := newComplianceReportJob(connectionID, source.Type(src.Type), benchmarkID, scheduleJob.ID)
-
-			err = h.DB.CreateComplianceReportJob(&crj)
-			if err != nil {
-				return err
-			}
-
-			if src == nil {
-				return errors.New("failed to find connection")
-			}
-
-			enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, *src, &crj, scheduleJob)
-
-			err = h.DB.UpdateSourceReportGenerated(connectionID, h.Scheduler.complianceIntervalHours)
-			if err != nil {
-				return err
-			}
-			evaluation := StackEvaluation{
-				EvaluatorID: benchmarkID,
-				Type:        "BENCHMARK",
-				StackID:     stackRecord.StackID,
-				JobID:       crj.ID,
-			}
-			err = h.DB.AddEvaluation(&evaluation)
-			if err != nil {
-				return err
-			}
-			complianceJobs = append(complianceJobs, crj)
+		src, err := h.DB.GetSourceByID(connectionId)
+		if err != nil {
+			return err
 		}
+
+		crj := newComplianceReportJob(connectionId, source.Type(src.Type), benchmarkID, scheduleJob.ID)
+
+		err = h.DB.CreateComplianceReportJob(&crj)
+		if err != nil {
+			return err
+		}
+
+		if src == nil {
+			return errors.New("failed to find connection")
+		}
+
+		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, *src, &crj, scheduleJob)
+
+		err = h.DB.UpdateSourceReportGenerated(connectionId, h.Scheduler.complianceIntervalHours)
+		if err != nil {
+			return err
+		}
+		evaluation := StackEvaluation{
+			EvaluatorID: benchmarkID,
+			Type:        "BENCHMARK",
+			StackID:     stackRecord.StackID,
+			JobID:       crj.ID,
+		}
+		err = h.DB.AddEvaluation(&evaluation)
+		if err != nil {
+			return err
+		}
+		complianceJobs = append(complianceJobs, crj)
 	}
+
 	return ctx.JSON(http.StatusOK, complianceJobs)
 }
 
@@ -1137,24 +1141,11 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	var conns []string
-	for _, acc := range []string(stackRecord.AccountIDs) {
-		source, err := h.Scheduler.onboardClient.GetSourcesByAccount(httpclient.FromEchoContext(ctx), acc)
-		if err != nil {
-			return err
-		}
-		conns = append(conns, source.ID.String())
-	}
-	if err != nil {
-		return err
-	}
-	if err != nil {
-		return err
-	}
+	connectionId := stackRecord.StackID[6:]
 
 	req := complianceapi.GetFindingsRequest{
 		Filters: complianceapi.FindingFilters{
-			ConnectionID: conns,
+			ConnectionID: []string{connectionId},
 			BenchmarkID:  reqBody.BenchmarkIDs,
 			ResourceID:   []string(stackRecord.Resources),
 		},
@@ -1210,19 +1201,9 @@ func (h HttpServer) GetStackInsight(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	var conns []string
-	for _, acc := range []string(stackRecord.AccountIDs) {
-		source, err := h.Scheduler.onboardClient.GetSourcesByAccount(httpclient.FromEchoContext(ctx), acc)
-		if err != nil {
-			return err
-		}
-		conns = append(conns, source.ID.String())
-	}
-	if err != nil {
-		return err
-	}
+	connectionId := stackRecord.StackID[6:]
 
-	insight, err := h.Scheduler.complianceClient.GetInsight(httpclient.FromEchoContext(ctx), insightId, conns, &startTime, &endTime)
+	insight, err := h.Scheduler.complianceClient.GetInsight(httpclient.FromEchoContext(ctx), insightId, []string{connectionId}, &startTime, &endTime)
 	if err != nil {
 		return err
 	}
@@ -1463,14 +1444,14 @@ func (h HttpServer) GetInsightJob(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, result)
 }
 
-func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []string, provider api.SourceType, configStr []byte, stackId string, accountId string) error {
+func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []string, provider source.Type, configStr []byte, stackId uuid.UUID, accountId string) error {
 	var secretBytes []byte
 	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), KMSAccessKey, KMSSecretKey, KeyRegion)
 	if err != nil {
 		return err
 	}
 	switch provider {
-	case api.SourceCloudAzure:
+	case source.CloudAzure:
 		config := onboardapi.SourceConfigAzure{}
 		err := json.Unmarshal([]byte(configStr), &config)
 		if err != nil {
@@ -1480,7 +1461,7 @@ func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []s
 		if err != nil {
 			return err
 		}
-	case api.SourceCloudAWS:
+	case source.CloudAWS:
 		config := onboardapi.SourceConfigAWS{}
 		err := json.Unmarshal([]byte(configStr), &config)
 		if err != nil {
@@ -1491,11 +1472,10 @@ func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []s
 			return err
 		}
 	}
-	sourceId, err := uuid.Parse(stackId[6:])
 	if err != nil {
 		return err
 	}
-	err = h.DB.CreateStackCredential(&StackCredential{StackID: sourceId, Secret: string(secretBytes)})
+	err = h.DB.CreateStackCredential(&StackCredential{StackID: stackId, Secret: string(secretBytes)})
 	if err != nil {
 		return err
 	}
@@ -1513,7 +1493,7 @@ func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []s
 
 	dsj := DescribeSourceJob{
 		DescribedAt:          describedAt,
-		SourceID:             sourceId,
+		SourceID:             stackId,
 		SourceType:           source.Type(provider),
 		AccountID:            accountId,
 		DescribeResourceJobs: describeResourceJobs,
@@ -1573,19 +1553,20 @@ func (h HttpServer) TriggerStackDescriber(ctx echo.Context) error {
 		Evaluations:   evaluations,
 		AccountIDs:    stackRecord.AccountIDs,
 	}
-	var provider api.SourceType
+	var provider source.Type
 	for _, resource := range stack.Resources {
 		if strings.Contains(resource, "aws") {
-			provider = api.SourceCloudAWS
+			provider = source.CloudAWS
 		} else if strings.Contains(resource, "subscriptions") {
-			provider = api.SourceCloudAzure
+			provider = source.CloudAzure
 		}
 	}
 	configStr, err := json.Marshal(req.Config)
 	if err != nil {
 		return err
 	}
-	err = h.triggerStackDescriberJob(ctx, stack.ResourceTypes, provider, configStr, stack.StackID, stack.AccountIDs[0]) // assume we have one account
+	stackId, err := uuid.Parse(stack.StackID[6:])
+	err = h.triggerStackDescriberJob(ctx, stack.ResourceTypes, provider, configStr, stackId, stack.AccountIDs[0]) // assume we have one account
 	return ctx.NoContent(http.StatusOK)
 }
 

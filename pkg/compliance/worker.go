@@ -8,11 +8,11 @@ import (
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-
+	client3 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 
 	"github.com/prometheus/client_golang/prometheus/push"
@@ -31,6 +31,7 @@ type Worker struct {
 	pusher           *push.Pusher
 	onboardClient    client.OnboardServiceClient
 	complianceClient client2.ComplianceServiceClient
+	scheduleClient   client3.SchedulerServiceClient
 	es               keibi.Client
 }
 
@@ -92,7 +93,7 @@ func InitializeWorker(
 
 	w.onboardClient = client.NewOnboardServiceClient(config.Onboard.BaseURL, nil)
 	w.complianceClient = client2.NewComplianceClient(config.Compliance.BaseURL)
-
+	w.scheduleClient = client3.NewSchedulerServiceClient(config.Scheduler.BaseURL)
 	w.pusher = push.New(prometheusPushAddress, "compliance-report")
 
 	defaultAccountID := "default"
@@ -142,7 +143,7 @@ func (w *Worker) Run() error {
 
 	w.logger.Info("Running the job", zap.Uint("jobID", job.JobID))
 
-	result := job.Do(w.complianceClient, w.onboardClient, w.config.ElasticSearch, w.kfkProducer, w.kfkTopic, w.logger)
+	result := job.Do(w.complianceClient, w.onboardClient, w.scheduleClient, w.config.ElasticSearch, w.kfkProducer, w.kfkTopic, w.logger)
 
 	w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 

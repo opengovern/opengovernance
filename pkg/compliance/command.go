@@ -31,6 +31,7 @@ type WorkerConfig struct {
 	Kafka                 config.Kafka
 	Compliance            config.KeibiService
 	Onboard               config.KeibiService
+	Scheduler             config.KeibiService
 	PrometheusPushAddress string
 }
 
