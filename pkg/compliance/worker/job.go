@@ -136,7 +136,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	var connector source.Type
 	src1, err := onboardClient.GetSource(ctx, j.ConnectionID)
 	if err != nil {
-		if err.Error() == "source not found" {
+		if err.Error() == "code=400, message=source not found" {
 			src2, err := schedulerClient.GetSource(ctx, j.ConnectionID)
 			if err != nil {
 				return err

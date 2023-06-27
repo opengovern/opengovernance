@@ -18,12 +18,6 @@ import (
 type ConnectionLifecycleState string
 
 const (
-	ConnectionLifecycleStatePending          ConnectionLifecycleState = "pending"
-	ConnectionLifecycleStateInitialDiscovery ConnectionLifecycleState = "initial-discovery"
-	ConnectionLifecycleStateEnabled          ConnectionLifecycleState = "enabled"
-	ConnectionLifecycleStateDisabled         ConnectionLifecycleState = "disabled"
-	ConnectionLifecycleStateDeleted          ConnectionLifecycleState = "deleted"
-
 	ConnectionLifecycleStateNotOnboard ConnectionLifecycleState = "NOT_ONBOARD"
 	ConnectionLifecycleStateInProgress ConnectionLifecycleState = "IN_PROGRESS"
 	ConnectionLifecycleStateOnboard    ConnectionLifecycleState = "ONBOARD"
@@ -32,7 +26,7 @@ const (
 )
 
 func (c ConnectionLifecycleState) IsEnabled() bool {
-	enabledStates := []ConnectionLifecycleState{ConnectionLifecycleStateEnabled, ConnectionLifecycleStateInitialDiscovery, ConnectionLifecycleStateOnboard, ConnectionLifecycleStateInProgress, ConnectionLifecycleStateUnhealthy}
+	enabledStates := []ConnectionLifecycleState{ConnectionLifecycleStateOnboard, ConnectionLifecycleStateInProgress, ConnectionLifecycleStateUnhealthy}
 	for _, state := range enabledStates {
 		if c == state {
 			return true
@@ -62,8 +56,7 @@ type Source struct {
 
 	AssetDiscoveryMethod source.AssetDiscoveryMethodType `gorm:"not null;default:'scheduled'"`
 
-	LastHealthCheckTime time.Time           `gorm:"not null;default:now()"`
-	HealthState         source.HealthStatus `gorm:"not null;default:'unhealthy'"`
+	LastHealthCheckTime time.Time `gorm:"not null;default:now()"`
 	HealthReason        *string
 
 	Connector  Connector  `gorm:"foreignKey:Type;references:Name;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
@@ -95,7 +88,6 @@ func (s Source) toApi() api.Connection {
 		OnboardDate:          s.CreatedAt,
 		LifecycleState:       api.ConnectionLifecycleState(s.LifecycleState),
 		AssetDiscoveryMethod: s.AssetDiscoveryMethod,
-		HealthState:          s.HealthState,
 		LastHealthCheckTime:  s.LastHealthCheckTime,
 		HealthReason:         s.HealthReason,
 		Metadata:             metadata,
@@ -164,7 +156,6 @@ func NewAWSSource(account awsAccount, description string) Source {
 		Credential:           creds,
 		LifecycleState:       ConnectionLifecycleStateInProgress,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
-		HealthState:          source.HealthStatusHealthy,
 		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       source.SourceCreationMethodManual,
 		Metadata:             datatypes.JSON(marshalMetadata),
@@ -215,7 +206,6 @@ func NewAzureSourceWithCredentials(sub azureSubscription, creationMethod source.
 		Credential:           creds,
 		LifecycleState:       ConnectionLifecycleStateInProgress,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
-		HealthState:          source.HealthStatusHealthy,
 		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       creationMethod,
 		Metadata:             datatypes.JSON(jsonMetadata),
