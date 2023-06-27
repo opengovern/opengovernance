@@ -143,8 +143,9 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 			}
 			accountId = src2.AccountID
 			connector = src2.Type
+		} else {
+			return err
 		}
-		return err
 	} else {
 		accountId = src1.ConnectionID
 		connector = src1.Connector
