@@ -1293,7 +1293,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 				return float64(*diffi)/float64(*apiServices[i].OldResourceCount) > float64(*diffj)/float64(*apiServices[j].OldResourceCount)
 			}
 		}
-		return *apiServices[i].ResourceCount > *apiServices[j].ResourceCount
+		return apiServices[i].ServiceName < apiServices[j].ServiceName
 	})
 
 	result := api.ListServiceMetricsResponse{
