@@ -20,7 +20,7 @@ const (
 
 func (c ConnectionLifecycleState) Validate() error {
 	switch c {
-	case ConnectionLifecycleStateInProgress, ConnectionLifecycleStateOnboard, ConnectionLifecycleStateUnhealthy:
+	case ConnectionLifecycleStateInProgress, ConnectionLifecycleStateOnboard, ConnectionLifecycleStateNotOnboard:
 		return nil
 	default:
 		return fmt.Errorf("invalid connection lifecycle state: %s", c)
