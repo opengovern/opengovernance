@@ -79,9 +79,6 @@ func (db Database) ListSourcesWithFilters(
 	if len(connectionIDs) > 0 {
 		tx = tx.Where("id IN ?", connectionIDs)
 	}
-	if len(healthStates) > 0 {
-		tx = tx.Where("health_state IN ?", healthStates)
-	}
 	if len(lifecycleState) > 0 {
 		tx = tx.Where("lifecycle_state IN ?", lifecycleState)
 	}

@@ -813,7 +813,6 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 			OnboardDate:          conn.CreatedAt,
 			LifecycleState:       api.ConnectionLifecycleState(conn.LifecycleState),
 			AssetDiscoveryMethod: conn.AssetDiscoveryMethod,
-			HealthState:          conn.HealthState,
 			LastHealthCheckTime:  conn.LastHealthCheckTime,
 			HealthReason:         conn.HealthReason,
 			Metadata:             metadata,
@@ -965,7 +964,6 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 				OnboardDate:          src.CreatedAt,
 				LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
 				AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-				HealthState:          src.HealthState,
 				LastHealthCheckTime:  src.LastHealthCheckTime,
 				HealthReason:         src.HealthReason,
 				Metadata:             metadata,
@@ -1098,7 +1096,6 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 				OnboardDate:          src.CreatedAt,
 				LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
 				AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-				HealthState:          src.HealthState,
 				LastHealthCheckTime:  src.LastHealthCheckTime,
 				HealthReason:         src.HealthReason,
 				Metadata:             metadata,
@@ -1713,7 +1710,6 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		OnboardDate:          src.CreatedAt,
 		LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
 		AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-		HealthState:          src.HealthState,
 		LastHealthCheckTime:  src.LastHealthCheckTime,
 		HealthReason:         src.HealthReason,
 		Metadata:             metadata,
@@ -1834,7 +1830,6 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		OnboardDate:          src.CreatedAt,
 		LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
 		AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-		HealthState:          src.HealthState,
 		LastHealthCheckTime:  src.LastHealthCheckTime,
 		HealthReason:         src.HealthReason,
 		Metadata:             metadata,
@@ -2012,7 +2007,6 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 			OnboardDate:          s.CreatedAt,
 			LifecycleState:       api.ConnectionLifecycleState(s.LifecycleState),
 			AssetDiscoveryMethod: s.AssetDiscoveryMethod,
-			HealthState:          s.HealthState,
 			LastHealthCheckTime:  s.LastHealthCheckTime,
 			HealthReason:         s.HealthReason,
 			Metadata:             metadata,
@@ -2077,7 +2071,6 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 			OnboardDate:          src.CreatedAt,
 			LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
 			AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-			HealthState:          src.HealthState,
 			LastHealthCheckTime:  src.LastHealthCheckTime,
 			HealthReason:         src.HealthReason,
 			Metadata:             metadata,
@@ -2283,11 +2276,6 @@ func (h HttpHandler) CountConnections(ctx echo.Context) error {
 		}
 	}
 
-	if request.Health != nil {
-		condQuery = append(condQuery, "health_state = ?")
-		params = append(params, string(*request.Health))
-	}
-
 	if request.State != nil {
 		condQuery = append(condQuery, "lifecycle_state = ?")
 		params = append(params, string(*request.State))
@@ -2312,7 +2300,6 @@ func (h HttpHandler) CountConnections(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	true	"Connector"
 //	@Param			connectionId	query		[]string		false	"Connection IDs"
-//	@Param			healthState		query		string			false	"Source Healthstate"	Enums(healthy,unhealthy)
 //	@Param			lifecycleState	query		string			false	"lifecycle state filter"
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
@@ -2351,10 +2338,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		sortBy = "cost"
 	}
 	var healthStateSlice []source.HealthStatus
-	healthState := ctx.QueryParam("healthState")
-	if healthState != "" {
-		healthStateSlice = append(healthStateSlice, source.HealthStatus(healthState))
-	}
+
 	var lifecycleStateSlice []ConnectionLifecycleState
 	lifecycleState := ctx.QueryParam("lifecycleState")
 	if lifecycleState != "" {
@@ -2402,11 +2386,9 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 				result.OldConnectionCount++
 				result.TotalOldResourceCount += *localData.OldCount
 			}
-			if connection.HealthState == source.HealthStatusUnhealthy {
-				result.TotalUnhealthyCount++
-			}
+
 			switch connection.LifecycleState {
-			case ConnectionLifecycleStateDisabled, ConnectionLifecycleStateNotOnboard:
+			case ConnectionLifecycleStateNotOnboard:
 				result.TotalDisabledCount++
 			case ConnectionLifecycleStateUnhealthy:
 				result.TotalUnhealthyCount++

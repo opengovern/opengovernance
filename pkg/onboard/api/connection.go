@@ -11,12 +11,6 @@ import (
 type ConnectionLifecycleState string
 
 const (
-	ConnectionLifecycleStatePending          ConnectionLifecycleState = "pending"
-	ConnectionLifecycleStateInitialDiscovery ConnectionLifecycleState = "initial-discovery"
-	ConnectionLifecycleStateEnabled          ConnectionLifecycleState = "enabled"
-	ConnectionLifecycleStateDisabled         ConnectionLifecycleState = "disabled"
-	ConnectionLifecycleStateDeleted          ConnectionLifecycleState = "deleted"
-
 	ConnectionLifecycleStateNotOnboard ConnectionLifecycleState = "NOT_ONBOARD"
 	ConnectionLifecycleStateInProgress ConnectionLifecycleState = "IN_PROGRESS"
 	ConnectionLifecycleStateOnboard    ConnectionLifecycleState = "ONBOARD"
@@ -26,8 +20,6 @@ const (
 
 func (c ConnectionLifecycleState) Validate() error {
 	switch c {
-	case ConnectionLifecycleStateInitialDiscovery, ConnectionLifecycleStateEnabled, ConnectionLifecycleStateDisabled:
-		return nil
 	case ConnectionLifecycleStateInProgress, ConnectionLifecycleStateOnboard, ConnectionLifecycleStateUnhealthy:
 		return nil
 	default:
@@ -55,9 +47,8 @@ type Connection struct {
 
 	LifecycleState ConnectionLifecycleState `json:"lifecycleState" example:"enabled"`
 
-	HealthState         source.HealthStatus `json:"healthState" example:"healthy"`
-	LastHealthCheckTime time.Time           `json:"lastHealthCheckTime" example:"2023-05-07T00:00:00Z"`
-	HealthReason        *string             `json:"healthReason,omitempty"`
+	LastHealthCheckTime time.Time `json:"lastHealthCheckTime" example:"2023-05-07T00:00:00Z"`
+	HealthReason        *string   `json:"healthReason,omitempty"`
 
 	LastInventory        *time.Time `json:"lastInventory" example:"2023-05-07T00:00:00Z"`
 	Cost                 *float64   `json:"cost" example:"1000.00"`
