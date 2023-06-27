@@ -1108,7 +1108,7 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 			if src.LifecycleState.IsEnabled() {
 				v.EnabledConnections = utils.PAdd(v.EnabledConnections, utils.GetPointer(1))
 			}
-			if src.HealthState == source.HealthStatusUnhealthy {
+			if src.LifecycleState == ConnectionLifecycleStateUnhealthy {
 				v.UnhealthyConnections = utils.PAdd(v.UnhealthyConnections, utils.GetPointer(1))
 			}
 		}
@@ -1552,7 +1552,13 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 }
 
 func (h HttpHandler) updateConnectionHealth(connection Source, healthStatus source.HealthStatus, reason *string) (Source, error) {
-	connection.HealthState = healthStatus
+	if connection.LifecycleState != ConnectionLifecycleStateNotOnboard && connection.LifecycleState != ConnectionLifecycleStateArchived {
+		if healthStatus == source.HealthStatusUnhealthy {
+			connection.LifecycleState = ConnectionLifecycleStateUnhealthy
+		} else if healthStatus == source.HealthStatusHealthy {
+			connection.LifecycleState = ConnectionLifecycleStateOnboard
+		}
+	}
 	connection.HealthReason = reason
 	connection.LastHealthCheckTime = time.Now()
 	_, err := h.db.UpdateSource(&connection)
@@ -2161,9 +2167,9 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 			metrics.ConnectionsEnabled++
 		}
 
-		if src.HealthState == source.HealthStatusUnhealthy {
+		if src.LifecycleState == ConnectionLifecycleStateUnhealthy {
 			metrics.UnhealthyConnections++
-		} else {
+		} else if src.LifecycleState == ConnectionLifecycleStateOnboard {
 			metrics.HealthyConnections++
 		}
 	}
