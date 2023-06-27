@@ -129,10 +129,7 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				DescribeResourceJobsCount.WithLabelValues("successful").Inc()
 				return nil, nil
 			})
-			err = s.db.RemoveStackCredential(ds.SourceID)
-			if err != nil {
-				return err
-			}
+
 		} else {
 			c := CloudNativeCall{
 				dr:  dr,

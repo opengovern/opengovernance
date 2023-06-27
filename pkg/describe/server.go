@@ -1522,7 +1522,6 @@ func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []s
 		FullDiscovery:        false,
 	}
 
-	fmt.Println(dsj)
 	err = h.Scheduler.db.CreateDescribeSourceJob(&dsj)
 	if err != nil {
 		return err
