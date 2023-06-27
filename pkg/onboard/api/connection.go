@@ -16,11 +16,19 @@ const (
 	ConnectionLifecycleStateEnabled          ConnectionLifecycleState = "enabled"
 	ConnectionLifecycleStateDisabled         ConnectionLifecycleState = "disabled"
 	ConnectionLifecycleStateDeleted          ConnectionLifecycleState = "deleted"
+
+	ConnectionLifecycleStateNotOnboard ConnectionLifecycleState = "NOT_ONBOARD"
+	ConnectionLifecycleStateInProgress ConnectionLifecycleState = "IN_PROGRESS"
+	ConnectionLifecycleStateOnboard    ConnectionLifecycleState = "ONBOARD"
+	ConnectionLifecycleStateUnhealthy  ConnectionLifecycleState = "UNHEALTHY"
+	ConnectionLifecycleStateArchived   ConnectionLifecycleState = "ARCHIVED"
 )
 
 func (c ConnectionLifecycleState) Validate() error {
 	switch c {
 	case ConnectionLifecycleStateInitialDiscovery, ConnectionLifecycleStateEnabled, ConnectionLifecycleStateDisabled:
+		return nil
+	case ConnectionLifecycleStateInProgress, ConnectionLifecycleStateOnboard, ConnectionLifecycleStateUnhealthy:
 		return nil
 	default:
 		return fmt.Errorf("invalid connection lifecycle state: %s", c)
@@ -30,7 +38,7 @@ func (c ConnectionLifecycleState) Validate() error {
 type ConnectionCountRequest struct {
 	ConnectorsNames []string                  `json:"connectors"`
 	State           *ConnectionLifecycleState `json:"state"`
-	Health          *source.HealthStatus      `json:"health"`
+	Health          *source.HealthStatus      `json:"health,omitempty"`
 }
 
 type Connection struct {
@@ -43,11 +51,13 @@ type Connection struct {
 	CredentialID         string                          `json:"credentialID" example:"7r6123ac-ca1c-434f-b1a3-91w2w9d277c8"`
 	CredentialName       *string                         `json:"credentialName,omitempty"`
 	OnboardDate          time.Time                       `json:"onboardDate" example:"2023-05-07T00:00:00Z"`
-	LifecycleState       ConnectionLifecycleState        `json:"lifecycleState" example:"enabled"`
 	AssetDiscoveryMethod source.AssetDiscoveryMethodType `json:"assetDiscoveryMethod" example:"scheduled"`
-	HealthState          source.HealthStatus             `json:"healthState" example:"healthy"`
-	LastHealthCheckTime  time.Time                       `json:"lastHealthCheckTime" example:"2023-05-07T00:00:00Z"`
-	HealthReason         *string                         `json:"healthReason,omitempty"`
+
+	LifecycleState ConnectionLifecycleState `json:"lifecycleState" example:"enabled"`
+
+	HealthState         source.HealthStatus `json:"healthState" example:"healthy"`
+	LastHealthCheckTime time.Time           `json:"lastHealthCheckTime" example:"2023-05-07T00:00:00Z"`
+	HealthReason        *string             `json:"healthReason,omitempty"`
 
 	LastInventory        *time.Time `json:"lastInventory" example:"2023-05-07T00:00:00Z"`
 	Cost                 *float64   `json:"cost" example:"1000.00"`

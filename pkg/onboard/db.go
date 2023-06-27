@@ -80,7 +80,7 @@ func (db Database) ListSourcesWithFilters(
 		tx = tx.Where("id IN ?", connectionIDs)
 	}
 	if len(healthStates) > 0 {
-		tx = tx.Where("health_state IN ?", connectionIDs)
+		tx = tx.Where("health_state IN ?", healthStates)
 	}
 	if len(lifecycleState) > 0 {
 		tx = tx.Where("lifecycle_state IN ?", lifecycleState)
@@ -224,7 +224,7 @@ func (db Database) UpdateSource(s *Source) (*Source, error) {
 func (s *Source) BeforeDelete(tx *gorm.DB) error {
 	t := tx.Model(&Source{}).
 		Where("id = ?", s.ID.String()).
-		Update("lifecycle_state", ConnectionLifecycleStateDeleted)
+		Update("lifecycle_state", ConnectionLifecycleStateArchived)
 	return t.Error
 }
 
