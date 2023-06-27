@@ -1345,7 +1345,10 @@ func (db Database) GetResourceStacks(resourceID string) ([]Stack, error) {
 func (db Database) CreateStackCredential(a *StackCredential) error {
 	tx := db.orm.
 		Model(&StackCredential{}).
-		Clauses(clause.OnConflict{DoNothing: true}). // Don't update an existing source
+		Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "stack_id"}},
+			DoUpdates: clause.AssignmentColumns([]string{"secret"}),
+		}).
 		Create(a)
 	if tx.Error != nil {
 		return tx.Error

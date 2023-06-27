@@ -119,6 +119,9 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 			if err != nil {
 				return err
 			}
+			if cred.Secret == "" {
+				return errors.New(fmt.Sprintf("No secret found for %s", ds.SourceID))
+			}
 			wp.AddJob(func() (interface{}, error) {
 				err := s.enqueueCloudNativeDescribeJob(dr, ds, cred.Secret, s.WorkspaceName)
 				if err != nil {
@@ -129,10 +132,7 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				DescribeResourceJobsCount.WithLabelValues("successful").Inc()
 				return nil, nil
 			})
-			err = s.db.RemoveStackCredential(ds.SourceID)
-			if err != nil {
-				return err
-			}
+
 		} else {
 			c := CloudNativeCall{
 				dr:  dr,
