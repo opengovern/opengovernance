@@ -2333,12 +2333,17 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
-	sortBy := ctx.QueryParam("sortBy")
+	sortBy := strings.ToLower(ctx.QueryParam("sortBy"))
 	if sortBy == "" {
 		sortBy = "cost"
 	}
-	var healthStateSlice []source.HealthStatus
 
+	if sortBy != "cost" && sortBy != "growth" &&
+		sortBy != "growth_rate" && sortBy != "cost_growth" &&
+		sortBy != "cost_growth_rate" && sortBy != "onboard_date" &&
+		sortBy != "resource_count" {
+		return ctx.JSON(http.StatusBadRequest, "sortBy is not a valid value")
+	}
 	var lifecycleStateSlice []ConnectionLifecycleState
 	lifecycleState := ctx.QueryParam("lifecycleState")
 	if lifecycleState != "" {
@@ -2403,21 +2408,27 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		case "onboard_date":
 			return result.Connections[i].OnboardDate.Before(result.Connections[j].OnboardDate)
 		case "resource_count":
+			if result.Connections[i].ResourceCount == nil && result.Connections[j].ResourceCount == nil {
+				break
+			}
 			if result.Connections[i].ResourceCount == nil {
-				return true
+				return false
 			}
 			if result.Connections[j].ResourceCount == nil {
-				return false
+				return true
 			}
 			if *result.Connections[i].ResourceCount != *result.Connections[j].ResourceCount {
 				return *result.Connections[i].ResourceCount > *result.Connections[j].ResourceCount
 			}
 		case "cost":
+			if result.Connections[i].Cost == nil && result.Connections[j].Cost == nil {
+				break
+			}
 			if result.Connections[i].Cost == nil {
-				return true
+				return false
 			}
 			if result.Connections[j].Cost == nil {
-				return false
+				return true
 			}
 			if *result.Connections[i].Cost != *result.Connections[j].Cost {
 				return *result.Connections[i].Cost > *result.Connections[j].Cost
@@ -2519,7 +2530,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 				return *diffi/(*result.Connections[i].DailyCostAtStartTime) > *diffj/(*result.Connections[j].DailyCostAtStartTime)
 			}
 		}
-		return result.Connections[i].ID.String() < result.Connections[j].ID.String()
+		return result.Connections[i].ConnectionName < result.Connections[j].ConnectionName
 	})
 
 	result.Connections = utils.Paginate(pageNumber, pageSize, result.Connections)
