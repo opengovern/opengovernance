@@ -93,7 +93,14 @@ func InitializeWorker(
 
 	w.onboardClient = client.NewOnboardServiceClient(config.Onboard.BaseURL, nil)
 	w.complianceClient = client2.NewComplianceClient(config.Compliance.BaseURL)
-	w.scheduleClient = client3.NewSchedulerServiceClient(strings.ReplaceAll(config.Compliance.BaseURL, "compliance", "schedule"))
+	var schedulerBaseUrl string
+	if config.Scheduler.BaseURL == "" {
+		schedulerBaseUrl = strings.ReplaceAll(config.Compliance.BaseURL, "compliance-service", "describe-scheduler")
+		schedulerBaseUrl = strings.ReplaceAll(schedulerBaseUrl, "7251", "5251")
+	} else {
+		schedulerBaseUrl = config.Scheduler.BaseURL
+	}
+	w.scheduleClient = client3.NewSchedulerServiceClient(schedulerBaseUrl)
 	w.pusher = push.New(prometheusPushAddress, "compliance-report")
 
 	defaultAccountID := "default"
