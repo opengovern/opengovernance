@@ -2350,7 +2350,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		lifecycleStateSlice = append(lifecycleStateSlice, ConnectionLifecycleState(lifecycleState))
 	}
 
-	connections, err := h.db.ListSourcesWithFilters(connectors, connectionIDs, healthStateSlice, lifecycleStateSlice)
+	connections, err := h.db.ListSourcesWithFilters(connectors, connectionIDs, lifecycleStateSlice)
 	if err != nil {
 		return err
 	}
