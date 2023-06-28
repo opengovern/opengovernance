@@ -1,0 +1,17 @@
+auth-service
+checkup-worker
+cli
+cloud-inventory
+compliance-report-worker
+compliance-service
+describe-scheduler
+hopper
+insight-worker
+inventory-service
+metadata-service
+migrator-worker
+onboard-service
+reporter
+summarizer-worker
+swagger-ui
+workspace-service
