@@ -1353,11 +1353,9 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	stackId, err := uuid.Parse(stackRecord.StackID[6:])
-	if err != nil {
-		return err
-	}
-	src, err := h.DB.GetSourceByID(stackId.String())
+	stackId := stackRecord.StackID[6:]
+
+	src, err := h.DB.GetSourceByID(stackId)
 	if err != nil {
 		return err
 	}
