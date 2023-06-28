@@ -68,7 +68,6 @@ func (db Database) ListSources() ([]Source, error) {
 func (db Database) ListSourcesWithFilters(
 	connectorTypes []source.Type,
 	connectionIDs []string,
-	healthStates []source.HealthStatus,
 	lifecycleState []ConnectionLifecycleState) ([]Source, error) {
 
 	var s []Source
