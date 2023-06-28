@@ -949,16 +949,37 @@ func (s *Server) GetCurrentWorkspace(c echo.Context) error {
 		fmt.Printf("failed to load version due to %v\n", err)
 	}
 
+	var organization *api.OrganizationResponse
+	if workspace.OrganizationID != nil {
+		org, err := s.pipedriveClient.GetPipedriveOrganization(c.Request().Context(), *workspace.OrganizationID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		organization = &api.OrganizationResponse{
+			ID:            *workspace.OrganizationID,
+			CompanyName:   org.Name,
+			Url:           org.URL,
+			AddressLine1:  org.Address,
+			City:          org.AddressLocality,
+			State:         org.AddressAdminAreaLevel1,
+			Country:       org.AddressCountry,
+			ContactPhone:  pipedrive.GetPrimaryValue(org.Contact.Phones),
+			ContactEmail:  pipedrive.GetPrimaryValue(org.Contact.Emails),
+			ContactPerson: org.Contact.Name,
+		}
+	}
+
 	return c.JSON(http.StatusOK, api.WorkspaceResponse{
-		ID:          workspace.ID,
-		OwnerId:     workspace.OwnerId,
-		URI:         workspace.URI,
-		Name:        workspace.Name,
-		Tier:        string(workspace.Tier),
-		Version:     version,
-		Status:      workspace.Status,
-		Description: workspace.Description,
-		CreatedAt:   workspace.CreatedAt,
+		ID:           workspace.ID,
+		OwnerId:      workspace.OwnerId,
+		URI:          workspace.URI,
+		Name:         workspace.Name,
+		Tier:         string(workspace.Tier),
+		Version:      version,
+		Status:       workspace.Status,
+		Description:  workspace.Description,
+		CreatedAt:    workspace.CreatedAt,
+		Organization: organization,
 	})
 }
 
