@@ -30,7 +30,6 @@ func (c ConnectionLifecycleState) Validate() error {
 type ConnectionCountRequest struct {
 	ConnectorsNames []string                  `json:"connectors"`
 	State           *ConnectionLifecycleState `json:"state"`
-	Health          *source.HealthStatus      `json:"health,omitempty"`
 }
 
 type Connection struct {

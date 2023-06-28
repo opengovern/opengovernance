@@ -18,6 +18,8 @@ var (
 	S3AccessKey    = os.Getenv("S3_ACCESS_KEY")
 	S3AccessSecret = os.Getenv("S3_ACCESS_SECRET")
 	S3Region       = os.Getenv("S3_REGION")
+
+	scheduleBaseUrl = os.Getenv("SCHEDULER_BASEURL")
 )
 
 const (
@@ -31,7 +33,6 @@ type WorkerConfig struct {
 	Kafka                 config.Kafka
 	Compliance            config.KeibiService
 	Onboard               config.KeibiService
-	Scheduler             config.KeibiService
 	PrometheusPushAddress string
 }
 
@@ -61,6 +62,7 @@ func WorkerCommand() *cobra.Command {
 			w, err := InitializeWorker(
 				id,
 				cnf,
+				scheduleBaseUrl,
 				JobsQueueName,
 				ResultsQueueName,
 				logger,

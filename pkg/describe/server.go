@@ -1353,13 +1353,13 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	var connectionIDs []string
-	for _, acc := range []string(stackRecord.AccountIDs) {
-		source, err := h.Scheduler.onboardClient.GetSourcesByAccount(httpclient.FromEchoContext(ctx), acc)
-		if err != nil {
-			return err
-		}
-		connectionIDs = append(connectionIDs, source.ID.String())
+	stackId, err := uuid.Parse(stackRecord.StackID[6:])
+	if err != nil {
+		return err
+	}
+	src, err := h.DB.GetSourceByID(stackId.String())
+	if err != nil {
+		return err
 	}
 
 	var insightJobs []api.InsightJob
@@ -1369,45 +1369,40 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
-		for _, srcID := range connectionIDs {
-			src, err := h.DB.GetSourceByID(srcID)
-			if err != nil {
-				return err
-			}
-			job := newInsightJob(*insight, string(src.Type), srcID, src.AccountID, "")
-			err = h.Scheduler.db.AddInsightJob(&job)
-			if err != nil {
-				return err
-			}
 
-			err = enqueueInsightJobs(h.Scheduler.insightJobQueue, job, *insight)
-			if err != nil {
-				job.Status = insightapi.InsightJobFailed
-				job.FailureMessage = "Failed to enqueue InsightJob"
-				h.Scheduler.db.UpdateInsightJobStatus(job)
-			}
-			evaluation := StackEvaluation{
-				EvaluatorID: strconv.FormatUint(uint64(insightId), 10),
-				Type:        "INSIGHT",
-				StackID:     stackRecord.StackID,
-				JobID:       job.ID,
-			}
-			err = h.DB.AddEvaluation(&evaluation)
-			if err != nil {
-				return err
-			}
-			insightJobs = append(insightJobs, api.InsightJob{
-				ID:             job.ID,
-				InsightID:      job.InsightID,
-				SourceID:       job.SourceID,
-				AccountID:      job.AccountID,
-				SourceType:     job.SourceType,
-				Status:         job.Status,
-				FailureMessage: job.FailureMessage,
-				CreatedAt:      job.CreatedAt,
-				UpdatedAt:      job.UpdatedAt,
-			})
+		job := newInsightJob(*insight, string(src.Type), src.ID.String(), src.AccountID, "")
+		err = h.Scheduler.db.AddInsightJob(&job)
+		if err != nil {
+			return err
 		}
+
+		err = enqueueInsightJobs(h.Scheduler.insightJobQueue, job, *insight)
+		if err != nil {
+			job.Status = insightapi.InsightJobFailed
+			job.FailureMessage = "Failed to enqueue InsightJob"
+			h.Scheduler.db.UpdateInsightJobStatus(job)
+		}
+		evaluation := StackEvaluation{
+			EvaluatorID: strconv.FormatUint(uint64(insightId), 10),
+			Type:        "INSIGHT",
+			StackID:     stackRecord.StackID,
+			JobID:       job.ID,
+		}
+		err = h.DB.AddEvaluation(&evaluation)
+		if err != nil {
+			return err
+		}
+		insightJobs = append(insightJobs, api.InsightJob{
+			ID:             job.ID,
+			InsightID:      job.InsightID,
+			SourceID:       job.SourceID,
+			AccountID:      job.AccountID,
+			SourceType:     job.SourceType,
+			Status:         job.Status,
+			FailureMessage: job.FailureMessage,
+			CreatedAt:      job.CreatedAt,
+			UpdatedAt:      job.UpdatedAt,
+		})
 	}
 	return ctx.JSON(http.StatusOK, insightJobs)
 }

@@ -154,7 +154,6 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		}
 	}
 
-	//defaultAccountID := "default"
 	esk, err := keibi.NewClient(keibi.ClientConfig{
 		Addresses: []string{elasticSearchConfig.Address},
 		Username:  &elasticSearchConfig.Username,

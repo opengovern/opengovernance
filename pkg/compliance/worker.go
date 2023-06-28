@@ -38,6 +38,7 @@ type Worker struct {
 func InitializeWorker(
 	id string,
 	config WorkerConfig,
+	scheduleBaseUrl string,
 	complianceReportJobQueue, complianceReportJobResultQueue string,
 	logger *zap.Logger,
 	prometheusPushAddress string,
@@ -93,7 +94,7 @@ func InitializeWorker(
 
 	w.onboardClient = client.NewOnboardServiceClient(config.Onboard.BaseURL, nil)
 	w.complianceClient = client2.NewComplianceClient(config.Compliance.BaseURL)
-	w.scheduleClient = client3.NewSchedulerServiceClient(config.Scheduler.BaseURL)
+	w.scheduleClient = client3.NewSchedulerServiceClient(scheduleBaseUrl)
 	w.pusher = push.New(prometheusPushAddress, "compliance-report")
 
 	defaultAccountID := "default"

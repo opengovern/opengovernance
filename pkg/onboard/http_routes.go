@@ -2337,15 +2337,13 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	if sortBy == "" {
 		sortBy = "cost"
 	}
+
 	if sortBy != "cost" && sortBy != "growth" &&
 		sortBy != "growth_rate" && sortBy != "cost_growth" &&
 		sortBy != "cost_growth_rate" && sortBy != "onboard_date" &&
 		sortBy != "resource_count" {
 		return ctx.JSON(http.StatusBadRequest, "sortBy is not a valid value")
 	}
-
-	var healthStateSlice []source.HealthStatus
-
 	var lifecycleStateSlice []ConnectionLifecycleState
 	lifecycleState := ctx.QueryParam("lifecycleState")
 	if lifecycleState != "" {
