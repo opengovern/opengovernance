@@ -60,7 +60,6 @@ func WorkerCommand() *cobra.Command {
 			w, err := InitializeWorker(
 				id,
 				cnf,
-				os.Getenv("SCHEDULER_BASEURL"),
 				JobsQueueName,
 				ResultsQueueName,
 				logger,
