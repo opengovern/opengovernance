@@ -1555,6 +1555,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 //	@Summary		Get service metrics
 //	@Description	This API allows users to retrieve a service with metrics.
 //	@Tags			inventory
+//	@Security		BearerToken
 //	@Accept			json
 //	@Produce		json
 //	@Param			serviceName		path		string		true	"ServiceName"

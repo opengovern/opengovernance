@@ -6274,6 +6274,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Service'
+      security:
+      - BearerToken: []
       summary: Get service metrics
       tags:
       - inventory

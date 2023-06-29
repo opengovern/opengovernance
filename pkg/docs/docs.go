@@ -4197,6 +4197,11 @@ const docTemplate = `{
         },
         "/inventory/api/v2/services/metric/{serviceName}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "This API allows users to retrieve a service with metrics.",
                 "consumes": [
                     "application/json"
