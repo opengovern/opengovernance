@@ -1391,7 +1391,7 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 	var result []api.InsightGroup
 	for _, insightGroupRow := range insightGroupRows {
 		apiRes := insightGroupRow.ToApi()
-		apiRes.Insights = make(map[uint]api.Insight)
+		apiRes.Insights = make([]api.Insight, 0, len(insightGroupRow.Insights))
 		for _, insightRow := range insightGroupRow.Insights {
 			insightApiRes := insightRow.ToApi()
 			if insightResults, ok := insightIdToResults[insightRow.ID]; ok {
@@ -1416,7 +1416,7 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 
 			apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, insightApiRes.TotalResultValue)
 			apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, insightApiRes.OldTotalResultValue)
-			apiRes.Insights[insightRow.ID] = insightApiRes
+			apiRes.Insights = append(apiRes.Insights, insightApiRes)
 		}
 		result = append(result, apiRes)
 	}
@@ -1542,7 +1542,7 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 
 		apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, insightApiRes.TotalResultValue)
 		apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, insightApiRes.OldTotalResultValue)
-		apiRes.Insights[insightRow.ID] = insightApiRes
+		apiRes.Insights = append(apiRes.Insights, insightApiRes)
 	}
 
 	return ctx.JSON(200, apiRes)
