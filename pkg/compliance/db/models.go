@@ -304,7 +304,7 @@ func (i InsightGroup) ToApi() api.InsightGroup {
 	}
 	connectorsMap := make(map[source.Type]bool)
 	for _, insight := range i.Insights {
-		ia.Insights[insight.ID] = insight.ToApi()
+		ia.Insights = append(ia.Insights, insight.ToApi())
 		connectorsMap[insight.Connector] = true
 	}
 	ia.Connectors = make([]source.Type, 0, len(connectorsMap))
