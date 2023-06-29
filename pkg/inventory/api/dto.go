@@ -382,18 +382,6 @@ type CategorizedMetricsResponse struct {
 	Category map[string][]ResourceTypeResponse `json:"category"`
 }
 
-type LocationResponse struct {
-	Location                   string   `json:"location"`                              // Region
-	ResourceCount              *int     `json:"resourceCount,omitempty" example:"100"` // Number of resources in the region
-	ResourceOldCount           *int     `json:"resourceOldCount,omitempty" example:"50"`
-	ResourceCountChangePercent *float64 `json:"resourceCountChangePercent,omitempty" example:"100"` // Change in number of resources in the region
-}
-
-type RegionsByResourceCountResponse struct {
-	TotalCount int                `json:"totalCount"`
-	Regions    []LocationResponse `json:"regions"`
-}
-
 type MetricsResponse struct {
 	MetricsName      string `json:"metricsName"`
 	Value            int    `json:"value"`

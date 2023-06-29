@@ -2373,6 +2373,7 @@ const docTemplate = `{
                     "resource"
                 ],
                 "summary": "Count resources",
+                "deprecated": true,
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2506,10 +2507,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse"
-                            }
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse"
                         }
                     }
                 }
@@ -3610,6 +3608,80 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/resources/regions/composition": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns list of top regions per given connector type and connection IDs",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resource"
+                ],
+                "summary": "List resources regions composition",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "How many top values to return default is 5",
+                        "name": "top",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "start time in unix seconds - default is now",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "end time in unix seconds - default is one week ago",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListRegionsResourceCountCompositionResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/resources/regions/summary": {
             "get": {
                 "security": [
@@ -3629,13 +3701,6 @@ const docTemplate = `{
                 ],
                 "summary": "List Regions Summary",
                 "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "count",
-                        "name": "count",
-                        "in": "query",
-                        "required": true
-                    },
                     {
                         "type": "array",
                         "items": {
@@ -3677,11 +3742,106 @@ const docTemplate = `{
                         "enum": [
                             "resource_count",
                             "resource_growth",
-                            "old_resource_count"
+                            "resource_growth_rate"
                         ],
                         "type": "string",
                         "description": "column to sort by - default is resource_count",
                         "name": "sortBy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size - default is 20",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number - default is 1",
+                        "name": "pageNumber",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/resources/regions/trend": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns list of regions resources summary",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resource"
+                ],
+                "summary": "Returns trend of resources count in given regions",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "start time in unix seconds - default is now",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "end time in unix seconds - default is one week ago",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Regions to filter by",
+                        "name": "region",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of datapoints to return",
+                        "name": "datapointCount",
                         "in": "query"
                     }
                 ],
@@ -3691,7 +3851,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTrendDatapoint"
                             }
                         }
                     }
@@ -10308,6 +10468,26 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListRegionsResourceCountCompositionResponse": {
+            "type": "object",
+            "properties": {
+                "others": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair"
+                },
+                "top_values": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "total_value_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeCompositionResponse": {
             "type": "object",
             "properties": {
@@ -10439,11 +10619,6 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 100
                 },
-                "resourceCountChangePercent": {
-                    "description": "Change in number of resources in the region",
-                    "type": "number",
-                    "example": 100
-                },
                 "resourceOldCount": {
                     "type": "integer",
                     "example": 50
@@ -10457,6 +10632,20 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "size": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse": {
+            "type": "object",
+            "properties": {
+                "regions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse"
+                    }
+                },
+                "totalCount": {
                     "type": "integer"
                 }
             }

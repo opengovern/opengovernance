@@ -679,7 +679,7 @@ func FetchProviderTrendSummaryPage(client keibi.Client, connectors []source.Type
 	return hits, nil
 }
 
-type ProviderResourceTypeTrendSummaryQueryResponse struct {
+type ConnectorResourceTypeTrendSummaryQueryResponse struct {
 	Aggregations struct {
 		ResourceTypeGroup struct {
 			Buckets []struct {
@@ -702,7 +702,7 @@ type ProviderResourceTypeTrendSummaryQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchProviderResourceTypeTrendSummaryPage(client keibi.Client, connectors []source.Type, resourceTypes []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
+func FetchConnectorResourceTypeTrendSummaryPage(client keibi.Client, connectors []source.Type, resourceTypes []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -784,7 +784,7 @@ func FetchProviderResourceTypeTrendSummaryPage(client keibi.Client, connectors [
 
 	query := string(b)
 	fmt.Println("query=", query, "index=", summarizer.ProviderSummaryIndex)
-	var response ProviderResourceTypeTrendSummaryQueryResponse
+	var response ConnectorResourceTypeTrendSummaryQueryResponse
 	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
@@ -1066,5 +1066,123 @@ func FetchConnectorResourceTypeCountAtTime(client keibi.Client, connectors []sou
 			result[hit.Source.ResourceType] += hit.Source.ResourceCount
 		}
 	}
+	return result, nil
+}
+
+type ConnectionResourceTypeRegionsTrendSummaryQueryResponse struct {
+	Aggregations struct {
+		ConnectionIDGroup struct {
+			Buckets []struct {
+				Key                    string `json:"key"`
+				SummarizedAtRangeGroup struct {
+					Buckets []struct {
+						From   float64 `json:"from"`
+						To     float64 `json:"to"`
+						Latest struct {
+							Hits struct {
+								Hits []struct {
+									Source summarizer.ConnectionLocationSummary `json:"_source"`
+								} `json:"hits"`
+							} `json:"hits"`
+						} `json:"latest"`
+					} `json:"buckets"`
+				} `json:"summarized_at_range_group"`
+			} `json:"buckets"`
+		} `json:"connection_id_group"`
+	} `json:"aggregations"`
+}
+
+func ConnectionResourceTypeRegionsTrendSummaryPage(client keibi.Client, connectors []source.Type, connectionIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]map[string]int, error) {
+	res := make(map[string]any)
+	var filters []any
+
+	filters = append(filters, map[string]any{
+		"terms": map[string][]string{"report_type": {string(summarizer.LocationConnectionSummaryHistory)}},
+	})
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"summarized_at": map[string]string{
+				"gte": strconv.FormatInt(startTime.Unix(), 10),
+				"lte": strconv.FormatInt(endTime.Unix(), 10),
+			},
+		},
+	})
+	filters = append(filters, map[string]any{
+		"terms": map[string][]string{"source_id": connectionIDs},
+	})
+	if len(connectors) > 0 {
+		connectorStrs := make([]string, 0, len(connectors))
+		for _, connector := range connectors {
+			connectorStrs = append(connectorStrs, connector.String())
+		}
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"source_type": connectorStrs},
+		})
+	}
+
+	res["size"] = 0
+	startTimeUnix := startTime.Unix()
+	endTimeUnix := endTime.Unix()
+	step := int(math.Ceil(float64(endTimeUnix-startTimeUnix) / float64(datapointCount)))
+	ranges := make([]map[string]any, 0, datapointCount)
+	for i := 0; i < datapointCount; i++ {
+		ranges = append(ranges, map[string]any{
+			"from": float64(startTimeUnix + int64(step*i)),
+			"to":   float64(startTimeUnix + int64(step*(i+1))),
+		})
+	}
+	res["aggs"] = map[string]any{
+		"connection_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "source_id",
+				"size":  size,
+			},
+			"aggs": map[string]any{
+				"summarized_at_range_group": map[string]any{
+					"range": map[string]any{
+						"field":  "summarized_at",
+						"ranges": ranges,
+					},
+					"aggs": map[string]any{
+						"latest": map[string]any{
+							"top_hits": map[string]any{
+								"size": 1,
+								"sort": map[string]string{
+									"summarized_at": "desc",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("query=", string(b), "index=", summarizer.ConnectionSummaryIndex)
+	var response ConnectionResourceTypeRegionsTrendSummaryQueryResponse
+	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, string(b), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[int]map[string]int)
+	for _, connectionIDBucket := range response.Aggregations.ConnectionIDGroup.Buckets {
+		for _, summarizedAtRangeBucket := range connectionIDBucket.SummarizedAtRangeGroup.Buckets {
+			rangeKey := int((summarizedAtRangeBucket.From + summarizedAtRangeBucket.To) / 2)
+			if _, ok := result[rangeKey]; !ok {
+				result[rangeKey] = make(map[string]int)
+			}
+			for _, hit := range summarizedAtRangeBucket.Latest.Hits.Hits {
+				for location, val := range hit.Source.LocationDistribution {
+					result[rangeKey][location] += val
+				}
+			}
+		}
+	}
+
 	return result, nil
 }

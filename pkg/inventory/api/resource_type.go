@@ -52,3 +52,21 @@ type ResourceTypeTrendDatapoint struct {
 	Count int       `json:"count"`
 	Date  time.Time `json:"date"`
 }
+
+type LocationResponse struct {
+	Location         string `json:"location"`                              // Region
+	ResourceCount    *int   `json:"resourceCount,omitempty" example:"100"` // Number of resources in the region
+	ResourceOldCount *int   `json:"resourceOldCount,omitempty" example:"50"`
+}
+
+type RegionsResourceCountResponse struct {
+	TotalCount int                `json:"totalCount"`
+	Regions    []LocationResponse `json:"regions"`
+}
+
+type ListRegionsResourceCountCompositionResponse struct {
+	TotalCount      int                  `json:"total_count"`
+	TotalValueCount int                  `json:"total_value_count"`
+	TopValues       map[string]CountPair `json:"top_values"`
+	Others          CountPair            `json:"others"`
+}
