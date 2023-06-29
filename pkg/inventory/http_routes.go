@@ -1988,18 +1988,6 @@ func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, apiDatapoints)
 }
 
-// ListConnectionsData godoc
-//
-//	@Summary	Returns cost and resource count data of the specified accounts at the specified time - internal use api,  for full result use onboard api
-//	@Security	BearerToken
-//	@Tags		connection
-//	@Accept		json
-//	@Produce	json
-//	@Param		connectionId	query		[]string	true	"Connection IDs"
-//	@Param		startTime		query		int			false	"start time in unix seconds"
-//	@Param		endTime			query		int			false	"end time in unix seconds"
-//	@Success	200				{object}	map[string]api.ConnectionData
-//	@Router		/inventory/api/v2/connections/data [get]
 func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	var err error
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
@@ -2104,18 +2092,6 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-// GetConnectionData godoc
-//
-//	@Summary	Returns cost and resource count data of the specified account at the specified time - internal use api,  for full result use onboard api
-//	@Security	BearerToken
-//	@Tags		connection
-//	@Accept		json
-//	@Produce	json
-//	@Param		startTime		query		int		false	"start time in unix seconds"
-//	@Param		endTime			query		int		false	"end time in unix seconds"
-//	@Param		connectionId	path		string	true	"ConnectionID"
-//	@Success	200				{object}	api.ConnectionData
-//	@Router		/inventory/api/v2/connections/data/{connectionId} [get]
 func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 	connectionId := ctx.Param("connectionId")
 	endTimeStr := ctx.QueryParam("endTime")
@@ -3223,19 +3199,6 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 	}
 }
 
-// ListInsightResults godoc
-//
-//	@Summary		List insight results
-//	@Description	List all insight results for the given insightIds - this mostly for internal usage, use compliance api for full api
-//	@Security		BearerToken
-//	@Tags			insights
-//	@Produce		json
-//	@Param			connector		query		[]source.Type	false	"filter insights by connector"
-//	@Param			connectionId	query		[]string		false	"filter the result by source id"
-//	@Param			insightId		query		[]string		true	"filter the result by insight id"
-//	@Param			time			query		int				false	"unix seconds for the time to get the insight result for"
-//	@Success		200				{object}	map[uint][]insight.InsightResource
-//	@Router			/inventory/api/v2/insights [get]
 func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 	var err error
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
@@ -3275,18 +3238,6 @@ func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, insightValues)
 }
 
-// GetInsightResult godoc
-//
-//	@Summary		Get insight result by id
-//	@Description	Get insight results for the given insightIds - this mostly for internal usage, use compliance api for full api
-//	@Security		BearerToken
-//	@Tags			insights
-//	@Produce		json
-//	@Param			insightId		path		string		true	"InsightID"
-//	@Param			connectionId	query		[]string	false	"filter the result by source id"
-//	@Param			time			query		int			false	"unix seconds for the time to get the insight result for"
-//	@Success		200				{object}	[]insight.InsightResource
-//	@Router			/inventory/api/v2/insights/{insightId} [get]
 func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
 	if err != nil {
@@ -3322,16 +3273,6 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 	}
 }
 
-// GetInsightResultByJobId godoc
-//
-//	@Summary		Get insight result by Job ID
-//	@Description	Get insight result for the given JobId - this mostly for internal usage, use compliance api for full api
-//	@Security		BearerToken
-//	@Tags			insights
-//	@Produce		json
-//	@Param			jobId	path		string	true	"JobId"
-//	@Success		200		{object}	insight.InsightResource
-//	@Router			/inventory/api/v2/insights/job/{jobId} [get]
 func (h *HttpHandler) GetInsightResultByJobId(ctx echo.Context) error {
 	jobIdStr := ctx.Param("jobId")
 	jobId, err := strconv.ParseUint(jobIdStr, 10, 64)
@@ -3358,19 +3299,6 @@ func (h *HttpHandler) GetInsightResultByJobId(ctx echo.Context) error {
 	return echo.NewHTTPError(http.StatusOK, *insightResult)
 }
 
-// GetInsightTrendResults godoc
-//
-//	@Summary		Get insight trend data
-//	@Description	Get an insight trend data by id and time window - this mostly for internal usage, use compliance api for full api
-//	@Security		BearerToken
-//	@Tags			insights
-//	@Produce		json
-//	@Param			insightId		path		string		true	"InsightID"
-//	@Param			connectionId	query		[]string	false	"filter the result by source id"
-//	@Param			startTime		query		int			false	"unix seconds for the start of the time window to get the insight trend for"
-//	@Param			endTime			query		int			false	"unix seconds for the end of the time window to get the insight trend for"
-//	@Success		200				{object}	map[int][]insight.InsightResource
-//	@Router			/inventory/api/v2/insights/{insightId}/trend [get]
 func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
 	if err != nil {

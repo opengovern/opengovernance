@@ -54,7 +54,7 @@ type InsightGroup struct {
 	LogoURL     *string             `json:"logoURL" example:"https://kaytu.io/logo.png"`
 	Tags        map[string][]string `json:"tags"`
 
-	Insights map[uint]Insight `json:"insights"`
+	Insights []Insight `json:"insights"`
 
 	TotalResultValue    *int64 `json:"totalResultValue,omitempty" example:"10"`
 	OldTotalResultValue *int64 `json:"oldTotalResultValue,omitempty" example:"0"`
