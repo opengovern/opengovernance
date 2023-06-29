@@ -3228,7 +3228,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, c
 //	@Summary		List insight results
 //	@Description	List all insight results for the given insightIds - this mostly for internal usage, use compliance api for full api
 //	@Security		BearerToken
-//	@Tags			insight
+//	@Tags			insights
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"filter insights by connector"
 //	@Param			connectionId	query		[]string		false	"filter the result by source id"
@@ -3280,7 +3280,7 @@ func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 //	@Summary		Get insight result by id
 //	@Description	Get insight results for the given insightIds - this mostly for internal usage, use compliance api for full api
 //	@Security		BearerToken
-//	@Tags			insight
+//	@Tags			insights
 //	@Produce		json
 //	@Param			insightId		path		string		true	"InsightID"
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
@@ -3327,7 +3327,7 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 //	@Summary		Get insight result by Job ID
 //	@Description	Get insight result for the given JobId - this mostly for internal usage, use compliance api for full api
 //	@Security		BearerToken
-//	@Tags			insight
+//	@Tags			insights
 //	@Produce		json
 //	@Param			jobId	path		string	true	"JobId"
 //	@Success		200		{object}	insight.InsightResource
@@ -3363,7 +3363,7 @@ func (h *HttpHandler) GetInsightResultByJobId(ctx echo.Context) error {
 //	@Summary		Get insight trend data
 //	@Description	Get an insight trend data by id and time window - this mostly for internal usage, use compliance api for full api
 //	@Security		BearerToken
-//	@Tags			insight
+//	@Tags			insights
 //	@Produce		json
 //	@Param			insightId		path		string		true	"InsightID"
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"

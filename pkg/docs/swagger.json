@@ -2926,7 +2926,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "insight"
+                    "insights"
                 ],
                 "summary": "List insight results",
                 "parameters": [
@@ -3001,7 +3001,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "insight"
+                    "insights"
                 ],
                 "summary": "Get insight result by Job ID",
                 "parameters": [
@@ -3035,7 +3035,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "insight"
+                    "insights"
                 ],
                 "summary": "Get insight result by id",
                 "parameters": [
@@ -3088,7 +3088,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "insight"
+                    "insights"
                 ],
                 "summary": "Get insight trend data",
                 "parameters": [

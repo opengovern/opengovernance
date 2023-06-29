@@ -2932,7 +2932,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "insight"
+                    "insights"
                 ],
                 "summary": "List insight results",
                 "parameters": [
@@ -3007,7 +3007,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "insight"
+                    "insights"
                 ],
                 "summary": "Get insight result by Job ID",
                 "parameters": [
@@ -3041,7 +3041,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "insight"
+                    "insights"
                 ],
                 "summary": "Get insight result by id",
                 "parameters": [
@@ -3094,7 +3094,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "insight"
+                    "insights"
                 ],
                 "summary": "Get insight trend data",
                 "parameters": [

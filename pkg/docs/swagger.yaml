@@ -5432,7 +5432,7 @@ paths:
       - BearerToken: []
       summary: List insight results
       tags:
-      - insight
+      - insights
   /inventory/api/v2/insights/{insightId}:
     get:
       description: Get insight results for the given insightIds - this mostly for
@@ -5467,7 +5467,7 @@ paths:
       - BearerToken: []
       summary: Get insight result by id
       tags:
-      - insight
+      - insights
   /inventory/api/v2/insights/{insightId}/trend:
     get:
       description: Get an insight trend data by id and time window - this mostly for
@@ -5510,7 +5510,7 @@ paths:
       - BearerToken: []
       summary: Get insight trend data
       tags:
-      - insight
+      - insights
   /inventory/api/v2/insights/job/{jobId}:
     get:
       description: Get insight result for the given JobId - this mostly for internal
@@ -5532,7 +5532,7 @@ paths:
       - BearerToken: []
       summary: Get insight result by Job ID
       tags:
-      - insight
+      - insights
   /inventory/api/v2/metadata/resourcetype:
     get:
       description: |-
