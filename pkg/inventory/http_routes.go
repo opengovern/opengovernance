@@ -971,7 +971,7 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
 //	@Param			startTime		query		int				false	"start time in unix seconds - default is now"
 //	@Param			endTime			query		int				false	"end time in unix seconds - default is one week ago"
-//	@Param			sortBy			query		string			false	"column to sort by - default is resource_count"	Enums(resource_count, resource_growth, resource_growth_rate)
+//	@Param			sortBy			query		string			false	"column to sort by - default is resource_count"	Enums(resource_count, growth, growth_rate)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
 //	@Success		200				{object}	api.RegionsResourceCountResponse

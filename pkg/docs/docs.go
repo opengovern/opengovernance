@@ -3741,8 +3741,8 @@ const docTemplate = `{
                     {
                         "enum": [
                             "resource_count",
-                            "resource_growth",
-                            "resource_growth_rate"
+                            "growth",
+                            "growth_rate"
                         ],
                         "type": "string",
                         "description": "column to sort by - default is resource_count",
@@ -12161,6 +12161,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

@@ -5932,8 +5932,8 @@ paths:
       - description: column to sort by - default is resource_count
         enum:
         - resource_count
-        - resource_growth
-        - resource_growth_rate
+        - growth
+        - growth_rate
         in: query
         name: sortBy
         type: string
