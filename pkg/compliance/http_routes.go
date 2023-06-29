@@ -1487,6 +1487,7 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 	}
 
 	apiRes := insightGroupRow.ToApi()
+	apiRes.Insights = make([]api.Insight, 0, len(insightGroupRow.Insights))
 	for _, insightRow := range insightGroupRow.Insights {
 		insightApiRes := insightRow.ToApi()
 		if insightResults, ok := insightResultsMap[insightRow.ID]; ok {
