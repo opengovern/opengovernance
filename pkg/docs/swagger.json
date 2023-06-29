@@ -1023,6 +1023,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Status",
                         "name": "status",
                         "in": "query",
@@ -1387,6 +1388,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -1401,6 +1403,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter insights by connector",
                         "name": "connector",
                         "in": "query"
@@ -1410,6 +1413,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1464,6 +1468,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -1478,6 +1483,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter insights by connector",
                         "name": "connector",
                         "in": "query"
@@ -1487,6 +1493,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1548,6 +1555,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1603,6 +1611,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1664,6 +1673,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1719,6 +1729,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -1781,6 +1792,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter by connector",
                         "name": "connector",
                         "in": "query"
@@ -2444,6 +2456,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2453,6 +2466,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2530,6 +2544,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2539,6 +2554,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2580,6 +2596,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs",
                         "name": "connectionId",
                         "in": "query",
@@ -2688,6 +2705,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2697,6 +2715,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2759,6 +2778,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2768,6 +2788,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2848,6 +2869,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -2857,6 +2879,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -2919,6 +2942,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter insights by connector",
                         "name": "connector",
                         "in": "query"
@@ -2928,6 +2952,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -2937,6 +2962,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by insight id",
                         "name": "insightId",
                         "in": "query",
@@ -3027,6 +3053,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -3079,6 +3106,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
                         "in": "query"
@@ -3138,6 +3166,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Filter by Connector",
                         "name": "connector",
                         "in": "query",
@@ -3148,6 +3177,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Filter by service name",
                         "name": "service",
                         "in": "query"
@@ -3157,6 +3187,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3244,6 +3275,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector",
                         "name": "connector",
                         "in": "query"
@@ -3253,6 +3285,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3357,6 +3390,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector types to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3366,6 +3400,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3417,6 +3452,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3426,6 +3462,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Service names to filter by",
                         "name": "servicename",
                         "in": "query"
@@ -3440,6 +3477,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3449,6 +3487,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3530,6 +3569,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3564,6 +3604,94 @@
                 }
             }
         },
+        "/inventory/api/v2/resources/regions/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns list of regions resources summary",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resource"
+                ],
+                "summary": "List Regions Summary",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "count",
+                        "name": "count",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "start time in unix seconds - default is now",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "end time in unix seconds - default is one week ago",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "resource_count",
+                            "resource_growth",
+                            "old_resource_count"
+                        ],
+                        "type": "string",
+                        "description": "column to sort by - default is resource_count",
+                        "name": "sortBy",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/resources/tag": {
             "get": {
                 "security": [
@@ -3588,6 +3716,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3597,6 +3726,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3654,6 +3784,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3663,6 +3794,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3724,6 +3856,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3733,6 +3866,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Service names to filter by",
                         "name": "servicename",
                         "in": "query"
@@ -3747,6 +3881,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3756,6 +3891,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3816,6 +3952,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -3830,6 +3967,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector type to filter by",
                         "name": "connector",
                         "in": "query"
@@ -3839,6 +3977,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3892,6 +4031,11 @@
         },
         "/inventory/api/v2/services/metric/{serviceName}": {
             "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
                 "description": "This API allows users to retrieve a service with metrics.",
                 "consumes": [
                     "application/json"
@@ -3916,6 +4060,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
@@ -3968,6 +4113,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter: Connection ID",
                         "name": "connectionId",
                         "in": "query"
@@ -3977,6 +4123,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter: Connector",
                         "name": "connector",
                         "in": "query"
@@ -3986,6 +4133,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter: tag for the services",
                         "name": "tag",
                         "in": "query"
@@ -4058,6 +4206,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter: connectorId",
                         "name": "connectorId",
                         "in": "query"
@@ -4067,6 +4216,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter: connector",
                         "name": "connector",
                         "in": "query"
@@ -4320,6 +4470,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connector",
                         "name": "connector",
                         "in": "query",
@@ -4330,18 +4481,9 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Connection IDs",
                         "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "healthy",
-                            "unhealthy"
-                        ],
-                        "type": "string",
-                        "description": "Source Healthstate",
-                        "name": "healthState",
                         "in": "query"
                     },
                     {
@@ -5228,6 +5370,7 @@
                             ],
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "filter by source type",
                         "name": "connector",
                         "in": "query"
@@ -6039,6 +6182,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
                         "in": "query"
@@ -6048,6 +6192,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Account IDs to filter by",
                         "name": "accountIds",
                         "in": "query"
@@ -6144,6 +6289,7 @@
                         "items": {
                             "type": "string"
                         },
+                        "collectionFormat": "csv",
                         "description": "Additional Resources",
                         "name": "resources",
                         "in": "formData"
@@ -9350,6 +9496,10 @@
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.Source": {
             "type": "object",
             "properties": {
+                "accountId": {
+                    "type": "string",
+                    "example": "123456789012"
+                },
                 "id": {
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
@@ -10280,11 +10430,17 @@
                 },
                 "resourceCount": {
                     "description": "Number of resources in the region",
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 100
                 },
                 "resourceCountChangePercent": {
                     "description": "Change in number of resources in the region",
-                    "type": "number"
+                    "type": "number",
+                    "example": 100
+                },
+                "resourceOldCount": {
+                    "type": "integer",
+                    "example": 50
                 }
             }
         },
@@ -10974,14 +11130,6 @@
                 "healthReason": {
                     "type": "string"
                 },
-                "healthState": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.HealthStatus"
-                        }
-                    ],
-                    "example": "healthy"
-                },
                 "id": {
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
@@ -11037,9 +11185,6 @@
                         "type": "string"
                     }
                 },
-                "health": {
-                    "$ref": "#/definitions/source.HealthStatus"
-                },
                 "state": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState"
                 }
@@ -11048,18 +11193,18 @@
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState": {
             "type": "string",
             "enum": [
-                "pending",
-                "initial-discovery",
-                "enabled",
-                "disabled",
-                "deleted"
+                "NOT_ONBOARD",
+                "IN_PROGRESS",
+                "ONBOARD",
+                "UNHEALTHY",
+                "ARCHIVED"
             ],
             "x-enum-varnames": [
-                "ConnectionLifecycleStatePending",
-                "ConnectionLifecycleStateInitialDiscovery",
-                "ConnectionLifecycleStateEnabled",
-                "ConnectionLifecycleStateDisabled",
-                "ConnectionLifecycleStateDeleted"
+                "ConnectionLifecycleStateNotOnboard",
+                "ConnectionLifecycleStateInProgress",
+                "ConnectionLifecycleStateOnboard",
+                "ConnectionLifecycleStateUnhealthy",
+                "ConnectionLifecycleStateArchived"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connector": {

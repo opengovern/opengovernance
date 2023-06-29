@@ -283,20 +283,20 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 
 // ListRegionsSummary godoc
 //
-//	@Summary	List Regions Summary
-//	@Description Returns list of regions resources summary
-//	@Security	BearerToken
-//	@Tags		resource
-//	@Accept		json
-//	@Produce	json
-//	@Param		count			query		int				true	"count"
-//	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param		startTime		query		int				false	"start time in unix seconds - default is now"
-//	@Param		endTime			query		int				false	"end time in unix seconds - default is one week ago"
-//	@Param 		sortBy			query		string			false	"column to sort by - default is resource_count"	Enums(resource_count,resource_growth, old_resource_count)
-//	@Success	200				{object}	[]api.LocationResponse
-//	@Router		/inventory/api/v2/resources/regions/summary [get]
+//	@Summary		List Regions Summary
+//	@Description	Returns list of regions resources summary
+//	@Security		BearerToken
+//	@Tags			resource
+//	@Accept			json
+//	@Produce		json
+//	@Param			count			query		int				true	"count"
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			startTime		query		int				false	"start time in unix seconds - default is now"
+//	@Param			endTime			query		int				false	"end time in unix seconds - default is one week ago"
+//	@Param			sortBy			query		string			false	"column to sort by - default is resource_count"	Enums(resource_count,resource_growth, old_resource_count)
+//	@Success		200				{object}	[]api.LocationResponse
+//	@Router			/inventory/api/v2/resources/regions/summary [get]
 func (h *HttpHandler) ListRegionsSummary(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	count, err := strconv.Atoi(ctx.QueryParam("count"))
@@ -1310,6 +1310,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 //	@Summary		Get service metrics
 //	@Description	This API allows users to retrieve a service with metrics.
 //	@Tags			inventory
+//	@Security		BearerToken
 //	@Accept			json
 //	@Produce		json
 //	@Param			serviceName		path		string		true	"ServiceName"
