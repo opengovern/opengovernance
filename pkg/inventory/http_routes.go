@@ -71,7 +71,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	resourcesV2.GET("/metric/:resourceType", httpserver.AuthorizeHandler(h.GetResourceTypeMetricsHandler, api3.ViewerRole))
 	resourcesV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListResourceTypeComposition, api3.ViewerRole))
 	resourcesV2.GET("/trend", httpserver.AuthorizeHandler(h.ListResourceTypeTrend, api3.ViewerRole))
-	resourcesV2.GET("/regions/summary", httpserver.AuthorizeHandler(h.ListRegionsSummary, api3.ViewerRole))
+	resourcesV2.GET("/regions/summary", httpserver.AuthorizeHandler(h.ListResourcesRegionsSummary, api3.ViewerRole))
+	resourcesV2.GET("/regions/composition", httpserver.AuthorizeHandler(h.ListResourcesRegionsComposition, api3.ViewerRole))
+	resourcesV2.GET("/regions/trend", httpserver.AuthorizeHandler(h.ListResourcesRegionsTrend, api3.ViewerRole))
 
 	servicesV2 := v2.Group("/services")
 	servicesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListServiceTags, api3.ViewerRole))
@@ -205,7 +207,7 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 //	@Param		startTime		query		string			false	"timestamp for resource count per location change comparison in epoch seconds"
 //	@Param		pageSize		query		int				false	"page size - default is 20"
 //	@Param		pageNumber		query		int				false	"page number - default is 1"
-//	@Success	200				{object}	[]api.LocationResponse
+//	@Success	200				{object}	api.RegionsResourceCountResponse
 //	@Router		/inventory/api/v1/resources/regions [get]
 func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 	var err error
@@ -264,7 +266,7 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 			ResourceCount: &cnt,
 		}
 		if oldLocationDistribution[region] != 0 {
-			res.ResourceCountChangePercent = utils.GetPointer((float64(count) - float64(oldLocationDistribution[region])) / float64(oldLocationDistribution[region]) * 100)
+			res.ResourceOldCount = utils.GetPointer(oldLocationDistribution[region])
 		}
 		response = append(response, res)
 	}
@@ -275,128 +277,10 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 		return response[i].Location < response[j].Location
 	})
 
-	return ctx.JSON(http.StatusOK, api.RegionsByResourceCountResponse{
+	return ctx.JSON(http.StatusOK, api.RegionsResourceCountResponse{
 		TotalCount: len(response),
 		Regions:    utils.Paginate(pageNumber, pageSize, response),
 	})
-}
-
-// ListRegionsSummary godoc
-//
-//	@Summary		List Regions Summary
-//	@Description	Returns list of regions resources summary
-//	@Security		BearerToken
-//	@Tags			resource
-//	@Accept			json
-//	@Produce		json
-//	@Param			count			query		int				true	"count"
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param			startTime		query		int				false	"start time in unix seconds - default is now"
-//	@Param			endTime			query		int				false	"end time in unix seconds - default is one week ago"
-//	@Param			sortBy			query		string			false	"column to sort by - default is resource_count"	Enums(resource_count,resource_growth, old_resource_count)
-//	@Success		200				{object}	[]api.LocationResponse
-//	@Router			/inventory/api/v2/resources/regions/summary [get]
-func (h *HttpHandler) ListRegionsSummary(ctx echo.Context) error {
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	count, err := strconv.Atoi(ctx.QueryParam("count"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid count")
-	}
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now()
-	if endTimeStr != "" {
-		endTimeUnix, err := strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid integer")
-		}
-		endTime = time.Unix(endTimeUnix, 0)
-	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := endTime.AddDate(0, 0, -7)
-	if startTimeStr != "" {
-		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid integer")
-		}
-		startTime = time.Unix(startTimeUnix, 0)
-	}
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
-	if len(connectionIDs) == 0 {
-		connectionIDs = nil
-	}
-	sortBy := ctx.QueryParam("sortBy")
-	if sortBy == "" {
-		sortBy = "resource_count"
-	}
-	currentLocationDistribution := map[string]int{}
-
-	currentHits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, endTime)
-	if err != nil {
-		return err
-	}
-	for _, hit := range currentHits {
-		for k, v := range hit.LocationDistribution {
-			currentLocationDistribution[k] += v
-		}
-	}
-
-	oldLocationDistribution := map[string]int{}
-
-	oldtHits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, startTime)
-	if err != nil {
-		return err
-	}
-	for _, hit := range oldtHits {
-		for k, v := range hit.LocationDistribution {
-			oldLocationDistribution[k] += v
-		}
-	}
-
-	var response []api.LocationResponse
-	for region, count := range currentLocationDistribution {
-		cnt := count
-		oldCount := 0
-		changePer := 0.0
-		if value, ok := oldLocationDistribution[region]; ok {
-			oldCount = value
-			changePer = (float64(count) - float64(oldCount)) / float64(oldCount) * 100
-		}
-		response = append(response, api.LocationResponse{
-			Location:                   region,
-			ResourceCount:              &cnt,
-			ResourceOldCount:           &oldCount,
-			ResourceCountChangePercent: &changePer,
-		})
-	}
-
-	sort.Slice(response, func(i, j int) bool {
-		switch sortBy {
-		case "resource_count":
-			return *response[i].ResourceCount > *response[j].ResourceCount
-		case "resource_growth":
-			if response[j].ResourceCountChangePercent == nil {
-				return true
-			}
-			if response[i].ResourceCountChangePercent == nil {
-				return false
-			}
-			return *response[i].ResourceCountChangePercent > *response[j].ResourceCountChangePercent
-		case "old_resource_count":
-			if response[j].ResourceOldCount == nil {
-				return false
-			}
-			if response[i].ResourceOldCount == nil {
-				return true
-			}
-			return *response[i].ResourceOldCount > *response[j].ResourceOldCount
-		}
-		return *response[i].ResourceCount > *response[j].ResourceCount
-	})
-	if len(response) > count {
-		response = response[:count]
-	}
-	return ctx.JSON(http.StatusOK, response)
 }
 
 // ListResourceTypeTags godoc
@@ -1057,7 +941,7 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		timeToCountMap, err = es.FetchProviderResourceTypeTrendSummaryPage(h.client, connectorTypes, resourceTypeStrings, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectorResourceTypeTrendSummaryPage(h.client, connectorTypes, resourceTypeStrings, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1071,6 +955,367 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
 	})
 	apiDatapoints = internal.DownSampleResourceTypeTrendDatapoints(apiDatapoints, int(datapointCount))
+
+	return ctx.JSON(http.StatusOK, apiDatapoints)
+}
+
+// ListResourcesRegionsSummary godoc
+//
+//	@Summary		List Regions Summary
+//	@Description	Returns list of regions resources summary
+//	@Security		BearerToken
+//	@Tags			resource
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			startTime		query		int				false	"start time in unix seconds - default is now"
+//	@Param			endTime			query		int				false	"end time in unix seconds - default is one week ago"
+//	@Param			sortBy			query		string			false	"column to sort by - default is resource_count"	Enums(resource_count, resource_growth, resource_growth_rate)
+//	@Param			pageSize		query		int				false	"page size - default is 20"
+//	@Param			pageNumber		query		int				false	"page number - default is 1"
+//	@Success		200				{object}	api.RegionsResourceCountResponse
+//	@Router			/inventory/api/v2/resources/regions/summary [get]
+func (h *HttpHandler) ListResourcesRegionsSummary(ctx echo.Context) error {
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now()
+	if endTimeStr != "" {
+		endTimeUnix, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid integer")
+		}
+		endTime = time.Unix(endTimeUnix, 0)
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := endTime.AddDate(0, 0, -7)
+	if startTimeStr != "" {
+		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid integer")
+		}
+		startTime = time.Unix(startTimeUnix, 0)
+	}
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	if len(connectionIDs) == 0 {
+		connectionIDs = nil
+	}
+
+	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+	sortBy := ctx.QueryParam("sortBy")
+	if sortBy == "" {
+		sortBy = "resource_count"
+	}
+	currentLocationDistribution := map[string]int{}
+
+	currentHits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, endTime)
+	if err != nil {
+		return err
+	}
+	for _, hit := range currentHits {
+		for k, v := range hit.LocationDistribution {
+			currentLocationDistribution[k] += v
+		}
+	}
+
+	oldLocationDistribution := map[string]int{}
+
+	oldtHits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, startTime)
+	if err != nil {
+		return err
+	}
+	for _, hit := range oldtHits {
+		for k, v := range hit.LocationDistribution {
+			oldLocationDistribution[k] += v
+		}
+	}
+
+	var locationResponses []api.LocationResponse
+	for region, count := range currentLocationDistribution {
+		cnt := count
+		oldCount := 0
+		if value, ok := oldLocationDistribution[region]; ok {
+			oldCount = value
+		}
+		locationResponses = append(locationResponses, api.LocationResponse{
+			Location:         region,
+			ResourceCount:    &cnt,
+			ResourceOldCount: &oldCount,
+		})
+	}
+
+	sort.Slice(locationResponses, func(i, j int) bool {
+		switch sortBy {
+		case "resource_count":
+			if locationResponses[i].ResourceCount == nil && locationResponses[j].ResourceCount == nil {
+				break
+			}
+			if locationResponses[i].ResourceCount == nil {
+				return false
+			}
+			if locationResponses[j].ResourceCount == nil {
+				return true
+			}
+			if *locationResponses[i].ResourceCount != *locationResponses[j].ResourceCount {
+				return *locationResponses[i].ResourceCount > *locationResponses[j].ResourceCount
+			}
+		case "growth":
+			diffi := utils.PSub(locationResponses[i].ResourceCount, locationResponses[i].ResourceOldCount)
+			diffj := utils.PSub(locationResponses[j].ResourceCount, locationResponses[j].ResourceOldCount)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if *diffi != *diffj {
+				return *diffi > *diffj
+			}
+		case "growth_rate":
+			diffi := utils.PSub(locationResponses[i].ResourceCount, locationResponses[i].ResourceOldCount)
+			diffj := utils.PSub(locationResponses[j].ResourceCount, locationResponses[j].ResourceOldCount)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if locationResponses[i].ResourceOldCount == nil && locationResponses[j].ResourceOldCount == nil {
+				break
+			}
+			if locationResponses[i].ResourceOldCount == nil {
+				return true
+			}
+			if locationResponses[j].ResourceOldCount == nil {
+				return false
+			}
+			if *locationResponses[i].ResourceOldCount == 0 && *locationResponses[j].ResourceOldCount == 0 {
+				break
+			}
+			if *locationResponses[i].ResourceOldCount == 0 {
+				return false
+			}
+			if *locationResponses[j].ResourceOldCount == 0 {
+				return true
+			}
+			if float64(*diffi)/float64(*locationResponses[i].ResourceOldCount) != float64(*diffj)/float64(*locationResponses[j].ResourceOldCount) {
+				return float64(*diffi)/float64(*locationResponses[i].ResourceOldCount) > float64(*diffj)/float64(*locationResponses[j].ResourceOldCount)
+			}
+		}
+		return locationResponses[i].Location < locationResponses[j].Location
+	})
+
+	response := api.RegionsResourceCountResponse{
+		TotalCount: len(locationResponses),
+		Regions:    utils.Paginate(pageNumber, pageSize, locationResponses),
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// ListResourcesRegionsComposition godoc
+//
+//	@Summary		List resources regions composition
+//	@Description	Returns list of top regions per given connector type and connection IDs
+//	@Security		BearerToken
+//	@Tags			resource
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			top				query		int				true	"How many top values to return default is 5"
+//	@Param			startTime		query		int				false	"start time in unix seconds - default is now"
+//	@Param			endTime			query		int				false	"end time in unix seconds - default is one week ago"
+//	@Success		200				{object}	api.ListRegionsResourceCountCompositionResponse
+//	@Router			/inventory/api/v2/resources/regions/composition [get]
+func (h *HttpHandler) ListResourcesRegionsComposition(ctx echo.Context) error {
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	endTime := time.Now()
+	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
+		endTimeUnix, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid integer")
+		}
+		endTime = time.Unix(endTimeUnix, 0)
+	}
+	startTime := endTime.AddDate(0, 0, -7)
+	if startTimeStr := ctx.QueryParam("startTime"); startTimeStr != "" {
+		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid integer")
+		}
+		startTime = time.Unix(startTimeUnix, 0)
+	}
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	if len(connectionIDs) == 0 {
+		connectionIDs = nil
+	}
+
+	top := 5
+	if topStr := ctx.QueryParam("top"); topStr != "" {
+		topVal, err := strconv.ParseInt(topStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "top is not a valid integer")
+		}
+		top = int(topVal)
+	}
+
+	currentLocationDistribution := map[string]int{}
+	oldLocationDistribution := map[string]int{}
+
+	currentHits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, endTime)
+	if err != nil {
+		return err
+	}
+	for _, hit := range currentHits {
+		for k, v := range hit.LocationDistribution {
+			currentLocationDistribution[k] += v
+		}
+	}
+	oldHits, err := es.FetchConnectionLocationsSummaryPage(h.client, connectors, connectionIDs, nil, startTime)
+	if err != nil {
+		return err
+	}
+	for _, hit := range oldHits {
+		for k, v := range hit.LocationDistribution {
+			oldLocationDistribution[k] += v
+		}
+	}
+
+	type currentAndOldCount struct {
+		current int
+		old     int
+	}
+	valueCountMap := make(map[string]currentAndOldCount)
+	totalCount := 0
+	totalOldCount := 0
+	for region, val := range currentLocationDistribution {
+		valueCountMap[region] = currentAndOldCount{current: val, old: oldLocationDistribution[region]}
+		totalCount += val
+		totalOldCount += oldLocationDistribution[region]
+	}
+	type strIntPair struct {
+		str    string
+		counts currentAndOldCount
+	}
+	valueCountPairs := make([]strIntPair, 0, len(valueCountMap))
+	for value, count := range valueCountMap {
+		valueCountPairs = append(valueCountPairs, strIntPair{str: value, counts: count})
+	}
+	sort.Slice(valueCountPairs, func(i, j int) bool {
+		return valueCountPairs[i].counts.current > valueCountPairs[j].counts.current
+	})
+
+	response := api.ListRegionsResourceCountCompositionResponse{
+		TotalCount:      len(valueCountPairs),
+		TotalValueCount: totalCount,
+		TopValues:       make(map[string]api.CountPair),
+		Others:          api.CountPair{},
+	}
+
+	for i, pair := range valueCountPairs {
+		if i < top {
+			response.TopValues[pair.str] = api.CountPair{
+				Count:    pair.counts.current,
+				OldCount: pair.counts.old,
+			}
+		} else {
+			response.Others.Count += pair.counts.current
+			response.Others.OldCount += pair.counts.old
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// ListResourcesRegionsTrend godoc
+//
+//	@Summary		Returns trend of resources count in given regions
+//	@Description	Returns list of regions resources summary
+//	@Security		BearerToken
+//	@Tags			resource
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			startTime		query		int				false	"start time in unix seconds - default is now"
+//	@Param			endTime			query		int				false	"end time in unix seconds - default is one week ago"
+//	@Param			region			query		[]string		false	"Regions to filter by"
+//	@Param			datapointCount	query		int				false	"Number of datapoints to return"
+//	@Success		200				{object}	[]api.ResourceTypeTrendDatapoint
+//	@Router			/inventory/api/v2/resources/regions/trend [get]
+func (h *HttpHandler) ListResourcesRegionsTrend(ctx echo.Context) error {
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	endTime := time.Now()
+	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
+		endTimeUnix, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid integer")
+		}
+		endTime = time.Unix(endTimeUnix, 0)
+	}
+	startTime := endTime.AddDate(0, 0, -7)
+	if startTimeStr := ctx.QueryParam("startTime"); startTimeStr != "" {
+		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid integer")
+		}
+		startTime = time.Unix(startTimeUnix, 0)
+	}
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
+	datapointCount := int(endTime.Sub(startTime).Hours() / 24)
+	if datapointCountStr := ctx.QueryParam("datapointCount"); datapointCountStr != "" {
+		datapointCountVal, err := strconv.ParseInt(datapointCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
+		}
+		datapointCount = int(datapointCountVal)
+	}
+	regions := ctx.QueryParams()["region"]
+	filterRegionsMap := make(map[string]bool)
+	for _, region := range regions {
+		filterRegionsMap[region] = true
+	}
+	if len(regions) == 0 {
+		filterRegionsMap = nil
+	}
+
+	esDatapointCount := int(endTime.Sub(startTime).Hours() / 24)
+	timeToCountsMap, err := es.ConnectionResourceTypeRegionsTrendSummaryPage(h.client, connectors, connectionIDs, startTime, endTime, esDatapointCount, EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+
+	apiDatapoints := make([]api.ResourceTypeTrendDatapoint, 0, len(timeToCountsMap))
+	for timeAt, regionStrToCountMap := range timeToCountsMap {
+		count := 0
+		for regionStr, regionCount := range regionStrToCountMap {
+			if filterRegionsMap != nil && !filterRegionsMap[regionStr] {
+				continue
+			}
+			count += regionCount
+		}
+		apiDatapoints = append(apiDatapoints, api.ResourceTypeTrendDatapoint{
+			Count: count,
+			Date:  time.Unix(int64(timeAt), 0),
+		})
+	}
+	sort.Slice(apiDatapoints, func(i, j int) bool {
+		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
+	})
+	apiDatapoints = internal.DownSampleResourceTypeTrendDatapoints(apiDatapoints, datapointCount)
 
 	return ctx.JSON(http.StatusOK, apiDatapoints)
 }
@@ -1310,7 +1555,6 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 //	@Summary		Get service metrics
 //	@Description	This API allows users to retrieve a service with metrics.
 //	@Tags			inventory
-//	@Security		BearerToken
 //	@Accept			json
 //	@Produce		json
 //	@Param			serviceName		path		string		true	"ServiceName"
@@ -2625,6 +2869,7 @@ func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 
 // CountResources godoc
 //
+//	@Deprecated
 //	@Summary		Count resources
 //	@Description	Number of all resources
 //	@Security		BearerToken

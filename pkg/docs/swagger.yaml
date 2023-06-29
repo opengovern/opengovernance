@@ -2275,6 +2275,19 @@ definitions:
         description: Specifies the Title
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListRegionsResourceCountCompositionResponse:
+    properties:
+      others:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair'
+      top_values:
+        additionalProperties:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair'
+        type: object
+      total_count:
+        type: integer
+      total_value_count:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeCompositionResponse:
     properties:
       others:
@@ -2364,10 +2377,6 @@ definitions:
         description: Number of resources in the region
         example: 100
         type: integer
-      resourceCountChangePercent:
-        description: Change in number of resources in the region
-        example: 100
-        type: number
       resourceOldCount:
         example: 50
         type: integer
@@ -2377,6 +2386,15 @@ definitions:
       "no":
         type: integer
       size:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse:
+    properties:
+      regions:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse'
+        type: array
+      totalCount:
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceFilters:
@@ -4990,6 +5008,7 @@ paths:
     get:
       consumes:
       - application/json
+      deprecated: true
       description: Number of all resources
       produces:
       - application/json
@@ -5083,9 +5102,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse'
-            type: array
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse'
       security:
       - BearerToken: []
       summary: Returns top n regions of specified provider by resource count
@@ -5830,17 +5847,62 @@ paths:
       summary: Get resource metrics
       tags:
       - inventory
+  /inventory/api/v2/resources/regions/composition:
+    get:
+      consumes:
+      - application/json
+      description: Returns list of top regions per given connector type and connection
+        IDs
+      parameters:
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: How many top values to return default is 5
+        in: query
+        name: top
+        required: true
+        type: integer
+      - description: start time in unix seconds - default is now
+        in: query
+        name: startTime
+        type: integer
+      - description: end time in unix seconds - default is one week ago
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListRegionsResourceCountCompositionResponse'
+      security:
+      - BearerToken: []
+      summary: List resources regions composition
+      tags:
+      - resource
   /inventory/api/v2/resources/regions/summary:
     get:
       consumes:
       - application/json
       description: Returns list of regions resources summary
       parameters:
-      - description: count
-        in: query
-        name: count
-        required: true
-        type: integer
       - collectionFormat: csv
         description: Connector type to filter by
         in: query
@@ -5871,10 +5933,73 @@ paths:
         enum:
         - resource_count
         - resource_growth
-        - old_resource_count
+        - resource_growth_rate
         in: query
         name: sortBy
         type: string
+      - description: page size - default is 20
+        in: query
+        name: pageSize
+        type: integer
+      - description: page number - default is 1
+        in: query
+        name: pageNumber
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse'
+      security:
+      - BearerToken: []
+      summary: List Regions Summary
+      tags:
+      - resource
+  /inventory/api/v2/resources/regions/trend:
+    get:
+      consumes:
+      - application/json
+      description: Returns list of regions resources summary
+      parameters:
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: start time in unix seconds - default is now
+        in: query
+        name: startTime
+        type: integer
+      - description: end time in unix seconds - default is one week ago
+        in: query
+        name: endTime
+        type: integer
+      - collectionFormat: csv
+        description: Regions to filter by
+        in: query
+        items:
+          type: string
+        name: region
+        type: array
+      - description: Number of datapoints to return
+        in: query
+        name: datapointCount
+        type: integer
       produces:
       - application/json
       responses:
@@ -5882,11 +6007,11 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTrendDatapoint'
             type: array
       security:
       - BearerToken: []
-      summary: List Regions Summary
+      summary: Returns trend of resources count in given regions
       tags:
       - resource
   /inventory/api/v2/resources/tag:
@@ -6149,8 +6274,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Service'
-      security:
-      - BearerToken: []
       summary: Get service metrics
       tags:
       - inventory
