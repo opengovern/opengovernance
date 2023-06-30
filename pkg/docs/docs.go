@@ -48,6 +48,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyResponse"
                         }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
                     }
                 }
             }
@@ -7562,6 +7568,12 @@ const docTemplate = `{
                 }
             }
         },
+        "echo.HTTPError": {
+            "type": "object",
+            "properties": {
+                "message": {}
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyRequest": {
             "type": "object",
             "properties": {
@@ -12161,8 +12173,6 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {

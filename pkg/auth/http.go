@@ -15,10 +15,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/email"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
+	"github.com/kaytu-io/kaytu-util/pkg/email"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 
@@ -29,8 +29,8 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 
-	"github.com/labstack/echo/v4"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )
 
@@ -632,6 +632,7 @@ func (r *httpRoutes) DeleteInvitation(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			request	body		api.CreateAPIKeyRequest	true	"Request Body"
 //	@Success		200		{object}	api.CreateAPIKeyResponse
+//	@Failure		406		{object}	echo.HTTPError
 //	@Router			/auth/api/v1/key/create [post]
 func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 	userID := httpserver.GetUserID(ctx)

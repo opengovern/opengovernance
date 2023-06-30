@@ -207,6 +207,10 @@ definitions:
       type:
         type: string
     type: object
+  echo.HTTPError:
+    properties:
+      message: {}
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyRequest:
     properties:
       name:
@@ -3564,6 +3568,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyResponse'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/echo.HTTPError'
       security:
       - BearerToken: []
       summary: Create Workspace Key

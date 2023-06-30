@@ -42,6 +42,12 @@
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyResponse"
                         }
+                    },
+                    "406": {
+                        "description": "Not Acceptable",
+                        "schema": {
+                            "$ref": "#/definitions/echo.HTTPError"
+                        }
                     }
                 }
             }
@@ -7554,6 +7560,12 @@
                 "type": {
                     "type": "string"
                 }
+            }
+        },
+        "echo.HTTPError": {
+            "type": "object",
+            "properties": {
+                "message": {}
             }
         },
         "github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyRequest": {
