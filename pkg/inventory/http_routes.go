@@ -82,6 +82,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	servicesV2.GET("/metric/:serviceName", httpserver.AuthorizeHandler(h.GetServiceMetricsHandler, api3.ViewerRole))
 	servicesV2.GET("/summary", httpserver.AuthorizeHandler(h.ListServiceSummaries, api3.ViewerRole))
 	servicesV2.GET("/summary/:serviceName", httpserver.AuthorizeHandler(h.GetServiceSummary, api3.ViewerRole))
+	servicesV2.GET("/cost/trend", httpserver.AuthorizeHandler(h.GetServiceCostTrend, api3.ViewerRole))
 
 	costV2 := v2.Group("/cost")
 	costV2.GET("/metric", httpserver.AuthorizeHandler(h.ListCostMetricsHandler, api3.ViewerRole))
@@ -2378,6 +2379,75 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, serviceSummary)
+}
+
+// GetServiceCostTrend godoc
+//
+//	@Summary		Get Services Cost Trend
+//	@Description	This API allows users to retrieve a list of costs over the course of the specified time frame for the given services. If startTime and endTime are empty, the API returns the last month trend.
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			services		query		[]string		false	"Services to filter by"
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
+//	@Success		200				{object}	[]api.CostTrendDatapoint
+//	@Router			/inventory/api/v2/services/cost/trend [get]
+func (h *HttpHandler) GetServiceCostTrend(ctx echo.Context) error {
+	var err error
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	services := httpserver.QueryArrayParam(ctx, "services")
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now()
+	if endTimeStr != "" {
+		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		endTime = time.Unix(endTimeVal, 0)
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := endTime.AddDate(0, -1, 0)
+	if startTimeStr != "" {
+		startTimeVal, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		startTime = time.Unix(startTimeVal, 0)
+	}
+
+	datapointCountStr := ctx.QueryParam("datapointCount")
+	datapointCount := int64(30)
+	if datapointCountStr != "" {
+		datapointCount, err = strconv.ParseInt(datapointCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
+		}
+	}
+
+	esDataPointCount := int(endTime.Sub(startTime).Hours() / 24)
+	servicesTimepointToCost, err := es.FetchDailyCostTrendByServicesBetween(h.client, connectionIDs, connectorTypes, services, startTime, endTime, esDataPointCount)
+	if err != nil {
+		return err
+	}
+	var response []api.ListServicesCostTrendDatapoint
+	for service, timepointToCost := range servicesTimepointToCost {
+		apiDatapoints := make([]api.CostTrendDatapoint, 0, len(timepointToCost))
+		for timeAt, costVal := range timepointToCost {
+			apiDatapoints = append(apiDatapoints, api.CostTrendDatapoint{Cost: costVal, Date: time.Unix(int64(timeAt), 0)})
+		}
+		sort.Slice(apiDatapoints, func(i, j int) bool {
+			return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
+		})
+		apiDatapoints = internal.DownSampleCostTrendDatapoints(apiDatapoints, int(datapointCount))
+		response = append(response, api.ListServicesCostTrendDatapoint{ServiceName: service, CostTrend: apiDatapoints})
+	}
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // GetResource godoc

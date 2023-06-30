@@ -11,6 +11,11 @@ type CostTrendDatapoint struct {
 	Date time.Time `json:"date"`
 }
 
+type ListServicesCostTrendDatapoint struct {
+	ServiceName string               `json:"serviceName" example:""`
+	CostTrend   []CostTrendDatapoint `json:"costTrend"`
+}
+
 type CostMetric struct {
 	Connector            source.Type `json:"connector" example:"azure"`
 	CostDimensionName    string      `json:"cost_dimension_name" `
