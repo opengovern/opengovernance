@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/lib/pq"
-	"github.com/kaytu-io/kaytu-engine/pkg/types"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	"gorm.io/gorm"
 )
@@ -300,11 +300,11 @@ func (i InsightGroup) ToApi() api.InsightGroup {
 		LongTitle:   i.LongTitle,
 		Description: i.Description,
 		LogoURL:     i.LogoURL,
-		Insights:    make(map[uint]api.Insight),
+		Insights:    nil,
 	}
 	connectorsMap := make(map[source.Type]bool)
 	for _, insight := range i.Insights {
-		ia.Insights[insight.ID] = insight.ToApi()
+		ia.Insights = append(ia.Insights, insight.ToApi())
 		connectorsMap[insight.Connector] = true
 	}
 	ia.Connectors = make([]source.Type, 0, len(connectorsMap))
