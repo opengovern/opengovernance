@@ -217,6 +217,8 @@ func InitializeScheduler(
 	insightIntervalHours string,
 	checkupIntervalHours string,
 	mustSummarizeIntervalHours string,
+	keibiHelmChartLocation string,
+	fluxSystemNamespace string,
 ) (s *Scheduler, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -339,7 +341,11 @@ func InitializeScheduler(
 	}
 	s.kafkaESSink = NewKafkaEsSink(s.logger, kafkaResourceSinkConsumer, s.es)
 
-	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
+	helmConfig := HelmConfig{
+		KeibiHelmChartLocation: keibiHelmChartLocation,
+		FluxSystemNamespace:    fluxSystemNamespace,
+	}
+	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s, helmConfig)
 
 	s.describeIntervalHours, err = strconv.ParseInt(describeIntervalHours, 10, 64)
 	if err != nil {

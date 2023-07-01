@@ -39,24 +39,29 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/internal"
 	"github.com/labstack/echo/v4"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type HttpServer struct {
-	Address   string
-	DB        Database
-	Scheduler *Scheduler
+	Address    string
+	DB         Database
+	Scheduler  *Scheduler
+	kubeClient k8sclient.Client
+	helmConfig HelmConfig
 }
 
 func NewHTTPServer(
 	address string,
 	db Database,
 	s *Scheduler,
+	helmConfig HelmConfig,
 ) *HttpServer {
 
 	return &HttpServer{
-		Address:   address,
-		DB:        db,
-		Scheduler: s,
+		Address:    address,
+		DB:         db,
+		Scheduler:  s,
+		helmConfig: helmConfig,
 	}
 }
 
