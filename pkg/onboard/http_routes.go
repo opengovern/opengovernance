@@ -2400,6 +2400,8 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 
 			}
 			result.Connections = append(result.Connections, apiConn)
+		} else {
+			result.Connections = append(result.Connections, connection.toApi())
 		}
 	}
 
