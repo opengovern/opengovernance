@@ -147,6 +147,56 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 	return nil
 }
 
+func (s *Scheduler) cleanupDeletedConnectionResources(connectionId string) error {
+	var searchAfter []interface{}
+
+	for {
+		esResp, err := es.GetResourceIDsForAccountFromES(s.es, connectionId, searchAfter, 1000)
+		if err != nil {
+			return err
+		}
+
+		if len(esResp.Hits.Hits) == 0 {
+			break
+		}
+		var msgs []*confluent_kafka.Message
+		for _, hit := range esResp.Hits.Hits {
+			searchAfter = hit.Sort
+			esResourceID := hit.Source.ResourceID
+
+			resource := es.Resource{
+				ID:           esResourceID,
+				ResourceType: strings.ToLower(hit.Source.ResourceType),
+				SourceType:   hit.Source.SourceType,
+			}
+			keys, idx := resource.KeysAndIndex()
+			key := kafka.HashOf(keys...)
+			msg := kafka.Msg(key, nil, idx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
+			msgs = append(msgs, msg)
+
+			lookupResource := es.LookupResource{
+				ResourceID:   esResourceID,
+				ResourceType: strings.ToLower(hit.Source.ResourceType),
+				SourceType:   hit.Source.SourceType,
+			}
+			keys, idx = lookupResource.KeysAndIndex()
+			key = kafka.HashOf(keys...)
+			msg = kafka.Msg(key, nil, idx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
+			msgs = append(msgs, msg)
+			if err != nil {
+				return err
+			}
+		}
+		err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs)
+		if err != nil {
+			s.logger.Error("failed to send delete message to kafka", zap.Error(err))
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (s *Scheduler) RunDescribeJobCompletionUpdater() {
 	t := time.NewTicker(JobCompletionInterval)
 	defer t.Stop()
