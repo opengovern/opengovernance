@@ -2070,6 +2070,12 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 
 	for connectionId, costValue := range costs {
 		localValue := costValue
+		if _, ok := res[connectionId]; !ok {
+			res[connectionId] = api.ConnectionData{
+				ConnectionID:  connectionId,
+				LastInventory: nil,
+			}
+		}
 		if v, ok := res[connectionId]; ok {
 			v.TotalCost = utils.PAdd(v.TotalCost, &localValue)
 			res[connectionId] = v
@@ -2077,12 +2083,24 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	}
 	for connectionId, costValue := range startTimeCosts {
 		localValue := costValue
+		if _, ok := res[connectionId]; !ok {
+			res[connectionId] = api.ConnectionData{
+				ConnectionID:  connectionId,
+				LastInventory: nil,
+			}
+		}
 		if v, ok := res[connectionId]; ok {
 			v.DailyCostAtStartTime = utils.PAdd(v.DailyCostAtStartTime, &localValue)
 			res[connectionId] = v
 		}
 	}
 	for connectionId, costValue := range endTimeCosts {
+		if _, ok := res[connectionId]; !ok {
+			res[connectionId] = api.ConnectionData{
+				ConnectionID:  connectionId,
+				LastInventory: nil,
+			}
+		}
 		localValue := costValue
 		if v, ok := res[connectionId]; ok {
 			v.DailyCostAtEndTime = utils.PAdd(v.DailyCostAtEndTime, &localValue)
