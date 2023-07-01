@@ -74,6 +74,53 @@ func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, r
 	return &response, nil
 }
 
+func GetResourceIDsForAccountFromES(client keibi.Client, sourceID string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
+	terms := map[string][]string{
+		"source_id": {sourceID},
+	}
+
+	root := map[string]any{}
+	if searchAfter != nil {
+		root["search_after"] = searchAfter
+	}
+	root["size"] = size
+
+	root["sort"] = []map[string]any{
+		{
+			"_id": "desc",
+		},
+	}
+
+	boolQuery := make(map[string]any)
+	var filters []map[string]any
+	for k, vs := range terms {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{
+				k: vs,
+			},
+		})
+	}
+	boolQuery["filter"] = filters
+	root["query"] = map[string]any{
+		"bool": boolQuery,
+	}
+
+	queryBytes, err := json.Marshal(root)
+	if err != nil {
+		return nil, err
+	}
+
+	var response ResourceIdentifierFetchResponse
+	err = client.Search(context.Background(), InventorySummaryIndex,
+		string(queryBytes), &response)
+	if err != nil {
+		fmt.Println("query=", string(queryBytes))
+		return nil, err
+	}
+
+	return &response, nil
+}
+
 func DeleteByIds(client keibi.Client, index string, ids []string) (*keibi.DeleteByQueryResponse, error) {
 	if len(ids) == 0 {
 		return nil, fmt.Errorf("no ids to delete")
