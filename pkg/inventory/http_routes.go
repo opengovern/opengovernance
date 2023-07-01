@@ -1488,7 +1488,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 				return true
 			}
 			if *apiServices[i].ResourceCount != *apiServices[j].ResourceCount {
-				return apiServices[i].ServiceName < apiServices[j].ServiceName
+				return *apiServices[i].ResourceCount > *apiServices[j].ResourceCount
 			}
 		case "growth":
 			diffi := utils.PSub(apiServices[i].ResourceCount, apiServices[i].OldResourceCount)
