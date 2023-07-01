@@ -51,7 +51,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/resources", httpserver.AuthorizeHandler(h.GetAllResources, api3.ViewerRole))
 	v1.POST("/resources/azure", httpserver.AuthorizeHandler(h.GetAzureResources, api3.ViewerRole))
 	v1.POST("/resources/aws", httpserver.AuthorizeHandler(h.GetAWSResources, api3.ViewerRole))
-	v1.GET("/resources/count", httpserver.AuthorizeHandler(h.CountResources, api3.ViewerRole))
 	v1.POST("/resources/filters", httpserver.AuthorizeHandler(h.GetResourcesFilters, api3.ViewerRole))
 	v1.POST("/resource", httpserver.AuthorizeHandler(h.GetResource, api3.ViewerRole))
 
@@ -67,6 +66,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	resourcesV2 := v2.Group("/resources")
 	resourcesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListResourceTypeTags, api3.ViewerRole))
 	resourcesV2.GET("/tag/:key", httpserver.AuthorizeHandler(h.GetResourceTypeTag, api3.ViewerRole))
+	resourcesV2.GET("/count", httpserver.AuthorizeHandler(h.CountResources, api3.ViewerRole))
 	resourcesV2.GET("/metric", httpserver.AuthorizeHandler(h.ListResourceTypeMetricsHandler, api3.ViewerRole))
 	resourcesV2.GET("/metric/:resourceType", httpserver.AuthorizeHandler(h.GetResourceTypeMetricsHandler, api3.ViewerRole))
 	resourcesV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListResourceTypeComposition, api3.ViewerRole))
@@ -1487,7 +1487,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 			if apiServices[j].ResourceCount == nil {
 				return true
 			}
-			if *apiServices[i].ResourceCount == *apiServices[j].ResourceCount {
+			if *apiServices[i].ResourceCount != *apiServices[j].ResourceCount {
 				return apiServices[i].ServiceName < apiServices[j].ServiceName
 			}
 		case "growth":
@@ -2924,25 +2924,18 @@ func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json,text/csv
 //	@Success		200	{object}	int64
-//	@Router			/inventory/api/v1/resources/count [get]
+//	@Router			/inventory/api/v2/resources/count [get]
 func (h *HttpHandler) CountResources(ctx echo.Context) error {
-	value := 0
-	toTime := time.Now()
-	fromTime := toTime.Add(-24 * time.Hour)
-	d, err := ExtractTrend(h.client, source.Nil, nil, fromTime.UnixMilli(), toTime.UnixMilli())
+	timeAt := time.Now()
+	metricsIndexed, err := es.FetchConnectorResourceTypeCountAtTime(h.client, nil, timeAt, nil, EsFetchPageSize)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	if len(d) > 0 {
-		var maxItem int64
-		for k, v := range d {
-			if k > maxItem {
-				maxItem, value = k, v
-			}
-		}
+	totalCount := 0
+	for _, count := range metricsIndexed {
+		totalCount += count
 	}
-
-	return ctx.JSON(http.StatusOK, value)
+	return ctx.JSON(http.StatusOK, totalCount)
 }
 
 // GetResourcesFilters godoc

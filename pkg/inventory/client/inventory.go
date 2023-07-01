@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/labstack/echo/v4"
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/labstack/echo/v4"
 
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 type InventoryServiceClient interface {
@@ -32,7 +32,7 @@ func NewInventoryServiceClient(baseURL string) InventoryServiceClient {
 }
 
 func (s *inventoryClient) CountResources(ctx *httpclient.Context) (int64, error) {
-	url := fmt.Sprintf("%s/api/v1/resources/count", s.baseURL)
+	url := fmt.Sprintf("%s/api/v2/resources/count", s.baseURL)
 
 	var count int64
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &count); err != nil {
