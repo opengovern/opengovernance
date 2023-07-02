@@ -119,3 +119,34 @@ func ignoreAwsOrgError(err error) bool {
 		(ae.ErrorCode() == (&types.AWSOrganizationsNotInUseException{}).ErrorCode() ||
 			ae.ErrorCode() == (&types.AccessDeniedException{}).ErrorCode())
 }
+
+func discoverAWSAccounts(ctx context.Context, cfg aws.Config) ([]awsAccount, error) {
+	orgs, err := describer.OrganizationOrganization(ctx, cfg)
+	if err != nil {
+		if !ignoreAwsOrgError(err) {
+			return nil, err
+		}
+	}
+
+	accounts, err := describer.OrganizationAccounts(ctx, cfg)
+	if err != nil {
+		if !ignoreAwsOrgError(err) {
+			return nil, err
+		}
+	}
+
+	awsAccounts := make([]awsAccount, 0)
+	for _, account := range accounts {
+		if account.Id == nil {
+			continue
+		}
+		awsAccounts = append(awsAccounts, awsAccount{
+			AccountID:    *account.Id,
+			AccountName:  account.Name,
+			Organization: orgs,
+			Account:      &account,
+		})
+	}
+
+	return awsAccounts, nil
+}
