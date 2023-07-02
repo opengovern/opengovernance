@@ -182,7 +182,7 @@ func NewAzureConnectionMetadata(sub azureSubscription) AzureConnectionMetadata {
 	return metadata
 }
 
-func NewAzureSourceWithCredentials(sub azureSubscription, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
+func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
 	id := uuid.New()
 
 	name := sub.SubscriptionID
@@ -205,6 +205,38 @@ func NewAzureSourceWithCredentials(sub azureSubscription, creationMethod source.
 		CredentialID:         creds.ID,
 		Credential:           creds,
 		LifecycleState:       ConnectionLifecycleStateInProgress,
+		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
+		LastHealthCheckTime:  time.Now(),
+		CreationMethod:       creationMethod,
+		Metadata:             datatypes.JSON(jsonMetadata),
+	}
+
+	return s
+}
+
+func NewAWSConnectionWithCredentials(account awsAccount, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
+	id := uuid.New()
+
+	name := account.AccountID
+	if account.AccountName != nil {
+		name = *account.AccountName
+	}
+
+	metadata := NewAWSConnectionMetadata(account)
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		jsonMetadata = []byte("{}")
+	}
+
+	s := Source{
+		ID:                   id,
+		SourceId:             account.AccountID,
+		Name:                 name,
+		Description:          description,
+		Type:                 source.CloudAWS,
+		CredentialID:         creds.ID,
+		Credential:           creds,
+		LifecycleState:       ConnectionLifecycleStateNotOnboard,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       creationMethod,
