@@ -871,7 +871,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 		}
 		h.logger.Info("discovered subscriptions", zap.Int("count", len(subs)))
 
-		existingConnections, err := h.db.GetSourcesByCredentialID(credential.ID.String())
+		existingConnections, err := h.db.GetSourcesOfType(credential.ConnectorType)
 		if err != nil {
 			return err
 		}
@@ -991,7 +991,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 			return err
 		}
 		h.logger.Info("discovered accounts", zap.Int("count", len(accounts)))
-		existingConnections, err := h.db.GetSourcesByCredentialID(credential.ID.String())
+		existingConnections, err := h.db.GetSourcesOfType(credential.ConnectorType)
 		if err != nil {
 			return err
 		}
