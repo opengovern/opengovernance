@@ -64,7 +64,7 @@ type Source struct {
 
 	CreationMethod source.SourceCreationMethod `gorm:"not null;default:'manual'"`
 
-	Metadata datatypes.JSON
+	Metadata datatypes.JSON `gorm:"default:'{}'"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -286,7 +286,7 @@ type Credential struct {
 	HealthStatus        source.HealthStatus `gorm:"not null;default:'healthy'" json:"healthStatus"`
 	HealthReason        *string             `json:"healthReason,omitempty"`
 
-	Metadata datatypes.JSON `json:"metadata,omitempty"`
+	Metadata datatypes.JSON `json:"metadata,omitempty" gorm:"default:'{}'"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
