@@ -2945,7 +2945,16 @@ func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 //	@Router			/inventory/api/v2/resources/count [get]
 func (h *HttpHandler) CountResources(ctx echo.Context) error {
 	timeAt := time.Now()
-	metricsIndexed, err := es.FetchConnectorResourceTypeCountAtTime(h.client, nil, timeAt, nil, EsFetchPageSize)
+	resourceTypes, err := h.db.ListFilteredResourceTypes(nil, nil, nil, true)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	resourceTypeNames := make([]string, 0, len(resourceTypes))
+	for _, resourceType := range resourceTypes {
+		resourceTypeNames = append(resourceTypeNames, resourceType.ResourceType)
+	}
+
+	metricsIndexed, err := es.FetchConnectorResourceTypeCountAtTime(h.client, nil, timeAt, resourceTypeNames, EsFetchPageSize)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
