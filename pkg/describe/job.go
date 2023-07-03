@@ -41,9 +41,10 @@ type AWSAccountConfig struct {
 	AccessKey     string   `json:"accessKey"`
 	SessionToken  string   `json:"sessionToken"`
 	AssumeRoleARN string   `json:"assumeRoleARN"`
+	ExternalID    *string  `json:"externalID,omitempty"`
 }
 
-func AWSAccountConfigFromMap(m map[string]interface{}) (AWSAccountConfig, error) {
+func AWSAccountConfigFromMap(m map[string]any) (AWSAccountConfig, error) {
 	mj, err := json.Marshal(m)
 	if err != nil {
 		return AWSAccountConfig{}, err

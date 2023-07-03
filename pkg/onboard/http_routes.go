@@ -309,13 +309,6 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	// Check creds section
-	err := keibiaws.CheckDescribeRegionsPermission(req.Config.AccessKey, req.Config.SecretKey)
-	if err != nil {
-		fmt.Printf("error in checking describe regions permission: %v", err)
-		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
-	}
-
 	isAttached, err := keibiaws.CheckAttachedPolicy(req.Config.AccessKey, req.Config.SecretKey, keibiaws.SecurityAuditPolicyARN)
 	if err != nil {
 		fmt.Printf("error in checking security audit permission: %v", err)
@@ -326,7 +319,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	}
 
 	// Create source section
-	cfg, err := keibiaws.GetConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "")
+	cfg, err := keibiaws.GetConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
 	if err != nil {
 		return err
 	}
@@ -990,7 +983,8 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 			awsCnf.AccessKey,
 			awsCnf.SecretKey,
 			"",
-			awsCnf.AssumeRoleARN)
+			awsCnf.AssumeRoleARN,
+			awsCnf.ExternalID)
 		h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
 		if cfg.Region == "" {
 			cfg.Region = "us-east-1"
@@ -1724,7 +1718,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 			}
 			isAttached, err = keibiaws.CheckAttachedPolicy(awsCnf.AccessKey, awsCnf.SecretKey, keibiaws.SecurityAuditPolicyARN)
 			if err == nil && isAttached {
-				cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", "")
+				cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", awsCnf.AssumeRoleARN, awsCnf.ExternalID)
 				if err != nil {
 					return err
 				}
