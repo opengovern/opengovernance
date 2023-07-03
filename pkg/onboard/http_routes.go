@@ -1361,7 +1361,7 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 	cred.Secret = string(secretBytes)
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		if err := h.db.CreateCredential(cred); err != nil {
+		if _, err := h.db.UpdateCredential(cred); err != nil {
 			return err
 		}
 
