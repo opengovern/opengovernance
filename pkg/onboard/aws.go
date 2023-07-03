@@ -60,7 +60,7 @@ func currentAwsAccount(ctx context.Context, cfg aws.Config) (*awsAccount, error)
 }
 
 func getAWSCredentialsMetadata(ctx context.Context, config describe.AWSAccountConfig) (*source.AWSCredentialMetadata, error) {
-	creds, err := keibiaws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "")
+	creds, err := keibiaws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", config.AssumeRoleARN, config.ExternalID)
 	if err != nil {
 		return nil, err
 	}
