@@ -110,6 +110,9 @@ func NewAWSConnectionMetadata(account awsAccount) AWSConnectionMetadata {
 	metadata := AWSConnectionMetadata{
 		AccountID: account.AccountID,
 	}
+	if account.AccountName != nil {
+		metadata.AccountName = *account.AccountName
+	}
 	metadata.Organization = account.Organization
 	metadata.OrganizationAccount = account.Account
 
