@@ -123,7 +123,7 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				return errors.New(fmt.Sprintf("No secret found for %s", ds.SourceID))
 			}
 			wp.AddJob(func() (interface{}, error) {
-				err := s.enqueueCloudNativeDescribeJob(dr, ds, cred.Secret, s.WorkspaceName)
+				err := s.enqueueCloudNativeDescribeJob(dr, ds, cred.Secret, s.WorkspaceName, ("stack-" + ds.SourceID.String()))
 				if err != nil {
 					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dr.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
@@ -140,7 +140,7 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				src: src,
 			}
 			wp.AddJob(func() (interface{}, error) {
-				err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, c.src.ConfigRef, s.WorkspaceName)
+				err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, c.src.ConfigRef, s.WorkspaceName, s.kafkaResourcesTopic)
 				if err != nil {
 					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dr.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
@@ -297,7 +297,7 @@ func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.Des
 	return daj
 }
 
-func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *DescribeSourceJob, cipherText string, workspaceName string) error {
+func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *DescribeSourceJob, cipherText string, workspaceName string, kafkaTopic string) error {
 	s.logger.Debug("enqueueCloudNativeDescribeJob",
 		zap.Uint("sourceJobID", ds.ID),
 		zap.Uint("jobID", dr.ID),
@@ -311,6 +311,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *Des
 		DescribeEndpoint: s.describeEndpoint,
 		KeyARN:           s.keyARN,
 		KeyRegion:        s.keyRegion,
+		KafkaTopic:       kafkaTopic,
 		DescribeJob: DescribeJob{
 			JobID:        dr.ID,
 			ParentJobID:  ds.ID,

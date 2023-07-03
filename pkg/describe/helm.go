@@ -47,7 +47,7 @@ func (s *HttpServer) newKubeClient() (client.Client, error) {
 func (s *HttpServer) createStackHelmRelease(ctx echo.Context, stack Stack) error {
 	settings := StackReleaseConfig{
 		KafkaTopics: KafkaTopics{
-			Resources: "",
+			Resources: stack.StackID,
 		},
 	}
 	settingsJSON, err := json.Marshal(settings)
@@ -98,7 +98,7 @@ func (s *HttpServer) createStackHelmRelease(ctx echo.Context, stack Stack) error
 	return nil
 }
 
-func (s *HttpServer) deleteHelmRelease(ctx echo.Context, stack Stack) error {
+func (s *HttpServer) deleteStackHelmRelease(ctx echo.Context, stack Stack) error {
 	helmRelease := helmv2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      stack.StackID,

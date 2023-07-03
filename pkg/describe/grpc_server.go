@@ -198,7 +198,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 	if !s.DoProcessReceivedMessages {
 		return &golang.ResponseOK{}, nil
 	}
-	if err := kafka.DoSend(s.producer, s.topic, -1, msgs, s.logger); err != nil {
+	if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger); err != nil {
 		StreamFailureCount.WithLabelValues("aws").Inc()
 		return nil, fmt.Errorf("send to kafka: %w", err)
 	}
@@ -290,7 +290,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		ResourcesDescribedCount.WithLabelValues("azure", "successful").Inc()
 	}
 
-	if err := kafka.DoSend(s.producer, s.topic, -1, msgs, s.logger); err != nil {
+	if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger); err != nil {
 		StreamFailureCount.WithLabelValues("azure").Inc()
 		return nil, fmt.Errorf("send to kafka: %w", err)
 	}
