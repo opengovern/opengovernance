@@ -68,6 +68,11 @@ func getAWSCredentialsMetadata(ctx context.Context, config describe.AWSAccountCo
 		creds.Region = "us-east-1"
 	}
 
+	accID, err := describer.STSAccount(ctx, creds)
+	if err != nil {
+		return nil, err
+	}
+
 	iamClient := iam.NewFromConfig(creds)
 	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
 	if err != nil {
@@ -91,12 +96,9 @@ func getAWSCredentialsMetadata(ctx context.Context, config describe.AWSAccountCo
 	}
 
 	metadata := source.AWSCredentialMetadata{
-		AccountID:        config.AccountID,
+		AccountID:        accID,
 		IamUserName:      user.User.UserName,
 		AttachedPolicies: policyARNs,
-	}
-	if user.User.UserId != nil {
-		metadata.AccountID = *user.User.UserId
 	}
 
 	accessKeys, err := iamClient.ListAccessKeys(ctx, &iam.ListAccessKeysInput{
