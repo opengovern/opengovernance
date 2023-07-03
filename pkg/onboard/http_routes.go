@@ -992,6 +992,9 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 			"",
 			awsCnf.AssumeRoleARN)
 		h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
+		if cfg.Region == "" {
+			cfg.Region = "us-east-1"
+		}
 		accounts, err := discoverAWSAccounts(ctx.Request().Context(), cfg)
 		if err != nil {
 			h.logger.Error("failed to discover accounts", zap.Error(err))
