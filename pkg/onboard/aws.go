@@ -158,11 +158,12 @@ func discoverAWSAccounts(ctx context.Context, cfg aws.Config) ([]awsAccount, err
 		if account.Id == nil {
 			continue
 		}
+		localAccount := account
 		awsAccounts = append(awsAccounts, awsAccount{
-			AccountID:    *account.Id,
-			AccountName:  account.Name,
+			AccountID:    *localAccount.Id,
+			AccountName:  localAccount.Name,
 			Organization: orgs,
-			Account:      &account,
+			Account:      &localAccount,
 		})
 	}
 
