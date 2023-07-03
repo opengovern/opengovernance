@@ -95,6 +95,9 @@ func getAWSCredentialsMetadata(ctx context.Context, config describe.AWSAccountCo
 		IamUserName:      user.User.UserName,
 		AttachedPolicies: policyARNs,
 	}
+	if user.User.UserId != nil {
+		metadata.AccountID = *user.User.UserId
+	}
 
 	accessKeys, err := iamClient.ListAccessKeys(ctx, &iam.ListAccessKeysInput{
 		UserName: user.User.UserName,
