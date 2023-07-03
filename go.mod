@@ -2,7 +2,6 @@ module github.com/kaytu-io/kaytu-engine
 
 go 1.19
 
-
 require (
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.2.2
@@ -34,7 +33,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/kaytu-io/kaytu-aws-describer v0.0.26
 	github.com/kaytu-io/kaytu-azure-describer v0.0.49
-	github.com/kaytu-io/kaytu-util v0.0.0-20230623140317-12dc853e96d0
+	github.com/kaytu-io/kaytu-util v0.0.0-20230703090141-cb7658e5b1d6
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/labstack/gommon v0.4.0

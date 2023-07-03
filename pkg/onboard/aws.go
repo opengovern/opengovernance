@@ -109,6 +109,19 @@ func getAWSCredentialsMetadata(ctx context.Context, config describe.AWSAccountCo
 		return nil, err
 	}
 
+	organization, err := describer.OrganizationOrganization(ctx, creds)
+	if err != nil {
+		if !ignoreAwsOrgError(err) {
+			return nil, err
+		}
+	}
+
+	if organization != nil {
+		metadata.OrganizationID = organization.Id
+		metadata.OrganizationMasterAccountEmail = organization.MasterAccountEmail
+		metadata.OrganizationMasterAccountId = organization.MasterAccountId
+	}
+
 	return &metadata, nil
 
 }
