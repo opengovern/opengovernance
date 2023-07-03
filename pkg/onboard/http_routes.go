@@ -629,6 +629,13 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 	if err != nil {
 		return err
 	}
+	if req.Name == "" {
+		if metadata.OrganizationID != nil {
+			req.Name = *metadata.OrganizationID
+		} else {
+			req.Name = metadata.AccountID
+		}
+	}
 	cred, err := NewAWSCredential(req.Name, metadata)
 	if err != nil {
 		return err
