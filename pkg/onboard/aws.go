@@ -47,10 +47,14 @@ func currentAwsAccount(ctx context.Context, logger *zap.Logger, cfg aws.Config) 
 			return nil, err
 		}
 	}
+	accountName := account.UserId
+	if acc != nil {
+		accountName = acc.Name
+	}
 
 	return &awsAccount{
 		AccountID:    *account.Account,
-		AccountName:  acc.Name,
+		AccountName:  accountName,
 		Organization: orgs,
 		Account:      acc,
 	}, nil
