@@ -31,7 +31,7 @@ require (
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/jedib0t/go-pretty/v6 v6.4.6
-	github.com/kaytu-io/kaytu-aws-describer v0.0.34
+	github.com/kaytu-io/kaytu-aws-describer v0.0.35
 	github.com/kaytu-io/kaytu-azure-describer v0.0.49
 	github.com/kaytu-io/kaytu-util v0.0.0-20230703125355-15bec58e8130
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
