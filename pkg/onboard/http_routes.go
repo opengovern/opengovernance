@@ -1801,9 +1801,11 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		}
 
 		if !isAttached {
-			healthMessage := err.Error()
+			var healthMessage string
 			if err == nil {
 				healthMessage = "Failed to find read permission"
+			} else {
+				healthMessage = err.Error()
 			}
 			src, err = h.updateConnectionHealth(src, source.HealthStatusUnhealthy, &healthMessage)
 			if err != nil {
