@@ -309,7 +309,11 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	isAttached, err := keibiaws.CheckAttachedPolicy(req.Config.AccessKey, req.Config.SecretKey, keibiaws.SecurityAuditPolicyARN)
+	sdkCnf, err := keibiaws.GetConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
+	if err != nil {
+		return err
+	}
+	isAttached, err := keibiaws.CheckAttachedPolicy(sdkCnf, keibiaws.SecurityAuditPolicyARN)
 	if err != nil {
 		fmt.Printf("error in checking security audit permission: %v", err)
 		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
@@ -481,7 +485,11 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		err = keibiaws.CheckGetUserPermission(awsConfig.AccessKey, awsConfig.SecretKey)
+		sdkCnf, err := keibiaws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
+		if err != nil {
+			return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		err = keibiaws.CheckGetUserPermission(sdkCnf)
 		if err == nil {
 			metadata, err := getAWSCredentialsMetadata(context.Background(), awsConfig)
 			if err != nil {
@@ -1014,6 +1022,21 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 
 		h.logger.Info("onboarding accounts", zap.Int("count", len(accountsToOnboard)))
 		for _, account := range accountsToOnboard {
+			assumeRoleArn := keibiaws.GetRoleArnFromName(account.AccountID, awsCnf.AssumeRoleName)
+			sdkCnf, err := keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, assumeRoleArn, assumeRoleArn, awsCnf.ExternalID)
+			if err != nil {
+				h.logger.Warn("failed to get config", zap.Error(err))
+				return err
+			}
+			isAttached, err := keibiaws.CheckAttachedPolicy(sdkCnf, keibiaws.SecurityAuditPolicyARN)
+			if err != nil {
+				h.logger.Warn("failed to check get user permission", zap.Error(err))
+				continue
+			}
+			if !isAttached {
+				h.logger.Warn("security audit policy not attached", zap.String("accountID", account.AccountID))
+				continue
+			}
 			h.logger.Info("onboarding account", zap.String("accountID", account.AccountID))
 			count, err := h.db.CountSources()
 			if err != nil {
@@ -1716,7 +1739,12 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 			if err != nil {
 				return err
 			}
-			isAttached, err = keibiaws.CheckAttachedPolicy(awsCnf.AccessKey, awsCnf.SecretKey, keibiaws.SecurityAuditPolicyARN)
+			assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
+			sdkCnf, err := keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
+			if err != nil {
+				return err
+			}
+			isAttached, err = keibiaws.CheckAttachedPolicy(sdkCnf, keibiaws.SecurityAuditPolicyARN)
 			if err == nil && isAttached {
 				assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
 				cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
@@ -1847,7 +1875,11 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 
 		req.AccountId = src.SourceId
 
-		isAttached, err := keibiaws.CheckAttachedPolicy(req.AccessKey, req.SecretKey, keibiaws.SecurityAuditPolicyARN)
+		sdkCnf, err := keibiaws.GetConfig(context.Background(), req.AccessKey, req.SecretKey, "", "", nil)
+		if err != nil {
+			return err
+		}
+		isAttached, err := keibiaws.CheckAttachedPolicy(sdkCnf, keibiaws.SecurityAuditPolicyARN)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}

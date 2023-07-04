@@ -2112,8 +2112,8 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
-github.com/kaytu-io/kaytu-aws-describer v0.0.31 h1:EDruKgCDTOjlcgHSi5LGjeWkm004IKXtS87RSe0Smc8=
-github.com/kaytu-io/kaytu-aws-describer v0.0.31/go.mod h1:h/SaRWf15RiWFsrC/pbESCDLgIN3rPuNghe/Ma3d94U=
+github.com/kaytu-io/kaytu-aws-describer v0.0.33 h1:ntMVbe5tNCRWH/ldN+h1yUh7MFy1eLjOu+NBJ3YxvXM=
+github.com/kaytu-io/kaytu-aws-describer v0.0.33/go.mod h1:h/SaRWf15RiWFsrC/pbESCDLgIN3rPuNghe/Ma3d94U=
 github.com/kaytu-io/kaytu-azure-describer v0.0.49 h1:CeqxW47IJ5M2f2KLD+LiabxioymmWdSpg/MYYaa5f5E=
 github.com/kaytu-io/kaytu-azure-describer v0.0.49/go.mod h1:qpVcTJTPS4Tqls/bqz4QyOaCItCXKEE9fMm9RSyXg7E=
 github.com/kaytu-io/kaytu-util v0.0.0-20230703125355-15bec58e8130 h1:LvcDHCu845EPIyPCRfar1y7aPGor/Y+Iir1WG1OsNPs=
