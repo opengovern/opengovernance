@@ -1014,6 +1014,8 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 
 		h.logger.Info("onboarding accounts", zap.Int("count", len(accountsToOnboard)))
 		for _, account := range accountsToOnboard {
+
+			keibiaws.CheckGetUserPermission()ww
 			h.logger.Info("onboarding account", zap.String("accountID", account.AccountID))
 			count, err := h.db.CountSources()
 			if err != nil {
@@ -1716,6 +1718,8 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 			if err != nil {
 				return err
 			}
+			assumeRoleArn
+			cnf := keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, "", "", awsCnf.ExternalID)
 			isAttached, err = keibiaws.CheckAttachedPolicy(awsCnf.AccessKey, awsCnf.SecretKey, keibiaws.SecurityAuditPolicyARN)
 			if err == nil && isAttached {
 				assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
