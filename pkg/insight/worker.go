@@ -3,8 +3,9 @@ package insight
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"strings"
+
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
@@ -13,25 +14,26 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/prometheus/client_golang/prometheus/push"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"go.uber.org/zap"
 )
 
 type Worker struct {
-	id             string
-	jobQueue       queue.Interface
-	jobResultQueue queue.Interface
-	kfkProducer    *confluent_kafka.Producer
-	kfkTopic       string
-	s3Bucket       string
-	logger         *zap.Logger
-	steampipeConn  *steampipe.Database
-	es             keibi.Client
-	pusher         *push.Pusher
-	onboardClient  client.OnboardServiceClient
-	uploader       *s3manager.Uploader
+	id              string
+	jobQueue        queue.Interface
+	jobResultQueue  queue.Interface
+	kfkProducer     *confluent_kafka.Producer
+	kfkTopic        string
+	s3Bucket        string
+	logger          *zap.Logger
+	steampipeOption steampipe.Option
+	steampipeConn   *steampipe.Database
+	es              keibi.Client
+	pusher          *push.Pusher
+	onboardClient   client.OnboardServiceClient
+	uploader        *s3manager.Uploader
 }
 
 func InitializeWorker(
@@ -99,13 +101,15 @@ func InitializeWorker(
 	w.logger = logger
 
 	// setup steampipe connection
-	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
+	steampipeOption := steampipe.Option{
 		Host: steampipeHost,
 		Port: steampipePort,
 		User: steampipeUsername,
 		Pass: steampipePassword,
 		Db:   steampipeDb,
-	})
+	}
+	w.steampipeOption = steampipeOption
+	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipeOption)
 	w.steampipeConn = steampipeConn
 	if err != nil {
 		return nil, err
@@ -172,7 +176,7 @@ func (w *Worker) Run() error {
 			continue
 		}
 		w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
-		result := job.Do(w.es, w.steampipeConn, w.onboardClient, w.kfkProducer, w.uploader, w.s3Bucket, w.kfkTopic, w.logger)
+		result := job.Do(w.es, w.steampipeOption, w.onboardClient, w.kfkProducer, w.uploader, w.s3Bucket, w.kfkTopic, w.logger)
 		w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)))
 		err := w.jobResultQueue.Publish(result)
 		if err != nil {

@@ -41,6 +41,8 @@ var (
 	S3AccessSecret = os.Getenv("S3_ACCESS_SECRET")
 	S3Region       = os.Getenv("S3_REGION")
 	S3Bucket       = os.Getenv("S3_BUCKET")
+
+	CurrentWorkspaceID = os.Getenv("CURRENT_NAMESPACE")
 )
 
 func WorkerCommand() *cobra.Command {

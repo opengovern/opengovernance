@@ -27,6 +27,8 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
+
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 )
 
 var DoInsightJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -63,7 +65,7 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardClient client.OnboardServiceClient, producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket, topic string, logger *zap.Logger) (r JobResult) {
+func (j Job) Do(client keibi.Client, steampipeOption steampipe.Option, onboardClient client.OnboardServiceClient, producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket, topic string, logger *zap.Logger) (r JobResult) {
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
@@ -99,8 +101,20 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 		locationsMap   map[string]struct{}
 		connectionsMap map[string]string
 	)
+	ctx := &httpclient.Context{
+		UserRole: authApi.AdminRole,
+	}
+	_, err := onboardClient.GetSource(ctx, j.SourceID)
+	var isStack bool
+	if err != nil {
+		if err.Error() == "code=400, message=source not found" {
+			isStack = true
+		}
+	} else {
+		isStack = false
+	}
+
 	var res *steampipe.Result
-	var err error
 	if strings.TrimSpace(j.Query) == "accounts_count" {
 		var totalAccounts int64
 		totalAccounts, err = onboardClient.CountSources(&httpclient.Context{
@@ -118,6 +132,10 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 		}
 		query := strings.ReplaceAll(j.Query, "$CONNECITON_ID", j.SourceID)
 		query = strings.ReplaceAll(query, "$IS_ALL_CONNECTIONS_QUERY", isAllConnectionsQuery)
+		if isStack == true {
+			steampipeOption.Host = fmt.Sprintf("%s-steampipe-service.%s.svc.cluster.local", ("stack-" + j.SourceID), CurrentWorkspaceID)
+		}
+		steampipeConn, err := steampipe.NewSteampipeDatabase(steampipeOption)
 		res, err = steampipeConn.QueryAll(query)
 		if res != nil {
 			count = int64(len(res.Data))
@@ -222,7 +240,13 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 						S3Location:          result.Location,
 					})
 				}
-				if err := kafka.DoSend(producer, topic, -1, resources, logger); err != nil {
+				var kafkaTopic string
+				if isStack == true {
+					kafkaTopic = "stack-" + j.SourceID
+				} else {
+					kafkaTopic = topic
+				}
+				if err := kafka.DoSend(producer, kafkaTopic, -1, resources, logger); err != nil {
 					fail(fmt.Errorf("send to kafka: %w", err))
 				}
 			} else {

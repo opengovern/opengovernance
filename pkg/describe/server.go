@@ -1021,7 +1021,7 @@ func (h HttpServer) DeleteStack(ctx echo.Context) error {
 //	@Param			request	body		api.StackBenchmarkRequest	true	"Request Body"
 //	@Success		200		{object}	[]ComplianceReportJob
 //	@Router			/schedule/api/v1/stacks/benchmark/trigger [post]
-func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
+func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error { // Retired
 	var req api.StackBenchmarkRequest
 	err := bindValidate(ctx, &req)
 	if err != nil {
@@ -1313,7 +1313,7 @@ func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
 //	@Param			request	body		api.StackInsightRequest	true	"Request Body"
 //	@Success		200		{object}	[]api.InsightJob
 //	@Router			/schedule/api/v1/stacks/insight/trigger [post]
-func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
+func (h HttpServer) TriggerStackInsight(ctx echo.Context) error { // Retired
 	var req api.StackInsightRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -1422,7 +1422,7 @@ func (h HttpServer) GetInsightJob(ctx echo.Context) error {
 //	@Success		200
 //	@Param			req	body	api.DescribeStackRequest	true	"request"
 //	@Router			/schedule/api/v1/stacks/describer/trigger [post]
-func (h HttpServer) TriggerStackDescriber(ctx echo.Context) error {
+func (h HttpServer) TriggerStackDescriber(ctx echo.Context) error { // Retired
 	var req api.DescribeStackRequest
 
 	if err := bindValidate(ctx, &req); err != nil {
