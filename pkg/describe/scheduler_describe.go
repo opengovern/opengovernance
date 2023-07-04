@@ -9,6 +9,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	apiDescribe "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
+	apiInsight "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	summarizerapi "github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
@@ -385,9 +387,11 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *Des
 	return nil
 }
 
+// ================================================ STACKS ================================================
+
 func (s Scheduler) scheduleStackJobs() error {
 
-	// Create helm chart for created stacks and run describer for them
+	// ==== Create helm chart for created stacks and run describer for them
 	stacks, err := s.db.ListCreatedStacks()
 	if err != nil {
 		return err
@@ -409,7 +413,7 @@ func (s Scheduler) scheduleStackJobs() error {
 		}
 	}
 
-	// Check describer jobs and update stack status
+	// ==== Check describer jobs and update stack status
 	stacks, err = s.db.ListDescribingStacks()
 	if err != nil {
 		return err
@@ -431,7 +435,7 @@ func (s Scheduler) scheduleStackJobs() error {
 		}
 	}
 
-	// run benchmarks on stacks
+	// ==== run benchmarks on stacks
 	stacks, err = s.db.ListDescribedStacks()
 	if err != nil {
 		return err
@@ -442,6 +446,16 @@ func (s Scheduler) scheduleStackJobs() error {
 			s.logger.Error(fmt.Sprintf("Failed to evaluate stack resources %s", stack.StackID), zap.Error(err))
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
 			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to run benchmarks on stack with error: %s", err.Error()))
+		}
+	}
+
+	// ==== run insights on stacks
+	for _, stack := range stacks {
+		err = s.runStackInsights(stack.ToApi())
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("Failed to evaluate stack resources %s", stack.StackID), zap.Error(err))
+			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
+			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to run insights on stack with error: %s", err.Error()))
 		}
 	}
 
@@ -553,7 +567,6 @@ func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		UserRole: apiAuth.AdminRole,
 	}
 	benchmarks, err := s.complianceClient.ListBenchmarks(ctx)
-	var complianceJobs []ComplianceReportJob
 	var provider source.Type
 	for _, resource := range stack.Resources {
 		if strings.Contains(resource, "aws") {
@@ -600,7 +613,53 @@ func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		if err != nil {
 			return err
 		}
-		complianceJobs = append(complianceJobs, crj)
+	}
+	return nil
+}
+
+func (s Scheduler) runStackInsights(stack apiDescribe.Stack) error {
+	stackId := stack.StackID[6:]
+
+	src, err := s.db.GetSourceByID(stackId)
+	if err != nil {
+		return err
+	}
+
+	var provider source.Type
+	for _, resource := range stack.Resources {
+		if strings.Contains(resource, "aws") {
+			provider = source.CloudAWS
+		} else if strings.Contains(resource, "subscriptions") {
+			provider = source.CloudAzure
+		}
+	}
+	insights, err := s.complianceClient.ListInsightsMetadata(&httpclient.Context{UserRole: apiAuth.AdminRole}, []source.Type{provider})
+	if err != nil {
+		return err
+	}
+	for _, insight := range insights {
+		job := newInsightJob(insight, string(src.Type), src.ID.String(), src.AccountID, "")
+		err = s.db.AddInsightJob(&job)
+		if err != nil {
+			return err
+		}
+
+		err = enqueueInsightJobs(s.insightJobQueue, job, insight)
+		if err != nil {
+			job.Status = apiInsight.InsightJobFailed
+			job.FailureMessage = "Failed to enqueue InsightJob"
+			s.db.UpdateInsightJobStatus(job)
+		}
+		evaluation := StackEvaluation{
+			EvaluatorID: strconv.FormatUint(uint64(insight.ID), 10),
+			Type:        api.EvaluationTypeInsight,
+			StackID:     stack.StackID,
+			JobID:       job.ID,
+		}
+		err = s.db.AddEvaluation(&evaluation)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
