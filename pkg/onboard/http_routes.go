@@ -309,14 +309,11 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	// Check creds section
-	err := keibiaws.CheckDescribeRegionsPermission(req.Config.AccessKey, req.Config.SecretKey)
+	sdkCnf, err := keibiaws.GetConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
 	if err != nil {
-		fmt.Printf("error in checking describe regions permission: %v", err)
-		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
+		return err
 	}
-
-	isAttached, err := keibiaws.CheckAttachedPolicy(req.Config.AccessKey, req.Config.SecretKey, keibiaws.SecurityAuditPolicyARN)
+	isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, "", keibiaws.SecurityAuditPolicyARN)
 	if err != nil {
 		fmt.Printf("error in checking security audit permission: %v", err)
 		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
@@ -326,7 +323,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	}
 
 	// Create source section
-	cfg, err := keibiaws.GetConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "")
+	cfg, err := keibiaws.GetConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
 	if err != nil {
 		return err
 	}
@@ -335,7 +332,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		cfg.Region = "us-east-1"
 	}
 
-	acc, err := currentAwsAccount(context.Background(), cfg)
+	acc, err := currentAwsAccount(context.Background(), h.logger, cfg)
 	if err != nil {
 		return err
 	}
@@ -444,7 +441,7 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return err
 	}
 
-	src := NewAzureSourceWithCredentials(*azSub, source.SourceCreationMethodManual, req.Description, *cred)
+	src := NewAzureConnectionWithCredentials(*azSub, source.SourceCreationMethodManual, req.Description, *cred)
 	secretBytes, err := h.kms.Encrypt(req.Config.AsMap(), h.keyARN)
 	if err != nil {
 		return err
@@ -488,9 +485,13 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		err = keibiaws.CheckGetUserPermission(awsConfig.AccessKey, awsConfig.SecretKey)
+		sdkCnf, err2 := keibiaws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
+		if err2 != nil {
+			return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		err = keibiaws.CheckGetUserPermission(h.logger, sdkCnf)
 		if err == nil {
-			metadata, err := getAWSCredentialsMetadata(context.Background(), awsConfig)
+			metadata, err := getAWSCredentialsMetadata(context.Background(), h.logger, awsConfig)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
@@ -500,7 +501,6 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 			}
 			cred.Metadata = jsonMetadata
 		}
-
 	case source.CloudAzure:
 		var azureConfig describe.AzureSubscriptionConfig
 		azureConfig, err = describe.AzureSubscriptionConfigFromMap(config)
@@ -625,9 +625,16 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 		return ctx.JSON(http.StatusBadRequest, "invalid config")
 	}
 
-	metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), awsCnf)
+	metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), h.logger, awsCnf)
 	if err != nil {
 		return err
+	}
+	if req.Name == "" {
+		if metadata.OrganizationID != nil {
+			req.Name = *metadata.OrganizationID
+		} else {
+			req.Name = metadata.AccountID
+		}
 	}
 	cred, err := NewAWSCredential(req.Name, metadata)
 	if err != nil {
@@ -871,7 +878,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 		}
 		h.logger.Info("discovered subscriptions", zap.Int("count", len(subs)))
 
-		existingConnections, err := h.db.GetSourcesByCredentialID(credential.ID.String())
+		existingConnections, err := h.db.GetSourcesOfType(credential.ConnectorType)
 		if err != nil {
 			return err
 		}
@@ -915,7 +922,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 				continue
 			}
 
-			src := NewAzureSourceWithCredentials(
+			src := NewAzureConnectionWithCredentials(
 				sub,
 				source.SourceCreationMethodAutoOnboard,
 				fmt.Sprintf("Auto onboarded subscription %s", sub.SubscriptionID),
@@ -937,6 +944,121 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 				}); err != nil {
 					return err
 				}
+
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+
+			metadata := make(map[string]any)
+			if src.Metadata.String() != "" {
+				err := json.Unmarshal(src.Metadata, &metadata)
+				if err != nil {
+					return err
+				}
+			}
+
+			onboardedSources = append(onboardedSources, api.Connection{
+				ID:                   src.ID,
+				ConnectionID:         src.SourceId,
+				ConnectionName:       src.Name,
+				Email:                src.Email,
+				Connector:            src.Type,
+				Description:          src.Description,
+				CredentialID:         src.CredentialID.String(),
+				CredentialName:       src.Credential.Name,
+				OnboardDate:          src.CreatedAt,
+				LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
+				AssetDiscoveryMethod: src.AssetDiscoveryMethod,
+				LastHealthCheckTime:  src.LastHealthCheckTime,
+				HealthReason:         src.HealthReason,
+				Metadata:             metadata,
+			})
+		}
+	case source.CloudAWS:
+		cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+		if err != nil {
+			return err
+		}
+		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+		cfg, err := keibiaws.GetConfig(
+			ctx.Request().Context(),
+			awsCnf.AccessKey,
+			awsCnf.SecretKey,
+			"",
+			"",
+			nil)
+		h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
+		if cfg.Region == "" {
+			cfg.Region = "us-east-1"
+		}
+		accounts, err := discoverAWSAccounts(ctx.Request().Context(), cfg)
+		if err != nil {
+			h.logger.Error("failed to discover accounts", zap.Error(err))
+			return err
+		}
+		h.logger.Info("discovered accounts", zap.Int("count", len(accounts)))
+		existingConnections, err := h.db.GetSourcesOfType(credential.ConnectorType)
+		if err != nil {
+			return err
+		}
+		existingConnectionAccountIDs := make([]string, 0, len(existingConnections))
+		for _, conn := range existingConnections {
+			existingConnectionAccountIDs = append(existingConnectionAccountIDs, conn.SourceId)
+		}
+		accountsToOnboard := make([]awsAccount, 0)
+		for _, account := range accounts {
+			if !utils.Includes(existingConnectionAccountIDs, account.AccountID) {
+				accountsToOnboard = append(accountsToOnboard, account)
+			}
+		}
+
+		// TODO add tag filter
+
+		h.logger.Info("onboarding accounts", zap.Int("count", len(accountsToOnboard)))
+		for _, account := range accountsToOnboard {
+			//assumeRoleArn := keibiaws.GetRoleArnFromName(account.AccountID, awsCnf.AssumeRoleName)
+			//sdkCnf, err := keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, assumeRoleArn, assumeRoleArn, awsCnf.ExternalID)
+			//if err != nil {
+			//	h.logger.Warn("failed to get config", zap.Error(err))
+			//	return err
+			//}
+			//isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, keibiaws.SecurityAuditPolicyARN)
+			//if err != nil {
+			//	h.logger.Warn("failed to check get user permission", zap.Error(err))
+			//	continue
+			//}
+			//if !isAttached {
+			//	h.logger.Warn("security audit policy not attached", zap.String("accountID", account.AccountID))
+			//	continue
+			//}
+			h.logger.Info("onboarding account", zap.String("accountID", account.AccountID))
+			count, err := h.db.CountSources()
+			if err != nil {
+				return err
+			}
+			if count >= httpserver.GetMaxConnections(ctx) {
+				return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+			}
+
+			src := NewAWSConnectionWithCredentials(
+				account,
+				source.SourceCreationMethodAutoOnboard,
+				fmt.Sprintf("Auto onboarded account %s", account.AccountID),
+				*credential,
+			)
+
+			err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+				err := h.db.CreateSource(&src)
+				if err != nil {
+					return err
+				}
+
+				//TODO: add enable account
 
 				return nil
 			})
@@ -1238,7 +1360,7 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 			return ctx.JSON(http.StatusBadRequest, "invalid config")
 		}
 
-		metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), awsCnf)
+		metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), h.logger, awsCnf)
 		if err != nil {
 			return err
 		}
@@ -1255,7 +1377,7 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 	cred.Secret = string(secretBytes)
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		if err := h.db.CreateCredential(cred); err != nil {
+		if _, err := h.db.UpdateCredential(cred); err != nil {
 			return err
 		}
 
@@ -1616,17 +1738,26 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 			if err != nil {
 				return err
 			}
-			isAttached, err = keibiaws.CheckAttachedPolicy(awsCnf.AccessKey, awsCnf.SecretKey, keibiaws.SecurityAuditPolicyARN)
+			assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
+			sdkCnf, err := keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
+			if err != nil {
+				h.logger.Error("failed to get aws config", zap.Error(err))
+				return err
+			}
+			isAttached, err = keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, keibiaws.SecurityAuditPolicyARN)
 			if err == nil && isAttached {
-				cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", "")
+				assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
+				cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
 				if err != nil {
+					h.logger.Error("failed to get aws config", zap.Error(err))
 					return err
 				}
 				if cfg.Region == "" {
 					cfg.Region = "us-east-1"
 				}
-				awsAccount, err := currentAwsAccount(ctx.Request().Context(), cfg)
+				awsAccount, err := currentAwsAccount(ctx.Request().Context(), h.logger, cfg)
 				if err != nil {
+					h.logger.Error("failed to get current aws account", zap.Error(err))
 					return err
 				}
 				metadata := NewAWSConnectionMetadata(*awsAccount)
@@ -1672,9 +1803,11 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		}
 
 		if !isAttached {
-			healthMessage := err.Error()
+			var healthMessage string
 			if err == nil {
 				healthMessage = "Failed to find read permission"
+			} else {
+				healthMessage = err.Error()
 			}
 			src, err = h.updateConnectionHealth(src, source.HealthStatusUnhealthy, &healthMessage)
 			if err != nil {
@@ -1746,7 +1879,11 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 
 		req.AccountId = src.SourceId
 
-		isAttached, err := keibiaws.CheckAttachedPolicy(req.AccessKey, req.SecretKey, keibiaws.SecurityAuditPolicyARN)
+		sdkCnf, err := keibiaws.GetConfig(context.Background(), req.AccessKey, req.SecretKey, "", "", nil)
+		if err != nil {
+			return err
+		}
+		isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, "", keibiaws.SecurityAuditPolicyARN)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
@@ -2391,15 +2528,16 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 				result.OldConnectionCount++
 				result.TotalOldResourceCount += *localData.OldCount
 			}
-
-			switch connection.LifecycleState {
-			case ConnectionLifecycleStateNotOnboard:
-				result.TotalDisabledCount++
-			case ConnectionLifecycleStateUnhealthy:
-				result.TotalUnhealthyCount++
-
-			}
 			result.Connections = append(result.Connections, apiConn)
+		} else {
+			result.Connections = append(result.Connections, connection.toApi())
+		}
+		switch connection.LifecycleState {
+		case ConnectionLifecycleStateNotOnboard:
+			result.TotalDisabledCount++
+		case ConnectionLifecycleStateUnhealthy:
+			result.TotalUnhealthyCount++
+
 		}
 	}
 

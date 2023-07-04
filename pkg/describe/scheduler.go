@@ -763,8 +763,14 @@ func (s *Scheduler) RunDeletedSourceCleanup() {
 }
 
 func (s Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
-	//TODO-Saleh remove all of source resources
-
+	err := s.cleanupDeletedConnectionResources(sourceId)
+	if err != nil {
+		s.logger.Error("Failed to cleanup deleted connection resources",
+			zap.String("sourceId", sourceId),
+			zap.Error(err),
+		)
+		s.deletedSources <- sourceId
+	}
 }
 
 func (s Scheduler) cleanupComplianceReportJobForDeletedSource(sourceId string) {

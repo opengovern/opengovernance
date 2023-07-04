@@ -51,7 +51,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.POST("/resources", httpserver.AuthorizeHandler(h.GetAllResources, api3.ViewerRole))
 	v1.POST("/resources/azure", httpserver.AuthorizeHandler(h.GetAzureResources, api3.ViewerRole))
 	v1.POST("/resources/aws", httpserver.AuthorizeHandler(h.GetAWSResources, api3.ViewerRole))
-	v1.GET("/resources/count", httpserver.AuthorizeHandler(h.CountResources, api3.ViewerRole))
 	v1.POST("/resources/filters", httpserver.AuthorizeHandler(h.GetResourcesFilters, api3.ViewerRole))
 	v1.POST("/resource", httpserver.AuthorizeHandler(h.GetResource, api3.ViewerRole))
 
@@ -67,6 +66,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	resourcesV2 := v2.Group("/resources")
 	resourcesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListResourceTypeTags, api3.ViewerRole))
 	resourcesV2.GET("/tag/:key", httpserver.AuthorizeHandler(h.GetResourceTypeTag, api3.ViewerRole))
+	resourcesV2.GET("/count", httpserver.AuthorizeHandler(h.CountResources, api3.ViewerRole))
 	resourcesV2.GET("/metric", httpserver.AuthorizeHandler(h.ListResourceTypeMetricsHandler, api3.ViewerRole))
 	resourcesV2.GET("/metric/:resourceType", httpserver.AuthorizeHandler(h.GetResourceTypeMetricsHandler, api3.ViewerRole))
 	resourcesV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListResourceTypeComposition, api3.ViewerRole))
@@ -82,6 +82,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	servicesV2.GET("/metric/:serviceName", httpserver.AuthorizeHandler(h.GetServiceMetricsHandler, api3.ViewerRole))
 	servicesV2.GET("/summary", httpserver.AuthorizeHandler(h.ListServiceSummaries, api3.ViewerRole))
 	servicesV2.GET("/summary/:serviceName", httpserver.AuthorizeHandler(h.GetServiceSummary, api3.ViewerRole))
+	servicesV2.GET("/cost/trend", httpserver.AuthorizeHandler(h.GetServiceCostTrend, api3.ViewerRole))
 
 	costV2 := v2.Group("/cost")
 	costV2.GET("/metric", httpserver.AuthorizeHandler(h.ListCostMetricsHandler, api3.ViewerRole))
@@ -1486,8 +1487,8 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 			if apiServices[j].ResourceCount == nil {
 				return true
 			}
-			if *apiServices[i].ResourceCount == *apiServices[j].ResourceCount {
-				return apiServices[i].ServiceName < apiServices[j].ServiceName
+			if *apiServices[i].ResourceCount != *apiServices[j].ResourceCount {
+				return *apiServices[i].ResourceCount > *apiServices[j].ResourceCount
 			}
 		case "growth":
 			diffi := utils.PSub(apiServices[i].ResourceCount, apiServices[i].OldResourceCount)
@@ -2069,6 +2070,12 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 
 	for connectionId, costValue := range costs {
 		localValue := costValue
+		if _, ok := res[connectionId]; !ok {
+			res[connectionId] = api.ConnectionData{
+				ConnectionID:  connectionId,
+				LastInventory: nil,
+			}
+		}
 		if v, ok := res[connectionId]; ok {
 			v.TotalCost = utils.PAdd(v.TotalCost, &localValue)
 			res[connectionId] = v
@@ -2076,12 +2083,24 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	}
 	for connectionId, costValue := range startTimeCosts {
 		localValue := costValue
+		if _, ok := res[connectionId]; !ok {
+			res[connectionId] = api.ConnectionData{
+				ConnectionID:  connectionId,
+				LastInventory: nil,
+			}
+		}
 		if v, ok := res[connectionId]; ok {
 			v.DailyCostAtStartTime = utils.PAdd(v.DailyCostAtStartTime, &localValue)
 			res[connectionId] = v
 		}
 	}
 	for connectionId, costValue := range endTimeCosts {
+		if _, ok := res[connectionId]; !ok {
+			res[connectionId] = api.ConnectionData{
+				ConnectionID:  connectionId,
+				LastInventory: nil,
+			}
+		}
 		localValue := costValue
 		if v, ok := res[connectionId]; ok {
 			v.DailyCostAtEndTime = utils.PAdd(v.DailyCostAtEndTime, &localValue)
@@ -2378,6 +2397,75 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, serviceSummary)
+}
+
+// GetServiceCostTrend godoc
+//
+//	@Summary		Get Services Cost Trend
+//	@Description	This API allows users to retrieve a list of costs over the course of the specified time frame for the given services. If startTime and endTime are empty, the API returns the last month trend.
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			services		query		[]string		false	"Services to filter by"
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
+//	@Success		200				{object}	[]api.CostTrendDatapoint
+//	@Router			/inventory/api/v2/services/cost/trend [get]
+func (h *HttpHandler) GetServiceCostTrend(ctx echo.Context) error {
+	var err error
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	services := httpserver.QueryArrayParam(ctx, "services")
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now()
+	if endTimeStr != "" {
+		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		endTime = time.Unix(endTimeVal, 0)
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := endTime.AddDate(0, -1, 0)
+	if startTimeStr != "" {
+		startTimeVal, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		startTime = time.Unix(startTimeVal, 0)
+	}
+
+	datapointCountStr := ctx.QueryParam("datapointCount")
+	datapointCount := int64(30)
+	if datapointCountStr != "" {
+		datapointCount, err = strconv.ParseInt(datapointCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
+		}
+	}
+
+	esDataPointCount := int(endTime.Sub(startTime).Hours() / 24)
+	servicesTimepointToCost, err := es.FetchDailyCostTrendByServicesBetween(h.client, connectionIDs, connectorTypes, services, startTime, endTime, esDataPointCount)
+	if err != nil {
+		return err
+	}
+	var response []api.ListServicesCostTrendDatapoint
+	for service, timepointToCost := range servicesTimepointToCost {
+		apiDatapoints := make([]api.CostTrendDatapoint, 0, len(timepointToCost))
+		for timeAt, costVal := range timepointToCost {
+			apiDatapoints = append(apiDatapoints, api.CostTrendDatapoint{Cost: costVal, Date: time.Unix(int64(timeAt), 0)})
+		}
+		sort.Slice(apiDatapoints, func(i, j int) bool {
+			return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
+		})
+		apiDatapoints = internal.DownSampleCostTrendDatapoints(apiDatapoints, int(datapointCount))
+		response = append(response, api.ListServicesCostTrendDatapoint{ServiceName: service, CostTrend: apiDatapoints})
+	}
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // GetResource godoc
@@ -2854,25 +2942,27 @@ func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json,text/csv
 //	@Success		200	{object}	int64
-//	@Router			/inventory/api/v1/resources/count [get]
+//	@Router			/inventory/api/v2/resources/count [get]
 func (h *HttpHandler) CountResources(ctx echo.Context) error {
-	value := 0
-	toTime := time.Now()
-	fromTime := toTime.Add(-24 * time.Hour)
-	d, err := ExtractTrend(h.client, source.Nil, nil, fromTime.UnixMilli(), toTime.UnixMilli())
+	timeAt := time.Now()
+	resourceTypes, err := h.db.ListFilteredResourceTypes(nil, nil, nil, true)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	if len(d) > 0 {
-		var maxItem int64
-		for k, v := range d {
-			if k > maxItem {
-				maxItem, value = k, v
-			}
-		}
+	resourceTypeNames := make([]string, 0, len(resourceTypes))
+	for _, resourceType := range resourceTypes {
+		resourceTypeNames = append(resourceTypeNames, resourceType.ResourceType)
 	}
 
-	return ctx.JSON(http.StatusOK, value)
+	metricsIndexed, err := es.FetchConnectorResourceTypeCountAtTime(h.client, nil, timeAt, resourceTypeNames, EsFetchPageSize)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	totalCount := 0
+	for _, count := range metricsIndexed {
+		totalCount += count
+	}
+	return ctx.JSON(http.StatusOK, totalCount)
 }
 
 // GetResourcesFilters godoc

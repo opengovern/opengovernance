@@ -763,6 +763,7 @@ func (h HttpServer) DescribeSingleResource(ctx echo.Context) error {
 			req.SecretKey,
 			"",
 			"",
+			nil,
 			false,
 			req.AdditionalFields,
 		)

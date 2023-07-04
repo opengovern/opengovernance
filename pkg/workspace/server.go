@@ -130,7 +130,7 @@ func NewServer(cfg *Config) (*Server, error) {
 	}
 	s.dockerRegistryConfig = base64.StdEncoding.EncodeToString(registrySecret.Data[".dockerconfigjson"])
 
-	s.awsConfig, err = aws2.GetConfig(context.Background(), cfg.S3AccessKey, cfg.S3SecretKey, "", "")
+	s.awsConfig, err = aws2.GetConfig(context.Background(), cfg.S3AccessKey, cfg.S3SecretKey, "", "", nil)
 	if err != nil {
 		return nil, err
 	}

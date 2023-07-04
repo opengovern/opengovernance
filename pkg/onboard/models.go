@@ -64,7 +64,7 @@ type Source struct {
 
 	CreationMethod source.SourceCreationMethod `gorm:"not null;default:'manual'"`
 
-	Metadata datatypes.JSON
+	Metadata datatypes.JSON `gorm:"default:'{}'"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -109,6 +109,9 @@ type AWSConnectionMetadata struct {
 func NewAWSConnectionMetadata(account awsAccount) AWSConnectionMetadata {
 	metadata := AWSConnectionMetadata{
 		AccountID: account.AccountID,
+	}
+	if account.AccountName != nil {
+		metadata.AccountName = *account.AccountName
 	}
 	metadata.Organization = account.Organization
 	metadata.OrganizationAccount = account.Account
@@ -182,7 +185,7 @@ func NewAzureConnectionMetadata(sub azureSubscription) AzureConnectionMetadata {
 	return metadata
 }
 
-func NewAzureSourceWithCredentials(sub azureSubscription, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
+func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
 	id := uuid.New()
 
 	name := sub.SubscriptionID
@@ -205,6 +208,38 @@ func NewAzureSourceWithCredentials(sub azureSubscription, creationMethod source.
 		CredentialID:         creds.ID,
 		Credential:           creds,
 		LifecycleState:       ConnectionLifecycleStateInProgress,
+		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
+		LastHealthCheckTime:  time.Now(),
+		CreationMethod:       creationMethod,
+		Metadata:             datatypes.JSON(jsonMetadata),
+	}
+
+	return s
+}
+
+func NewAWSConnectionWithCredentials(account awsAccount, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
+	id := uuid.New()
+
+	name := account.AccountID
+	if account.AccountName != nil {
+		name = *account.AccountName
+	}
+
+	metadata := NewAWSConnectionMetadata(account)
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		jsonMetadata = []byte("{}")
+	}
+
+	s := Source{
+		ID:                   id,
+		SourceId:             account.AccountID,
+		Name:                 name,
+		Description:          description,
+		Type:                 source.CloudAWS,
+		CredentialID:         creds.ID,
+		Credential:           creds,
+		LifecycleState:       ConnectionLifecycleStateNotOnboard,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       creationMethod,
@@ -242,7 +277,7 @@ type Credential struct {
 	ID                 uuid.UUID             `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()" json:"id"`
 	Name               *string               `json:"name,omitempty"`
 	ConnectorType      source.Type           `gorm:"not null" json:"connectorType"`
-	Secret             string                `gorm:"" json:"-"`
+	Secret             string                `json:"-"`
 	CredentialType     source.CredentialType `gorm:"default:'auto-generated'" json:"credentialType"`
 	Enabled            bool                  `gorm:"default:true" json:"enabled"`
 	AutoOnboardEnabled bool                  `gorm:"default:false" json:"autoOnboardEnabled"`
@@ -251,7 +286,7 @@ type Credential struct {
 	HealthStatus        source.HealthStatus `gorm:"not null;default:'healthy'" json:"healthStatus"`
 	HealthReason        *string             `json:"healthReason,omitempty"`
 
-	Metadata datatypes.JSON `json:"metadata,omitempty"`
+	Metadata datatypes.JSON `json:"metadata,omitempty" gorm:"default:'{}'"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

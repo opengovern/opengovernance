@@ -4923,25 +4923,6 @@ paths:
       summary: Get Azure resources
       tags:
       - resource
-  /inventory/api/v1/resources/count:
-    get:
-      consumes:
-      - application/json
-      deprecated: true
-      description: Number of all resources
-      produces:
-      - application/json
-      - text/csv
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: integer
-      security:
-      - BearerToken: []
-      summary: Count resources
-      tags:
-      - resource
   /inventory/api/v1/resources/filters:
     post:
       consumes:
@@ -5429,6 +5410,25 @@ paths:
       summary: List resource type composition
       tags:
       - inventory
+  /inventory/api/v2/resources/count:
+    get:
+      consumes:
+      - application/json
+      deprecated: true
+      description: Number of all resources
+      produces:
+      - application/json
+      - text/csv
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      security:
+      - BearerToken: []
+      summary: Count resources
+      tags:
+      - resource
   /inventory/api/v2/resources/metric:
     get:
       consumes:
@@ -5871,6 +5871,65 @@ paths:
       security:
       - BearerToken: []
       summary: Get resource type trend
+      tags:
+      - inventory
+  /inventory/api/v2/services/cost/trend:
+    get:
+      consumes:
+      - application/json
+      description: This API allows users to retrieve a list of costs over the course
+        of the specified time frame for the given services. If startTime and endTime
+        are empty, the API returns the last month trend.
+      parameters:
+      - collectionFormat: csv
+        description: Services to filter by
+        in: query
+        items:
+          type: string
+        name: services
+        type: array
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: timestamp for start in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      - description: timestamp for end in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: maximum number of datapoints to return, default is 30
+        in: query
+        name: datapointCount
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostTrendDatapoint'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get Services Cost Trend
       tags:
       - inventory
   /inventory/api/v2/services/metric:
