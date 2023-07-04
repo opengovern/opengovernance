@@ -485,8 +485,8 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		sdkCnf, err := keibiaws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
-		if err != nil {
+		sdkCnf, err2 := keibiaws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
+		if err2 != nil {
 			return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		err = keibiaws.CheckGetUserPermission(h.logger, sdkCnf)
@@ -501,7 +501,6 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 			}
 			cred.Metadata = jsonMetadata
 		}
-
 	case source.CloudAzure:
 		var azureConfig describe.AzureSubscriptionConfig
 		azureConfig, err = describe.AzureSubscriptionConfigFromMap(config)
