@@ -2528,17 +2528,16 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 				result.OldConnectionCount++
 				result.TotalOldResourceCount += *localData.OldCount
 			}
-
-			switch connection.LifecycleState {
-			case ConnectionLifecycleStateNotOnboard:
-				result.TotalDisabledCount++
-			case ConnectionLifecycleStateUnhealthy:
-				result.TotalUnhealthyCount++
-
-			}
 			result.Connections = append(result.Connections, apiConn)
 		} else {
 			result.Connections = append(result.Connections, connection.toApi())
+		}
+		switch connection.LifecycleState {
+		case ConnectionLifecycleStateNotOnboard:
+			result.TotalDisabledCount++
+		case ConnectionLifecycleStateUnhealthy:
+			result.TotalUnhealthyCount++
+
 		}
 	}
 
