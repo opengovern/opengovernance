@@ -10,6 +10,7 @@ import (
 type JobConfig struct {
 	PostgreSQL            config.Postgres
 	ElasticSearch         config.ElasticSearch
+	Metadata              config.KeibiService
 	QueryGitURL           string `yaml:"query_git_url"`
 	GithubToken           string `yaml:"github_token"`
 	AWSComplianceGitURL   string `yaml:"aws_compliance_git_url"`

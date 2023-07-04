@@ -3,12 +3,14 @@ package migrator
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 	"net/http"
 	"os"
 
 	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/prometheus/client_golang/prometheus/push"
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/compliance"
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/elasticsearch"
@@ -16,6 +18,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/internal"
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/inventory"
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/workspace"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"
 )
 
@@ -69,6 +73,28 @@ func InitializeJob(
 	w.AzureComplianceGitURL = conf.AzureComplianceGitURL
 	w.QueryGitURL = conf.QueryGitURL
 	w.githubToken = conf.GithubToken
+
+	metadata := client.NewMetadataServiceClient(conf.Metadata.BaseURL)
+	if value, err := metadata.GetConfigMetadata(&httpclient.Context{
+		UserRole: api.AdminRole,
+	}, models.MetadataKeyAWSComplianceGitURL); err == nil && len(value.GetValue().(string)) > 0 {
+		w.AWSComplianceGitURL = value.GetValue().(string)
+	}
+	if value, err := metadata.GetConfigMetadata(&httpclient.Context{
+		UserRole: api.AdminRole,
+	}, models.MetadataKeyAzureComplianceGitURL); err == nil && len(value.GetValue().(string)) > 0 {
+		w.AzureComplianceGitURL = value.GetValue().(string)
+	}
+	if value, err := metadata.GetConfigMetadata(&httpclient.Context{
+		UserRole: api.AdminRole,
+	}, models.MetadataKeyInsightsGitURL); err == nil && len(value.GetValue().(string)) > 0 {
+		w.InsightGitURL = value.GetValue().(string)
+	}
+	if value, err := metadata.GetConfigMetadata(&httpclient.Context{
+		UserRole: api.AdminRole,
+	}, models.MetadataKeyQueriesGitURL); err == nil && len(value.GetValue().(string)) > 0 {
+		w.QueryGitURL = value.GetValue().(string)
+	}
 
 	w.elastic = elasticsearchv7.Config{
 		Addresses: []string{conf.ElasticSearch.Address},

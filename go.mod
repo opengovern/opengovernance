@@ -12,6 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/iam v1.18.9
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.16.8
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.1
+	github.com/aws/aws-sdk-go-v2/service/sts v1.19.0
 	github.com/aws/smithy-go v1.13.5
 	github.com/brpaz/echozap v1.1.3
 	github.com/confluentinc/confluent-kafka-go/v2 v2.1.1
@@ -226,7 +227,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssoadmin v1.15.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.10 // indirect
 	github.com/aws/aws-sdk-go-v2/service/storagegateway v1.18.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.19.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/support v1.11.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/synthetics v1.9.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/waf v1.11.19 // indirect
