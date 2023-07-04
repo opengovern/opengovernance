@@ -3,7 +3,6 @@ package onboard
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -13,6 +12,7 @@ import (
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"go.uber.org/zap"
 )
 
 var PermissionError = errors.New("PermissionError")
@@ -24,7 +24,7 @@ type awsAccount struct {
 	Account      *types.Account
 }
 
-func currentAwsAccount(ctx context.Context, cfg aws.Config) (*awsAccount, error) {
+func currentAwsAccount(ctx context.Context, logger *zap.Logger, cfg aws.Config) (*awsAccount, error) {
 	accID, err := describer.STSAccount(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -33,13 +33,14 @@ func currentAwsAccount(ctx context.Context, cfg aws.Config) (*awsAccount, error)
 	iamClient := iam.NewFromConfig(cfg)
 	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
 	if err != nil {
-		fmt.Printf("failed to get user: %v", err)
+		logger.Warn("failed to get user", zap.Error(err))
 		return nil, err
 	}
 
 	orgs, err := describer.OrganizationOrganization(ctx, cfg)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
+			logger.Warn("failed to get organization", zap.Error(err))
 			return nil, err
 		}
 	}
@@ -47,6 +48,7 @@ func currentAwsAccount(ctx context.Context, cfg aws.Config) (*awsAccount, error)
 	acc, err := describer.OrganizationAccount(ctx, cfg, accID)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
+			logger.Warn("failed to get account", zap.Error(err))
 			return nil, err
 		}
 	}
@@ -59,7 +61,7 @@ func currentAwsAccount(ctx context.Context, cfg aws.Config) (*awsAccount, error)
 	}, nil
 }
 
-func getAWSCredentialsMetadata(ctx context.Context, config describe.AWSAccountConfig) (*source.AWSCredentialMetadata, error) {
+func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config describe.AWSAccountConfig) (*source.AWSCredentialMetadata, error) {
 	creds, err := keibiaws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "", nil)
 	if err != nil {
 		return nil, err
@@ -70,13 +72,14 @@ func getAWSCredentialsMetadata(ctx context.Context, config describe.AWSAccountCo
 
 	accID, err := describer.STSAccount(ctx, creds)
 	if err != nil {
+		logger.Warn("failed to get account id", zap.Error(err))
 		return nil, err
 	}
 
 	iamClient := iam.NewFromConfig(creds)
 	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
 	if err != nil {
-		fmt.Printf("failed to get user: %v", err)
+		logger.Warn("failed to get user", zap.Error(err))
 		return nil, err
 	}
 	paginator := iam.NewListAttachedUserPoliciesPaginator(iamClient, &iam.ListAttachedUserPoliciesInput{
@@ -87,7 +90,7 @@ func getAWSCredentialsMetadata(ctx context.Context, config describe.AWSAccountCo
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
-			fmt.Printf("failed to get policy page: %v", err)
+			logger.Warn("failed to get attached policies", zap.Error(err))
 			return nil, err
 		}
 		for _, policy := range page.AttachedPolicies {
@@ -110,13 +113,14 @@ func getAWSCredentialsMetadata(ctx context.Context, config describe.AWSAccountCo
 		}
 	}
 	if err != nil {
-		fmt.Printf("failed to get access keys: %v", err)
+		logger.Warn("failed to get access keys", zap.Error(err))
 		return nil, err
 	}
 
 	organization, err := describer.OrganizationOrganization(ctx, creds)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
+			logger.Warn("failed to get organization", zap.Error(err))
 			return nil, err
 		}
 	}

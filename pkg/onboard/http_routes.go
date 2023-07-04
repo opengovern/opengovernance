@@ -332,7 +332,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		cfg.Region = "us-east-1"
 	}
 
-	acc, err := currentAwsAccount(context.Background(), cfg)
+	acc, err := currentAwsAccount(context.Background(), h.logger, cfg)
 	if err != nil {
 		return err
 	}
@@ -491,7 +491,7 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 		}
 		err = keibiaws.CheckGetUserPermission(sdkCnf)
 		if err == nil {
-			metadata, err := getAWSCredentialsMetadata(context.Background(), awsConfig)
+			metadata, err := getAWSCredentialsMetadata(context.Background(), h.logger, awsConfig)
 			if err != nil {
 				return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			}
@@ -626,7 +626,7 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 		return ctx.JSON(http.StatusBadRequest, "invalid config")
 	}
 
-	metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), awsCnf)
+	metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), h.logger, awsCnf)
 	if err != nil {
 		return err
 	}
@@ -1361,7 +1361,7 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 			return ctx.JSON(http.StatusBadRequest, "invalid config")
 		}
 
-		metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), awsCnf)
+		metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), h.logger, awsCnf)
 		if err != nil {
 			return err
 		}
@@ -1742,6 +1742,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 			assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
 			sdkCnf, err := keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
 			if err != nil {
+				h.logger.Error("failed to get aws config", zap.Error(err))
 				return err
 			}
 			isAttached, err = keibiaws.CheckAttachedPolicy(sdkCnf, keibiaws.SecurityAuditPolicyARN)
@@ -1749,13 +1750,15 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 				assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
 				cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
 				if err != nil {
+					h.logger.Error("failed to get aws config", zap.Error(err))
 					return err
 				}
 				if cfg.Region == "" {
 					cfg.Region = "us-east-1"
 				}
-				awsAccount, err := currentAwsAccount(ctx.Request().Context(), cfg)
+				awsAccount, err := currentAwsAccount(ctx.Request().Context(), h.logger, cfg)
 				if err != nil {
+					h.logger.Error("failed to get current aws account", zap.Error(err))
 					return err
 				}
 				metadata := NewAWSConnectionMetadata(*awsAccount)
