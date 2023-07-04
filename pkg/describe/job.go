@@ -35,13 +35,13 @@ const (
 )
 
 type AWSAccountConfig struct {
-	AccountID     string   `json:"accountId"`
-	Regions       []string `json:"regions"`
-	SecretKey     string   `json:"secretKey"`
-	AccessKey     string   `json:"accessKey"`
-	SessionToken  string   `json:"sessionToken"`
-	AssumeRoleARN string   `json:"assumeRoleARN"`
-	ExternalID    *string  `json:"externalID,omitempty"`
+	AccountID      string   `json:"accountId"`
+	Regions        []string `json:"regions"`
+	SecretKey      string   `json:"secretKey"`
+	AccessKey      string   `json:"accessKey"`
+	SessionToken   string   `json:"sessionToken"`
+	AssumeRoleName string   `json:"assumeRoleName"`
+	ExternalID     *string  `json:"externalID,omitempty"`
 }
 
 func AWSAccountConfigFromMap(m map[string]any) (AWSAccountConfig, error) {

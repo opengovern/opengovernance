@@ -983,8 +983,8 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 			awsCnf.AccessKey,
 			awsCnf.SecretKey,
 			"",
-			awsCnf.AssumeRoleARN,
-			awsCnf.ExternalID)
+			"",
+			nil)
 		h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
 		if cfg.Region == "" {
 			cfg.Region = "us-east-1"
@@ -1718,7 +1718,8 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 			}
 			isAttached, err = keibiaws.CheckAttachedPolicy(awsCnf.AccessKey, awsCnf.SecretKey, keibiaws.SecurityAuditPolicyARN)
 			if err == nil && isAttached {
-				cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", awsCnf.AssumeRoleARN, awsCnf.ExternalID)
+				assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
+				cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
 				if err != nil {
 					return err
 				}
