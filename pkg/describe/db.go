@@ -1376,3 +1376,34 @@ func (db Database) RemoveStackCredential(stackId uuid.UUID) error {
 	}
 	return nil
 }
+
+func (db Database) ListCreatedStacks() ([]Stack, error) {
+	var stacks []Stack
+	tx := db.orm.Model(&Stack{}).
+		Where("status = ?", api.StackStatusCreated).
+		Find(&stacks)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return stacks, nil
+}
+
+func (db Database) UpdateStackStatus(stackId string, status api.StackStatus) error {
+	tx := db.orm.Model(&Stack{}).
+		Where("stack_id = ?", stackId).
+		Update("status", status)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) UpdateStackFailureMessage(stackId string, message string) error {
+	tx := db.orm.Model(&Stack{}).
+		Where("stack_id = ?", stackId).
+		Update("failure_message", message)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}

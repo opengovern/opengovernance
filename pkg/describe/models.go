@@ -131,10 +131,12 @@ type CheckupJob struct {
 }
 
 type Stack struct {
-	StackID       string         `gorm:"primarykey"`
-	Resources     pq.StringArray `gorm:"type:text[]"`
-	AccountIDs    pq.StringArray `gorm:"type:text[]"`
-	ResourceTypes pq.StringArray `gorm:"type:text[]"`
+	StackID        string         `gorm:"primarykey"`
+	Resources      pq.StringArray `gorm:"type:text[]"`
+	AccountIDs     pq.StringArray `gorm:"type:text[]"`
+	ResourceTypes  pq.StringArray `gorm:"type:text[]"`
+	Status         api.StackStatus
+	FailureMessage string
 
 	Evaluations []*StackEvaluation  `gorm:"foreignKey:StackID;references:StackID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Tags        []*StackTag         `gorm:"foreignKey:StackID;references:StackID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
@@ -143,6 +145,32 @@ type Stack struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (s Stack) ToApi() api.Stack {
+	var evaluations []api.StackEvaluation
+	for _, e := range s.Evaluations {
+		evaluations = append(evaluations, api.StackEvaluation{
+			Type:        e.Type,
+			EvaluatorID: e.EvaluatorID,
+			JobID:       e.JobID,
+			CreatedAt:   e.CreatedAt,
+		})
+	}
+
+	stack := api.Stack{
+		StackID:        s.StackID,
+		CreatedAt:      s.CreatedAt,
+		UpdatedAt:      s.UpdatedAt,
+		Resources:      []string(s.Resources),
+		ResourceTypes:  []string(s.ResourceTypes),
+		Tags:           trimPrivateTags(s.GetTagsMap()),
+		Evaluations:    evaluations,
+		AccountIDs:     s.AccountIDs,
+		Status:         s.Status,
+		FailureMessage: s.FailureMessage,
+	}
+	return stack
 }
 
 type StackTag struct {

@@ -1,17 +1,22 @@
 package describe
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
+	"github.com/kaytu-io/kaytu-engine/pkg/config"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/labstack/echo/v4"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -44,7 +49,9 @@ func (s *HttpServer) newKubeClient() (client.Client, error) {
 	return kubeClient, nil
 }
 
-func (s *HttpServer) createStackHelmRelease(ctx echo.Context, stack Stack) error {
+func (s *HttpServer) createStackHelmRelease(workspaceId string, stack api.Stack) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
 	settings := StackReleaseConfig{
 		KafkaTopics: KafkaTopics{
 			Resources: stack.StackID,
@@ -54,7 +61,6 @@ func (s *HttpServer) createStackHelmRelease(ctx echo.Context, stack Stack) error
 	if err != nil {
 		return err
 	}
-	workspaceId := httpserver.GetWorkspaceID(ctx)
 	helmRelease := helmv2.HelmRelease{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "helm.toolkit.fluxcd.io/v2beta1",
@@ -92,18 +98,60 @@ func (s *HttpServer) createStackHelmRelease(ctx echo.Context, stack Stack) error
 			},
 		},
 	}
-	if err := s.kubeClient.Create(ctx.Request().Context(), &helmRelease); err != nil {
+	if err := s.kubeClient.Create(ctx, &helmRelease); err != nil {
 		return fmt.Errorf("create helm release: %w", err)
 	}
 	return nil
 }
 
-func (s *HttpServer) deleteStackHelmRelease(ctx echo.Context, stack Stack) error {
+func (s *HttpServer) findHelmRelease(stack Stack) (*helmv2.HelmRelease, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	key := types.NamespacedName{
+		Name:      stack.StackID,
+		Namespace: s.helmConfig.FluxSystemNamespace,
+	}
+	var helmRelease helmv2.HelmRelease
+	if err := s.kubeClient.Get(ctx, key, &helmRelease); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &helmRelease, nil
+}
+
+func (s *HttpServer) deleteStackHelmRelease(stack Stack) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
 	helmRelease := helmv2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      stack.StackID,
 			Namespace: s.helmConfig.FluxSystemNamespace,
 		},
 	}
-	return s.kubeClient.Delete(ctx.Request().Context(), &helmRelease)
+	return s.kubeClient.Delete(ctx, &helmRelease)
+}
+
+func (s *HttpServer) getStackElasticConfig(ctx echo.Context, stack Stack) (config.ElasticSearch, error) {
+
+	namespace := httpserver.GetWorkspaceID(ctx)
+	releaseName := stack.StackID
+	secretName := fmt.Sprintf("%s-es-elastic-user", releaseName)
+
+	secret := &corev1.Secret{}
+	err := s.kubeClient.Get(context.TODO(), types.NamespacedName{
+		Namespace: namespace,
+		Name:      secretName,
+	}, secret)
+	if err != nil {
+		panic(err.Error())
+	}
+	password := string(secret.Data["elastic"])
+
+	return config.ElasticSearch{
+		Address:  fmt.Sprintf("https://%s-es-http:9200/", releaseName),
+		Username: "elastic",
+		Password: password,
+	}, nil
 }

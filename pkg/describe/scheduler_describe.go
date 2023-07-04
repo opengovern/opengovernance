@@ -2,6 +2,7 @@ package describe
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -20,6 +22,7 @@ import (
 	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"go.uber.org/zap"
 )
 
@@ -375,6 +378,120 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *Des
 			zap.String("resourceType", dr.ResourceType),
 			zap.Error(err),
 		)
+	}
+	return nil
+}
+
+func (s Scheduler) scheduleStackJobs() error {
+
+	// Create helm chart for created stacks and run describer for them
+	stacks, err := s.db.ListCreatedStacks()
+	if err != nil {
+		return err
+	}
+	for _, stack := range stacks {
+
+		s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusInProgress)
+		err := s.httpServer.createStackHelmRelease(CurrentWorkspaceID, stack.ToApi())
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("Failed to make helm chart for stack %s", stack.StackID), zap.Error(err))
+			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
+			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to make helm chart with error: %s", err.Error()))
+		}
+		err = s.triggerStackDescriberJob(stack.ToApi())
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("Failed to describe stack resources %s", stack.StackID), zap.Error(err))
+			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
+			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to describe stack resources with error: %s", err.Error()))
+		}
+	}
+
+	// Check describer jobs and update stack status
+
+	return nil
+}
+
+func (s Scheduler) triggerStackDescriberJob(stack apiDescribe.Stack) error {
+	var provider source.Type
+	for _, resource := range stack.Resources {
+		if strings.Contains(resource, "aws") {
+			provider = source.CloudAWS
+		} else if strings.Contains(resource, "subscriptions") {
+			provider = source.CloudAzure
+		}
+	}
+	describedAt := time.Now()
+	resourceTypes := stack.ResourceTypes
+	var describeResourceJobs []DescribeResourceJob
+	rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
+	for _, rType := range resourceTypes {
+		describeResourceJobs = append(describeResourceJobs, DescribeResourceJob{
+			ResourceType: rType,
+			Status:       apiDescribe.DescribeResourceJobCreated,
+		})
+	}
+	stackId, err := uuid.Parse(stack.StackID[6:])
+	dsj := DescribeSourceJob{
+		DescribedAt:          describedAt,
+		SourceID:             stackId,
+		SourceType:           source.Type(provider),
+		AccountID:            stack.AccountIDs[0], // assume we have one account
+		DescribeResourceJobs: describeResourceJobs,
+		Status:               apiDescribe.DescribeSourceJobCreated,
+		TriggerType:          enums.DescribeTriggerTypeStack,
+		FullDiscovery:        false,
+	}
+
+	err = s.db.CreateDescribeSourceJob(&dsj)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s Scheduler) storeStackCredentials(stack apiDescribe.Stack, configStr string) error {
+	var provider source.Type
+	for _, resource := range stack.Resources {
+		if strings.Contains(resource, "aws") {
+			provider = source.CloudAWS
+		} else if strings.Contains(resource, "subscriptions") {
+			provider = source.CloudAzure
+		}
+	}
+	var secretBytes []byte
+	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), KMSAccessKey, KMSSecretKey, KeyRegion)
+	if err != nil {
+		return err
+	}
+	switch provider {
+	case source.CloudAzure:
+		config := apiOnboard.SourceConfigAzure{}
+		err := json.Unmarshal([]byte(configStr), &config)
+		if err != nil {
+			return fmt.Errorf("invalid config")
+		}
+		secretBytes, err = kms.Encrypt(config.AsMap(), KeyARN)
+		if err != nil {
+			return err
+		}
+	case source.CloudAWS:
+		config := apiOnboard.SourceConfigAWS{}
+		err := json.Unmarshal([]byte(configStr), &config)
+		if err != nil {
+			return fmt.Errorf("invalid config")
+		}
+		secretBytes, err = kms.Encrypt(config.AsMap(), KeyARN)
+		if err != nil {
+			return err
+		}
+	}
+	if err != nil {
+		return err
+	}
+	stackId, err := uuid.Parse(stack.StackID[6:])
+	err = s.db.CreateStackCredential(&StackCredential{StackID: stackId, Secret: string(secretBytes)})
+	if err != nil {
+		return err
 	}
 	return nil
 }

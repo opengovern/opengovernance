@@ -6,6 +6,16 @@ import (
 	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 )
 
+type StackStatus string
+
+const (
+	StackStatusCreated    StackStatus = "CREATED"
+	StackStatusComplete   StackStatus = "COMPLETE"
+	StackStatusInProgress StackStatus = "IN_PROGRESS"
+	StackStatusDescribed  StackStatus = "DESCRIBED_RESOURCES"
+	StackStatusFailed     StackStatus = "FAILED"
+)
+
 type StackBenchmarkRequest struct {
 	Benchmarks []string `json:"benchmarks" validate:"required" example:"[azure_cis_v140, azure_cis_v140_1, azure_cis_v140_1_1]"` // Benchmarks to add to the stack
 	StackID    string   `json:"stackId" validate:"required" example:"stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0"`                // Stack unique identifier
@@ -22,14 +32,16 @@ type UpdateStackResourcesRequest struct {
 }
 
 type Stack struct {
-	StackID       string              `json:"stackId" validate:"required" example:"stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0"`                              // Stack unique identifier
-	CreatedAt     time.Time           `json:"createdAt" example:"2023-06-01T17:00:00.000000Z"`                                                               // Stack creation date
-	UpdatedAt     time.Time           `json:"updatedAt" example:"2023-06-01T17:00:00.000000Z"`                                                               // Stack last update date
-	Resources     []string            `json:"resources" example:"[/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1]"` // Stack resources list
-	ResourceTypes []string            `json:"resourceTypes" example:"[Microsoft.Compute/virtualMachines]"`                                                   // Stack resource types
-	Tags          map[string][]string `json:"tags"`                                                                                                          // Stack tags
-	Evaluations   []StackEvaluation   `json:"evaluations,omitempty"`                                                                                         // Stack evaluations history, including insight evaluations and compliance evaluations
-	AccountIDs    []string            `json:"accountIds" example:"[0123456789]"`                                                                             // Accounts included in the stack
+	StackID        string              `json:"stackId" validate:"required" example:"stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0"`                              // Stack unique identifier
+	CreatedAt      time.Time           `json:"createdAt" example:"2023-06-01T17:00:00.000000Z"`                                                               // Stack creation date
+	UpdatedAt      time.Time           `json:"updatedAt" example:"2023-06-01T17:00:00.000000Z"`                                                               // Stack last update date
+	Resources      []string            `json:"resources" example:"[/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1]"` // Stack resources list
+	ResourceTypes  []string            `json:"resourceTypes" example:"[Microsoft.Compute/virtualMachines]"`                                                   // Stack resource types
+	Tags           map[string][]string `json:"tags"`                                                                                                          // Stack tags
+	Evaluations    []StackEvaluation   `json:"evaluations,omitempty"`                                                                                         // Stack evaluations history, including insight evaluations and compliance evaluations
+	AccountIDs     []string            `json:"accountIds" example:"[0123456789]"`                                                                             // Accounts included in the stack
+	Status         StackStatus         `json:"status" example:"CREATED"`                                                                                      // Stack status. CREATED, EVALUATED, IN_PROGRESS, FAILED
+	FailureMessage string              `json:"failureMessage,omitempty" example:"error message"`                                                              // Stack failure message
 }
 
 type StackEvaluation struct {
