@@ -1021,21 +1021,21 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 
 		h.logger.Info("onboarding accounts", zap.Int("count", len(accountsToOnboard)))
 		for _, account := range accountsToOnboard {
-			assumeRoleArn := keibiaws.GetRoleArnFromName(account.AccountID, awsCnf.AssumeRoleName)
-			sdkCnf, err := keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, assumeRoleArn, assumeRoleArn, awsCnf.ExternalID)
-			if err != nil {
-				h.logger.Warn("failed to get config", zap.Error(err))
-				return err
-			}
-			isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, keibiaws.SecurityAuditPolicyARN)
-			if err != nil {
-				h.logger.Warn("failed to check get user permission", zap.Error(err))
-				continue
-			}
-			if !isAttached {
-				h.logger.Warn("security audit policy not attached", zap.String("accountID", account.AccountID))
-				continue
-			}
+			//assumeRoleArn := keibiaws.GetRoleArnFromName(account.AccountID, awsCnf.AssumeRoleName)
+			//sdkCnf, err := keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, assumeRoleArn, assumeRoleArn, awsCnf.ExternalID)
+			//if err != nil {
+			//	h.logger.Warn("failed to get config", zap.Error(err))
+			//	return err
+			//}
+			//isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, keibiaws.SecurityAuditPolicyARN)
+			//if err != nil {
+			//	h.logger.Warn("failed to check get user permission", zap.Error(err))
+			//	continue
+			//}
+			//if !isAttached {
+			//	h.logger.Warn("security audit policy not attached", zap.String("accountID", account.AccountID))
+			//	continue
+			//}
 			h.logger.Info("onboarding account", zap.String("accountID", account.AccountID))
 			count, err := h.db.CountSources()
 			if err != nil {
