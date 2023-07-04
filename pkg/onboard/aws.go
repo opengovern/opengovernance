@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
@@ -25,15 +26,9 @@ type awsAccount struct {
 }
 
 func currentAwsAccount(ctx context.Context, logger *zap.Logger, cfg aws.Config) (*awsAccount, error) {
-	accID, err := describer.STSAccount(ctx, cfg)
+	stsClient := sts.NewFromConfig(cfg)
+	account, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
-		return nil, err
-	}
-
-	iamClient := iam.NewFromConfig(cfg)
-	user, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
-	if err != nil {
-		logger.Warn("failed to get user", zap.Error(err))
 		return nil, err
 	}
 
@@ -45,7 +40,7 @@ func currentAwsAccount(ctx context.Context, logger *zap.Logger, cfg aws.Config) 
 		}
 	}
 
-	acc, err := describer.OrganizationAccount(ctx, cfg, accID)
+	acc, err := describer.OrganizationAccount(ctx, cfg, *account.Account)
 	if err != nil {
 		if !ignoreAwsOrgError(err) {
 			logger.Warn("failed to get account", zap.Error(err))
@@ -54,8 +49,8 @@ func currentAwsAccount(ctx context.Context, logger *zap.Logger, cfg aws.Config) 
 	}
 
 	return &awsAccount{
-		AccountID:    accID,
-		AccountName:  user.User.UserName,
+		AccountID:    *account.Account,
+		AccountName:  acc.Name,
 		Organization: orgs,
 		Account:      acc,
 	}, nil
