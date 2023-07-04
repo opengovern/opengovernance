@@ -447,16 +447,13 @@ func (s Scheduler) scheduleStackJobs() error {
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
 			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to run benchmarks on stack with error: %s", err.Error()))
 		}
-	}
-
-	// ==== run insights on stacks
-	for _, stack := range stacks {
 		err = s.runStackInsights(stack.ToApi())
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("Failed to evaluate stack resources %s", stack.StackID), zap.Error(err))
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
 			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to run insights on stack with error: %s", err.Error()))
 		}
+		s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusEvaluated)
 	}
 
 	return nil

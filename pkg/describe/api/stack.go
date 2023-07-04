@@ -10,7 +10,7 @@ type StackStatus string
 
 const (
 	StackStatusCreated    StackStatus = "CREATED"
-	StackStatusComplete   StackStatus = "COMPLETE"
+	StackStatusEvaluated  StackStatus = "EVALUATED"
 	StackStatusDescribing StackStatus = "DESCRIBING"
 	StackStatusDescribed  StackStatus = "DESCRIBED_RESOURCES"
 	StackStatusFailed     StackStatus = "FAILED"
