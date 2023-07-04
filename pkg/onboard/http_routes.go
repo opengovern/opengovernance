@@ -313,7 +313,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	isAttached, err := keibiaws.CheckAttachedPolicy(sdkCnf, keibiaws.SecurityAuditPolicyARN)
+	isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, keibiaws.SecurityAuditPolicyARN)
 	if err != nil {
 		fmt.Printf("error in checking security audit permission: %v", err)
 		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
@@ -489,7 +489,7 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		err = keibiaws.CheckGetUserPermission(sdkCnf)
+		err = keibiaws.CheckGetUserPermission(h.logger, sdkCnf)
 		if err == nil {
 			metadata, err := getAWSCredentialsMetadata(context.Background(), h.logger, awsConfig)
 			if err != nil {
@@ -1028,7 +1028,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 				h.logger.Warn("failed to get config", zap.Error(err))
 				return err
 			}
-			isAttached, err := keibiaws.CheckAttachedPolicy(sdkCnf, keibiaws.SecurityAuditPolicyARN)
+			isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, keibiaws.SecurityAuditPolicyARN)
 			if err != nil {
 				h.logger.Warn("failed to check get user permission", zap.Error(err))
 				continue
@@ -1745,7 +1745,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 				h.logger.Error("failed to get aws config", zap.Error(err))
 				return err
 			}
-			isAttached, err = keibiaws.CheckAttachedPolicy(sdkCnf, keibiaws.SecurityAuditPolicyARN)
+			isAttached, err = keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, keibiaws.SecurityAuditPolicyARN)
 			if err == nil && isAttached {
 				assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
 				cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
@@ -1884,7 +1884,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
-		isAttached, err := keibiaws.CheckAttachedPolicy(sdkCnf, keibiaws.SecurityAuditPolicyARN)
+		isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, keibiaws.SecurityAuditPolicyARN)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}

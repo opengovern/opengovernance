@@ -277,7 +277,7 @@ type Credential struct {
 	ID                 uuid.UUID             `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()" json:"id"`
 	Name               *string               `json:"name,omitempty"`
 	ConnectorType      source.Type           `gorm:"not null" json:"connectorType"`
-	Secret             string                `gorm:"" json:"-"`
+	Secret             string                `json:"-"`
 	CredentialType     source.CredentialType `gorm:"default:'auto-generated'" json:"credentialType"`
 	Enabled            bool                  `gorm:"default:true" json:"enabled"`
 	AutoOnboardEnabled bool                  `gorm:"default:false" json:"autoOnboardEnabled"`
