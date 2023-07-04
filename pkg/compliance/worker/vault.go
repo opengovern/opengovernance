@@ -3,12 +3,12 @@ package worker
 import "encoding/json"
 
 type AWSAccountConfig struct {
-	AccountID     string   `json:"accountId"`
-	Regions       []string `json:"regions"`
-	SecretKey     string   `json:"secretKey"`
-	AccessKey     string   `json:"accessKey"`
-	SessionToken  string   `json:"sessionToken"`
-	AssumeRoleARN string   `json:"assumeRoleARN"`
+	AccountID      string   `json:"accountId"`
+	Regions        []string `json:"regions"`
+	SecretKey      string   `json:"secretKey"`
+	AccessKey      string   `json:"accessKey"`
+	SessionToken   string   `json:"sessionToken"`
+	AssumeRoleName string   `json:"assumeRoleName"`
 }
 
 func AWSAccountConfigFromMap(m map[string]interface{}) (AWSAccountConfig, error) {
