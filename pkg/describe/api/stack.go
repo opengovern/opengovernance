@@ -11,9 +11,16 @@ type StackStatus string
 const (
 	StackStatusCreated    StackStatus = "CREATED"
 	StackStatusComplete   StackStatus = "COMPLETE"
-	StackStatusInProgress StackStatus = "IN_PROGRESS"
+	StackStatusDescribing StackStatus = "DESCRIBING"
 	StackStatusDescribed  StackStatus = "DESCRIBED_RESOURCES"
 	StackStatusFailed     StackStatus = "FAILED"
+)
+
+type EvaluationType string
+
+const (
+	EvaluationTypeInsight   EvaluationType = "INSIGHT"
+	EvaluationTypeBenchmark EvaluationType = "BENCHMARK"
 )
 
 type StackBenchmarkRequest struct {
@@ -45,10 +52,10 @@ type Stack struct {
 }
 
 type StackEvaluation struct {
-	EvaluatorID string    `json:"evaluatorId" example:"azure_cis_v140"`     // Benchmark ID or Insight ID
-	Type        string    `json:"type" example:"BENCHMARK"`                 // BENCHMARK or INSIGHT
-	JobID       uint      `json:"jobId" example:"1"`                        // Evaluation Job ID to find the job results
-	CreatedAt   time.Time `json:"createdAt" example:"2020-01-01T00:00:00Z"` // Evaluation creation date
+	EvaluatorID string         `json:"evaluatorId" example:"azure_cis_v140"`     // Benchmark ID or Insight ID
+	Type        EvaluationType `json:"type" example:"BENCHMARK"`                 // BENCHMARK or INSIGHT
+	JobID       uint           `json:"jobId" example:"1"`                        // Evaluation Job ID to find the job results
+	CreatedAt   time.Time      `json:"createdAt" example:"2020-01-01T00:00:00Z"` // Evaluation creation date
 }
 
 type GetStackFindings struct {

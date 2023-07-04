@@ -16,14 +16,17 @@ import (
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	apiDescribe "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	summarizerapi "github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
 	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 const (
@@ -391,7 +394,7 @@ func (s Scheduler) scheduleStackJobs() error {
 	}
 	for _, stack := range stacks {
 
-		s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusInProgress)
+		s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusDescribing)
 		err := s.httpServer.createStackHelmRelease(CurrentWorkspaceID, stack.ToApi())
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("Failed to make helm chart for stack %s", stack.StackID), zap.Error(err))
@@ -407,6 +410,40 @@ func (s Scheduler) scheduleStackJobs() error {
 	}
 
 	// Check describer jobs and update stack status
+	stacks, err = s.db.ListDescribingStacks()
+	if err != nil {
+		return err
+	}
+	for _, stack := range stacks {
+		jobs, err := s.db.QueryDescribeSourceJobs(stack.StackID[6:])
+		if err != nil {
+			return err
+		}
+		if len(jobs) == 0 {
+			continue
+		} else {
+			if jobs[0].Status == apiDescribe.DescribeSourceJobCompleted {
+				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusDescribed)
+			} else if jobs[0].Status == apiDescribe.DescribeSourceJobCompletedWithFailure {
+				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
+				s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to describe stack resources"))
+			}
+		}
+	}
+
+	// run benchmarks on stacks
+	stacks, err = s.db.ListDescribedStacks()
+	if err != nil {
+		return err
+	}
+	for _, stack := range stacks {
+		err = s.runStackBenchmarks(stack.ToApi())
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("Failed to evaluate stack resources %s", stack.StackID), zap.Error(err))
+			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
+			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to run benchmarks on stack with error: %s", err.Error()))
+		}
+	}
 
 	return nil
 }
@@ -492,6 +529,78 @@ func (s Scheduler) storeStackCredentials(stack apiDescribe.Stack, configStr stri
 	err = s.db.CreateStackCredential(&StackCredential{StackID: stackId, Secret: string(secretBytes)})
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
+
+	job := ScheduleJob{
+		Model:          gorm.Model{},
+		Status:         summarizerapi.SummarizerJobInProgress,
+		FailureMessage: "",
+	}
+	err := s.db.AddScheduleJob(&job)
+	if err != nil {
+		return err
+	}
+	connectionId := stack.StackID[6:]
+	scheduleJob, err := s.db.FetchLastScheduleJob()
+	if err != nil {
+		return err
+	}
+	ctx := &httpclient.Context{
+		UserRole: apiAuth.AdminRole,
+	}
+	benchmarks, err := s.complianceClient.ListBenchmarks(ctx)
+	var complianceJobs []ComplianceReportJob
+	var provider source.Type
+	for _, resource := range stack.Resources {
+		if strings.Contains(resource, "aws") {
+			provider = source.CloudAWS
+		} else if strings.Contains(resource, "subscriptions") {
+			provider = source.CloudAzure
+		}
+	}
+	for _, benchmark := range benchmarks {
+		for _, p := range benchmark.Tags["connectors"] {
+			if p != provider.String() { // Passes if the connector doesn't match
+				continue
+			}
+		}
+		src, err := s.db.GetSourceByID(connectionId)
+		if err != nil {
+			return err
+		}
+
+		crj := newComplianceReportJob(connectionId, source.Type(src.Type), benchmark.ID, scheduleJob.ID)
+
+		err = s.db.CreateComplianceReportJob(&crj)
+		if err != nil {
+			return err
+		}
+
+		if src == nil {
+			return errors.New("failed to find connection")
+		}
+
+		enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, *src, &crj, scheduleJob)
+
+		err = s.db.UpdateSourceReportGenerated(connectionId, s.complianceIntervalHours)
+		if err != nil {
+			return err
+		}
+		evaluation := StackEvaluation{
+			EvaluatorID: benchmark.ID,
+			Type:        api.EvaluationTypeBenchmark,
+			StackID:     stack.StackID,
+			JobID:       crj.ID,
+		}
+		err = s.db.AddEvaluation(&evaluation)
+		if err != nil {
+			return err
+		}
+		complianceJobs = append(complianceJobs, crj)
 	}
 	return nil
 }

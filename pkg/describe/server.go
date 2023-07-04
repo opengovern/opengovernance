@@ -1077,7 +1077,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 		}
 		evaluation := StackEvaluation{
 			EvaluatorID: benchmarkID,
-			Type:        "BENCHMARK",
+			Type:        api.EvaluationTypeBenchmark,
 			StackID:     stackRecord.StackID,
 			JobID:       crj.ID,
 		}
@@ -1355,7 +1355,7 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 		}
 		evaluation := StackEvaluation{
 			EvaluatorID: strconv.FormatUint(uint64(insightId), 10),
-			Type:        "INSIGHT",
+			Type:        api.EvaluationTypeInsight,
 			StackID:     stackRecord.StackID,
 			JobID:       job.ID,
 		}

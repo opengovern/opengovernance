@@ -185,7 +185,7 @@ type StackTag struct {
 
 type StackEvaluation struct {
 	EvaluatorID string
-	Type        string
+	Type        api.EvaluationType
 	StackID     string
 	JobID       uint `gorm:"primaryKey"`
 

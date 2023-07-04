@@ -23,6 +23,7 @@ type ComplianceServiceClient interface {
 	ListInsights(ctx *httpclient.Context, tags map[string][]string, connectors []source.Type, connectionIDs []string, timeAt *time.Time) ([]compliance.Insight, error)
 	GetFindings(ctx *httpclient.Context, req compliance.GetFindingsRequest) (compliance.GetFindingsResponse, error)
 	GetInsight(ctx *httpclient.Context, insightId string, connectionId []string, startTime *time.Time, endTime *time.Time) (compliance.Insight, error)
+	ListBenchmarks(ctx *httpclient.Context) ([]compliance.Benchmark, error)
 }
 
 type complianceClient struct {
@@ -214,4 +215,14 @@ func (s *complianceClient) GetInsight(ctx *httpclient.Context, insightId string,
 		return compliance.Insight{}, err
 	}
 	return insight, nil
+}
+
+func (s *complianceClient) ListBenchmarks(ctx *httpclient.Context) ([]compliance.Benchmark, error) {
+	url := fmt.Sprintf("%s/api/v1/benchmarks", s.baseURL)
+
+	var benchmarks []compliance.Benchmark
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &benchmarks); err != nil {
+		return nil, err
+	}
+	return benchmarks, nil
 }

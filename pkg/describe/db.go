@@ -1407,3 +1407,25 @@ func (db Database) UpdateStackFailureMessage(stackId string, message string) err
 	}
 	return nil
 }
+
+func (db Database) ListDescribingStacks() ([]Stack, error) {
+	var stacks []Stack
+	tx := db.orm.Model(&Stack{}).
+		Where("status = ?", api.StackStatusDescribing).
+		Find(&stacks)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return stacks, nil
+}
+
+func (db Database) ListDescribedStacks() ([]Stack, error) {
+	var stacks []Stack
+	tx := db.orm.Model(&Stack{}).
+		Where("status = ?", api.StackStatusDescribed).
+		Find(&stacks)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return stacks, nil
+}
