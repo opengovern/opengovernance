@@ -150,7 +150,7 @@ func (w *Worker) Run() error {
 
 	w.logger.Info("Running the job", zap.Uint("jobID", job.JobID))
 
-	result := job.Do(w.complianceClient, w.onboardClient, w.scheduleClient, w.config.ElasticSearch, w.kfkProducer, w.kfkTopic, w.logger)
+	result := job.Do(w.complianceClient, w.onboardClient, w.scheduleClient, w.config.ElasticSearch, w.kfkProducer, w.kfkTopic, CurrentWorkspaceID, w.logger)
 
 	w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 

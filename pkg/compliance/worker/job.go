@@ -1,12 +1,14 @@
 package worker
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -24,6 +26,12 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
+
+	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
+	corev1 "k8s.io/api/core/v1"
+	kuberTypes "k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
+	client4 "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Job struct {
@@ -53,6 +61,7 @@ func (j *Job) Do(
 	elasticSearchConfig config.ElasticSearch,
 	kfkProducer *confluent_kafka.Producer,
 	kfkTopic string,
+	currentWorkspaceId string,
 	logger *zap.Logger,
 ) JobResult {
 	result := JobResult{
@@ -62,7 +71,7 @@ func (j *Job) Do(
 		Error:           "",
 	}
 
-	if err := j.Run(complianceClient, onboardClient, scheduleClient, elasticSearchConfig, kfkProducer, kfkTopic, logger); err != nil {
+	if err := j.Run(complianceClient, onboardClient, scheduleClient, elasticSearchConfig, kfkProducer, kfkTopic, currentWorkspaceId, logger); err != nil {
 		result.Error = err.Error()
 		result.Status = api.ComplianceReportJobCompletedWithFailure
 	}
@@ -127,7 +136,7 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 }
 
 func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient client2.OnboardServiceClient, schedulerClient client3.SchedulerServiceClient,
-	elasticSearchConfig config.ElasticSearch, kfkProducer *confluent_kafka.Producer, kfkTopic string, logger *zap.Logger) error {
+	elasticSearchConfig config.ElasticSearch, kfkProducer *confluent_kafka.Producer, kfkTopic string, currentWorkspaceId string, logger *zap.Logger) error {
 
 	ctx := &httpclient.Context{
 		UserRole: api2.AdminRole,
@@ -135,18 +144,25 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	var accountId string
 	var connector source.Type
 	src1, err := onboardClient.GetSource(ctx, j.ConnectionID)
+	var isStack bool
 	if err != nil {
 		if err.Error() == "code=400, message=source not found" {
 			src2, err := schedulerClient.GetSource(ctx, j.ConnectionID)
 			if err != nil {
 				return err
 			}
+			isStack = true
 			accountId = src2.AccountID
 			connector = src2.Type
+			elasticSearchConfig, err = getStackElasticConfig(currentWorkspaceId, j.ConnectionID)
+			if err != nil {
+				return err
+			}
 		} else {
 			return err
 		}
 	} else {
+		isStack = false
 		accountId = src1.ConnectionID
 		connector = src1.Connector
 		if src1.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard {
@@ -232,7 +248,12 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	for _, finding := range findingsFiltered {
 		docs = append(docs, finding)
 	}
-	return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger)
+	if isStack {
+		return kafka.DoSend(kfkProducer, ("stack-" + j.ConnectionID), -1, docs, logger)
+
+	} else {
+		return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger)
+	}
 }
 
 func (j *Job) FilterFindings(esClient keibi.Client, findings []es.Finding) ([]es.Finding, error) {
@@ -335,4 +356,38 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 		})
 	}
 	return findings, nil
+}
+
+func getStackElasticConfig(workspaceId string, stackId string) (config.ElasticSearch, error) {
+
+	scheme := runtime.NewScheme()
+	if err := helmv2.AddToScheme(scheme); err != nil {
+		return config.ElasticSearch{}, err
+	}
+	if err := corev1.AddToScheme(scheme); err != nil {
+		return config.ElasticSearch{}, err
+	}
+	kubeClient, err := client4.New(ctrl.GetConfigOrDie(), client4.Options{Scheme: scheme})
+	if err != nil {
+		return config.ElasticSearch{}, err
+	}
+
+	releaseName := "stack-" + stackId
+	secretName := fmt.Sprintf("%s-es-elastic-user", releaseName)
+
+	secret := &corev1.Secret{}
+	err = kubeClient.Get(context.TODO(), kuberTypes.NamespacedName{
+		Namespace: workspaceId,
+		Name:      secretName,
+	}, secret)
+	if err != nil {
+		panic(err.Error())
+	}
+	password := string(secret.Data["elastic"])
+
+	return config.ElasticSearch{
+		Address:  fmt.Sprintf("https://%s-es-http:9200/", releaseName),
+		Username: "elastic",
+		Password: password,
+	}, nil
 }

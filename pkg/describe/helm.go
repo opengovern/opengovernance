@@ -7,10 +7,7 @@ import (
 	"time"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
-	"github.com/kaytu-io/kaytu-engine/pkg/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
-	"github.com/labstack/echo/v4"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -131,27 +128,4 @@ func (s *HttpServer) deleteStackHelmRelease(stack Stack) error {
 		},
 	}
 	return s.kubeClient.Delete(ctx, &helmRelease)
-}
-
-func (s *HttpServer) getStackElasticConfig(ctx echo.Context, stack Stack) (config.ElasticSearch, error) {
-
-	namespace := httpserver.GetWorkspaceID(ctx)
-	releaseName := stack.StackID
-	secretName := fmt.Sprintf("%s-es-elastic-user", releaseName)
-
-	secret := &corev1.Secret{}
-	err := s.kubeClient.Get(context.TODO(), types.NamespacedName{
-		Namespace: namespace,
-		Name:      secretName,
-	}, secret)
-	if err != nil {
-		panic(err.Error())
-	}
-	password := string(secret.Data["elastic"])
-
-	return config.ElasticSearch{
-		Address:  fmt.Sprintf("https://%s-es-http:9200/", releaseName),
-		Username: "elastic",
-		Password: password,
-	}, nil
 }
