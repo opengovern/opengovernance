@@ -2720,6 +2720,10 @@ definitions:
     - insight_job_interval
     - metrics_job_interval
     - data_retention_duration
+    - aws_compliance_git_url
+    - azure_compliance_git_url
+    - insights_git_url
+    - queries_git_url
     type: string
     x-enum-varnames:
     - MetadataKeyWorkspaceOwnership
@@ -2748,6 +2752,10 @@ definitions:
     - MetadataKeyInsightJobInterval
     - MetadataKeyMetricsJobInterval
     - MetadataKeyDataRetention
+    - MetadataKeyAWSComplianceGitURL
+    - MetadataKeyAzureComplianceGitURL
+    - MetadataKeyInsightsGitURL
+    - MetadataKeyQueriesGitURL
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredential:
     properties:
       accessKey:
@@ -3045,6 +3053,10 @@ definitions:
       accessKey:
         type: string
       accountId:
+        type: string
+      assumeRoleName:
+        type: string
+      externalId:
         type: string
       regions:
         items:
@@ -4654,6 +4666,21 @@ paths:
       security:
       - BearerToken: []
       summary: Get query
+      tags:
+      - compliance
+  /compliance/api/v1/queries/sync:
+    get:
+      consumes:
+      - application/json
+      description: This API syncs queries with the git backend.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Sync queries
       tags:
       - compliance
   /inventory/api/v1/locations/{connector}:

@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	if err := migrator.JobCommand().Execute(); err != nil {
+	if err := migrator.WorkerCommand().Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

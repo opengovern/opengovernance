@@ -88,7 +88,10 @@ type ServerConfig struct {
 	Scheduler  config.KeibiService
 	Onboard    config.KeibiService
 	Inventory  config.KeibiService
+	RabbitMq   config.RabbitMQ
 	Http       config.HttpServer
+
+	MigratorJobQueueName string
 }
 
 func ServerCommand() *cobra.Command {

@@ -1931,6 +1931,31 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/queries/sync": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "This API syncs queries with the git backend.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Sync queries",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/queries/{query_id}": {
             "get": {
                 "security": [
@@ -10836,7 +10861,11 @@ const docTemplate = `{
                 "health_check_job_interval",
                 "insight_job_interval",
                 "metrics_job_interval",
-                "data_retention_duration"
+                "data_retention_duration",
+                "aws_compliance_git_url",
+                "azure_compliance_git_url",
+                "insights_git_url",
+                "queries_git_url"
             ],
             "x-enum-varnames": [
                 "MetadataKeyWorkspaceOwnership",
@@ -10864,7 +10893,11 @@ const docTemplate = `{
                 "MetadataKeyHealthCheckJobInterval",
                 "MetadataKeyInsightJobInterval",
                 "MetadataKeyMetricsJobInterval",
-                "MetadataKeyDataRetention"
+                "MetadataKeyDataRetention",
+                "MetadataKeyAWSComplianceGitURL",
+                "MetadataKeyAzureComplianceGitURL",
+                "MetadataKeyInsightsGitURL",
+                "MetadataKeyQueriesGitURL"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredential": {
@@ -11316,6 +11349,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "accountId": {
+                    "type": "string"
+                },
+                "assumeRoleName": {
+                    "type": "string"
+                },
+                "externalId": {
                     "type": "string"
                 },
                 "regions": {

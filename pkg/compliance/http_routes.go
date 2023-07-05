@@ -36,17 +36,26 @@ import (
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	v1.GET("/benchmarks", httpserver.AuthorizeHandler(h.ListBenchmarks, api3.ViewerRole))
-	v1.GET("/benchmarks/:benchmark_id", httpserver.AuthorizeHandler(h.GetBenchmark, api3.ViewerRole))
-	v1.GET("/benchmarks/:benchmark_id/policies", httpserver.AuthorizeHandler(h.ListPolicies, api3.ViewerRole))
-	v1.GET("/benchmarks/policies/:policy_id", httpserver.AuthorizeHandler(h.GetPolicy, api3.ViewerRole))
-	v1.GET("/queries/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api3.ViewerRole))
+	benchmarks := v1.Group("/benchmarks")
+	benchmarks.GET("", httpserver.AuthorizeHandler(h.ListBenchmarks, api3.ViewerRole))
+	benchmarks.GET("/:benchmark_id", httpserver.AuthorizeHandler(h.GetBenchmark, api3.ViewerRole))
+	benchmarks.GET("/:benchmark_id/policies", httpserver.AuthorizeHandler(h.ListPolicies, api3.ViewerRole))
+	benchmarks.GET("/policies/:policy_id", httpserver.AuthorizeHandler(h.GetPolicy, api3.ViewerRole))
+	benchmarks.GET("/summary", httpserver.AuthorizeHandler(h.GetBenchmarksSummary, api3.ViewerRole))
+	benchmarks.GET("/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
+	benchmarks.GET("/:benchmark_id/summary/result/trend", httpserver.AuthorizeHandler(h.GetBenchmarkResultTrend, api3.ViewerRole))
+	benchmarks.GET("/:benchmark_id/tree", httpserver.AuthorizeHandler(h.GetBenchmarkTree, api3.ViewerRole))
 
-	v1.GET("/assignments", httpserver.AuthorizeHandler(h.ListAssignments, api3.ViewerRole))
-	v1.GET("/assignments/benchmark/:benchmark_id", httpserver.AuthorizeHandler(h.ListAssignmentsByBenchmark, api3.ViewerRole))
-	v1.GET("/assignments/connection/:connection_id", httpserver.AuthorizeHandler(h.ListAssignmentsByConnection, api3.ViewerRole))
-	v1.POST("/assignments/:benchmark_id/connection/:connection_id", httpserver.AuthorizeHandler(h.CreateBenchmarkAssignment, api3.EditorRole))
-	v1.DELETE("/assignments/:benchmark_id/connection/:connection_id", httpserver.AuthorizeHandler(h.DeleteBenchmarkAssignment, api3.EditorRole))
+	queries := v1.Group("/queries")
+	queries.GET("/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api3.ViewerRole))
+	queries.GET("/sync", httpserver.AuthorizeHandler(h.SyncQueries, api3.AdminRole))
+
+	assignments := v1.Group("/assignments")
+	assignments.GET("", httpserver.AuthorizeHandler(h.ListAssignments, api3.ViewerRole))
+	assignments.GET("/benchmark/:benchmark_id", httpserver.AuthorizeHandler(h.ListAssignmentsByBenchmark, api3.ViewerRole))
+	assignments.GET("/connection/:connection_id", httpserver.AuthorizeHandler(h.ListAssignmentsByConnection, api3.ViewerRole))
+	assignments.POST("/:benchmark_id/connection/:connection_id", httpserver.AuthorizeHandler(h.CreateBenchmarkAssignment, api3.EditorRole))
+	assignments.DELETE("/:benchmark_id/connection/:connection_id", httpserver.AuthorizeHandler(h.DeleteBenchmarkAssignment, api3.EditorRole))
 
 	metadata := v1.Group("/metadata")
 	metadata.GET("/tag/insight", httpserver.AuthorizeHandler(h.ListInsightTags, api3.ViewerRole))
@@ -63,14 +72,10 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	insights.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
 	insights.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, api3.ViewerRole))
 
-	v1.GET("/benchmarks/summary", httpserver.AuthorizeHandler(h.GetBenchmarksSummary, api3.ViewerRole))
-	v1.GET("/benchmark/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
-	v1.GET("/benchmark/:benchmark_id/summary/result/trend", httpserver.AuthorizeHandler(h.GetBenchmarkResultTrend, api3.ViewerRole))
-	v1.GET("/benchmark/:benchmark_id/tree", httpserver.AuthorizeHandler(h.GetBenchmarkTree, api3.ViewerRole))
-
-	v1.POST("/findings", httpserver.AuthorizeHandler(h.GetFindings, api3.ViewerRole))
-	v1.GET("/findings/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
-	v1.GET("/findings/metrics", httpserver.AuthorizeHandler(h.GetFindingsMetrics, api3.ViewerRole))
+	findings := v1.Group("/findings")
+	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, api3.ViewerRole))
+	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
+	findings.GET("/metrics", httpserver.AuthorizeHandler(h.GetFindingsMetrics, api3.ViewerRole))
 
 	v1.POST("/alarms/top", httpserver.AuthorizeHandler(h.GetTopFieldByAlarmCount, api3.ViewerRole))
 }
@@ -949,6 +954,26 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, q.ToApi())
+}
+
+// SyncQueries godoc
+//
+//	@Summary		Sync queries
+//
+//	@Description	This API syncs queries with the git backend.
+//
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Success		200
+//	@Router			/compliance/api/v1/queries/sync [get]
+func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
+	err := h.syncJobsQueue.Publish([]byte{})
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, struct{}{})
 }
 
 // ListInsightTags godoc
