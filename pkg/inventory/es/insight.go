@@ -296,7 +296,8 @@ func FetchInsightAggregatedPerQueryValuesBetweenTimes(client keibi.Client, start
 			result[uint(insightIDBucket.Key)] = make(map[int][]es.InsightResource)
 		}
 		for _, rangeBucket := range insightIDBucket.ExecutedAtRangeGroup.Buckets {
-			rangeBucketKey := int((rangeBucket.From+rangeBucket.To)/2) / 1000 // convert to seconds
+			rangeBucketKey := int(rangeBucket.To) / 1000 // convert to seconds
+			//rangeBucketKey := int((rangeBucket.From+rangeBucket.To)/2) / 1000 // convert to seconds
 			for _, sourceIDBucket := range rangeBucket.SourceIDGroup.Buckets {
 				for _, hit := range sourceIDBucket.LatestGroup.Hits.Hits {
 					result[uint(insightIDBucket.Key)][rangeBucketKey] = append(result[uint(insightIDBucket.Key)][rangeBucketKey], hit.Source)
