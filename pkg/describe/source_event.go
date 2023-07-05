@@ -19,14 +19,14 @@ const (
 
 type SourceEvent struct {
 	Action     SourceAction
-	SourceID   uuid.UUID
+	SourceID   string
 	AccountID  string
 	SourceType source.Type
 	Secret     string
 }
 
 func ProcessSourceAction(db Database, event SourceEvent) error {
-	fmt.Printf("Processing SourceEvent[%s] for Source[%s] with type %s\n", event.Action, event.SourceID.String(), event.SourceType)
+	fmt.Printf("Processing SourceEvent[%s] for Source[%s] with type %s\n", event.Action, event.SourceID, event.SourceType)
 	switch event.Action {
 	case SourceCreate:
 		err := CreateSource(db, event)
@@ -51,8 +51,12 @@ func ProcessSourceAction(db Database, event SourceEvent) error {
 }
 
 func CreateSource(db Database, event SourceEvent) error {
+	sourceUUID, err := uuid.Parse(event.SourceID)
+	if err != nil {
+		return fmt.Errorf("source has invalid uuid format")
+	}
 	switch {
-	case len(event.SourceID) == 0 || event.SourceID.Variant() == uuid.Invalid:
+	case len(event.SourceID) == 0 || sourceUUID.Variant() == uuid.Invalid:
 		return fmt.Errorf("source has invalid uuid format")
 	case len(event.AccountID) == 0:
 		return fmt.Errorf("account id must be provided")
@@ -62,7 +66,7 @@ func CreateSource(db Database, event SourceEvent) error {
 		return fmt.Errorf("source has invalid config ref")
 	}
 
-	err := db.CreateSource(&Source{
+	err = db.CreateSource(&Source{
 		ID:             event.SourceID,
 		AccountID:      event.AccountID,
 		Type:           event.SourceType,
@@ -77,8 +81,12 @@ func CreateSource(db Database, event SourceEvent) error {
 }
 
 func UpdateSource(db Database, event SourceEvent) error {
+	sourceUUID, err := uuid.Parse(event.SourceID)
+	if err != nil {
+		return fmt.Errorf("source has invalid uuid format")
+	}
 	switch {
-	case len(event.SourceID) == 0 || event.SourceID.Variant() == uuid.Invalid:
+	case len(event.SourceID) == 0 || sourceUUID.Variant() == uuid.Invalid:
 		return fmt.Errorf("source has invalid uuid format")
 	case len(event.AccountID) == 0:
 		return fmt.Errorf("account id must be provided")
@@ -88,7 +96,7 @@ func UpdateSource(db Database, event SourceEvent) error {
 		return fmt.Errorf("source has invalid credentials")
 	}
 
-	err := db.UpdateSource(&Source{
+	err = db.UpdateSource(&Source{
 		ID:        event.SourceID,
 		AccountID: event.AccountID,
 		Type:      event.SourceType,
@@ -102,12 +110,16 @@ func UpdateSource(db Database, event SourceEvent) error {
 }
 
 func DeleteSource(db Database, event SourceEvent) error {
+	sourceUUID, err := uuid.Parse(event.SourceID)
+	if err != nil {
+		return fmt.Errorf("source has invalid uuid format")
+	}
 	switch {
-	case len(event.SourceID) == 0 || event.SourceID.Variant() == uuid.Invalid:
+	case len(event.SourceID) == 0 || sourceUUID.Variant() == uuid.Invalid:
 		return fmt.Errorf("source has invalid uuid format")
 	}
 
-	err := db.DeleteSource(Source{
+	err = db.DeleteSource(Source{
 		ID: event.SourceID,
 	})
 	if err != nil {

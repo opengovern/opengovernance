@@ -74,6 +74,9 @@ var (
 	DoProcessReceivedMsgs = os.Getenv("DO_PROCESS_RECEIVED_MSGS")
 
 	MaxConcurrentCall = os.Getenv("MAX_CONCURRENT_CALL")
+
+	KaytuHelmChartLocation = os.Getenv("KAYTU_STACK_HELM_CHART_LOCATION")
+	FluxSystemNamespace    = os.Getenv("FLUX_SYSTEM_NAMESPACE")
 )
 
 func SchedulerCommand() *cobra.Command {
@@ -118,6 +121,8 @@ func SchedulerCommand() *cobra.Command {
 				InsightIntervalHours,
 				CheckupIntervalHours,
 				MustSummarizeIntervalHours,
+				KaytuHelmChartLocation,
+				FluxSystemNamespace,
 			)
 			if err != nil {
 				return err

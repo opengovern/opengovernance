@@ -20,6 +20,7 @@ type SchedulerServiceClient interface {
 	ListComplianceReportJobs(ctx *httpclient.Context, sourceID string, filter *TimeRangeFilter) ([]*compliance.ComplianceReport, error)
 	GetLastComplianceReportID(ctx *httpclient.Context) (uint, error)
 	GetInsightJobById(ctx *httpclient.Context, jobId string) (api.InsightJob, error)
+	GetStack(ctx *httpclient.Context, stackID string) (*api.Stack, error)
 }
 
 type schedulerClient struct {
@@ -80,4 +81,17 @@ func (s *schedulerClient) GetInsightJobById(ctx *httpclient.Context, jobId strin
 		return api.InsightJob{}, err
 	}
 	return job, nil
+}
+
+func (s *schedulerClient) GetStack(ctx *httpclient.Context, stackID string) (*api.Stack, error) {
+	url := fmt.Sprintf("%s/api/v1/stacks/%s", s.baseURL, stackID)
+
+	var stack api.Stack
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &stack); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &stack, nil
 }

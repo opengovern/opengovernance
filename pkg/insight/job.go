@@ -13,7 +13,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/managedgrafana"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/go-errors/errors"
 	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
@@ -27,6 +26,8 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
+
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 )
 
 var DoInsightJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -55,6 +56,7 @@ type Job struct {
 	Query           string
 	Description     string
 	ExecutedAt      int64
+	IsStack         bool
 }
 
 type JobResult struct {
@@ -63,7 +65,7 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardClient client.OnboardServiceClient, producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket, topic string, logger *zap.Logger) (r JobResult) {
+func (j Job) Do(client keibi.Client, steampipeOption steampipe.Option, onboardClient client.OnboardServiceClient, producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket, topic string, logger *zap.Logger) (r JobResult) {
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
@@ -99,13 +101,14 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 		locationsMap   map[string]struct{}
 		connectionsMap map[string]string
 	)
-	var res *steampipe.Result
+	ctx := &httpclient.Context{
+		UserRole: authApi.AdminRole,
+	}
 	var err error
+	var res *steampipe.Result
 	if strings.TrimSpace(j.Query) == "accounts_count" {
 		var totalAccounts int64
-		totalAccounts, err = onboardClient.CountSources(&httpclient.Context{
-			UserRole: managedgrafana.RoleAdmin,
-		}, j.SourceType)
+		totalAccounts, _ = onboardClient.CountSources(ctx, j.SourceType)
 		count = totalAccounts
 		res = &steampipe.Result{
 			Headers: []string{"count"},
@@ -118,6 +121,10 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 		}
 		query := strings.ReplaceAll(j.Query, "$CONNECITON_ID", j.SourceID)
 		query = strings.ReplaceAll(query, "$IS_ALL_CONNECTIONS_QUERY", isAllConnectionsQuery)
+		if j.IsStack == true {
+			steampipeOption.Host = fmt.Sprintf("%s-steampipe-service.%s.svc.cluster.local", j.SourceID, CurrentWorkspaceID)
+		}
+		steampipeConn, err := steampipe.NewSteampipeDatabase(steampipeOption)
 		res, err = steampipeConn.QueryAll(query)
 		if res != nil {
 			count = int64(len(res.Data))
@@ -222,7 +229,13 @@ func (j Job) Do(client keibi.Client, steampipeConn *steampipe.Database, onboardC
 						S3Location:          result.Location,
 					})
 				}
-				if err := kafka.DoSend(producer, topic, -1, resources, logger); err != nil {
+				var kafkaTopic string
+				if j.IsStack == true {
+					kafkaTopic = j.SourceID
+				} else {
+					kafkaTopic = topic
+				}
+				if err := kafka.DoSend(producer, kafkaTopic, -1, resources, logger); err != nil {
 					fail(fmt.Errorf("send to kafka: %w", err))
 				}
 			} else {

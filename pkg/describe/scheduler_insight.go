@@ -51,7 +51,7 @@ func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 				continue
 			}
 
-			err := s.runInsightJob(forceCreate, ins, src.ID.String(), src.AccountID, src.Type)
+			err := s.runInsightJob(forceCreate, ins, src.ID, src.AccountID, src.Type)
 			if err != nil {
 				s.logger.Error("Failed to run InsightJob", zap.Error(err))
 				InsightJobsCount.WithLabelValues("failure").Inc()
@@ -109,6 +109,7 @@ func enqueueInsightJobs(q queue.Interface, job InsightJob, ins complianceapi.Ins
 		Query:           ins.Query.QueryToExecute,
 		Description:     ins.Description,
 		ExecutedAt:      job.CreatedAt.UnixMilli(),
+		IsStack:         job.IsStack,
 	}); err != nil {
 		return err
 	}
@@ -125,5 +126,6 @@ func newInsightJob(insight complianceapi.Insight, sourceType, sourceId, accountI
 		SourceType:     srcType,
 		Status:         insightapi.InsightJobInProgress,
 		FailureMessage: "",
+		IsStack:        false,
 	}
 }

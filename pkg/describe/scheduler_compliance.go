@@ -2,9 +2,10 @@ package describe
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"time"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
 	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	complianceworker "github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
@@ -67,7 +68,7 @@ func (s Scheduler) scheduleComplianceJob() error {
 				continue
 			}
 
-			crj := newComplianceReportJob(src.ID.String(), source.Type(src.Type), b.BenchmarkId, scheduleJob.ID)
+			crj := newComplianceReportJob(src.ID, source.Type(src.Type), b.BenchmarkId, scheduleJob.ID)
 			err = s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
@@ -77,7 +78,7 @@ func (s Scheduler) scheduleComplianceJob() error {
 
 			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, src, &crj, scheduleJob)
 
-			err = s.db.UpdateSourceReportGenerated(src.ID.String(), s.complianceIntervalHours)
+			err = s.db.UpdateSourceReportGenerated(src.ID, s.complianceIntervalHours)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
 				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
@@ -105,6 +106,7 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 		BenchmarkID:   crj.BenchmarkID,
 		ConfigReg:     a.ConfigRef,
 		Connector:     source.Type(a.Type),
+		IsStack:       crj.IsStack,
 	}); err != nil {
 		logger.Error("Failed to queue ComplianceReportJob",
 			zap.Uint("jobId", crj.ID),

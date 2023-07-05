@@ -3,7 +3,6 @@ package api
 import (
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
@@ -24,7 +23,7 @@ func IsValidSourceType(t SourceType) bool {
 }
 
 type Source struct {
-	ID                     uuid.UUID   `json:"id" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
+	ID                     string      `json:"id" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`
 	AccountID              string      `json:"accountId" example:"123456789012"`
 	Type                   source.Type `json:"type" example:"Azure"`
 	LastDescribedAt        time.Time   `json:"lastDescribedAt" example:"2021-01-01T00:00:00Z"`

@@ -38,7 +38,7 @@ func trimPrivateTags(tags map[string][]string) map[string][]string {
 }
 
 type Source struct {
-	ID                     uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
+	ID                     string `gorm:"type:uuid;default:uuid_generate_v4()"`
 	AccountID              string
 	Type                   source.Type
 	ConfigRef              string
@@ -63,6 +63,7 @@ type ComplianceReportJob struct {
 	ReportCreatedAt int64                          `json:"ReportCreatedAt" example:"1619510400"`
 	Status          api2.ComplianceReportJobStatus `json:"Status" example:"InProgress"`
 	FailureMessage  string                         // Should be NULLSTRING
+	IsStack         bool                           `json:"IsStack" example:"false"`
 }
 
 type ScheduleJob struct {
@@ -74,7 +75,7 @@ type ScheduleJob struct {
 type DescribeSourceJob struct {
 	gorm.Model
 	DescribedAt          time.Time
-	SourceID             uuid.UUID // Not the primary key but should be a unique identifier
+	SourceID             string // Not the primary key but should be a unique identifier
 	SourceType           source.Type
 	AccountID            string
 	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
@@ -114,6 +115,7 @@ type InsightJob struct {
 	SourceType     source.Type
 	Status         insightapi.InsightJobStatus
 	FailureMessage string
+	IsStack        bool
 }
 
 type SummarizerJob struct {
@@ -131,10 +133,13 @@ type CheckupJob struct {
 }
 
 type Stack struct {
-	StackID       string         `gorm:"primarykey"`
-	Resources     pq.StringArray `gorm:"type:text[]"`
-	AccountIDs    pq.StringArray `gorm:"type:text[]"`
-	ResourceTypes pq.StringArray `gorm:"type:text[]"`
+	StackID        string         `gorm:"primarykey"`
+	Resources      pq.StringArray `gorm:"type:text[]"`
+	AccountIDs     pq.StringArray `gorm:"type:text[]"`
+	SourceType     source.Type    `gorm:"type:text"`
+	ResourceTypes  pq.StringArray `gorm:"type:text[]"`
+	Status         api.StackStatus
+	FailureMessage string
 
 	Evaluations []*StackEvaluation  `gorm:"foreignKey:StackID;references:StackID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Tags        []*StackTag         `gorm:"foreignKey:StackID;references:StackID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
@@ -143,6 +148,33 @@ type Stack struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (s Stack) ToApi() api.Stack {
+	var evaluations []api.StackEvaluation
+	for _, e := range s.Evaluations {
+		evaluations = append(evaluations, api.StackEvaluation{
+			Type:        e.Type,
+			EvaluatorID: e.EvaluatorID,
+			JobID:       e.JobID,
+			CreatedAt:   e.CreatedAt,
+			Status:      e.Status,
+		})
+	}
+
+	stack := api.Stack{
+		StackID:        s.StackID,
+		CreatedAt:      s.CreatedAt,
+		UpdatedAt:      s.UpdatedAt,
+		Resources:      []string(s.Resources),
+		ResourceTypes:  []string(s.ResourceTypes),
+		Tags:           trimPrivateTags(s.GetTagsMap()),
+		Evaluations:    evaluations,
+		AccountIDs:     s.AccountIDs,
+		Status:         s.Status,
+		FailureMessage: s.FailureMessage,
+	}
+	return stack
 }
 
 type StackTag struct {
@@ -157,16 +189,17 @@ type StackTag struct {
 
 type StackEvaluation struct {
 	EvaluatorID string
-	Type        string
+	Type        api.EvaluationType
 	StackID     string
 	JobID       uint `gorm:"primaryKey"`
+	Status      api.StackEvaluationStatus
 
 	CreatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 type StackCredential struct {
-	StackID uuid.UUID `gorm:"primarykey"`
+	StackID string `gorm:"primarykey"`
 	Secret  string
 }
 

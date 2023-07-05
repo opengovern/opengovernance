@@ -217,6 +217,8 @@ func InitializeScheduler(
 	insightIntervalHours string,
 	checkupIntervalHours string,
 	mustSummarizeIntervalHours string,
+	keibiHelmChartLocation string,
+	fluxSystemNamespace string,
 ) (s *Scheduler, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -339,7 +341,11 @@ func InitializeScheduler(
 	}
 	s.kafkaESSink = NewKafkaEsSink(s.logger, kafkaResourceSinkConsumer, s.es)
 
-	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s)
+	helmConfig := HelmConfig{
+		KeibiHelmChartLocation: keibiHelmChartLocation,
+		FluxSystemNamespace:    fluxSystemNamespace,
+	}
+	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s, helmConfig)
 
 	s.describeIntervalHours, err = strconv.ParseInt(describeIntervalHours, 10, 64)
 	if err != nil {
@@ -842,7 +848,7 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 		err := ProcessSourceAction(s.db, event)
 		if err != nil {
 			s.logger.Error("Failed to process event for Source",
-				zap.String("sourceId", event.SourceID.String()),
+				zap.String("sourceId", event.SourceID),
 				zap.Error(err),
 			)
 			err = msg.Nack(false, false)
@@ -857,7 +863,7 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 		}
 
 		if event.Action == SourceDelete {
-			s.deletedSources <- event.SourceID.String()
+			s.deletedSources <- event.SourceID
 		}
 	}
 
@@ -931,7 +937,7 @@ func (s *Scheduler) RunComplianceReport(scheduleJob *ScheduleJob) (int, error) {
 		}
 
 		for _, b := range benchmarks {
-			crj := newComplianceReportJob(src.ID.String(), source.Type(src.Type), b.BenchmarkId, scheduleJob.ID)
+			crj := newComplianceReportJob(src.ID, source.Type(src.Type), b.BenchmarkId, scheduleJob.ID)
 			err := s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
@@ -941,7 +947,7 @@ func (s *Scheduler) RunComplianceReport(scheduleJob *ScheduleJob) (int, error) {
 
 			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, src, &crj, scheduleJob)
 
-			err = s.db.UpdateSourceReportGenerated(src.ID.String(), s.complianceIntervalHours)
+			err = s.db.UpdateSourceReportGenerated(src.ID, s.complianceIntervalHours)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
 				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
@@ -1041,6 +1047,7 @@ func newComplianceReportJob(connectionID string, connector source.Type, benchmar
 		ReportCreatedAt: 0,
 		Status:          complianceapi.ComplianceReportJobCreated,
 		FailureMessage:  "",
+		IsStack:         false,
 	}
 }
 

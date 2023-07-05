@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,10 +14,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
-	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"github.com/lib/pq"
 
-	apiDescribe "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 
 	"github.com/kaytu-io/kaytu-util/pkg/model"
@@ -28,7 +25,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
 	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	insightapi "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
-	onboardapi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	summarizerapi "github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
 
 	"gorm.io/gorm"
@@ -39,24 +35,29 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/internal"
 	"github.com/labstack/echo/v4"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type HttpServer struct {
-	Address   string
-	DB        Database
-	Scheduler *Scheduler
+	Address    string
+	DB         Database
+	Scheduler  *Scheduler
+	kubeClient k8sclient.Client
+	helmConfig HelmConfig
 }
 
 func NewHTTPServer(
 	address string,
 	db Database,
 	s *Scheduler,
+	helmConfig HelmConfig,
 ) *HttpServer {
 
 	return &HttpServer{
-		Address:   address,
-		DB:        db,
-		Scheduler: s,
+		Address:    address,
+		DB:         db,
+		Scheduler:  s,
+		helmConfig: helmConfig,
 	}
 }
 
@@ -171,18 +172,18 @@ func (h HttpServer) HandleListSources(ctx echo.Context) error {
 //	@Router			/schedule/api/v1/sources/{source_id} [get]
 func (h HttpServer) HandleGetSource(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
-	sourceUUID, err := uuid.Parse(sourceID)
+	_, err := uuid.Parse(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("parsing uuid: %v", err)
 		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
 	}
-	source, err := h.DB.GetSourceByUUID(sourceUUID)
+	source, err := h.DB.GetSourceByUUID(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("fetching source %s: %v", sourceID, err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "fetching source"})
 	}
 
-	job, err := h.DB.GetLastDescribeSourceJob(sourceUUID)
+	job, err := h.DB.GetLastDescribeSourceJob(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("fetching source last describe job %s: %v", sourceID, err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "fetching source last describe job"})
@@ -895,45 +896,27 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	id := uuid.New()
+	id := "stack-" + uuid.New().String()
 
-	err = h.triggerStackDescriberJob(ctx, resourceTypes, provider, []byte(configStr), id, accs[0]) // assume we have one account
-	if err != nil {
-		return err
-	}
 	stackRecord := Stack{
-		StackID:       "stack-" + id.String(),
+		StackID:       id,
 		Resources:     pq.StringArray(resources),
 		Tags:          recordTags,
 		AccountIDs:    accs,
 		ResourceTypes: pq.StringArray(resourceTypes),
+		Status:        api.StackStatusCreated,
 	}
 	err = h.DB.AddStack(&stackRecord)
 	if err != nil {
 		return err
 	}
 
-	stackSource := Source{
-		ID:        id,
-		AccountID: accs[0],
-		Type:      provider,
-		ConfigRef: "",
-	}
+	err = h.Scheduler.storeStackCredentials(stackRecord.ToApi(), configStr) // should be removed after describing
 	if err != nil {
 		return err
 	}
-	err = h.DB.CreateSource(&stackSource)
 
-	stack := api.Stack{
-		StackID:       stackRecord.StackID,
-		CreatedAt:     stackRecord.CreatedAt,
-		UpdatedAt:     stackRecord.UpdatedAt,
-		Resources:     []string(stackRecord.Resources),
-		ResourceTypes: []string(stackRecord.ResourceTypes),
-		Tags:          trimPrivateTags(stackRecord.GetTagsMap()),
-		AccountIDs:    accs,
-	}
-	return ctx.JSON(http.StatusOK, stack)
+	return ctx.JSON(http.StatusOK, stackRecord.ToApi())
 }
 
 // GetStack godoc
@@ -954,27 +937,7 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 		return err
 	}
 
-	var evaluations []api.StackEvaluation
-	for _, e := range stackRecord.Evaluations {
-		evaluations = append(evaluations, api.StackEvaluation{
-			Type:        e.Type,
-			EvaluatorID: e.EvaluatorID,
-			JobID:       e.JobID,
-			CreatedAt:   e.CreatedAt,
-		})
-	}
-
-	stack := api.Stack{
-		StackID:       stackRecord.StackID,
-		CreatedAt:     stackRecord.CreatedAt,
-		UpdatedAt:     stackRecord.UpdatedAt,
-		Resources:     []string(stackRecord.Resources),
-		ResourceTypes: []string(stackRecord.ResourceTypes),
-		Tags:          trimPrivateTags(stackRecord.GetTagsMap()),
-		Evaluations:   evaluations,
-		AccountIDs:    stackRecord.AccountIDs,
-	}
-	return ctx.JSON(http.StatusOK, stack)
+	return ctx.JSON(http.StatusOK, stackRecord.ToApi())
 }
 
 // ListStack godoc
@@ -1049,7 +1012,7 @@ func (h HttpServer) DeleteStack(ctx echo.Context) error {
 //	@Param			request	body		api.StackBenchmarkRequest	true	"Request Body"
 //	@Success		200		{object}	[]ComplianceReportJob
 //	@Router			/schedule/api/v1/stacks/benchmark/trigger [post]
-func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
+func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error { // Retired
 	var req api.StackBenchmarkRequest
 	err := bindValidate(ctx, &req)
 	if err != nil {
@@ -1074,7 +1037,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 		errMsg := fmt.Sprintf("error adding schedule job: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
 	}
-	connectionId := stackRecord.StackID[6:]
+	connectionId := stackRecord.StackID
 	scheduleJob, err := h.DB.FetchLastScheduleJob()
 	if err != nil {
 		return err
@@ -1105,9 +1068,10 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error {
 		}
 		evaluation := StackEvaluation{
 			EvaluatorID: benchmarkID,
-			Type:        "BENCHMARK",
+			Type:        api.EvaluationTypeBenchmark,
 			StackID:     stackRecord.StackID,
 			JobID:       crj.ID,
+			Status:      api.StackEvaluationStatusInProgress,
 		}
 		err = h.DB.AddEvaluation(&evaluation)
 		if err != nil {
@@ -1142,7 +1106,7 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	connectionId := stackRecord.StackID[6:]
+	connectionId := stackRecord.StackID
 
 	req := complianceapi.GetFindingsRequest{
 		Filters: complianceapi.FindingFilters{
@@ -1202,7 +1166,7 @@ func (h HttpServer) GetStackInsight(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	connectionId := stackRecord.StackID[6:]
+	connectionId := stackRecord.StackID
 
 	insight, err := h.Scheduler.complianceClient.GetInsight(httpclient.FromEchoContext(ctx), insightId, []string{connectionId}, &startTime, &endTime)
 	if err != nil {
@@ -1341,7 +1305,7 @@ func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
 //	@Param			request	body		api.StackInsightRequest	true	"Request Body"
 //	@Success		200		{object}	[]api.InsightJob
 //	@Router			/schedule/api/v1/stacks/insight/trigger [post]
-func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
+func (h HttpServer) TriggerStackInsight(ctx echo.Context) error { // Retired
 	var req api.StackInsightRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -1354,7 +1318,7 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	stackId := stackRecord.StackID[6:]
+	stackId := stackRecord.StackID
 
 	src, err := h.DB.GetSourceByID(stackId)
 	if err != nil {
@@ -1369,7 +1333,7 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 			return err
 		}
 
-		job := newInsightJob(*insight, string(src.Type), src.ID.String(), src.AccountID, "")
+		job := newInsightJob(*insight, string(src.Type), src.ID, src.AccountID, "")
 		err = h.Scheduler.db.AddInsightJob(&job)
 		if err != nil {
 			return err
@@ -1383,9 +1347,10 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error {
 		}
 		evaluation := StackEvaluation{
 			EvaluatorID: strconv.FormatUint(uint64(insightId), 10),
-			Type:        "INSIGHT",
+			Type:        api.EvaluationTypeInsight,
 			StackID:     stackRecord.StackID,
 			JobID:       job.ID,
+			Status:      api.StackEvaluationStatusInProgress,
 		}
 		err = h.DB.AddEvaluation(&evaluation)
 		if err != nil {
@@ -1438,71 +1403,6 @@ func (h HttpServer) GetInsightJob(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, result)
 }
 
-func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []string, provider source.Type, configStr []byte, stackId uuid.UUID, accountId string) error {
-	var secretBytes []byte
-	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), KMSAccessKey, KMSSecretKey, KeyRegion)
-	if err != nil {
-		return err
-	}
-	switch provider {
-	case source.CloudAzure:
-		config := onboardapi.SourceConfigAzure{}
-		err := json.Unmarshal([]byte(configStr), &config)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "invalid config")
-		}
-		secretBytes, err = kms.Encrypt(config.AsMap(), KeyARN)
-		if err != nil {
-			return err
-		}
-	case source.CloudAWS:
-		config := onboardapi.SourceConfigAWS{}
-		err := json.Unmarshal([]byte(configStr), &config)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "invalid config")
-		}
-		secretBytes, err = kms.Encrypt(config.AsMap(), KeyARN)
-		if err != nil {
-			return err
-		}
-	}
-	if err != nil {
-		return err
-	}
-	err = h.DB.CreateStackCredential(&StackCredential{StackID: stackId, Secret: string(secretBytes)})
-	if err != nil {
-		return err
-	}
-
-	describedAt := time.Now()
-
-	var describeResourceJobs []DescribeResourceJob
-	rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
-	for _, rType := range resourceTypes {
-		describeResourceJobs = append(describeResourceJobs, DescribeResourceJob{
-			ResourceType: rType,
-			Status:       apiDescribe.DescribeResourceJobCreated,
-		})
-	}
-
-	dsj := DescribeSourceJob{
-		DescribedAt:          describedAt,
-		SourceID:             stackId,
-		SourceType:           source.Type(provider),
-		AccountID:            accountId,
-		DescribeResourceJobs: describeResourceJobs,
-		Status:               apiDescribe.DescribeSourceJobCreated,
-		TriggerType:          enums.DescribeTriggerTypeStack,
-		FullDiscovery:        false,
-	}
-
-	err = h.Scheduler.db.CreateDescribeSourceJob(&dsj)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // TriggerStackDescriber godoc
 //
 //	@Summary		Trigger Stack Describer
@@ -1515,7 +1415,7 @@ func (h HttpServer) triggerStackDescriberJob(ctx echo.Context, resourceTypes []s
 //	@Success		200
 //	@Param			req	body	api.DescribeStackRequest	true	"request"
 //	@Router			/schedule/api/v1/stacks/describer/trigger [post]
-func (h HttpServer) TriggerStackDescriber(ctx echo.Context) error {
+func (h HttpServer) TriggerStackDescriber(ctx echo.Context) error { // Retired
 	var req api.DescribeStackRequest
 
 	if err := bindValidate(ctx, &req); err != nil {
@@ -1526,41 +1426,19 @@ func (h HttpServer) TriggerStackDescriber(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-
-	var evaluations []api.StackEvaluation
-	for _, e := range stackRecord.Evaluations {
-		evaluations = append(evaluations, api.StackEvaluation{
-			Type:        e.Type,
-			EvaluatorID: e.EvaluatorID,
-			JobID:       e.JobID,
-			CreatedAt:   e.CreatedAt,
-		})
-	}
-
-	stack := api.Stack{
-		StackID:       stackRecord.StackID,
-		CreatedAt:     stackRecord.CreatedAt,
-		UpdatedAt:     stackRecord.UpdatedAt,
-		Resources:     []string(stackRecord.Resources),
-		Tags:          trimPrivateTags(stackRecord.GetTagsMap()),
-		ResourceTypes: []string(stackRecord.ResourceTypes),
-		Evaluations:   evaluations,
-		AccountIDs:    stackRecord.AccountIDs,
-	}
-	var provider source.Type
-	for _, resource := range stack.Resources {
-		if strings.Contains(resource, "aws") {
-			provider = source.CloudAWS
-		} else if strings.Contains(resource, "subscriptions") {
-			provider = source.CloudAzure
-		}
-	}
+	stack := stackRecord.ToApi()
 	configStr, err := json.Marshal(req.Config)
 	if err != nil {
 		return err
 	}
-	stackId, err := uuid.Parse(stack.StackID[6:])
-	err = h.triggerStackDescriberJob(ctx, stack.ResourceTypes, provider, configStr, stackId, stack.AccountIDs[0]) // assume we have one account
+	err = h.Scheduler.storeStackCredentials(stack, string(configStr))
+	if err != nil {
+		return err
+	}
+	err = h.Scheduler.triggerStackDescriberJob(stack)
+	if err != nil {
+		return err
+	}
 	return ctx.NoContent(http.StatusOK)
 }
 

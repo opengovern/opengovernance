@@ -67,7 +67,7 @@ func (db Database) ListSources() ([]Source, error) {
 func (db Database) UpdateSource(a *Source) error {
 	tx := db.orm.
 		Model(&Source{}).
-		Where("id = ?", a.ID.String()).
+		Where("id = ?", a.ID).
 		Updates(a)
 	if tx.Error != nil {
 		return tx.Error
@@ -81,7 +81,7 @@ func (db Database) UpdateSource(a *Source) error {
 // DeleteSource deletes the source
 func (db Database) DeleteSource(a Source) error {
 	tx := db.orm.
-		Where("id = ?", a.ID.String()).
+		Where("id = ?", a.ID).
 		Unscoped().
 		Delete(&Source{})
 	if tx.Error != nil {
@@ -94,10 +94,10 @@ func (db Database) DeleteSource(a Source) error {
 }
 
 // GetSourceByUUID find source by uuid
-func (db Database) GetSourceByUUID(id uuid.UUID) (*Source, error) {
+func (db Database) GetSourceByUUID(id string) (*Source, error) {
 	var source Source
 	tx := db.orm.
-		Where("id = ?", id.String()).
+		Where("id = ?", id).
 		Find(&source)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -416,7 +416,7 @@ func (db Database) ListDescribeSourceJobs(sourceID uuid.UUID) ([]DescribeSourceJ
 }
 
 // GetLastDescribeSourceJob returns the last DescribeSourceJobs for the given source.
-func (db Database) GetLastDescribeSourceJob(sourceID uuid.UUID) (*DescribeSourceJob, error) {
+func (db Database) GetLastDescribeSourceJob(sourceID string) (*DescribeSourceJob, error) {
 	var job DescribeSourceJob
 	tx := db.orm.Preload(clause.Associations).Where("source_id = ?", sourceID).Order("updated_at DESC").First(&job)
 	if tx.Error != nil {
@@ -429,7 +429,7 @@ func (db Database) GetLastDescribeSourceJob(sourceID uuid.UUID) (*DescribeSource
 	return &job, nil
 }
 
-func (db Database) GetLastFullDiscoveryDescribeSourceJob(sourceID uuid.UUID) (*DescribeSourceJob, error) {
+func (db Database) GetLastFullDiscoveryDescribeSourceJob(sourceID string) (*DescribeSourceJob, error) {
 	var job DescribeSourceJob
 	tx := db.orm.Preload(clause.Associations).Where("source_id = ? AND full_discovery = true", sourceID).Order("updated_at DESC").First(&job)
 	if tx.Error != nil {
@@ -734,6 +734,16 @@ func (db Database) GetLastCompletedSourceComplianceReport(sourceID uuid.UUID) (*
 		Where("source_id = ? AND status = ?", sourceID, api2.ComplianceReportJobCompleted).
 		Order("updated_at DESC").
 		First(&job)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return &job, nil
+}
+
+func (db Database) GetComplianceReportJobByID(ID uint) (*ComplianceReportJob, error) {
+	var job ComplianceReportJob
+	tx := db.orm.Where("id = ?", ID).Find(&job)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -1356,7 +1366,7 @@ func (db Database) CreateStackCredential(a *StackCredential) error {
 	return nil
 }
 
-func (db Database) GetStackCredential(stackId uuid.UUID) (StackCredential, error) {
+func (db Database) GetStackCredential(stackId string) (StackCredential, error) {
 	var stackCredential StackCredential
 	tx := db.orm.Model(&StackCredential{}).
 		Where("stack_id = ?", stackId).
@@ -1367,10 +1377,96 @@ func (db Database) GetStackCredential(stackId uuid.UUID) (StackCredential, error
 	return stackCredential, nil
 }
 
-func (db Database) RemoveStackCredential(stackId uuid.UUID) error {
+func (db Database) RemoveStackCredential(stackId string) error {
 	tx := db.orm.Model(&StackCredential{}).
 		Where("stack_id = ?", stackId).
 		Delete(&StackCredential{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) ListPendingStacks() ([]Stack, error) {
+	var stacks []Stack
+	tx := db.orm.Model(&Stack{}).
+		Where("status IN (?, ?)", api.StackStatusPending, api.StackStatusStalled).
+		Find(&stacks)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return stacks, nil
+}
+
+func (db Database) ListCreatedStacks() ([]Stack, error) {
+	var stacks []Stack
+	tx := db.orm.Model(&Stack{}).
+		Where("status = ?", api.StackStatusCreated).
+		Find(&stacks)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return stacks, nil
+}
+
+func (db Database) UpdateStackStatus(stackId string, status api.StackStatus) error {
+	tx := db.orm.Model(&Stack{}).
+		Where("stack_id = ?", stackId).
+		Update("status", status)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) UpdateStackFailureMessage(stackId string, message string) error {
+	tx := db.orm.Model(&Stack{}).
+		Where("stack_id = ?", stackId).
+		Update("failure_message", message)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) ListDescribingStacks() ([]Stack, error) {
+	var stacks []Stack
+	tx := db.orm.Model(&Stack{}).
+		Where("status = ?", api.StackStatusDescribing).
+		Find(&stacks)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return stacks, nil
+}
+
+func (db Database) ListDescribedStacks() ([]Stack, error) {
+	var stacks []Stack
+	tx := db.orm.Model(&Stack{}).
+		Where("status = ?", api.StackStatusDescribed).
+		Find(&stacks)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return stacks, nil
+}
+
+func (db Database) ListEvaluatingStacks() ([]Stack, error) {
+	var stacks []Stack
+	tx := db.orm.Model(&Stack{}).
+		Where("status = ?", api.StackStatusEvaluating).
+		Preload("Evaluations").
+		Find(&stacks)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return stacks, nil
+}
+
+func (db Database) UpdateEvaluationStatus(jobId uint, status api.StackEvaluationStatus) error {
+	tx := db.orm.Model(&StackEvaluation{}).
+		Where("job_id = ?", jobId).
+		Update("status", status)
 	if tx.Error != nil {
 		return tx.Error
 	}
