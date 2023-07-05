@@ -842,7 +842,7 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 		err := ProcessSourceAction(s.db, event)
 		if err != nil {
 			s.logger.Error("Failed to process event for Source",
-				zap.String("sourceId", event.SourceID.String()),
+				zap.String("sourceId", event.SourceID),
 				zap.Error(err),
 			)
 			err = msg.Nack(false, false)
@@ -857,7 +857,7 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 		}
 
 		if event.Action == SourceDelete {
-			s.deletedSources <- event.SourceID.String()
+			s.deletedSources <- event.SourceID
 		}
 	}
 
@@ -931,7 +931,7 @@ func (s *Scheduler) RunComplianceReport(scheduleJob *ScheduleJob) (int, error) {
 		}
 
 		for _, b := range benchmarks {
-			crj := newComplianceReportJob(src.ID.String(), source.Type(src.Type), b.BenchmarkId, scheduleJob.ID)
+			crj := newComplianceReportJob(src.ID, source.Type(src.Type), b.BenchmarkId, scheduleJob.ID)
 			err := s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
@@ -941,7 +941,7 @@ func (s *Scheduler) RunComplianceReport(scheduleJob *ScheduleJob) (int, error) {
 
 			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, src, &crj, scheduleJob)
 
-			err = s.db.UpdateSourceReportGenerated(src.ID.String(), s.complianceIntervalHours)
+			err = s.db.UpdateSourceReportGenerated(src.ID, s.complianceIntervalHours)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
 				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()

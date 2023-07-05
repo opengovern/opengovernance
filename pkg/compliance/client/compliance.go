@@ -8,13 +8,12 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 
-	"github.com/google/uuid"
 	compliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 type ComplianceServiceClient interface {
-	GetAllBenchmarkAssignmentsBySourceId(ctx *httpclient.Context, sourceID uuid.UUID) ([]compliance.BenchmarkAssignment, error)
+	GetAllBenchmarkAssignmentsBySourceId(ctx *httpclient.Context, sourceID string) ([]compliance.BenchmarkAssignment, error)
 	GetBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.Benchmark, error)
 	GetPolicy(ctx *httpclient.Context, policyID string) (*compliance.Policy, error)
 	GetQuery(ctx *httpclient.Context, queryID string) (*compliance.Query, error)
@@ -34,8 +33,8 @@ func NewComplianceClient(baseURL string) ComplianceServiceClient {
 	return &complianceClient{baseURL: baseURL}
 }
 
-func (s *complianceClient) GetAllBenchmarkAssignmentsBySourceId(ctx *httpclient.Context, sourceID uuid.UUID) ([]compliance.BenchmarkAssignment, error) {
-	url := fmt.Sprintf("%s/api/v1/assignments/connection/%s", s.baseURL, sourceID.String())
+func (s *complianceClient) GetAllBenchmarkAssignmentsBySourceId(ctx *httpclient.Context, sourceID string) ([]compliance.BenchmarkAssignment, error) {
+	url := fmt.Sprintf("%s/api/v1/assignments/connection/%s", s.baseURL, sourceID)
 
 	var response []compliance.BenchmarkAssignment
 	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {

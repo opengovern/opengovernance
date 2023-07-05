@@ -68,7 +68,7 @@ func (s Scheduler) scheduleComplianceJob() error {
 				continue
 			}
 
-			crj := newComplianceReportJob(src.ID.String(), source.Type(src.Type), b.BenchmarkId, scheduleJob.ID)
+			crj := newComplianceReportJob(src.ID, source.Type(src.Type), b.BenchmarkId, scheduleJob.ID)
 			err = s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
@@ -78,7 +78,7 @@ func (s Scheduler) scheduleComplianceJob() error {
 
 			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, src, &crj, scheduleJob)
 
-			err = s.db.UpdateSourceReportGenerated(src.ID.String(), s.complianceIntervalHours)
+			err = s.db.UpdateSourceReportGenerated(src.ID, s.complianceIntervalHours)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
 				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()

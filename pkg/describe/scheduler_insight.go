@@ -51,7 +51,7 @@ func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 				continue
 			}
 
-			err := s.runInsightJob(forceCreate, ins, src.ID.String(), src.AccountID, src.Type)
+			err := s.runInsightJob(forceCreate, ins, src.ID, src.AccountID, src.Type)
 			if err != nil {
 				s.logger.Error("Failed to run InsightJob", zap.Error(err))
 				InsightJobsCount.WithLabelValues("failure").Inc()

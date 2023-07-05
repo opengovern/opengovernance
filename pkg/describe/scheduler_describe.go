@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -134,7 +133,7 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				return errors.New(fmt.Sprintf("No secret found for %s", ds.SourceID))
 			}
 			wp.AddJob(func() (interface{}, error) {
-				err := s.enqueueCloudNativeDescribeJob(dr, ds, cred.Secret, s.WorkspaceName, ds.SourceID.String())
+				err := s.enqueueCloudNativeDescribeJob(dr, ds, cred.Secret, s.WorkspaceName, ds.SourceID)
 				if err != nil {
 					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dr.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
@@ -195,7 +194,7 @@ func (s Scheduler) scheduleDescribeJob() {
 	for _, connection := range connections {
 		err = s.describeConnection(connection, true)
 		if err != nil {
-			s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+			s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID), zap.Error(err))
 		}
 	}
 
@@ -214,7 +213,7 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 
 		healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
 			UserRole: apiAuth.EditorRole,
-		}, connection.ID.String())
+		}, connection.ID)
 		if err != nil {
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			return err
@@ -235,7 +234,7 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 		if healthCheckedSrc.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
 			triggerType = enums.DescribeTriggerTypeInitialDiscovery
 		}
-		s.logger.Debug("Source is due for a describe. Creating a job now", zap.String("sourceId", connection.ID.String()))
+		s.logger.Debug("Source is due for a describe. Creating a job now", zap.String("sourceId", connection.ID))
 
 		fullDiscoveryJob, err := s.db.GetLastFullDiscoveryDescribeSourceJob(connection.ID)
 		if err != nil {
@@ -260,9 +259,9 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 		if healthCheckedSrc.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
 			_, err = s.onboardClient.SetConnectionLifecycleState(&httpclient.Context{
 				UserRole: apiAuth.EditorRole,
-			}, connection.ID.String(), apiOnboard.ConnectionLifecycleStateOnboard)
+			}, connection.ID, apiOnboard.ConnectionLifecycleStateOnboard)
 			if err != nil {
-				s.logger.Warn("Failed to set connection lifecycle state", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+				s.logger.Warn("Failed to set connection lifecycle state", zap.String("connection_id", connection.ID), zap.Error(err))
 			}
 		}
 	}
@@ -312,7 +311,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *Des
 	s.logger.Debug("enqueueCloudNativeDescribeJob",
 		zap.Uint("sourceJobID", ds.ID),
 		zap.Uint("jobID", dr.ID),
-		zap.String("connectionID", ds.SourceID.String()),
+		zap.String("connectionID", ds.SourceID),
 		zap.String("resourceType", dr.ResourceType),
 	)
 
@@ -327,7 +326,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *Des
 			JobID:        dr.ID,
 			ParentJobID:  ds.ID,
 			ResourceType: dr.ResourceType,
-			SourceID:     ds.SourceID.String(),
+			SourceID:     ds.SourceID,
 			AccountID:    ds.AccountID,
 			DescribedAt:  ds.DescribedAt.UnixMilli(),
 			SourceType:   ds.SourceType,
@@ -374,7 +373,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *Des
 	s.logger.Info("successful job trigger",
 		zap.Uint("sourceJobID", ds.ID),
 		zap.Uint("jobID", dr.ID),
-		zap.String("connectionID", ds.SourceID.String()),
+		zap.String("connectionID", ds.SourceID),
 		zap.String("resourceType", dr.ResourceType),
 	)
 
@@ -382,7 +381,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *Des
 		s.logger.Error("failed to QueueDescribeResourceJob",
 			zap.Uint("sourceJobID", ds.ID),
 			zap.Uint("jobID", dr.ID),
-			zap.String("connectionID", ds.SourceID.String()),
+			zap.String("connectionID", ds.SourceID),
 			zap.String("resourceType", dr.ResourceType),
 			zap.Error(err),
 		)
@@ -523,13 +522,10 @@ func (s Scheduler) triggerStackDescriberJob(stack apiDescribe.Stack) error {
 			Status:       apiDescribe.DescribeResourceJobCreated,
 		})
 	}
-	u, err := uuid.Parse(stack.StackID)
-	if err != nil {
-		return err
-	}
+
 	dsj := DescribeSourceJob{
 		DescribedAt:          describedAt,
-		SourceID:             u,
+		SourceID:             stack.StackID,
 		SourceType:           source.Type(provider),
 		AccountID:            stack.AccountIDs[0], // assume we have one account
 		DescribeResourceJobs: describeResourceJobs,
@@ -538,7 +534,7 @@ func (s Scheduler) triggerStackDescriberJob(stack apiDescribe.Stack) error {
 		FullDiscovery:        false,
 	}
 
-	err = s.db.CreateDescribeSourceJob(&dsj)
+	err := s.db.CreateDescribeSourceJob(&dsj)
 	if err != nil {
 		return err
 	}

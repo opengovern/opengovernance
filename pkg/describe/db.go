@@ -67,7 +67,7 @@ func (db Database) ListSources() ([]Source, error) {
 func (db Database) UpdateSource(a *Source) error {
 	tx := db.orm.
 		Model(&Source{}).
-		Where("id = ?", a.ID.String()).
+		Where("id = ?", a.ID).
 		Updates(a)
 	if tx.Error != nil {
 		return tx.Error
@@ -81,7 +81,7 @@ func (db Database) UpdateSource(a *Source) error {
 // DeleteSource deletes the source
 func (db Database) DeleteSource(a Source) error {
 	tx := db.orm.
-		Where("id = ?", a.ID.String()).
+		Where("id = ?", a.ID).
 		Unscoped().
 		Delete(&Source{})
 	if tx.Error != nil {
@@ -94,10 +94,10 @@ func (db Database) DeleteSource(a Source) error {
 }
 
 // GetSourceByUUID find source by uuid
-func (db Database) GetSourceByUUID(id uuid.UUID) (*Source, error) {
+func (db Database) GetSourceByUUID(id string) (*Source, error) {
 	var source Source
 	tx := db.orm.
-		Where("id = ?", id.String()).
+		Where("id = ?", id).
 		Find(&source)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -416,7 +416,7 @@ func (db Database) ListDescribeSourceJobs(sourceID uuid.UUID) ([]DescribeSourceJ
 }
 
 // GetLastDescribeSourceJob returns the last DescribeSourceJobs for the given source.
-func (db Database) GetLastDescribeSourceJob(sourceID uuid.UUID) (*DescribeSourceJob, error) {
+func (db Database) GetLastDescribeSourceJob(sourceID string) (*DescribeSourceJob, error) {
 	var job DescribeSourceJob
 	tx := db.orm.Preload(clause.Associations).Where("source_id = ?", sourceID).Order("updated_at DESC").First(&job)
 	if tx.Error != nil {
@@ -429,7 +429,7 @@ func (db Database) GetLastDescribeSourceJob(sourceID uuid.UUID) (*DescribeSource
 	return &job, nil
 }
 
-func (db Database) GetLastFullDiscoveryDescribeSourceJob(sourceID uuid.UUID) (*DescribeSourceJob, error) {
+func (db Database) GetLastFullDiscoveryDescribeSourceJob(sourceID string) (*DescribeSourceJob, error) {
 	var job DescribeSourceJob
 	tx := db.orm.Preload(clause.Associations).Where("source_id = ? AND full_discovery = true", sourceID).Order("updated_at DESC").First(&job)
 	if tx.Error != nil {
@@ -1356,7 +1356,7 @@ func (db Database) CreateStackCredential(a *StackCredential) error {
 	return nil
 }
 
-func (db Database) GetStackCredential(stackId uuid.UUID) (StackCredential, error) {
+func (db Database) GetStackCredential(stackId string) (StackCredential, error) {
 	var stackCredential StackCredential
 	tx := db.orm.Model(&StackCredential{}).
 		Where("stack_id = ?", stackId).
@@ -1367,7 +1367,7 @@ func (db Database) GetStackCredential(stackId uuid.UUID) (StackCredential, error
 	return stackCredential, nil
 }
 
-func (db Database) RemoveStackCredential(stackId uuid.UUID) error {
+func (db Database) RemoveStackCredential(stackId string) error {
 	tx := db.orm.Model(&StackCredential{}).
 		Where("stack_id = ?", stackId).
 		Delete(&StackCredential{})

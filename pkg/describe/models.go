@@ -38,7 +38,7 @@ func trimPrivateTags(tags map[string][]string) map[string][]string {
 }
 
 type Source struct {
-	ID                     uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
+	ID                     string `gorm:"type:uuid;default:uuid_generate_v4()"`
 	AccountID              string
 	Type                   source.Type
 	ConfigRef              string
@@ -75,7 +75,7 @@ type ScheduleJob struct {
 type DescribeSourceJob struct {
 	gorm.Model
 	DescribedAt          time.Time
-	SourceID             uuid.UUID // Not the primary key but should be a unique identifier
+	SourceID             string // Not the primary key but should be a unique identifier
 	SourceType           source.Type
 	AccountID            string
 	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`

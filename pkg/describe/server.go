@@ -172,18 +172,18 @@ func (h HttpServer) HandleListSources(ctx echo.Context) error {
 //	@Router			/schedule/api/v1/sources/{source_id} [get]
 func (h HttpServer) HandleGetSource(ctx echo.Context) error {
 	sourceID := ctx.Param("source_id")
-	sourceUUID, err := uuid.Parse(sourceID)
+	_, err := uuid.Parse(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("parsing uuid: %v", err)
 		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
 	}
-	source, err := h.DB.GetSourceByUUID(sourceUUID)
+	source, err := h.DB.GetSourceByUUID(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("fetching source %s: %v", sourceID, err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "fetching source"})
 	}
 
-	job, err := h.DB.GetLastDescribeSourceJob(sourceUUID)
+	job, err := h.DB.GetLastDescribeSourceJob(sourceID)
 	if err != nil {
 		ctx.Logger().Errorf("fetching source last describe job %s: %v", sourceID, err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "fetching source last describe job"})
@@ -1331,7 +1331,7 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error { // Retired
 			return err
 		}
 
-		job := newInsightJob(*insight, string(src.Type), src.ID.String(), src.AccountID, "")
+		job := newInsightJob(*insight, string(src.Type), src.ID, src.AccountID, "")
 		err = h.Scheduler.db.AddInsightJob(&job)
 		if err != nil {
 			return err
