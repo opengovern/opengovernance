@@ -5,11 +5,12 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 
 	"github.com/golang-jwt/jwt"
 
@@ -203,7 +204,7 @@ func (s Server) Verify(ctx context.Context, authToken string) (*userClaim, error
 	}
 
 	var u userClaim
-	t, err := s.verifier.Verify(context.Background(), token)
+	t, err := s.verifierNative.Verify(context.Background(), token)
 	if err == nil {
 		if err := t.Claims(&u); err != nil {
 			return nil, err
@@ -212,7 +213,7 @@ func (s Server) Verify(ctx context.Context, authToken string) (*userClaim, error
 		return &u, nil
 	}
 
-	t, err = s.verifierNative.Verify(context.Background(), token)
+	t, err = s.verifier.Verify(context.Background(), token)
 	if err == nil {
 		if err := t.Claims(&u); err != nil {
 			return nil, err
