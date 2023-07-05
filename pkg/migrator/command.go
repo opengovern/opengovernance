@@ -2,12 +2,14 @@ package migrator
 
 import (
 	"github.com/kaytu-io/kaytu-engine/pkg/config"
-	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
+	utilConfig "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
 
 type JobConfig struct {
+	IsManual bool `yaml:"is_manual"`
+
 	PostgreSQL            config.Postgres
 	ElasticSearch         config.ElasticSearch
 	Metadata              config.KeibiService
@@ -17,13 +19,18 @@ type JobConfig struct {
 	InsightGitURL         string `yaml:"insight_git_url"`
 	AzureComplianceGitURL string `yaml:"azure_compliance_git_url"`
 	PrometheusPushAddress string `yaml:"prometheus_push_address"`
+
+	RabbitMqService  string `yaml:"rabbit_mq_service"`
+	RabbitMqUsername string `yaml:"rabbit_mq_username"`
+	RabbitMqPassword string `yaml:"rabbit_mq_password"`
+	RabbitMqQueue    string `yaml:"rabbit_mq_queue"`
 }
 
-func JobCommand() *cobra.Command {
+func WorkerCommand() *cobra.Command {
 	var (
 		cnf JobConfig
 	)
-	config2.ReadFromEnv(&cnf, nil)
+	utilConfig.ReadFromEnv(&cnf, nil)
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -32,8 +39,22 @@ func JobCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if cnf.IsManual {
+				w, err := InitializeJob(
+					cnf,
+					logger,
+					cnf.PrometheusPushAddress,
+				)
+				if err != nil {
+					return err
+				}
 
-			w, err := InitializeJob(
+				defer w.Stop()
+
+				return w.Run()
+			}
+
+			w, err := InitializeWorker(
 				cnf,
 				logger,
 				cnf.PrometheusPushAddress,
