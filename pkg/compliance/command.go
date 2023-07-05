@@ -91,7 +91,7 @@ type ServerConfig struct {
 	RabbitMq   config.RabbitMQ
 	Http       config.HttpServer
 
-	MigratorJobQueueName string
+	MigratorJobQueueName string `yaml:"migrator_job_queue_name"`
 }
 
 func ServerCommand() *cobra.Command {
