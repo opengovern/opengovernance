@@ -29,7 +29,6 @@ type Worker struct {
 	s3Bucket        string
 	logger          *zap.Logger
 	steampipeOption steampipe.Option
-	steampipeConn   *steampipe.Database
 	es              keibi.Client
 	pusher          *push.Pusher
 	onboardClient   client.OnboardServiceClient
@@ -110,7 +109,6 @@ func InitializeWorker(
 	}
 	w.steampipeOption = steampipeOption
 	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipeOption)
-	w.steampipeConn = steampipeConn
 	if err != nil {
 		return nil, err
 	}
