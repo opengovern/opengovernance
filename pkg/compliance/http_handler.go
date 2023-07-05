@@ -101,6 +101,7 @@ func InitializeHttpHandler(
 	qCfg.Server.Port = 5672
 	qCfg.Queue.Name = conf.MigratorJobQueueName
 	qCfg.Queue.Durable = true
+	qCfg.Producer.ID = "compliance"
 	syncJobsQueue, err := queue.New(qCfg)
 	if err != nil {
 		return nil, fmt.Errorf("new queue: %w", err)
