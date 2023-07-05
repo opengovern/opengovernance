@@ -424,8 +424,6 @@ func (s Scheduler) scheduleStackJobs() error {
 		} else {
 			if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
 				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCreated)
-			} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
-				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusStalled) // Temporary for debug
 			} else if meta.IsStatusConditionFalse(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
 				if !helmRelease.Spec.Suspend {
 					helmRelease.Spec.Suspend = true
@@ -444,6 +442,8 @@ func (s Scheduler) scheduleStackJobs() error {
 						s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("failed to unsuspend helmrelease: %s", err.Error()))
 					}
 				}
+			} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
+				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusStalled) // Temporary for debug
 			}
 		}
 	}
