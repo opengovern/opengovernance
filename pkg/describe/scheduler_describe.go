@@ -412,7 +412,7 @@ func (s Scheduler) scheduleStackJobs() error {
 
 		helmRelease, err := s.httpServer.findHelmRelease(ctx, stack.ToApi())
 		if err != nil {
-			s.logger.Error("=======================HELM ERROR=======================")
+			s.logger.Error(fmt.Sprintf("=======================%s=======================", err.Error()))
 			return fmt.Errorf("could not find helm release: %w", err)
 		}
 
