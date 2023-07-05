@@ -640,10 +640,14 @@ func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		}
 	}
 	for _, benchmark := range benchmarks {
-		for _, p := range benchmark.Tags["connectors"] {
-			if p != provider.String() { // Passes if the connector doesn't match
-				continue
+		connectorMatch := false
+		for _, p := range benchmark.Connectors {
+			if p == provider {
+				connectorMatch = true
 			}
+		}
+		if !connectorMatch { // pass if connector doesn't match
+			continue
 		}
 		crj := newComplianceReportJob(stack.StackID, stack.SourceType, benchmark.ID, scheduleJob.ID)
 		crj.IsStack = true
