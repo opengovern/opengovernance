@@ -456,6 +456,8 @@ func (s Scheduler) scheduleStackJobs() error {
 			s.logger.Error(fmt.Sprintf("Failed to describe stack resources %s", stack.StackID), zap.Error(err))
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
 			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to describe stack resources with error: %s", err.Error()))
+		} else {
+			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusDescribing)
 		}
 	}
 
@@ -722,6 +724,9 @@ func (s Scheduler) runStackInsights(stack apiDescribe.Stack) error {
 func (s Scheduler) updateStackJobs(stack apiDescribe.Stack) (bool, error) { // returns true if all jobs are completed
 	isAllDone := true
 	for _, evaluation := range stack.Evaluations {
+		if evaluation.Status != apiDescribe.StackEvaluationStatusInProgress {
+			continue
+		}
 		if evaluation.Type == api.EvaluationTypeBenchmark {
 			job, err := s.db.GetComplianceReportJobByID(evaluation.JobID)
 			if err != nil {
