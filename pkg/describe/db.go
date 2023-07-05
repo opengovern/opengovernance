@@ -1377,6 +1377,17 @@ func (db Database) RemoveStackCredential(stackId uuid.UUID) error {
 	return nil
 }
 
+func (db Database) ListPendingStacks() ([]Stack, error) {
+	var stacks []Stack
+	tx := db.orm.Model(&Stack{}).
+		Where("status IN (?, ?)", api.StackStatusPending, api.StackStatusStalled).
+		Find(&stacks)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return stacks, nil
+}
+
 func (db Database) ListCreatedStacks() ([]Stack, error) {
 	var stacks []Stack
 	tx := db.orm.Model(&Stack{}).

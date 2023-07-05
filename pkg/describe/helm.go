@@ -46,9 +46,8 @@ func (s *HttpServer) newKubeClient() (client.Client, error) {
 	return kubeClient, nil
 }
 
-func (s *HttpServer) createStackHelmRelease(workspaceId string, stack api.Stack) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
+func (s *HttpServer) createStackHelmRelease(ctx context.Context, workspaceId string, stack api.Stack) error {
+
 	settings := StackReleaseConfig{
 		KafkaTopics: KafkaTopics{
 			Resources: stack.StackID,
@@ -101,9 +100,7 @@ func (s *HttpServer) createStackHelmRelease(workspaceId string, stack api.Stack)
 	return nil
 }
 
-func (s *HttpServer) findHelmRelease(stack Stack) (*helmv2.HelmRelease, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
+func (s *HttpServer) findHelmRelease(ctx context.Context, stack api.Stack) (*helmv2.HelmRelease, error) {
 	key := types.NamespacedName{
 		Name:      stack.StackID,
 		Namespace: s.helmConfig.FluxSystemNamespace,
@@ -118,7 +115,7 @@ func (s *HttpServer) findHelmRelease(stack Stack) (*helmv2.HelmRelease, error) {
 	return &helmRelease, nil
 }
 
-func (s *HttpServer) deleteStackHelmRelease(stack Stack) error {
+func (s *HttpServer) deleteStackHelmRelease(stack api.Stack) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	helmRelease := helmv2.HelmRelease{

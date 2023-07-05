@@ -29,6 +29,9 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+
+	apimeta "github.com/fluxcd/pkg/apis/meta"
+	"k8s.io/apimachinery/pkg/api/meta"
 )
 
 const (
@@ -390,21 +393,63 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *Des
 // ================================================ STACKS ================================================
 
 func (s Scheduler) scheduleStackJobs() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
 
-	// ==== Create helm chart for created stacks and run describer for them
-	stacks, err := s.db.ListCreatedStacks()
+	kubeClient, err := s.httpServer.newKubeClient()
+	if err != nil {
+		return fmt.Errorf("failt to make new kube client: %w", err)
+	}
+	s.httpServer.kubeClient = kubeClient
+
+	// ==== Create helm chart for created stacks and check helm release created
+	stacks, err := s.db.ListPendingStacks()
 	if err != nil {
 		return err
 	}
 	for _, stack := range stacks {
 
-		s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusDescribing)
-		err := s.httpServer.createStackHelmRelease(CurrentWorkspaceID, stack.ToApi())
+		helmRelease, err := s.httpServer.findHelmRelease(ctx, stack.ToApi())
 		if err != nil {
-			s.logger.Error(fmt.Sprintf("Failed to make helm chart for stack %s", stack.StackID), zap.Error(err))
-			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to make helm chart with error: %s", err.Error()))
+			return fmt.Errorf("find helm release: %w", err)
 		}
+
+		if helmRelease == nil {
+			if err := s.httpServer.createStackHelmRelease(ctx, CurrentWorkspaceID, stack.ToApi()); err != nil {
+				s.logger.Error(fmt.Sprintf("failed to create helm release for stack: %s", stack.StackID), zap.Error(err))
+				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
+				s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("failed to create helm release: %s", err.Error()))
+			}
+		} else {
+			if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
+				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCreated)
+			} else if meta.IsStatusConditionFalse(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
+				if !helmRelease.Spec.Suspend {
+					helmRelease.Spec.Suspend = true
+					err = s.httpServer.kubeClient.Update(ctx, helmRelease)
+					if err != nil {
+						s.logger.Error(fmt.Sprintf("failed to suspend helmrelease for stack: %s", stack.StackID), zap.Error(err))
+						s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
+						s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("failed to suspend helmrelease: %s", err.Error()))
+					}
+				} else {
+					helmRelease.Spec.Suspend = false
+					err = s.httpServer.kubeClient.Update(ctx, helmRelease)
+					if err != nil {
+						s.logger.Error(fmt.Sprintf("failed to unsuspend helmrelease for stack: %s", stack.StackID), zap.Error(err))
+						s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
+						s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("failed to unsuspend helmrelease: %s", err.Error()))
+					}
+				}
+			} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
+				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusStalled) // Temporary for debug
+			}
+		}
+	}
+
+	// ==== Run describer for created stacks
+	stacks, err = s.db.ListCreatedStacks()
+	for _, stack := range stacks {
 		err = s.triggerStackDescriberJob(stack.ToApi())
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("Failed to describe stack resources %s", stack.StackID), zap.Error(err))

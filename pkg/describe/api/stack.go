@@ -9,10 +9,12 @@ import (
 type StackStatus string
 
 const (
+	StackStatusPending    StackStatus = "PENDING"
+	StackStatusStalled    StackStatus = "STALLED"
 	StackStatusCreated    StackStatus = "CREATED"
-	StackStatusEvaluated  StackStatus = "EVALUATED"
 	StackStatusDescribing StackStatus = "DESCRIBING"
 	StackStatusDescribed  StackStatus = "DESCRIBED_RESOURCES"
+	StackStatusEvaluated  StackStatus = "EVALUATED"
 	StackStatusFailed     StackStatus = "FAILED"
 )
 
