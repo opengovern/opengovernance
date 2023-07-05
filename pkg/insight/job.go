@@ -13,7 +13,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/managedgrafana"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/go-errors/errors"
 	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
@@ -57,6 +56,7 @@ type Job struct {
 	Query           string
 	Description     string
 	ExecutedAt      int64
+	IsStack         bool
 }
 
 type JobResult struct {
@@ -104,22 +104,11 @@ func (j Job) Do(client keibi.Client, steampipeOption steampipe.Option, onboardCl
 	ctx := &httpclient.Context{
 		UserRole: authApi.AdminRole,
 	}
-	_, err := onboardClient.GetSource(ctx, j.SourceID)
-	var isStack bool
-	if err != nil {
-		if err.Error() == "code=400, message=source not found" {
-			isStack = true
-		}
-	} else {
-		isStack = false
-	}
-
+	var err error
 	var res *steampipe.Result
 	if strings.TrimSpace(j.Query) == "accounts_count" {
 		var totalAccounts int64
-		totalAccounts, err = onboardClient.CountSources(&httpclient.Context{
-			UserRole: managedgrafana.RoleAdmin,
-		}, j.SourceType)
+		totalAccounts, _ = onboardClient.CountSources(ctx, j.SourceType)
 		count = totalAccounts
 		res = &steampipe.Result{
 			Headers: []string{"count"},
@@ -132,8 +121,8 @@ func (j Job) Do(client keibi.Client, steampipeOption steampipe.Option, onboardCl
 		}
 		query := strings.ReplaceAll(j.Query, "$CONNECITON_ID", j.SourceID)
 		query = strings.ReplaceAll(query, "$IS_ALL_CONNECTIONS_QUERY", isAllConnectionsQuery)
-		if isStack == true {
-			steampipeOption.Host = fmt.Sprintf("%s-steampipe-service.%s.svc.cluster.local", ("stack-" + j.SourceID), CurrentWorkspaceID)
+		if j.IsStack == true {
+			steampipeOption.Host = fmt.Sprintf("%s-steampipe-service.%s.svc.cluster.local", j.SourceID, CurrentWorkspaceID)
 		}
 		steampipeConn, err := steampipe.NewSteampipeDatabase(steampipeOption)
 		res, err = steampipeConn.QueryAll(query)
@@ -241,8 +230,8 @@ func (j Job) Do(client keibi.Client, steampipeOption steampipe.Option, onboardCl
 					})
 				}
 				var kafkaTopic string
-				if isStack == true {
-					kafkaTopic = "stack-" + j.SourceID
+				if j.IsStack == true {
+					kafkaTopic = j.SourceID
 				} else {
 					kafkaTopic = topic
 				}

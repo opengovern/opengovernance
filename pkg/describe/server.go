@@ -895,10 +895,10 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	id := uuid.New()
+	id := "stack-" + uuid.New().String()
 
 	stackRecord := Stack{
-		StackID:       "stack-" + id.String(),
+		StackID:       id,
 		Resources:     pq.StringArray(resources),
 		Tags:          recordTags,
 		AccountIDs:    accs,
@@ -914,16 +914,6 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	stackSource := Source{
-		ID:        id,
-		AccountID: accs[0],
-		Type:      provider,
-		ConfigRef: "",
-	}
-	if err != nil {
-		return err
-	}
-	err = h.DB.CreateSource(&stackSource)
 
 	return ctx.JSON(http.StatusOK, stackRecord.ToApi())
 }
@@ -1046,7 +1036,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error { // Retired
 		errMsg := fmt.Sprintf("error adding schedule job: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
 	}
-	connectionId := stackRecord.StackID[6:]
+	connectionId := stackRecord.StackID
 	scheduleJob, err := h.DB.FetchLastScheduleJob()
 	if err != nil {
 		return err
@@ -1114,7 +1104,7 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	connectionId := stackRecord.StackID[6:]
+	connectionId := stackRecord.StackID
 
 	req := complianceapi.GetFindingsRequest{
 		Filters: complianceapi.FindingFilters{
@@ -1174,7 +1164,7 @@ func (h HttpServer) GetStackInsight(ctx echo.Context) error {
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	connectionId := stackRecord.StackID[6:]
+	connectionId := stackRecord.StackID
 
 	insight, err := h.Scheduler.complianceClient.GetInsight(httpclient.FromEchoContext(ctx), insightId, []string{connectionId}, &startTime, &endTime)
 	if err != nil {
@@ -1326,7 +1316,7 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error { // Retired
 	if stackRecord.StackID == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
-	stackId := stackRecord.StackID[6:]
+	stackId := stackRecord.StackID
 
 	src, err := h.DB.GetSourceByID(stackId)
 	if err != nil {

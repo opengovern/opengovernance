@@ -45,6 +45,7 @@ type Job struct {
 
 	ConfigReg string
 	Connector source.Type
+	IsStack   bool
 }
 
 type JobResult struct {
@@ -143,46 +144,50 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	}
 	var accountId string
 	var connector source.Type
-	src1, err := onboardClient.GetSource(ctx, j.ConnectionID)
-	var isStack bool
-	if err != nil {
-		if err.Error() == "code=400, message=source not found" {
-			src2, err := schedulerClient.GetSource(ctx, j.ConnectionID)
-			if err != nil {
-				return err
-			}
-			isStack = true
-			accountId = src2.AccountID
-			connector = src2.Type
-			elasticSearchConfig, err = getStackElasticConfig(currentWorkspaceId, j.ConnectionID)
-			if err != nil {
-				return err
-			}
-		} else {
+	var esk keibi.Client
+	if j.IsStack == true {
+		stack, err := schedulerClient.GetStack(ctx, j.ConnectionID)
+		if err != nil {
+			return err
+		}
+		accountId = stack.AccountIDs[0]
+		connector = stack.SourceType
+
+		eskConfig, err := getStackElasticConfig(currentWorkspaceId, stack.StackID)
+		esk, err = keibi.NewClient(keibi.ClientConfig{
+			Addresses: []string{eskConfig.Address},
+			Username:  &eskConfig.Username,
+			Password:  &eskConfig.Password,
+			AccountID: &accountId,
+		})
+		if err != nil {
 			return err
 		}
 	} else {
-		isStack = false
-		accountId = src1.ConnectionID
-		connector = src1.Connector
-		if src1.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard {
+		src, err := onboardClient.GetSource(ctx, j.ConnectionID)
+		if err != nil {
+			return err
+		}
+		accountId = src.ConnectionID
+		connector = src.Connector
+		if src.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard {
 			return errors.New("connection not healthy")
 		}
-	}
 
-	esk, err := keibi.NewClient(keibi.ClientConfig{
-		Addresses: []string{elasticSearchConfig.Address},
-		Username:  &elasticSearchConfig.Username,
-		Password:  &elasticSearchConfig.Password,
-		AccountID: &accountId,
-	})
-	if err != nil {
-		return err
+		esk, err = keibi.NewClient(keibi.ClientConfig{
+			Addresses: []string{elasticSearchConfig.Address},
+			Username:  &elasticSearchConfig.Username,
+			Password:  &elasticSearchConfig.Password,
+			AccountID: &accountId,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	fmt.Println("+++++ New elasticSearch Client created")
 
-	err = j.PopulateSteampipeConfig(elasticSearchConfig, accountId)
+	err := j.PopulateSteampipeConfig(elasticSearchConfig, accountId)
 	if err != nil {
 		return err
 	}
@@ -248,8 +253,8 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	for _, finding := range findingsFiltered {
 		docs = append(docs, finding)
 	}
-	if isStack {
-		return kafka.DoSend(kfkProducer, ("stack-" + j.ConnectionID), -1, docs, logger)
+	if j.IsStack {
+		return kafka.DoSend(kfkProducer, j.ConnectionID, -1, docs, logger)
 
 	} else {
 		return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger)
@@ -372,7 +377,7 @@ func getStackElasticConfig(workspaceId string, stackId string) (config.ElasticSe
 		return config.ElasticSearch{}, err
 	}
 
-	releaseName := "stack-" + stackId
+	releaseName := stackId
 	secretName := fmt.Sprintf("%s-es-elastic-user", releaseName)
 
 	secret := &corev1.Secret{}

@@ -2,9 +2,10 @@ package describe
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"time"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
 	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	complianceworker "github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
@@ -105,6 +106,7 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 		BenchmarkID:   crj.BenchmarkID,
 		ConfigReg:     a.ConfigRef,
 		Connector:     source.Type(a.Type),
+		IsStack:       crj.IsStack,
 	}); err != nil {
 		logger.Error("Failed to queue ComplianceReportJob",
 			zap.Uint("jobId", crj.ID),

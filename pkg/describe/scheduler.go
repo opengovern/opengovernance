@@ -1041,6 +1041,7 @@ func newComplianceReportJob(connectionID string, connector source.Type, benchmar
 		ReportCreatedAt: 0,
 		Status:          complianceapi.ComplianceReportJobCreated,
 		FailureMessage:  "",
+		IsStack:         false,
 	}
 }
 

@@ -63,6 +63,7 @@ type ComplianceReportJob struct {
 	ReportCreatedAt int64                          `json:"ReportCreatedAt" example:"1619510400"`
 	Status          api2.ComplianceReportJobStatus `json:"Status" example:"InProgress"`
 	FailureMessage  string                         // Should be NULLSTRING
+	IsStack         bool                           `json:"IsStack" example:"false"`
 }
 
 type ScheduleJob struct {
@@ -114,6 +115,7 @@ type InsightJob struct {
 	SourceType     source.Type
 	Status         insightapi.InsightJobStatus
 	FailureMessage string
+	IsStack        bool
 }
 
 type SummarizerJob struct {
@@ -134,6 +136,7 @@ type Stack struct {
 	StackID        string         `gorm:"primarykey"`
 	Resources      pq.StringArray `gorm:"type:text[]"`
 	AccountIDs     pq.StringArray `gorm:"type:text[]"`
+	SourceType     source.Type    `gorm:"type:text"`
 	ResourceTypes  pq.StringArray `gorm:"type:text[]"`
 	Status         api.StackStatus
 	FailureMessage string
@@ -194,7 +197,7 @@ type StackEvaluation struct {
 }
 
 type StackCredential struct {
-	StackID uuid.UUID `gorm:"primarykey"`
+	StackID string `gorm:"primarykey"`
 	Secret  string
 }
 

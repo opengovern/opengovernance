@@ -4,6 +4,7 @@ import (
 	"time"
 
 	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 type StackStatus string
@@ -49,6 +50,7 @@ type Stack struct {
 	Tags           map[string][]string `json:"tags"`                                                                                                          // Stack tags
 	Evaluations    []StackEvaluation   `json:"evaluations,omitempty"`                                                                                         // Stack evaluations history, including insight evaluations and compliance evaluations
 	AccountIDs     []string            `json:"accountIds" example:"[0123456789]"`                                                                             // Accounts included in the stack
+	SourceType     source.Type         `json:"sourceType" example:"Azure"`                                                                                    // Source type
 	Status         StackStatus         `json:"status" example:"CREATED"`                                                                                      // Stack status. CREATED, EVALUATED, IN_PROGRESS, FAILED
 	FailureMessage string              `json:"failureMessage,omitempty" example:"error message"`                                                              // Stack failure message
 }

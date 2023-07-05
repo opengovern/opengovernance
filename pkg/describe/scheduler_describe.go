@@ -134,7 +134,7 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				return errors.New(fmt.Sprintf("No secret found for %s", ds.SourceID))
 			}
 			wp.AddJob(func() (interface{}, error) {
-				err := s.enqueueCloudNativeDescribeJob(dr, ds, cred.Secret, s.WorkspaceName, ("stack-" + ds.SourceID.String()))
+				err := s.enqueueCloudNativeDescribeJob(dr, ds, cred.Secret, s.WorkspaceName, ds.SourceID.String())
 				if err != nil {
 					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dr.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
@@ -464,7 +464,7 @@ func (s Scheduler) scheduleStackJobs() error {
 		return err
 	}
 	for _, stack := range stacks {
-		jobs, err := s.db.QueryDescribeSourceJobs(stack.StackID[6:])
+		jobs, err := s.db.QueryDescribeSourceJobs(stack.StackID)
 		if err != nil {
 			return err
 		}
@@ -480,7 +480,7 @@ func (s Scheduler) scheduleStackJobs() error {
 		}
 	}
 
-	// ==== run benchmarks on stacks
+	// ==== run evaluations on stacks
 	stacks, err = s.db.ListDescribedStacks()
 	if err != nil {
 		return err
@@ -523,10 +523,13 @@ func (s Scheduler) triggerStackDescriberJob(stack apiDescribe.Stack) error {
 			Status:       apiDescribe.DescribeResourceJobCreated,
 		})
 	}
-	stackId, err := uuid.Parse(stack.StackID[6:])
+	u, err := uuid.Parse(stack.StackID)
+	if err != nil {
+		return err
+	}
 	dsj := DescribeSourceJob{
 		DescribedAt:          describedAt,
-		SourceID:             stackId,
+		SourceID:             u,
 		SourceType:           source.Type(provider),
 		AccountID:            stack.AccountIDs[0], // assume we have one account
 		DescribeResourceJobs: describeResourceJobs,
@@ -581,8 +584,7 @@ func (s Scheduler) storeStackCredentials(stack apiDescribe.Stack, configStr stri
 	if err != nil {
 		return err
 	}
-	stackId, err := uuid.Parse(stack.StackID[6:])
-	err = s.db.CreateStackCredential(&StackCredential{StackID: stackId, Secret: string(secretBytes)})
+	err = s.db.CreateStackCredential(&StackCredential{StackID: stack.StackID, Secret: string(secretBytes)})
 	if err != nil {
 		return err
 	}
@@ -600,7 +602,6 @@ func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 	if err != nil {
 		return err
 	}
-	connectionId := stack.StackID[6:]
 	scheduleJob, err := s.db.FetchLastScheduleJob()
 	if err != nil {
 		return err
@@ -623,25 +624,21 @@ func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 				continue
 			}
 		}
-		src, err := s.db.GetSourceByID(connectionId)
-		if err != nil {
-			return err
-		}
-
-		crj := newComplianceReportJob(connectionId, source.Type(src.Type), benchmark.ID, scheduleJob.ID)
+		crj := newComplianceReportJob(stack.StackID, stack.SourceType, benchmark.ID, scheduleJob.ID)
+		crj.IsStack = true
 
 		err = s.db.CreateComplianceReportJob(&crj)
 		if err != nil {
 			return err
 		}
-
-		if src == nil {
-			return errors.New("failed to find connection")
+		src := &Source{
+			AccountID: stack.AccountIDs[0],
+			Type:      provider,
+			ConfigRef: "",
 		}
-
 		enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, *src, &crj, scheduleJob)
 
-		err = s.db.UpdateSourceReportGenerated(connectionId, s.complianceIntervalHours)
+		err = s.db.UpdateSourceReportGenerated(stack.StackID, s.complianceIntervalHours)
 		if err != nil {
 			return err
 		}
@@ -660,13 +657,6 @@ func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 }
 
 func (s Scheduler) runStackInsights(stack apiDescribe.Stack) error {
-	stackId := stack.StackID[6:]
-
-	src, err := s.db.GetSourceByID(stackId)
-	if err != nil {
-		return err
-	}
-
 	var provider source.Type
 	for _, resource := range stack.Resources {
 		if strings.Contains(resource, "aws") {
@@ -680,7 +670,9 @@ func (s Scheduler) runStackInsights(stack apiDescribe.Stack) error {
 		return err
 	}
 	for _, insight := range insights {
-		job := newInsightJob(insight, string(src.Type), src.ID.String(), src.AccountID, "")
+		job := newInsightJob(insight, string(stack.SourceType), stack.StackID, stack.AccountIDs[0], "")
+		job.IsStack = true
+
 		err = s.db.AddInsightJob(&job)
 		if err != nil {
 			return err

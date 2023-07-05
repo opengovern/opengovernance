@@ -109,6 +109,7 @@ func enqueueInsightJobs(q queue.Interface, job InsightJob, ins complianceapi.Ins
 		Query:           ins.Query.QueryToExecute,
 		Description:     ins.Description,
 		ExecutedAt:      job.CreatedAt.UnixMilli(),
+		IsStack:         job.IsStack,
 	}); err != nil {
 		return err
 	}
@@ -125,5 +126,6 @@ func newInsightJob(insight complianceapi.Insight, sourceType, sourceId, accountI
 		SourceType:     srcType,
 		Status:         insightapi.InsightJobInProgress,
 		FailureMessage: "",
+		IsStack:        false,
 	}
 }
