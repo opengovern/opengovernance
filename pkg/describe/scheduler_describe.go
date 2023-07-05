@@ -53,6 +53,7 @@ func (s Scheduler) RunDescribeJobScheduler() {
 
 	for ; ; <-t.C {
 		s.scheduleDescribeJob()
+		s.scheduleStackJobs()
 	}
 }
 
@@ -401,7 +402,7 @@ func (s Scheduler) scheduleStackJobs() error {
 	}
 	s.httpServer.kubeClient = kubeClient
 
-	// ==== Create helm chart for created stacks and check helm release created
+	// ======== Create helm chart for created stacks and check helm release created ========
 	stacks, err := s.db.ListPendingStacks()
 	if err != nil {
 		return err
@@ -446,7 +447,7 @@ func (s Scheduler) scheduleStackJobs() error {
 		}
 	}
 
-	// ==== Run describer for created stacks
+	// ======== Run describer for created stacks ========
 	stacks, err = s.db.ListCreatedStacks()
 	for _, stack := range stacks {
 		err = s.triggerStackDescriberJob(stack.ToApi())
@@ -457,7 +458,7 @@ func (s Scheduler) scheduleStackJobs() error {
 		}
 	}
 
-	// ==== Check describer jobs and update stack status
+	// ======== Check describer jobs and update stack status ========
 	stacks, err = s.db.ListDescribingStacks()
 	if err != nil {
 		return err
@@ -479,7 +480,7 @@ func (s Scheduler) scheduleStackJobs() error {
 		}
 	}
 
-	// ==== run evaluations on stacks
+	// ======== run evaluations on stacks ========
 	stacks, err = s.db.ListDescribedStacks()
 	if err != nil {
 		return err
