@@ -640,8 +640,8 @@ func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		}
 	}
 	for _, benchmark := range benchmarks {
-		for _, p := range benchmark.Tags["connectors"] {
-			if p != provider.String() { // Passes if the connector doesn't match
+		for _, p := range benchmark.Connectors {
+			if p != provider { // Passes if the connector doesn't match
 				continue
 			}
 		}
