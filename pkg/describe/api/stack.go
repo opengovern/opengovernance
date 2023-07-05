@@ -15,7 +15,8 @@ const (
 	StackStatusCreated    StackStatus = "CREATED"
 	StackStatusDescribing StackStatus = "DESCRIBING"
 	StackStatusDescribed  StackStatus = "DESCRIBED_RESOURCES"
-	StackStatusEvaluated  StackStatus = "EVALUATED"
+	StackStatusEvaluating StackStatus = "EVALUATING"
+	StackStatusCompleted  StackStatus = "COMPLETED"
 	StackStatusFailed     StackStatus = "FAILED"
 )
 
@@ -24,6 +25,14 @@ type EvaluationType string
 const (
 	EvaluationTypeInsight   EvaluationType = "INSIGHT"
 	EvaluationTypeBenchmark EvaluationType = "BENCHMARK"
+)
+
+type StackEvaluationStatus string
+
+const (
+	StackEvaluationStatusInProgress StackEvaluationStatus = "IN_PROGRESS"
+	StackEvaluationStatusFailed     StackEvaluationStatus = "COMPLETED_WITH_FAILURE"
+	StackEvaluationStatusCompleted  StackEvaluationStatus = "COMPLETED"
 )
 
 type StackBenchmarkRequest struct {
@@ -60,6 +69,7 @@ type StackEvaluation struct {
 	Type        EvaluationType `json:"type" example:"BENCHMARK"`                 // BENCHMARK or INSIGHT
 	JobID       uint           `json:"jobId" example:"1"`                        // Evaluation Job ID to find the job results
 	CreatedAt   time.Time      `json:"createdAt" example:"2020-01-01T00:00:00Z"` // Evaluation creation date
+	Status      StackEvaluationStatus
 }
 
 type GetStackFindings struct {

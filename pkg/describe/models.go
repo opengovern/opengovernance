@@ -158,6 +158,7 @@ func (s Stack) ToApi() api.Stack {
 			EvaluatorID: e.EvaluatorID,
 			JobID:       e.JobID,
 			CreatedAt:   e.CreatedAt,
+			Status:      e.Status,
 		})
 	}
 
@@ -191,6 +192,7 @@ type StackEvaluation struct {
 	Type        api.EvaluationType
 	StackID     string
 	JobID       uint `gorm:"primaryKey"`
+	Status      api.StackEvaluationStatus
 
 	CreatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`

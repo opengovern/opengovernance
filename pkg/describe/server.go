@@ -1070,6 +1070,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error { // Retired
 			Type:        api.EvaluationTypeBenchmark,
 			StackID:     stackRecord.StackID,
 			JobID:       crj.ID,
+			Status:      api.StackEvaluationStatusInProgress,
 		}
 		err = h.DB.AddEvaluation(&evaluation)
 		if err != nil {
@@ -1348,6 +1349,7 @@ func (h HttpServer) TriggerStackInsight(ctx echo.Context) error { // Retired
 			Type:        api.EvaluationTypeInsight,
 			StackID:     stackRecord.StackID,
 			JobID:       job.ID,
+			Status:      api.StackEvaluationStatusInProgress,
 		}
 		err = h.DB.AddEvaluation(&evaluation)
 		if err != nil {

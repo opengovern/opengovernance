@@ -71,7 +71,7 @@ func (s *HttpServerSuite) SetupSuite() {
 
 		return d.Ping()
 	})
-	s.handler = NewHTTPServer(":8080", Database{orm: adb}, nil)
+	s.handler = NewHTTPServer(":8080", Database{orm: adb}, nil, HelmConfig{})
 	err = s.handler.DB.Initialize()
 	require.NoError(err, "db initialize")
 
@@ -328,6 +328,7 @@ func (s *HttpServerSuite) TestTriggerStackBenchmark() {
 						EvaluatorID: e.EvaluatorID,
 						JobID:       e.JobID,
 						CreatedAt:   e.CreatedAt,
+						Status:      e.Status,
 					})
 				}
 

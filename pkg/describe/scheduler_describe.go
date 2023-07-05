@@ -16,6 +16,7 @@ import (
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	apiCompliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	apiDescribe "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
@@ -498,7 +499,28 @@ func (s Scheduler) scheduleStackJobs() error {
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
 			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to run insights on stack with error: %s", err.Error()))
 		}
-		s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusEvaluated)
+		s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusEvaluating)
+	}
+
+	// ======== Check evaluation jobs completed and remove helm release ========
+	stacks, err = s.db.ListEvaluatingStacks()
+	if err != nil {
+		return err
+	}
+	for _, stack := range stacks {
+		isComplete, err := s.updateStackJobs(stack.ToApi())
+		if err != nil {
+			return err
+		}
+		if isComplete {
+			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCompleted)
+			err = s.httpServer.deleteStackHelmRelease(stack.ToApi())
+			if err != nil {
+				s.logger.Error(fmt.Sprintf("Failed to delete helmrelease for stack: %s", stack.StackID), zap.Error(err))
+				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
+				s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to delete helmrelease: %s", err.Error()))
+			}
+		}
 	}
 
 	return nil
@@ -644,6 +666,7 @@ func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 			Type:        api.EvaluationTypeBenchmark,
 			StackID:     stack.StackID,
 			JobID:       crj.ID,
+			Status:      api.StackEvaluationStatusInProgress,
 		}
 		err = s.db.AddEvaluation(&evaluation)
 		if err != nil {
@@ -686,6 +709,7 @@ func (s Scheduler) runStackInsights(stack apiDescribe.Stack) error {
 			Type:        api.EvaluationTypeInsight,
 			StackID:     stack.StackID,
 			JobID:       job.ID,
+			Status:      api.StackEvaluationStatusInProgress,
 		}
 		err = s.db.AddEvaluation(&evaluation)
 		if err != nil {
@@ -693,4 +717,36 @@ func (s Scheduler) runStackInsights(stack apiDescribe.Stack) error {
 		}
 	}
 	return nil
+}
+
+func (s Scheduler) updateStackJobs(stack apiDescribe.Stack) (bool, error) { // returns true if all jobs are completed
+	isAllDone := true
+	for _, evaluation := range stack.Evaluations {
+		if evaluation.Type == api.EvaluationTypeBenchmark {
+			job, err := s.db.GetComplianceReportJobByID(evaluation.JobID)
+			if err != nil {
+				return false, err
+			}
+			if job.Status == apiCompliance.ComplianceReportJobCompleted {
+				err = s.db.UpdateEvaluationStatus(evaluation.JobID, apiDescribe.StackEvaluationStatusCompleted)
+			} else if job.Status == apiCompliance.ComplianceReportJobCompletedWithFailure {
+				err = s.db.UpdateEvaluationStatus(evaluation.JobID, apiDescribe.StackEvaluationStatusFailed)
+			} else {
+				isAllDone = false
+			}
+		} else if evaluation.Type == api.EvaluationTypeInsight {
+			job, err := s.db.GetInsightJobById(evaluation.JobID)
+			if err != nil {
+				return false, err
+			}
+			if job.Status == apiInsight.InsightJobSucceeded {
+				err = s.db.UpdateEvaluationStatus(evaluation.JobID, apiDescribe.StackEvaluationStatusCompleted)
+			} else if job.Status == apiInsight.InsightJobFailed {
+				err = s.db.UpdateEvaluationStatus(evaluation.JobID, apiDescribe.StackEvaluationStatusFailed)
+			} else {
+				isAllDone = false
+			}
+		}
+	}
+	return isAllDone, nil
 }

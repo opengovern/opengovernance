@@ -741,6 +741,16 @@ func (db Database) GetLastCompletedSourceComplianceReport(sourceID uuid.UUID) (*
 	return &job, nil
 }
 
+func (db Database) GetComplianceReportJobByID(ID uint) (*ComplianceReportJob, error) {
+	var job ComplianceReportJob
+	tx := db.orm.Where("id = ?", ID).Find(&job)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return &job, nil
+}
+
 func (db Database) GetComplianceReportJobsByScheduleID(scheduleJobID uint) ([]ComplianceReportJob, error) {
 	var jobs []ComplianceReportJob
 	tx := db.orm.Where("schedule_job_id = ?", scheduleJobID).Find(&jobs)
@@ -1439,4 +1449,26 @@ func (db Database) ListDescribedStacks() ([]Stack, error) {
 		return nil, tx.Error
 	}
 	return stacks, nil
+}
+
+func (db Database) ListEvaluatingStacks() ([]Stack, error) {
+	var stacks []Stack
+	tx := db.orm.Model(&Stack{}).
+		Where("status = ?", api.StackStatusEvaluating).
+		Preload("Evaluations").
+		Find(&stacks)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return stacks, nil
+}
+
+func (db Database) UpdateEvaluationStatus(jobId uint, status api.StackEvaluationStatus) error {
+	tx := db.orm.Model(&StackEvaluation{}).
+		Where("job_id = ?", jobId).
+		Update("status", status)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
 }
