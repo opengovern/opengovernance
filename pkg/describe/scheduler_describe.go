@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -476,7 +477,13 @@ func (s Scheduler) scheduleStackJobs() error {
 			continue
 		} else {
 			if jobs[0].Status == apiDescribe.DescribeSourceJobCompleted || jobs[0].Status == apiDescribe.DescribeSourceJobCompletedWithFailure {
-				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusDescribed)
+				lag, err := s.getKafkaLag(stack.StackID)
+				if err != nil {
+					return err
+				}
+				if lag == 0 {
+					s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusDescribed)
+				}
 			}
 		}
 	}
@@ -769,4 +776,36 @@ func (s Scheduler) updateStackJobs(stack apiDescribe.Stack) (bool, error) { // r
 		}
 	}
 	return isAllDone, nil
+}
+
+func (s Scheduler) getKafkaLag(topic string) (int, error) {
+	//Get the assigned partitions.
+	topicPartitions, err := s.kafkaConsumer.Assignment()
+	if err != nil {
+		return 0, err
+	}
+
+	// Get the offset for each partition assigned to this consumer instance
+	topicPartitions, err = s.kafkaConsumer.Committed(topicPartitions, 5000)
+	if err != nil {
+		return 0, err
+	}
+
+	//Calculates the difference per partition of the consumer lag
+	var l, highOffset int64
+	for i := range topicPartitions {
+		if *topicPartitions[i].Topic == topic {
+			l, highOffset, err = s.kafkaConsumer.QueryWatermarkOffsets(*topicPartitions[i].Topic, topicPartitions[i].Partition, 5000)
+			if err != nil {
+				return 0, err
+			}
+			offset := int64(topicPartitions[i].Offset)
+			if topicPartitions[i].Offset == kafka.OffsetInvalid {
+				offset = l
+			}
+			//save information from the partition
+			return int(highOffset - offset), nil
+		}
+	}
+	return 0, fmt.Errorf("kafka topic %s not found", topic)
 }
