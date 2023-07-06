@@ -909,6 +909,7 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		Tags:          recordTags,
 		AccountIDs:    accs,
 		ResourceTypes: pq.StringArray(resourceTypes),
+		SourceType:    provider,
 		Status:        api.StackStatusPending,
 	}
 	err = h.DB.AddStack(&stackRecord)

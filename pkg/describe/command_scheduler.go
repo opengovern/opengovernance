@@ -64,7 +64,7 @@ var (
 
 	LambdaFuncsBaseURL      = os.Getenv("LAMBDA_FUNCS_BASE_URL")
 	KeyARN                  = os.Getenv("KMS_KEY_ARN")
-	KeyRegion               = os.Getenv("KMS_KEY_REGION")
+	KeyRegion               = os.Getenv("KMS_ACCOUNT_REGION")
 	KMSAccessKey            = os.Getenv("KMS_KEY_ACCESS_KEY")
 	KMSSecretKey            = os.Getenv("KMS_KEY_SECRET_KEY")
 	DescribeDeliverEndpoint = os.Getenv("DESCRIBE_DELIVER_ENDPOINT")
