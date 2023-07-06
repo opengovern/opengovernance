@@ -685,10 +685,6 @@ func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		}
 		enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, *src, &crj, scheduleJob)
 
-		err = s.db.UpdateSourceReportGenerated(stack.StackID, s.complianceIntervalHours)
-		if err != nil {
-			return err
-		}
 		evaluation := StackEvaluation{
 			EvaluatorID: benchmark.ID,
 			Type:        api.EvaluationTypeBenchmark,
