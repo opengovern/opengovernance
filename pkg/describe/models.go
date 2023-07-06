@@ -38,7 +38,7 @@ func trimPrivateTags(tags map[string][]string) map[string][]string {
 }
 
 type Source struct {
-	ID                     string `gorm:"type:uuid;default:uuid_generate_v4()"`
+	ID                     string `gorm:"type:text;default:uuid_generate_v4()"`
 	AccountID              string
 	Type                   source.Type
 	ConfigRef              string
