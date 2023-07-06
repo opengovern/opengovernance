@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"time"
 
+	"encoding/base64"
+
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -381,13 +383,15 @@ func getStackElasticConfig(workspaceId string, stackId string) (config.ElasticSe
 		Name:      secretName,
 	}, secret)
 	if err != nil {
-		panic(err.Error())
+		return config.ElasticSearch{}, err
 	}
-	password := string(secret.Data["elastic"])
-
+	password, err := base64.URLEncoding.DecodeString(string(secret.Data["elastic"]))
+	if err != nil {
+		return config.ElasticSearch{}, err
+	}
 	return config.ElasticSearch{
 		Address:  fmt.Sprintf("https://%s-es-http:9200/", releaseName),
 		Username: "elastic",
-		Password: password,
+		Password: string(password),
 	}, nil
 }
