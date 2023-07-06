@@ -171,6 +171,7 @@ func (s Stack) ToApi() api.Stack {
 		Tags:           trimPrivateTags(s.GetTagsMap()),
 		Evaluations:    evaluations,
 		AccountIDs:     s.AccountIDs,
+		SourceType:     s.SourceType,
 		Status:         s.Status,
 		FailureMessage: s.FailureMessage,
 	}
