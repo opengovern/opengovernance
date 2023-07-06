@@ -53,6 +53,9 @@ definitions:
         description: Not the primary key but should be a unique identifier
         example: azure_cis_v1
         type: string
+      IsStack:
+        example: false
+        type: boolean
       ReportCreatedAt:
         example: 1619510400
         type: integer
@@ -154,6 +157,8 @@ definitions:
         type: integer
       insightID:
         type: integer
+      isStack:
+        type: boolean
       scheduleUUID:
         type: string
       sourceID:
@@ -1130,6 +1135,9 @@ definitions:
         description: Long Title
         example: List clusters that have role-based access control (RBAC) disabled
         type: string
+      oldTotalResultDate:
+        description: Old Total Result Date
+        type: string
       oldTotalResultValue:
         description: Number of Old Total Result Value
         example: 0
@@ -1202,6 +1210,9 @@ definitions:
         type: string
       longTitle:
         example: List clusters that have role-based access control (RBAC) disabled
+        type: string
+      oldTotalResultDate:
+        example: "2023-04-21T08:53:09.928Z"
         type: string
       oldTotalResultValue:
         example: 0
@@ -1616,6 +1627,14 @@ definitions:
         example: stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.EvaluationType:
+    enum:
+    - INSIGHT
+    - BENCHMARK
+    type: string
+    x-enum-varnames:
+    - EvaluationTypeInsight
+    - EvaluationTypeBenchmark
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetStackFindings:
     properties:
       benchmarkIds:
@@ -1752,6 +1771,10 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackEvaluation'
         type: array
+      failureMessage:
+        description: Stack failure message
+        example: error message
+        type: string
       resourceTypes:
         description: Stack resource types
         example:
@@ -1766,10 +1789,20 @@ definitions:
         items:
           type: string
         type: array
+      sourceType:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Source type
+        example: Azure
       stackId:
         description: Stack unique identifier
         example: stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0
         type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackStatus'
+        description: Stack status. CREATED, EVALUATED, IN_PROGRESS, FAILED
+        example: CREATED
       tags:
         additionalProperties:
           items:
@@ -1817,13 +1850,46 @@ definitions:
         description: Evaluation Job ID to find the job results
         example: 1
         type: integer
+      status:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackEvaluationStatus'
       type:
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.EvaluationType'
         description: BENCHMARK or INSIGHT
         example: BENCHMARK
-        type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackEvaluationStatus:
+    enum:
+    - IN_PROGRESS
+    - COMPLETED_WITH_FAILURE
+    - COMPLETED
+    type: string
+    x-enum-varnames:
+    - StackEvaluationStatusInProgress
+    - StackEvaluationStatusFailed
+    - StackEvaluationStatusCompleted
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackInsightRequest:
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackStatus:
+    enum:
+    - PENDING
+    - STALLED
+    - CREATED
+    - DESCRIBING
+    - DESCRIBED_RESOURCES
+    - EVALUATING
+    - COMPLETED
+    - FAILED
+    type: string
+    x-enum-varnames:
+    - StackStatusPending
+    - StackStatusStalled
+    - StackStatusCreated
+    - StackStatusDescribing
+    - StackStatusDescribed
+    - StackStatusEvaluating
+    - StackStatusCompleted
+    - StackStatusFailed
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest:
     properties:
       benchmarkID:

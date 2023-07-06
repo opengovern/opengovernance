@@ -7124,6 +7124,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "azure_cis_v1"
                 },
+                "IsStack": {
+                    "type": "boolean",
+                    "example": false
+                },
                 "ReportCreatedAt": {
                     "type": "integer",
                     "example": 1619510400
@@ -7276,6 +7280,9 @@ const docTemplate = `{
                 },
                 "insightID": {
                     "type": "integer"
+                },
+                "isStack": {
+                    "type": "boolean"
                 },
                 "scheduleUUID": {
                     "type": "string"
@@ -8652,6 +8659,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "List clusters that have role-based access control (RBAC) disabled"
                 },
+                "oldTotalResultDate": {
+                    "description": "Old Total Result Date",
+                    "type": "string"
+                },
                 "oldTotalResultValue": {
                     "description": "Number of Old Total Result Value",
                     "type": "integer",
@@ -8757,6 +8768,10 @@ const docTemplate = `{
                 "longTitle": {
                     "type": "string",
                     "example": "List clusters that have role-based access control (RBAC) disabled"
+                },
+                "oldTotalResultDate": {
+                    "type": "string",
+                    "example": "2023-04-21T08:53:09.928Z"
                 },
                 "oldTotalResultValue": {
                     "type": "integer",
@@ -9317,6 +9332,17 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.EvaluationType": {
+            "type": "string",
+            "enum": [
+                "INSIGHT",
+                "BENCHMARK"
+            ],
+            "x-enum-varnames": [
+                "EvaluationTypeInsight",
+                "EvaluationTypeBenchmark"
+            ]
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetStackFindings": {
             "type": "object",
             "required": [
@@ -9516,6 +9542,11 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackEvaluation"
                     }
                 },
+                "failureMessage": {
+                    "description": "Stack failure message",
+                    "type": "string",
+                    "example": "error message"
+                },
                 "resourceTypes": {
                     "description": "Stack resource types",
                     "type": "array",
@@ -9536,10 +9567,28 @@ const docTemplate = `{
                         "[/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1]"
                     ]
                 },
+                "sourceType": {
+                    "description": "Source type",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
+                },
                 "stackId": {
                     "description": "Stack unique identifier",
                     "type": "string",
                     "example": "stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0"
+                },
+                "status": {
+                    "description": "Stack status. CREATED, EVALUATED, IN_PROGRESS, FAILED",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackStatus"
+                        }
+                    ],
+                    "example": "CREATED"
                 },
                 "tags": {
                     "description": "Stack tags",
@@ -9602,15 +9651,58 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 1
                 },
+                "status": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackEvaluationStatus"
+                },
                 "type": {
                     "description": "BENCHMARK or INSIGHT",
-                    "type": "string",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.EvaluationType"
+                        }
+                    ],
                     "example": "BENCHMARK"
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackEvaluationStatus": {
+            "type": "string",
+            "enum": [
+                "IN_PROGRESS",
+                "COMPLETED_WITH_FAILURE",
+                "COMPLETED"
+            ],
+            "x-enum-varnames": [
+                "StackEvaluationStatusInProgress",
+                "StackEvaluationStatusFailed",
+                "StackEvaluationStatusCompleted"
+            ]
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackInsightRequest": {
             "type": "object"
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackStatus": {
+            "type": "string",
+            "enum": [
+                "PENDING",
+                "STALLED",
+                "CREATED",
+                "DESCRIBING",
+                "DESCRIBED_RESOURCES",
+                "EVALUATING",
+                "COMPLETED",
+                "FAILED"
+            ],
+            "x-enum-varnames": [
+                "StackStatusPending",
+                "StackStatusStalled",
+                "StackStatusCreated",
+                "StackStatusDescribing",
+                "StackStatusDescribed",
+                "StackStatusEvaluating",
+                "StackStatusCompleted",
+                "StackStatusFailed"
+            ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest": {
             "type": "object",
