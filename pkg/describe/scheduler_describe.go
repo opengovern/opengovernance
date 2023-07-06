@@ -477,11 +477,8 @@ func (s Scheduler) scheduleStackJobs() error {
 		if len(jobs) == 0 {
 			continue
 		} else {
-			if jobs[0].Status == apiDescribe.DescribeSourceJobCompleted {
+			if jobs[0].Status == apiDescribe.DescribeSourceJobCompleted || jobs[0].Status == apiDescribe.DescribeSourceJobCompletedWithFailure {
 				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusDescribed)
-			} else if jobs[0].Status == apiDescribe.DescribeSourceJobCompletedWithFailure {
-				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-				s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to describe stack resources"))
 			}
 		}
 	}
@@ -528,6 +525,21 @@ func (s Scheduler) scheduleStackJobs() error {
 		}
 	}
 
+	// ======== Delete failed helm releases ========
+	stacks, err = s.db.ListFailedStacks()
+	if err != nil {
+		return err
+	}
+	for _, stack := range stacks {
+		err = s.httpServer.deleteStackHelmRelease(stack.ToApi(), CurrentWorkspaceID)
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("Failed to delete helmrelease for stack: %s", stack.StackID), zap.Error(err))
+			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
+			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to delete helmrelease: %s", err.Error()))
+		} else {
+			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCompletedWithFailure)
+		}
+	}
 	return nil
 }
 
