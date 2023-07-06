@@ -10,14 +10,15 @@ import (
 type StackStatus string
 
 const (
-	StackStatusPending    StackStatus = "PENDING"
-	StackStatusStalled    StackStatus = "STALLED"
-	StackStatusCreated    StackStatus = "CREATED"
-	StackStatusDescribing StackStatus = "DESCRIBING"
-	StackStatusDescribed  StackStatus = "DESCRIBED_RESOURCES"
-	StackStatusEvaluating StackStatus = "EVALUATING"
-	StackStatusCompleted  StackStatus = "COMPLETED"
-	StackStatusFailed     StackStatus = "FAILED"
+	StackStatusPending              StackStatus = "PENDING"
+	StackStatusStalled              StackStatus = "STALLED"
+	StackStatusCreated              StackStatus = "CREATED"
+	StackStatusDescribing           StackStatus = "DESCRIBING"
+	StackStatusDescribed            StackStatus = "DESCRIBED_RESOURCES"
+	StackStatusEvaluating           StackStatus = "EVALUATING"
+	StackStatusFailed               StackStatus = "FAILED"
+	StackStatusCompleted            StackStatus = "COMPLETED"
+	StackStatusCompletedWithFailure StackStatus = "COMPLETED_WITH_FAILURE"
 )
 
 type EvaluationType string

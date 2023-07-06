@@ -1472,3 +1472,15 @@ func (db Database) UpdateEvaluationStatus(jobId uint, status api.StackEvaluation
 	}
 	return nil
 }
+
+func (db Database) ListFailedStacks() ([]Stack, error) {
+	var stacks []Stack
+	tx := db.orm.Model(&Stack{}).
+		Where("status = ?", api.StackStatusFailed).
+		Preload("Evaluations").
+		Find(&stacks)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return stacks, nil
+}
