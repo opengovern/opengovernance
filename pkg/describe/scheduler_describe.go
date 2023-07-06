@@ -482,8 +482,7 @@ func (s Scheduler) scheduleStackJobs() error {
 					s.logger.Error(fmt.Sprintf("Failed to check kafka lag %s", stack.StackID), zap.Error(err))
 					s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
 					s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to check kafka lag with error: %s", err.Error()))
-				}
-				if lag == 0 {
+				} else if lag == 0 {
 					s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusDescribed)
 				} else {
 					s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Kafka lag is %d", lag))
@@ -779,33 +778,33 @@ func (s Scheduler) updateStackJobs(stack apiDescribe.Stack) (bool, error) { // r
 }
 
 func (s Scheduler) getKafkaLag(topic string) (int, error) {
-	//Get the assigned partitions.
-	topicPartitions, err := s.kafkaConsumer.Assignment()
+	err := s.kafkaConsumer.Subscribe(topic, nil)
 	if err != nil {
 		return 0, err
 	}
 
-	// Get the offset for each partition assigned to this consumer instance
-	topicPartitions, err = s.kafkaConsumer.Committed(topicPartitions, 5000)
+	metadata, err := s.kafkaConsumer.GetMetadata(&topic, false, 5000)
 	if err != nil {
 		return 0, err
 	}
 
-	//Calculates the difference per partition of the consumer lag
-	var l, highOffset int64
-	for i := range topicPartitions {
-		if *topicPartitions[i].Topic == topic {
-			l, highOffset, err = s.kafkaConsumer.QueryWatermarkOffsets(*topicPartitions[i].Topic, topicPartitions[i].Partition, 5000)
-			if err != nil {
-				return 0, err
-			}
-			offset := int64(topicPartitions[i].Offset)
-			if topicPartitions[i].Offset == kafka.OffsetInvalid {
-				offset = l
-			}
-			//save information from the partition
-			return int(highOffset - offset), nil
+	numPartitions := len(metadata.Topics[topic].Partitions)
+	sum := 0
+	for partition := 0; partition < numPartitions; partition++ {
+		committed, err := s.kafkaConsumer.Committed([]kafka.TopicPartition{{Topic: &topic, Partition: int32(partition)}}, 5000)
+		if err != nil {
+			continue
 		}
+
+		_, high, err := s.kafkaConsumer.QueryWatermarkOffsets(topic, int32(partition), 5000)
+		if err != nil {
+			continue
+		}
+
+		offset := committed[0].Offset
+
+		lag := high - int64(offset)
+		sum = sum + int(lag)
 	}
-	return 0, fmt.Errorf("kafka topic %s not found", topic)
+	return sum, nil
 }
