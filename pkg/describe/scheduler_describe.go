@@ -604,9 +604,6 @@ func (s Scheduler) storeStackCredentials(stack apiDescribe.Stack, configStr stri
 			return err
 		}
 	}
-	if err != nil {
-		return err
-	}
 	err = s.db.CreateStackCredential(&StackCredential{StackID: stack.StackID, Secret: string(secretBytes)})
 	if err != nil {
 		return err
