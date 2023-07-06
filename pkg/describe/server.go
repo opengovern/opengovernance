@@ -15,6 +15,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/lib/pq"
+	"github.com/sony/sonyflake"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 
@@ -896,10 +897,14 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	id := "stack-" + uuid.New().String()
+	sf := sonyflake.NewSonyflake(sonyflake.Settings{})
+	id, err := sf.NextID()
+	if err != nil {
+		return err
+	}
 
 	stackRecord := Stack{
-		StackID:       id,
+		StackID:       fmt.Sprintf("stack-%d", id),
 		Resources:     pq.StringArray(resources),
 		Tags:          recordTags,
 		AccountIDs:    accs,
