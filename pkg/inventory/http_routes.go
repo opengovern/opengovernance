@@ -3330,7 +3330,7 @@ func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	h.logger.Debug("firstAvailable", zap.Any("firstAvailable", firstAvailable))
+	h.logger.Info("firstAvailable", zap.Any("firstAvailable", firstAvailable))
 
 	for insightId, resources := range insightValues {
 		if len(resources) != 0 {
@@ -3374,7 +3374,7 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	h.logger.Debug("firstAvailable", zap.Any("firstAvailable", firstAvailable))
+	h.logger.Info("firstAvailable", zap.Any("firstAvailable", firstAvailable))
 
 	for insightId, resources := range insightResults {
 		if len(resources) != 0 {
