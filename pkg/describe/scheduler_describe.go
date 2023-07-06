@@ -226,9 +226,10 @@ func (s Scheduler) describeConnection(connection Source, scheduled bool) error {
 			return errors.New("asset discovery is not scheduled")
 		}
 
-		if healthCheckedSrc.LifecycleState == apiOnboard.ConnectionLifecycleStateUnhealthy {
+		if healthCheckedSrc.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard &&
+			healthCheckedSrc.LifecycleState != apiOnboard.ConnectionLifecycleStateInProgress {
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			return errors.New("connection is not healthy")
+			return errors.New("connection is not healthy or disabled")
 		}
 
 		describedAt := time.Now()

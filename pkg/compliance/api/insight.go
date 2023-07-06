@@ -42,6 +42,7 @@ type Insight struct {
 
 	TotalResultValue    *int64          `json:"totalResultValue,omitempty" example:"10"`   // Number of Total Result Value
 	OldTotalResultValue *int64          `json:"oldTotalResultValue,omitempty" example:"0"` // Number of Old Total Result Value
+	FirstOldResultDate  *time.Time      `json:"oldTotalResultDate,omitempty"`              // Old Total Result Date
 	Results             []InsightResult `json:"result,omitempty"`                          // Insight Results
 }
 
@@ -56,8 +57,9 @@ type InsightGroup struct {
 
 	Insights []Insight `json:"insights"`
 
-	TotalResultValue    *int64 `json:"totalResultValue,omitempty" example:"10"`
-	OldTotalResultValue *int64 `json:"oldTotalResultValue,omitempty" example:"0"`
+	TotalResultValue    *int64     `json:"totalResultValue,omitempty" example:"10"`
+	OldTotalResultValue *int64     `json:"oldTotalResultValue,omitempty" example:"0"`
+	FirstOldResultDate  *time.Time `json:"oldTotalResultDate,omitempty" example:"2023-04-21T08:53:09.928Z"`
 }
 
 type InsightTrendDatapoint struct {

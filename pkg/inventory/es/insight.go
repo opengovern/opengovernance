@@ -195,6 +195,75 @@ func FetchInsightValueAtTime(client keibi.Client, t time.Time, connectors []sour
 	return result, nil
 }
 
+func FetchInsightValueAfter(client keibi.Client, t time.Time, connectors []source.Type, connectionIDs []string, insightIds []uint) (map[uint][]es.InsightResource, error) {
+	var query map[string]any
+	if len(connectionIDs) == 0 {
+		query = BuildFindInsightResultsQuery(connectors, nil, &t, nil, insightIds, true, true)
+	} else {
+		query = BuildFindInsightResultsQuery(connectors, connectionIDs, &t, nil, insightIds, true, false)
+	}
+	query["size"] = 0
+	delete(query, "sort")
+
+	query["aggs"] = map[string]any{
+		"insight_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "insight_id",
+				"size":  MAX_INSIGHTS,
+			},
+			"aggs": map[string]any{
+				"source_id_group": map[string]any{
+					"terms": map[string]any{
+						"field": "source_id",
+						"size":  MAX_INSIGHTS,
+					},
+					"aggs": map[string]any{
+						"latest_group": map[string]any{
+							"top_hits": map[string]any{
+								"size": 1,
+								"sort": []map[string]any{
+									{
+										"executed_at": map[string]any{
+											"order": "asc",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("query=", string(queryJson), "index=", es.InsightsIndex)
+	var response InsightResultQueryResponse
+	err = client.Search(context.Background(), es.InsightsIndex, string(queryJson), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[uint][]es.InsightResource)
+	if response.Aggregations == nil {
+		return nil, nil
+	}
+	for _, insightIdBucket := range response.Aggregations.InsightIDGroup.Buckets {
+		for _, sourceIdBucket := range insightIdBucket.SourceIDGroup.Buckets {
+			for _, hit := range sourceIdBucket.LatestGroup.Hits.Hits {
+				result[uint(insightIdBucket.Key)] = append(result[uint(insightIdBucket.Key)], hit.Source)
+			}
+		}
+		sort.Slice(result[uint(insightIdBucket.Key)], func(i, j int) bool {
+			return result[uint(insightIdBucket.Key)][i].ExecutedAt < result[uint(insightIdBucket.Key)][j].ExecutedAt
+		})
+	}
+	return result, nil
+}
+
 type InsightHistoryResultQueryResponse struct {
 	Aggregations struct {
 		InsightIDGroup struct {

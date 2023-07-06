@@ -3325,6 +3325,17 @@ func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 		return err
 	}
 
+	firstAvailable, err := es.FetchInsightValueAfter(h.client, time.Unix(timeAt, 0), connectors, connectionIDs, insightIdList)
+	if err != nil {
+		return err
+	}
+
+	for insightId, resources := range insightValues {
+		if len(resources) == 0 {
+			insightValues[insightId] = firstAvailable[insightId]
+		}
+	}
+
 	return ctx.JSON(http.StatusOK, insightValues)
 }
 
@@ -3354,6 +3365,17 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 	}
 	if err != nil {
 		return err
+	}
+
+	firstAvailable, err := es.FetchInsightValueAfter(h.client, time.Unix(timeAt, 0), nil, connectionIDs, []uint{uint(insightId)})
+	if err != nil {
+		return err
+	}
+
+	for insightId, resources := range insightResults {
+		if len(resources) == 0 {
+			insightResults[insightId] = firstAvailable[insightId]
+		}
 	}
 
 	if insightResult, ok := insightResults[uint(insightId)]; ok {

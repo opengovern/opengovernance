@@ -1150,7 +1150,13 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 			for _, oldInsightResult := range oldInsightResults {
 				localOldInsightResult := oldInsightResult.Result
 				apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, &localOldInsightResult)
+				if apiRes.FirstOldResultDate == nil || apiRes.FirstOldResultDate.After(time.UnixMilli(oldInsightResult.ExecutedAt)) {
+					apiRes.FirstOldResultDate = utils.GetPointer(time.UnixMilli(oldInsightResult.ExecutedAt))
+				}
 			}
+		}
+		if apiRes.FirstOldResultDate != nil && apiRes.FirstOldResultDate.After(startTime) {
+			apiRes.OldTotalResultValue = nil
 		}
 		result = append(result, apiRes)
 	}
@@ -1257,6 +1263,12 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	for _, oldInsightResult := range oldInsightResults {
 		localOldInsightResult := oldInsightResult.Result
 		apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, &localOldInsightResult)
+		if apiRes.FirstOldResultDate == nil || apiRes.FirstOldResultDate.After(time.UnixMilli(oldInsightResult.ExecutedAt)) {
+			apiRes.FirstOldResultDate = utils.GetPointer(time.UnixMilli(oldInsightResult.ExecutedAt))
+		}
+	}
+	if apiRes.FirstOldResultDate != nil && apiRes.FirstOldResultDate.After(startTime) {
+		apiRes.OldTotalResultValue = nil
 	}
 
 	return ctx.JSON(200, apiRes)
@@ -1436,12 +1448,24 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 				for _, oldInsightResult := range oldInsightResults {
 					localOldInsightResult := oldInsightResult.Result
 					insightApiRes.OldTotalResultValue = utils.PAdd(insightApiRes.OldTotalResultValue, &localOldInsightResult)
+					if insightApiRes.FirstOldResultDate == nil || insightApiRes.FirstOldResultDate.After(time.UnixMilli(oldInsightResult.ExecutedAt)) {
+						insightApiRes.FirstOldResultDate = utils.GetPointer(time.UnixMilli(oldInsightResult.ExecutedAt))
+					}
 				}
+			}
+			if insightApiRes.FirstOldResultDate != nil && insightApiRes.FirstOldResultDate.After(startTime) {
+				insightApiRes.OldTotalResultValue = nil
 			}
 
 			apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, insightApiRes.TotalResultValue)
 			apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, insightApiRes.OldTotalResultValue)
+			if apiRes.FirstOldResultDate == nil || insightApiRes.FirstOldResultDate != nil && apiRes.FirstOldResultDate.After(*insightApiRes.FirstOldResultDate) {
+				apiRes.FirstOldResultDate = insightApiRes.FirstOldResultDate
+			}
 			apiRes.Insights = append(apiRes.Insights, insightApiRes)
+		}
+		if apiRes.FirstOldResultDate != nil && apiRes.FirstOldResultDate.After(startTime) {
+			apiRes.OldTotalResultValue = nil
 		}
 		result = append(result, apiRes)
 	}
@@ -1563,12 +1587,24 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 			for _, oldInsightResult := range oldInsightResults {
 				localOldInsightResult := oldInsightResult.Result
 				insightApiRes.OldTotalResultValue = utils.PAdd(insightApiRes.OldTotalResultValue, &localOldInsightResult)
+				if insightApiRes.FirstOldResultDate == nil || insightApiRes.FirstOldResultDate.After(time.UnixMilli(oldInsightResult.ExecutedAt)) {
+					insightApiRes.FirstOldResultDate = utils.GetPointer(time.UnixMilli(oldInsightResult.ExecutedAt))
+				}
 			}
+		}
+		if insightApiRes.FirstOldResultDate != nil && insightApiRes.FirstOldResultDate.After(startTime) {
+			insightApiRes.OldTotalResultValue = nil
 		}
 
 		apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, insightApiRes.TotalResultValue)
 		apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, insightApiRes.OldTotalResultValue)
+		if apiRes.FirstOldResultDate == nil || insightApiRes.FirstOldResultDate != nil && apiRes.FirstOldResultDate.After(*insightApiRes.FirstOldResultDate) {
+			apiRes.FirstOldResultDate = insightApiRes.FirstOldResultDate
+		}
 		apiRes.Insights = append(apiRes.Insights, insightApiRes)
+	}
+	if apiRes.FirstOldResultDate != nil && apiRes.FirstOldResultDate.After(startTime) {
+		apiRes.OldTotalResultValue = nil
 	}
 
 	return ctx.JSON(200, apiRes)
