@@ -100,10 +100,10 @@ func (s *HttpServer) createStackHelmRelease(ctx context.Context, workspaceId str
 	return nil
 }
 
-func (s *HttpServer) findHelmRelease(ctx context.Context, stack api.Stack) (*helmv2.HelmRelease, error) {
+func (s *HttpServer) findHelmRelease(ctx context.Context, stack api.Stack, workspaceId string) (*helmv2.HelmRelease, error) {
 	key := types.NamespacedName{
 		Name:      stack.StackID,
-		Namespace: s.helmConfig.FluxSystemNamespace,
+		Namespace: workspaceId,
 	}
 	var helmRelease helmv2.HelmRelease
 	if err := s.kubeClient.Get(ctx, key, &helmRelease); err != nil {
@@ -115,13 +115,13 @@ func (s *HttpServer) findHelmRelease(ctx context.Context, stack api.Stack) (*hel
 	return &helmRelease, nil
 }
 
-func (s *HttpServer) deleteStackHelmRelease(stack api.Stack) error {
+func (s *HttpServer) deleteStackHelmRelease(stack api.Stack, workspaceId string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	helmRelease := helmv2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      stack.StackID,
-			Namespace: s.helmConfig.FluxSystemNamespace,
+			Namespace: workspaceId,
 		},
 	}
 	return s.kubeClient.Delete(ctx, &helmRelease)

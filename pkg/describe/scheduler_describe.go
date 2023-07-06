@@ -410,7 +410,7 @@ func (s Scheduler) scheduleStackJobs() error {
 	}
 	for _, stack := range stacks {
 
-		helmRelease, err := s.httpServer.findHelmRelease(ctx, stack.ToApi())
+		helmRelease, err := s.httpServer.findHelmRelease(ctx, stack.ToApi(), CurrentWorkspaceID)
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("=======================%s=======================", err.Error()))
 			return fmt.Errorf("could not find helm release: %w", err)
@@ -518,7 +518,7 @@ func (s Scheduler) scheduleStackJobs() error {
 		}
 		if isComplete {
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCompleted)
-			err = s.httpServer.deleteStackHelmRelease(stack.ToApi())
+			err = s.httpServer.deleteStackHelmRelease(stack.ToApi(), CurrentWorkspaceID)
 			if err != nil {
 				s.logger.Error(fmt.Sprintf("Failed to delete helmrelease for stack: %s", stack.StackID), zap.Error(err))
 				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
