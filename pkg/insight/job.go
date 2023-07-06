@@ -229,13 +229,7 @@ func (j Job) Do(client keibi.Client, steampipeOption steampipe.Option, onboardCl
 						S3Location:          result.Location,
 					})
 				}
-				var kafkaTopic string
-				if j.IsStack == true {
-					kafkaTopic = j.SourceID
-				} else {
-					kafkaTopic = topic
-				}
-				if err := kafka.DoSend(producer, kafkaTopic, -1, resources, logger); err != nil {
+				if err := kafka.DoSend(producer, topic, -1, resources, logger); err != nil {
 					fail(fmt.Errorf("send to kafka: %w", err))
 				}
 			} else {

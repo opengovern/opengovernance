@@ -253,12 +253,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	for _, finding := range findingsFiltered {
 		docs = append(docs, finding)
 	}
-	if j.IsStack {
-		return kafka.DoSend(kfkProducer, j.ConnectionID, -1, docs, logger)
-
-	} else {
-		return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger)
-	}
+	return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger)
 }
 
 func (j *Job) FilterFindings(esClient keibi.Client, findings []es.Finding) ([]es.Finding, error) {

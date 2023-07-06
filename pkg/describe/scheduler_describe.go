@@ -484,6 +484,7 @@ func (s Scheduler) scheduleStackJobs() error {
 				} else if lag == 0 {
 					s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusDescribed)
 				} else {
+					s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusDescribed)
 					s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Kafka lag is %d", lag))
 				}
 			}
