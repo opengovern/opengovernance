@@ -487,6 +487,7 @@ func (s Scheduler) scheduleStackJobs() error {
 		return err
 	}
 	for _, stack := range stacks {
+		s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusEvaluating)
 		err = s.runStackBenchmarks(stack.ToApi())
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("Failed to evaluate stack resources %s", stack.StackID), zap.Error(err))
@@ -499,7 +500,7 @@ func (s Scheduler) scheduleStackJobs() error {
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
 			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to run insights on stack with error: %s", err.Error()))
 		}
-		s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusEvaluating)
+
 	}
 
 	// ======== Check evaluation jobs completed and remove helm release ========
@@ -514,12 +515,12 @@ func (s Scheduler) scheduleStackJobs() error {
 		}
 		if isComplete {
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCompleted)
-			err = s.httpServer.deleteStackHelmRelease(stack.ToApi(), CurrentWorkspaceID)
-			if err != nil {
-				s.logger.Error(fmt.Sprintf("Failed to delete helmrelease for stack: %s", stack.StackID), zap.Error(err))
-				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-				s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to delete helmrelease: %s", err.Error()))
-			}
+			// err = s.httpServer.deleteStackHelmRelease(stack.ToApi(), CurrentWorkspaceID)
+			// if err != nil {
+			// 	s.logger.Error(fmt.Sprintf("Failed to delete helmrelease for stack: %s", stack.StackID), zap.Error(err))
+			// 	s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
+			// 	s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to delete helmrelease: %s", err.Error()))
+			// }
 		}
 	}
 
