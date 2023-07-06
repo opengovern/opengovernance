@@ -777,22 +777,18 @@ func (s Scheduler) updateStackJobs(stack apiDescribe.Stack) (bool, error) { // r
 }
 
 func (s Scheduler) getKafkaLag(topic string) (int, error) {
-	// Subscribe to the topic
 	err := s.kafkaConsumer.Subscribe(topic, nil)
 	if err != nil {
 		return 0, err
 	}
 
-	// Fetch metadata
 	metadata, err := s.kafkaConsumer.GetMetadata(&topic, false, 5000)
 	if err != nil {
 		return 0, err
 	}
 
-	// Get the number of partitions for the topic
 	numPartitions := len(metadata.Topics[topic].Partitions)
 	sum := 0
-	// Calculate lag for each partition
 	for partition := 0; partition < numPartitions; partition++ {
 		committed, err := s.kafkaConsumer.Committed([]kafka.TopicPartition{{Topic: &topic, Partition: int32(partition)}}, 5000)
 		if err != nil {
@@ -806,7 +802,6 @@ func (s Scheduler) getKafkaLag(topic string) (int, error) {
 
 		offset := committed[0].Offset
 
-		// Calculate the lag
 		lag := high - int64(offset)
 		sum = sum + int(lag)
 	}
