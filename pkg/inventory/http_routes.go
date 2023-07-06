@@ -20,6 +20,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/internal"
@@ -3329,11 +3330,13 @@ func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	h.logger.Debug("firstAvailable", zap.Any("firstAvailable", firstAvailable))
 
 	for insightId, resources := range insightValues {
-		if len(resources) == 0 {
-			insightValues[insightId] = firstAvailable[insightId]
+		if len(resources) != 0 {
+			continue
 		}
+		insightValues[insightId] = firstAvailable[insightId]
 	}
 
 	return ctx.JSON(http.StatusOK, insightValues)
@@ -3371,11 +3374,13 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	h.logger.Debug("firstAvailable", zap.Any("firstAvailable", firstAvailable))
 
 	for insightId, resources := range insightResults {
-		if len(resources) == 0 {
-			insightResults[insightId] = firstAvailable[insightId]
+		if len(resources) != 0 {
+			continue
 		}
+		insightResults[insightId] = firstAvailable[insightId]
 	}
 
 	if insightResult, ok := insightResults[uint(insightId)]; ok {

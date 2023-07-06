@@ -1116,6 +1116,9 @@ definitions:
       enabled:
         example: true
         type: boolean
+      firstOldResultDate:
+        description: Old Total Result Date
+        type: string
       id:
         description: Insight ID
         example: 23
@@ -1134,9 +1137,6 @@ definitions:
       longTitle:
         description: Long Title
         example: List clusters that have role-based access control (RBAC) disabled
-        type: string
-      oldTotalResultDate:
-        description: Old Total Result Date
         type: string
       oldTotalResultValue:
         description: Number of Old Total Result Value
@@ -1198,6 +1198,9 @@ definitions:
       description:
         example: List clusters that have role-based access control (RBAC) disabled
         type: string
+      firstOldResultDate:
+        example: "2023-04-21T08:53:09.928Z"
+        type: string
       id:
         example: 23
         type: integer
@@ -1210,9 +1213,6 @@ definitions:
         type: string
       longTitle:
         example: List clusters that have role-based access control (RBAC) disabled
-        type: string
-      oldTotalResultDate:
-        example: "2023-04-21T08:53:09.928Z"
         type: string
       oldTotalResultValue:
         example: 0

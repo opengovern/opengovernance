@@ -8634,6 +8634,10 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "firstOldResultDate": {
+                    "description": "Old Total Result Date",
+                    "type": "string"
+                },
                 "id": {
                     "description": "Insight ID",
                     "type": "integer",
@@ -8658,10 +8662,6 @@ const docTemplate = `{
                     "description": "Long Title",
                     "type": "string",
                     "example": "List clusters that have role-based access control (RBAC) disabled"
-                },
-                "oldTotalResultDate": {
-                    "description": "Old Total Result Date",
-                    "type": "string"
                 },
                 "oldTotalResultValue": {
                     "description": "Number of Old Total Result Value",
@@ -8751,6 +8751,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "List clusters that have role-based access control (RBAC) disabled"
                 },
+                "firstOldResultDate": {
+                    "type": "string",
+                    "example": "2023-04-21T08:53:09.928Z"
+                },
                 "id": {
                     "type": "integer",
                     "example": 23
@@ -8768,10 +8772,6 @@ const docTemplate = `{
                 "longTitle": {
                     "type": "string",
                     "example": "List clusters that have role-based access control (RBAC) disabled"
-                },
-                "oldTotalResultDate": {
-                    "type": "string",
-                    "example": "2023-04-21T08:53:09.928Z"
                 },
                 "oldTotalResultValue": {
                     "type": "integer",
