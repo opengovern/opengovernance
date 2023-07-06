@@ -478,10 +478,14 @@ func (s Scheduler) scheduleStackJobs() error {
 			if jobs[0].Status == apiDescribe.DescribeSourceJobCompleted || jobs[0].Status == apiDescribe.DescribeSourceJobCompletedWithFailure {
 				lag, err := s.getKafkaLag(stack.StackID)
 				if err != nil {
-					return err
+					s.logger.Error(fmt.Sprintf("Failed to check kafka lag %s", stack.StackID), zap.Error(err))
+					s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
+					s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to check kafka lag with error: %s", err.Error()))
 				}
 				if lag == 0 {
 					s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusDescribed)
+				} else {
+					s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Kafka lag is %d", lag))
 				}
 			}
 		}

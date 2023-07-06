@@ -398,7 +398,7 @@ func InitializeScheduler(
 		DB:       0,  // use default DB
 	})
 
-	describeServer := NewDescribeServer(s.db, s.rdb, kafkaProducer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.authGrpcClient, s.logger)
+	describeServer := NewDescribeServer(s.db, s.rdb, s.kafkaProducer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.authGrpcClient, s.logger)
 	s.grpcServer = grpc.NewServer(
 		grpc.MaxRecvMsgSize(128*1024*1024),
 		grpc.UnaryInterceptor(describeServer.grpcUnaryAuthInterceptor),
