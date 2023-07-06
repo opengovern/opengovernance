@@ -46,8 +46,7 @@ type Source struct {
 	NextDescribeAt         sql.NullTime
 	LastComplianceReportAt sql.NullTime
 	NextComplianceReportAt sql.NullTime
-	ComplianceReportJobs   []ComplianceReportJob `gorm:"foreignKey:SourceID;constraint:OnDelete:CASCADE;"`
-	NextComplianceReportID uint                  `gorm:"default:0"`
+	NextComplianceReportID uint `gorm:"default:0"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

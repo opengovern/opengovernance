@@ -157,6 +157,7 @@ type Scheduler struct {
 	kafkaESSink         *KafkaEsSink
 	kafkaResourcesTopic string
 	kafkaDeletionTopic  string
+	kafkaConsumer       *confluent_kafka.Consumer
 
 	describeEndpoint string
 	keyARN           string
@@ -339,6 +340,7 @@ func InitializeScheduler(
 	if err != nil {
 		return nil, err
 	}
+	s.kafkaConsumer = kafkaResourceSinkConsumer
 	s.kafkaESSink = NewKafkaEsSink(s.logger, kafkaResourceSinkConsumer, s.es)
 
 	helmConfig := HelmConfig{
