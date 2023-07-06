@@ -245,16 +245,22 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return err
 	}
 	fmt.Println("++++++ findings len: ", len(findings))
-	findingsFiltered, err := j.FilterFindings(esk, findings)
-	if err != nil {
-		return err
-	}
-	fmt.Println("++++++ findingsFiltered len: ", len(findingsFiltered))
-
 	var docs []kafka.Doc
-	for _, finding := range findingsFiltered {
-		docs = append(docs, finding)
+	if j.IsStack == false {
+		findingsFiltered, err := j.FilterFindings(esk, findings)
+		if err != nil {
+			return err
+		}
+		fmt.Println("++++++ findingsFiltered len: ", len(findingsFiltered))
+		for _, finding := range findingsFiltered {
+			docs = append(docs, finding)
+		}
+	} else {
+		for _, finding := range findings {
+			docs = append(docs, finding)
+		}
 	}
+
 	return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger)
 }
 
