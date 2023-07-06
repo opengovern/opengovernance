@@ -524,30 +524,30 @@ func (s Scheduler) scheduleStackJobs() error {
 		}
 		if isComplete {
 			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCompleted)
-			// err = s.httpServer.deleteStackHelmRelease(stack.ToApi(), CurrentWorkspaceID)
-			// if err != nil {
-			// 	s.logger.Error(fmt.Sprintf("Failed to delete helmrelease for stack: %s", stack.StackID), zap.Error(err))
-			// 	s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-			// 	s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to delete helmrelease: %s", err.Error()))
-			// }
+			err = s.httpServer.deleteStackHelmRelease(stack.ToApi(), CurrentWorkspaceID)
+			if err != nil {
+				s.logger.Error(fmt.Sprintf("Failed to delete helmrelease for stack: %s", stack.StackID), zap.Error(err))
+				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
+				s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to delete helmrelease: %s", err.Error()))
+			}
 		}
 	}
 
-	// // ======== Delete failed helm releases ========
-	// stacks, err = s.db.ListFailedStacks()
-	// if err != nil {
-	// 	return err
-	// }
-	// for _, stack := range stacks {
-	// 	err = s.httpServer.deleteStackHelmRelease(stack.ToApi(), CurrentWorkspaceID)
-	// 	if err != nil {
-	// 		s.logger.Error(fmt.Sprintf("Failed to delete helmrelease for stack: %s", stack.StackID), zap.Error(err))
-	// 		s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
-	// 		s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to delete helmrelease: %s", err.Error()))
-	// 	} else {
-	// 		s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCompletedWithFailure)
-	// 	}
-	// }
+	// ======== Delete failed helm releases ========
+	stacks, err = s.db.ListFailedStacks()
+	if err != nil {
+		return err
+	}
+	for _, stack := range stacks {
+		err = s.httpServer.deleteStackHelmRelease(stack.ToApi(), CurrentWorkspaceID)
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("Failed to delete helmrelease for stack: %s", stack.StackID), zap.Error(err))
+			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
+			s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("Failed to delete helmrelease: %s", err.Error()))
+		} else {
+			s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCompletedWithFailure)
+		}
+	}
 	return nil
 }
 
