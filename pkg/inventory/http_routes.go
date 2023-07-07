@@ -16,29 +16,27 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
-	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
-	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"github.com/labstack/echo/v4"
+	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/inventory/internal"
-	"github.com/kaytu-io/kaytu-engine/pkg/utils"
-
-	api3 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
-	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/inventory/es"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
+	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory/internal"
+	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
-	"github.com/labstack/echo/v4"
 )
 
 const EsFetchPageSize = 10000
@@ -46,64 +44,62 @@ const EsFetchPageSize = 10000
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	v1.GET("/locations/:connector", httpserver.AuthorizeHandler(h.GetLocations, api3.ViewerRole))
+	v1.GET("/locations/:connector", httpserver.AuthorizeHandler(h.GetLocations, authApi.ViewerRole))
 
-	v1.POST("/resources", httpserver.AuthorizeHandler(h.GetAllResources, api3.ViewerRole))
-	v1.POST("/resources/azure", httpserver.AuthorizeHandler(h.GetAzureResources, api3.ViewerRole))
-	v1.POST("/resources/aws", httpserver.AuthorizeHandler(h.GetAWSResources, api3.ViewerRole))
-	v1.POST("/resources/filters", httpserver.AuthorizeHandler(h.GetResourcesFilters, api3.ViewerRole))
-	v1.POST("/resource", httpserver.AuthorizeHandler(h.GetResource, api3.ViewerRole))
+	v1.POST("/resources", httpserver.AuthorizeHandler(h.GetResources, authApi.ViewerRole))
+	v1.POST("/resources/filters", httpserver.AuthorizeHandler(h.GetResourcesFilters, authApi.ViewerRole))
+	v1.POST("/resource", httpserver.AuthorizeHandler(h.GetResource, authApi.ViewerRole))
 
-	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, api3.ViewerRole))
-	v1.GET("/resources/regions", httpserver.AuthorizeHandler(h.GetRegionsByResourceCount, api3.ViewerRole))
+	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, authApi.ViewerRole))
+	v1.GET("/resources/regions", httpserver.AuthorizeHandler(h.GetRegionsByResourceCount, authApi.ViewerRole))
 
-	v1.GET("/query", httpserver.AuthorizeHandler(h.ListQueries, api3.ViewerRole))
-	v1.GET("/query/count", httpserver.AuthorizeHandler(h.CountQueries, api3.ViewerRole))
-	v1.POST("/query/:queryId", httpserver.AuthorizeHandler(h.RunQuery, api3.EditorRole))
+	v1.GET("/query", httpserver.AuthorizeHandler(h.ListQueries, authApi.ViewerRole))
+	v1.GET("/query/count", httpserver.AuthorizeHandler(h.CountQueries, authApi.ViewerRole))
+	v1.POST("/query/:queryId", httpserver.AuthorizeHandler(h.RunQuery, authApi.EditorRole))
 
 	v2 := e.Group("/api/v2")
 
 	resourcesV2 := v2.Group("/resources")
-	resourcesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListResourceTypeTags, api3.ViewerRole))
-	resourcesV2.GET("/tag/:key", httpserver.AuthorizeHandler(h.GetResourceTypeTag, api3.ViewerRole))
-	resourcesV2.GET("/count", httpserver.AuthorizeHandler(h.CountResources, api3.ViewerRole))
-	resourcesV2.GET("/metric", httpserver.AuthorizeHandler(h.ListResourceTypeMetricsHandler, api3.ViewerRole))
-	resourcesV2.GET("/metric/:resourceType", httpserver.AuthorizeHandler(h.GetResourceTypeMetricsHandler, api3.ViewerRole))
-	resourcesV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListResourceTypeComposition, api3.ViewerRole))
-	resourcesV2.GET("/trend", httpserver.AuthorizeHandler(h.ListResourceTypeTrend, api3.ViewerRole))
-	resourcesV2.GET("/regions/summary", httpserver.AuthorizeHandler(h.ListResourcesRegionsSummary, api3.ViewerRole))
-	resourcesV2.GET("/regions/composition", httpserver.AuthorizeHandler(h.ListResourcesRegionsComposition, api3.ViewerRole))
-	resourcesV2.GET("/regions/trend", httpserver.AuthorizeHandler(h.ListResourcesRegionsTrend, api3.ViewerRole))
+	resourcesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListResourceTypeTags, authApi.ViewerRole))
+	resourcesV2.GET("/tag/:key", httpserver.AuthorizeHandler(h.GetResourceTypeTag, authApi.ViewerRole))
+	resourcesV2.GET("/count", httpserver.AuthorizeHandler(h.CountResources, authApi.ViewerRole))
+	resourcesV2.GET("/metric", httpserver.AuthorizeHandler(h.ListResourceTypeMetricsHandler, authApi.ViewerRole))
+	resourcesV2.GET("/metric/:resourceType", httpserver.AuthorizeHandler(h.GetResourceTypeMetricsHandler, authApi.ViewerRole))
+	resourcesV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListResourceTypeComposition, authApi.ViewerRole))
+	resourcesV2.GET("/trend", httpserver.AuthorizeHandler(h.ListResourceTypeTrend, authApi.ViewerRole))
+	resourcesV2.GET("/regions/summary", httpserver.AuthorizeHandler(h.ListResourcesRegionsSummary, authApi.ViewerRole))
+	resourcesV2.GET("/regions/composition", httpserver.AuthorizeHandler(h.ListResourcesRegionsComposition, authApi.ViewerRole))
+	resourcesV2.GET("/regions/trend", httpserver.AuthorizeHandler(h.ListResourcesRegionsTrend, authApi.ViewerRole))
 
 	servicesV2 := v2.Group("/services")
-	servicesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListServiceTags, api3.ViewerRole))
-	servicesV2.GET("/tag/:key", httpserver.AuthorizeHandler(h.GetServiceTag, api3.ViewerRole))
-	servicesV2.GET("/metric", httpserver.AuthorizeHandler(h.ListServiceMetricsHandler, api3.ViewerRole))
-	servicesV2.GET("/metric/:serviceName", httpserver.AuthorizeHandler(h.GetServiceMetricsHandler, api3.ViewerRole))
-	servicesV2.GET("/summary", httpserver.AuthorizeHandler(h.ListServiceSummaries, api3.ViewerRole))
-	servicesV2.GET("/summary/:serviceName", httpserver.AuthorizeHandler(h.GetServiceSummary, api3.ViewerRole))
-	servicesV2.GET("/cost/trend", httpserver.AuthorizeHandler(h.GetServiceCostTrend, api3.ViewerRole))
+	servicesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListServiceTags, authApi.ViewerRole))
+	servicesV2.GET("/tag/:key", httpserver.AuthorizeHandler(h.GetServiceTag, authApi.ViewerRole))
+	servicesV2.GET("/metric", httpserver.AuthorizeHandler(h.ListServiceMetricsHandler, authApi.ViewerRole))
+	servicesV2.GET("/metric/:serviceName", httpserver.AuthorizeHandler(h.GetServiceMetricsHandler, authApi.ViewerRole))
+	servicesV2.GET("/summary", httpserver.AuthorizeHandler(h.ListServiceSummaries, authApi.ViewerRole))
+	servicesV2.GET("/summary/:serviceName", httpserver.AuthorizeHandler(h.GetServiceSummary, authApi.ViewerRole))
+	servicesV2.GET("/cost/trend", httpserver.AuthorizeHandler(h.GetServiceCostTrend, authApi.ViewerRole))
 
 	costV2 := v2.Group("/cost")
-	costV2.GET("/metric", httpserver.AuthorizeHandler(h.ListCostMetricsHandler, api3.ViewerRole))
-	costV2.GET("/composition", httpserver.AuthorizeHandler(h.ListCostComposition, api3.ViewerRole))
-	costV2.GET("/trend", httpserver.AuthorizeHandler(h.GetCostTrend, api3.ViewerRole))
+	costV2.GET("/metric", httpserver.AuthorizeHandler(h.ListCostMetricsHandler, authApi.ViewerRole))
+	costV2.GET("/composition", httpserver.AuthorizeHandler(h.ListCostComposition, authApi.ViewerRole))
+	costV2.GET("/trend", httpserver.AuthorizeHandler(h.GetCostTrend, authApi.ViewerRole))
 
 	connectionsV2 := v2.Group("/connections")
-	connectionsV2.GET("/data", httpserver.AuthorizeHandler(h.ListConnectionsData, api3.ViewerRole))
-	connectionsV2.GET("/data/:connectionId", httpserver.AuthorizeHandler(h.GetConnectionData, api3.ViewerRole))
+	connectionsV2.GET("/data", httpserver.AuthorizeHandler(h.ListConnectionsData, authApi.ViewerRole))
+	connectionsV2.GET("/data/:connectionId", httpserver.AuthorizeHandler(h.GetConnectionData, authApi.ViewerRole))
 
 	insightsV2 := v2.Group("/insights")
-	insightsV2.GET("", httpserver.AuthorizeHandler(h.ListInsightResults, api3.ViewerRole))
-	insightsV2.GET("/job/:jobId", httpserver.AuthorizeHandler(h.GetInsightResultByJobId, api3.ViewerRole))
-	insightsV2.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrendResults, api3.ViewerRole))
-	insightsV2.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsightResult, api3.ViewerRole))
+	insightsV2.GET("", httpserver.AuthorizeHandler(h.ListInsightResults, authApi.ViewerRole))
+	insightsV2.GET("/job/:jobId", httpserver.AuthorizeHandler(h.GetInsightResultByJobId, authApi.ViewerRole))
+	insightsV2.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrendResults, authApi.ViewerRole))
+	insightsV2.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsightResult, authApi.ViewerRole))
 
 	metadata := v2.Group("/metadata")
-	metadata.GET("/services", httpserver.AuthorizeHandler(h.ListServiceMetadata, api3.ViewerRole))
-	metadata.GET("/services/:serviceName", httpserver.AuthorizeHandler(h.GetServiceMetadata, api3.ViewerRole))
-	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, api3.ViewerRole))
-	metadata.GET("/resourcetype/:resourceType", httpserver.AuthorizeHandler(h.GetResourceTypeMetadata, api3.ViewerRole))
+	metadata.GET("/services", httpserver.AuthorizeHandler(h.ListServiceMetadata, authApi.ViewerRole))
+	metadata.GET("/services/:serviceName", httpserver.AuthorizeHandler(h.GetServiceMetadata, authApi.ViewerRole))
+	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, authApi.ViewerRole))
+	metadata.GET("/resourcetype/:resourceType", httpserver.AuthorizeHandler(h.GetResourceTypeMetadata, authApi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -152,7 +148,7 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 //	@Param		count			query		int				true	"count"
 //	@Param		connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param		connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Success	200				{object}	[]api.LocationResponse
+//	@Success	200				{object}	[]inventoryApi.LocationResponse
 //	@Router		/inventory/api/v1/resources/top/regions [get]
 func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
@@ -178,10 +174,10 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 		}
 	}
 
-	var response []api.LocationResponse
+	var response []inventoryApi.LocationResponse
 	for region, count := range locationDistribution {
 		cnt := count
-		response = append(response, api.LocationResponse{
+		response = append(response, inventoryApi.LocationResponse{
 			Location:      region,
 			ResourceCount: &cnt,
 		})
@@ -208,7 +204,7 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 //	@Param		startTime		query		string			false	"timestamp for resource count per location change comparison in epoch seconds"
 //	@Param		pageSize		query		int				false	"page size - default is 20"
 //	@Param		pageNumber		query		int				false	"page number - default is 1"
-//	@Success	200				{object}	api.RegionsResourceCountResponse
+//	@Success	200				{object}	inventoryApi.RegionsResourceCountResponse
 //	@Router		/inventory/api/v1/resources/regions [get]
 func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 	var err error
@@ -259,10 +255,10 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 		}
 	}
 
-	var response []api.LocationResponse
+	var response []inventoryApi.LocationResponse
 	for region, count := range locationDistribution {
 		cnt := count
-		res := api.LocationResponse{
+		res := inventoryApi.LocationResponse{
 			Location:      region,
 			ResourceCount: &cnt,
 		}
@@ -278,7 +274,7 @@ func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 		return response[i].Location < response[j].Location
 	})
 
-	return ctx.JSON(http.StatusOK, api.RegionsResourceCountResponse{
+	return ctx.JSON(http.StatusOK, inventoryApi.RegionsResourceCountResponse{
 		TotalCount: len(response),
 		Regions:    utils.Paginate(pageNumber, pageSize, response),
 	})
@@ -344,7 +340,7 @@ func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 	filteredTags := map[string][]string{}
 	for key, values := range tags {
 		for _, tagValue := range values {
-			resourceTypes, err := h.db.ListFilteredResourceTypes(map[string][]string{key: {tagValue}}, nil, connectorTypes, true)
+			resourceTypes, err := h.db.ListFilteredResourceTypes(map[string][]string{key: {tagValue}}, nil, nil, connectorTypes, true)
 			if err != nil {
 				return err
 			}
@@ -424,7 +420,7 @@ func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
 
 	filteredTags := make([]string, 0, len(tags))
 	for _, tagValue := range tags {
-		resourceTypes, err := h.db.ListFilteredResourceTypes(map[string][]string{tagKey: {tagValue}}, nil, connectorTypes, true)
+		resourceTypes, err := h.db.ListFilteredResourceTypes(map[string][]string{tagKey: {tagValue}}, nil, nil, connectorTypes, true)
 		if err != nil {
 			return err
 		}
@@ -440,8 +436,8 @@ func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, tags)
 }
 
-func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, serviceNames []string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []api.ResourceType, error) {
-	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, serviceNames, connectorTypes, true)
+func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, serviceNames []string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []inventoryApi.ResourceType, error) {
+	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, nil, serviceNames, connectorTypes, true)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -460,7 +456,7 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 		return 0, nil, err
 	}
 
-	apiResourceTypes := make([]api.ResourceType, 0, len(resourceTypes))
+	apiResourceTypes := make([]inventoryApi.ResourceType, 0, len(resourceTypes))
 	totalCount := 0
 	for _, resourceType := range resourceTypes {
 		apiResourceType := resourceType.ToApi()
@@ -494,7 +490,7 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 //	@Param			sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count,growth,growth_rate)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
-//	@Success		200				{object}	api.ListResourceTypeMetricsResponse
+//	@Success		200				{object}	inventoryApi.ListResourceTypeMetricsResponse
 //	@Router			/inventory/api/v2/resources/metric [get]
 func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	var err error
@@ -550,7 +546,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	apiResourceTypesMap := make(map[string]api.ResourceType, len(apiResourceTypes))
+	apiResourceTypesMap := make(map[string]inventoryApi.ResourceType, len(apiResourceTypes))
 	for _, apiResourceType := range apiResourceTypes {
 		apiResourceTypesMap[apiResourceType.ResourceType] = apiResourceType
 	}
@@ -566,7 +562,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 		}
 	}
 
-	apiResourceTypes = make([]api.ResourceType, 0, len(apiResourceTypesMap))
+	apiResourceTypes = make([]inventoryApi.ResourceType, 0, len(apiResourceTypesMap))
 	for _, apiResourceType := range apiResourceTypesMap {
 		apiResourceTypes = append(apiResourceTypes, apiResourceType)
 	}
@@ -640,7 +636,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 		return apiResourceTypes[i].ResourceType < apiResourceTypes[j].ResourceType
 	})
 
-	result := api.ListResourceTypeMetricsResponse{
+	result := inventoryApi.ListResourceTypeMetricsResponse{
 		TotalCount:         totalCount,
 		TotalOldCount:      totalOldCount,
 		TotalResourceTypes: len(apiResourceTypes),
@@ -650,7 +646,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, result)
 }
 
-func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionIDs []string, timeAt int64) (*api.ResourceType, error) {
+func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionIDs []string, timeAt int64) (*inventoryApi.ResourceType, error) {
 	resourceType, err := h.db.GetResourceType(resourceTypeStr)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -689,7 +685,7 @@ func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionID
 //	@Param			endTime			query		string		false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		string		false	"timestamp for resource count change comparison in epoch seconds"
 //	@Param			resourceType	path		string		true	"ResourceType"
-//	@Success		200				{object}	api.ResourceType
+//	@Success		200				{object}	inventoryApi.ResourceType
 //	@Router			/inventory/api/v2/resources/metric/{resourceType} [get]
 func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 	var err error
@@ -743,7 +739,7 @@ func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
 //	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
-//	@Success		200				{object}	api.ListResourceTypeCompositionResponse
+//	@Success		200				{object}	inventoryApi.ListResourceTypeCompositionResponse
 //	@Router			/inventory/api/v2/resources/composition/{key} [get]
 func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 	var err error
@@ -783,7 +779,7 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 		startTime = time.Unix(startTimeVal, 0)
 	}
 
-	resourceTypes, err := h.db.ListFilteredResourceTypes(map[string][]string{tagKey: nil}, nil, connectorTypes, true)
+	resourceTypes, err := h.db.ListFilteredResourceTypes(map[string][]string{tagKey: nil}, nil, nil, connectorTypes, true)
 	if err != nil {
 		return err
 	}
@@ -847,16 +843,16 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 		return valueCountPairs[i].counts.current > valueCountPairs[j].counts.current
 	})
 
-	apiResult := api.ListResourceTypeCompositionResponse{
+	apiResult := inventoryApi.ListResourceTypeCompositionResponse{
 		TotalCount:      totalCount,
 		TotalValueCount: len(valueCountMap),
-		TopValues:       make(map[string]api.CountPair),
-		Others:          api.CountPair{},
+		TopValues:       make(map[string]inventoryApi.CountPair),
+		Others:          inventoryApi.CountPair{},
 	}
 
 	for i, pair := range valueCountPairs {
 		if i < int(top) {
-			apiResult.TopValues[pair.str] = api.CountPair{
+			apiResult.TopValues[pair.str] = inventoryApi.CountPair{
 				Count:    pair.counts.current,
 				OldCount: pair.counts.old,
 			}
@@ -885,7 +881,7 @@ func (h *HttpHandler) ListResourceTypeComposition(ctx echo.Context) error {
 //	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
 //	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
-//	@Success		200				{object}	[]api.ResourceTypeTrendDatapoint
+//	@Success		200				{object}	[]inventoryApi.ResourceTypeTrendDatapoint
 //	@Router			/inventory/api/v2/resources/trend [get]
 func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 	var err error
@@ -925,7 +921,7 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 		}
 	}
 
-	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, serviceNames, connectorTypes, true)
+	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, nil, serviceNames, connectorTypes, true)
 	if err != nil {
 		return err
 	}
@@ -948,9 +944,9 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 		}
 	}
 
-	apiDatapoints := make([]api.ResourceTypeTrendDatapoint, 0, len(timeToCountMap))
+	apiDatapoints := make([]inventoryApi.ResourceTypeTrendDatapoint, 0, len(timeToCountMap))
 	for timeAt, count := range timeToCountMap {
-		apiDatapoints = append(apiDatapoints, api.ResourceTypeTrendDatapoint{Count: count, Date: time.UnixMilli(int64(timeAt))})
+		apiDatapoints = append(apiDatapoints, inventoryApi.ResourceTypeTrendDatapoint{Count: count, Date: time.UnixMilli(int64(timeAt))})
 	}
 	sort.Slice(apiDatapoints, func(i, j int) bool {
 		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
@@ -975,7 +971,7 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 //	@Param			sortBy			query		string			false	"column to sort by - default is resource_count"	Enums(resource_count, growth, growth_rate)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
-//	@Success		200				{object}	api.RegionsResourceCountResponse
+//	@Success		200				{object}	inventoryApi.RegionsResourceCountResponse
 //	@Router			/inventory/api/v2/resources/regions/summary [get]
 func (h *HttpHandler) ListResourcesRegionsSummary(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
@@ -1034,14 +1030,14 @@ func (h *HttpHandler) ListResourcesRegionsSummary(ctx echo.Context) error {
 		}
 	}
 
-	var locationResponses []api.LocationResponse
+	var locationResponses []inventoryApi.LocationResponse
 	for region, count := range currentLocationDistribution {
 		cnt := count
 		oldCount := 0
 		if value, ok := oldLocationDistribution[region]; ok {
 			oldCount = value
 		}
-		locationResponses = append(locationResponses, api.LocationResponse{
+		locationResponses = append(locationResponses, inventoryApi.LocationResponse{
 			Location:         region,
 			ResourceCount:    &cnt,
 			ResourceOldCount: &oldCount,
@@ -1115,7 +1111,7 @@ func (h *HttpHandler) ListResourcesRegionsSummary(ctx echo.Context) error {
 		return locationResponses[i].Location < locationResponses[j].Location
 	})
 
-	response := api.RegionsResourceCountResponse{
+	response := inventoryApi.RegionsResourceCountResponse{
 		TotalCount: len(locationResponses),
 		Regions:    utils.Paginate(pageNumber, pageSize, locationResponses),
 	}
@@ -1136,7 +1132,7 @@ func (h *HttpHandler) ListResourcesRegionsSummary(ctx echo.Context) error {
 //	@Param			top				query		int				true	"How many top values to return default is 5"
 //	@Param			startTime		query		int				false	"start time in unix seconds - default is now"
 //	@Param			endTime			query		int				false	"end time in unix seconds - default is one week ago"
-//	@Success		200				{object}	api.ListRegionsResourceCountCompositionResponse
+//	@Success		200				{object}	inventoryApi.ListRegionsResourceCountCompositionResponse
 //	@Router			/inventory/api/v2/resources/regions/composition [get]
 func (h *HttpHandler) ListResourcesRegionsComposition(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
@@ -1216,16 +1212,16 @@ func (h *HttpHandler) ListResourcesRegionsComposition(ctx echo.Context) error {
 		return valueCountPairs[i].counts.current > valueCountPairs[j].counts.current
 	})
 
-	response := api.ListRegionsResourceCountCompositionResponse{
+	response := inventoryApi.ListRegionsResourceCountCompositionResponse{
 		TotalCount:      len(valueCountPairs),
 		TotalValueCount: totalCount,
-		TopValues:       make(map[string]api.CountPair),
-		Others:          api.CountPair{},
+		TopValues:       make(map[string]inventoryApi.CountPair),
+		Others:          inventoryApi.CountPair{},
 	}
 
 	for i, pair := range valueCountPairs {
 		if i < top {
-			response.TopValues[pair.str] = api.CountPair{
+			response.TopValues[pair.str] = inventoryApi.CountPair{
 				Count:    pair.counts.current,
 				OldCount: pair.counts.old,
 			}
@@ -1252,7 +1248,7 @@ func (h *HttpHandler) ListResourcesRegionsComposition(ctx echo.Context) error {
 //	@Param			endTime			query		int				false	"end time in unix seconds - default is one week ago"
 //	@Param			region			query		[]string		false	"Regions to filter by"
 //	@Param			datapointCount	query		int				false	"Number of datapoints to return"
-//	@Success		200				{object}	[]api.ResourceTypeTrendDatapoint
+//	@Success		200				{object}	[]inventoryApi.ResourceTypeTrendDatapoint
 //	@Router			/inventory/api/v2/resources/regions/trend [get]
 func (h *HttpHandler) ListResourcesRegionsTrend(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
@@ -1299,7 +1295,7 @@ func (h *HttpHandler) ListResourcesRegionsTrend(ctx echo.Context) error {
 		return err
 	}
 
-	apiDatapoints := make([]api.ResourceTypeTrendDatapoint, 0, len(timeToCountsMap))
+	apiDatapoints := make([]inventoryApi.ResourceTypeTrendDatapoint, 0, len(timeToCountsMap))
 	for timeAt, regionStrToCountMap := range timeToCountsMap {
 		count := 0
 		for regionStr, regionCount := range regionStrToCountMap {
@@ -1308,7 +1304,7 @@ func (h *HttpHandler) ListResourcesRegionsTrend(ctx echo.Context) error {
 			}
 			count += regionCount
 		}
-		apiDatapoints = append(apiDatapoints, api.ResourceTypeTrendDatapoint{
+		apiDatapoints = append(apiDatapoints, inventoryApi.ResourceTypeTrendDatapoint{
 			Count: count,
 			Date:  time.Unix(int64(timeAt), 0),
 		})
@@ -1380,7 +1376,7 @@ func (h *HttpHandler) GetServiceTag(ctx echo.Context) error {
 //	@Param			sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count,growth,growth_rate)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
-//	@Success		200				{object}	api.ListServiceMetricsResponse
+//	@Success		200				{object}	inventoryApi.ListServiceMetricsResponse
 //	@Router			/inventory/api/v2/services/metric [get]
 func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 	var err error
@@ -1455,7 +1451,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 
 	totalCount := 0
 	totalOldCount := 0
-	apiServices := make([]api.Service, 0, len(services))
+	apiServices := make([]inventoryApi.Service, 0, len(services))
 	for _, service := range services {
 		apiService := service.ToApi()
 		for _, resourceType := range service.ResourceTypes {
@@ -1542,7 +1538,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 		return apiServices[i].ServiceName < apiServices[j].ServiceName
 	})
 
-	result := api.ListServiceMetricsResponse{
+	result := inventoryApi.ListServiceMetricsResponse{
 		TotalCount:    totalCount,
 		TotalOldCount: totalOldCount,
 		TotalServices: len(apiServices),
@@ -1563,7 +1559,7 @@ func (h *HttpHandler) ListServiceMetricsHandler(ctx echo.Context) error {
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
 //	@Param			startTime		query		string		false	"timestamp for old values in epoch seconds"
 //	@Param			endTime			query		string		false	"timestamp for current values in epoch seconds"
-//	@Success		200				{object}	api.Service
+//	@Success		200				{object}	inventoryApi.Service
 //	@Router			/inventory/api/v2/services/metric/{serviceName} [get]
 func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 	var err error
@@ -1650,7 +1646,7 @@ func (h *HttpHandler) GetServiceMetricsHandler(ctx echo.Context) error {
 //	@Param			sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost,growth,growth_rate)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
-//	@Success		200				{object}	api.ListCostMetricsResponse
+//	@Success		200				{object}	inventoryApi.ListCostMetricsResponse
 //	@Router			/inventory/api/v2/cost/metric [get]
 func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 	var err error
@@ -1689,12 +1685,12 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	costMetricMap := make(map[string]api.CostMetric)
+	costMetricMap := make(map[string]inventoryApi.CostMetric)
 	for connector, serviceToCostMap := range costHits {
 		for dimension, costVal := range serviceToCostMap {
 			connectorTyped, _ := source.ParseType(connector)
 			localCostVal := costVal
-			costMetricMap[dimension] = api.CostMetric{
+			costMetricMap[dimension] = inventoryApi.CostMetric{
 				Connector:         connectorTyped,
 				CostDimensionName: dimension,
 				TotalCost:         &localCostVal,
@@ -1729,7 +1725,7 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 		}
 	}
 
-	var costMetrics []api.CostMetric
+	var costMetrics []inventoryApi.CostMetric
 	totalCost := float64(0)
 	for _, costMetric := range costMetricMap {
 		costMetrics = append(costMetrics, costMetric)
@@ -1807,7 +1803,7 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 		return costMetrics[i].CostDimensionName < costMetrics[j].CostDimensionName
 	})
 
-	return ctx.JSON(http.StatusOK, api.ListCostMetricsResponse{
+	return ctx.JSON(http.StatusOK, inventoryApi.ListCostMetricsResponse{
 		TotalCount: len(costMetrics),
 		TotalCost:  totalCost,
 		Metrics:    utils.Paginate(pageNumber, pageSize, costMetrics),
@@ -1827,7 +1823,7 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 //	@Param			top				query		int				false	"How many top values to return default is 5"
 //	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
-//	@Success		200				{object}	api.ListCostCompositionResponse
+//	@Success		200				{object}	inventoryApi.ListCostCompositionResponse
 //	@Router			/inventory/api/v2/cost/composition [get]
 func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 	var err error
@@ -1862,12 +1858,12 @@ func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	costMetricMap := make(map[string]api.CostMetric)
+	costMetricMap := make(map[string]inventoryApi.CostMetric)
 	for connector, serviceToCostMap := range costHits {
 		for dimension, costVal := range serviceToCostMap {
 			connectorTyped, _ := source.ParseType(connector)
 			localCostVal := costVal
-			costMetricMap[dimension] = api.CostMetric{
+			costMetricMap[dimension] = inventoryApi.CostMetric{
 				Connector:         connectorTyped,
 				CostDimensionName: dimension,
 				TotalCost:         &localCostVal,
@@ -1875,7 +1871,7 @@ func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 		}
 	}
 
-	var costMetrics []api.CostMetric
+	var costMetrics []inventoryApi.CostMetric
 	totalCost := float64(0)
 	for _, costMetric := range costMetricMap {
 		costMetrics = append(costMetrics, costMetric)
@@ -1915,7 +1911,7 @@ func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, api.ListCostCompositionResponse{
+	return ctx.JSON(http.StatusOK, inventoryApi.ListCostCompositionResponse{
 		TotalCount:     len(costMetrics),
 		TotalCostValue: totalCost,
 		TopValues:      topCostMap,
@@ -1936,7 +1932,7 @@ func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 //	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
 //	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
-//	@Success		200				{object}	[]api.CostTrendDatapoint
+//	@Success		200				{object}	[]inventoryApi.CostTrendDatapoint
 //	@Router			/inventory/api/v2/cost/trend [get]
 func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 	var err error
@@ -1977,9 +1973,9 @@ func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 		return err
 	}
 
-	apiDatapoints := make([]api.CostTrendDatapoint, 0, len(timepointToCost))
+	apiDatapoints := make([]inventoryApi.CostTrendDatapoint, 0, len(timepointToCost))
 	for timeAt, costVal := range timepointToCost {
-		apiDatapoints = append(apiDatapoints, api.CostTrendDatapoint{Cost: costVal, Date: time.Unix(int64(timeAt), 0)})
+		apiDatapoints = append(apiDatapoints, inventoryApi.CostTrendDatapoint{Cost: costVal, Date: time.Unix(int64(timeAt), 0)})
 	}
 	sort.Slice(apiDatapoints, func(i, j int) bool {
 		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
@@ -2015,7 +2011,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 		startTime = time.Unix(startTimeUnix, 0)
 	}
 
-	res := map[string]api.ConnectionData{}
+	res := map[string]inventoryApi.ConnectionData{}
 	resourceCounts, err := es.FetchConnectionResourcesCountAtTime(h.client, connectors, connectionIDs, endTime, EsFetchPageSize)
 	if err != nil {
 		return err
@@ -2023,7 +2019,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	for _, hit := range resourceCounts {
 		localHit := hit
 		if _, ok := res[localHit.SourceID]; !ok {
-			res[localHit.SourceID] = api.ConnectionData{
+			res[localHit.SourceID] = inventoryApi.ConnectionData{
 				ConnectionID: localHit.SourceID,
 			}
 		}
@@ -2041,7 +2037,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	for _, hit := range oldResourceCount {
 		localHit := hit
 		if _, ok := res[localHit.SourceID]; !ok {
-			res[localHit.SourceID] = api.ConnectionData{
+			res[localHit.SourceID] = inventoryApi.ConnectionData{
 				ConnectionID:  localHit.SourceID,
 				LastInventory: nil,
 			}
@@ -2071,7 +2067,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	for connectionId, costValue := range costs {
 		localValue := costValue
 		if _, ok := res[connectionId]; !ok {
-			res[connectionId] = api.ConnectionData{
+			res[connectionId] = inventoryApi.ConnectionData{
 				ConnectionID:  connectionId,
 				LastInventory: nil,
 			}
@@ -2084,7 +2080,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	for connectionId, costValue := range startTimeCosts {
 		localValue := costValue
 		if _, ok := res[connectionId]; !ok {
-			res[connectionId] = api.ConnectionData{
+			res[connectionId] = inventoryApi.ConnectionData{
 				ConnectionID:  connectionId,
 				LastInventory: nil,
 			}
@@ -2096,7 +2092,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	}
 	for connectionId, costValue := range endTimeCosts {
 		if _, ok := res[connectionId]; !ok {
-			res[connectionId] = api.ConnectionData{
+			res[connectionId] = inventoryApi.ConnectionData{
 				ConnectionID:  connectionId,
 				LastInventory: nil,
 			}
@@ -2132,7 +2128,7 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 		startTime = time.Unix(startTimeUnix, 0)
 	}
 
-	res := api.ConnectionData{
+	res := inventoryApi.ConnectionData{
 		ConnectionID: connectionId,
 	}
 
@@ -2214,7 +2210,7 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 //	@Param			pageSize		query		int			false	"page size - default is 20"
 //	@Param			pageNumber		query		int			false	"page number - default is 1"
 //	@Param			sortBy			query		string		false	"column to sort by - default is resourcecount"	Enums(servicecode,resourcecount)
-//	@Success		200				{object}	api.ListServiceSummariesResponse
+//	@Success		200				{object}	inventoryApi.ListServiceSummariesResponse
 //	@Router			/inventory/api/v2/services/summary [get]
 func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 	var err error
@@ -2270,9 +2266,9 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 		return err
 	}
 
-	serviceSummaries := make([]api.ServiceSummary, 0, len(services))
+	serviceSummaries := make([]inventoryApi.ServiceSummary, 0, len(services))
 	for _, service := range services {
-		serviceSummary := api.ServiceSummary{
+		serviceSummary := inventoryApi.ServiceSummary{
 			Connector:     service.Connector,
 			ServiceLabel:  service.ServiceLabel,
 			ServiceName:   service.ServiceName,
@@ -2288,7 +2284,7 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 	}
 
 	// remove services with no resource count
-	serviceSummariesFiltered := make([]api.ServiceSummary, 0, len(serviceSummaries))
+	serviceSummariesFiltered := make([]inventoryApi.ServiceSummary, 0, len(serviceSummaries))
 	for _, serviceSummary := range serviceSummaries {
 		if serviceSummary.ResourceCount != nil {
 			serviceSummariesFiltered = append(serviceSummariesFiltered, serviceSummary)
@@ -2314,7 +2310,7 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 		return serviceSummaries[i].ServiceName < serviceSummaries[j].ServiceName
 	})
 
-	res := api.ListServiceSummariesResponse{
+	res := inventoryApi.ListServiceSummariesResponse{
 		TotalCount: len(serviceSummaries),
 		Services:   utils.Paginate(pageNumber, pageSize, serviceSummaries),
 	}
@@ -2335,7 +2331,7 @@ func (h *HttpHandler) ListServiceSummaries(ctx echo.Context) error {
 //	@Param			connectorId	query		[]string	false	"filter: connectorId"
 //	@Param			connector	query		[]string	false	"filter: connector"
 //	@Param			endTime		query		string		true	"time for resource count in epoch seconds"
-//	@Success		200			{object}	api.ServiceSummary
+//	@Success		200			{object}	inventoryApi.ServiceSummary
 //	@Router			/inventory/api/v2/services/summary/{serviceName} [get]
 func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 	var err error
@@ -2384,7 +2380,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 		return err
 	}
 
-	serviceSummary := api.ServiceSummary{
+	serviceSummary := inventoryApi.ServiceSummary{
 		Connector:     service.Connector,
 		ServiceLabel:  service.ServiceLabel,
 		ServiceName:   service.ServiceName,
@@ -2413,7 +2409,7 @@ func (h *HttpHandler) GetServiceSummary(ctx echo.Context) error {
 //	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
 //	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
-//	@Success		200				{object}	[]api.CostTrendDatapoint
+//	@Success		200				{object}	[]inventoryApi.CostTrendDatapoint
 //	@Router			/inventory/api/v2/services/cost/trend [get]
 func (h *HttpHandler) GetServiceCostTrend(ctx echo.Context) error {
 	var err error
@@ -2453,17 +2449,17 @@ func (h *HttpHandler) GetServiceCostTrend(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	var response []api.ListServicesCostTrendDatapoint
+	var response []inventoryApi.ListServicesCostTrendDatapoint
 	for service, timepointToCost := range servicesTimepointToCost {
-		apiDatapoints := make([]api.CostTrendDatapoint, 0, len(timepointToCost))
+		apiDatapoints := make([]inventoryApi.CostTrendDatapoint, 0, len(timepointToCost))
 		for timeAt, costVal := range timepointToCost {
-			apiDatapoints = append(apiDatapoints, api.CostTrendDatapoint{Cost: costVal, Date: time.Unix(int64(timeAt), 0)})
+			apiDatapoints = append(apiDatapoints, inventoryApi.CostTrendDatapoint{Cost: costVal, Date: time.Unix(int64(timeAt), 0)})
 		}
 		sort.Slice(apiDatapoints, func(i, j int) bool {
 			return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
 		})
 		apiDatapoints = internal.DownSampleCostTrendDatapoints(apiDatapoints, int(datapointCount))
-		response = append(response, api.ListServicesCostTrendDatapoint{ServiceName: service, CostTrend: apiDatapoints})
+		response = append(response, inventoryApi.ListServicesCostTrendDatapoint{ServiceName: service, CostTrend: apiDatapoints})
 	}
 	return ctx.JSON(http.StatusOK, response)
 }
@@ -2476,11 +2472,11 @@ func (h *HttpHandler) GetServiceCostTrend(ctx echo.Context) error {
 //	@Tags			resource
 //	@Accepts		json
 //	@Produce		json
-//	@Param			request	body		api.GetResourceRequest	true	"Request Body"
+//	@Param			request	body		inventoryApi.GetResourceRequest	true	"Request Body"
 //	@Success		200		{object}	map[string]string
 //	@Router			/inventory/api/v1/resource [post]
 func (h *HttpHandler) GetResource(ctx echo.Context) error {
-	var req api.GetResourceRequest
+	var req inventoryApi.GetResourceRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -2504,7 +2500,7 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 		return err
 	}
 
-	var response api.GenericQueryResponse
+	var response inventoryApi.GenericQueryResponse
 	err = h.client.Search(ctx.Request().Context(), index, string(queryBytes), &response)
 	if err != nil {
 		return err
@@ -2609,11 +2605,11 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			smart_query
 //	@Produce		json
-//	@Param			request	body		api.ListQueryRequest	true	"Request Body"
-//	@Success		200		{object}	[]api.SmartQueryItem
+//	@Param			request	body		inventoryApi.ListQueryRequest	true	"Request Body"
+//	@Success		200		{object}	[]inventoryApi.SmartQueryItem
 //	@Router			/inventory/api/v1/query [get]
 func (h *HttpHandler) ListQueries(ctx echo.Context) error {
-	var req api.ListQueryRequest
+	var req inventoryApi.ListQueryRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -2628,11 +2624,11 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 		return err
 	}
 
-	var result []api.SmartQueryItem
+	var result []inventoryApi.SmartQueryItem
 	for _, item := range queries {
 		category := ""
 
-		result = append(result, api.SmartQueryItem{
+		result = append(result, inventoryApi.SmartQueryItem{
 			ID:          item.Model.ID,
 			Provider:    item.Provider,
 			Title:       item.Title,
@@ -2652,11 +2648,11 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			smart_query
 //	@Produce		json
-//	@Param			request	body		api.ListQueryRequest	true	"Request Body"
+//	@Param			request	body		inventoryApi.ListQueryRequest	true	"Request Body"
 //	@Success		200		{object}	int
 //	@Router			/inventory/api/v1/query/count [get]
 func (h *HttpHandler) CountQueries(ctx echo.Context) error {
-	var req api.ListQueryRequest
+	var req inventoryApi.ListQueryRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -2683,13 +2679,13 @@ func (h *HttpHandler) CountQueries(ctx echo.Context) error {
 //	@Tags			smart_query
 //	@Accepts		json
 //	@Produce		json,text/csv
-//	@Param			queryId	path		string				true	"QueryID"
-//	@Param			request	body		api.RunQueryRequest	true	"Request Body"
-//	@Param			accept	header		string				true	"Accept header"	Enums(application/json,text/csv)
-//	@Success		200		{object}	api.RunQueryResponse
+//	@Param			queryId	path		string							true	"QueryID"
+//	@Param			request	body		inventoryApi.RunQueryRequest	true	"Request Body"
+//	@Param			accept	header		string							true	"Accept header"	Enums(application/json,text/csv)
+//	@Success		200		{object}	inventoryApi.RunQueryResponse
 //	@Router			/inventory/api/v1/query/{queryId} [post]
 func (h *HttpHandler) RunQuery(ctx echo.Context) error {
-	var req api.RunQueryRequest
+	var req inventoryApi.RunQueryRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -2699,7 +2695,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 	if accepts := ctx.Request().Header.Get("accept"); accepts != "" {
 		mediaType, _, err := mime.ParseMediaType(accepts)
 		if err == nil && mediaType == "text/csv" {
-			req.Page = api.Page{
+			req.Page = inventoryApi.Page{
 				No:   1,
 				Size: 5000,
 			}
@@ -2763,13 +2759,13 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 //	@Tags			location
 //	@Produce		json
 //	@Param			connector	path		string	true	"Connector"
-//	@Success		200			{object}	[]api.LocationByProviderResponse
+//	@Success		200			{object}	[]inventoryApi.LocationByProviderResponse
 //	@Router			/inventory/api/v1/locations/{connector} [get]
 func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 	connectorStr := ctx.Param("connector")
 	connector, _ := source.ParseType(connectorStr)
 
-	var locations []api.LocationByProviderResponse
+	var locations []inventoryApi.LocationByProviderResponse
 
 	if connectorStr == "all" || connector == source.CloudAWS {
 		regions, err := h.awsClient.NewEC2RegionPaginator(nil, nil)
@@ -2789,7 +2785,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 			}
 		}
 		for regionName := range res {
-			locations = append(locations, api.LocationByProviderResponse{
+			locations = append(locations, inventoryApi.LocationByProviderResponse{
 				Name: regionName,
 			})
 		}
@@ -2813,7 +2809,7 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 			}
 		}
 		for regionName := range res {
-			locations = append(locations, api.LocationByProviderResponse{
+			locations = append(locations, inventoryApi.LocationByProviderResponse{
 				Name: regionName,
 			})
 		}
@@ -2822,114 +2818,66 @@ func (h *HttpHandler) GetLocations(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, locations)
 }
 
-// GetAzureResources godoc
-//
-//	@Summary		Get Azure resources
-//	@Description	Getting Azure resources by filters.
-//	@Description	In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
-//	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
-//	@Description	If sort by is empty, result will be sorted by the first column in ascending order.
-//	@Security		BearerToken
-//	@Tags			resource
-//	@Accept			json
-//	@Produce		json,text/csv
-//	@Param			request	body		api.GetResourcesRequest	true	"Request Body"
-//	@Param			accept	header		string					true	"Accept header"	Enums(application/json,text/csv)
-//	@Param			common	query		string					false	"Common filter"	Enums(true,false,all)
-//	@Success		200		{object}	api.GetAzureResourceResponse
-//	@Router			/inventory/api/v1/resources/azure [post]
-func (h *HttpHandler) GetAzureResources(ctx echo.Context) error {
-	provider := api.SourceCloudAzure
-	commonQuery := ctx.QueryParam("common")
-	var common *bool
-	if commonQuery == "" || commonQuery == "true" {
-		v := true
-		common = &v
-	} else if commonQuery == "false" {
-		v := false
-		common = &v
-	}
-
-	if accepts := ctx.Request().Header.Get("accept"); accepts != "" {
-		mediaType, _, err := mime.ParseMediaType(accepts)
-		if err == nil && mediaType == "text/csv" {
-			return h.GetResourcesCSV(ctx, &provider, common)
-		}
-	}
-	return h.GetResources(ctx, &provider, common)
-}
-
-// GetAWSResources godoc
-//
-//	@Summary		Get AWS resources
-//	@Description	Getting AWS resources by filters.
-//	@Description	In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
-//	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
-//	@Description	If sort by is empty, result will be sorted by the first column in ascending order.
-//	@Security		BearerToken
-//	@Tags			resource
-//	@Accept			json
-//	@Produce		json,text/csv
-//	@Param			request	body		api.GetResourcesRequest	true	"Request Body"
-//	@Param			accept	header		string					true	"Accept header"	Enums(application/json,text/csv)
-//	@Param			common	query		string					false	"Common filter"	Enums(true,false,all)
-//	@Success		200		{object}	api.GetAWSResourceResponse
-//	@Router			/inventory/api/v1/resources/aws [post]
-func (h *HttpHandler) GetAWSResources(ctx echo.Context) error {
-	provider := api.SourceCloudAWS
-	commonQuery := ctx.QueryParam("common")
-	var common *bool
-	if commonQuery == "" || commonQuery == "true" {
-		v := true
-		common = &v
-	} else if commonQuery == "false" {
-		v := false
-		common = &v
-	}
-
-	if accepts := ctx.Request().Header.Get("accept"); accepts != "" {
-		mediaType, _, err := mime.ParseMediaType(accepts)
-		if err == nil && mediaType == "text/csv" {
-			return h.GetResourcesCSV(ctx, &provider, common)
-		}
-	}
-	return h.GetResources(ctx, &provider, common)
-}
-
-// GetAllResources godoc
+// GetResources godoc
 //
 //	@Summary		Get resources
-//	@Description	Getting all cloud providers resources by filters.
-//	@Description	In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
-//	@Description	Note that csv output doesn't process pagination and returns first 5000 records.
-//	@Description	If sort by is empty, result will be sorted by the first column in ascending order.
+//	@Description	Getting all cloud providers resources by filters
 //	@Security		BearerToken
 //	@Tags			resource
 //	@Accept			json
-//	@Produce		json,text/csv
-//	@Param			request	body		api.GetResourcesRequest	true	"Request Body"
-//	@Param			accept	header		string					true	"Accept header"	Enums(application/json,text/csv)
-//	@Param			common	query		string					false	"Common filter"	Enums(true,false,all)
-//	@Success		200		{object}	api.GetResourcesResponse
+//	@Produce		json
+//	@Param			request	body		inventoryApi.GetResourcesRequest	true	"Request Body"
+//	@Success		200		{object}	inventoryApi.GetResourcesResponse
 //	@Router			/inventory/api/v1/resources [post]
-func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
-	commonQuery := ctx.QueryParam("common")
-	var common *bool
-	if commonQuery == "" || commonQuery == "true" {
-		v := true
-		common = &v
-	} else if commonQuery == "false" {
-		v := false
-		common = &v
+func (h *HttpHandler) GetResources(ctx echo.Context) error {
+	var req inventoryApi.GetResourcesRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if accepts := ctx.Request().Header.Get("accept"); accepts != "" {
-		mediaType, _, err := mime.ParseMediaType(accepts)
-		if err == nil && mediaType == "text/csv" {
-			return h.GetResourcesCSV(ctx, nil, common)
+	resourceTypes, err := h.db.ListFilteredResourceTypes(nil, req.Filters.ResourceType, req.Filters.Service, req.Filters.Connectors, true)
+	req.Filters.ResourceType = make([]string, 0, len(resourceTypes))
+	resourceTypeMap := make(map[string]ResourceType)
+	for _, resourceType := range resourceTypes {
+		req.Filters.ResourceType = append(req.Filters.ResourceType, resourceType.ResourceType)
+		resourceTypeMap[strings.ToLower(resourceType.ResourceType)] = resourceType
+	}
+	res, err := inventoryApi.QueryResources(ctx.Request().Context(), h.client, &req, req.Filters.Connectors)
+	if err != nil {
+		return err
+	}
+
+	var connections []onboardApi.Connection
+	if len(req.Filters.ConnectionID) == 0 {
+		connections, err = h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), req.Filters.Connectors)
+		if err != nil {
+			h.logger.Error("Failed to list sources", zap.Error(err))
+			return err
+		}
+	} else {
+		connections, err = h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), req.Filters.ConnectionID)
+		if err != nil {
+			h.logger.Error("Failed to get sources", zap.Error(err))
+			return err
 		}
 	}
-	return h.GetResources(ctx, nil, common)
+	connectionsMap := map[string]onboardApi.Connection{}
+	for _, connection := range connections {
+		connectionsMap[connection.ID.String()] = connection
+	}
+	for idx := range res.AllResources {
+		id := res.AllResources[idx].ConnectionID
+		res.AllResources[idx].ProviderConnectionID = connectionsMap[id].ConnectionID
+		res.AllResources[idx].ProviderConnectionName = connectionsMap[id].ConnectionName
+		res.AllResources[idx].ResourceTypeLabel = resourceTypeMap[res.AllResources[idx].ResourceType].ResourceLabel
+	}
+
+	result := inventoryApi.GetResourcesResponse{
+		Resources:  res.AllResources,
+		TotalCount: res.TotalCount,
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }
 
 // CountResources godoc
@@ -2945,7 +2893,7 @@ func (h *HttpHandler) GetAllResources(ctx echo.Context) error {
 //	@Router			/inventory/api/v2/resources/count [get]
 func (h *HttpHandler) CountResources(ctx echo.Context) error {
 	timeAt := time.Now()
-	resourceTypes, err := h.db.ListFilteredResourceTypes(nil, nil, nil, true)
+	resourceTypes, err := h.db.ListFilteredResourceTypes(nil, nil, nil, nil, true)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -2973,9 +2921,9 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 //	@Tags			resource
 //	@Accept			json
 //	@Produce		json,text/csv
-//	@Param			request	body		api.GetFiltersRequest	true	"Request Body"
-//	@Param			common	query		string					false	"Common filter"	Enums(true,false,all)
-//	@Success		200		{object}	api.GetFiltersResponse
+//	@Param			request	body		inventoryApi.GetFiltersRequest	true	"Request Body"
+//	@Param			common	query		string							false	"Common filter"	Enums(true,false,all)
+//	@Success		200		{object}	inventoryApi.GetFiltersResponse
 //	@Router			/inventory/api/v1/resources/filters [post]
 func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	commonQuery := ctx.QueryParam("common")
@@ -2988,7 +2936,7 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 		common = &v
 	}
 
-	var req api.GetFiltersRequest
+	var req inventoryApi.GetFiltersRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -3005,9 +2953,9 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 		return err
 	}
 
-	resp := api.GetFiltersResponse{}
+	resp := inventoryApi.GetFiltersResponse{}
 	for _, item := range response.Aggregations.ResourceTypeFilter.Buckets {
-		resp.Filters.ResourceType = append(resp.Filters.ResourceType, api.ResourceTypeFull{
+		resp.Filters.ResourceType = append(resp.Filters.ResourceType, inventoryApi.ResourceTypeFull{
 			ResourceTypeARN:  item.Key,
 			ResourceTypeName: cloudservice.ResourceTypeName(item.Key),
 		})
@@ -3021,7 +2969,7 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	for _, service := range services {
 		resp.Filters.Service[service.ServiceName] = service.Name
 	}
-	if !api.FilterIsEmpty(req.Filters.Service) {
+	if !inventoryApi.FilterIsEmpty(req.Filters.Service) {
 		servicesMap := make(map[string]string)
 		for _, service := range req.Filters.Service {
 			if _, ok := resp.Filters.Service[service]; ok {
@@ -3039,7 +2987,7 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	for _, category := range categories {
 		resp.Filters.Category[category.ElementID] = category.Name
 	}
-	if !api.FilterIsEmpty(req.Filters.Category) {
+	if !inventoryApi.FilterIsEmpty(req.Filters.Category) {
 		categoriesMap := make(map[string]string)
 		for _, category := range req.Filters.Category {
 			if _, ok := resp.Filters.Category[category]; ok {
@@ -3064,7 +3012,7 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 				connName = c.ConnectionName
 			}
 		}
-		resp.Filters.Connections = append(resp.Filters.Connections, api.ConnectionFull{
+		resp.Filters.Connections = append(resp.Filters.Connections, inventoryApi.ConnectionFull{
 			ID:   item.Key,
 			Name: connName,
 		})
@@ -3110,16 +3058,16 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) RunSmartQuery(title, query string,
-	req *api.RunQueryRequest) (*api.RunQueryResponse, error) {
+	req *inventoryApi.RunQueryRequest) (*inventoryApi.RunQueryResponse, error) {
 
 	var err error
 	lastIdx := (req.Page.No - 1) * req.Page.Size
 
 	if req.Sorts == nil || len(req.Sorts) == 0 {
-		req.Sorts = []api.SmartQuerySortItem{
+		req.Sorts = []inventoryApi.SmartQuerySortItem{
 			{
 				Field:     "1",
-				Direction: api.DirectionAscending,
+				Direction: inventoryApi.DirectionAscending,
 			},
 		}
 	}
@@ -3133,160 +3081,13 @@ func (h *HttpHandler) RunSmartQuery(title, query string,
 		return nil, err
 	}
 
-	resp := api.RunQueryResponse{
+	resp := inventoryApi.RunQueryResponse{
 		Title:   title,
 		Query:   query,
 		Headers: res.Headers,
 		Result:  res.Data,
 	}
 	return &resp, nil
-}
-
-func (h *HttpHandler) GetResources(ctx echo.Context, provider *api.SourceType, commonFilter *bool) error {
-	var req api.GetResourcesRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	if !api.FilterIsEmpty(req.Filters.Service) && api.FilterIsEmpty(req.Filters.ResourceType) {
-		pvd := source.Nil
-		if provider != nil {
-			pvd, _ = source.ParseType(string(*provider))
-		}
-		filterType := FilterTypeCloudResourceType
-		resourceFilters, err := h.graphDb.GetFilters(ctx.Request().Context(), pvd, req.Filters.Service, &filterType)
-		if err != nil {
-			return err
-		}
-		req.Filters.ResourceType = make([]string, 0)
-		for _, filter := range resourceFilters {
-			switch filter.GetFilterType() {
-			case FilterTypeCloudResourceType:
-				f := filter.(*FilterCloudResourceTypeNode)
-				req.Filters.ResourceType = append(req.Filters.ResourceType, f.ResourceType)
-			}
-		}
-	}
-
-	if !api.FilterIsEmpty(req.Filters.Category) && api.FilterIsEmpty(req.Filters.ResourceType) {
-		resourceTypesMap := make(map[string]bool)
-		for _, category := range req.Filters.Category {
-			cat, err := h.graphDb.GetCategory(ctx.Request().Context(), category)
-			if err != nil {
-				return err
-			}
-			for _, filter := range cat.SubTreeFilters {
-				switch filter.GetFilterType() {
-				case FilterTypeCloudResourceType:
-					f := filter.(*FilterCloudResourceTypeNode)
-					resourceTypesMap[f.ResourceType] = true
-				}
-			}
-		}
-		req.Filters.ResourceType = make([]string, 0)
-		for resourceType := range resourceTypesMap {
-			req.Filters.ResourceType = append(req.Filters.ResourceType, resourceType)
-		}
-	}
-
-	res, err := api.QueryResources(ctx.Request().Context(), h.client, &req, provider, commonFilter)
-	if err != nil {
-		return err
-	}
-
-	if provider == nil {
-		connectionID := map[string]string{}
-		connectionName := map[string]string{}
-		var sourceIds []string
-		for _, resource := range res.AllResources {
-			connectionName[resource.ProviderConnectionID] = "Unknown"
-			connectionID[resource.ProviderConnectionID] = ""
-			sourceIds = append(sourceIds, resource.ProviderConnectionID)
-		}
-		srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceIds)
-		if err != nil {
-			return err
-		}
-		for sourceId := range connectionName {
-			for _, src := range srcs {
-				if sourceId == src.ID.String() {
-					connectionName[sourceId] = src.ConnectionName
-					connectionID[sourceId] = src.ConnectionID
-				}
-			}
-		}
-		for idx := range res.AllResources {
-			id := res.AllResources[idx].ProviderConnectionID
-			res.AllResources[idx].ProviderConnectionID = connectionID[id]
-			res.AllResources[idx].ProviderConnectionName = connectionName[id]
-		}
-		return ctx.JSON(http.StatusOK, api.GetResourcesResponse{
-			Resources:  res.AllResources,
-			TotalCount: res.TotalCount,
-		})
-	} else if *provider == api.SourceCloudAWS {
-		connectionID := map[string]string{}
-		connectionName := map[string]string{}
-		var sourceIds []string
-		for _, resource := range res.AWSResources {
-			connectionName[resource.ProviderConnectionID] = "Unknown"
-			connectionID[resource.ProviderConnectionID] = ""
-			sourceIds = append(sourceIds, resource.ProviderConnectionID)
-		}
-		srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceIds)
-		if err != nil {
-			return err
-		}
-		for sourceId := range connectionName {
-			for _, src := range srcs {
-				if sourceId == src.ID.String() {
-					connectionName[sourceId] = src.ConnectionName
-					connectionID[sourceId] = src.ConnectionID
-				}
-			}
-		}
-		for idx := range res.AWSResources {
-			id := res.AWSResources[idx].ProviderConnectionID
-			res.AWSResources[idx].ProviderConnectionID = connectionID[id]
-			res.AWSResources[idx].ProviderConnectionName = connectionName[id]
-		}
-		return ctx.JSON(http.StatusOK, api.GetAWSResourceResponse{
-			Resources:  res.AWSResources,
-			TotalCount: res.TotalCount,
-		})
-	} else if *provider == api.SourceCloudAzure {
-		connectionID := map[string]string{}
-		connectionName := map[string]string{}
-		var sourceIds []string
-		for _, resource := range res.AzureResources {
-			connectionName[resource.ProviderConnectionID] = "Unknown"
-			connectionID[resource.ProviderConnectionID] = ""
-			sourceIds = append(sourceIds, resource.ProviderConnectionID)
-		}
-		srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), sourceIds)
-		if err != nil {
-			return err
-		}
-		for sourceId := range connectionName {
-			for _, src := range srcs {
-				if sourceId == src.ID.String() {
-					connectionName[sourceId] = src.ConnectionName
-					connectionID[sourceId] = src.ConnectionID
-				}
-			}
-		}
-		for idx := range res.AzureResources {
-			id := res.AzureResources[idx].ProviderConnectionID
-			res.AzureResources[idx].ProviderConnectionID = connectionID[id]
-			res.AzureResources[idx].ProviderConnectionName = connectionName[id]
-		}
-		return ctx.JSON(http.StatusOK, api.GetAzureResourceResponse{
-			Resources:  res.AzureResources,
-			TotalCount: res.TotalCount,
-		})
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
-	}
 }
 
 func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
@@ -3463,7 +3264,7 @@ func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 //	@Param			tag			query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			pageSize	query		int				false	"page size - default is 20"
 //	@Param			pageNumber	query		int				false	"page number - default is 1"
-//	@Success		200			{object}	api.ListServiceMetadataResponse
+//	@Success		200			{object}	inventoryApi.ListServiceMetadataResponse
 //	@Router			/inventory/api/v2/metadata/services [get]
 func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
@@ -3478,7 +3279,7 @@ func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 		return err
 	}
 
-	var serviceMetadata []api.Service
+	var serviceMetadata []inventoryApi.Service
 	for _, service := range services {
 		serviceMetadata = append(serviceMetadata, service.ToApi())
 	}
@@ -3487,7 +3288,7 @@ func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 		return serviceMetadata[i].ServiceName < serviceMetadata[j].ServiceName
 	})
 
-	result := api.ListServiceMetadataResponse{
+	result := inventoryApi.ListServiceMetadataResponse{
 		TotalServiceCount: len(serviceMetadata),
 		Services:          utils.Paginate(pageNumber, pageSize, serviceMetadata),
 	}
@@ -3503,7 +3304,7 @@ func (h *HttpHandler) ListServiceMetadata(ctx echo.Context) error {
 //	@Tags			metadata
 //	@Produce		json
 //	@Param			serviceName	path		string	true	"ServiceName"
-//	@Success		200			{object}	api.Service
+//	@Success		200			{object}	inventoryApi.Service
 //	@Router			/inventory/api/v2/metadata/services/{serviceName} [get]
 func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 	serviceName := ctx.Param("serviceName")
@@ -3529,7 +3330,7 @@ func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 //	@Param			tag			query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			pageSize	query		int				false	"page size - default is 20"
 //	@Param			pageNumber	query		int				false	"page number - default is 1"
-//	@Success		200			{object}	api.ListResourceTypeMetadataResponse
+//	@Success		200			{object}	inventoryApi.ListResourceTypeMetadataResponse
 //	@Router			/inventory/api/v2/metadata/resourcetype [get]
 func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
@@ -3539,12 +3340,12 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
-	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, serviceNames, connectors, true)
+	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, nil, serviceNames, connectors, true)
 	if err != nil {
 		return err
 	}
 
-	var resourceTypeMetadata []api.ResourceType
+	var resourceTypeMetadata []inventoryApi.ResourceType
 
 	for _, resourceType := range resourceTypes {
 		apiResourceType := resourceType.ToApi()
@@ -3582,7 +3383,7 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 		return resourceTypeMetadata[i].ResourceType < resourceTypeMetadata[j].ResourceType
 	})
 
-	result := api.ListResourceTypeMetadataResponse{
+	result := inventoryApi.ListResourceTypeMetadataResponse{
 		TotalResourceTypeCount: len(resourceTypeMetadata),
 		ResourceTypes:          utils.Paginate(pageNumber, pageSize, resourceTypeMetadata),
 	}
@@ -3598,7 +3399,7 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 //	@Tags			metadata
 //	@Produce		json
 //	@Param			resourceType	path		string	true	"ResourceType"
-//	@Success		200				{object}	api.ResourceType
+//	@Success		200				{object}	inventoryApi.ResourceType
 //	@Router			/inventory/api/v2/metadata/resourcetype/{resourceType} [get]
 func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 	resourceTypeStr := ctx.Param("resourceType")
@@ -3655,66 +3456,5 @@ func Csv(record []string, w io.Writer) error {
 		return err
 	}
 	wr.Flush()
-	return nil
-}
-
-func (h *HttpHandler) GetResourcesCSV(ctx echo.Context, provider *api.SourceType, commonFilter *bool) error {
-	var req api.GetResourcesRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	req.Page = api.Page{
-		No:   1,
-		Size: 10000,
-	}
-
-	ctx.Response().Header().Set(echo.HeaderContentType, "text/csv")
-	ctx.Response().WriteHeader(http.StatusOK)
-
-	res, err := api.QueryResources(ctx.Request().Context(), h.client, &req, provider, commonFilter)
-	if err != nil {
-		return err
-	}
-
-	if provider == nil {
-		err := Csv(api.AllResource{}.ToCSVHeaders(), ctx.Response())
-		if err != nil {
-			return err
-		}
-
-		for _, resource := range res.AllResources {
-			err := Csv(resource.ToCSVRecord(), ctx.Response())
-			if err != nil {
-				return err
-			}
-		}
-	} else if *provider == api.SourceCloudAWS {
-		err := Csv(api.AWSResource{}.ToCSVHeaders(), ctx.Response())
-		if err != nil {
-			return err
-		}
-
-		for _, resource := range res.AWSResources {
-			err := Csv(resource.ToCSVRecord(), ctx.Response())
-			if err != nil {
-				return err
-			}
-		}
-	} else if *provider == api.SourceCloudAzure {
-		err := Csv(api.AzureResource{}.ToCSVHeaders(), ctx.Response())
-		if err != nil {
-			return err
-		}
-
-		for _, resource := range res.AzureResources {
-			err := Csv(resource.ToCSVRecord(), ctx.Response())
-			if err != nil {
-				return err
-			}
-		}
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid provider")
-	}
-	ctx.Response().Flush()
 	return nil
 }

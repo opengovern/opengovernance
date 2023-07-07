@@ -5,7 +5,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/lib/pq"
-	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -60,7 +59,7 @@ func (db Database) GetQueries() ([]SmartQuery, error) {
 }
 
 // GetQueriesWithFilters gets list of all queries filtered by tags and search
-func (db Database) GetQueriesWithFilters(search *string, labels []string, provider *api.SourceType) ([]SmartQuery, error) {
+func (db Database) GetQueriesWithFilters(search *string, labels []string, provider *source.Type) ([]SmartQuery, error) {
 	var s []SmartQuery
 
 	m := db.orm.Model(&SmartQuery{}).
@@ -94,7 +93,7 @@ func (db Database) GetQueriesWithFilters(search *string, labels []string, provid
 }
 
 // CountQueriesWithFilters count list of all queries filtered by tags and search
-func (db Database) CountQueriesWithFilters(search *string, labels []string, provider *api.SourceType) (*int64, error) {
+func (db Database) CountQueriesWithFilters(search *string, labels []string, provider *source.Type) (*int64, error) {
 	var s int64
 
 	m := db.orm.Model(&SmartQuery{}).
@@ -231,7 +230,7 @@ func (db Database) GetResourceTypeTagPossibleValues(key string, connectorTypes [
 	return result[key], nil
 }
 
-func (db Database) ListFilteredResourceTypes(tags map[string][]string, serviceNames []string, connectorTypes []source.Type, doSummarize bool) ([]ResourceType, error) {
+func (db Database) ListFilteredResourceTypes(tags map[string][]string, resourceTypeNames []string, serviceNames []string, connectorTypes []source.Type, doSummarize bool) ([]ResourceType, error) {
 	var resourceTypes []ResourceType
 	query := db.orm.Model(ResourceType{}).Preload(clause.Associations)
 	query = query.Where("resource_types.do_summarize = ?", doSummarize)
@@ -250,6 +249,9 @@ func (db Database) ListFilteredResourceTypes(tags map[string][]string, serviceNa
 	}
 	if len(connectorTypes) != 0 {
 		query = query.Where("connector IN ?", connectorTypes)
+	}
+	if len(resourceTypeNames) != 0 {
+		query = query.Where("resource_type IN ?", resourceTypeNames)
 	}
 	tx := query.Find(&resourceTypes)
 	if tx.Error != nil {

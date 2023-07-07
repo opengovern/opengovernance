@@ -2206,13 +2206,12 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Getting all cloud providers resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with ` + "`" + `text/csv` + "`" + ` value.\nNote that csv output doesn't process pagination and returns first 5000 records.\nIf sort by is empty, result will be sorted by the first column in ascending order.",
+                "description": "Getting all cloud providers resources by filters",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
-                    "text/csv"
+                    "application/json"
                 ],
                 "tags": [
                     "resource"
@@ -2227,28 +2226,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesRequest"
                         }
-                    },
-                    {
-                        "enum": [
-                            "application/json",
-                            "text/csv"
-                        ],
-                        "type": "string",
-                        "description": "Accept header",
-                        "name": "accept",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "true",
-                            "false",
-                            "all"
-                        ],
-                        "type": "string",
-                        "description": "Common filter",
-                        "name": "common",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2256,130 +2233,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v1/resources/aws": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Getting AWS resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with ` + "`" + `text/csv` + "`" + ` value.\nNote that csv output doesn't process pagination and returns first 5000 records.\nIf sort by is empty, result will be sorted by the first column in ascending order.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json",
-                    "text/csv"
-                ],
-                "tags": [
-                    "resource"
-                ],
-                "summary": "Get AWS resources",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesRequest"
-                        }
-                    },
-                    {
-                        "enum": [
-                            "application/json",
-                            "text/csv"
-                        ],
-                        "type": "string",
-                        "description": "Accept header",
-                        "name": "accept",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "true",
-                            "false",
-                            "all"
-                        ],
-                        "type": "string",
-                        "description": "Common filter",
-                        "name": "common",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAWSResourceResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/api/v1/resources/azure": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Getting Azure resources by filters.\nIn order to get the results in CSV format, Accepts header must be filled with ` + "`" + `text/csv` + "`" + ` value.\nNote that csv output doesn't process pagination and returns first 5000 records.\nIf sort by is empty, result will be sorted by the first column in ascending order.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json",
-                    "text/csv"
-                ],
-                "tags": [
-                    "resource"
-                ],
-                "summary": "Get Azure resources",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesRequest"
-                        }
-                    },
-                    {
-                        "enum": [
-                            "application/json",
-                            "text/csv"
-                        ],
-                        "type": "string",
-                        "description": "Accept header",
-                        "name": "accept",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "true",
-                            "false",
-                            "all"
-                        ],
-                        "type": "string",
-                        "description": "Common filter",
-                        "name": "common",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAzureResourceResponse"
                         }
                     }
                 }
@@ -9785,41 +9638,6 @@ const docTemplate = `{
                 "InsightJobSucceeded"
             ]
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AWSResource": {
-            "type": "object",
-            "properties": {
-                "attributes": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "location": {
-                    "type": "string"
-                },
-                "providerConnectionID": {
-                    "type": "string"
-                },
-                "providerConnectionName": {
-                    "type": "string"
-                },
-                "resourceCategory": {
-                    "type": "string"
-                },
-                "resourceID": {
-                    "type": "string"
-                },
-                "resourceName": {
-                    "type": "string"
-                },
-                "resourceType": {
-                    "type": "string"
-                },
-                "resourceTypeName": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AllResource": {
             "type": "object",
             "properties": {
@@ -9829,56 +9647,17 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "location": {
-                    "description": "The Region of the resource",
+                "connectionID": {
+                    "description": "Kaytu Connection Id of the resource",
                     "type": "string"
                 },
-                "provider": {
+                "connector": {
                     "description": "Resource Provider",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SourceType"
+                            "$ref": "#/definitions/source.Type"
                         }
                     ]
-                },
-                "providerConnectionID": {
-                    "description": "Provider Connection Id",
-                    "type": "string"
-                },
-                "providerConnectionName": {
-                    "description": "Provider Connection Name",
-                    "type": "string"
-                },
-                "resourceCategory": {
-                    "description": "Resource Category",
-                    "type": "string"
-                },
-                "resourceID": {
-                    "description": "Resource Id",
-                    "type": "string"
-                },
-                "resourceName": {
-                    "description": "Resource Name",
-                    "type": "string"
-                },
-                "resourceType": {
-                    "description": "Resource Type",
-                    "type": "string"
-                },
-                "resourceTypeName": {
-                    "description": "Resource Type Name",
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AzureResource": {
-            "type": "object",
-            "properties": {
-                "attributes": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
                 },
                 "location": {
                     "description": "The Region of the resource",
@@ -9892,14 +9671,6 @@ const docTemplate = `{
                     "description": "Provider Connection Name",
                     "type": "string"
                 },
-                "resourceCategory": {
-                    "description": "Resource Category",
-                    "type": "string"
-                },
-                "resourceGroup": {
-                    "description": "Resource Group",
-                    "type": "string"
-                },
                 "resourceID": {
                     "description": "Resource Id",
                     "type": "string"
@@ -9912,8 +9683,8 @@ const docTemplate = `{
                     "description": "Resource Type",
                     "type": "string"
                 },
-                "resourceTypeName": {
-                    "description": "Resource Type Name",
+                "resourceTypeLabel": {
+                    "description": "Resource Type Label",
                     "type": "string"
                 }
             }
@@ -9991,11 +9762,18 @@ const docTemplate = `{
             "description": "if you provide two values for same filter OR operation would be used if you provide value for two filters AND operation would be used",
             "type": "object",
             "properties": {
-                "category": {
+                "connectionID": {
                     "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                },
+                "connectors": {
+                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
                     }
                 },
                 "location": {
@@ -10018,52 +9796,6 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
-                },
-                "sourceID": {
-                    "description": "if you dont need to use this filter, leave them empty. (e.g. [])",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "tags": {
-                    "description": "if you dont need to use this filter, leave them empty. (e.g. {})",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAWSResourceResponse": {
-            "type": "object",
-            "properties": {
-                "resources": {
-                    "description": "A list of AWS resources with details",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AWSResource"
-                    }
-                },
-                "totalCount": {
-                    "description": "Number of returned resources",
-                    "type": "integer"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAzureResourceResponse": {
-            "type": "object",
-            "properties": {
-                "resources": {
-                    "description": "A list of Azure resources with details",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AzureResource"
-                    }
-                },
-                "totalCount": {
-                    "description": "Number of returned resources",
-                    "type": "integer"
                 }
             }
         },
@@ -10220,7 +9952,7 @@ const docTemplate = `{
                     "description": "Specifies the Provider",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SourceType"
+                            "$ref": "#/definitions/source.Type"
                         }
                     ]
                 },
@@ -10558,8 +10290,7 @@ const docTemplate = `{
                 "field": {
                     "enum": [
                         "resourceID",
-                        "resourceName",
-                        "provider",
+                        "connector",
                         "resourceType",
                         "resourceGroup",
                         "location",
@@ -10859,8 +10590,7 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "resourceID",
-                "resourceName",
-                "provider",
+                "connector",
                 "resourceType",
                 "resourceGroup",
                 "location",
@@ -10868,23 +10598,11 @@ const docTemplate = `{
             ],
             "x-enum-varnames": [
                 "SortFieldResourceID",
-                "SortFieldName",
-                "SortFieldSourceType",
+                "SortFieldConnector",
                 "SortFieldResourceType",
                 "SortFieldResourceGroup",
                 "SortFieldLocation",
-                "SortFieldSourceID"
-            ]
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SourceType": {
-            "type": "string",
-            "enum": [
-                "AWS",
-                "Azure"
-            ],
-            "x-enum-varnames": [
-                "SourceCloudAWS",
-                "SourceCloudAzure"
+                "SortFieldConnectionID"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetConfigMetadataRequest": {

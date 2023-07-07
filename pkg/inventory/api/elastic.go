@@ -18,17 +18,15 @@ func FilterIsEmpty(filter []string) bool {
 	return filter == nil || len(filter) == 0
 }
 
-func BuildSort(sorts []ResourceSortItem) []map[string]interface{} {
-	var result []map[string]interface{}
+func BuildSort(sorts []ResourceSortItem) []map[string]string {
+	var result []map[string]string
 	for _, item := range sorts {
 		dir := string(item.Direction)
 		field := ""
 		switch item.Field {
 		case SortFieldResourceID:
 			field = "resource_id"
-		case SortFieldName:
-			field = "name"
-		case SortFieldSourceType:
+		case SortFieldConnector:
 			field = "source_type"
 		case SortFieldResourceType:
 			field = "resource_type"
@@ -36,10 +34,10 @@ func BuildSort(sorts []ResourceSortItem) []map[string]interface{} {
 			field = "resource_group"
 		case SortFieldLocation:
 			field = "location"
-		case SortFieldSourceID:
+		case SortFieldConnectionID:
 			field = "source_id"
 		}
-		result = append(result, map[string]interface{}{field: dir})
+		result = append(result, map[string]string{field: dir})
 	}
 	return result
 }

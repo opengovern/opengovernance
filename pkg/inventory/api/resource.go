@@ -4,16 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
+
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	"strings"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
 
 	awsmodel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
@@ -46,7 +45,7 @@ type ResourceQueryHit struct {
 
 type SteampipeResource struct {
 	Name          string
-	Provider      SourceType
+	Provider      source.Type
 	ResourceType  string
 	ResourceGroup string
 	Location      string
@@ -57,8 +56,7 @@ type SteampipeResource struct {
 }
 
 func QueryResourcesWithSteampipeColumns(
-	ctx context.Context, client keibi.Client, req *GetResourcesRequest, provider *SourceType, commonFilter *bool,
-) (*GetResourcesResult, error) {
+	ctx context.Context, client keibi.Client, req *GetResourcesRequest, connector []source.Type) (*GetResourcesResult, error) {
 	if req.Filters.ResourceType == nil || len(req.Filters.ResourceType) == 0 {
 		return nil, nil
 	}
@@ -69,13 +67,6 @@ func QueryResourcesWithSteampipeColumns(
 		TotalCount: 0,
 	}
 	for _, resourceType := range req.Filters.ResourceType {
-		if commonFilter != nil {
-			isCommon := cloudservice.IsCommonByResourceType(resourceType)
-			if (!isCommon && *commonFilter) || (isCommon && !*commonFilter) {
-				continue
-			}
-		}
-
 		var response ResourceQueryResponse
 		indexName := types.ResourceTypeToESIndex(resourceType)
 
@@ -99,15 +90,19 @@ func QueryResourcesWithSteampipeColumns(
 			terms["resource_type"] = req.Filters.ResourceType
 		}
 
-		if !FilterIsEmpty(req.Filters.SourceID) {
-			terms["source_id"] = req.Filters.SourceID
+		if !FilterIsEmpty(req.Filters.ConnectionID) {
+			terms["source_id"] = req.Filters.ConnectionID
 		}
 
-		if provider != nil {
-			terms["source_type"] = []string{string(*provider)}
+		if len(connector) > 0 {
+			connectorStr := make([]string, 0, len(connector))
+			for _, c := range connector {
+				connectorStr = append(connectorStr, c.String())
+			}
+			terms["source_type"] = connectorStr
 		}
 
-		query, err := BuildResourceQuery(req.Query, terms, req.Page.Size, idx, req.Sorts, SourceType(sourceType))
+		query, err := BuildResourceQuery(req.Query, terms, req.Page.Size, idx, req.Sorts, sourceType)
 		if err != nil {
 			return nil, err
 		}
@@ -140,8 +135,6 @@ func QueryResourcesWithSteampipeColumns(
 				resource := AWSResource{
 					ResourceName:         metadata.Name,
 					ResourceType:         resourceType,
-					ResourceTypeName:     cloudservice.ResourceTypeName(resourceType),
-					ResourceCategory:     cloudservice.CategoryByResourceType(resourceType),
 					ResourceID:           hit.Source.ID,
 					Location:             metadata.Region,
 					ProviderConnectionID: metadata.SourceID,
@@ -182,8 +175,6 @@ func QueryResourcesWithSteampipeColumns(
 				resource := AzureResource{
 					ResourceName:         metadata.Name,
 					ResourceType:         resourceType,
-					ResourceTypeName:     cloudservice.ResourceTypeName(resourceType),
-					ResourceCategory:     cloudservice.CategoryByResourceType(resourceType),
 					ResourceID:           hit.Source.ID,
 					ResourceGroup:        resourceGroup,
 					Location:             metadata.Location,
@@ -222,40 +213,34 @@ func QueryResourcesWithSteampipeColumns(
 		}
 	}
 
-	if provider == nil {
-		for _, aws := range result.AWSResources {
-			result.AllResources = append(result.AllResources, AllResource{
-				ResourceName:         aws.ResourceName,
-				Provider:             SourceCloudAWS,
-				ResourceType:         aws.ResourceType,
-				ResourceTypeName:     cloudservice.ResourceTypeName(aws.ResourceType),
-				ResourceCategory:     cloudservice.CategoryByResourceType(aws.ResourceType),
-				Location:             aws.Location,
-				ResourceID:           aws.ResourceID,
-				ProviderConnectionID: aws.ProviderConnectionID,
-				Attributes:           aws.Attributes,
-			})
-		}
+	for _, aws := range result.AWSResources {
+		result.AllResources = append(result.AllResources, AllResource{
+			ResourceName:         aws.ResourceName,
+			Connector:            source.CloudAWS,
+			ResourceType:         aws.ResourceType,
+			Location:             aws.Location,
+			ResourceID:           aws.ResourceID,
+			ProviderConnectionID: aws.ProviderConnectionID,
+			Attributes:           aws.Attributes,
+		})
+	}
 
-		for _, azure := range result.AzureResources {
-			result.AllResources = append(result.AllResources, AllResource{
-				ResourceName:         azure.ResourceName,
-				Provider:             SourceCloudAzure,
-				ResourceType:         azure.ResourceType,
-				ResourceTypeName:     cloudservice.ResourceTypeName(azure.ResourceType),
-				ResourceCategory:     cloudservice.CategoryByResourceType(azure.ResourceType),
-				Location:             azure.Location,
-				ResourceID:           azure.ResourceID,
-				ProviderConnectionID: azure.ProviderConnectionID,
-				Attributes:           azure.Attributes,
-			})
-		}
+	for _, azure := range result.AzureResources {
+		result.AllResources = append(result.AllResources, AllResource{
+			ResourceName:         azure.ResourceName,
+			Connector:            source.CloudAzure,
+			ResourceType:         azure.ResourceType,
+			Location:             azure.Location,
+			ResourceID:           azure.ResourceID,
+			ProviderConnectionID: azure.ProviderConnectionID,
+			Attributes:           azure.Attributes,
+		})
 	}
 
 	return &result, nil
 }
 
-func BuildResourceQuery(query string, terms map[string][]string, size, lastIdx int, sorts []ResourceSortItem, provider SourceType) (string, error) {
+func BuildResourceQuery(query string, terms map[string][]string, size, lastIdx int, sorts []ResourceSortItem, provider source.Type) (string, error) {
 	q := map[string]interface{}{
 		"size": size,
 		"from": lastIdx,
@@ -300,29 +285,27 @@ func BuildResourceQuery(query string, terms map[string][]string, size, lastIdx i
 	return string(queryBytes), nil
 }
 
-func BuildSortResource(sorts []ResourceSortItem, provider SourceType) []map[string]interface{} {
+func BuildSortResource(sorts []ResourceSortItem, connector source.Type) []map[string]interface{} {
 	var result []map[string]interface{}
 	for _, item := range sorts {
 		field := ""
 		switch item.Field {
 		case SortFieldResourceID:
 			field = "id"
-		case SortFieldName:
-			field = "metadata.name"
-		case SortFieldSourceType:
+		case SortFieldConnector:
 			field = "source_type"
 		case SortFieldResourceType:
 			field = "resource_type"
 		case SortFieldResourceGroup:
 			field = "description.ResourceGroup"
 		case SortFieldLocation:
-			if provider == SourceCloudAWS {
+			switch connector {
+			case source.CloudAWS:
 				field = "metadata.region"
-			} else {
+			case source.CloudAzure:
 				field = "metadata.location"
 			}
-
-		case SortFieldSourceID:
+		case SortFieldConnectionID:
 			field = "source_id"
 		}
 

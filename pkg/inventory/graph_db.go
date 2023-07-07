@@ -8,9 +8,9 @@ import (
 
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
 type CategoryRootType string
@@ -1482,48 +1482,4 @@ func (gdb *GraphDatabase) GetResourceType(ctx context.Context, connector source.
 	}
 
 	return filter.(*FilterCloudResourceTypeNode), nil
-}
-
-func (gdb *GraphDatabase) GetFilters(ctx context.Context, connector source.Type, serviceNames []string, filterType *FilterType) ([]Filter, error) {
-	session := gdb.Driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
-	defer session.Close(ctx)
-
-	filterTypeStr := ""
-	if filterType != nil {
-		filterTypeStr = string(*filterType)
-	}
-	if serviceNames == nil {
-		serviceNames = []string{}
-	}
-
-	result, err := session.Run(ctx,
-		fmt.Sprintf("MATCH (f:Filter:%s) WHERE ((f.connector IS NULL OR $connector = '' OR f.connector = $connector) AND ($service_names = [] OR (NOT f.service_name IS NULL AND f.service_name IN $service_names))) RETURN f;", filterTypeStr),
-		map[string]any{
-			"connector":     connector.String(),
-			"service_names": serviceNames,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	var filters []Filter
-	for result.Next(ctx) {
-		rawFilter, ok := result.Record().Get("f")
-		if !ok {
-			return nil, ErrKeyColumnNotFound
-		}
-		filterNode, ok := rawFilter.(neo4j.Node)
-		if !ok {
-			return nil, ErrColumnConversion
-		}
-
-		filter, err := getFilterFromNode(filterNode)
-		if err != nil {
-			return nil, err
-		}
-		filters = append(filters, filter)
-	}
-
-	return filters, nil
 }

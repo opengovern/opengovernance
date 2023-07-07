@@ -3,9 +3,9 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )
@@ -17,10 +17,9 @@ func QuerySummaryResources(
 	client keibi.Client,
 	query string,
 	filters Filters,
-	provider *SourceType,
+	connector []source.Type,
 	size, lastIndex int,
 	sorts []ResourceSortItem,
-	commonFilter *bool,
 ) ([]es.LookupResource, keibi.SearchTotal, error) {
 	var err error
 
@@ -33,49 +32,19 @@ func QuerySummaryResources(
 		terms["resource_type"] = filters.ResourceType
 	}
 
-	if !FilterIsEmpty(filters.SourceID) {
-		terms["source_id"] = filters.SourceID
+	if !FilterIsEmpty(filters.ConnectionID) {
+		terms["source_id"] = filters.ConnectionID
 	}
 
-	if !FilterIsEmpty(filters.Category) {
-		terms["category"] = filters.Category
+	if len(connector) > 0 {
+		connectorStrs := make([]string, 0, len(connector))
+		for _, c := range connector {
+			connectorStrs = append(connectorStrs, c.String())
+		}
+		terms["source_type"] = connectorStrs
 	}
 
-	if !FilterIsEmpty(filters.Service) {
-		terms["service_name"] = filters.Service
-	}
-
-	for key, value := range filters.Tags {
-		terms[fmt.Sprintf("tags.%s", key)] = []string{value}
-	}
-
-	if provider != nil {
-		terms["source_type"] = []string{string(*provider)}
-	}
-
-	if commonFilter != nil {
-		terms["is_common"] = []string{fmt.Sprintf("%v", *commonFilter)}
-	}
-
-	notTerms := make(map[string][]string)
-	ignoreResourceTypes := []string{
-		"Microsoft.Resources/subscriptions/locations",
-		"Microsoft.Authorization/roleDefinitions",
-		"microsoft.security/autoProvisioningSettings",
-		"microsoft.security/settings",
-		"Microsoft.Authorization/elevateAccessRoleAssignment",
-		"Microsoft.AppConfiguration/configurationStores",
-		"Microsoft.KeyVault/vaults/keys",
-		"microsoft.security/pricings",
-		"Microsoft.Security/autoProvisioningSettings",
-		"Microsoft.Security/securityContacts",
-		"Microsoft.Security/locations/jitNetworkAccessPolicies",
-		"AWS::EC2::Region",
-		"AWS::EC2::RegionalSettings",
-	}
-	notTerms["resource_type"] = ignoreResourceTypes
-
-	queryStr, err := BuildSummaryQuery(query, terms, notTerms, size, lastIndex, sorts)
+	queryStr, err := BuildSummaryQuery(query, terms, nil, size, lastIndex, sorts)
 	if err != nil {
 		return nil, keibi.SearchTotal{}, err
 	}
@@ -89,7 +58,7 @@ func QuerySummaryResources(
 }
 
 func BuildSummaryQuery(query string, terms map[string][]string, notTerms map[string][]string, size, lastIdx int, sorts []ResourceSortItem) (string, error) {
-	q := map[string]interface{}{
+	q := map[string]any{
 		"size": size,
 		"from": lastIdx,
 	}
@@ -97,11 +66,11 @@ func BuildSummaryQuery(query string, terms map[string][]string, notTerms map[str
 		q["sort"] = BuildSort(sorts)
 	}
 
-	boolQuery := make(map[string]interface{})
+	boolQuery := make(map[string]any)
 	if terms != nil && len(terms) > 0 {
-		var filters []map[string]interface{}
+		var filters []map[string]any
 		for k, vs := range terms {
-			filters = append(filters, map[string]interface{}{
+			filters = append(filters, map[string]any{
 				"terms": map[string][]string{
 					k: vs,
 				},
@@ -111,9 +80,9 @@ func BuildSummaryQuery(query string, terms map[string][]string, notTerms map[str
 		boolQuery["filter"] = filters
 	}
 	if len(query) > 0 {
-		boolQuery["must"] = map[string]interface{}{
-			"multi_match": map[string]interface{}{
-				"fields": []string{"resource_id", "name", "source_type", "resource_type", "resource_group",
+		boolQuery["must"] = map[string]any{
+			"multi_match": map[string]any{
+				"fields": []string{"resource_id", "source_type", "resource_type", "resource_group",
 					"location", "source_id"},
 				"query":     query,
 				"fuzziness": "AUTO",
@@ -121,9 +90,9 @@ func BuildSummaryQuery(query string, terms map[string][]string, notTerms map[str
 		}
 	}
 	if len(notTerms) > 0 {
-		var filters []map[string]interface{}
+		var filters []map[string]any
 		for k, vs := range notTerms {
-			filters = append(filters, map[string]interface{}{
+			filters = append(filters, map[string]any{
 				"terms": map[string][]string{
 					k: vs,
 				},
@@ -133,7 +102,7 @@ func BuildSummaryQuery(query string, terms map[string][]string, notTerms map[str
 		boolQuery["must_not"] = filters
 	}
 	if len(boolQuery) > 0 {
-		q["query"] = map[string]interface{}{
+		q["query"] = map[string]any{
 			"bool": boolQuery,
 		}
 	}
