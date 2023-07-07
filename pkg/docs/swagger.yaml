@@ -1950,70 +1950,19 @@ definitions:
     - InsightJobInProgress
     - InsightJobFailed
     - InsightJobSucceeded
-  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AWSResource:
-    properties:
-      attributes:
-        additionalProperties:
-          type: string
-        type: object
-      location:
-        type: string
-      providerConnectionID:
-        type: string
-      providerConnectionName:
-        type: string
-      resourceCategory:
-        type: string
-      resourceID:
-        type: string
-      resourceName:
-        type: string
-      resourceType:
-        type: string
-      resourceTypeName:
-        type: string
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AllResource:
     properties:
       attributes:
         additionalProperties:
           type: string
         type: object
-      location:
-        description: The Region of the resource
+      connectionID:
+        description: Kaytu Connection Id of the resource
         type: string
-      provider:
+      connector:
         allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SourceType'
+        - $ref: '#/definitions/source.Type'
         description: Resource Provider
-      providerConnectionID:
-        description: Provider Connection Id
-        type: string
-      providerConnectionName:
-        description: Provider Connection Name
-        type: string
-      resourceCategory:
-        description: Resource Category
-        type: string
-      resourceID:
-        description: Resource Id
-        type: string
-      resourceName:
-        description: Resource Name
-        type: string
-      resourceType:
-        description: Resource Type
-        type: string
-      resourceTypeName:
-        description: Resource Type Name
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AzureResource:
-    properties:
-      attributes:
-        additionalProperties:
-          type: string
-        type: object
       location:
         description: The Region of the resource
         type: string
@@ -2023,12 +1972,6 @@ definitions:
       providerConnectionName:
         description: Provider Connection Name
         type: string
-      resourceCategory:
-        description: Resource Category
-        type: string
-      resourceGroup:
-        description: Resource Group
-        type: string
       resourceID:
         description: Resource Id
         type: string
@@ -2038,8 +1981,8 @@ definitions:
       resourceType:
         description: Resource Type
         type: string
-      resourceTypeName:
-        description: Resource Type Name
+      resourceTypeLabel:
+        description: Resource Type Label
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ConnectionFull:
@@ -2090,11 +2033,17 @@ definitions:
     description: if you provide two values for same filter OR operation would be used
       if you provide value for two filters AND operation would be used
     properties:
-      category:
+      connectionID:
         description: if you dont need to use this filter, leave them empty. (e.g.
           [])
         items:
           type: string
+        type: array
+      connectors:
+        description: if you dont need to use this filter, leave them empty. (e.g.
+          [])
+        items:
+          $ref: '#/definitions/source.Type'
         type: array
       location:
         description: if you dont need to use this filter, leave them empty. (e.g.
@@ -2114,40 +2063,6 @@ definitions:
         items:
           type: string
         type: array
-      sourceID:
-        description: if you dont need to use this filter, leave them empty. (e.g.
-          [])
-        items:
-          type: string
-        type: array
-      tags:
-        additionalProperties:
-          type: string
-        description: if you dont need to use this filter, leave them empty. (e.g.
-          {})
-        type: object
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAWSResourceResponse:
-    properties:
-      resources:
-        description: A list of AWS resources with details
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AWSResource'
-        type: array
-      totalCount:
-        description: Number of returned resources
-        type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAzureResourceResponse:
-    properties:
-      resources:
-        description: A list of Azure resources with details
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AzureResource'
-        type: array
-      totalCount:
-        description: Number of returned resources
-        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetFiltersRequest:
     properties:
@@ -2250,7 +2165,7 @@ definitions:
         type: array
       providerFilter:
         allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SourceType'
+        - $ref: '#/definitions/source.Type'
         description: Specifies the Provider
       titleFilter:
         description: Specifies the Title
@@ -2499,8 +2414,7 @@ definitions:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SortFieldType'
         enum:
         - resourceID
-        - resourceName
-        - provider
+        - connector
         - resourceType
         - resourceGroup
         - location
@@ -2708,8 +2622,7 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SortFieldType:
     enum:
     - resourceID
-    - resourceName
-    - provider
+    - connector
     - resourceType
     - resourceGroup
     - location
@@ -2717,20 +2630,11 @@ definitions:
     type: string
     x-enum-varnames:
     - SortFieldResourceID
-    - SortFieldName
-    - SortFieldSourceType
+    - SortFieldConnector
     - SortFieldResourceType
     - SortFieldResourceGroup
     - SortFieldLocation
-    - SortFieldSourceID
-  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SourceType:
-    enum:
-    - AWS
-    - Azure
-    type: string
-    x-enum-varnames:
-    - SourceCloudAWS
-    - SourceCloudAzure
+    - SortFieldConnectionID
   github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetConfigMetadataRequest:
     properties:
       key:
@@ -4885,11 +4789,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: |-
-        Getting all cloud providers resources by filters.
-        In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
-        Note that csv output doesn't process pagination and returns first 5000 records.
-        If sort by is empty, result will be sorted by the first column in ascending order.
+      description: Getting all cloud providers resources by filters
       parameters:
       - description: Request Body
         in: body
@@ -4897,25 +4797,8 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesRequest'
-      - description: Accept header
-        enum:
-        - application/json
-        - text/csv
-        in: header
-        name: accept
-        required: true
-        type: string
-      - description: Common filter
-        enum:
-        - "true"
-        - "false"
-        - all
-        in: query
-        name: common
-        type: string
       produces:
       - application/json
-      - text/csv
       responses:
         "200":
           description: OK
@@ -4924,96 +4807,6 @@ paths:
       security:
       - BearerToken: []
       summary: Get resources
-      tags:
-      - resource
-  /inventory/api/v1/resources/aws:
-    post:
-      consumes:
-      - application/json
-      description: |-
-        Getting AWS resources by filters.
-        In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
-        Note that csv output doesn't process pagination and returns first 5000 records.
-        If sort by is empty, result will be sorted by the first column in ascending order.
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesRequest'
-      - description: Accept header
-        enum:
-        - application/json
-        - text/csv
-        in: header
-        name: accept
-        required: true
-        type: string
-      - description: Common filter
-        enum:
-        - "true"
-        - "false"
-        - all
-        in: query
-        name: common
-        type: string
-      produces:
-      - application/json
-      - text/csv
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAWSResourceResponse'
-      security:
-      - BearerToken: []
-      summary: Get AWS resources
-      tags:
-      - resource
-  /inventory/api/v1/resources/azure:
-    post:
-      consumes:
-      - application/json
-      description: |-
-        Getting Azure resources by filters.
-        In order to get the results in CSV format, Accepts header must be filled with `text/csv` value.
-        Note that csv output doesn't process pagination and returns first 5000 records.
-        If sort by is empty, result will be sorted by the first column in ascending order.
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetResourcesRequest'
-      - description: Accept header
-        enum:
-        - application/json
-        - text/csv
-        in: header
-        name: accept
-        required: true
-        type: string
-      - description: Common filter
-        enum:
-        - "true"
-        - "false"
-        - all
-        in: query
-        name: common
-        type: string
-      produces:
-      - application/json
-      - text/csv
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.GetAzureResourceResponse'
-      security:
-      - BearerToken: []
-      summary: Get Azure resources
       tags:
       - resource
   /inventory/api/v1/resources/filters:

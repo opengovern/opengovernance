@@ -9,13 +9,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )
 
-type SourceType string
-
-const (
-	SourceCloudAWS   SourceType = "AWS"
-	SourceCloudAzure SourceType = "Azure"
-)
-
 type DirectionType string
 
 const (
@@ -27,12 +20,11 @@ type SortFieldType string
 
 const (
 	SortFieldResourceID    SortFieldType = "resourceID"
-	SortFieldName          SortFieldType = "resourceName"
-	SortFieldSourceType    SortFieldType = "provider"
+	SortFieldConnector     SortFieldType = "connector"
 	SortFieldResourceType  SortFieldType = "resourceType"
 	SortFieldResourceGroup SortFieldType = "resourceGroup"
 	SortFieldLocation      SortFieldType = "location"
-	SortFieldSourceID      SortFieldType = "connectionID"
+	SortFieldConnectionID  SortFieldType = "connectionID"
 )
 
 type CostWithUnit struct {
@@ -83,15 +75,13 @@ type Filters struct {
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	ResourceType []string `json:"resourceType"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
-	Category []string `json:"category"`
-	// if you dont need to use this filter, leave them empty. (e.g. [])
 	Service []string `json:"service"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
 	Location []string `json:"location"`
 	// if you dont need to use this filter, leave them empty. (e.g. [])
-	SourceID []string `json:"sourceID"`
-	// if you dont need to use this filter, leave them empty. (e.g. {})
-	Tags map[string]string `json:"tags"`
+	ConnectionID []string `json:"connectionID"`
+	// if you dont need to use this filter, leave them empty. (e.g. [])
+	Connectors []source.Type `json:"connectors"`
 }
 
 // ResourceFilters model
@@ -154,7 +144,7 @@ type GetFiltersResponse struct {
 }
 
 type ResourceSortItem struct {
-	Field     SortFieldType `json:"field" enums:"resourceID,resourceName,provider,resourceType,resourceGroup,location,connectionID"`
+	Field     SortFieldType `json:"field" enums:"resourceID,connector,resourceType,resourceGroup,location,connectionID"`
 	Direction DirectionType `json:"direction" enums:"asc,desc"`
 }
 
@@ -170,34 +160,17 @@ type GetResourcesResponse struct {
 }
 
 type AllResource struct {
-	ResourceName           string     `json:"resourceName"`           // Resource Name
-	ResourceID             string     `json:"resourceID"`             // Resource Id
-	ResourceType           string     `json:"resourceType"`           // Resource Type
-	ResourceTypeName       string     `json:"resourceTypeName"`       // Resource Type Name
-	ResourceCategory       string     `json:"resourceCategory"`       // Resource Category
-	Provider               SourceType `json:"provider"`               // Resource Provider
-	Location               string     `json:"location"`               // The Region of the resource
-	ProviderConnectionID   string     `json:"providerConnectionID"`   // Provider Connection Id
-	ProviderConnectionName string     `json:"providerConnectionName"` // Provider Connection Name
+	ResourceName           string      `json:"resourceName"`           // Resource Name
+	ResourceID             string      `json:"resourceID"`             // Resource Id
+	ResourceType           string      `json:"resourceType"`           // Resource Type
+	ResourceTypeLabel      string      `json:"resourceTypeLabel"`      // Resource Type Label
+	Connector              source.Type `json:"connector"`              // Resource Provider
+	Location               string      `json:"location"`               // The Region of the resource
+	ConnectionID           string      `json:"connectionID"`           // Kaytu Connection Id of the resource
+	ProviderConnectionID   string      `json:"providerConnectionID"`   // Provider Connection Id
+	ProviderConnectionName string      `json:"providerConnectionName"` // Provider Connection Name
 
 	Attributes map[string]string `json:"attributes"`
-}
-
-func (r AllResource) ToCSVRecord() []string {
-	h := []string{r.ResourceName, string(r.Provider), r.ResourceTypeName, r.Location,
-		r.ResourceID, r.ProviderConnectionID}
-	for _, value := range r.Attributes {
-		h = append(h, value)
-	}
-	return h
-}
-
-func (r AllResource) ToCSVHeaders() []string {
-	h := []string{"Name", "Provider", "ResourceType", "Location", "ResourceID", "ProviderAccountID"}
-	for key := range r.Attributes {
-		h = append(h, key)
-	}
-	return h
 }
 
 type GetAzureResourceResponse struct {
@@ -209,62 +182,27 @@ type AzureResource struct {
 	ResourceName           string `json:"resourceName"`           // Resource Name
 	ResourceID             string `json:"resourceID"`             // Resource Id
 	ResourceType           string `json:"resourceType"`           // Resource Type
-	ResourceTypeName       string `json:"resourceTypeName"`       // Resource Type Name
-	ResourceCategory       string `json:"resourceCategory"`       // Resource Category
+	ResourceTypeLabel      string `json:"resourceTypeLabel"`      // Resource Type Label
 	ResourceGroup          string `json:"resourceGroup"`          // Resource Group
 	Location               string `json:"location"`               // The Region of the resource
+	ConnectionID           string `json:"connectionID"`           // Kaytu Connection Id of the resource
 	ProviderConnectionID   string `json:"providerConnectionID"`   // Provider Connection Id
 	ProviderConnectionName string `json:"providerConnectionName"` // Provider Connection Name
 
 	Attributes map[string]string `json:"attributes"`
 }
 
-func (r AzureResource) ToCSVRecord() []string {
-	h := []string{r.ResourceName, r.ResourceTypeName, r.ResourceGroup, r.Location, r.ResourceID, r.ProviderConnectionID}
-	for _, value := range r.Attributes {
-		h = append(h, value)
-	}
-	return h
-}
-func (r AzureResource) ToCSVHeaders() []string {
-	h := []string{"Name", "ResourceType", "ResourceGroup", "Location", "ResourceID", "SubscriptionID"}
-	for key := range r.Attributes {
-		h = append(h, key)
-	}
-	return h
-}
-
-type GetAWSResourceResponse struct {
-	Resources  []AWSResource `json:"resources"`            // A list of AWS resources with details
-	TotalCount int64         `json:"totalCount,omitempty"` // Number of returned resources
-}
-
 type AWSResource struct {
 	ResourceName           string `json:"resourceName"`
 	ResourceID             string `json:"resourceID"`
 	ResourceType           string `json:"resourceType"`
-	ResourceTypeName       string `json:"resourceTypeName"`
-	ResourceCategory       string `json:"resourceCategory"`
+	ResourceTypeLabel      string `json:"resourceTypeLabel"`
 	Location               string `json:"location"`
-	ProviderConnectionID   string `json:"providerConnectionID"`
+	ConnectionID           string `json:"connectionID"`
+	ProviderConnectionID   string `json:"ProviderConnectionID"`
 	ProviderConnectionName string `json:"providerConnectionName"`
 
 	Attributes map[string]string `json:"attributes"`
-}
-
-func (r AWSResource) ToCSVRecord() []string {
-	h := []string{r.ResourceName, r.ResourceTypeName, r.ResourceID, r.Location, r.ProviderConnectionID}
-	for _, value := range r.Attributes {
-		h = append(h, value)
-	}
-	return h
-}
-func (r AWSResource) ToCSVHeaders() []string {
-	h := []string{"ResourceName", "ResourceType", "ResourceID", "Location", "ProviderConnectionID"}
-	for key := range r.Attributes {
-		h = append(h, key)
-	}
-	return h
 }
 
 type SummaryQueryResponse struct {
@@ -312,9 +250,9 @@ type SmartQueryItem struct {
 }
 
 type ListQueryRequest struct {
-	TitleFilter    string      `json:"titleFilter"`    // Specifies the Title
-	ProviderFilter *SourceType `json:"providerFilter"` // Specifies the Provider
-	Labels         []string    `json:"labels"`         // Labels
+	TitleFilter    string       `json:"titleFilter"`    // Specifies the Title
+	ProviderFilter *source.Type `json:"providerFilter"` // Specifies the Provider
+	Labels         []string     `json:"labels"`         // Labels
 }
 
 type ConnectionResourceCountResponse struct {
@@ -338,102 +276,6 @@ type ConnectionData struct {
 	DailyCostAtEndTime   *float64   `json:"dailyCostAtEndTime"`
 }
 
-type TopAccountResponse struct {
-	SourceID               string `json:"sourceID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`             // Source Id
-	Provider               string `json:"provider" example:"azure"`                                            // Account Provider
-	ProviderConnectionName string `json:"providerConnectionName" example:"example-account"`                    // Account Provider Connection Name
-	ProviderConnectionID   string `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Account Provider Connection ID
-	ResourceCount          int    `json:"resourceCount" example:"100"`                                         // Last number of Resources of the account
-}
-
-type TopAccountCostResponse struct {
-	SourceID               string  `json:"sourceID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`             // Source Id
-	ProviderConnectionName string  `json:"providerConnectionName" example:"example-account"`                    // Account Provider Connection Name
-	ProviderConnectionID   string  `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Account Provider Connection ID
-	Cost                   float64 `json:"cost" example:"100"`                                                  // Account costs
-}
-
-type TopServicesResponse struct {
-	ServiceName      string `json:"serviceName"`      // Service Name
-	Provider         string `json:"provider"`         // Service Provider Name
-	ResourceCount    int    `json:"resourceCount"`    // Number of resources
-	LastDayCount     *int   `json:"lastDayCount"`     // Number of resources on last day
-	LastWeekCount    *int   `json:"lastWeekCount"`    // Number of resources on last week
-	LastQuarterCount *int   `json:"lastQuarterCount"` // Number of resources on last quarter
-	LastYearCount    *int   `json:"lastYearCount"`    // Number of resources on last year
-}
-
-type TopServiceCostResponse struct {
-	ServiceName string  `json:"serviceName" example:"compute"` // Service Name
-	Cost        float64 `json:"cost" example:"100"`            // Service Cost
-}
-
-type ResourceTypeResponse struct {
-	ResourceType     string `json:"resourceType"`     // Resource Type
-	ResourceTypeName string `json:"resourceTypeName"` // Resoutce Type Name
-	ResourceCount    int    `json:"resourceCount"`    // Number of resources
-	LastDayCount     *int   `json:"lastDayCount"`     // Number of resources on last day
-	LastWeekCount    *int   `json:"lastWeekCount"`    // Number of resources on last week
-	LastQuarterCount *int   `json:"lastQuarterCount"` // Number of resources on last quarter
-	LastYearCount    *int   `json:"lastYearCount"`    // Number of resources on last year
-}
-
-type CategorizedMetricsResponse struct {
-	Category map[string][]ResourceTypeResponse `json:"category"`
-}
-
-type MetricsResponse struct {
-	MetricsName      string `json:"metricsName"`
-	Value            int    `json:"value"`
-	LastDayValue     *int   `json:"lastDayValue"`
-	LastWeekValue    *int   `json:"lastWeekValue"`
-	LastQuarterValue *int   `json:"lastQuarterValue"`
-	LastYearValue    *int   `json:"lastYearValue"`
-}
-
-type ServiceDistributionItem struct {
-	ServiceName  string         `json:"serviceName"`  // Service name
-	Distribution map[string]int `json:"distribution"` // Distribution name
-}
-
-type Category struct {
-	Name        string   `json:"name"`        // Category Name
-	SubCategory []string `json:"subCategory"` // List of sub categories
-}
-
-type ConnectionSummaryCategory struct {
-	ResourceCount int            `json:"resourceCount"`
-	SubCategories map[string]int `json:"subCategories"`
-}
-
-type CategoriesMetrics struct {
-	Categories map[string]CategoryMetric `json:"categories"`
-}
-
-type CategoryMetric struct {
-	ResourceCount    int  `json:"resourceCount"`
-	LastDayValue     *int `json:"lastDayValue"`
-	LastWeekValue    *int `json:"lastWeekValue"`
-	LastQuarterValue *int `json:"lastQuarterValue"`
-	LastYearValue    *int `json:"lastYearValue"`
-
-	SubCategories map[string]HistoryCount `json:"subCategories"`
-}
-
-type HistoryCount struct {
-	Count            int  `json:"count"`
-	LastDayValue     *int `json:"lastDayValue"`
-	LastWeekValue    *int `json:"lastWeekValue"`
-	LastQuarterValue *int `json:"lastQuarterValue"`
-	LastYearValue    *int `json:"lastYearValue"`
-}
-
-type ConnectionSummaryResponse struct {
-	Categories    map[string]ConnectionSummaryCategory `json:"categories"`    // Categories with their Summary
-	CloudServices map[string]int                       `json:"cloudServices"` // Services as Key, Number of them as Value
-	ResourceTypes map[string]int                       `json:"resourceTypes"` // Resource types as Key, Number of them as Value
-}
-
 type ListServiceSummariesResponse struct {
 	TotalCount int              `json:"totalCount" example:"20"` // Number of services
 	Services   []ServiceSummary `json:"services"`                // A list of service summeries
@@ -444,96 +286,4 @@ type ServiceSummary struct {
 	ServiceLabel  string      `json:"serviceLabel" example:"Compute"`        // Service Label
 	ServiceName   string      `json:"serviceName" example:"compute"`         // Service Name
 	ResourceCount *int        `json:"resourceCount,omitempty" example:"100"` // Number of Resources
-}
-
-type ListResourceTypesResponse struct {
-	TotalCount    int                       `json:"totalCount" example:"1"` // Number of resource types
-	ResourceTypes []FilterCloudResourceType `json:"resourceTypes"`          // A list of resource types
-}
-
-type FilterType string
-
-const (
-	FilterTypeCloudResourceType FilterType = "cloudResourceType"
-	FilterTypeCost              FilterType = "cost"
-	FilterTypeInsightMetric     FilterType = "insight-metric"
-)
-
-type Filter interface {
-	GetFilterID() string
-	GetFilterType() FilterType
-	GetFilterName() string
-}
-
-type FilterCloudResourceType struct {
-	FilterType          FilterType  `json:"filterType" example:"cloudResourceType"`
-	FilterID            string      `json:"filterId"`
-	Connector           source.Type `json:"connector" example:"AWS"`
-	ResourceType        string      `json:"resourceType" example:"AWS::AMP::Workspace"`
-	ResourceLabel       string      `json:"resourceName" example:""`
-	ServiceName         string      `json:"serviceName" example:"amp"`
-	ResourceCount       int         `json:"resourceCount" example:"0"`
-	ResourceCountChange *float64    `json:"resourceCountChange,omitempty"`
-}
-
-func (f FilterCloudResourceType) GetFilterID() string {
-	return f.FilterID
-}
-
-func (f FilterCloudResourceType) GetFilterType() FilterType {
-	return FilterTypeCloudResourceType
-}
-
-func (f FilterCloudResourceType) GetFilterName() string {
-	return f.ResourceLabel
-}
-
-type FilterCost struct {
-	FilterType    FilterType  `json:"filterType"`
-	FilterID      string      `json:"filterID"`
-	CloudProvider source.Type `json:"cloudProvider"`
-	ServiceLabel  string      `json:"serviceLabel"`
-}
-
-func (f FilterCost) GetFilterID() string {
-	return f.FilterID
-}
-
-func (f FilterCost) GetFilterType() FilterType {
-	return FilterTypeCost
-}
-
-func (f FilterCost) GetFilterName() string {
-	return f.ServiceLabel
-}
-
-type FilterInsightMetric struct {
-	FilterType  FilterType  `json:"filterType"`
-	FilterID    string      `json:"filterID"`
-	InsightID   uint        `json:"insightID"`
-	Connector   source.Type `json:"connector"`
-	Name        string      `json:"name"`
-	Value       int         `json:"value"`
-	ValueChange *float64    `json:"valueChange,omitempty"`
-}
-
-func (f FilterInsightMetric) GetFilterID() string {
-	return f.FilterID
-}
-
-func (f FilterInsightMetric) GetFilterType() FilterType {
-	return FilterTypeInsightMetric
-}
-
-func (f FilterInsightMetric) GetFilterName() string {
-	return f.Name
-}
-
-type CategoryNode struct {
-	CategoryID          string         `json:"categoryID"`
-	CategoryName        string         `json:"categoryName"`            // Name of the Category
-	ResourceCount       *int           `json:"resourceCount,omitempty"` // Number of Resources of the category
-	ResourceCountChange *float64       `json:"resourceCountChange,omitempty"`
-	Subcategories       []CategoryNode `json:"subcategories,omitempty"` // Subcategories sorted by ResourceCount [resources/category, ]
-	Filters             []Filter       `json:"filters,omitempty"`       // List of Filters associated with this Category
 }
