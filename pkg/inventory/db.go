@@ -251,7 +251,7 @@ func (db Database) ListFilteredResourceTypes(tags map[string][]string, resourceT
 		query = query.Where("connector IN ?", connectorTypes)
 	}
 	if len(resourceTypeNames) != 0 {
-		query = query.Where("resource_type IN ?", resourceTypeNames)
+		query = query.Where("resource_types.resource_type IN ?", resourceTypeNames)
 	}
 	tx := query.Find(&resourceTypes)
 	if tx.Error != nil {
