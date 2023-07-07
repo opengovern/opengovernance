@@ -2848,6 +2848,9 @@ func (h *HttpHandler) GetResources(ctx echo.Context) error {
 		req.Filters.ResourceType = append(req.Filters.ResourceType, strings.ToLower(resourceType.ResourceType))
 		resourceTypeMap[strings.ToLower(resourceType.ResourceType)] = resourceType
 	}
+	if len(req.Filters.ResourceType) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid resource type")
+	}
 
 	h.logger.Info("list of resourceType", zap.Any("resourceType", req.Filters.ResourceType))
 

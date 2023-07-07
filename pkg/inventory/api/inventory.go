@@ -39,6 +39,7 @@ func QueryResourcesFromInventorySummary(ctx context.Context, client keibi.Client
 			ResourceName:         resource.Name,
 			Connector:            resource.SourceType,
 			ResourceType:         resource.ResourceType,
+			ConnectionID:         resource.SourceID,
 			Location:             resource.Location,
 			ResourceID:           resource.ResourceID,
 			ProviderConnectionID: resource.SourceID,
