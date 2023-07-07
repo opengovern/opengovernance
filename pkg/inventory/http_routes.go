@@ -2845,7 +2845,7 @@ func (h *HttpHandler) GetResources(ctx echo.Context) error {
 	req.Filters.ResourceType = make([]string, 0, len(resourceTypes))
 	resourceTypeMap := make(map[string]ResourceType)
 	for _, resourceType := range resourceTypes {
-		req.Filters.ResourceType = append(req.Filters.ResourceType, resourceType.ResourceType)
+		req.Filters.ResourceType = append(req.Filters.ResourceType, strings.ToLower(resourceType.ResourceType))
 		resourceTypeMap[strings.ToLower(resourceType.ResourceType)] = resourceType
 	}
 
