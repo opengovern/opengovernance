@@ -698,15 +698,20 @@ func (h HttpHandler) PostCredentials(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
-//	@Success		200			{object}	[]api.Credential
-//	@Param			connector	query		source.Type	false	"filter by connector type"
-//	@Param			health		query		string		false	"filter by health status"	Enums(healthy, unhealthy, initial_discovery)
-//	@Param			pageSize	query		int			false	"page size"					default(50)
-//	@Param			pageNumber	query		int			false	"page number"				default(1)
+//	@Success		200				{object}	api.ListCredentialResponse
+//	@Param			connector		query		source.Type	false	"filter by connector type"
+//	@Param			health			query		string		false	"filter by health status"	Enums(healthy, unhealthy)
+//	@Param			credentialType	query		string		false	"filter by credential type"	Enums(manual, auto-generated)	default(manual)
+//	@Param			pageSize		query		int			false	"page size"					default(50)
+//	@Param			pageNumber		query		int			false	"page number"				default(1)
 //	@Router			/onboard/api/v1/credential [get]
 func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 	connector, _ := source.ParseType(ctx.QueryParam("connector"))
 	health, _ := source.ParseHealthStatus(ctx.QueryParam("health"))
+	credentialType := source.CredentialType(ctx.QueryParam("credentialType"))
+	if credentialType == "" {
+		credentialType = source.CredentialTypeManual
+	}
 	pageSizeStr := ctx.QueryParam("pageSize")
 	pageNumberStr := ctx.QueryParam("pageNumber")
 	pageSize := int64(50)
@@ -718,7 +723,7 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 		pageNumber, _ = strconv.ParseInt(pageNumberStr, 10, 64)
 	}
 
-	credentials, err := h.db.GetCredentialsByFilters(connector, health)
+	credentials, err := h.db.GetCredentialsByFilters(connector, health, credentialType)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -748,7 +753,12 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 		return apiCredentials[i].OnboardDate.After(apiCredentials[j].OnboardDate)
 	})
 
-	return ctx.JSON(http.StatusOK, utils.Paginate(pageNumber, pageSize, apiCredentials))
+	result := api.ListCredentialResponse{
+		TotalCredentialCount: len(apiCredentials),
+		Credentials:          utils.Paginate(pageNumber, pageSize, apiCredentials),
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }
 
 // GetCredential godoc
@@ -1135,15 +1145,17 @@ func (h HttpHandler) GetCredentialHealth(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
-//	@Param			connector	query		source.Type	false	"filter by connector type"
-//	@Param			pageSize	query		int			false	"page size"		default(50)
-//	@Param			pageNumber	query		int			false	"page number"	default(1)
-//	@Success		200			{object}	[]api.Credential
+//	@Param			connector		query		source.Type	false	"filter by connector type"
+//	@Param			credentialType	query		string		false	"filter by credential type"	Enums(manual, auto-generated)
+//	@Param			pageSize		query		int			false	"page size"					default(50)
+//	@Param			pageNumber		query		int			false	"page number"				default(1)
+//	@Success		200				{object}	api.ListCredentialResponse
 //	@Router			/onboard/api/v1/credential/sources/list [get]
 func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 	sType, _ := source.ParseType(ctx.QueryParam("connector"))
 	pageSizeStr := ctx.QueryParam("pageSize")
 	pageNumberStr := ctx.QueryParam("pageNumber")
+	credentialType := source.CredentialType(ctx.QueryParam("credentialType"))
 	pageSize := int64(50)
 	pageNumber := int64(1)
 	if pageSizeStr != "" {
@@ -1166,7 +1178,7 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 		}
 	}
 
-	credentials, err := h.db.GetCredentialsByFilters(sType, source.HealthStatusNil)
+	credentials, err := h.db.GetCredentialsByFilters(sType, source.HealthStatusNil, credentialType)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -1245,7 +1257,12 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 		return apiCredentialsList[i].OnboardDate.After(apiCredentialsList[j].OnboardDate)
 	})
 
-	return ctx.JSON(http.StatusOK, utils.Paginate(pageNumber, pageSize, apiCredentialsList))
+	result := api.ListCredentialResponse{
+		TotalCredentialCount: len(apiCredentialsList),
+		Credentials:          utils.Paginate(pageNumber, pageSize, apiCredentialsList),
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }
 
 func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredentialRequest) error {

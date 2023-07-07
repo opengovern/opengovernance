@@ -1878,8 +1878,9 @@ definitions:
     - DESCRIBING
     - DESCRIBED_RESOURCES
     - EVALUATING
-    - COMPLETED
     - FAILED
+    - COMPLETED
+    - COMPLETED_WITH_FAILURE
     type: string
     x-enum-varnames:
     - StackStatusPending
@@ -1888,8 +1889,9 @@ definitions:
     - StackStatusDescribing
     - StackStatusDescribed
     - StackStatusEvaluating
-    - StackStatusCompleted
     - StackStatusFailed
+    - StackStatusCompleted
+    - StackStatusCompletedWithFailure
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest:
     properties:
       benchmarkID:
@@ -2996,6 +2998,15 @@ definitions:
         type: integer
       totalUnhealthyCount:
         example: 10
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ListCredentialResponse:
+    properties:
+      credentials:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential'
+        type: array
+      totalCredentialCount:
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceAwsRequest:
@@ -6333,9 +6344,16 @@ paths:
         enum:
         - healthy
         - unhealthy
-        - initial_discovery
         in: query
         name: health
+        type: string
+      - default: manual
+        description: filter by credential type
+        enum:
+        - manual
+        - auto-generated
+        in: query
+        name: credentialType
         type: string
       - default: 50
         description: page size
@@ -6353,9 +6371,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential'
-            type: array
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ListCredentialResponse'
       security:
       - BearerToken: []
       summary: List credentials
@@ -6537,6 +6553,13 @@ paths:
         in: query
         name: connector
         type: string
+      - description: filter by credential type
+        enum:
+        - manual
+        - auto-generated
+        in: query
+        name: credentialType
+        type: string
       - default: 50
         description: page size
         in: query
@@ -6553,9 +6576,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential'
-            type: array
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ListCredentialResponse'
       security:
       - BearerToken: []
       summary: Returns a list of sources

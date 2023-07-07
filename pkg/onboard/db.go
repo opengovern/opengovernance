@@ -303,7 +303,7 @@ func (db Database) CountSourcesWithFilters(query string, args ...interface{}) (i
 	return count, nil
 }
 
-func (db Database) GetCredentialsByFilters(connector source.Type, health source.HealthStatus) ([]Credential, error) {
+func (db Database) GetCredentialsByFilters(connector source.Type, health source.HealthStatus, credentialType source.CredentialType) ([]Credential, error) {
 	var creds []Credential
 	tx := db.orm.Model(&Credential{})
 	if connector != source.Nil {
@@ -311,6 +311,9 @@ func (db Database) GetCredentialsByFilters(connector source.Type, health source.
 	}
 	if health != source.HealthStatusNil {
 		tx = tx.Where("health_status = ?", health)
+	}
+	if credentialType != "" {
+		tx = tx.Where("credential_type = ?", credentialType)
 	}
 	tx = tx.Find(&creds)
 	if tx.Error != nil {

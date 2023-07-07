@@ -22,6 +22,11 @@ type UpdateCredentialRequest struct {
 	Config    any         `json:"config"`
 }
 
+type ListCredentialResponse struct {
+	TotalCredentialCount int          `json:"totalCredentialCount"`
+	Credentials          []Credential `json:"credentials"`
+}
+
 type Credential struct {
 	ID             string                `json:"id"`
 	Name           *string               `json:"name,omitempty"`

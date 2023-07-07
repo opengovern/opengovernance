@@ -4532,12 +4532,22 @@ const docTemplate = `{
                     {
                         "enum": [
                             "healthy",
-                            "unhealthy",
-                            "initial_discovery"
+                            "unhealthy"
                         ],
                         "type": "string",
                         "description": "filter by health status",
                         "name": "health",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "manual",
+                            "auto-generated"
+                        ],
+                        "type": "string",
+                        "default": "manual",
+                        "description": "filter by credential type",
+                        "name": "credentialType",
                         "in": "query"
                     },
                     {
@@ -4559,10 +4569,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential"
-                            }
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ListCredentialResponse"
                         }
                     }
                 }
@@ -4630,6 +4637,16 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "manual",
+                            "auto-generated"
+                        ],
+                        "type": "string",
+                        "description": "filter by credential type",
+                        "name": "credentialType",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "default": 50,
                         "description": "page size",
@@ -4648,10 +4665,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential"
-                            }
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ListCredentialResponse"
                         }
                     }
                 }
@@ -9543,8 +9557,9 @@ const docTemplate = `{
                 "DESCRIBING",
                 "DESCRIBED_RESOURCES",
                 "EVALUATING",
+                "FAILED",
                 "COMPLETED",
-                "FAILED"
+                "COMPLETED_WITH_FAILURE"
             ],
             "x-enum-varnames": [
                 "StackStatusPending",
@@ -9553,8 +9568,9 @@ const docTemplate = `{
                 "StackStatusDescribing",
                 "StackStatusDescribed",
                 "StackStatusEvaluating",
+                "StackStatusFailed",
                 "StackStatusCompleted",
-                "StackStatusFailed"
+                "StackStatusCompletedWithFailure"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.TriggerBenchmarkEvaluationRequest": {
@@ -11114,6 +11130,20 @@ const docTemplate = `{
                 "totalUnhealthyCount": {
                     "type": "integer",
                     "example": 10
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ListCredentialResponse": {
+            "type": "object",
+            "properties": {
+                "credentials": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential"
+                    }
+                },
+                "totalCredentialCount": {
+                    "type": "integer"
                 }
             }
         },
