@@ -83,7 +83,7 @@ func BuildSummaryQuery(query string, terms map[string][]string, notTerms map[str
 	if len(query) > 0 {
 		boolQuery["must"] = map[string]any{
 			"multi_match": map[string]any{
-				"fields": []string{"resource_id", "source_type", "resource_type", "resource_group",
+				"fields": []string{"resource_id", "name", "source_type", "resource_type", "resource_group",
 					"location", "source_id"},
 				"query":     query,
 				"fuzziness": "AUTO",

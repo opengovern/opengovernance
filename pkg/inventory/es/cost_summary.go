@@ -584,12 +584,12 @@ type FetchDailyCostHistoryByAccountsAtTimeResponse struct {
 					Hits struct {
 						Hits []struct {
 							CostSummary summarizer.ConnectionCostSummary `json:"_source"`
-						}
-					}
-				}
-			}
-		}
-	}
+						} `json:"hits"`
+					} `json:"hits"`
+				} `json:"latest"`
+			} `json:"buckets"`
+		} `json:"connection_id_group"`
+	} `json:"aggregations"`
 }
 
 func FetchDailyCostHistoryByAccountsAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, at time.Time) (map[string]float64, error) {

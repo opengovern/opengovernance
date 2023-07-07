@@ -2872,6 +2872,9 @@ func (h *HttpHandler) GetResources(ctx echo.Context) error {
 			return err
 		}
 	}
+
+	h.logger.Info("list of connections", zap.Any("connections", connections))
+
 	connectionsMap := map[string]onboardApi.Connection{}
 	for _, connection := range connections {
 		connectionsMap[connection.ID.String()] = connection
