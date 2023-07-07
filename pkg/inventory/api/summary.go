@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -116,6 +117,9 @@ func BuildSummaryQuery(query string, terms map[string][]string, notTerms map[str
 
 func SummaryQueryES(client keibi.Client, ctx context.Context, index string, query string) ([]es.LookupResource, keibi.SearchTotal, error) {
 	var response SummaryQueryResponse
+
+	fmt.Println("query:", query, "index:", index)
+
 	err := client.SearchWithTrackTotalHits(ctx, index, query, &response, true)
 	if err != nil {
 		return nil, keibi.SearchTotal{}, err

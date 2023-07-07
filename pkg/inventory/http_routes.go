@@ -2835,17 +2835,28 @@ func (h *HttpHandler) GetResources(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	h.logger.Info("GetResources got called", zap.Any("req", req))
+
 	resourceTypes, err := h.db.ListFilteredResourceTypes(nil, req.Filters.ResourceType, req.Filters.Service, req.Filters.Connectors, true)
+	if err != nil {
+		h.logger.Error("failed to list resource types", zap.Error(err))
+		return err
+	}
 	req.Filters.ResourceType = make([]string, 0, len(resourceTypes))
 	resourceTypeMap := make(map[string]ResourceType)
 	for _, resourceType := range resourceTypes {
 		req.Filters.ResourceType = append(req.Filters.ResourceType, resourceType.ResourceType)
 		resourceTypeMap[strings.ToLower(resourceType.ResourceType)] = resourceType
 	}
+
+	h.logger.Info("list of resourceType", zap.Any("resourceType", req.Filters.ResourceType))
+
 	res, err := inventoryApi.QueryResources(ctx.Request().Context(), h.client, &req, req.Filters.Connectors)
 	if err != nil {
 		return err
 	}
+
+	h.logger.Info("list of resources", zap.Int("len", len(res.AllResources)))
 
 	var connections []onboardApi.Connection
 	if len(req.Filters.ConnectionID) == 0 {
