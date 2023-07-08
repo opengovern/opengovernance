@@ -1288,7 +1288,7 @@ func (db Database) ListStacks(tags map[string][]string, accountIds []string) ([]
 		query = query.Joins("JOIN stack_tags AS tags ON tags.stack_id = stacks.stack_id")
 		for key, values := range tags {
 			if len(values) != 0 {
-				query = query.Where("tags.key = ? AND tags.value @> ?", key, pq.StringArray(values))
+				query = query.Where("tags.key = ? AND (tags.value && ?)", key, pq.StringArray(values))
 			} else {
 				query = query.Where("tags.key = ?", key)
 			}
