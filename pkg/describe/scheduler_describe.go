@@ -43,7 +43,7 @@ const (
 
 type CloudNativeCall struct {
 	dr  DescribeResourceJob
-	ds  *DescribeSourceJob
+	ds  DescribeSourceJob
 	src *Source
 }
 
@@ -126,8 +126,8 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 			}
 			parentMap[dr.ParentJobID] = ds
 		}
-
-		if ds.TriggerType == enums.DescribeTriggerTypeStack {
+		switch ds.TriggerType {
+		case enums.DescribeTriggerTypeStack:
 			cred, err := s.db.GetStackCredential(ds.SourceID)
 			if err != nil {
 				return err
@@ -135,8 +135,13 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 			if cred.Secret == "" {
 				return errors.New(fmt.Sprintf("No secret found for %s", ds.SourceID))
 			}
+			c := CloudNativeCall{
+				dr: dr,
+				ds: *ds,
+			}
+			s.logger.Info("enqueueing stack describe job", zap.Uint("jobID", dr.ID))
 			wp.AddJob(func() (interface{}, error) {
-				err := s.enqueueCloudNativeDescribeJob(dr, ds, cred.Secret, s.WorkspaceName, ds.SourceID)
+				err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, cred.Secret, s.WorkspaceName, ds.SourceID)
 				if err != nil {
 					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dr.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
@@ -145,13 +150,13 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				DescribeResourceJobsCount.WithLabelValues("successful").Inc()
 				return nil, nil
 			})
-
-		} else {
+		default:
 			c := CloudNativeCall{
 				dr:  dr,
-				ds:  ds,
+				ds:  *ds,
 				src: src,
 			}
+			s.logger.Info("enqueueing describe job", zap.Uint("jobID", c.dr.ID))
 			wp.AddJob(func() (interface{}, error) {
 				err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, c.src.ConfigRef, s.WorkspaceName, s.kafkaResourcesTopic)
 				if err != nil {
@@ -163,9 +168,10 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				return nil, nil
 			})
 		}
-
 		jobCount++
 	}
+
+	s.logger.Info("waiting for all jobs to finish")
 	wp.Run()
 
 	return nil
@@ -311,7 +317,7 @@ func newDescribeSourceJob(a Source, describedAt time.Time, triggerType enums.Des
 	return daj
 }
 
-func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds *DescribeSourceJob, cipherText string, workspaceName string, kafkaTopic string) error {
+func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds DescribeSourceJob, cipherText string, workspaceName string, kafkaTopic string) error {
 	s.logger.Debug("enqueueCloudNativeDescribeJob",
 		zap.Uint("sourceJobID", ds.ID),
 		zap.Uint("jobID", dr.ID),
