@@ -75,9 +75,11 @@ jobs:
         for f in $(cat ./services); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
         chmod +x ./build/*
     - name: Pack build
+      if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
       run: |
         tar -cvf build.tar build
     - name: Upload artifact
+      if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
       uses: actions/upload-artifact@v3
       with:
         name: build
