@@ -99,8 +99,6 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 	parentMap := map[uint]*DescribeSourceJob{}
 	srcMap := map[uint]*Source{}
 
-	jobCount := 0
-
 	wp := concurrency.NewWorkPool(len(drs))
 	for _, dr := range drs {
 		var ds *DescribeSourceJob
@@ -115,7 +113,9 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 				return err
 			}
-			if ds.TriggerType != enums.DescribeTriggerTypeStack {
+			switch ds.TriggerType {
+			case enums.DescribeTriggerTypeStack:
+			default:
 				src, err = s.db.GetSourceByUUID(ds.SourceID)
 				if err != nil {
 					s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dr.ID))
@@ -130,9 +130,11 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 		case enums.DescribeTriggerTypeStack:
 			cred, err := s.db.GetStackCredential(ds.SourceID)
 			if err != nil {
+				s.logger.Error("failed to get stack credential", zap.String("spot", "GetStackCredential"), zap.Error(err), zap.Uint("jobID", dr.ID))
 				return err
 			}
 			if cred.Secret == "" {
+				s.logger.Error("failed to get stack credential secret", zap.String("spot", "GetStackCredential"), zap.Error(err), zap.Uint("jobID", dr.ID))
 				return errors.New(fmt.Sprintf("No secret found for %s", ds.SourceID))
 			}
 			c := CloudNativeCall{
@@ -168,7 +170,6 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				return nil, nil
 			})
 		}
-		jobCount++
 	}
 
 	s.logger.Info("waiting for all jobs to finish")
