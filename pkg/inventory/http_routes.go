@@ -2835,8 +2835,6 @@ func (h *HttpHandler) GetResources(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	h.logger.Info("GetResources got called", zap.Any("req", req))
-
 	resourceTypes, err := h.db.ListFilteredResourceTypes(nil, req.Filters.ResourceType, req.Filters.Service, req.Filters.Connectors, true)
 	if err != nil {
 		h.logger.Error("failed to list resource types", zap.Error(err))
@@ -2852,14 +2850,10 @@ func (h *HttpHandler) GetResources(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid resource type")
 	}
 
-	h.logger.Info("list of resourceType", zap.Any("resourceType", req.Filters.ResourceType))
-
 	res, err := inventoryApi.QueryResources(ctx.Request().Context(), h.client, &req, req.Filters.Connectors)
 	if err != nil {
 		return err
 	}
-
-	h.logger.Info("list of resources", zap.Int("len", len(res.AllResources)))
 
 	var connections []onboardApi.Connection
 	if len(req.Filters.ConnectionID) == 0 {
@@ -2875,8 +2869,6 @@ func (h *HttpHandler) GetResources(ctx echo.Context) error {
 			return err
 		}
 	}
-
-	h.logger.Info("list of connections", zap.Any("connections", connections))
 
 	connectionsMap := map[string]onboardApi.Connection{}
 	for _, connection := range connections {
