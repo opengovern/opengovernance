@@ -238,7 +238,7 @@ func (db Database) ListFilteredResourceTypes(tags map[string][]string, resourceT
 		query = query.Joins("JOIN resource_type_tags AS tags ON tags.resource_type = resource_types.resource_type")
 		for key, values := range tags {
 			if len(values) != 0 {
-				query = query.Where("tags.key = ? AND tags.value @> ?", key, pq.StringArray(values))
+				query = query.Where("tags.key = ? AND (tags.value && ?)", key, pq.StringArray(values))
 			} else {
 				query = query.Where("tags.key = ?", key)
 			}
@@ -304,7 +304,7 @@ func (db Database) ListFilteredServices(tags map[string][]string, connectorTypes
 		query = query.Joins("JOIN service_tags AS tags ON tags.service_name = services.service_name")
 		for key, values := range tags {
 			if len(values) != 0 {
-				query = query.Where("tags.key = ? AND tags.value @> ?", key, pq.StringArray(values))
+				query = query.Where("tags.key = ? AND (tags.value && ?)", key, pq.StringArray(values))
 			} else {
 				query = query.Where("tags.key = ?", key)
 			}

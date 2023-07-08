@@ -314,7 +314,7 @@ func (db Database) ListInsightsWithFilters(insightIDs []uint, connectors []sourc
 		m = m.Joins("JOIN insight_tags AS tags ON tags.insight_id = insights.id")
 		for key, values := range tags {
 			if len(values) != 0 {
-				m = m.Where("tags.key = ? AND tags.value @> ?", key, pq.StringArray(values))
+				m = m.Where("tags.key = ? AND (tags.value && ?)", key, pq.StringArray(values))
 			} else {
 				m = m.Where("tags.key = ?", key)
 			}
