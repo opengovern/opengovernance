@@ -141,7 +141,6 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				dr: dr,
 				ds: *ds,
 			}
-			s.logger.Info("enqueueing stack describe job", zap.Uint("jobID", dr.ID))
 			wp.AddJob(func() (interface{}, error) {
 				err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, cred.Secret, s.WorkspaceName, ds.SourceID)
 				if err != nil {
@@ -158,7 +157,6 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 				ds:  *ds,
 				src: src,
 			}
-			s.logger.Info("enqueueing describe job", zap.Uint("jobID", c.dr.ID))
 			wp.AddJob(func() (interface{}, error) {
 				err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, c.src.ConfigRef, s.WorkspaceName, s.kafkaResourcesTopic)
 				if err != nil {
@@ -172,7 +170,6 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 		}
 	}
 
-	s.logger.Info("waiting for all jobs to finish")
 	wp.Run()
 
 	return nil
