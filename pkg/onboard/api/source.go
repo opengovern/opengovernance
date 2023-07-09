@@ -21,7 +21,7 @@ const (
 	PAIDSupportTier string = "PAID"
 )
 
-type SourceConfigAWS struct {
+type AWSCredentialConfig struct {
 	AccountId      string   `json:"accountId"`
 	Regions        []string `json:"regions,omitempty"`
 	AccessKey      string   `json:"accessKey" validate:"required"`
@@ -30,7 +30,7 @@ type SourceConfigAWS struct {
 	ExternalId     *string  `json:"externalId,omitempty"`
 }
 
-func (s SourceConfigAWS) AsMap() map[string]interface{} {
+func (s AWSCredentialConfig) AsMap() map[string]interface{} {
 	in, err := json.Marshal(s)
 	if err != nil {
 		panic(err) // Don't expect any error
@@ -45,13 +45,13 @@ func (s SourceConfigAWS) AsMap() map[string]interface{} {
 }
 
 type SourceAwsRequest struct {
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Email       string          `json:"email"`
-	Config      SourceConfigAWS `json:"config"`
+	Name        string              `json:"name"`
+	Description string              `json:"description"`
+	Email       string              `json:"email"`
+	Config      AWSCredentialConfig `json:"config"`
 }
 
-type SourceConfigAzure struct {
+type AzureCredentialConfig struct {
 	SubscriptionId string `json:"subscriptionId"`
 	TenantId       string `json:"tenantId" validate:"required,uuid_rfc4122"`
 	ObjectId       string `json:"objectId" validate:"required,uuid_rfc4122"`
@@ -60,7 +60,7 @@ type SourceConfigAzure struct {
 	ClientSecret   string `json:"clientSecret" validate:"required"`
 }
 
-func (s SourceConfigAzure) AsMap() map[string]interface{} {
+func (s AzureCredentialConfig) AsMap() map[string]interface{} {
 	in, err := json.Marshal(s)
 	if err != nil {
 		panic(err) // Don't expect any error
@@ -75,9 +75,9 @@ func (s SourceConfigAzure) AsMap() map[string]interface{} {
 }
 
 type SourceAzureRequest struct {
-	Name        string            `json:"name"`
-	Description string            `json:"description"`
-	Config      SourceConfigAzure `json:"config"`
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	Config      AzureCredentialConfig `json:"config"`
 }
 
 type SourceAzureSPNRequest struct {
@@ -121,7 +121,7 @@ type DiscoverAWSAccountsResponse struct {
 }
 
 type DiscoverAzureSubscriptionsRequest struct {
-	Config SourceConfigAzure `json:"config"`
+	Config AzureCredentialConfig `json:"config"`
 }
 
 type DiscoverAzureSubscriptionsSPNRequest struct {
