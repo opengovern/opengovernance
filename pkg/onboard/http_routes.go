@@ -1384,7 +1384,8 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		return err
 	}
 	cred.Secret = string(secretBytes)
-	if metadata.OrganizationID != nil {
+	if metadata.OrganizationID != nil && metadata.OrganizationMasterAccountId != nil &&
+		metadata.AccountID == *metadata.OrganizationMasterAccountId {
 		cred.Name = metadata.OrganizationID
 		cred.CredentialType = source.CredentialTypeManual
 	}
