@@ -53,8 +53,8 @@ jobs:
       with:
         go-version-file: './go.mod'
         cache: false
-    - name: Go Cache
-      uses: actions/cache@v3
+    - name: Restore cache
+      uses: actions/cache/restore@v3
       with:
         path: |
           ~/go/pkg/mod
@@ -74,6 +74,14 @@ jobs:
         fi
         for f in $(cat ./services); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
         chmod +x ./build/*
+    - name: Upload cache
+      uses: actions/cache/save@v3
+      if: always()
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
     - name: Pack build
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
       run: |
