@@ -601,7 +601,7 @@ func (s Scheduler) storeStackCredentials(stack apiDescribe.Stack, configStr stri
 	}
 	switch provider {
 	case source.CloudAzure:
-		config := apiOnboard.SourceConfigAzure{}
+		config := apiOnboard.AzureCredentialConfig{}
 		err := json.Unmarshal([]byte(configStr), &config)
 		if err != nil {
 			return fmt.Errorf("invalid config")
@@ -611,7 +611,7 @@ func (s Scheduler) storeStackCredentials(stack apiDescribe.Stack, configStr stri
 			return err
 		}
 	case source.CloudAWS:
-		config := apiOnboard.SourceConfigAWS{}
+		config := apiOnboard.AWSCredentialConfig{}
 		err := json.Unmarshal([]byte(configStr), &config)
 		if err != nil {
 			return fmt.Errorf("invalid config")

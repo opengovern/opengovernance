@@ -71,7 +71,7 @@ type Source struct {
 	DeletedAt sql.NullTime `gorm:"index"`
 }
 
-func (s Source) toApi() api.Connection {
+func (s Source) toAPI() api.Connection {
 	metadata := make(map[string]any)
 	if s.Metadata.String() != "" {
 		_ = json.Unmarshal(s.Metadata, &metadata)
@@ -291,6 +291,35 @@ type Credential struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt sql.NullTime `gorm:"index"`
+}
+
+func (credential *Credential) ToAPI() api.Credential {
+	metadata := make(map[string]any)
+	if string(credential.Metadata) == "" {
+		credential.Metadata = []byte("{}")
+	}
+	_ = json.Unmarshal(credential.Metadata, &metadata)
+	apiCredential := api.Credential{
+		ID:                  credential.ID.String(),
+		Name:                credential.Name,
+		ConnectorType:       credential.ConnectorType,
+		CredentialType:      credential.CredentialType,
+		Enabled:             credential.Enabled,
+		OnboardDate:         credential.CreatedAt,
+		LastHealthCheckTime: credential.LastHealthCheckTime,
+		HealthStatus:        credential.HealthStatus,
+		HealthReason:        credential.HealthReason,
+		Metadata:            metadata,
+
+		Config: nil,
+
+		Connections:          nil,
+		TotalConnections:     nil,
+		EnabledConnections:   nil,
+		UnhealthyConnections: nil,
+	}
+
+	return apiCredential
 }
 
 func NewAzureCredential(name string, credentialType source.CredentialType, metadata *source.AzureCredentialMetadata) (*Credential, error) {

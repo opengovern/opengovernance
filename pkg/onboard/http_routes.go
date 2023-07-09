@@ -553,7 +553,7 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 	return true, nil
 }
 
-func createAzureCredential(ctx context.Context, name string, credType source.CredentialType, config api.SourceConfigAzure) (*Credential, error) {
+func createAzureCredential(ctx context.Context, name string, credType source.CredentialType, config api.AzureCredentialConfig) (*Credential, error) {
 	azureCnf, err := describe.AzureSubscriptionConfigFromMap(config.AsMap())
 	if err != nil {
 		return nil, err
@@ -575,7 +575,7 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 	if err != nil {
 		return err
 	}
-	config := api.SourceConfigAzure{}
+	config := api.AzureCredentialConfig{}
 	err = json.Unmarshal(configStr, &config)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, "invalid config")
@@ -614,7 +614,7 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 	if err != nil {
 		return err
 	}
-	config := api.SourceConfigAWS{}
+	config := api.AWSCredentialConfig{}
 	err = json.Unmarshal(configStr, &config)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, "invalid config")
@@ -730,23 +730,7 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 
 	apiCredentials := make([]api.Credential, 0, len(credentials))
 	for _, cred := range credentials {
-		metadata := make(map[string]any)
-		err = json.Unmarshal(cred.Metadata, &metadata)
-		if err != nil {
-			return err
-		}
-		apiCredentials = append(apiCredentials, api.Credential{
-			ID:                  cred.ID.String(),
-			Name:                cred.Name,
-			ConnectorType:       cred.ConnectorType,
-			CredentialType:      cred.CredentialType,
-			Enabled:             cred.Enabled,
-			OnboardDate:         cred.CreatedAt,
-			LastHealthCheckTime: cred.LastHealthCheckTime,
-			HealthStatus:        cred.HealthStatus,
-			HealthReason:        cred.HealthReason,
-			Metadata:            metadata,
-		})
+		apiCredentials = append(apiCredentials, cred.ToAPI())
 	}
 
 	sort.Slice(apiCredentials, func(i, j int) bool {
@@ -796,44 +780,54 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		return err
 	}
 
-	apiCredential := api.Credential{
-		ID:                  credential.ID.String(),
-		Name:                credential.Name,
-		ConnectorType:       credential.ConnectorType,
-		CredentialType:      credential.CredentialType,
-		Enabled:             credential.Enabled,
-		OnboardDate:         credential.CreatedAt,
-		LastHealthCheckTime: credential.LastHealthCheckTime,
-		HealthStatus:        credential.HealthStatus,
-		HealthReason:        credential.HealthReason,
-		Metadata:            metadata,
-		Connections:         make([]api.Connection, 0, len(connections)),
+	apiCredential := credential.ToAPI()
+	if err != nil {
+		return err
 	}
 	for _, conn := range connections {
-		metadata := make(map[string]any)
-		if conn.Metadata.String() != "" {
-			err := json.Unmarshal(conn.Metadata, &metadata)
-			if err != nil {
-				return err
-			}
+		apiCredential.Connections = append(apiCredential.Connections, conn.toAPI())
+		if conn.LifecycleState == ConnectionLifecycleStateUnhealthy {
+			apiCredential.UnhealthyConnections = utils.PAdd(apiCredential.UnhealthyConnections, utils.GetPointer(1))
 		}
+		if conn.LifecycleState.IsEnabled() {
+			apiCredential.EnabledConnections = utils.PAdd(apiCredential.EnabledConnections, utils.GetPointer(1))
+		}
+		apiCredential.TotalConnections = utils.PAdd(apiCredential.TotalConnections, utils.GetPointer(1))
+	}
 
-		apiCredential.Connections = append(apiCredential.Connections, api.Connection{
-			ID:                   conn.ID,
-			ConnectionID:         conn.SourceId,
-			ConnectionName:       conn.Name,
-			Email:                conn.Email,
-			Connector:            conn.Type,
-			Description:          conn.Description,
-			CredentialID:         conn.CredentialID.String(),
-			CredentialName:       conn.Credential.Name,
-			OnboardDate:          conn.CreatedAt,
-			LifecycleState:       api.ConnectionLifecycleState(conn.LifecycleState),
-			AssetDiscoveryMethod: conn.AssetDiscoveryMethod,
-			LastHealthCheckTime:  conn.LastHealthCheckTime,
-			HealthReason:         conn.HealthReason,
-			Metadata:             metadata,
-		})
+	switch credential.ConnectorType {
+	case source.CloudAzure:
+		cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+		if err != nil {
+			return err
+		}
+		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+		apiCredential.Config = api.AzureCredentialConfig{
+			SubscriptionId: azureCnf.SubscriptionID,
+			TenantId:       azureCnf.TenantID,
+			ObjectId:       azureCnf.ObjectID,
+			SecretId:       azureCnf.SecretID,
+			ClientId:       azureCnf.ClientID,
+		}
+	case source.CloudAWS:
+		cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+		if err != nil {
+			return err
+		}
+		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+		apiCredential.Config = api.AWSCredentialConfig{
+			AccountId:      awsCnf.AccountID,
+			Regions:        awsCnf.Regions,
+			AccessKey:      awsCnf.AccessKey,
+			AssumeRoleName: awsCnf.AssumeRoleName,
+			ExternalId:     awsCnf.ExternalID,
+		}
 	}
 
 	return ctx.JSON(http.StatusOK, apiCredential)
@@ -1185,24 +1179,7 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 
 	apiCredentials := make(map[string]api.Credential)
 	for _, cred := range credentials {
-		metadata := make(map[string]any)
-		err = json.Unmarshal(cred.Metadata, &metadata)
-		if err != nil {
-			return err
-		}
-		apiCredentials[cred.ID.String()] = api.Credential{
-			ID:                  cred.ID.String(),
-			Name:                cred.Name,
-			ConnectorType:       cred.ConnectorType,
-			CredentialType:      cred.CredentialType,
-			Enabled:             cred.Enabled,
-			OnboardDate:         cred.CreatedAt,
-			LastHealthCheckTime: cred.LastHealthCheckTime,
-			HealthStatus:        cred.HealthStatus,
-			HealthReason:        cred.HealthReason,
-			Metadata:            metadata,
-			Connections:         nil,
-		}
+		apiCredentials[cred.ID.String()] = cred.ToAPI()
 	}
 
 	for _, src := range sources {
@@ -1210,31 +1187,7 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 			if v.Connections == nil {
 				v.Connections = make([]api.Connection, 0)
 			}
-			metadata := make(map[string]any)
-			if src.Metadata.String() != "" {
-				err := json.Unmarshal(src.Metadata, &metadata)
-				if err != nil {
-					return err
-				}
-			}
-
-			v.Connections = append(v.Connections, api.Connection{
-				ID:                   src.ID,
-				ConnectionID:         src.SourceId,
-				ConnectionName:       src.Name,
-				Email:                src.Email,
-				Connector:            src.Type,
-				Description:          src.Description,
-				CredentialID:         src.CredentialID.String(),
-				CredentialName:       src.Credential.Name,
-				OnboardDate:          src.CreatedAt,
-				LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
-				AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-				LastHealthCheckTime:  src.LastHealthCheckTime,
-				HealthReason:         src.HealthReason,
-				Metadata:             metadata,
-			})
-			apiCredentials[src.CredentialID.String()] = v
+			v.Connections = append(v.Connections, src.toAPI())
 			v.TotalConnections = utils.PAdd(v.TotalConnections, utils.GetPointer(1))
 			if src.LifecycleState.IsEnabled() {
 				v.EnabledConnections = utils.PAdd(v.EnabledConnections, utils.GetPointer(1))
@@ -1242,6 +1195,8 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 			if src.LifecycleState == ConnectionLifecycleStateUnhealthy {
 				v.UnhealthyConnections = utils.PAdd(v.UnhealthyConnections, utils.GetPointer(1))
 			}
+
+			apiCredentials[src.CredentialID.String()] = v
 		}
 	}
 
@@ -1283,7 +1238,7 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 		cred.Name = req.Name
 	}
 
-	config := api.SourceConfigAzure{}
+	config := api.AzureCredentialConfig{}
 
 	if req.Config != nil {
 		configStr, err := json.Marshal(req.Config)
@@ -1356,7 +1311,7 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		cred.Name = req.Name
 	}
 
-	config := api.SourceConfigAWS{}
+	config := api.AWSCredentialConfig{}
 	if req.Config != nil {
 		configStr, err := json.Marshal(req.Config)
 		if err != nil {
@@ -1889,7 +1844,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 
 	switch src.Type {
 	case source.CloudAWS:
-		var req api.SourceConfigAWS
+		var req api.AWSCredentialConfig
 		if err := bindValidate(ctx, &req); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 		}
@@ -1919,7 +1874,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 		}
 		return ctx.NoContent(http.StatusOK)
 	case source.CloudAzure:
-		var req api.SourceConfigAzure
+		var req api.AzureCredentialConfig
 		if err := bindValidate(ctx, &req); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 		}
@@ -2254,7 +2209,7 @@ func (h HttpHandler) GetSourcesByAccount(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, src.toApi())
+	return ctx.JSON(http.StatusOK, src.toAPI())
 }
 
 // CountSources godoc
@@ -2528,7 +2483,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	for _, connection := range connections {
 		if data, ok := connectionData[connection.ID.String()]; ok {
 			localData := data
-			apiConn := connection.toApi()
+			apiConn := connection.toAPI()
 			apiConn.Cost = localData.TotalCost
 			apiConn.DailyCostAtStartTime = localData.DailyCostAtStartTime
 			apiConn.DailyCostAtEndTime = localData.DailyCostAtEndTime
@@ -2547,7 +2502,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 			}
 			result.Connections = append(result.Connections, apiConn)
 		} else {
-			result.Connections = append(result.Connections, connection.toApi())
+			result.Connections = append(result.Connections, connection.toAPI())
 		}
 		switch connection.LifecycleState {
 		case ConnectionLifecycleStateNotOnboard:
@@ -2739,7 +2694,7 @@ func (h HttpHandler) GetConnectionSummary(ctx echo.Context) error {
 		return err
 	}
 
-	result := connection.toApi()
+	result := connection.toAPI()
 	result.Cost = connectionData.TotalCost
 	result.ResourceCount = connectionData.Count
 	result.OldResourceCount = connectionData.OldCount

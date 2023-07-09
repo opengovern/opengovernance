@@ -35,6 +35,8 @@ type Credential struct {
 	Enabled        bool                  `json:"enabled"`
 	OnboardDate    time.Time             `json:"onboardDate"`
 
+	Config any `json:"config"`
+
 	LastHealthCheckTime time.Time           `json:"lastHealthCheckTime"`
 	HealthStatus        source.HealthStatus `json:"healthStatus"`
 	HealthReason        *string             `json:"healthReason,omitempty"`
