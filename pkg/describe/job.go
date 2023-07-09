@@ -44,6 +44,19 @@ type AWSAccountConfig struct {
 	ExternalID     *string  `json:"externalID,omitempty"`
 }
 
+func (asc AWSAccountConfig) ToMap() map[string]any {
+	jsonCnf, err := json.Marshal(asc)
+	if err != nil {
+		return nil
+	}
+	res := make(map[string]any)
+	err = json.Unmarshal(jsonCnf, &res)
+	if err != nil {
+		return nil
+	}
+	return res
+}
+
 func AWSAccountConfigFromMap(m map[string]any) (AWSAccountConfig, error) {
 	mj, err := json.Marshal(m)
 	if err != nil {
@@ -70,6 +83,19 @@ type AzureSubscriptionConfig struct {
 	CertificatePass string `json:"certificatePass"`
 	Username        string `json:"username"`
 	Password        string `json:"password"`
+}
+
+func (asc AzureSubscriptionConfig) ToMap() map[string]any {
+	jsonCnf, err := json.Marshal(asc)
+	if err != nil {
+		return nil
+	}
+	res := make(map[string]any)
+	err = json.Unmarshal(jsonCnf, &res)
+	if err != nil {
+		return nil
+	}
+	return res
 }
 
 func AzureSubscriptionConfigFromMap(m map[string]interface{}) (AzureSubscriptionConfig, error) {

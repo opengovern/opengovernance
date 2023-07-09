@@ -1238,42 +1238,61 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 		cred.Name = req.Name
 	}
 
-	config := api.AzureCredentialConfig{}
+	cnf, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	if err != nil {
+		return err
+	}
+	config, err := describe.AzureSubscriptionConfigFromMap(cnf)
+	if err != nil {
+		return err
+	}
 
 	if req.Config != nil {
 		configStr, err := json.Marshal(req.Config)
 		if err != nil {
 			return err
 		}
-		err = json.Unmarshal(configStr, &config)
+		newConfig := api.AzureCredentialConfig{}
+		err = json.Unmarshal(configStr, &newConfig)
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "invalid config")
 		}
-		err = h.validator.Struct(config)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, err.Error())
+		if newConfig.SubscriptionId != "" {
+			config.SubscriptionID = newConfig.SubscriptionId
 		}
-
-		azureCnf, err := describe.AzureSubscriptionConfigFromMap(config.AsMap())
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "invalid config")
+		if newConfig.TenantId != "" {
+			config.TenantID = newConfig.TenantId
 		}
-
-		metadata, err := getAzureCredentialsMetadata(ctx.Request().Context(), azureCnf)
-		if err != nil {
-			return err
+		if newConfig.ObjectId != "" {
+			config.ObjectID = newConfig.ObjectId
 		}
-		jsonMetadata, err := json.Marshal(metadata)
-		if err != nil {
-			return err
+		if newConfig.SecretId != "" {
+			config.SecretID = newConfig.SecretId
 		}
-		cred.Metadata = jsonMetadata
+		if newConfig.ClientId != "" {
+			config.ClientID = newConfig.ClientId
+		}
+		if newConfig.ClientSecret != "" {
+			config.ClientSecret = newConfig.ClientSecret
+		}
 	}
-	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
+	metadata, err := getAzureCredentialsMetadata(ctx.Request().Context(), config)
+	if err != nil {
+		return err
+	}
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+	cred.Metadata = jsonMetadata
+	secretBytes, err := h.kms.Encrypt(config.ToMap(), h.keyARN)
 	if err != nil {
 		return err
 	}
 	cred.Secret = string(secretBytes)
+	if metadata.SpnName != "" {
+		cred.Name = &metadata.SpnName
+	}
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		if _, err := h.db.UpdateCredential(cred); err != nil {
@@ -1311,42 +1330,64 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		cred.Name = req.Name
 	}
 
-	config := api.AWSCredentialConfig{}
+	cnf, err := h.kms.Decrypt(cred.Secret, h.keyARN)
+	if err != nil {
+		return err
+	}
+	config, err := describe.AWSAccountConfigFromMap(cnf)
+	if err != nil {
+		return err
+	}
+
 	if req.Config != nil {
 		configStr, err := json.Marshal(req.Config)
 		if err != nil {
 			return err
 		}
-
-		err = json.Unmarshal(configStr, &config)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "invalid config")
-		}
-		err = h.validator.Struct(config)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, err.Error())
-		}
-
-		awsCnf, err := describe.AWSAccountConfigFromMap(config.AsMap())
+		newConfig := api.AWSCredentialConfig{}
+		err = json.Unmarshal(configStr, &newConfig)
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, "invalid config")
 		}
 
-		metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), h.logger, awsCnf)
-		if err != nil {
-			return err
+		if newConfig.AccountId != "" {
+			config.AccountID = newConfig.AccountId
 		}
-		jsonMetadata, err := json.Marshal(metadata)
-		if err != nil {
-			return err
+		if newConfig.Regions != nil {
+			config.Regions = newConfig.Regions
 		}
-		cred.Metadata = jsonMetadata
+		if newConfig.AccessKey != "" {
+			config.AccessKey = newConfig.AccessKey
+		}
+		if newConfig.SecretKey != "" {
+			config.SecretKey = newConfig.SecretKey
+		}
+		if newConfig.AssumeRoleName != "" {
+			config.AssumeRoleName = newConfig.AssumeRoleName
+		}
+		if newConfig.ExternalId != nil {
+			config.ExternalID = newConfig.ExternalId
+		}
 	}
-	secretBytes, err := h.kms.Encrypt(config.AsMap(), h.keyARN)
+
+	metadata, err := getAWSCredentialsMetadata(ctx.Request().Context(), h.logger, config)
+	if err != nil {
+		return err
+	}
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		return err
+	}
+	cred.Metadata = jsonMetadata
+	secretBytes, err := h.kms.Encrypt(config.ToMap(), h.keyARN)
 	if err != nil {
 		return err
 	}
 	cred.Secret = string(secretBytes)
+	if metadata.OrganizationID != nil {
+		cred.Name = metadata.OrganizationID
+		cred.CredentialType = source.CredentialTypeManual
+	}
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		if _, err := h.db.UpdateCredential(cred); err != nil {
