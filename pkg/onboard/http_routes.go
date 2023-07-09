@@ -1385,7 +1385,8 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 	}
 	cred.Secret = string(secretBytes)
 	if metadata.OrganizationID != nil && metadata.OrganizationMasterAccountId != nil &&
-		metadata.AccountID == *metadata.OrganizationMasterAccountId {
+		metadata.AccountID == *metadata.OrganizationMasterAccountId &&
+		config.AssumeRoleName != "" && config.ExternalID != nil {
 		cred.Name = metadata.OrganizationID
 		cred.CredentialType = source.CredentialTypeManual
 	}
