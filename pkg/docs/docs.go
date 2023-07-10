@@ -5210,52 +5210,6 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Returning a list of sources including both AWS and Azure unless filtered by Type.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "onboard"
-                ],
-                "summary": "Get filtered sources",
-                "parameters": [
-                    {
-                        "enum": [
-                            "aws",
-                            "azure"
-                        ],
-                        "type": "string",
-                        "description": "Type",
-                        "name": "type",
-                        "in": "query"
-                    },
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.GetSourcesRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
-                            }
-                        }
-                    }
-                }
             }
         },
         "/onboard/api/v1/sources/count": {
@@ -10737,6 +10691,36 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig": {
+            "type": "object",
+            "required": [
+                "accessKey",
+                "secretKey"
+            ],
+            "properties": {
+                "accessKey": {
+                    "type": "string"
+                },
+                "accountId": {
+                    "type": "string"
+                },
+                "assumeRoleName": {
+                    "type": "string"
+                },
+                "externalId": {
+                    "type": "string"
+                },
+                "regions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "secretKey": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredential": {
             "type": "object",
             "properties": {
@@ -10747,6 +10731,36 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "tenantID": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredentialConfig": {
+            "type": "object",
+            "required": [
+                "clientId",
+                "clientSecret",
+                "objectId",
+                "secretId",
+                "tenantId"
+            ],
+            "properties": {
+                "clientId": {
+                    "type": "string"
+                },
+                "clientSecret": {
+                    "type": "string"
+                },
+                "objectId": {
+                    "type": "string"
+                },
+                "secretId": {
+                    "type": "string"
+                },
+                "subscriptionId": {
+                    "type": "string"
+                },
+                "tenantId": {
                     "type": "string"
                 }
             }
@@ -11035,6 +11049,7 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential": {
             "type": "object",
             "properties": {
+                "config": {},
                 "connections": {
                     "type": "array",
                     "items": {
@@ -11080,17 +11095,6 @@ const docTemplate = `{
                 },
                 "unhealthy_connections": {
                     "type": "integer"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.GetSourcesRequest": {
-            "type": "object",
-            "properties": {
-                "source_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -11151,7 +11155,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "config": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAWS"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig"
                 },
                 "description": {
                     "type": "string"
@@ -11168,72 +11172,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "config": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAzure"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredentialConfig"
                 },
                 "description": {
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAWS": {
-            "type": "object",
-            "required": [
-                "accessKey",
-                "secretKey"
-            ],
-            "properties": {
-                "accessKey": {
-                    "type": "string"
-                },
-                "accountId": {
-                    "type": "string"
-                },
-                "assumeRoleName": {
-                    "type": "string"
-                },
-                "externalId": {
-                    "type": "string"
-                },
-                "regions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "secretKey": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAzure": {
-            "type": "object",
-            "required": [
-                "clientId",
-                "clientSecret",
-                "objectId",
-                "secretId",
-                "tenantId"
-            ],
-            "properties": {
-                "clientId": {
-                    "type": "string"
-                },
-                "clientSecret": {
-                    "type": "string"
-                },
-                "objectId": {
-                    "type": "string"
-                },
-                "secretId": {
-                    "type": "string"
-                },
-                "subscriptionId": {
-                    "type": "string"
-                },
-                "tenantId": {
                     "type": "string"
                 }
             }

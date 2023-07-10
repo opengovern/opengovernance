@@ -2735,6 +2735,26 @@ definitions:
       secretKey:
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig:
+    properties:
+      accessKey:
+        type: string
+      accountId:
+        type: string
+      assumeRoleName:
+        type: string
+      externalId:
+        type: string
+      regions:
+        items:
+          type: string
+        type: array
+      secretKey:
+        type: string
+    required:
+    - accessKey
+    - secretKey
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredential:
     properties:
       clientID:
@@ -2743,6 +2763,27 @@ definitions:
         type: string
       tenantID:
         type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredentialConfig:
+    properties:
+      clientId:
+        type: string
+      clientSecret:
+        type: string
+      objectId:
+        type: string
+      secretId:
+        type: string
+      subscriptionId:
+        type: string
+      tenantId:
+        type: string
+    required:
+    - clientId
+    - clientSecret
+    - objectId
+    - secretId
+    - tenantId
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogMetrics:
     properties:
@@ -2933,6 +2974,7 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential:
     properties:
+      config: {}
       connections:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
@@ -2964,13 +3006,6 @@ definitions:
         type: integer
       unhealthy_connections:
         type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.GetSourcesRequest:
-    properties:
-      source_ids:
-        items:
-          type: string
-        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ListConnectionSummaryResponse:
     properties:
@@ -3012,7 +3047,7 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceAwsRequest:
     properties:
       config:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAWS'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig'
       description:
         type: string
       email:
@@ -3023,52 +3058,11 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceAzureRequest:
     properties:
       config:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAzure'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AzureCredentialConfig'
       description:
         type: string
       name:
         type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAWS:
-    properties:
-      accessKey:
-        type: string
-      accountId:
-        type: string
-      assumeRoleName:
-        type: string
-      externalId:
-        type: string
-      regions:
-        items:
-          type: string
-        type: array
-      secretKey:
-        type: string
-    required:
-    - accessKey
-    - secretKey
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceConfigAzure:
-    properties:
-      clientId:
-        type: string
-      clientSecret:
-        type: string
-      objectId:
-        type: string
-      secretId:
-        type: string
-      subscriptionId:
-        type: string
-      tenantId:
-        type: string
-    required:
-    - clientId
-    - clientSecret
-    - objectId
-    - secretId
-    - tenantId
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.UpdateCredentialRequest:
     properties:
@@ -6777,36 +6771,6 @@ paths:
       security:
       - BearerToken: []
       summary: List all sources
-      tags:
-      - onboard
-    post:
-      description: Returning a list of sources including both AWS and Azure unless
-        filtered by Type.
-      parameters:
-      - description: Type
-        enum:
-        - aws
-        - azure
-        in: query
-        name: type
-        type: string
-      - description: Request Body
-        in: body
-        name: request
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.GetSourcesRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Get filtered sources
       tags:
       - onboard
   /onboard/api/v1/sources/count:

@@ -38,7 +38,7 @@ const (
 func (h HttpHandler) Register(r *echo.Echo) {
 	v1 := r.Group("/api/v1")
 
-	v1.GET("/sources", httpserver.AuthorizeHandler(h.ListSources, api3.KeibiAdminRole))
+	v1.GET("/sources", httpserver.AuthorizeHandler(h.ListSources, api3.ViewerRole))
 	v1.POST("/sources", httpserver.AuthorizeHandler(h.GetSources, api3.KeibiAdminRole))
 	v1.GET("/sources/count", httpserver.AuthorizeHandler(h.CountSources, api3.ViewerRole))
 	v1.GET("/catalog/metrics", httpserver.AuthorizeHandler(h.CatalogMetrics, api3.ViewerRole))
@@ -2111,6 +2111,16 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
+// ListSources godoc
+//
+//	@Summary		List all sources
+//	@Description	Returning a list of sources including both AWS and Azure unless filtered by Type.
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Param			connector	query		[]source.Type	false	"filter by source type"
+//	@Success		200			{object}	api.GetSourcesResponse
+//	@Router			/onboard/api/v1/sources [get]
 func (h HttpHandler) ListSources(ctx echo.Context) error {
 	var err error
 	sType := httpserver.QueryArrayParam(ctx, "connector")
@@ -2130,30 +2140,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
-		metadata := make(map[string]any)
-		if s.Metadata.String() != "" {
-			err := json.Unmarshal(s.Metadata, &metadata)
-			if err != nil {
-				return err
-			}
-		}
-		src := api.Connection{
-			ID:                   s.ID,
-			ConnectionID:         s.SourceId,
-			ConnectionName:       s.Name,
-			Email:                s.Email,
-			Connector:            s.Type,
-			Description:          s.Description,
-			CredentialID:         s.CredentialID.String(),
-			CredentialName:       s.Credential.Name,
-			OnboardDate:          s.CreatedAt,
-			LifecycleState:       api.ConnectionLifecycleState(s.LifecycleState),
-			AssetDiscoveryMethod: s.AssetDiscoveryMethod,
-			LastHealthCheckTime:  s.LastHealthCheckTime,
-			HealthReason:         s.HealthReason,
-			Metadata:             metadata,
-		}
-		resp = append(resp, src)
+		resp = append(resp, s.toAPI())
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
