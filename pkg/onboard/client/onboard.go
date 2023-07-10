@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/labstack/echo/v4"
 
@@ -45,6 +46,7 @@ func NewOnboardServiceClient(baseURL string, cache *cache.Cache) OnboardServiceC
 }
 
 func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*api.Connection, error) {
+	ctx.UserRole = authApi.KeibiAdminRole
 	url := fmt.Sprintf("%s/api/v1/source/%s", s.baseURL, sourceID)
 
 	var source api.Connection
@@ -120,6 +122,7 @@ func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID stri
 }
 
 func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) ([]api.Connection, error) {
+	ctx.UserRole = authApi.KeibiAdminRole
 	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
 
 	var req api.GetSourcesRequest
@@ -166,6 +169,7 @@ func (s *onboardClient) GetSources(ctx *httpclient.Context, sourceIDs []string) 
 }
 
 func (s *onboardClient) ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error) {
+	ctx.UserRole = authApi.KeibiAdminRole
 	url := fmt.Sprintf("%s/api/v1/sources", s.baseURL)
 	for i, v := range t {
 		if i == 0 {
