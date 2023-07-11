@@ -1004,17 +1004,6 @@ func (h HttpServer) DeleteStack(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-// TriggerStackBenchmark godoc
-//
-//	@Summary		Trigger Stack benchmark
-//	@Description	Trigger defined benchmarks for a stack and save in the history
-//	@Security		BearerToken
-//	@Tags			stack
-//	@Accept			json
-//	@Produce		json
-//	@Param			request	body		api.StackBenchmarkRequest	true	"Request Body"
-//	@Success		200		{object}	[]ComplianceReportJob
-//	@Router			/schedule/api/v1/stacks/benchmark/trigger [post]
 func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error { // Retired
 	var req api.StackBenchmarkRequest
 	err := bindValidate(ctx, &req)
@@ -1301,16 +1290,6 @@ func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, insightJobs)
 }
 
-// TriggerStackInsight godoc
-//
-//	@Summary		Trigger stack insight evaluation
-//	@Description	Trigger an insight evaluation to run immediately on a stack with given details
-//	@Security		BearerToken
-//	@Tags			describe
-//	@Produce		json
-//	@Param			request	body		api.StackInsightRequest	true	"Request Body"
-//	@Success		200		{object}	[]api.InsightJob
-//	@Router			/schedule/api/v1/stacks/insight/trigger [post]
 func (h HttpServer) TriggerStackInsight(ctx echo.Context) error { // Retired
 	var req api.StackInsightRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -1409,18 +1388,6 @@ func (h HttpServer) GetInsightJob(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, result)
 }
 
-// TriggerStackDescriber godoc
-//
-//	@Summary		Trigger Stack Describer
-//	@Description	Describe stack resources. This is needed before triggering insights and benchmarks
-//	@Description	Config structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}
-//	@Description	Config structure for aws: {accessKey: string, secretKey: string}
-//	@Security		BearerToken
-//	@Tags			stack
-//	@Produce		json
-//	@Success		200
-//	@Param			req	body	api.DescribeStackRequest	true	"request"
-//	@Router			/schedule/api/v1/stacks/describer/trigger [post]
 func (h HttpServer) TriggerStackDescriber(ctx echo.Context) error { // Retired
 	var req api.DescribeStackRequest
 
