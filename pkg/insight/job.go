@@ -237,6 +237,8 @@ func (j Job) Do(client keibi.Client, steampipeOption *steampipe.Option, onboardC
 						S3Location:          result.Location,
 					})
 				}
+
+				logger.Info("sending docs to kafka", zap.Any("producer", producer), zap.String("topic", topic), zap.Int("count", len(resources)))
 				if err := kafka.DoSend(producer, topic, -1, resources, logger); err != nil {
 					fail(fmt.Errorf("send to kafka: %w", err))
 				}
