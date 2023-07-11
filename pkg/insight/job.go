@@ -128,6 +128,7 @@ func (j Job) Do(client keibi.Client, steampipeOption *steampipe.Option, onboardC
 		}
 		steampipeConn, err := steampipe.NewSteampipeDatabase(*steampipeOption)
 		if err != nil {
+			logger.Error("failed to create steampipe connection", zap.Error(err))
 			fail(fmt.Errorf("failed to create steampipe connection: %w", err))
 			return
 		}
@@ -243,13 +244,15 @@ func (j Job) Do(client keibi.Client, steampipeOption *steampipe.Option, onboardC
 					fail(fmt.Errorf("send to kafka: %w", err))
 				}
 			} else {
+				logger.Error("failed to upload to s3", zap.Error(err))
 				fail(fmt.Errorf("uploading to s3: %w", err))
 			}
 		} else {
+			logger.Error("failed to marshal content", zap.Error(err))
 			fail(fmt.Errorf("building content: %w", err))
 		}
-
 	} else {
+		logger.Error("failed to query", zap.Error(err))
 		fail(fmt.Errorf("describe resources: %w", err))
 	}
 
