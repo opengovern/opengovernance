@@ -28,7 +28,7 @@ type Worker struct {
 	kfkTopic        string
 	s3Bucket        string
 	logger          *zap.Logger
-	steampipeOption steampipe.Option
+	steampipeOption *steampipe.Option
 	es              keibi.Client
 	pusher          *push.Pusher
 	onboardClient   client.OnboardServiceClient
@@ -107,12 +107,7 @@ func InitializeWorker(
 		Pass: steampipePassword,
 		Db:   steampipeDb,
 	}
-	w.steampipeOption = steampipeOption
-	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipeOption)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("Initialized steampipe database: ", steampipeConn)
+	w.steampipeOption = &steampipeOption
 
 	w.pusher = push.New(prometheusPushAddress, "insight-worker")
 	w.pusher.Collector(DoInsightJobsCount).

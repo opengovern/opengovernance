@@ -65,7 +65,7 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(client keibi.Client, steampipeOption steampipe.Option, onboardClient client.OnboardServiceClient, producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket, topic string, logger *zap.Logger) (r JobResult) {
+func (j Job) Do(client keibi.Client, steampipeOption *steampipe.Option, onboardClient client.OnboardServiceClient, producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket, topic string, logger *zap.Logger) (r JobResult) {
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
@@ -123,8 +123,16 @@ func (j Job) Do(client keibi.Client, steampipeOption steampipe.Option, onboardCl
 		query = strings.ReplaceAll(query, "$IS_ALL_CONNECTIONS_QUERY", isAllConnectionsQuery)
 		if j.IsStack == true {
 			steampipeOption.Host = fmt.Sprintf("%s-steampipe-service.%s.svc.cluster.local", j.SourceID, CurrentWorkspaceID)
+		} else {
+			steampipeOption.Host = SteampipeHost
 		}
-		steampipeConn, err := steampipe.NewSteampipeDatabase(steampipeOption)
+		steampipeConn, err := steampipe.NewSteampipeDatabase(*steampipeOption)
+		if err != nil {
+			fail(fmt.Errorf("failed to create steampipe connection: %w", err))
+			return
+		}
+		fmt.Println("Initialized steampipe database: ", *steampipeConn)
+
 		res, err = steampipeConn.QueryAll(query)
 		if res != nil {
 			count = int64(len(res.Data))
