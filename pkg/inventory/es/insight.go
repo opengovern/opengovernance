@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -170,15 +171,31 @@ func FetchInsightValueAtTime(client keibi.Client, t time.Time, connectors []sour
 		},
 	}
 
+	isStack := false
+	if len(connectionIDs) > 0 {
+		if strings.HasPrefix(connectionIDs[0], "stack-") {
+			isStack = true
+		}
+	}
+
 	queryJson, err := json.Marshal(query)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("query=", string(queryJson), "index=", es.InsightsIndex)
 	var response InsightResultQueryResponse
-	err = client.Search(context.Background(), es.InsightsIndex, string(queryJson), &response)
-	if err != nil {
-		return nil, err
+
+	if isStack {
+		fmt.Println("query=", string(queryJson), "index=", es.StacksInsightsIndex)
+		err = client.Search(context.Background(), es.StacksInsightsIndex, string(queryJson), &response)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		fmt.Println("query=", string(queryJson), "index=", es.InsightsIndex)
+		err = client.Search(context.Background(), es.InsightsIndex, string(queryJson), &response)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	result := make(map[uint][]es.InsightResource)
@@ -240,11 +257,28 @@ func FetchInsightValueAfter(client keibi.Client, t time.Time, connectors []sourc
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("query=", string(queryJson), "index=", es.InsightsIndex)
+
+	isStack := false
+	if len(connectionIDs) > 0 {
+		if strings.HasPrefix(connectionIDs[0], "stack-") {
+			isStack = true
+		}
+	}
+
 	var response InsightResultQueryResponse
-	err = client.Search(context.Background(), es.InsightsIndex, string(queryJson), &response)
-	if err != nil {
-		return nil, err
+
+	if isStack {
+		fmt.Println("query=", string(queryJson), "index=", es.StacksInsightsIndex)
+		err = client.Search(context.Background(), es.StacksInsightsIndex, string(queryJson), &response)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		fmt.Println("query=", string(queryJson), "index=", es.InsightsIndex)
+		err = client.Search(context.Background(), es.InsightsIndex, string(queryJson), &response)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	result := make(map[uint][]es.InsightResource)
@@ -352,11 +386,27 @@ func FetchInsightAggregatedPerQueryValuesBetweenTimes(client keibi.Client, start
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("query=", string(queryJson), "index=", es.InsightsIndex)
+
+	isStack := false
+	if len(connectionIDs) > 0 {
+		if strings.HasPrefix(connectionIDs[0], "stack-") {
+			isStack = true
+		}
+	}
+
 	var response InsightHistoryResultQueryResponse
-	err = client.Search(context.Background(), es.InsightsIndex, string(queryJson), &response)
-	if err != nil {
-		return nil, err
+	if isStack {
+		fmt.Println("query=", string(queryJson), "index=", es.StacksInsightsIndex)
+		err = client.Search(context.Background(), es.StacksInsightsIndex, string(queryJson), &response)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		fmt.Println("query=", string(queryJson), "index=", es.InsightsIndex)
+		err = client.Search(context.Background(), es.InsightsIndex, string(queryJson), &response)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	result := make(map[uint]map[int][]es.InsightResource)
