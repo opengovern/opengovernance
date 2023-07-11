@@ -260,7 +260,8 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 			docs = append(docs, finding)
 		}
 	}
-
+	_, index := docs[0].KeysAndIndex()
+	fmt.Println("++++++ kakfa topic and index: ", kfkTopic, index)
 	return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger)
 }
 
