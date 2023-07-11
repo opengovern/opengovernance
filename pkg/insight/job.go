@@ -186,8 +186,8 @@ func (j Job) Do(client keibi.Client, steampipeOption *steampipe.Option, onboardC
 			}
 		}
 	}
-	logger.Info("Got the results, uploading to s3")
 	if err == nil {
+		logger.Info("Got the results, uploading to s3")
 		objectName := fmt.Sprintf("%d-%d.out", j.InsightID, j.JobID)
 		content, err := json.Marshal(res)
 		if err == nil {
