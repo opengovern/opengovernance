@@ -800,9 +800,8 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			terrafromFile	formData	file		false	"File to upload"
+//	@Param			terraformFile	formData	file		false	"File to upload"
 //	@Param			tag				formData	string		false	"Tags Map[string][]string"
-//	@Param			resources		formData	[]string	false	"Additional Resources"
 //	@Param			config			formData	string		false	"Config json structure"
 //	@Success		200				{object}	api.Stack
 //	@Router			/schedule/api/v1/stacks/create [post]
@@ -814,12 +813,8 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 	}
 
 	var resources []string
-	// resourcesData := ctx.FormValue("resources")
-	// if resourcesData != "" {
-	// 	json.Unmarshal([]byte(resourcesData), &resources)
-	// }
 
-	file, err := ctx.FormFile("terrafromFile")
+	file, err := ctx.FormFile("terraformFile")
 	if err != nil {
 		if err.Error() != "http: no such file" {
 			return err
@@ -975,6 +970,8 @@ func (h HttpServer) ListStack(ctx echo.Context) error {
 			Resources:     []string(sr.Resources),
 			ResourceTypes: []string(sr.ResourceTypes),
 			Tags:          trimPrivateTags(sr.GetTagsMap()),
+			Status:        sr.Status,
+			SourceType:    sr.SourceType,
 			AccountIDs:    sr.AccountIDs,
 		}
 		stacks = append(stacks, stack)
@@ -1234,12 +1231,15 @@ func (h HttpServer) ListResourceStack(ctx echo.Context) error {
 	for _, sr := range stacksRecord {
 
 		stack := api.Stack{
-			StackID:    sr.StackID,
-			CreatedAt:  sr.CreatedAt,
-			UpdatedAt:  sr.UpdatedAt,
-			Resources:  []string(sr.Resources),
-			Tags:       trimPrivateTags(sr.GetTagsMap()),
-			AccountIDs: sr.AccountIDs,
+			StackID:       sr.StackID,
+			CreatedAt:     sr.CreatedAt,
+			UpdatedAt:     sr.UpdatedAt,
+			Resources:     []string(sr.Resources),
+			Tags:          trimPrivateTags(sr.GetTagsMap()),
+			AccountIDs:    sr.AccountIDs,
+			Status:        sr.Status,
+			SourceType:    sr.SourceType,
+			ResourceTypes: sr.ResourceTypes,
 		}
 		stacks = append(stacks, stack)
 	}
@@ -1301,7 +1301,7 @@ func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, insightJobs)
 }
 
-// TriggerInsightEvaluation godoc
+// TriggerStackInsight godoc
 //
 //	@Summary		Trigger stack insight evaluation
 //	@Description	Trigger an insight evaluation to run immediately on a stack with given details
