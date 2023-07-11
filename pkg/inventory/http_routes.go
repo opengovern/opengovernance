@@ -932,6 +932,9 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 
 	timeToCountMap := make(map[int]int)
 	esDatapointCount := int(math.Ceil(endTime.Sub(startTime).Hours() / 24))
+	if esDatapointCount == 0 {
+		esDatapointCount = 1
+	}
 	if len(connectionIDs) != 0 {
 		timeToCountMap, err = es.FetchConnectionResourceTypeTrendSummaryPage(h.client, connectionIDs, resourceTypeStrings, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
@@ -1290,6 +1293,9 @@ func (h *HttpHandler) ListResourcesRegionsTrend(ctx echo.Context) error {
 	}
 
 	esDatapointCount := int(endTime.Sub(startTime).Hours() / 24)
+	if esDatapointCount == 0 {
+		esDatapointCount = 1
+	}
 	timeToCountsMap, err := es.ConnectionResourceTypeRegionsTrendSummaryPage(h.client, connectors, connectionIDs, startTime, endTime, esDatapointCount, EsFetchPageSize)
 	if err != nil {
 		return err
@@ -1968,6 +1974,9 @@ func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 	}
 
 	esDataPointCount := int(endTime.Sub(startTime).Hours() / 24)
+	if esDataPointCount == 0 {
+		esDataPointCount = 1
+	}
 	timepointToCost, err := es.FetchDailyCostTrendBetween(h.client, connectionIDs, connectorTypes, startTime, endTime, esDataPointCount)
 	if err != nil {
 		return err
@@ -2445,6 +2454,9 @@ func (h *HttpHandler) GetServiceCostTrend(ctx echo.Context) error {
 	}
 
 	esDataPointCount := int(endTime.Sub(startTime).Hours() / 24)
+	if esDataPointCount == 0 {
+		esDataPointCount = 1
+	}
 	servicesTimepointToCost, err := es.FetchDailyCostTrendByServicesBetween(h.client, connectionIDs, connectorTypes, services, startTime, endTime, esDataPointCount)
 	if err != nil {
 		return err
