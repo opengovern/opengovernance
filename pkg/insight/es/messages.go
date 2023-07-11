@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	InsightsIndex = "insights"
+	InsightsIndex       = "insights"
+	StacksInsightsIndex = "stacks-insights"
 )
 
 type InsightResourceType string
@@ -71,5 +72,9 @@ func (r InsightResource) KeysAndIndex() ([]string, string) {
 		}
 	}
 
-	return keys, InsightsIndex
+	if strings.HasPrefix(r.SourceID, "stack-") {
+		return keys, StacksInsightsIndex
+	} else {
+		return keys, InsightsIndex
+	}
 }

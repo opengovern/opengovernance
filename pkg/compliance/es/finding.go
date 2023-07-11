@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 
@@ -14,7 +15,8 @@ import (
 )
 
 const (
-	FindingsIndex = "findings"
+	FindingsIndex      = "findings"
+	StackFindingsIndex = "stacks-findings"
 )
 
 type Finding struct {
@@ -39,12 +41,21 @@ type Finding struct {
 }
 
 func (r Finding) KeysAndIndex() ([]string, string) {
-	return []string{
-		r.ResourceID,
-		r.ConnectionID,
-		r.PolicyID,
-		strconv.FormatInt(r.DescribedAt, 10),
-	}, FindingsIndex
+	if strings.HasPrefix(r.ConnectionID, "stack-") {
+		return []string{
+			r.ResourceID,
+			r.ConnectionID,
+			r.PolicyID,
+			strconv.FormatInt(r.DescribedAt, 10),
+		}, StackFindingsIndex
+	} else {
+		return []string{
+			r.ResourceID,
+			r.ConnectionID,
+			r.PolicyID,
+			strconv.FormatInt(r.DescribedAt, 10),
+		}, FindingsIndex
+	}
 }
 
 type FindingsQueryResponse struct {
@@ -167,8 +178,19 @@ func FindingsQuery(client keibi.Client,
 		return nil, err
 	}
 
+	isStack := false
+	if len(connectionID) > 0 {
+		if strings.HasPrefix(connectionID[0], "stack-") {
+			isStack = true
+		}
+	}
+
 	var resp FindingsQueryResponse
-	err = client.SearchWithTrackTotalHits(context.Background(), FindingsIndex, string(b), &resp, true)
+	if isStack {
+		err = client.SearchWithTrackTotalHits(context.Background(), StackFindingsIndex, string(b), &resp, true)
+	} else {
+		err = client.SearchWithTrackTotalHits(context.Background(), FindingsIndex, string(b), &resp, true)
+	}
 	return &resp, err
 }
 
