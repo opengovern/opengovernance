@@ -3,11 +3,11 @@ package resourcebuilder
 import (
 	"time"
 
+	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
-	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 )
 
 type trendSummaryBuilder struct {
@@ -94,10 +94,6 @@ func (b *trendSummaryBuilder) Process(resource describe.LookupResource) {
 	v4 := b.providerResourceTypeSummary[key]
 	v4.ResourceCount++
 	b.providerResourceTypeSummary[key] = v4
-}
-
-func (b *trendSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error {
-	return nil
 }
 
 func (b *trendSummaryBuilder) Build() []kafka.Doc {

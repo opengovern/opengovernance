@@ -49,10 +49,6 @@ func (b *resourceSummaryBuilder) Process(resource describe.LookupResource) {
 	b.connectionSummary[resource.SourceID] = v
 }
 
-func (b *resourceSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error {
-	return nil
-}
-
 func (b *resourceSummaryBuilder) Build() []kafka.Doc {
 	var docs []kafka.Doc
 	for _, v := range b.connectionSummary {
@@ -62,58 +58,6 @@ func (b *resourceSummaryBuilder) Build() []kafka.Doc {
 		docs = append(docs, h)
 	}
 	return docs
-}
-
-type ConnectionResourceCountQueryResponse struct {
-	Hits ConnectionResourceCountQueryHits `json:"hits"`
-}
-type ConnectionResourceCountQueryHits struct {
-	Total keibi.SearchTotal                 `json:"total"`
-	Hits  []ConnectionResourceCountQueryHit `json:"hits"`
-}
-type ConnectionResourceCountQueryHit struct {
-	ID      string                        `json:"_id"`
-	Score   float64                       `json:"_score"`
-	Index   string                        `json:"_index"`
-	Type    string                        `json:"_type"`
-	Version int64                         `json:"_version,omitempty"`
-	Source  es.ConnectionResourcesSummary `json:"_source"`
-	Sort    []interface{}                 `json:"sort"`
-}
-
-func (b *resourceSummaryBuilder) queryConnectionResourceCount(scheduleJobID uint, connectionID string) (int, error) {
-	res := make(map[string]interface{})
-	var filters []interface{}
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"report_type": {es.ResourceSummary + "History"}},
-	})
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"schedule_job_id": {scheduleJobID}},
-	})
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"source_id": {connectionID}},
-	})
-	res["size"] = es.EsFetchPageSize
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
-			"filter": filters,
-		},
-	}
-	c, err := json.Marshal(res)
-	if err != nil {
-		return 0, err
-	}
-
-	var response ConnectionResourceCountQueryResponse
-	err = b.client.Search(context.Background(), es.ConnectionSummaryIndex, string(c), &response)
-	if err != nil {
-		return 0, err
-	}
-
-	if len(response.Hits.Hits) == 0 {
-		return 0, nil
-	}
-	return response.Hits.Hits[0].Source.ResourceCount, nil
 }
 
 func (b *resourceSummaryBuilder) Cleanup(summarizeJobID uint) error {
