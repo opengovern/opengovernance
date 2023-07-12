@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
@@ -49,30 +50,6 @@ func (b *resourceSummaryBuilder) Process(resource describe.LookupResource) {
 }
 
 func (b *resourceSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error {
-	jobIDs := []uint{lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID}
-	for connId, connSummary := range b.connectionSummary {
-		for idx, jid := range jobIDs {
-			if jid == 0 {
-				continue
-			}
-
-			r, err := b.queryConnectionResourceCount(jid, connId)
-			if err != nil {
-				return err
-			}
-
-			switch idx {
-			case 0:
-				connSummary.LastDayCount = &r
-			case 1:
-				connSummary.LastWeekCount = &r
-			case 2:
-				connSummary.LastQuarterCount = &r
-			case 3:
-				connSummary.LastYearCount = &r
-			}
-		}
-	}
 	return nil
 }
 

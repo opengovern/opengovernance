@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 )
 
@@ -79,56 +80,6 @@ func (b *resourceTypeSummaryBuilder) Process(resource describe.LookupResource) {
 }
 
 func (b *resourceTypeSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error {
-	jobIDs := []uint{lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID}
-	for k, connSummary := range b.connectionSummary {
-		for idx, jid := range jobIDs {
-			if jid == 0 {
-				continue
-			}
-
-			r, err := b.queryResourceTypeConnectionResourceCount(jid, connSummary.SourceID, connSummary.ResourceType)
-			if err != nil {
-				return err
-			}
-
-			switch idx {
-			case 0:
-				connSummary.LastDayCount = &r
-			case 1:
-				connSummary.LastWeekCount = &r
-			case 2:
-				connSummary.LastQuarterCount = &r
-			case 3:
-				connSummary.LastYearCount = &r
-			}
-		}
-		b.connectionSummary[k] = connSummary
-	}
-
-	for k, pSummary := range b.providerSummary {
-		for idx, jid := range jobIDs {
-			if jid == 0 {
-				continue
-			}
-
-			r, err := b.queryResourceTypeProviderResourceCount(jid, pSummary.SourceType, pSummary.ResourceType)
-			if err != nil {
-				return err
-			}
-
-			switch idx {
-			case 0:
-				pSummary.LastDayCount = &r
-			case 1:
-				pSummary.LastWeekCount = &r
-			case 2:
-				pSummary.LastQuarterCount = &r
-			case 3:
-				pSummary.LastYearCount = &r
-			}
-		}
-		b.providerSummary[k] = pSummary
-	}
 	return nil
 }
 

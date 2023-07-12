@@ -12,7 +12,6 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/go-redis/redis/v8"
 	"github.com/gogo/googleapis/google/rpc"
-	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
@@ -165,8 +164,6 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			Name:          resource.Name,
 			SourceType:    source.CloudAWS,
 			ResourceType:  strings.ToLower(resource.Job.ResourceType),
-			ServiceName:   cloudservice.ServiceNameByResourceType(resource.Job.ResourceType),
-			Category:      cloudservice.CategoryByResourceType(resource.Job.ResourceType),
 			ResourceGroup: "",
 			Location:      resource.Region,
 			SourceID:      resource.Job.SourceId,
@@ -174,7 +171,6 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			SourceJobID:   uint(resource.Job.ParentJobId),
 			ScheduleJobID: uint(resource.Job.ScheduleJobId),
 			CreatedAt:     resource.Job.DescribedAt,
-			IsCommon:      cloudservice.IsCommonByResourceType(resource.Job.ResourceType),
 			Tags:          tags,
 		}
 		kmsg, _ = json.Marshal(lookupResource)
@@ -261,8 +257,6 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 			Name:          resource.Name,
 			SourceType:    source.CloudAzure,
 			ResourceType:  strings.ToLower(resource.Job.ResourceType),
-			ServiceName:   cloudservice.ServiceNameByResourceType(resource.Job.ResourceType),
-			Category:      cloudservice.CategoryByResourceType(resource.Job.ResourceType),
 			ResourceGroup: resource.ResourceGroup,
 			Location:      resource.Location,
 			SourceID:      resource.Job.SourceId,
@@ -270,7 +264,6 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 			SourceJobID:   uint(resource.Job.ParentJobId),
 			ScheduleJobID: uint(resource.Job.ScheduleJobId),
 			CreatedAt:     resource.Job.DescribedAt,
-			IsCommon:      cloudservice.IsCommonByResourceType(resource.Job.ResourceType),
 			Tags:          tags,
 		}
 		kmsg, _ = json.Marshal(lookupResource)

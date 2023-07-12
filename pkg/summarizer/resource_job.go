@@ -108,9 +108,6 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 		resourcebuilder.NewTrendSummaryBuilder(client, j.JobID),
 		resourcebuilder.NewLocationSummaryBuilder(client, j.JobID),
 		resourcebuilder.NewResourceTypeSummaryBuilder(client, logger, db, j.JobID),
-		resourcebuilder.NewServiceSummaryBuilder(client, j.JobID),
-		resourcebuilder.NewCategorySummaryBuilder(client, j.JobID),
-		resourcebuilder.NewServiceLocationSummaryBuilder(client, j.JobID),
 	}
 	var searchAfter []interface{}
 	for {
