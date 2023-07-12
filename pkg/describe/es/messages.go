@@ -5,43 +5,13 @@ import (
 	"strings"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-
-	"github.com/google/uuid"
 )
 
 const (
-	InventorySummaryIndex       = "inventory_summary"
-	SourceResourcesSummaryIndex = "source_resources_summary"
+	InventorySummaryIndex = "inventory_summary"
 )
 
 type ResourceSummaryType string
-
-const (
-	ResourceSummaryTypeCompliancyTrend = "compliancy_trend"
-)
-
-type ResourceCompliancyTrendResource struct {
-	// SourceID is aws account id or azure subscription id
-	SourceID string `json:"source_id"`
-	// SourceType is the type of the source of the resource, i.e. AWS Cloud, Azure Cloud.
-	SourceType source.Type `json:"source_type"`
-	// ComplianceJobID is the ID that the Report was created for
-	ComplianceJobID uint `json:"compliance_job_id"`
-	// CompliantResourceCount is number of resources which is non-compliant
-	CompliantResourceCount int `json:"compliant_resource_count"`
-	// NonCompliantResourceCount is number of resources which is non-compliant
-	NonCompliantResourceCount int `json:"non_compliant_resource_count"`
-	// DescribedAt is when the resources is described
-	DescribedAt int64 `json:"described_at"`
-	// ResourceSummaryType of document
-	ResourceSummaryType ResourceSummaryType `json:"report_type"`
-}
-
-func (r ResourceCompliancyTrendResource) KeysAndIndex() ([]string, string) {
-	return []string{
-		uuid.New().String(),
-	}, SourceResourcesSummaryIndex
-}
 
 type Resource struct {
 	// ID is the globally unique ID of the resource.

@@ -108,9 +108,6 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 		resourcebuilder.NewTrendSummaryBuilder(client, j.JobID),
 		resourcebuilder.NewLocationSummaryBuilder(client, j.JobID),
 		resourcebuilder.NewResourceTypeSummaryBuilder(client, logger, db, j.JobID),
-		resourcebuilder.NewServiceSummaryBuilder(client, j.JobID),
-		resourcebuilder.NewCategorySummaryBuilder(client, j.JobID),
-		resourcebuilder.NewServiceLocationSummaryBuilder(client, j.JobID),
 	}
 	var searchAfter []interface{}
 	for {
@@ -157,11 +154,6 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 		}
 	}
 	logger.Info("processed cost lookup resources")
-	err := costBuilder.PopulateHistory(j.LastDayScheduleJobID, j.LastWeekScheduleJobID, j.LastQuarterScheduleJobID, j.LastYearScheduleJobID)
-	if err != nil {
-		fail(fmt.Errorf("Failed to populate history: %v ", err))
-	}
-	logger.Info("history populated")
 
 	var msgs []kafka.Doc
 	msgs = append(msgs, costBuilder.Build()...)
@@ -170,7 +162,7 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 	}
 	logger.Info("built messages", zap.Int("count", len(msgs)))
 
-	err = costBuilder.Cleanup(j.JobID)
+	err := costBuilder.Cleanup(j.JobID)
 	if err != nil {
 		fail(fmt.Errorf("Failed to cleanup: %v ", err))
 	}

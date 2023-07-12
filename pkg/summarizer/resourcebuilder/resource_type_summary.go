@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"go.uber.org/zap"
 )
 
@@ -78,60 +78,6 @@ func (b *resourceTypeSummaryBuilder) Process(resource describe.LookupResource) {
 	b.providerSummary[key] = v2
 }
 
-func (b *resourceTypeSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error {
-	jobIDs := []uint{lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID}
-	for k, connSummary := range b.connectionSummary {
-		for idx, jid := range jobIDs {
-			if jid == 0 {
-				continue
-			}
-
-			r, err := b.queryResourceTypeConnectionResourceCount(jid, connSummary.SourceID, connSummary.ResourceType)
-			if err != nil {
-				return err
-			}
-
-			switch idx {
-			case 0:
-				connSummary.LastDayCount = &r
-			case 1:
-				connSummary.LastWeekCount = &r
-			case 2:
-				connSummary.LastQuarterCount = &r
-			case 3:
-				connSummary.LastYearCount = &r
-			}
-		}
-		b.connectionSummary[k] = connSummary
-	}
-
-	for k, pSummary := range b.providerSummary {
-		for idx, jid := range jobIDs {
-			if jid == 0 {
-				continue
-			}
-
-			r, err := b.queryResourceTypeProviderResourceCount(jid, pSummary.SourceType, pSummary.ResourceType)
-			if err != nil {
-				return err
-			}
-
-			switch idx {
-			case 0:
-				pSummary.LastDayCount = &r
-			case 1:
-				pSummary.LastWeekCount = &r
-			case 2:
-				pSummary.LastQuarterCount = &r
-			case 3:
-				pSummary.LastYearCount = &r
-			}
-		}
-		b.providerSummary[k] = pSummary
-	}
-	return nil
-}
-
 func (b *resourceTypeSummaryBuilder) Build() []kafka.Doc {
 	var docs []kafka.Doc
 	for _, v := range b.connectionSummary {
@@ -162,116 +108,6 @@ func (b *resourceTypeSummaryBuilder) Build() []kafka.Doc {
 		docs = append(docs, h)
 	}
 	return docs
-}
-
-type ConnectionResourceTypeResourceCountQueryResponse struct {
-	Hits ConnectionResourceTypeResourceCountQueryHits `json:"hits"`
-}
-type ConnectionResourceTypeResourceCountQueryHits struct {
-	Total keibi.SearchTotal                             `json:"total"`
-	Hits  []ConnectionResourceTypeResourceCountQueryHit `json:"hits"`
-}
-type ConnectionResourceTypeResourceCountQueryHit struct {
-	ID      string                           `json:"_id"`
-	Score   float64                          `json:"_score"`
-	Index   string                           `json:"_index"`
-	Type    string                           `json:"_type"`
-	Version int64                            `json:"_version,omitempty"`
-	Source  es.ConnectionResourceTypeSummary `json:"_source"`
-	Sort    []interface{}                    `json:"sort"`
-}
-
-func (b *resourceTypeSummaryBuilder) queryResourceTypeConnectionResourceCount(scheduleJobID uint, connectionID string, resourceType string) (int, error) {
-	res := make(map[string]interface{})
-	var filters []interface{}
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"report_type": {es.ResourceTypeSummary + "History"}},
-	})
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"resource_type": {resourceType}},
-	})
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"schedule_job_id": {scheduleJobID}},
-	})
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"source_id": {connectionID}},
-	})
-	res["size"] = es.EsFetchPageSize
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
-			"filter": filters,
-		},
-	}
-	c, err := json.Marshal(res)
-	if err != nil {
-		return 0, err
-	}
-
-	var response ConnectionResourceTypeResourceCountQueryResponse
-	err = b.client.Search(context.Background(), es.ConnectionSummaryIndex, string(c), &response)
-	if err != nil {
-		return 0, err
-	}
-
-	if len(response.Hits.Hits) == 0 {
-		return 0, nil
-	}
-	return response.Hits.Hits[0].Source.ResourceCount, nil
-}
-
-type ProviderResourceTypeResourceCountQueryResponse struct {
-	Hits ProviderResourceTypeResourceCountQueryHits `json:"hits"`
-}
-type ProviderResourceTypeResourceCountQueryHits struct {
-	Total keibi.SearchTotal                           `json:"total"`
-	Hits  []ProviderResourceTypeResourceCountQueryHit `json:"hits"`
-}
-type ProviderResourceTypeResourceCountQueryHit struct {
-	ID      string                     `json:"_id"`
-	Score   float64                    `json:"_score"`
-	Index   string                     `json:"_index"`
-	Type    string                     `json:"_type"`
-	Version int64                      `json:"_version,omitempty"`
-	Source  es.ProviderCategorySummary `json:"_source"`
-	Sort    []interface{}              `json:"sort"`
-}
-
-func (b *resourceTypeSummaryBuilder) queryResourceTypeProviderResourceCount(scheduleJobID uint, provider source.Type, resourceType string) (int, error) {
-	res := make(map[string]interface{})
-	var filters []interface{}
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"report_type": {es.ResourceTypeProviderSummary + "History"}},
-	})
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"resource_type": {resourceType}},
-	})
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"schedule_job_id": {scheduleJobID}},
-	})
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"source_type": {provider.String()}},
-	})
-	res["size"] = es.EsFetchPageSize
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
-			"filter": filters,
-		},
-	}
-	c, err := json.Marshal(res)
-	if err != nil {
-		return 0, err
-	}
-
-	var response ProviderResourceTypeResourceCountQueryResponse
-	err = b.client.Search(context.Background(), es.ProviderSummaryIndex, string(c), &response)
-	if err != nil {
-		return 0, err
-	}
-
-	if len(response.Hits.Hits) == 0 {
-		return 0, nil
-	}
-	return response.Hits.Hits[0].Source.ResourceCount, nil
 }
 
 func (b *resourceTypeSummaryBuilder) Cleanup(summarizeJobID uint) error {

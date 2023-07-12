@@ -3,7 +3,6 @@ package es
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -11,7 +10,6 @@ import (
 	awsModel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	azureModel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
-	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/helpers"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
@@ -35,7 +33,6 @@ const (
 	CostResourceTypeAWSCostExplorerAccountCostMonthly CostResourceType = "aws::costexplorer::byaccountmonthly"
 	CostResourceTypeAWSCostExplorerServiceCostDaily   CostResourceType = "aws::costexplorer::byservicedaily"
 	CostResourceTypeAWSCostExplorerAccountCostDaily   CostResourceType = "aws::costexplorer::byaccountdaily"
-	CostResourceTypeAWSEBSVolume                      CostResourceType = "aws::ec2::volume"
 
 	CostResourceTypeAzureCostManagementCostByResourceType CostResourceType = "microsoft.costmanagement/costbyresourcetype"
 	CostResourceTypeAzureCostManagementCostBySubscription CostResourceType = "microsoft.costmanagement/costbysubscription"
@@ -50,7 +47,6 @@ var CostResourceTypeList = []CostResourceType{
 	CostResourceTypeAWSCostExplorerAccountCostMonthly,
 	CostResourceTypeAWSCostExplorerServiceCostDaily,
 	CostResourceTypeAWSCostExplorerAccountCostDaily,
-	CostResourceTypeAWSEBSVolume,
 	CostResourceTypeAzureCostManagementCostByResourceType,
 	CostResourceTypeAzureCostManagementCostBySubscription,
 }
@@ -66,8 +62,6 @@ func GetCostResourceTypeFromString(resourceType string) CostResourceType {
 		return CostResourceTypeAWSCostExplorerServiceCostDaily
 	case "aws::costexplorer::byaccountdaily":
 		return CostResourceTypeAWSCostExplorerAccountCostDaily
-	case "aws::ec2::volume":
-		return CostResourceTypeAWSEBSVolume
 	case "microsoft.costmanagement/costbyresourcetype":
 		return CostResourceTypeAzureCostManagementCostByResourceType
 	case "microsoft.costmanagement/costbysubscription":
@@ -80,7 +74,7 @@ func (c CostResourceType) GetProviderReportType() ProviderReportType {
 	switch c {
 	case CostResourceTypeAWSCostExplorerServiceCostMonthly, CostResourceTypeAWSCostExplorerAccountCostMonthly:
 		return CostServiceSummaryMonthly
-	case CostResourceTypeAWSCostExplorerServiceCostDaily, CostResourceTypeAWSCostExplorerAccountCostDaily, CostResourceTypeAWSEBSVolume:
+	case CostResourceTypeAWSCostExplorerServiceCostDaily, CostResourceTypeAWSCostExplorerAccountCostDaily:
 		return CostServiceSummaryDaily
 	case CostResourceTypeAzureCostManagementCostByResourceType, CostResourceTypeAzureCostManagementCostBySubscription:
 		return CostServiceSummaryDaily
@@ -127,17 +121,6 @@ func (c CostResourceType) GetCostAndUnitFromResource(costDescriptionObj any) (fl
 			return costFloat, "USD"
 		}
 		return costFloat, costUnit.(string)
-	case CostResourceTypeAWSEBSVolume:
-		var desc helpers.EBSCostDescription
-		jsonDesc, err := json.Marshal(costDescription)
-		if err != nil {
-			return 0, ""
-		}
-		err = json.Unmarshal(jsonDesc, &desc)
-		if err != nil {
-			return 0, ""
-		}
-		return desc.GetCost(), "USD"
 	}
 	return 0, ""
 }
@@ -226,32 +209,6 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 			ReportType:  CostConnectionSummaryDaily,
 		}
 		return connectionCostSummary, key, nil
-	case CostResourceTypeAWSEBSVolume:
-		jsonDesc, err := json.Marshal(resource.Description)
-		if err != nil {
-			return nil, "", err
-		}
-		desc := awsModel.EC2VolumeDescription{}
-		err = json.Unmarshal(jsonDesc, &desc)
-		if err != nil {
-			return nil, "", err
-		}
-		region, ok := resource.Metadata["region"]
-		if !ok {
-			re := regexp.MustCompile(`[a-z]$`)
-			region = re.ReplaceAllString(*desc.Volume.AvailabilityZone, "")
-			resource.Metadata["region"] = region
-		}
-		key := fmt.Sprintf("%s|%s|%s", resource.SourceID, region, *desc.Volume.VolumeId)
-		serviceCostSummary := &ServiceCostSummary{
-			ServiceName: string(CostResourceTypeAWSEBSVolume),
-			Cost:        desc,
-			PeriodStart: time.UnixMilli(lookupResource.CreatedAt).Truncate(24 * time.Hour).Unix(),
-			PeriodEnd:   time.UnixMilli(lookupResource.CreatedAt).Truncate(24 * time.Hour).Unix(),
-			ReportType:  CostServiceSummaryDaily,
-			Region:      &region,
-		}
-		return serviceCostSummary, key, nil
 	case CostResourceTypeAzureCostManagementCostByResourceType:
 		jsonDesc, err := json.Marshal(resource.Description)
 		if err != nil {

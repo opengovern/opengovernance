@@ -16,13 +16,10 @@ const (
 type ConnectionReportType string
 
 const (
-	ServiceSummary                     ConnectionReportType = "ServicePerSource"
-	CategorySummary                    ConnectionReportType = "CategoryPerSource"
 	ResourceSummary                    ConnectionReportType = "ResourcesPerSource"
 	ResourceTypeSummary                ConnectionReportType = "ResourceTypePerSource"
 	LocationConnectionSummary          ConnectionReportType = "LocationPerSource"
 	LocationConnectionSummaryHistory   ConnectionReportType = "LocationPerSourceHistory"
-	ServiceLocationConnectionSummary   ConnectionReportType = "ServiceLocationPerSource"
 	TrendConnectionSummary             ConnectionReportType = "TrendPerSourceHistory"
 	ResourceTypeTrendConnectionSummary ConnectionReportType = "ResourceTypeTrendPerSourceHistory"
 	CostConnectionSummaryMonthly       ConnectionReportType = "CostPerSource"
@@ -69,29 +66,6 @@ func (r ConnectionLocationSummary) KeysAndIndex() ([]string, string) {
 	keys := []string{
 		r.SourceID,
 		string(LocationConnectionSummary),
-	}
-	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
-	}
-	return keys, ConnectionSummaryIndex
-}
-
-type ConnectionServiceLocationSummary struct {
-	SummarizeJobID       uint                 `json:"summarize_job_id"`
-	ScheduleJobID        uint                 `json:"schedule_job_id"`
-	SourceID             string               `json:"source_id"`
-	SourceType           source.Type          `json:"source_type"`
-	SourceJobID          uint                 `json:"source_job_id"`
-	ServiceName          string               `json:"service_name"`
-	LocationDistribution map[string]int       `json:"location_distribution"`
-	ReportType           ConnectionReportType `json:"report_type"`
-}
-
-func (r ConnectionServiceLocationSummary) KeysAndIndex() ([]string, string) {
-	keys := []string{
-		r.ServiceName,
-		r.SourceID,
-		string(ServiceLocationConnectionSummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
 		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
@@ -167,64 +141,6 @@ func (r ConnectionResourceTypeSummary) KeysAndIndex() ([]string, string) {
 		r.ResourceType,
 		r.SourceID,
 		string(ResourceTypeSummary),
-	}
-	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
-	}
-	return keys, ConnectionSummaryIndex
-}
-
-type ConnectionServiceSummary struct {
-	SummarizeJobID   uint                 `json:"summarize_job_id"`
-	ScheduleJobID    uint                 `json:"schedule_job_id"`
-	SourceID         string               `json:"source_id"`
-	SourceJobID      uint                 `json:"source_job_id"`
-	ServiceName      string               `json:"service_name"`
-	ResourceType     string               `json:"resource_type"`
-	SourceType       source.Type          `json:"source_type"`
-	DescribedAt      int64                `json:"described_at"`
-	ResourceCount    int                  `json:"resource_count"`
-	LastDayCount     *int                 `json:"last_day_count"`
-	LastWeekCount    *int                 `json:"last_week_count"`
-	LastQuarterCount *int                 `json:"last_quarter_count"`
-	LastYearCount    *int                 `json:"last_year_count"`
-	ReportType       ConnectionReportType `json:"report_type"`
-}
-
-func (r ConnectionServiceSummary) KeysAndIndex() ([]string, string) {
-	keys := []string{
-		r.ServiceName,
-		r.SourceID,
-		string(ServiceSummary),
-	}
-	if strings.HasSuffix(string(r.ReportType), "History") {
-		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))
-	}
-	return keys, ConnectionSummaryIndex
-}
-
-type ConnectionCategorySummary struct {
-	SummarizeJobID   uint                 `json:"summarize_job_id"`
-	ScheduleJobID    uint                 `json:"schedule_job_id"`
-	SourceID         string               `json:"source_id"`
-	SourceJobID      uint                 `json:"source_job_id"`
-	CategoryName     string               `json:"category_name"`
-	ResourceType     string               `json:"resource_type"`
-	SourceType       source.Type          `json:"source_type"`
-	DescribedAt      int64                `json:"described_at"`
-	ResourceCount    int                  `json:"resource_count"`
-	LastDayCount     *int                 `json:"last_day_count"`
-	LastWeekCount    *int                 `json:"last_week_count"`
-	LastQuarterCount *int                 `json:"last_quarter_count"`
-	LastYearCount    *int                 `json:"last_year_count"`
-	ReportType       ConnectionReportType `json:"report_type"`
-}
-
-func (r ConnectionCategorySummary) KeysAndIndex() ([]string, string) {
-	keys := []string{
-		r.CategoryName,
-		r.SourceID,
-		string(CategorySummary),
 	}
 	if strings.HasSuffix(string(r.ReportType), "History") {
 		keys = append(keys, fmt.Sprintf("%d", r.SummarizeJobID))

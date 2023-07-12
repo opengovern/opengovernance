@@ -65,10 +65,6 @@ func (b *locationSummaryBuilder) Process(resource describe.LookupResource) {
 	b.providerSummary[resource.SourceType] = v2
 }
 
-func (b *locationSummaryBuilder) PopulateHistory(lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint) error {
-	return nil
-}
-
 func (b *locationSummaryBuilder) Build() []kafka.Doc {
 	var docs []kafka.Doc
 	for _, v := range b.connectionSummary {
