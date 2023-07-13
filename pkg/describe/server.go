@@ -801,9 +801,9 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			terraformFile	formData	file	false	"File to upload"
+//	@Param			terraformFile	formData	file	true	"File to upload"
 //	@Param			tag				formData	string	false	"Tags Map[string][]string"
-//	@Param			config			formData	string	false	"Config json structure"
+//	@Param			config			formData	string	true	"Config json structure"
 //	@Success		200				{object}	api.Stack
 //	@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
