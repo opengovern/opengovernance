@@ -1130,7 +1130,7 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			insightId	query		string	true	"InsightID"
+//	@Param			insightId	query		int 	true	"InsightID"
 //	@Param			startTime	query		int		false	"unix seconds for the start time of the trend"
 //	@Param			endTime		query		int		false	"unix seconds for the end time of the trend"
 //	@Param			stackId		path		string	true	"StackID"
@@ -1211,7 +1211,7 @@ func (h HttpServer) GetStackInsight(ctx echo.Context) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			insightIds	query		[]string	false	"Insight IDs to filter with. If empty, then all insights are returned"
+//	@Param			insightIds	query		[]int	false	"Insight IDs to filter with. If empty, then all insights are returned"
 //	@Param			startTime	query		int			false	"unix seconds for the start time of the trend"
 //	@Param			endTime		query		int			false	"unix seconds for the end time of the trend"
 //	@Param			stackId		path		string		true	"Stack ID"
@@ -1250,7 +1250,7 @@ func (h HttpServer) ListStackInsights(ctx echo.Context) error {
 		insightIds = []string{}
 		insights, err := h.Scheduler.complianceClient.ListInsightsMetadata(httpclient.FromEchoContext(ctx), []source.Type{stackRecord.SourceType})
 		if err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error for insight %s: %s", stackRecord.SourceType, err.Error()))
 		}
 		for _, insight := range insights {
 			insightIds = append(insightIds, string(insight.ID))
