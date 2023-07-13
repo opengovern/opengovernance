@@ -986,7 +986,6 @@ func (h HttpServer) ListStack(ctx echo.Context) error {
 //	@Description	Delete a stack by ID
 //	@Security		BearerToken
 //	@Tags			stack
-//	@Cli			delete-stack
 //	@Accept			json
 //	@Produce		json
 //	@Param			stackId	path	string	true	"StackID"
