@@ -1247,6 +1247,7 @@ func (h HttpServer) ListStackInsights(ctx echo.Context) error {
 
 	insightIds := httpserver.QueryArrayParam(ctx, "insightIds")
 	if len(insightIds) == 0 {
+		insightIds = []string{}
 		insights, err := h.Scheduler.complianceClient.ListInsightsMetadata(httpclient.FromEchoContext(ctx), []source.Type{stackRecord.SourceType})
 		if err != nil {
 			return err
@@ -1294,6 +1295,7 @@ func (h HttpServer) ListStackInsights(ctx echo.Context) error {
 		}
 		insight.Results = filteredResults
 		insight.TotalResultValue = &totalResaults
+		insights = append(insights, insight)
 	}
 	return ctx.JSON(http.StatusOK, insights)
 }
