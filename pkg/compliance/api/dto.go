@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 type BenchmarkAssignment struct {
@@ -123,27 +123,21 @@ type Datapoint struct {
 }
 
 type GetBenchmarksSummaryResponse struct {
-	BenchmarkSummary []BenchmarkSummary `json:"benchmarkSummary"`
+	BenchmarkSummary []BenchmarkEvaluationSummary `json:"benchmarkSummary"`
 
-	PassedResources int64 `json:"passedResources"`
-	FailedResources int64 `json:"failedResources"`
-	TotalAssets     int64 `json:"totalAssets"`
+	TotalResult types.ComplianceResultSummary `json:"totalResult"`
+	TotalChecks types.SeverityResult          `json:"totalChecks"`
 }
 
-type BenchmarkSummary struct {
-	ID              string                        `json:"id" example:"azure_cis_v140"`                                                                                                                                                       // Benchmark ID
-	Title           string                        `json:"title" example:"Azure CIS v1.4.0"`                                                                                                                                                  // Benchmark title
-	Description     string                        `json:"description" example:"The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."` // Benchmark description
-	Connectors      []source.Type                 `json:"connectors" example:"[Azure]"`                                                                                                                                                      // Cloud providers
-	Tags            map[string][]string           `json:"tags" `                                                                                                                                                                             // Tags
-	Enabled         bool                          `json:"enabled" example:"true"`                                                                                                                                                            // Enabled
-	Result          types.ComplianceResultSummary `json:"result"`                                                                                                                                                                            // Compliance result summary
-	Checks          types.SeverityResult          `json:"checks"`                                                                                                                                                                            // Checks summary
-	Coverage        float64                       `json:"coverage" example:"100"`                                                                                                                                                            // Coverage
-	CompliancyTrend []Datapoint                   `json:"compliancyTrend"`                                                                                                                                                                   // Compliancy trend data points
-
-	PassedResources int64 `json:"passedResources" example:"24"` // Number of passed resources
-	FailedResources int64 `json:"failedResources" example:"1"`  // Number of failed resources
+type BenchmarkEvaluationSummary struct {
+	ID          string                        `json:"id" example:"azure_cis_v140"`                                                                                                                                                       // Benchmark ID
+	Title       string                        `json:"title" example:"Azure CIS v1.4.0"`                                                                                                                                                  // Benchmark title
+	Description string                        `json:"description" example:"The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive guidance for establishing a secure baseline configuration for Microsoft Azure."` // Benchmark description
+	Connectors  []source.Type                 `json:"connectors" example:"[Azure]"`                                                                                                                                                      // Cloud providers
+	Tags        map[string][]string           `json:"tags" `                                                                                                                                                                             // Tags
+	Enabled     bool                          `json:"enabled" example:"true"`                                                                                                                                                            // Enabled
+	Result      types.ComplianceResultSummary `json:"result"`                                                                                                                                                                            // Compliance result summary
+	Checks      types.SeverityResult          `json:"checks"`                                                                                                                                                                            // Checks summary
 }
 
 type ResultDatapoint struct {

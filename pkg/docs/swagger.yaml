@@ -787,24 +787,12 @@ definitions:
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend:
-    properties:
-      resultTrend:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResultDatapoint'
-        type: array
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSummary:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary:
     properties:
       checks:
         allOf:
         - $ref: '#/definitions/types.SeverityResult'
         description: Checks summary
-      compliancyTrend:
-        description: Compliancy trend data points
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Datapoint'
-        type: array
       connectors:
         description: Cloud providers
         example:
@@ -812,10 +800,6 @@ definitions:
         items:
           $ref: '#/definitions/source.Type'
         type: array
-      coverage:
-        description: Coverage
-        example: 100
-        type: number
       description:
         description: Benchmark description
         example: The CIS Microsoft Azure Foundations Security Benchmark provides prescriptive
@@ -826,18 +810,10 @@ definitions:
         description: Enabled
         example: true
         type: boolean
-      failedResources:
-        description: Number of failed resources
-        example: 1
-        type: integer
       id:
         description: Benchmark ID
         example: azure_cis_v140
         type: string
-      passedResources:
-        description: Number of passed resources
-        example: 24
-        type: integer
       result:
         allOf:
         - $ref: '#/definitions/types.ComplianceResultSummary'
@@ -853,6 +829,13 @@ definitions:
         description: Benchmark title
         example: Azure CIS v1.4.0
         type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend:
+    properties:
+      resultTrend:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResultDatapoint'
+        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree:
     properties:
@@ -904,15 +887,6 @@ definitions:
     - ComplianceReportJobInProgress
     - ComplianceReportJobCompletedWithFailure
     - ComplianceReportJobCompleted
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Datapoint:
-    properties:
-      time:
-        description: Time
-        type: integer
-      value:
-        description: Value
-        type: integer
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType:
     enum:
     - asc
@@ -1017,14 +991,12 @@ definitions:
     properties:
       benchmarkSummary:
         items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSummary'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary'
         type: array
-      failedResources:
-        type: integer
-      passedResources:
-        type: integer
-      totalAssets:
-        type: integer
+      totalChecks:
+        $ref: '#/definitions/types.SeverityResult'
+      totalResult:
+        $ref: '#/definitions/types.ComplianceResultSummary'
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsMetricsResponse:
     properties:
@@ -3898,104 +3870,6 @@ paths:
       summary: Get all benchmark assignments with source id
       tags:
       - benchmarks_assignment
-  /compliance/api/v1/benchmark/{benchmark_id}/summary:
-    get:
-      consumes:
-      - application/json
-      description: This API enables users to retrieve a summary of a benchmark and
-        its associated checks and results. Users can use this API to obtain an overview
-        of the benchmark, including its name, description, and other relevant information,
-        as well as the checks and their corresponding results.
-      parameters:
-      - description: Benchmark ID
-        in: path
-        name: benchmark_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSummary'
-      security:
-      - BearerToken: []
-      summary: Get benchmark summary
-      tags:
-      - compliance
-  /compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend:
-    get:
-      consumes:
-      - application/json
-      description: This API allows users to retrieve datapoints of compliance severities
-        over a specified time period, enabling users to keep track of and monitor
-        changes in compliance.
-      parameters:
-      - description: Start time
-        in: query
-        name: start
-        required: true
-        type: integer
-      - description: End time
-        in: query
-        name: end
-        required: true
-        type: integer
-      - description: Benchmark ID
-        in: path
-        name: benchmark_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend'
-      security:
-      - BearerToken: []
-      summary: Get compliance result trend
-      tags:
-      - compliance
-  /compliance/api/v1/benchmark/{benchmark_id}/tree:
-    get:
-      consumes:
-      - application/json
-      description: This API retrieves the benchmark tree, including all of its child
-        benchmarks. Users can use this API to obtain a comprehensive overview of the
-        benchmarks within a particular category or hierarchy.
-      parameters:
-      - description: Benchmark ID
-        in: path
-        name: benchmark_id
-        required: true
-        type: string
-      - collectionFormat: csv
-        description: Status
-        in: query
-        items:
-          enum:
-          - passed
-          - failed
-          - unknown
-          type: string
-        name: status
-        required: true
-        type: array
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
-      security:
-      - BearerToken: []
-      summary: Get benchmark tree
-      tags:
-      - compliance
   /compliance/api/v1/benchmarks:
     get:
       consumes:
@@ -4071,6 +3945,111 @@ paths:
       summary: List Benchmark Policies
       tags:
       - compliance
+  /compliance/api/v1/benchmarks/{benchmark_id}/summary:
+    get:
+      consumes:
+      - application/json
+      description: This API enables users to retrieve a summary of a benchmark and
+        its associated checks and results. Users can use this API to obtain an overview
+        of the benchmark, including its name, description, and other relevant information,
+        as well as the checks and their corresponding results.
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary'
+      security:
+      - BearerToken: []
+      summary: Get benchmark summary
+      tags:
+      - compliance
+  /compliance/api/v1/benchmarks/{benchmark_id}/summary/result/trend:
+    get:
+      consumes:
+      - application/json
+      description: This API allows users to retrieve datapoints of compliance severities
+        over a specified time period, enabling users to keep track of and monitor
+        changes in compliance.
+      parameters:
+      - description: Start time
+        in: query
+        name: start
+        required: true
+        type: integer
+      - description: End time
+        in: query
+        name: end
+        required: true
+        type: integer
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend'
+      security:
+      - BearerToken: []
+      summary: Get compliance result trend
+      tags:
+      - compliance
+  /compliance/api/v1/benchmarks/{benchmark_id}/tree:
+    get:
+      consumes:
+      - application/json
+      description: This API retrieves the benchmark tree, including all of its child
+        benchmarks. Users can use this API to obtain a comprehensive overview of the
+        benchmarks within a particular category or hierarchy.
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: Status
+        in: query
+        items:
+          enum:
+          - passed
+          - failed
+          - unknown
+          type: string
+        name: status
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
+      security:
+      - BearerToken: []
+      summary: Get benchmark tree
+      tags:
+      - compliance
   /compliance/api/v1/benchmarks/policies/{policy_id}:
     get:
       consumes:
@@ -4106,16 +4085,13 @@ paths:
         their names, descriptions, and other relevant information, as well as the
         checks and their corresponding results within the specified time period.
       parameters:
-      - description: Start Time
+      - collectionFormat: csv
+        description: Connection IDs to filter by
         in: query
-        name: start
-        required: true
-        type: integer
-      - description: End Time
-        in: query
-        name: end
-        required: true
-        type: integer
+        items:
+          type: string
+        name: connectionId
+        type: array
       produces:
       - application/json
       responses:

@@ -287,38 +287,17 @@ func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			start	query		int64	true	"Start Time"
-//	@Param			end		query		int64	true	"End Time"
-//	@Success		200		{object}	api.GetBenchmarksSummaryResponse
+//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Success		200				{object}	api.GetBenchmarksSummaryResponse
 //	@Router			/compliance/api/v1/benchmarks/summary [get]
 func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
-	startDateStr := ctx.QueryParam("start")
-	endDateStr := ctx.QueryParam("end")
-	if startDateStr == "" || endDateStr == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "start & end query params are required")
-	}
-	startDate, err := strconv.ParseInt(startDateStr, 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	endDate, err := strconv.ParseInt(endDateStr, 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	_, _ = startDate, endDate
-
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	var response api.GetBenchmarksSummaryResponse
 	benchmarks, err := h.db.ListRootBenchmarks()
 	if err != nil {
 		return err
 	}
 
-	totalWorkspaceAssets, err := h.inventoryClient.CountResources(httpclient.FromEchoContext(ctx))
-	if err != nil {
-		return err
-	}
-
-	summ := ShortSummary{}
 	for _, b := range benchmarks {
 		be := b.ToApi()
 		err = b.PopulateConnectors(h.db, &be)
@@ -326,75 +305,36 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 			return err
 		}
 
-		s, err := GetShortSummary(h.client, h.db, b)
+		s, err := getBenchmarkEvaluationSummary(h.client, h.db, b, connectionIDs)
 		if err != nil {
 			return err
 		}
 
-		var totalBenchmarkCoveredAssets int64
-		for _, conn := range s.ConnectionIDs {
-			count, err := h.inventoryClient.GetAccountsResourceCount(httpclient.FromEchoContext(ctx), source.Nil, &conn)
-			if err != nil {
-				return err
-			}
-			totalBenchmarkCoveredAssets += int64(count[0].ResourceCount)
-		}
-
-		coverage := 100.0
-		if totalWorkspaceAssets > 0 {
-			coverage = float64(totalBenchmarkCoveredAssets) / float64(totalWorkspaceAssets) * 100.0
-		}
-
-		trend, err := h.BuildBenchmarkResultTrend(b, startDate, endDate)
-		if err != nil {
-			return err
-		}
-
-		var ctrend []api.Datapoint
-		for _, v := range trend {
-			ctrend = append(ctrend, api.Datapoint{
-				Time:  v.Time,
-				Value: int64(v.Result.PassedCount),
-			})
-		}
-
-		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkSummary{
-			ID:              b.ID,
-			Title:           b.Title,
-			Description:     b.Description,
-			Connectors:      be.Connectors,
-			Tags:            be.Tags,
-			Enabled:         b.Enabled,
-			Result:          s.Result,
-			Checks:          s.Checks,
-			Coverage:        coverage,
-			CompliancyTrend: ctrend,
-			PassedResources: int64(len(s.PassedResourceIDs)),
-			FailedResources: int64(len(s.FailedResourceIDs)),
+		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkEvaluationSummary{
+			ID:          b.ID,
+			Title:       b.Title,
+			Description: b.Description,
+			Connectors:  be.Connectors,
+			Tags:        be.Tags,
+			Enabled:     b.Enabled,
+			Result:      s.Result,
+			Checks:      s.Checks,
 		})
-		summ.PassedResourceIDs = append(summ.PassedResourceIDs, s.PassedResourceIDs...)
-		summ.FailedResourceIDs = append(summ.FailedResourceIDs, s.FailedResourceIDs...)
-		summ.ConnectionIDs = append(summ.ConnectionIDs, s.ConnectionIDs...)
-	}
-	summ.PassedResourceIDs = UniqueArray(summ.PassedResourceIDs, func(t, t2 string) bool {
-		return t == t2
-	})
-	summ.FailedResourceIDs = UniqueArray(summ.FailedResourceIDs, func(t, t2 string) bool {
-		return t == t2
-	})
-	summ.ConnectionIDs = UniqueArray(summ.ConnectionIDs, func(t, t2 string) bool {
-		return t == t2
-	})
 
-	response.PassedResources = int64(len(summ.PassedResourceIDs))
-	response.FailedResources = int64(len(summ.FailedResourceIDs))
-	for _, conn := range summ.ConnectionIDs {
-		count, err := h.inventoryClient.GetAccountsResourceCount(httpclient.FromEchoContext(ctx), source.Nil, &conn)
-		if err != nil {
-			return err
-		}
-		response.TotalAssets += int64(count[0].ResourceCount)
+		response.TotalResult.OkCount += s.Result.OkCount
+		response.TotalResult.AlarmCount += s.Result.AlarmCount
+		response.TotalResult.InfoCount += s.Result.InfoCount
+		response.TotalResult.SkipCount += s.Result.SkipCount
+		response.TotalResult.ErrorCount += s.Result.ErrorCount
+
+		response.TotalChecks.UnknownCount += s.Checks.UnknownCount
+		response.TotalChecks.PassedCount += s.Checks.PassedCount
+		response.TotalChecks.LowCount += s.Checks.LowCount
+		response.TotalChecks.MediumCount += s.Checks.MediumCount
+		response.TotalChecks.HighCount += s.Checks.HighCount
+		response.TotalChecks.CriticalCount += s.Checks.CriticalCount
 	}
+
 	return ctx.JSON(http.StatusOK, response)
 }
 
@@ -406,10 +346,12 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id	path		string	true	"Benchmark ID"
-//	@Success		200				{object}	api.BenchmarkSummary
-//	@Router			/compliance/api/v1/benchmark/{benchmark_id}/summary [get]
+//	@Param			benchmark_id	path		string		true	"Benchmark ID"
+//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Success		200				{object}	api.BenchmarkEvaluationSummary
+//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	benchmarkID := ctx.Param("benchmark_id")
 
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
@@ -421,47 +363,26 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
 	}
 
-	totalWorkspaceAssets, err := h.inventoryClient.CountResources(httpclient.FromEchoContext(ctx))
-	if err != nil {
-		return err
-	}
-
 	be := benchmark.ToApi()
 	err = benchmark.PopulateConnectors(h.db, &be)
 	if err != nil {
 		return err
 	}
 
-	s, err := GetShortSummary(h.client, h.db, *benchmark)
+	s, err := getBenchmarkEvaluationSummary(h.client, h.db, *benchmark, connectionIDs)
 	if err != nil {
 		return err
 	}
 
-	var totalBenchmarkCoveredAssets int64
-	for _, conn := range s.ConnectionIDs {
-		count, err := h.inventoryClient.GetAccountsResourceCount(httpclient.FromEchoContext(ctx), source.Nil, &conn)
-		if err != nil {
-			return err
-		}
-		totalBenchmarkCoveredAssets += int64(count[0].ResourceCount)
-	}
-
-	coverage := 100.0
-	if totalWorkspaceAssets > 0 {
-		coverage = float64(totalBenchmarkCoveredAssets) / float64(totalWorkspaceAssets) * 100.0
-	}
-	response := api.BenchmarkSummary{
-		ID:              benchmark.ID,
-		Title:           benchmark.Title,
-		Description:     benchmark.Description,
-		Connectors:      be.Connectors,
-		Tags:            be.Tags,
-		Enabled:         benchmark.Enabled,
-		Result:          s.Result,
-		Checks:          s.Checks,
-		Coverage:        coverage,
-		PassedResources: int64(len(s.PassedResourceIDs)),
-		FailedResources: int64(len(s.FailedResourceIDs)),
+	response := api.BenchmarkEvaluationSummary{
+		ID:          benchmark.ID,
+		Title:       benchmark.Title,
+		Description: benchmark.Description,
+		Connectors:  be.Connectors,
+		Tags:        be.Tags,
+		Enabled:     benchmark.Enabled,
+		Result:      s.Result,
+		Checks:      s.Checks,
 	}
 	return ctx.JSON(http.StatusOK, response)
 }
@@ -478,7 +399,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 //	@Param			end				query		int64	true	"End time"
 //	@Param			benchmark_id	path		string	true	"Benchmark ID"
 //	@Success		200				{object}	api.BenchmarkResultTrend
-//	@Router			/compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend [get]
+//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/summary/result/trend [get]
 func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
 	startDateStr := ctx.QueryParam("start")
 	endDateStr := ctx.QueryParam("end")
@@ -525,7 +446,7 @@ func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
 //	@Param			benchmark_id	path		string		true	"Benchmark ID"
 //	@Param			status			query		[]string	true	"Status"	Enums(passed,failed,unknown)
 //	@Success		200				{object}	api.BenchmarkTree
-//	@Router			/compliance/api/v1/benchmark/{benchmark_id}/tree [get]
+//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/tree [get]
 func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
 	var status []types.PolicyStatus
 	benchmarkID := ctx.Param("benchmark_id")

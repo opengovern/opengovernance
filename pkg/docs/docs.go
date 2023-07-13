@@ -911,147 +911,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/benchmark/{benchmark_id}/summary": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "This API enables users to retrieve a summary of a benchmark and its associated checks and results. Users can use this API to obtain an overview of the benchmark, including its name, description, and other relevant information, as well as the checks and their corresponding results.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Get benchmark summary",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Benchmark ID",
-                        "name": "benchmark_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSummary"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmark/{benchmark_id}/summary/result/trend": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "This API allows users to retrieve datapoints of compliance severities over a specified time period, enabling users to keep track of and monitor changes in compliance.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Get compliance result trend",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Start time",
-                        "name": "start",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "End time",
-                        "name": "end",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Benchmark ID",
-                        "name": "benchmark_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmark/{benchmark_id}/tree": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "This API retrieves the benchmark tree, including all of its child benchmarks. Users can use this API to obtain a comprehensive overview of the benchmarks within a particular category or hierarchy.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Get benchmark tree",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Benchmark ID",
-                        "name": "benchmark_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "passed",
-                                "failed",
-                                "unknown"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Status",
-                        "name": "status",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree"
-                        }
-                    }
-                }
-            }
-        },
         "/compliance/api/v1/benchmarks": {
             "get": {
                 "security": [
@@ -1140,18 +999,14 @@ const docTemplate = `{
                 "summary": "List benchmarks summaries",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Start Time",
-                        "name": "start",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "End Time",
-                        "name": "end",
-                        "in": "query",
-                        "required": true
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1236,6 +1091,157 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/benchmarks/{benchmark_id}/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "This API enables users to retrieve a summary of a benchmark and its associated checks and results. Users can use this API to obtain an overview of the benchmark, including its name, description, and other relevant information, as well as the checks and their corresponding results.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get benchmark summary",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/benchmarks/{benchmark_id}/summary/result/trend": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "This API allows users to retrieve datapoints of compliance severities over a specified time period, enabling users to keep track of and monitor changes in compliance.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get compliance result trend",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Start time",
+                        "name": "start",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "End time",
+                        "name": "end",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/benchmarks/{benchmark_id}/tree": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "This API retrieves the benchmark tree, including all of its child benchmarks. Users can use this API to obtain a comprehensive overview of the benchmarks within a particular category or hierarchy.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get benchmark tree",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "passed",
+                                "failed",
+                                "unknown"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Status",
+                        "name": "status",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree"
                         }
                     }
                 }
@@ -7924,18 +7930,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend": {
-            "type": "object",
-            "properties": {
-                "resultTrend": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResultDatapoint"
-                    }
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSummary": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary": {
             "type": "object",
             "properties": {
                 "checks": {
@@ -7945,13 +7940,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/types.SeverityResult"
                         }
                     ]
-                },
-                "compliancyTrend": {
-                    "description": "Compliancy trend data points",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Datapoint"
-                    }
                 },
                 "connectors": {
                     "description": "Cloud providers",
@@ -7963,11 +7951,6 @@ const docTemplate = `{
                         "[Azure]"
                     ]
                 },
-                "coverage": {
-                    "description": "Coverage",
-                    "type": "number",
-                    "example": 100
-                },
                 "description": {
                     "description": "Benchmark description",
                     "type": "string",
@@ -7978,20 +7961,10 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
-                "failedResources": {
-                    "description": "Number of failed resources",
-                    "type": "integer",
-                    "example": 1
-                },
                 "id": {
                     "description": "Benchmark ID",
                     "type": "string",
                     "example": "azure_cis_v140"
-                },
-                "passedResources": {
-                    "description": "Number of passed resources",
-                    "type": "integer",
-                    "example": 24
                 },
                 "result": {
                     "description": "Compliance result summary",
@@ -8015,6 +7988,17 @@ const docTemplate = `{
                     "description": "Benchmark title",
                     "type": "string",
                     "example": "Azure CIS v1.4.0"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend": {
+            "type": "object",
+            "properties": {
+                "resultTrend": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResultDatapoint"
+                    }
                 }
             }
         },
@@ -8088,19 +8072,6 @@ const docTemplate = `{
                 "ComplianceReportJobCompletedWithFailure",
                 "ComplianceReportJobCompleted"
             ]
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Datapoint": {
-            "type": "object",
-            "properties": {
-                "time": {
-                    "description": "Time",
-                    "type": "integer"
-                },
-                "value": {
-                    "description": "Value",
-                    "type": "integer"
-                }
-            }
         },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType": {
             "type": "string",
@@ -8249,17 +8220,14 @@ const docTemplate = `{
                 "benchmarkSummary": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkSummary"
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary"
                     }
                 },
-                "failedResources": {
-                    "type": "integer"
+                "totalChecks": {
+                    "$ref": "#/definitions/types.SeverityResult"
                 },
-                "passedResources": {
-                    "type": "integer"
-                },
-                "totalAssets": {
-                    "type": "integer"
+                "totalResult": {
+                    "$ref": "#/definitions/types.ComplianceResultSummary"
                 }
             }
         },
@@ -11530,6 +11498,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

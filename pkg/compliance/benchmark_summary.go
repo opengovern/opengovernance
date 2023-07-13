@@ -10,23 +10,20 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )
 
-type ShortSummary struct {
-	PassedResourceIDs []string
-	FailedResourceIDs []string
-	ConnectionIDs     []string
-	Result            types.ComplianceResultSummary
-	Checks            types.SeverityResult
+type BenchmarkEvaluationSummary struct {
+	Result types.ComplianceResultSummary
+	Checks types.SeverityResult
 }
 
-func GetShortSummary(client keibi.Client, db db.Database, benchmark db.Benchmark) (ShortSummary, error) {
-	resp := ShortSummary{}
+func getBenchmarkEvaluationSummary(client keibi.Client, db db.Database, benchmark db.Benchmark, connectionIds []string) (BenchmarkEvaluationSummary, error) {
+	resp := BenchmarkEvaluationSummary{}
 	for _, child := range benchmark.Children {
 		childBenchmark, err := db.GetBenchmark(child.ID)
 		if err != nil {
 			return resp, err
 		}
 
-		s, err := GetShortSummary(client, db, *childBenchmark)
+		s, err := getBenchmarkEvaluationSummary(client, db, *childBenchmark, connectionIds)
 		if err != nil {
 			return resp, err
 		}
@@ -43,77 +40,32 @@ func GetShortSummary(client keibi.Client, db db.Database, benchmark db.Benchmark
 		resp.Checks.HighCount += s.Checks.HighCount
 		resp.Checks.MediumCount += s.Checks.MediumCount
 		resp.Checks.LowCount += s.Checks.LowCount
-
-		resp.FailedResourceIDs = append(resp.FailedResourceIDs, s.FailedResourceIDs...)
-		resp.PassedResourceIDs = append(resp.PassedResourceIDs, s.PassedResourceIDs...)
-		resp.ConnectionIDs = append(resp.ConnectionIDs, s.ConnectionIDs...)
 	}
 
-	res, err := query.ListBenchmarkSummaries(client, &benchmark.ID)
+	res, err := query.FetchLiveBenchmarkAggregatedFindings(client, &benchmark.ID, connectionIds)
 	if err != nil {
 		return resp, err
 	}
 
-	for _, summ := range res {
-		for _, policy := range summ.Policies {
-			p, err := db.GetPolicy(policy.PolicyID)
-			if err != nil {
-				return resp, err
-			}
-
-			for _, resource := range policy.Resources {
-				switch resource.Result {
-				case types.ComplianceResultOK:
-					resp.Checks.PassedCount++
-					resp.Result.OkCount++
-				case types.ComplianceResultALARM:
-					resp.Checks.IncreaseBySeverity(p.Severity)
-					resp.Result.AlarmCount++
-				case types.ComplianceResultINFO:
-					resp.Checks.UnknownCount++
-					resp.Result.InfoCount++
-				case types.ComplianceResultSKIP:
-					resp.Checks.UnknownCount++
-					resp.Result.SkipCount++
-				case types.ComplianceResultERROR:
-					resp.Checks.IncreaseBySeverity(p.Severity)
-					resp.Result.ErrorCount++
-				}
-
-				if resource.Result.IsPassed() {
-					resp.PassedResourceIDs = append(resp.PassedResourceIDs, resource.ResourceID)
-				} else {
-					resp.FailedResourceIDs = append(resp.FailedResourceIDs, resource.ResourceID)
-				}
-				resp.ConnectionIDs = append(resp.ConnectionIDs, resource.SourceID)
-			}
+	for policyId, resultCounts := range res {
+		p, err := db.GetPolicy(policyId)
+		if err != nil {
+			return resp, err
 		}
+
+		resp.Result.OkCount += resultCounts[types.ComplianceResultOK]
+		resp.Result.AlarmCount += resultCounts[types.ComplianceResultALARM]
+		resp.Result.InfoCount += resultCounts[types.ComplianceResultINFO]
+		resp.Result.SkipCount += resultCounts[types.ComplianceResultSKIP]
+		resp.Result.ErrorCount += resultCounts[types.ComplianceResultERROR]
+
+		resp.Checks.PassedCount += resultCounts[types.ComplianceResultOK]
+		resp.Checks.IncreaseBySeverityByAmount(p.Severity, resultCounts[types.ComplianceResultALARM])
+		resp.Checks.UnknownCount += resultCounts[types.ComplianceResultINFO]
+		resp.Checks.UnknownCount += resultCounts[types.ComplianceResultSKIP]
+		resp.Checks.IncreaseBySeverityByAmount(p.Severity, resultCounts[types.ComplianceResultERROR])
 	}
 
-	resp.PassedResourceIDs = UniqueArray(resp.PassedResourceIDs, func(t, t2 string) bool {
-		return t == t2
-	})
-	resp.FailedResourceIDs = UniqueArray(resp.FailedResourceIDs, func(t, t2 string) bool {
-		return t == t2
-	})
-	resp.ConnectionIDs = UniqueArray(resp.ConnectionIDs, func(t, t2 string) bool {
-		return t == t2
-	})
-
-	var successfuls []string
-	for _, passed := range resp.PassedResourceIDs {
-		failedExists := false
-		for _, failed := range resp.FailedResourceIDs {
-			if passed == failed {
-				failedExists = true
-			}
-		}
-
-		if !failedExists {
-			successfuls = append(successfuls, passed)
-		}
-	}
-	resp.PassedResourceIDs = successfuls
 	return resp, nil
 }
 
