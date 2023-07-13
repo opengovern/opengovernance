@@ -6011,7 +6011,8 @@ const docTemplate = `{
                         "type": "file",
                         "description": "File to upload",
                         "name": "terraformFile",
-                        "in": "formData"
+                        "in": "formData",
+                        "required": true
                     },
                     {
                         "type": "string",
@@ -6023,7 +6024,8 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Config json structure",
                         "name": "config",
-                        "in": "formData"
+                        "in": "formData",
+                        "required": true
                     }
                 ],
                 "responses": {
