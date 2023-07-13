@@ -60,6 +60,7 @@ var (
 )
 
 type Server struct {
+	logger               *zap.Logger
 	e                    *echo.Echo
 	cfg                  *Config
 	db                   *Database
@@ -134,6 +135,8 @@ func NewServer(cfg *Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	s.logger = logger
 
 	return s, nil
 }
@@ -738,19 +741,20 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 	if workspace.OrganizationID != nil {
 		org, err := s.pipedriveClient.GetPipedriveOrganization(c.Request().Context(), *workspace.OrganizationID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		organization = &api.OrganizationResponse{
-			ID:            *workspace.OrganizationID,
-			CompanyName:   org.Name,
-			Url:           org.URL,
-			AddressLine1:  org.Address,
-			City:          org.AddressLocality,
-			State:         org.AddressAdminAreaLevel1,
-			Country:       org.AddressCountry,
-			ContactPhone:  pipedrive.GetPrimaryValue(org.Contact.Phones),
-			ContactEmail:  pipedrive.GetPrimaryValue(org.Contact.Emails),
-			ContactPerson: org.Contact.Name,
+			s.logger.Error("failed to get organization from pipedrive", zap.Error(err))
+		} else {
+			organization = &api.OrganizationResponse{
+				ID:            *workspace.OrganizationID,
+				CompanyName:   org.Name,
+				Url:           org.URL,
+				AddressLine1:  org.Address,
+				City:          org.AddressLocality,
+				State:         org.AddressAdminAreaLevel1,
+				Country:       org.AddressCountry,
+				ContactPhone:  pipedrive.GetPrimaryValue(org.Contact.Phones),
+				ContactEmail:  pipedrive.GetPrimaryValue(org.Contact.Emails),
+				ContactPerson: org.Contact.Name,
+			}
 		}
 	}
 
@@ -953,19 +957,20 @@ func (s *Server) GetCurrentWorkspace(c echo.Context) error {
 	if workspace.OrganizationID != nil {
 		org, err := s.pipedriveClient.GetPipedriveOrganization(c.Request().Context(), *workspace.OrganizationID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		organization = &api.OrganizationResponse{
-			ID:            *workspace.OrganizationID,
-			CompanyName:   org.Name,
-			Url:           org.URL,
-			AddressLine1:  org.Address,
-			City:          org.AddressLocality,
-			State:         org.AddressAdminAreaLevel1,
-			Country:       org.AddressCountry,
-			ContactPhone:  pipedrive.GetPrimaryValue(org.Contact.Phones),
-			ContactEmail:  pipedrive.GetPrimaryValue(org.Contact.Emails),
-			ContactPerson: org.Contact.Name,
+			s.logger.Error("failed to get organization from pipedrive", zap.Error(err))
+		} else {
+			organization = &api.OrganizationResponse{
+				ID:            *workspace.OrganizationID,
+				CompanyName:   org.Name,
+				Url:           org.URL,
+				AddressLine1:  org.Address,
+				City:          org.AddressLocality,
+				State:         org.AddressAdminAreaLevel1,
+				Country:       org.AddressCountry,
+				ContactPhone:  pipedrive.GetPrimaryValue(org.Contact.Phones),
+				ContactEmail:  pipedrive.GetPrimaryValue(org.Contact.Emails),
+				ContactPerson: org.Contact.Name,
+			}
 		}
 	}
 
