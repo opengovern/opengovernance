@@ -209,10 +209,10 @@ func (h *HttpHandler) GetTopRegionsByResourceCount(ctx echo.Context) error {
 func (h *HttpHandler) GetRegionsByResourceCount(ctx echo.Context) error {
 	var err error
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	`connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) == 0 {
 		connectionIDs = nil
-	}
+	}`
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
