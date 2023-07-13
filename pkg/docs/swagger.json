@@ -5982,48 +5982,6 @@
                 }
             }
         },
-        "/schedule/api/v1/stacks/benchmark/trigger": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Trigger defined benchmarks for a stack and save in the history",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "stack"
-                ],
-                "summary": "Trigger Stack benchmark",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackBenchmarkRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/describe.ComplianceReportJob"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/schedule/api/v1/stacks/create": {
             "post": {
                 "security": [
@@ -6046,23 +6004,13 @@
                     {
                         "type": "file",
                         "description": "File to upload",
-                        "name": "terrafromFile",
+                        "name": "terraformFile",
                         "in": "formData"
                     },
                     {
                         "type": "string",
                         "description": "Tags Map[string][]string",
                         "name": "tag",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Additional Resources",
-                        "name": "resources",
                         "in": "formData"
                     },
                     {
@@ -6077,78 +6025,6 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack"
-                        }
-                    }
-                }
-            }
-        },
-        "/schedule/api/v1/stacks/describer/trigger": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Describe stack resources. This is needed before triggering insights and benchmarks\nConfig structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}\nConfig structure for aws: {accessKey: string, secretKey: string}",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "stack"
-                ],
-                "summary": "Trigger Stack Describer",
-                "parameters": [
-                    {
-                        "description": "request",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeStackRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
-        "/schedule/api/v1/stacks/insight/trigger": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Trigger an insight evaluation to run immediately on a stack with given details",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "describe"
-                ],
-                "summary": "Trigger stack insight evaluation",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackInsightRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.InsightJob"
-                            }
                         }
                     }
                 }
@@ -6360,6 +6236,68 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight"
+                        }
+                    }
+                }
+            }
+        },
+        "/schedule/api/v1/stacks/{stackId}/insights": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get all Insights results with the given filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stack"
+                ],
+                "summary": "List Stack Insights",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Insight IDs to filter with. If empty, then all insights are returned",
+                        "name": "insightIds",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the start time of the trend",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the end time of the trend",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Stack ID",
+                        "name": "stackId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight"
+                            }
                         }
                     }
                 }
@@ -9137,16 +9075,6 @@
                 "DescribeSourceJobCompleted"
             ]
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeStackRequest": {
-            "type": "object",
-            "properties": {
-                "config": {},
-                "stackId": {
-                    "type": "string",
-                    "example": "stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.EvaluationType": {
             "type": "string",
             "enum": [
@@ -9422,32 +9350,6 @@
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackBenchmarkRequest": {
-            "type": "object",
-            "required": [
-                "benchmarks",
-                "stackId"
-            ],
-            "properties": {
-                "benchmarks": {
-                    "description": "Benchmarks to add to the stack",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "[azure_cis_v140",
-                        " azure_cis_v140_1",
-                        " azure_cis_v140_1_1]"
-                    ]
-                },
-                "stackId": {
-                    "description": "Stack unique identifier",
-                    "type": "string",
-                    "example": "stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackEvaluation": {
             "type": "object",
             "properties": {
@@ -9492,9 +9394,6 @@
                 "StackEvaluationStatusFailed",
                 "StackEvaluationStatusCompleted"
             ]
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackInsightRequest": {
-            "type": "object"
         },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackStatus": {
             "type": "string",
