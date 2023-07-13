@@ -33,3 +33,18 @@ func (r *SeverityResult) IncreaseBySeverity(severity Severity) {
 		r.LowCount++
 	}
 }
+
+func (r *SeverityResult) IncreaseBySeverityByAmount(severity Severity, amount int) {
+	switch severity {
+	case SeverityCritical:
+		r.CriticalCount += amount
+	case SeverityHigh:
+		r.HighCount += amount
+	case SeverityMedium:
+		r.MediumCount += amount
+	case SeverityLow:
+		r.LowCount += amount
+	case SeverityNone:
+		r.LowCount += amount
+	}
+}
