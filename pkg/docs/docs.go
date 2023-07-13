@@ -3060,6 +3060,16 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "ResourceType",
+                        "name": "resourceType",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "description": "timestamp for resource count in epoch seconds",
                         "name": "endTime",
