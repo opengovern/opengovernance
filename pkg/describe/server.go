@@ -1253,7 +1253,7 @@ func (h HttpServer) ListStackInsights(ctx echo.Context) error {
 			return err
 		}
 		for _, insight := range insights {
-			insightIds = append(insightIds, string(insight.ID))
+			insightIds = append(insightIds, strconv.FormatUint(uint64(insight.ID), 10))
 		}
 	}
 
