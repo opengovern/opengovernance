@@ -15,14 +15,13 @@ const (
 type ProviderReportType string
 
 const (
-	ResourceTypeProviderSummary        ProviderReportType = "ResourceTypePerProvider"
-	LocationProviderSummary            ProviderReportType = "LocationPerProvider"
-	TrendProviderSummary               ProviderReportType = "TrendPerProviderHistory"
-	ResourceTypeTrendProviderSummary   ProviderReportType = "ResourceTypeTrendPerProviderHistory"
-	CostServiceSummaryMonthly          ProviderReportType = "CostPerService"
-	CostServiceSummaryDaily            ProviderReportType = "CostPerServiceDaily"
-	CostServiceConnectorSummaryMonthly ProviderReportType = "CostPerServicePerConnector"
-	CostServiceConnectorSummaryDaily   ProviderReportType = "CostPerServicePerConnectorDaily"
+	ResourceTypeProviderSummary      ProviderReportType = "ResourceTypePerProvider"
+	LocationProviderSummary          ProviderReportType = "LocationPerProvider"
+	TrendProviderSummary             ProviderReportType = "TrendPerProviderHistory"
+	ResourceTypeTrendProviderSummary ProviderReportType = "ResourceTypeTrendPerProviderHistory"
+	CostServiceSummaryMonthly        ProviderReportType = "CostPerService"
+	CostServiceSummaryDaily          ProviderReportType = "CostPerServiceDaily"
+	CostServiceConnectorSummaryDaily ProviderReportType = "CostPerServicePerConnectorDaily"
 )
 
 type ProviderTrendSummary struct {

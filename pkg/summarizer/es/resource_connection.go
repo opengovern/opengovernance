@@ -23,7 +23,6 @@ const (
 	TrendConnectionSummary             ConnectionReportType = "TrendPerSourceHistory"
 	ResourceTypeTrendConnectionSummary ConnectionReportType = "ResourceTypeTrendPerSourceHistory"
 	CostConnectionSummaryMonthly       ConnectionReportType = "CostPerSource"
-	CostConnectorSummaryMonthly        ConnectionReportType = "CostPerConnector"
 	CostConnectionSummaryDaily         ConnectionReportType = "CostPerSourceDaily"
 	CostConnectorSummaryDaily          ConnectionReportType = "CostPerConnectorDaily"
 )
