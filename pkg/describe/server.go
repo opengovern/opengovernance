@@ -109,6 +109,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	stacks.GET("/resource", httpserver.AuthorizeHandler(h.ListResourceStack, api3.ViewerRole))
 	stacks.POST("/insight/trigger", httpserver.AuthorizeHandler(h.TriggerStackInsight, api3.AdminRole))
 	stacks.POST("/describer/trigger", httpserver.AuthorizeHandler(h.TriggerStackDescriber, api3.AdminRole))
+	stacks.GET("/:stackId/insights", httpserver.AuthorizeHandler(h.ListStackInsights, api3.ViewerRole))
 }
 
 // HandleListSources godoc
@@ -1197,6 +1198,93 @@ func (h HttpServer) GetStackInsight(ctx echo.Context) error {
 	insight.Results = filteredResults
 	insight.TotalResultValue = &totalResaults
 	return ctx.JSON(http.StatusOK, insight)
+}
+
+// ListStackInsights godoc
+//
+//	@Summary		List Stack Insights
+//	@Description	Get all Insights results with the given filters
+//	@Security		BearerToken
+//	@Tags			stack
+//	@Accept			json
+//	@Produce		json
+//	@Param			insightIds	query		[]string	false	"Insight IDs to filter with. If empty, then all insights are returned"
+//	@Param			startTime	query		int		false	"unix seconds for the start time of the trend"
+//	@Param			endTime		query		int		false	"unix seconds for the end time of the trend"
+//	@Param			stackId		path		string	true	"Stack ID"
+//	@Success		200			{object}	[]complianceapi.Insight
+//	@Router			/schedule/api/v1/stacks/{stackId}/insights [get]
+func (h HttpServer) ListStackInsights(ctx echo.Context) error {
+	stackId := ctx.Param("stackId")
+	endTime := time.Now()
+	if ctx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		endTime = time.Unix(t, 0)
+	}
+	startTime := endTime.Add(-1 * 7 * 24 * time.Hour)
+	if ctx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		startTime = time.Unix(t, 0)
+	}
+	insightIds := httpserver.QueryArrayParam(ctx, "insightIds")
+	if len(insightIds) == 0 {
+		insightIds = nil
+	}
+	stackRecord, err := h.DB.GetStack(stackId)
+	if err != nil {
+		return err
+	}
+	if stackRecord.StackID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
+	}
+	connectionId := stackRecord.StackID
+
+	var insights []complianceapi.Insight
+	for _, insightId := range insightIds {
+		insight, err := h.Scheduler.complianceClient.GetInsight(httpclient.FromEchoContext(ctx), insightId, []string{connectionId}, &startTime, &endTime)
+		if err != nil {
+			return err
+		}
+		var totalResaults int64
+		var filteredResults []complianceapi.InsightResult
+		for _, result := range insight.Results {
+			var headerIndex int
+			for i, header := range result.Details.Headers {
+				if header == "kaytu_resource_id" {
+					headerIndex = i
+				}
+			}
+			var count int64
+			var filteredRows [][]interface{}
+			for _, row := range result.Details.Rows {
+				for _, resourceId := range []string(stackRecord.Resources) {
+					if row[headerIndex] == resourceId {
+						filteredRows = append(filteredRows, row)
+						count++
+						break
+					}
+				}
+			}
+			if count > 0 {
+				result.Details = &complianceapi.InsightDetail{
+					Headers: result.Details.Headers,
+					Rows:    filteredRows,
+				}
+				result.Result = count
+				filteredResults = append(filteredResults, result)
+				totalResaults = totalResaults + count
+			}
+		}
+		insight.Results = filteredResults
+		insight.TotalResultValue = &totalResaults
+	}
+	return ctx.JSON(http.StatusOK, insights)
 }
 
 // ListResourceStack godoc
