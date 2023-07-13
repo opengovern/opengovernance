@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
@@ -14,10 +15,12 @@ import (
 )
 
 type costSummaryBuilder struct {
-	client          keibi.Client
-	summarizerJobID uint
-	costsByService  map[string]es.ServiceCostSummary
-	costsByAccount  map[string]es.ConnectionCostSummary
+	client                     keibi.Client
+	summarizerJobID            uint
+	costsByService             map[string]es.ServiceCostSummary
+	costsByServicePerConnector map[source.Type]map[string]es.ServiceCostSummary
+	costsByAccount             map[string]es.ConnectionCostSummary
+	costsPerConnector          map[source.Type]es.ConnectionCostSummary
 }
 
 type EBSCostDoc struct {
@@ -27,10 +30,12 @@ type EBSCostDoc struct {
 
 func NewCostSummaryBuilder(client keibi.Client, summarizerJobID uint) *costSummaryBuilder {
 	return &costSummaryBuilder{
-		client:          client,
-		summarizerJobID: summarizerJobID,
-		costsByService:  make(map[string]es.ServiceCostSummary),
-		costsByAccount:  make(map[string]es.ConnectionCostSummary),
+		client:                     client,
+		summarizerJobID:            summarizerJobID,
+		costsByService:             make(map[string]es.ServiceCostSummary),
+		costsByServicePerConnector: make(map[source.Type]map[string]es.ServiceCostSummary),
+		costsByAccount:             make(map[string]es.ConnectionCostSummary),
+		costsPerConnector:          make(map[source.Type]es.ConnectionCostSummary),
 	}
 }
 
@@ -65,6 +70,28 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		if _, ok := b.costsByService[key]; !ok {
 			b.costsByService[key] = *serviceCostSummary
 		}
+		if _, ok := b.costsByServicePerConnector[resource.SourceType]; !ok {
+			b.costsByServicePerConnector[resource.SourceType] = make(map[string]es.ServiceCostSummary)
+		}
+		if v, ok := b.costsByServicePerConnector[resource.SourceType][key]; !ok {
+			local := *serviceCostSummary
+			local.SourceID = ""
+			local.SourceJobID = 0
+			local.Cost = nil
+			switch local.ReportType {
+			case es.CostServiceSummaryMonthly:
+				local.ReportType = es.CostServiceConnectorSummaryMonthly
+			case es.CostServiceSummaryDaily:
+				local.ReportType = es.CostServiceConnectorSummaryDaily
+			default:
+				fmt.Printf("(costSummaryBuilder) - WARNING: Unknown report type: %v", local.ReportType)
+				local.ReportType = ""
+			}
+			b.costsByServicePerConnector[resource.SourceType][key] = local
+		} else {
+			v.CostValue += serviceCostSummary.CostValue
+			b.costsByServicePerConnector[resource.SourceType][key] = v
+		}
 	case *es.ConnectionCostSummary:
 		connectionCostSummary := costSummary.(*es.ConnectionCostSummary)
 		connectionCostSummary.SummarizeJobID = b.summarizerJobID
@@ -77,6 +104,26 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		connectionCostSummary.CostValue = costVal
 		if _, ok := b.costsByAccount[key]; !ok {
 			b.costsByAccount[key] = *connectionCostSummary
+		}
+		if v, ok := b.costsPerConnector[resource.SourceType]; !ok {
+			local := *connectionCostSummary
+			local.SourceID = ""
+			local.AccountID = ""
+			local.SourceJobID = 0
+			local.Cost = nil
+			switch local.ReportType {
+			case es.CostConnectionSummaryMonthly:
+				local.ReportType = es.CostConnectorSummaryMonthly
+			case es.CostConnectionSummaryDaily:
+				local.ReportType = es.CostConnectorSummaryDaily
+			default:
+				fmt.Printf("(costSummaryBuilder) - WARNING: Unknown report type: %v", local.ReportType)
+				local.ReportType = ""
+			}
+			b.costsPerConnector[resource.SourceType] = local
+		} else {
+			v.CostValue += connectionCostSummary.CostValue
+			b.costsPerConnector[resource.SourceType] = v
 		}
 	default:
 		fmt.Printf("(costSummaryBuilder) - WARNING: Unknown cost summary type: %T:%v", costSummary, costSummary)
