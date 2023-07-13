@@ -1202,8 +1202,8 @@ func (h HttpServer) GetStackInsight(ctx echo.Context) error {
 
 // ListStackInsights godoc
 //
-//	@Summary		Get Stack Insight
-//	@Description	Get Insight results for a stack in the given time period
+//	@Summary		List Stack Insights
+//	@Description	Get all Insights results with the given filters
 //	@Security		BearerToken
 //	@Tags			stack
 //	@Accept			json
