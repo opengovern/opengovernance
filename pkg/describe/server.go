@@ -1231,10 +1231,7 @@ func (h HttpServer) ListStackInsights(ctx echo.Context) error {
 		}
 		startTime = time.Unix(t, 0)
 	}
-	insightIds := httpserver.QueryArrayParam(ctx, "insightIds")
-	if len(insightIds) == 0 {
-		insightIds = nil
-	}
+
 	stackRecord, err := h.DB.GetStack(stackId)
 	if err != nil {
 		return err
@@ -1243,6 +1240,17 @@ func (h HttpServer) ListStackInsights(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
 	}
 	connectionId := stackRecord.StackID
+
+	insightIds := httpserver.QueryArrayParam(ctx, "insightIds")
+	if len(insightIds) == 0 {
+		insights, err := h.Scheduler.complianceClient.ListInsightsMetadata(httpclient.FromEchoContext(ctx), []source.Type{stackRecord.SourceType})
+		if err != nil {
+			return err
+		}
+		for _, insight := range insights {
+			insightIds = append(insightIds, string(insight.ID))
+		}
+	}
 
 	var insights []complianceapi.Insight
 	for _, insightId := range insightIds {
