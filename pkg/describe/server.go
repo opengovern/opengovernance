@@ -1250,7 +1250,7 @@ func (h HttpServer) ListStackInsights(ctx echo.Context) error {
 		insightIds = []string{}
 		insights, err := h.Scheduler.complianceClient.ListInsightsMetadata(httpclient.FromEchoContext(ctx), []source.Type{stackRecord.SourceType})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error for insight %s: %s", stackRecord.SourceType, err.Error()))
+			return err
 		}
 		for _, insight := range insights {
 			insightIds = append(insightIds, string(insight.ID))
@@ -1261,7 +1261,7 @@ func (h HttpServer) ListStackInsights(ctx echo.Context) error {
 	for _, insightId := range insightIds {
 		insight, err := h.Scheduler.complianceClient.GetInsight(httpclient.FromEchoContext(ctx), insightId, []string{connectionId}, &startTime, &endTime)
 		if err != nil {
-			return err
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("error for insight %s: %s", insightId, err.Error()))
 		}
 		var totalResaults int64
 		var filteredResults []complianceapi.InsightResult
