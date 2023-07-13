@@ -150,7 +150,7 @@ func FetchLiveBenchmarkAggregatedFindings(client keibi.Client, benchmarkID *stri
 
 	if benchmarkID != nil {
 		filters = append(filters, map[string]any{
-			"term": map[string]string{"benchmark_id": *benchmarkID},
+			"term": map[string]string{"benchmarkID": *benchmarkID},
 		})
 	}
 	if len(connectionIds) > 0 {
