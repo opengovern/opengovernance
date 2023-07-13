@@ -1295,7 +1295,9 @@ func (h HttpServer) ListStackInsights(ctx echo.Context) error {
 		}
 		insight.Results = filteredResults
 		insight.TotalResultValue = &totalResaults
-		insights = append(insights, insight)
+		if totalResaults > 0 {
+			insights = append(insights, insight)
+		}
 	}
 	return ctx.JSON(http.StatusOK, insights)
 }
