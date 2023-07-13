@@ -82,7 +82,7 @@ func (j *Job) Do(
 	return result
 }
 
-func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]es.Finding, error) {
+func (j *Job) RunBenchmark(esk keibi.Client, benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]es.Finding, error) {
 	ctx := &httpclient.Context{
 		UserRole: api2.AdminRole,
 	}
@@ -96,7 +96,7 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 
 	var findings []es.Finding
 	for _, childBenchmarkID := range benchmark.Children {
-		f, err := j.RunBenchmark(childBenchmarkID, complianceClient, steampipeConn, connector)
+		f, err := j.RunBenchmark(esk, childBenchmarkID, complianceClient, steampipeConn, connector)
 		if err != nil {
 			return nil, err
 		}
@@ -133,8 +133,18 @@ func (j *Job) RunBenchmark(benchmarkID string, complianceClient client.Complianc
 			return nil, err
 		}
 
+		if !j.IsStack {
+			findingsFiltered, err := j.FilterFindings(esk, policyID, f)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Println("++++++ findingsFiltered len: ", len(findingsFiltered))
+			f = findingsFiltered
+		}
+
 		findings = append(findings, f...)
 	}
+
 	return findings, nil
 }
 
@@ -240,43 +250,33 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	fmt.Println("+++++ Steampipe database created")
 
-	findings, err := j.RunBenchmark(j.BenchmarkID, complianceClient, steampipeConn, connector)
+	findings, err := j.RunBenchmark(esk, j.BenchmarkID, complianceClient, steampipeConn, connector)
 	if err != nil {
 		return err
 	}
 	fmt.Println("++++++ findings len: ", len(findings))
 	var docs []kafka.Doc
-	if j.IsStack == false {
-		findingsFiltered, err := j.FilterFindings(esk, findings)
-		if err != nil {
-			return err
-		}
-		fmt.Println("++++++ findingsFiltered len: ", len(findingsFiltered))
-		for _, finding := range findingsFiltered {
-			docs = append(docs, finding)
-		}
-	} else {
-		for _, finding := range findings {
-			docs = append(docs, finding)
-		}
+	for _, finding := range findings {
+		docs = append(docs, finding)
 	}
 	_, index := docs[0].KeysAndIndex()
 	fmt.Println("++++++ kakfa topic and index: ", kfkTopic, index)
 	return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger)
 }
 
-func (j *Job) FilterFindings(esClient keibi.Client, findings []es.Finding) ([]es.Finding, error) {
+func (j *Job) FilterFindings(esClient keibi.Client, policyID string, findings []es.Finding) ([]es.Finding, error) {
 	// get all active findings from ES page by page
 	// go through the ones extracted and remove duplicates
 	// if a finding fetched from es is not duplicated disable it
 	from := 0
+	const esFetchSize = 1000
 	for {
-		resp, err := es.GetActiveFindings(esClient, from, 1000)
+		resp, err := es.GetActiveFindings(esClient, policyID, from, esFetchSize)
 		if err != nil {
 			return nil, err
 		}
 		fmt.Println("+++++++++ active old findings:", len(resp.Hits.Hits))
-		from += 1000
+		from += esFetchSize
 
 		if len(resp.Hits.Hits) == 0 {
 			break

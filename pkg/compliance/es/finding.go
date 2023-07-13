@@ -75,13 +75,14 @@ type FindingsQueryHit struct {
 	Sort    []interface{} `json:"sort"`
 }
 
-func GetActiveFindings(client keibi.Client, from, size int) (*FindingsQueryResponse, error) {
+func GetActiveFindings(client keibi.Client, policyID string, from, size int) (*FindingsQueryResponse, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 
-	filters = append(filters, map[string]interface{}{
-		"term": map[string]interface{}{"stateActive": true},
-	})
+	filters = append(filters,
+		map[string]any{"term": map[string]any{"stateActive": true}},
+		map[string]any{"term": map[string]any{"policyID": policyID}},
+	)
 	res["size"] = size
 	res["from"] = from
 
