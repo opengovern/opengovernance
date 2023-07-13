@@ -7309,7 +7309,7 @@ paths:
         in: query
         name: insightId
         required: true
-        type: string
+        type: integer
       - description: unix seconds for the start time of the trend
         in: query
         name: startTime
@@ -7345,7 +7345,7 @@ paths:
         description: Insight IDs to filter with. If empty, then all insights are returned
         in: query
         items:
-          type: string
+          type: integer
         name: insightIds
         type: array
       - description: unix seconds for the start time of the trend

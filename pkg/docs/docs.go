@@ -6213,7 +6213,7 @@ const docTemplate = `{
                 "summary": "Get Stack Insight",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "InsightID",
                         "name": "insightId",
                         "in": "query",
@@ -6271,7 +6271,7 @@ const docTemplate = `{
                     {
                         "type": "array",
                         "items": {
-                            "type": "string"
+                            "type": "integer"
                         },
                         "collectionFormat": "csv",
                         "description": "Insight IDs to filter with. If empty, then all insights are returned",
