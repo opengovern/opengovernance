@@ -24,6 +24,7 @@ const (
 	ResourceTypeTrendConnectionSummary ConnectionReportType = "ResourceTypeTrendPerSourceHistory"
 	CostConnectionSummaryMonthly       ConnectionReportType = "CostPerSource"
 	CostConnectionSummaryDaily         ConnectionReportType = "CostPerSourceDaily"
+	CostConnectorSummaryDaily          ConnectionReportType = "CostPerConnectorDaily"
 )
 
 type ConnectionResourcesSummary struct {
