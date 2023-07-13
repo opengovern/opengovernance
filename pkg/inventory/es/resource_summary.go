@@ -251,7 +251,6 @@ func FetchConnectionResourcesCountAtTime(client keibi.Client, connectors []sourc
 		"range": map[string]any{
 			"described_at": map[string]any{
 				"lte": t.UnixMilli(),
-				"gte": t.AddDate(0, 0, -7).UnixMilli(),
 			},
 		},
 	})
