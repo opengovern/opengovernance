@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
@@ -181,6 +182,8 @@ func FetchLiveBenchmarkAggregatedFindings(client keibi.Client, benchmarkID *stri
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("query=", string(query), "index=", summarizer.FindingsIndex)
 
 	var response LiveBenchmarkAggregatedFindingsQueryResponse
 	err = client.Search(context.Background(), summarizer.FindingsIndex, string(query), &response)
