@@ -7387,6 +7387,7 @@ paths:
       - description: File to upload
         in: formData
         name: terraformFile
+        required: true
         type: file
       - description: Tags Map[string][]string
         in: formData
@@ -7395,6 +7396,7 @@ paths:
       - description: Config json structure
         in: formData
         name: config
+        required: true
         type: string
       produces:
       - application/json
