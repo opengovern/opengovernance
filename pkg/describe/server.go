@@ -801,9 +801,9 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			terraformFile	formData	file		false	"File to upload"
-//	@Param			tag				formData	string		false	"Tags Map[string][]string"
-//	@Param			config			formData	string		false	"Config json structure"
+//	@Param			terraformFile	formData	file	false	"File to upload"
+//	@Param			tag				formData	string	false	"Tags Map[string][]string"
+//	@Param			config			formData	string	false	"Config json structure"
 //	@Success		200				{object}	api.Stack
 //	@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
@@ -1208,9 +1208,9 @@ func (h HttpServer) GetStackInsight(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			insightIds	query		[]string	false	"Insight IDs to filter with. If empty, then all insights are returned"
-//	@Param			startTime	query		int		false	"unix seconds for the start time of the trend"
-//	@Param			endTime		query		int		false	"unix seconds for the end time of the trend"
-//	@Param			stackId		path		string	true	"Stack ID"
+//	@Param			startTime	query		int			false	"unix seconds for the start time of the trend"
+//	@Param			endTime		query		int			false	"unix seconds for the end time of the trend"
+//	@Param			stackId		path		string		true	"Stack ID"
 //	@Success		200			{object}	[]complianceapi.Insight
 //	@Router			/schedule/api/v1/stacks/{stackId}/insights [get]
 func (h HttpServer) ListStackInsights(ctx echo.Context) error {

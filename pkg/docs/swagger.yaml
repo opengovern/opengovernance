@@ -1620,13 +1620,6 @@ definitions:
     - DescribeSourceJobInProgress
     - DescribeSourceJobCompletedWithFailure
     - DescribeSourceJobCompleted
-  github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeStackRequest:
-    properties:
-      config: {}
-      stackId:
-        example: stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0
-        type: string
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.EvaluationType:
     enum:
     - INSIGHT
@@ -1817,25 +1810,6 @@ definitions:
     required:
     - stackId
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackBenchmarkRequest:
-    properties:
-      benchmarks:
-        description: Benchmarks to add to the stack
-        example:
-        - '[azure_cis_v140'
-        - ' azure_cis_v140_1'
-        - ' azure_cis_v140_1_1]'
-        items:
-          type: string
-        type: array
-      stackId:
-        description: Stack unique identifier
-        example: stack-twr32a5d-5as5-4ffe-b1cc-e32w1ast87s0
-        type: string
-    required:
-    - benchmarks
-    - stackId
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackEvaluation:
     properties:
       createdAt:
@@ -1868,8 +1842,6 @@ definitions:
     - StackEvaluationStatusInProgress
     - StackEvaluationStatusFailed
     - StackEvaluationStatusCompleted
-  github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackInsightRequest:
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackStatus:
     enum:
     - PENDING
@@ -7363,18 +7335,32 @@ paths:
       summary: Get Stack Insight
       tags:
       - stack
-  /schedule/api/v1/stacks/benchmark/trigger:
-    post:
+  /schedule/api/v1/stacks/{stackId}/insights:
+    get:
       consumes:
       - application/json
-      description: Trigger defined benchmarks for a stack and save in the history
+      description: Get all Insights results with the given filters
       parameters:
-      - description: Request Body
-        in: body
-        name: request
+      - collectionFormat: csv
+        description: Insight IDs to filter with. If empty, then all insights are returned
+        in: query
+        items:
+          type: string
+        name: insightIds
+        type: array
+      - description: unix seconds for the start time of the trend
+        in: query
+        name: startTime
+        type: integer
+      - description: unix seconds for the end time of the trend
+        in: query
+        name: endTime
+        type: integer
+      - description: Stack ID
+        in: path
+        name: stackId
         required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackBenchmarkRequest'
+        type: string
       produces:
       - application/json
       responses:
@@ -7382,11 +7368,11 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/describe.ComplianceReportJob'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight'
             type: array
       security:
       - BearerToken: []
-      summary: Trigger Stack benchmark
+      summary: List Stack Insights
       tags:
       - stack
   /schedule/api/v1/stacks/create:
@@ -7400,19 +7386,12 @@ paths:
       parameters:
       - description: File to upload
         in: formData
-        name: terrafromFile
+        name: terraformFile
         type: file
       - description: Tags Map[string][]string
         in: formData
         name: tag
         type: string
-      - collectionFormat: csv
-        description: Additional Resources
-        in: formData
-        items:
-          type: string
-        name: resources
-        type: array
       - description: Config json structure
         in: formData
         name: config
@@ -7429,54 +7408,6 @@ paths:
       summary: Create stack
       tags:
       - stack
-  /schedule/api/v1/stacks/describer/trigger:
-    post:
-      description: |-
-        Describe stack resources. This is needed before triggering insights and benchmarks
-        Config structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}
-        Config structure for aws: {accessKey: string, secretKey: string}
-      parameters:
-      - description: request
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeStackRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Trigger Stack Describer
-      tags:
-      - stack
-  /schedule/api/v1/stacks/insight/trigger:
-    post:
-      description: Trigger an insight evaluation to run immediately on a stack with
-        given details
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.StackInsightRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.InsightJob'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Trigger stack insight evaluation
-      tags:
-      - describe
   /schedule/api/v1/stacks/resource:
     get:
       consumes:
