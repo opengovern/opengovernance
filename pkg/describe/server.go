@@ -939,6 +939,10 @@ func (h HttpServer) GetStack(ctx echo.Context) error {
 		return err
 	}
 
+	if stackRecord.StackID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
+	}
+
 	return ctx.JSON(http.StatusOK, stackRecord.ToApi())
 }
 
