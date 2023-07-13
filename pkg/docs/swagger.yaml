@@ -5307,6 +5307,13 @@ paths:
           type: string
         name: connectionId
         type: array
+      - collectionFormat: csv
+        description: ResourceType
+        in: query
+        items:
+          type: string
+        name: resourceType
+        type: array
       - description: timestamp for resource count in epoch seconds
         in: query
         name: endTime

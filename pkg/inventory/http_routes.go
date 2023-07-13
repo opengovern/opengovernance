@@ -436,8 +436,8 @@ func (h *HttpHandler) GetResourceTypeTag(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, tags)
 }
 
-func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, serviceNames []string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []inventoryApi.ResourceType, error) {
-	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, nil, serviceNames, connectorTypes, true)
+func (h *HttpHandler) ListResourceTypeMetrics(resourceTypeNames []string, tagMap map[string][]string, serviceNames []string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []inventoryApi.ResourceType, error) {
+	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, resourceTypeNames, serviceNames, connectorTypes, true)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -484,6 +484,7 @@ func (h *HttpHandler) ListResourceTypeMetrics(tagMap map[string][]string, servic
 //	@Param			servicename		query		[]string		false	"Service names to filter by"
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			resourceType	query		[]string		false	"ResourceType"
 //	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
 //	@Param			minCount		query		int				false	"Minimum number of resources with this tag value, default 1"
@@ -498,6 +499,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	serviceNames := httpserver.QueryArrayParam(ctx, "servicename")
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	resourceTypeNames := httpserver.QueryArrayParam(ctx, "resourceType")
 	if len(connectionIDs) > 20 {
 		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
@@ -542,7 +544,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
 	}
 
-	totalCount, apiResourceTypes, err := h.ListResourceTypeMetrics(tagMap, serviceNames, connectorTypes, connectionIDs, minCount, endTime)
+	totalCount, apiResourceTypes, err := h.ListResourceTypeMetrics(resourceTypeNames, tagMap, serviceNames, connectorTypes, connectionIDs, minCount, endTime)
 	if err != nil {
 		return err
 	}
@@ -551,7 +553,7 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 		apiResourceTypesMap[apiResourceType.ResourceType] = apiResourceType
 	}
 
-	totalOldCount, oldApiResourceTypes, err := h.ListResourceTypeMetrics(tagMap, serviceNames, connectorTypes, connectionIDs, 0, startTime)
+	totalOldCount, oldApiResourceTypes, err := h.ListResourceTypeMetrics(resourceTypeNames, tagMap, serviceNames, connectorTypes, connectionIDs, 0, startTime)
 	if err != nil {
 		return err
 	}
