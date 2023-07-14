@@ -1146,7 +1146,7 @@ func (s Scheduler) scheduleComplianceSummarizerJob(scheduleJobID uint) error {
 		return err
 	}
 
-	err = enqueueComplianceSummarizerJobs(s.db, s.summarizerJobQueue, job, scheduleJobID)
+	err = enqueueComplianceSummarizerJobs(s.db, s.summarizerJobQueue, job)
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to enqueue SummarizerJob",
@@ -1167,46 +1167,10 @@ func (s Scheduler) scheduleComplianceSummarizerJob(scheduleJobID uint) error {
 	return nil
 }
 
-func enqueueComplianceSummarizerJobs(db Database, q queue.Interface, job SummarizerJob, scheduleJobID uint) error {
-	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
-
-	lastDay, err := db.GetOldCompletedScheduleJob(1)
-	if err != nil {
-		return err
-	}
-	if lastDay != nil {
-		lastDayJobID = lastDay.ID
-	}
-	lastWeek, err := db.GetOldCompletedScheduleJob(7)
-	if err != nil {
-		return err
-	}
-	if lastWeek != nil {
-		lastWeekJobID = lastWeek.ID
-	}
-	lastQuarter, err := db.GetOldCompletedScheduleJob(93)
-	if err != nil {
-		return err
-	}
-	if lastQuarter != nil {
-		lastQuarterJobID = lastQuarter.ID
-	}
-	lastYear, err := db.GetOldCompletedScheduleJob(428)
-	if err != nil {
-		return err
-	}
-	if lastYear != nil {
-		lastYearJobID = lastYear.ID
-	}
-
-	if err := q.Publish(summarizer.ComplianceJob{
-		JobID:                    job.ID,
-		ScheduleJobID:            scheduleJobID,
-		LastDayScheduleJobID:     lastDayJobID,
-		LastWeekScheduleJobID:    lastWeekJobID,
-		LastQuarterScheduleJobID: lastQuarterJobID,
-		LastYearScheduleJobID:    lastYearJobID,
-		JobType:                  summarizer.JobType_ComplianceSummarizer,
+func enqueueComplianceSummarizerJobs(db Database, q queue.Interface, job SummarizerJob) error {
+	if err := q.Publish(summarizer.SummarizeJob{
+		JobID:   job.ID,
+		JobType: summarizer.JobType_ComplianceSummarizer,
 	}); err != nil {
 		return err
 	}
