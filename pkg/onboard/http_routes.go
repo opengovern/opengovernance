@@ -1996,7 +1996,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
-//	@Param			sourceId	path	integer	true	"Source ID"
+//	@Param			sourceId	path	string	true	"Source ID"
 //	@Router			/onboard/api/v1/source/{sourceId} [delete]
 func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))

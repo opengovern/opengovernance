@@ -5072,7 +5072,7 @@ const docTemplate = `{
                 "summary": "Delete source",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Source ID",
                         "name": "sourceId",
                         "in": "path",
