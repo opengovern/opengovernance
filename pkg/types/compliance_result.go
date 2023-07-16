@@ -22,6 +22,14 @@ type ComplianceResultSummary struct {
 	ErrorCount int `json:"errorCount" example:"1"`
 }
 
+func (c *ComplianceResultSummary) AddComplianceResultSummary(summary ComplianceResultSummary) {
+	c.OkCount += summary.OkCount
+	c.AlarmCount += summary.AlarmCount
+	c.InfoCount += summary.InfoCount
+	c.SkipCount += summary.SkipCount
+	c.ErrorCount += summary.ErrorCount
+}
+
 type ComplianceResultShortSummary struct {
 	Passed int `json:"passed"`
 	Failed int `json:"failed"`

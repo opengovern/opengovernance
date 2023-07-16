@@ -22,6 +22,8 @@ type BenchmarkSummaryBuilder struct {
 	logger *zap.Logger
 	client keibi.Client
 
+	policyMap map[string]complianceApi.Policy
+
 	policySummaries    map[string]map[string]types.PolicySummary
 	benchmarkSummaries map[string]map[string]types.BenchmarkSummary
 	complianceClient   complianceClient.ComplianceServiceClient
@@ -33,6 +35,7 @@ func NewBenchmarkSummaryBuilder(logger *zap.Logger, jobId uint, client keibi.Cli
 		logger:             logger,
 		client:             client,
 		complianceClient:   complianceClient,
+		policyMap:          make(map[string]complianceApi.Policy),
 		policySummaries:    make(map[string]map[string]types.PolicySummary),
 		benchmarkSummaries: make(map[string]map[string]types.BenchmarkSummary),
 	}
@@ -48,7 +51,17 @@ func (b *BenchmarkSummaryBuilder) Process(resource types.Finding) {
 	if _, ok := b.policySummaries[resource.PolicyID]; !ok {
 		b.policySummaries[resource.PolicyID] = make(map[string]types.PolicySummary)
 	}
-
+	if _, ok := b.policyMap[resource.PolicyID]; !ok {
+		policy, err := b.complianceClient.GetPolicy(&httpclient.Context{UserRole: authApi.KeibiAdminRole}, resource.PolicyID)
+		if err != nil {
+			b.logger.Error("failed to get policy", zap.Error(err))
+			return
+		}
+		if policy == nil {
+			b.policyMap[resource.PolicyID] = *policy
+		}
+	}
+	policy := b.policyMap[resource.PolicyID]
 	if _, ok := b.policySummaries[resource.PolicyID][resource.ConnectionID]; !ok {
 		b.policySummaries[resource.PolicyID][resource.ConnectionID] = types.PolicySummary{
 			PolicyID:      resource.PolicyID,
@@ -62,14 +75,19 @@ func (b *BenchmarkSummaryBuilder) Process(resource types.Finding) {
 	switch resource.Result {
 	case types.ComplianceResultOK:
 		policySummary.TotalResult.OkCount++
+		policySummary.TotalSeverity.PassedCount++
 	case types.ComplianceResultALARM:
 		policySummary.TotalResult.AlarmCount++
+		policySummary.TotalSeverity.IncreaseBySeverityByAmount(policy.Severity, 1)
 	case types.ComplianceResultINFO:
 		policySummary.TotalResult.InfoCount++
+		policySummary.TotalSeverity.UnknownCount++
 	case types.ComplianceResultSKIP:
 		policySummary.TotalResult.SkipCount++
+		policySummary.TotalSeverity.UnknownCount++
 	case types.ComplianceResultERROR:
 		policySummary.TotalResult.ErrorCount++
+		policySummary.TotalSeverity.IncreaseBySeverityByAmount(policy.Severity, 1)
 	}
 	b.policySummaries[resource.PolicyID][resource.ConnectionID] = policySummary
 }
@@ -107,11 +125,8 @@ func (b *BenchmarkSummaryBuilder) extractBenchmarkSummary(benchmark *complianceA
 
 			benchmarkSummary := b.benchmarkSummaries[benchmark.ID][connectionID]
 
-			benchmarkSummary.TotalResult.OkCount += childBenchmarkSummary.TotalResult.OkCount
-			benchmarkSummary.TotalResult.AlarmCount += childBenchmarkSummary.TotalResult.AlarmCount
-			benchmarkSummary.TotalResult.InfoCount += childBenchmarkSummary.TotalResult.InfoCount
-			benchmarkSummary.TotalResult.SkipCount += childBenchmarkSummary.TotalResult.SkipCount
-			benchmarkSummary.TotalResult.ErrorCount += childBenchmarkSummary.TotalResult.ErrorCount
+			benchmarkSummary.TotalResult.AddComplianceResultSummary(childBenchmarkSummary.TotalResult)
+			benchmarkSummary.TotalSeverity.AddSeverityResult(childBenchmarkSummary.TotalSeverity)
 
 			benchmarkSummary.Policies = append(benchmarkSummary.Policies, childBenchmarkSummary.Policies...)
 
@@ -153,11 +168,9 @@ func (b *BenchmarkSummaryBuilder) extractBenchmarkSummary(benchmark *complianceA
 			}
 
 			connectorTypeMap[connectionID][policySummary.ConnectorType] = true
-			benchmarkSummary.TotalResult.OkCount += policySummary.TotalResult.OkCount
-			benchmarkSummary.TotalResult.AlarmCount += policySummary.TotalResult.AlarmCount
-			benchmarkSummary.TotalResult.InfoCount += policySummary.TotalResult.InfoCount
-			benchmarkSummary.TotalResult.SkipCount += policySummary.TotalResult.SkipCount
-			benchmarkSummary.TotalResult.ErrorCount += policySummary.TotalResult.ErrorCount
+
+			benchmarkSummary.TotalResult.AddComplianceResultSummary(policySummary.TotalResult)
+			benchmarkSummary.TotalSeverity.AddSeverityResult(policySummary.TotalSeverity)
 
 			benchmarkSummary.Policies = append(benchmarkSummary.Policies, policySummary)
 
@@ -210,10 +223,11 @@ func (b *BenchmarkSummaryBuilder) Build() []kafka.Doc {
 				ConnectorTypes: []source.Type{connector},
 				DescribedAt:    timeAt,
 				EvaluatedAt:    timeAt,
+				Policies:       nil,
+				TotalResult:    types.ComplianceResultSummary{},
+				TotalSeverity:  types.SeverityResult{},
 				ReportType:     types.BenchmarksConnectorSummary,
 				SummarizeJobId: b.jobID,
-				TotalResult:    types.ComplianceResultSummary{},
-				Policies:       nil,
 			}
 			for _, benchmarkSummaryPerConnection := range benchmarkSummaryMap {
 				found := false
@@ -226,11 +240,10 @@ func (b *BenchmarkSummaryBuilder) Build() []kafka.Doc {
 				if !found {
 					continue
 				}
-				benchmarkSummary.TotalResult.OkCount += benchmarkSummaryPerConnection.TotalResult.OkCount
-				benchmarkSummary.TotalResult.AlarmCount += benchmarkSummaryPerConnection.TotalResult.AlarmCount
-				benchmarkSummary.TotalResult.InfoCount += benchmarkSummaryPerConnection.TotalResult.InfoCount
-				benchmarkSummary.TotalResult.SkipCount += benchmarkSummaryPerConnection.TotalResult.SkipCount
-				benchmarkSummary.TotalResult.ErrorCount += benchmarkSummaryPerConnection.TotalResult.ErrorCount
+
+				benchmarkSummary.TotalResult.AddComplianceResultSummary(benchmarkSummaryPerConnection.TotalResult)
+				benchmarkSummary.TotalSeverity.AddSeverityResult(benchmarkSummaryPerConnection.TotalSeverity)
+
 				benchmarkSummary.Policies = append(benchmarkSummary.Policies, benchmarkSummaryPerConnection.Policies...)
 			}
 
