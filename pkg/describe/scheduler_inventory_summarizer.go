@@ -19,21 +19,33 @@ func (s Scheduler) RunMustSummerizeJobScheduler() {
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		lastJob, err := s.db.FetchLastSummarizerJob()
+		lastJob, err := s.db.FetchLastSummarizerJob(summarizer.JobType_ResourceMustSummarizer)
 		if err != nil {
 			s.logger.Error("Failed to find the last job to check for MustSummerizeJob", zap.Error(err))
 			continue
 		}
 		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.mustSummarizeIntervalHours)*time.Hour).Before(time.Now()) {
-			err := s.scheduleMustSummarizerJob(nil)
+			err := s.scheduleMustSummarizerJob()
 			if err != nil {
 				s.logger.Error("failure on scheduleMustSummarizerJob", zap.Error(err))
+			}
+		}
+
+		lastJob, err = s.db.FetchLastSummarizerJob(summarizer.JobType_ComplianceSummarizer)
+		if err != nil {
+			s.logger.Error("Failed to find the last job to check for ComplianceSummarizerJob", zap.Error(err))
+			continue
+		}
+		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.mustSummarizeIntervalHours)*time.Hour).Before(time.Now()) {
+			err := s.scheduleComplianceSummarizerJob()
+			if err != nil {
+				s.logger.Error("failure on scheduleComplianceSummarizerJob", zap.Error(err))
 			}
 		}
 	}
 }
 
-func (s Scheduler) scheduleMustSummarizerJob(scheduleJobID *uint) error {
+func (s Scheduler) scheduleMustSummarizerJob() error {
 	ongoingJobs, err := s.db.GetOngoingSummarizerJobsByType(summarizer.JobType_ResourceMustSummarizer)
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()
@@ -47,7 +59,7 @@ func (s Scheduler) scheduleMustSummarizerJob(scheduleJobID *uint) error {
 		return fmt.Errorf("there is ongoing MustSummarizerJob skipping this schedule")
 	}
 
-	job := newMustSummarizerJob(scheduleJobID)
+	job := newMustSummarizerJob()
 	err = s.db.AddSummarizerJob(&job)
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()
@@ -90,11 +102,10 @@ func enqueueMustSummarizerJobs(db Database, q queue.Interface, job SummarizerJob
 	return nil
 }
 
-func newMustSummarizerJob(scheduleJobID *uint) SummarizerJob {
+func newMustSummarizerJob() SummarizerJob {
 	return SummarizerJob{
 		Model:          gorm.Model{},
 		Status:         summarizerapi.SummarizerJobInProgress,
-		ScheduleJobID:  scheduleJobID,
 		JobType:        summarizer.JobType_ResourceMustSummarizer,
 		FailureMessage: "",
 	}
