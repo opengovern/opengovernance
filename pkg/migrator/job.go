@@ -153,7 +153,7 @@ func (w *Job) Run() error {
 
 	w.logger.Info("Starting compliance migration")
 	if err := compliance.Run(w.db, []string{gitConfig.AWSComplianceGitURL, gitConfig.AzureComplianceGitURL}, gitConfig.QueryGitURL, gitConfig.githubToken); err != nil {
-		w.logger.Error(fmt.Sprintf("Failure while running aws compliance migration: %v", err))
+		w.logger.Error(fmt.Sprintf("Failure while running compliance migration: %v", err))
 	}
 
 	w.logger.Info("Starting insight migration")

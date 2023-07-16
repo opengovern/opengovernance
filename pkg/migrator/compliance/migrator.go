@@ -1,6 +1,9 @@
 package compliance
 
 import (
+	"fmt"
+	"path"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/kaytu-io/kaytu-engine/pkg/migrator/db"
@@ -11,8 +14,8 @@ import (
 
 func Run(db db.Database, complianceInputGitURLs []string, queryInputGitURL, githubToken string) error {
 	os.RemoveAll(internal.ComplianceGitPath)
-	for _, complianceInputGitURL := range complianceInputGitURLs {
-		_, err := git.PlainClone(internal.ComplianceGitPath, false, &git.CloneOptions{
+	for i, complianceInputGitURL := range complianceInputGitURLs {
+		_, err := git.PlainClone(path.Join(internal.ComplianceGitPath, fmt.Sprintf("%d", i)), false, &git.CloneOptions{
 			Auth: &http.BasicAuth{
 				Username: "abc123",
 				Password: githubToken,
