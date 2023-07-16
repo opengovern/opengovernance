@@ -191,6 +191,9 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 //	@Router			/compliance/api/v1/benchmarks/summary [get]
 func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	if len(connectionIDs) > 20 {
+		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
+	}
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	timeAt := time.Now()
 	if timeAtStr := ctx.QueryParam("timeAt"); timeAtStr != "" {
@@ -258,6 +261,9 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 //	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	if len(connectionIDs) > 20 {
+		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
+	}
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	timeAt := time.Now()
 	if timeAtStr := ctx.QueryParam("timeAt"); timeAtStr != "" {
