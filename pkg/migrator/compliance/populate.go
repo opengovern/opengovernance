@@ -23,7 +23,6 @@ func PopulateDatabase(dbc *gorm.DB, compliancePath, queryPath string) error {
 		tx.Model(&db.BenchmarkPolicies{}).Where("1=1").Unscoped().Delete(&db.BenchmarkPolicies{})
 		tx.Model(&db.Benchmark{}).Where("1=1").Unscoped().Delete(&db.Benchmark{})
 		tx.Model(&db.Policy{}).Where("1=1").Unscoped().Delete(&db.Policy{})
-		tx.Model(&db.Query{}).Where("1=1").Unscoped().Delete(&db.Query{})
 
 		for _, obj := range p.queries {
 			obj.Policies = nil
