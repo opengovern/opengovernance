@@ -1126,9 +1126,10 @@ func (db Database) GetOngoingSummarizerJobsByType(jobType summarizer.JobType) ([
 	return jobs, nil
 }
 
-func (db Database) FetchLastSummarizerJob() (*SummarizerJob, error) {
+func (db Database) FetchLastSummarizerJob(jobType summarizer.JobType) (*SummarizerJob, error) {
 	var job SummarizerJob
 	tx := db.orm.Model(&SummarizerJob{}).
+		Where("job_type = ?", jobType).
 		Order("created_at DESC").First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {

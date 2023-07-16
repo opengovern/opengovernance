@@ -1123,18 +1123,17 @@ func (s Scheduler) scheduleCheckupJob() {
 	}
 }
 
-func newSummarizerJob(jobType summarizer.JobType, scheduleJobID uint) SummarizerJob {
+func newSummarizerJob(jobType summarizer.JobType) SummarizerJob {
 	return SummarizerJob{
 		Model:          gorm.Model{},
-		ScheduleJobID:  &scheduleJobID,
 		Status:         summarizerapi.SummarizerJobInProgress,
 		JobType:        jobType,
 		FailureMessage: "",
 	}
 }
 
-func (s Scheduler) scheduleComplianceSummarizerJob(scheduleJobID uint) error {
-	job := newSummarizerJob(summarizer.JobType_ComplianceSummarizer, scheduleJobID)
+func (s Scheduler) scheduleComplianceSummarizerJob() error {
+	job := newSummarizerJob(summarizer.JobType_ComplianceSummarizer)
 	err := s.db.AddSummarizerJob(&job)
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()
