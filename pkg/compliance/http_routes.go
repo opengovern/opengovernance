@@ -21,8 +21,6 @@ import (
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
-	es2 "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
-	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/query"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
@@ -75,9 +73,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings := v1.Group("/findings")
 	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, api3.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
-	findings.GET("/metrics", httpserver.AuthorizeHandler(h.GetFindingsMetrics, api3.ViewerRole))
-
-	v1.POST("/alarms/top", httpserver.AuthorizeHandler(h.GetTopFieldByAlarmCount, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -181,101 +176,6 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		})
 	}
 
-	return ctx.JSON(http.StatusOK, response)
-}
-
-// GetTopFieldByAlarmCount godoc
-//
-//	@Summary		Top field by alarm count
-//	@Description	Returns top field by alarm count with respect to filters
-//	@Security		BearerToken
-//	@Tags			compliance
-//	@Accept			json
-//	@Produce		json
-//	@Param			request	body		api.GetTopFieldRequest	true	"Request Body"
-//	@Success		200		{object}	api.GetTopFieldResponse
-//	@Router			/compliance/api/v1/alarms/top [post]
-func (h *HttpHandler) GetTopFieldByAlarmCount(ctx echo.Context) error {
-	var req api.GetTopFieldRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	var response api.GetTopFieldResponse
-	res, err := query.AlarmTopFieldQuery(h.client, req.Field, req.Filters.Connector, req.Filters.ResourceTypeID,
-		req.Filters.ConnectionID, req.Filters.Status, req.Filters.BenchmarkID, req.Filters.PolicyID,
-		req.Filters.Severity, req.Count)
-	if err != nil {
-		return err
-	}
-
-	for _, item := range res.Aggregations.FieldFilter.Buckets {
-		response.Records = append(response.Records, api.TopFieldRecord{
-			Value: item.Key,
-			Count: item.DocCount,
-		})
-	}
-	return ctx.JSON(http.StatusOK, response)
-}
-
-// GetFindingsMetrics godoc
-//
-//	@Summary		Returns findings metrics
-//	@Description	This API enables users to retrieve findings metrics for two given times, which includes the total number of findings, the number of passed findings, the number of failed findings, and the number of unknowns findings. Users can use this API to compare the compliance status of their resources between two different time periods.
-//	@Description	The API will return the findings metrics for each time period separately, allowing users to easily compare the compliance status of their resources at each time period. This can be useful for monitoring the effectiveness of compliance measures over time and identifying any areas of improvement."
-//	@Security		BearerToken
-//	@Tags			compliance
-//	@Accept			json
-//	@Produce		json
-//	@Param			start	query		int64	false	"unix seconds for the start time"
-//	@Param			end		query		int64	false	"unix seconds for the end time"
-//	@Success		200		{object}	api.GetFindingsMetricsResponse
-//	@Router			/compliance/api/v1/findings/metrics [get]
-func (h *HttpHandler) GetFindingsMetrics(ctx echo.Context) error {
-	startDateStr := ctx.QueryParam("start")
-	endDateStr := ctx.QueryParam("end")
-
-	startDate, err := strconv.ParseInt(startDateStr, 10, 64)
-	if err != nil {
-		return err
-	}
-
-	endDate, err := strconv.ParseInt(endDateStr, 10, 64)
-	if err != nil {
-		return err
-	}
-
-	startDateTo := time.UnixMilli(startDate)
-	startDateFrom := startDateTo.Add(-24 * time.Hour)
-	metricStart, err := query.GetFindingMetrics(h.client, startDateTo, startDateFrom)
-	if err != nil {
-		return err
-	}
-
-	endDateTo := time.UnixMilli(endDate)
-	endDateFrom := startDateTo.Add(-24 * time.Hour)
-	metricEnd, err := query.GetFindingMetrics(h.client, endDateTo, endDateFrom)
-	if err != nil {
-		return err
-	}
-
-	if metricEnd == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "metrics not found")
-	}
-	if metricStart == nil {
-		metricStart = &es2.FindingMetrics{}
-	}
-
-	var response api.GetFindingsMetricsResponse
-	response.TotalFindings = metricEnd.PassedFindingsCount + metricEnd.FailedFindingsCount + metricEnd.UnknownFindingsCount
-	response.PassedFindings = metricEnd.PassedFindingsCount
-	response.FailedFindings = metricEnd.FailedFindingsCount
-	response.UnknownFindings = metricEnd.UnknownFindingsCount
-
-	response.LastTotalFindings = metricStart.PassedFindingsCount + metricStart.FailedFindingsCount + metricStart.UnknownFindingsCount
-	response.LastPassedFindings = metricStart.PassedFindingsCount
-	response.LastFailedFindings = metricStart.FailedFindingsCount
-	response.LastUnknownFindings = metricStart.UnknownFindingsCount
 	return ctx.JSON(http.StatusOK, response)
 }
 

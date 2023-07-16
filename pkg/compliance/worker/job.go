@@ -82,7 +82,7 @@ func (j *Job) Do(
 	return result
 }
 
-func (j *Job) RunBenchmark(esk keibi.Client, benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]es.Finding, error) {
+func (j *Job) RunBenchmark(esk keibi.Client, benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]types.Finding, error) {
 	ctx := &httpclient.Context{
 		UserRole: api2.AdminRole,
 	}
@@ -94,7 +94,7 @@ func (j *Job) RunBenchmark(esk keibi.Client, benchmarkID string, complianceClien
 
 	fmt.Println("+++++++++ Running Benchmark:", benchmarkID)
 
-	var findings []es.Finding
+	var findings []types.Finding
 	for _, childBenchmarkID := range benchmark.Children {
 		f, err := j.RunBenchmark(esk, childBenchmarkID, complianceClient, steampipeConn, connector)
 		if err != nil {
@@ -259,12 +259,10 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	for _, finding := range findings {
 		docs = append(docs, finding)
 	}
-	_, index := docs[0].KeysAndIndex()
-	fmt.Println("++++++ kakfa topic and index: ", kfkTopic, index)
 	return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger)
 }
 
-func (j *Job) FilterFindings(esClient keibi.Client, policyID string, findings []es.Finding) ([]es.Finding, error) {
+func (j *Job) FilterFindings(esClient keibi.Client, policyID string, findings []types.Finding) ([]types.Finding, error) {
 	// get all active findings from ES page by page
 	// go through the ones extracted and remove duplicates
 	// if a finding fetched from es is not duplicated disable it
@@ -305,8 +303,8 @@ func (j *Job) FilterFindings(esClient keibi.Client, policyID string, findings []
 	return findings, nil
 }
 
-func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, query *api.Query, res *steampipe.Result) ([]es.Finding, error) {
-	var findings []es.Finding
+func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, query *api.Query, res *steampipe.Result) ([]types.Finding, error) {
+	var findings []types.Finding
 	for _, record := range res.Data {
 		if len(record) != len(res.Headers) {
 			return nil, fmt.Errorf("invalid record length, record=%d headers=%d", len(record), len(res.Headers))
@@ -343,7 +341,7 @@ func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, quer
 		if status == types.ComplianceResultALARM {
 			severity = policy.Severity
 		}
-		findings = append(findings, es.Finding{
+		findings = append(findings, types.Finding{
 			ID:               fmt.Sprintf("%s-%s-%d", resourceID, policy.ID, j.ScheduleJobID),
 			BenchmarkID:      benchmark.ID,
 			PolicyID:         policy.ID,

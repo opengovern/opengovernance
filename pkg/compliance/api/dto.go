@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
@@ -109,8 +108,8 @@ type GetTopFieldResponse struct {
 }
 
 type GetFindingsResponse struct {
-	Findings   []es.Finding `json:"findings"`
-	TotalCount int64        `json:"totalCount" example:"100"`
+	Findings   []types.Finding `json:"findings"`
+	TotalCount int64           `json:"totalCount" example:"100"`
 }
 
 type GetFindingsFiltersResponse struct {

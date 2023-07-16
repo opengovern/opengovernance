@@ -34,6 +34,8 @@ var (
 	KafkaService = os.Getenv("KAFKA_SERVICE")
 
 	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
+
+	ComplianceBaseUrl = os.Getenv("COMPLIANCE_BASE_URL")
 )
 
 func WorkerCommand() *cobra.Command {
@@ -62,25 +64,14 @@ func WorkerCommand() *cobra.Command {
 
 			w, err := InitializeWorker(
 				id,
-				RabbitMQUsername,
-				RabbitMQPassword,
-				RabbitMQService,
-				RabbitMQPort,
-				SummarizerJobsQueueName,
-				SummarizerResultsQueueName,
-				strings.Split(KafkaService, ","),
-				kafkaTopic,
+				RabbitMQUsername, RabbitMQPassword, RabbitMQService, RabbitMQPort,
+				SummarizerJobsQueueName, SummarizerResultsQueueName,
+				strings.Split(KafkaService, ","), kafkaTopic,
 				logger,
 				PrometheusPushAddress,
-				ElasticSearchAddress,
-				ElasticSearchUsername,
-				ElasticSearchPassword,
-				PostgreSQLHost,
-				PostgreSQLPort,
-				PostgreSQLDb,
-				PostgreSQLUser,
-				PostgreSQLPassword,
-				PostgreSQLSSLMode,
+				ComplianceBaseUrl,
+				ElasticSearchAddress, ElasticSearchUsername, ElasticSearchPassword,
+				PostgreSQLHost, PostgreSQLPort, PostgreSQLDb, PostgreSQLUser, PostgreSQLPassword, PostgreSQLSSLMode,
 			)
 			if err != nil {
 				return err

@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
@@ -19,45 +21,48 @@ import (
 
 type JobType string
 
+const MaxKafkaSendBatchSize = 10000
+
 const (
-	JobType_ResourceSummarizer     JobType = "resourceSummarizer"
 	JobType_ResourceMustSummarizer JobType = "resourceMustSummarizer"
 	JobType_ComplianceSummarizer   JobType = "complianceSummarizer"
 )
 
 type Worker struct {
-	id             string
-	jobQueue       queue.Interface
-	jobResultQueue queue.Interface
-	kfkProducer    *confluent_kafka.Producer
-	kfkTopic       string
-	logger         *zap.Logger
-	es             keibi.Client
-	db             inventory.Database
-	pusher         *push.Pusher
+	id               string
+	jobQueue         queue.Interface
+	jobResultQueue   queue.Interface
+	kfkProducer      *confluent_kafka.Producer
+	kfkTopic         string
+	logger           *zap.Logger
+	es               keibi.Client
+	db               inventory.Database
+	complianceClient client.ComplianceServiceClient
+	pusher           *push.Pusher
+}
+
+type SummarizeJob struct {
+	JobID   uint
+	JobType JobType
+}
+
+type SummarizeJobResult struct {
+	JobID   uint
+	Status  api.SummarizerJobStatus
+	Error   string
+	JobType JobType
 }
 
 func InitializeWorker(
 	id string,
-	rabbitMQUsername string,
-	rabbitMQPassword string,
-	rabbitMQHost string,
-	rabbitMQPort int,
-	summarizerJobQueue string,
-	summarizerJobResultQueue string,
-	kafkaBrokers []string,
-	kafkaTopic string,
+	rabbitMQUsername string, rabbitMQPassword string, rabbitMQHost string, rabbitMQPort int,
+	summarizerJobQueue string, summarizerJobResultQueue string,
+	kafkaBrokers []string, kafkaTopic string,
 	logger *zap.Logger,
 	prometheusPushAddress string,
-	elasticSearchAddress string,
-	elasticSearchUsername string,
-	elasticSearchPassword string,
-	postgresHost string,
-	postgresPort string,
-	postgresDb string,
-	postgresUsername string,
-	postgresPassword string,
-	postgresSSLMode string,
+	complianceBaseUrl string,
+	elasticSearchAddress string, elasticSearchUsername string, elasticSearchPassword string,
+	postgresHost string, postgresPort string, postgresDb string, postgresUsername string, postgresPassword string, postgresSSLMode string,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -71,6 +76,8 @@ func InitializeWorker(
 			w.Stop()
 		}
 	}()
+
+	w.complianceClient = client.NewComplianceClient(complianceBaseUrl)
 
 	qCfg := queue.Config{}
 	qCfg.Server.Username = rabbitMQUsername
@@ -112,7 +119,8 @@ func InitializeWorker(
 	w.logger = logger
 
 	w.pusher = push.New(prometheusPushAddress, "summarizer-worker")
-	w.pusher.Collector(DoResourceSummarizerJobsCount).
+	w.pusher.
+		Collector(DoResourceSummarizerJobsCount).
 		Collector(DoResourceSummarizerJobsDuration).
 		Collector(DoComplianceSummarizerJobsCount).
 		Collector(DoComplianceSummarizerJobsDuration)
@@ -165,8 +173,8 @@ func (w *Worker) Run() error {
 	msg := <-msgs
 
 	w.logger.Info("Took the job")
-	var resourceJob ResourceJob
-	if err := json.Unmarshal(msg.Body, &resourceJob); err != nil {
+	var summarizeJob SummarizeJob
+	if err := json.Unmarshal(msg.Body, &summarizeJob); err != nil {
 		w.logger.Error("Failed to unmarshal task", zap.Error(err))
 		err2 := msg.Nack(false, false)
 		if err2 != nil {
@@ -175,28 +183,21 @@ func (w *Worker) Run() error {
 		return err
 	}
 
-	if resourceJob.JobType == "" || resourceJob.JobType == JobType_ResourceSummarizer || resourceJob.JobType == JobType_ResourceMustSummarizer {
-		w.logger.Info("Processing job", zap.Int("jobID", int(resourceJob.JobID)))
-		result := resourceJob.DoMustSummarizer(w.es, w.db, w.kfkProducer, w.kfkTopic, w.logger)
-		w.logger.Info("Publishing job result", zap.Int("jobID", int(resourceJob.JobID)), zap.String("status", string(result.Status)))
+	switch summarizeJob.JobType {
+	case "":
+		fallthrough
+	case JobType_ResourceMustSummarizer:
+		w.logger.Info("Processing job", zap.Int("jobID", int(summarizeJob.JobID)))
+		result := summarizeJob.DoMustSummarizer(w.es, w.db, w.kfkProducer, w.kfkTopic, w.logger)
+		w.logger.Info("Publishing job result", zap.Int("jobID", int(summarizeJob.JobID)), zap.String("status", string(result.Status)))
 		err = w.jobResultQueue.Publish(result)
 		if err != nil {
 			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
 		}
-	} else {
-		var complianceJob ComplianceJob
-		if err := json.Unmarshal(msg.Body, &complianceJob); err != nil {
-			w.logger.Error("Failed to unmarshal task", zap.Error(err))
-			err2 := msg.Nack(false, false)
-			if err2 != nil {
-				w.logger.Error("Failed nacking message", zap.Error(err))
-			}
-			return err
-		}
-
-		w.logger.Info("Processing job", zap.Int("jobID", int(complianceJob.JobID)))
-		result := complianceJob.Do(w.es, w.kfkProducer, w.kfkTopic, w.logger)
-		w.logger.Info("Publishing job result", zap.Int("jobID", int(complianceJob.JobID)), zap.String("status", string(result.Status)))
+	case JobType_ComplianceSummarizer:
+		w.logger.Info("Processing job", zap.Int("jobID", int(summarizeJob.JobID)))
+		result := summarizeJob.DoComplianceSummarizer(w.es, w.complianceClient, w.kfkProducer, w.kfkTopic, w.logger)
+		w.logger.Info("Publishing job result", zap.Int("jobID", int(summarizeJob.JobID)), zap.String("status", string(result.Status)))
 		err = w.jobResultQueue.Publish(result)
 		if err != nil {
 			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))

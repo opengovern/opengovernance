@@ -5,7 +5,7 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/query"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )
@@ -42,7 +42,7 @@ func getBenchmarkEvaluationSummary(client keibi.Client, db db.Database, benchmar
 		resp.Checks.LowCount += s.Checks.LowCount
 	}
 
-	res, err := query.FetchLiveBenchmarkAggregatedFindings(client, &benchmark.ID, connectionIds)
+	res, err := es.FetchLiveBenchmarkAggregatedFindings(client, &benchmark.ID, connectionIds)
 	if err != nil {
 		return resp, err
 	}
@@ -107,7 +107,7 @@ func GetBenchmarkTree(db db.Database, client keibi.Client, b db.Benchmark, statu
 		tree.Children = append(tree.Children, childTree)
 	}
 
-	res, err := query.ListBenchmarkSummaries(client, &b.ID)
+	res, err := es.ListBenchmarkSummaries(client, &b.ID)
 	if err != nil {
 		return tree, err
 	}
@@ -189,7 +189,7 @@ func (h *HttpHandler) BuildBenchmarkResultTrend(b db.Benchmark, startDate, endDa
 		}
 	}
 
-	res, err := query.FetchBenchmarkSummaryHistory(h.client, &b.ID, startDate, endDate)
+	res, err := es.FetchBenchmarkSummaryHistory(h.client, &b.ID, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}

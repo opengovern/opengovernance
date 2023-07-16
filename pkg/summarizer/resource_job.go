@@ -27,8 +27,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const MaxKafkaSendBatchSize = 10000
-
 var DoResourceSummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "keibi",
 	Subsystem: "summarizer_worker",
@@ -44,26 +42,7 @@ var DoResourceSummarizerJobsDuration = promauto.NewHistogramVec(prometheus.Histo
 	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
 }, []string{"queryid", "status"})
 
-type ResourceJob struct {
-	JobID uint
-
-	LastDayScheduleJobID     uint
-	LastWeekScheduleJobID    uint
-	LastQuarterScheduleJobID uint
-	LastYearScheduleJobID    uint
-
-	JobType JobType
-}
-
-type ResourceJobResult struct {
-	JobID  uint
-	Status api.SummarizerJobStatus
-	Error  string
-
-	JobType JobType
-}
-
-func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database, producer *confluent_kafka.Producer, topic string, logger *zap.Logger) (r ResourceJobResult) {
+func (j SummarizeJob) DoMustSummarizer(client keibi.Client, db inventory.Database, producer *confluent_kafka.Producer, topic string, logger *zap.Logger) (r SummarizeJobResult) {
 	logger.Info("Starting must summarizing", zap.Int("jobID", int(j.JobID)))
 	startTime := time.Now().Unix()
 	defer func() {
@@ -74,7 +53,7 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 
 			DoResourceSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Observe(float64(time.Now().Unix() - startTime))
 			DoResourceSummarizerJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Inc()
-			r = ResourceJobResult{
+			r = SummarizeJobResult{
 				JobID:   j.JobID,
 				Status:  api.SummarizerJobFailed,
 				Error:   fmt.Sprintf("paniced: %s", err),
@@ -197,7 +176,7 @@ func (j ResourceJob) DoMustSummarizer(client keibi.Client, db inventory.Database
 		DoResourceSummarizerJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "successful").Inc()
 	}
 
-	return ResourceJobResult{
+	return SummarizeJobResult{
 		JobID:   j.JobID,
 		Status:  status,
 		Error:   errMsg,

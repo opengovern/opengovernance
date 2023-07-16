@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
@@ -13,50 +12,6 @@ import (
 
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )
-
-const (
-	FindingsIndex      = "findings"
-	StackFindingsIndex = "stacks-findings"
-)
-
-type Finding struct {
-	ID               string                 `json:"ID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1-azure_cis_v140_7_5"` // Finding ID
-	BenchmarkID      string                 `json:"benchmarkID" example:"azure_cis_v140"`                                                                                    // Benchmark ID
-	PolicyID         string                 `json:"policyID" example:"azure_cis_v140_7_5"`                                                                                   // Policy ID
-	ConnectionID     string                 `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`                                                             // Connection ID
-	DescribedAt      int64                  `json:"describedAt" example:"1589395200"`                                                                                        // Timestamp of the policy description
-	EvaluatedAt      int64                  `json:"evaluatedAt" example:"1589395200"`                                                                                        // Timestamp of the policy evaluation
-	StateActive      bool                   `json:"stateActive" example:"true"`                                                                                              // Whether the policy is active or not
-	Result           types.ComplianceResult `json:"result" example:"alarm"`                                                                                                  // Compliance result
-	Severity         types.Severity         `json:"severity" example:"low"`                                                                                                  // Compliance severity
-	Evaluator        string                 `json:"evaluator" example:"steampipe-v0.5"`                                                                                      // Evaluator name
-	Connector        source.Type            `json:"connector" example:"Azure"`                                                                                               // Cloud provider
-	ResourceID       string                 `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`            // Resource ID
-	ResourceName     string                 `json:"resourceName" example:"vm-1"`                                                                                             // Resource name
-	ResourceLocation string                 `json:"resourceLocation" example:"eastus"`                                                                                       // Resource location
-	ResourceType     string                 `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`                                                                // Resource type
-	Reason           string                 `json:"reason" example:"The VM is not using managed disks"`                                                                      // Reason for the policy evaluation result
-	ComplianceJobID  uint                   `json:"complianceJobID" example:"1"`                                                                                             // Compliance job ID
-	ScheduleJobID    uint                   `json:"scheduleJobID" example:"1"`                                                                                               // Schedule job ID
-}
-
-func (r Finding) KeysAndIndex() ([]string, string) {
-	if strings.HasPrefix(r.ConnectionID, "stack-") {
-		return []string{
-			r.ResourceID,
-			r.ConnectionID,
-			r.PolicyID,
-			strconv.FormatInt(r.DescribedAt, 10),
-		}, StackFindingsIndex
-	} else {
-		return []string{
-			r.ResourceID,
-			r.ConnectionID,
-			r.PolicyID,
-			strconv.FormatInt(r.DescribedAt, 10),
-		}, FindingsIndex
-	}
-}
 
 type FindingsQueryResponse struct {
 	Hits FindingsQueryHits `json:"hits"`
@@ -71,7 +26,7 @@ type FindingsQueryHit struct {
 	Index   string        `json:"_index"`
 	Type    string        `json:"_type"`
 	Version int64         `json:"_version,omitempty"`
-	Source  Finding       `json:"_source"`
+	Source  types.Finding `json:"_source"`
 	Sort    []interface{} `json:"sort"`
 }
 
@@ -103,7 +58,7 @@ func GetActiveFindings(client keibi.Client, policyID string, from, size int) (*F
 	}
 
 	var resp FindingsQueryResponse
-	err = client.SearchWithTrackTotalHits(context.Background(), FindingsIndex, string(b), &resp, false)
+	err = client.SearchWithTrackTotalHits(context.Background(), types.FindingsIndex, string(b), &resp, false)
 	return &resp, err
 }
 
@@ -188,9 +143,9 @@ func FindingsQuery(client keibi.Client,
 
 	var resp FindingsQueryResponse
 	if isStack {
-		err = client.SearchWithTrackTotalHits(context.Background(), StackFindingsIndex, string(b), &resp, true)
+		err = client.SearchWithTrackTotalHits(context.Background(), types.StackFindingsIndex, string(b), &resp, true)
 	} else {
-		err = client.SearchWithTrackTotalHits(context.Background(), FindingsIndex, string(b), &resp, true)
+		err = client.SearchWithTrackTotalHits(context.Background(), types.FindingsIndex, string(b), &resp, true)
 	}
 	return &resp, err
 }
@@ -304,6 +259,82 @@ func FindingsTopFieldQuery(client keibi.Client,
 
 	fmt.Println("======", string(queryBytes))
 	var resp FindingsTopFieldResponse
-	err = client.Search(context.Background(), FindingsIndex, string(queryBytes), &resp)
+	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
 	return &resp, err
+}
+
+type LiveBenchmarkAggregatedFindingsQueryResponse struct {
+	Aggregations struct {
+		PolicyGroup struct {
+			Buckets []struct {
+				Key         string `json:"key"`
+				ResultGroup struct {
+					Buckets []struct {
+						Key      string `json:"key"`
+						DocCount int64  `json:"doc_count"`
+					} `json:"buckets"`
+				} `json:"result_group"`
+			} `json:"buckets"`
+		} `json:"policy_group"`
+	} `json:"aggregations"`
+}
+
+func FetchLiveBenchmarkAggregatedFindings(client keibi.Client, benchmarkID *string, connectionIds []string) (map[string]map[types.ComplianceResult]int, error) {
+	var filters []any
+
+	filters = append(filters, map[string]any{
+		"term": map[string]bool{"stateActive": true},
+	})
+
+	if benchmarkID != nil {
+		filters = append(filters, map[string]any{
+			"term": map[string]string{"benchmarkID": *benchmarkID},
+		})
+	}
+	if len(connectionIds) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"connectionID": connectionIds},
+		})
+	}
+
+	queryObj := map[string]any{
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": filters,
+			},
+		},
+		"size": 0,
+	}
+	queryObj["aggs"] = map[string]any{
+		"policy_group": map[string]any{
+			"terms": map[string]string{"field": "policyID"},
+			"aggs": map[string]any{
+				"result_group": map[string]any{
+					"terms": map[string]string{"field": "result"},
+				},
+			},
+		},
+	}
+
+	query, err := json.Marshal(queryObj)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("query=", string(query), "index=", types.FindingsIndex)
+
+	var response LiveBenchmarkAggregatedFindingsQueryResponse
+	err = client.Search(context.Background(), types.FindingsIndex, string(query), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]map[types.ComplianceResult]int)
+	for _, policyBucket := range response.Aggregations.PolicyGroup.Buckets {
+		result[policyBucket.Key] = make(map[types.ComplianceResult]int)
+		for _, resultBucket := range policyBucket.ResultGroup.Buckets {
+			result[policyBucket.Key][types.ComplianceResult(resultBucket.Key)] = int(resultBucket.DocCount)
+		}
+	}
+	return result, nil
 }

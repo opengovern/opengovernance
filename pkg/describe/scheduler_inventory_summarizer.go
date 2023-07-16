@@ -3,12 +3,13 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"time"
+
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer"
 	summarizerapi "github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"time"
 )
 
 func (s Scheduler) RunMustSummerizeJobScheduler() {
@@ -79,44 +80,9 @@ func (s Scheduler) scheduleMustSummarizerJob(scheduleJobID *uint) error {
 }
 
 func enqueueMustSummarizerJobs(db Database, q queue.Interface, job SummarizerJob) error {
-	var lastDayJobID, lastWeekJobID, lastQuarterJobID, lastYearJobID uint
-
-	lastDay, err := db.GetOldCompletedScheduleJob(1)
-	if err != nil {
-		return err
-	}
-	if lastDay != nil {
-		lastDayJobID = lastDay.ID
-	}
-	lastWeek, err := db.GetOldCompletedScheduleJob(7)
-	if err != nil {
-		return err
-	}
-	if lastWeek != nil {
-		lastWeekJobID = lastWeek.ID
-	}
-	lastQuarter, err := db.GetOldCompletedScheduleJob(93)
-	if err != nil {
-		return err
-	}
-	if lastQuarter != nil {
-		lastQuarterJobID = lastQuarter.ID
-	}
-	lastYear, err := db.GetOldCompletedScheduleJob(428)
-	if err != nil {
-		return err
-	}
-	if lastYear != nil {
-		lastYearJobID = lastYear.ID
-	}
-
-	if err := q.Publish(summarizer.ResourceJob{
-		JobID:                    job.ID,
-		LastDayScheduleJobID:     lastDayJobID,
-		LastWeekScheduleJobID:    lastWeekJobID,
-		LastQuarterScheduleJobID: lastQuarterJobID,
-		LastYearScheduleJobID:    lastYearJobID,
-		JobType:                  summarizer.JobType_ResourceMustSummarizer,
+	if err := q.Publish(summarizer.SummarizeJob{
+		JobID:   job.ID,
+		JobType: summarizer.JobType_ResourceMustSummarizer,
 	}); err != nil {
 		return err
 	}
@@ -155,7 +121,7 @@ func (s *Scheduler) RunSummarizerJobResultsConsumer() error {
 				return fmt.Errorf("tasks channel is closed")
 			}
 
-			var result summarizer.ResourceJobResult
+			var result summarizer.SummarizeJobResult
 			if err := json.Unmarshal(msg.Body, &result); err != nil {
 				s.logger.Error("Failed to unmarshal SummarizerJobResult results", zap.Error(err))
 				err = msg.Nack(false, false)
@@ -165,48 +131,20 @@ func (s *Scheduler) RunSummarizerJobResultsConsumer() error {
 				continue
 			}
 
-			if result.JobType == "" || result.JobType == summarizer.JobType_ResourceSummarizer || result.JobType == summarizer.JobType_ResourceMustSummarizer {
-				s.logger.Info("Processing SummarizerJobResult for Job",
+			s.logger.Info("Processing SummarizerJobResult for Job",
+				zap.Uint("jobId", result.JobID),
+				zap.String("status", string(result.Status)),
+			)
+			err := s.db.UpdateSummarizerJob(result.JobID, result.Status, result.Error)
+			if err != nil {
+				s.logger.Error("Failed to update the status of SummarizerJob",
 					zap.Uint("jobId", result.JobID),
-					zap.String("status", string(result.Status)),
-				)
-				err := s.db.UpdateSummarizerJob(result.JobID, result.Status, result.Error)
+					zap.Error(err))
+				err = msg.Nack(false, true)
 				if err != nil {
-					s.logger.Error("Failed to update the status of SummarizerJob",
-						zap.Uint("jobId", result.JobID),
-						zap.Error(err))
-					err = msg.Nack(false, true)
-					if err != nil {
-						s.logger.Error("Failed nacking message", zap.Error(err))
-					}
-					continue
+					s.logger.Error("Failed nacking message", zap.Error(err))
 				}
-			} else {
-				var result summarizer.ComplianceJobResult
-				if err := json.Unmarshal(msg.Body, &result); err != nil {
-					s.logger.Error("Failed to unmarshal SummarizerJobResult results", zap.Error(err))
-					err = msg.Nack(false, false)
-					if err != nil {
-						s.logger.Error("Failed nacking message", zap.Error(err))
-					}
-					continue
-				}
-
-				s.logger.Info("Processing SummarizerJobResult for Job",
-					zap.Uint("jobId", result.JobID),
-					zap.String("status", string(result.Status)),
-				)
-				err := s.db.UpdateSummarizerJob(result.JobID, result.Status, result.Error)
-				if err != nil {
-					s.logger.Error("Failed to update the status of SummarizerJob",
-						zap.Uint("jobId", result.JobID),
-						zap.Error(err))
-					err = msg.Nack(false, true)
-					if err != nil {
-						s.logger.Error("Failed nacking message", zap.Error(err))
-					}
-					continue
-				}
+				continue
 			}
 
 			if err := msg.Ack(false); err != nil {
