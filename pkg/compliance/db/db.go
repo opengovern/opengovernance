@@ -49,24 +49,15 @@ func (db Database) ListBenchmarks() ([]Benchmark, error) {
 }
 
 func (db Database) ListRootBenchmarks() ([]Benchmark, error) {
-	benchmarks, err := db.ListBenchmarks()
+	var benchmarks []Benchmark
+	err := db.Orm.Model(&Benchmark{}).
+		Where("NOT EXISTS (SELECT 1 FROM benchmark_children WHERE benchmark_children.child_id = benchmarks.id)").
+		Find(&benchmarks).Error
 	if err != nil {
 		return nil, err
 	}
-	hasParent := make(map[string]bool)
-	var response []Benchmark
-	for _, b := range benchmarks {
-		for _, c := range b.Children {
-			hasParent[c.ID] = true
-		}
-	}
-	for _, b := range benchmarks {
-		if !hasParent[b.ID] {
-			response = append(response, b)
-		}
-	}
 
-	return response, nil
+	return benchmarks, nil
 }
 
 func (db Database) GetBenchmark(benchmarkId string) (*Benchmark, error) {
