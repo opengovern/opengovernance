@@ -148,6 +148,10 @@ func (b *BenchmarkSummaryBuilder) extractBenchmarkSummary(benchmark *complianceA
 
 			benchmarkSummary := b.benchmarkSummaries[benchmark.ID][connectionID]
 
+			if _, ok := connectorTypeMap[connectionID]; !ok {
+				connectorTypeMap[connectionID] = make(map[source.Type]bool)
+			}
+
 			connectorTypeMap[connectionID][policySummary.ConnectorType] = true
 			benchmarkSummary.TotalResult.OkCount += policySummary.TotalResult.OkCount
 			benchmarkSummary.TotalResult.AlarmCount += policySummary.TotalResult.AlarmCount
