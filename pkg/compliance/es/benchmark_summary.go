@@ -85,8 +85,8 @@ func FetchBenchmarkSummariesByConnectionIDAtTime(
 		"bool": map[string]any{
 			"filter": filters,
 		},
-		"size": 0,
 	}
+	request["size"] = 0
 	request["aggs"] = map[string]any{
 		"connection_id_group": map[string]any{
 			"terms": map[string]string{
@@ -211,8 +211,8 @@ func FetchBenchmarkSummariesByConnectorAtTime(
 		"bool": map[string]any{
 			"filter": filters,
 		},
-		"size": 0,
 	}
+	request["size"] = 0
 	request["aggs"] = map[string]any{
 		"connector_group": map[string]any{
 			"terms": map[string]string{

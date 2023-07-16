@@ -1012,6 +1012,27 @@ const docTemplate = `{
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "timestamp for values in epoch seconds",
+                        "name": "timeAt",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1136,6 +1157,27 @@ const docTemplate = `{
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "timestamp for values in epoch seconds",
+                        "name": "timeAt",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1143,110 +1185,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/{benchmark_id}/summary/result/trend": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "This API allows users to retrieve datapoints of compliance severities over a specified time period, enabling users to keep track of and monitor changes in compliance.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Get compliance result trend",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Start time",
-                        "name": "start",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "End time",
-                        "name": "end",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Benchmark ID",
-                        "name": "benchmark_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/{benchmark_id}/tree": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "This API retrieves the benchmark tree, including all of its child benchmarks. Users can use this API to obtain a comprehensive overview of the benchmarks within a particular category or hierarchy.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Get benchmark tree",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Benchmark ID",
-                        "name": "benchmark_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "passed",
-                                "failed",
-                                "unknown"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Status",
-                        "name": "status",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree"
                         }
                     }
                 }
@@ -7960,44 +7898,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend": {
-            "type": "object",
-            "properties": {
-                "resultTrend": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResultDatapoint"
-                    }
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree": {
-            "type": "object",
-            "properties": {
-                "children": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree"
-                    }
-                },
-                "id": {
-                    "description": "Benchmark ID",
-                    "type": "string",
-                    "example": "azure_cis_v140"
-                },
-                "policies": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree"
-                    }
-                },
-                "title": {
-                    "description": "Benchmark title",
-                    "type": "string",
-                    "example": "CIS v1.4.0"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ComplianceReport": {
             "type": "object",
             "properties": {
@@ -8597,40 +8497,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "description": "Policy ID",
-                    "type": "string",
-                    "example": "azure_cis_v140_7_5"
-                },
-                "lastChecked": {
-                    "description": "Last checked",
-                    "type": "integer",
-                    "example": 0
-                },
-                "severity": {
-                    "description": "Severity",
-                    "type": "string",
-                    "example": "low"
-                },
-                "status": {
-                    "description": "Status",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.PolicyStatus"
-                        }
-                    ],
-                    "example": "passed"
-                },
-                "title": {
-                    "description": "Policy title",
-                    "type": "string",
-                    "example": "7.5 Ensure that the latest OS Patches for all Virtual Machines are applied"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query": {
             "type": "object",
             "properties": {
@@ -8666,23 +8532,6 @@ const docTemplate = `{
                 "updatedAt": {
                     "type": "string",
                     "example": "2023-06-16T14:58:08.759554Z"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResultDatapoint": {
-            "type": "object",
-            "properties": {
-                "result": {
-                    "description": "Result",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.SeverityResult"
-                        }
-                    ]
-                },
-                "time": {
-                    "description": "Datapoint Time",
-                    "type": "integer"
                 }
             }
         },
@@ -11321,19 +11170,6 @@ const docTemplate = `{
                     "example": true
                 }
             }
-        },
-        "types.PolicyStatus": {
-            "type": "string",
-            "enum": [
-                "passed",
-                "failed",
-                "unknown"
-            ],
-            "x-enum-varnames": [
-                "PolicyStatusPASSED",
-                "PolicyStatusFAILED",
-                "PolicyStatusUNKNOWN"
-            ]
         },
         "types.SeverityResult": {
             "type": "object",

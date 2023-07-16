@@ -250,7 +250,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id	path		string		true	"Benchmark ID"
+//	@Param			benchmark_id	path		string			true	"Benchmark ID"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			timeAt			query		int				false	"timestamp for values in epoch seconds"

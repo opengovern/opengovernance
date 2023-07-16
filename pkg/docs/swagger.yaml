@@ -827,32 +827,6 @@ definitions:
         example: Azure CIS v1.4.0
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend:
-    properties:
-      resultTrend:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResultDatapoint'
-        type: array
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree:
-    properties:
-      children:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
-        type: array
-      id:
-        description: Benchmark ID
-        example: azure_cis_v140
-        type: string
-      policies:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree'
-        type: array
-      title:
-        description: Benchmark title
-        example: CIS v1.4.0
-        type: string
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ComplianceReport:
     properties:
       failureMessage:
@@ -1274,31 +1248,6 @@ definitions:
         example: "2020-01-01T00:00:00Z"
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree:
-    properties:
-      id:
-        description: Policy ID
-        example: azure_cis_v140_7_5
-        type: string
-      lastChecked:
-        description: Last checked
-        example: 0
-        type: integer
-      severity:
-        description: Severity
-        example: low
-        type: string
-      status:
-        allOf:
-        - $ref: '#/definitions/types.PolicyStatus'
-        description: Status
-        example: passed
-      title:
-        description: Policy title
-        example: 7.5 Ensure that the latest OS Patches for all Virtual Machines are
-          applied
-        type: string
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query:
     properties:
       connector:
@@ -1330,16 +1279,6 @@ definitions:
       updatedAt:
         example: "2023-06-16T14:58:08.759554Z"
         type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ResultDatapoint:
-    properties:
-      result:
-        allOf:
-        - $ref: '#/definitions/types.SeverityResult'
-        description: Result
-      time:
-        description: Datapoint Time
-        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType:
     enum:
@@ -3210,16 +3149,6 @@ definitions:
         example: true
         type: boolean
     type: object
-  types.PolicyStatus:
-    enum:
-    - passed
-    - failed
-    - unknown
-    type: string
-    x-enum-varnames:
-    - PolicyStatusPASSED
-    - PolicyStatusFAILED
-    - PolicyStatusUNKNOWN
   types.SeverityResult:
     properties:
       criticalCount:
@@ -3906,6 +3835,21 @@ paths:
           type: string
         name: connectionId
         type: array
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - description: timestamp for values in epoch seconds
+        in: query
+        name: timeAt
+        type: integer
       produces:
       - application/json
       responses:
@@ -3916,78 +3860,6 @@ paths:
       security:
       - BearerToken: []
       summary: Get benchmark summary
-      tags:
-      - compliance
-  /compliance/api/v1/benchmarks/{benchmark_id}/summary/result/trend:
-    get:
-      consumes:
-      - application/json
-      description: This API allows users to retrieve datapoints of compliance severities
-        over a specified time period, enabling users to keep track of and monitor
-        changes in compliance.
-      parameters:
-      - description: Start time
-        in: query
-        name: start
-        required: true
-        type: integer
-      - description: End time
-        in: query
-        name: end
-        required: true
-        type: integer
-      - description: Benchmark ID
-        in: path
-        name: benchmark_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkResultTrend'
-      security:
-      - BearerToken: []
-      summary: Get compliance result trend
-      tags:
-      - compliance
-  /compliance/api/v1/benchmarks/{benchmark_id}/tree:
-    get:
-      consumes:
-      - application/json
-      description: This API retrieves the benchmark tree, including all of its child
-        benchmarks. Users can use this API to obtain a comprehensive overview of the
-        benchmarks within a particular category or hierarchy.
-      parameters:
-      - description: Benchmark ID
-        in: path
-        name: benchmark_id
-        required: true
-        type: string
-      - collectionFormat: csv
-        description: Status
-        in: query
-        items:
-          enum:
-          - passed
-          - failed
-          - unknown
-          type: string
-        name: status
-        required: true
-        type: array
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
-      security:
-      - BearerToken: []
-      summary: Get benchmark tree
       tags:
       - compliance
   /compliance/api/v1/benchmarks/policies/{policy_id}:
@@ -4032,6 +3904,21 @@ paths:
           type: string
         name: connectionId
         type: array
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - description: timestamp for values in epoch seconds
+        in: query
+        name: timeAt
+        type: integer
       produces:
       - application/json
       responses:
