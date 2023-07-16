@@ -16,6 +16,50 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/ai/api/v1/gpt/run": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "resource"
+                ],
+                "summary": "Runs the query on KaytuGPT and returns the generated query",
+                "parameters": [
+                    {
+                        "description": "Description of query for KaytuGPT",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/api/v1/key/create": {
             "post": {
                 "security": [
@@ -678,45 +722,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/alarms/top": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Returns top field by alarm count with respect to filters",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Top field by alarm count",
-                "parameters": [
-                    {
-                        "description": "Request Body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/compliance/api/v1/assignments": {
             "get": {
                 "security": [
@@ -1281,48 +1286,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/findings/metrics": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "This API enables users to retrieve findings metrics for two given times, which includes the total number of findings, the number of passed findings, the number of failed findings, and the number of unknowns findings. Users can use this API to compare the compliance status of their resources between two different time periods.\nThe API will return the findings metrics for each time period separately, allowing users to easily compare the compliance status of their resources at each time period. This can be useful for monitoring the effectiveness of compliance measures over time and identifying any areas of improvement.\"",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Returns findings metrics",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the start time",
-                        "name": "start",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "unix seconds for the end time",
-                        "name": "end",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsMetricsResponse"
                         }
                     }
                 }
@@ -6943,10 +6906,6 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "scheduleJobId": {
-                    "type": "integer",
-                    "example": 1
-                },
                 "updatedAt": {
                     "type": "string"
                 }
@@ -8241,43 +8200,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsMetricsResponse": {
-            "type": "object",
-            "properties": {
-                "failedFindings": {
-                    "type": "integer",
-                    "example": 10
-                },
-                "lastFailedFindings": {
-                    "type": "integer",
-                    "example": 10
-                },
-                "lastPassedFindings": {
-                    "type": "integer",
-                    "example": 90
-                },
-                "lastTotalFindings": {
-                    "type": "integer",
-                    "example": 100
-                },
-                "lastUnknownFindings": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "passedFindings": {
-                    "type": "integer",
-                    "example": 90
-                },
-                "totalFindings": {
-                    "type": "integer",
-                    "example": 100
-                },
-                "unknownFindings": {
-                    "type": "integer",
-                    "example": 0
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequest": {
             "type": "object",
             "required": [
@@ -8304,40 +8226,12 @@ const docTemplate = `{
                 "findings": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_es.Finding"
+                        "$ref": "#/definitions/types.Finding"
                     }
                 },
                 "totalCount": {
                     "type": "integer",
                     "example": 100
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldRequest": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "description": "Number of items to return",
-                    "type": "integer",
-                    "example": 1
-                },
-                "field": {
-                    "description": "Field to get top values for",
-                    "enum": [
-                        "resourceType",
-                        "serviceName",
-                        "sourceID",
-                        "resourceID"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopField"
-                        }
-                    ],
-                    "example": "resourceType"
-                },
-                "filters": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters"
                 }
             }
         },
@@ -8831,21 +8725,6 @@ const docTemplate = `{
                 "FieldPolicySeverity"
             ]
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopField": {
-            "type": "string",
-            "enum": [
-                "resourceType",
-                "serviceName",
-                "sourceID",
-                "resourceID"
-            ],
-            "x-enum-varnames": [
-                "TopField_ResourceType",
-                "TopField_CloudService",
-                "TopField_CloudAccount",
-                "TopField_Resources"
-            ]
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord": {
             "type": "object",
             "properties": {
@@ -8854,109 +8733,6 @@ const docTemplate = `{
                 },
                 "value": {
                     "type": "string"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_es.Finding": {
-            "type": "object",
-            "properties": {
-                "ID": {
-                    "description": "Finding ID",
-                    "type": "string",
-                    "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1-azure_cis_v140_7_5"
-                },
-                "benchmarkID": {
-                    "description": "Benchmark ID",
-                    "type": "string",
-                    "example": "azure_cis_v140"
-                },
-                "complianceJobID": {
-                    "description": "Compliance job ID",
-                    "type": "integer",
-                    "example": 1
-                },
-                "connectionID": {
-                    "description": "Connection ID",
-                    "type": "string",
-                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
-                },
-                "connector": {
-                    "description": "Cloud provider",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
-                    "example": "Azure"
-                },
-                "describedAt": {
-                    "description": "Timestamp of the policy description",
-                    "type": "integer",
-                    "example": 1589395200
-                },
-                "evaluatedAt": {
-                    "description": "Timestamp of the policy evaluation",
-                    "type": "integer",
-                    "example": 1589395200
-                },
-                "evaluator": {
-                    "description": "Evaluator name",
-                    "type": "string",
-                    "example": "steampipe-v0.5"
-                },
-                "policyID": {
-                    "description": "Policy ID",
-                    "type": "string",
-                    "example": "azure_cis_v140_7_5"
-                },
-                "reason": {
-                    "description": "Reason for the policy evaluation result",
-                    "type": "string",
-                    "example": "The VM is not using managed disks"
-                },
-                "resourceID": {
-                    "description": "Resource ID",
-                    "type": "string",
-                    "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
-                },
-                "resourceLocation": {
-                    "description": "Resource location",
-                    "type": "string",
-                    "example": "eastus"
-                },
-                "resourceName": {
-                    "description": "Resource name",
-                    "type": "string",
-                    "example": "vm-1"
-                },
-                "resourceType": {
-                    "description": "Resource type",
-                    "type": "string",
-                    "example": "Microsoft.Compute/virtualMachines"
-                },
-                "result": {
-                    "description": "Compliance result",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.ComplianceResult"
-                        }
-                    ],
-                    "example": "alarm"
-                },
-                "scheduleJobID": {
-                    "description": "Schedule job ID",
-                    "type": "integer",
-                    "example": 1
-                },
-                "severity": {
-                    "description": "Compliance severity",
-                    "type": "string",
-                    "example": "low"
-                },
-                "stateActive": {
-                    "description": "Whether the policy is active or not",
-                    "type": "boolean",
-                    "example": true
                 }
             }
         },
@@ -11393,12 +11169,10 @@ const docTemplate = `{
         "summarizer.JobType": {
             "type": "string",
             "enum": [
-                "resourceSummarizer",
                 "resourceMustSummarizer",
                 "complianceSummarizer"
             ],
             "x-enum-varnames": [
-                "JobType_ResourceSummarizer",
                 "JobType_ResourceMustSummarizer",
                 "JobType_ComplianceSummarizer"
             ]
@@ -11442,6 +11216,109 @@ const docTemplate = `{
                 "skipCount": {
                     "type": "integer",
                     "example": 1
+                }
+            }
+        },
+        "types.Finding": {
+            "type": "object",
+            "properties": {
+                "ID": {
+                    "description": "Finding ID",
+                    "type": "string",
+                    "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1-azure_cis_v140_7_5"
+                },
+                "benchmarkID": {
+                    "description": "Benchmark ID",
+                    "type": "string",
+                    "example": "azure_cis_v140"
+                },
+                "complianceJobID": {
+                    "description": "Compliance job ID",
+                    "type": "integer",
+                    "example": 1
+                },
+                "connectionID": {
+                    "description": "Connection ID",
+                    "type": "string",
+                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                },
+                "connector": {
+                    "description": "Cloud provider",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
+                },
+                "describedAt": {
+                    "description": "Timestamp of the policy description",
+                    "type": "integer",
+                    "example": 1589395200
+                },
+                "evaluatedAt": {
+                    "description": "Timestamp of the policy evaluation",
+                    "type": "integer",
+                    "example": 1589395200
+                },
+                "evaluator": {
+                    "description": "Evaluator name",
+                    "type": "string",
+                    "example": "steampipe-v0.5"
+                },
+                "policyID": {
+                    "description": "Policy ID",
+                    "type": "string",
+                    "example": "azure_cis_v140_7_5"
+                },
+                "reason": {
+                    "description": "Reason for the policy evaluation result",
+                    "type": "string",
+                    "example": "The VM is not using managed disks"
+                },
+                "resourceID": {
+                    "description": "Resource ID",
+                    "type": "string",
+                    "example": "/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"
+                },
+                "resourceLocation": {
+                    "description": "Resource location",
+                    "type": "string",
+                    "example": "eastus"
+                },
+                "resourceName": {
+                    "description": "Resource name",
+                    "type": "string",
+                    "example": "vm-1"
+                },
+                "resourceType": {
+                    "description": "Resource type",
+                    "type": "string",
+                    "example": "Microsoft.Compute/virtualMachines"
+                },
+                "result": {
+                    "description": "Compliance result",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.ComplianceResult"
+                        }
+                    ],
+                    "example": "alarm"
+                },
+                "scheduleJobID": {
+                    "description": "Schedule job ID",
+                    "type": "integer",
+                    "example": 1
+                },
+                "severity": {
+                    "description": "Compliance severity",
+                    "type": "string",
+                    "example": "low"
+                },
+                "stateActive": {
+                    "description": "Whether the policy is active or not",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
