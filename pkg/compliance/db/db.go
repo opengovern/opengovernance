@@ -50,7 +50,7 @@ func (db Database) ListBenchmarks() ([]Benchmark, error) {
 
 func (db Database) ListRootBenchmarks() ([]Benchmark, error) {
 	var benchmarks []Benchmark
-	err := db.Orm.Model(&Benchmark{}).
+	err := db.Orm.Model(&Benchmark{}).Preload(clause.Associations).
 		Where("NOT EXISTS (SELECT 1 FROM benchmark_children WHERE benchmark_children.child_id = benchmarks.id)").
 		Find(&benchmarks).Error
 	if err != nil {
