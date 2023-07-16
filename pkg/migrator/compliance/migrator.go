@@ -9,22 +9,24 @@ import (
 	"os"
 )
 
-func Run(db db.Database, complianceInputGitURL, queryInputGitURL, githubToken string) error {
+func Run(db db.Database, complianceInputGitURLs []string, queryInputGitURL, githubToken string) error {
 	os.RemoveAll(internal.ComplianceGitPath)
-	_, err := git.PlainClone(internal.ComplianceGitPath, false, &git.CloneOptions{
-		Auth: &http.BasicAuth{
-			Username: "abc123",
-			Password: githubToken,
-		},
-		URL:      complianceInputGitURL,
-		Progress: os.Stdout,
-	})
-	if err != nil {
-		return err
+	for _, complianceInputGitURL := range complianceInputGitURLs {
+		_, err := git.PlainClone(internal.ComplianceGitPath, false, &git.CloneOptions{
+			Auth: &http.BasicAuth{
+				Username: "abc123",
+				Password: githubToken,
+			},
+			URL:      complianceInputGitURL,
+			Progress: os.Stdout,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	os.RemoveAll(internal.QueriesGitPath)
-	_, err = git.PlainClone(internal.QueriesGitPath, false, &git.CloneOptions{
+	_, err := git.PlainClone(internal.QueriesGitPath, false, &git.CloneOptions{
 		Auth: &http.BasicAuth{
 			Username: "abc123",
 			Password: githubToken,
