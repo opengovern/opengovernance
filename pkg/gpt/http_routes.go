@@ -13,7 +13,6 @@ import (
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
-
 	v1.POST("/gpt/run", httpserver.AuthorizeHandler(h.RunGPTQuery, authApi.ViewerRole))
 }
 
