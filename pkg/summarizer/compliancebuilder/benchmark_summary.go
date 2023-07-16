@@ -42,12 +42,6 @@ func NewBenchmarkSummaryBuilder(logger *zap.Logger, jobId uint, client keibi.Cli
 }
 
 func (b *BenchmarkSummaryBuilder) Process(resource types.Finding) {
-	resourceResult := types.ResourceResult{
-		ResourceID:   resource.ResourceID,
-		ResourceName: resource.ResourceName,
-		ConnectionID: resource.ConnectionID,
-		Result:       resource.Result,
-	}
 	if _, ok := b.policySummaries[resource.PolicyID]; !ok {
 		b.policySummaries[resource.PolicyID] = make(map[string]types.PolicySummary)
 	}
@@ -66,12 +60,10 @@ func (b *BenchmarkSummaryBuilder) Process(resource types.Finding) {
 		b.policySummaries[resource.PolicyID][resource.ConnectionID] = types.PolicySummary{
 			PolicyID:      resource.PolicyID,
 			ConnectorType: resource.Connector,
-			Resources:     []types.ResourceResult{},
 			TotalResult:   types.ComplianceResultSummary{},
 		}
 	}
 	policySummary := b.policySummaries[resource.PolicyID][resource.ConnectionID]
-	policySummary.Resources = append(policySummary.Resources, resourceResult)
 	switch resource.Result {
 	case types.ComplianceResultOK:
 		policySummary.TotalResult.OkCount++

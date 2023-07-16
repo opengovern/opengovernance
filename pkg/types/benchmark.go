@@ -67,7 +67,6 @@ type ResourceResult struct {
 type PolicySummary struct {
 	PolicyID      string                  `json:"policy_id"`
 	ConnectorType source.Type             `json:"connector_type"`
-	Resources     []ResourceResult        `json:"resources"`
 	TotalResult   ComplianceResultSummary `json:"total_result"`
 	TotalSeverity SeverityResult          `json:"total_severity"`
 }
