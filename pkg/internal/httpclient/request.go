@@ -83,7 +83,7 @@ func DoRequest(method string, url string, headers map[string]string, payload []b
 	t.MaxConnsPerHost = 100
 	t.MaxIdleConnsPerHost = 100
 	client := http.Client{
-		Timeout:   15 * time.Second,
+		Timeout:   3 * time.Minute,
 		Transport: t,
 	}
 	res, err := client.Do(req)
