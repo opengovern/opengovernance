@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -86,8 +87,11 @@ type BenchmarkSummary struct {
 }
 
 func (r BenchmarkSummary) KeysAndIndex() ([]string, string) {
+	connectionsTypesStr, _ := json.Marshal(r.ConnectorTypes)
 	keys := []string{
 		r.BenchmarkID,
+		r.ConnectionID,
+		string(connectionsTypesStr),
 		string(BenchmarksSummary),
 	}
 	if r.ReportType == BenchmarksSummaryHistory {
