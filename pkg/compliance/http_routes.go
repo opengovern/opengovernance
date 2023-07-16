@@ -289,6 +289,8 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		return err
 	}
 
+	h.logger.Info("summariesAtTime", zap.Any("summariesAtTime", summariesAtTime))
+
 	summaryAtTime := summariesAtTime[benchmarkID]
 
 	h.logger.Info("summaryAtTime", zap.Any("summaryAtTime", summaryAtTime))
