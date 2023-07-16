@@ -102,6 +102,9 @@ func (b *Benchmark) PopulateConnectors(db Database, api *api.Benchmark) error {
 	}
 
 	for _, policy := range b.Policies {
+		if policy.QueryID == nil {
+			continue
+		}
 		query, err := db.GetQuery(*policy.QueryID)
 		if err != nil {
 			return err
