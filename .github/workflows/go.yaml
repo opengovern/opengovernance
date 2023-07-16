@@ -738,4 +738,6 @@ jobs:
           push: true
           tags: ${{ vars.DOCKER_REGISTRY }}/gpt-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/GPTServiceDockerfile
+          build-args: |
+            PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
           context: .
