@@ -53,19 +53,15 @@ func (db Database) ListRootBenchmarks() ([]Benchmark, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	hasParent := make(map[string]bool)
 	var response []Benchmark
 	for _, b := range benchmarks {
-		hasParent := false
-		for _, parent := range benchmarks {
-			for _, child := range parent.Children {
-				if child.ID == b.ID {
-					hasParent = true
-				}
-			}
+		for _, c := range b.Children {
+			hasParent[c.ID] = true
 		}
-
-		if !hasParent {
+	}
+	for _, b := range benchmarks {
+		if !hasParent[b.ID] {
 			response = append(response, b)
 		}
 	}
