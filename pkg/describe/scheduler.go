@@ -919,7 +919,7 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 //	}
 //}
 
-func (s *Scheduler) RunComplianceReport(scheduleJob *ScheduleJob) (int, error) {
+func (s *Scheduler) RunComplianceReport() (int, error) {
 	createdJobCount := 0
 
 	sources, err := s.db.ListSources()
@@ -939,7 +939,7 @@ func (s *Scheduler) RunComplianceReport(scheduleJob *ScheduleJob) (int, error) {
 		}
 
 		for _, b := range benchmarks {
-			crj := newComplianceReportJob(src.ID, source.Type(src.Type), b.BenchmarkId, scheduleJob.ID)
+			crj := newComplianceReportJob(src.ID, src.Type, b.BenchmarkId)
 			err := s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
@@ -947,7 +947,7 @@ func (s *Scheduler) RunComplianceReport(scheduleJob *ScheduleJob) (int, error) {
 				return createdJobCount, fmt.Errorf("error while creating compliance job: %v", err)
 			}
 
-			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, src, &crj, scheduleJob)
+			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, src, &crj)
 
 			err = s.db.UpdateSourceReportGenerated(src.ID, s.complianceIntervalHours)
 			if err != nil {
@@ -1039,10 +1039,9 @@ func (s *Scheduler) Stop() {
 	}
 }
 
-func newComplianceReportJob(connectionID string, connector source.Type, benchmarkID string, scheduleJobID uint) ComplianceReportJob {
+func newComplianceReportJob(connectionID string, connector source.Type, benchmarkID string) ComplianceReportJob {
 	return ComplianceReportJob{
 		Model:           gorm.Model{},
-		ScheduleJobID:   scheduleJobID,
 		SourceID:        connectionID,
 		SourceType:      connector,
 		BenchmarkID:     benchmarkID,

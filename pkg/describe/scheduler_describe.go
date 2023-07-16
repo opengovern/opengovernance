@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -24,14 +25,10 @@ import (
 	apiInsight "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-	summarizerapi "github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
 	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
-
-	apimeta "github.com/fluxcd/pkg/apis/meta"
 	"k8s.io/apimachinery/pkg/api/meta"
 )
 
@@ -629,20 +626,6 @@ func (s Scheduler) storeStackCredentials(stack apiDescribe.Stack, configStr stri
 }
 
 func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
-
-	job := ScheduleJob{
-		Model:          gorm.Model{},
-		Status:         summarizerapi.SummarizerJobInProgress,
-		FailureMessage: "",
-	}
-	err := s.db.AddScheduleJob(&job)
-	if err != nil {
-		return err
-	}
-	scheduleJob, err := s.db.FetchLastScheduleJob()
-	if err != nil {
-		return err
-	}
 	ctx := &httpclient.Context{
 		UserRole: apiAuth.AdminRole,
 	}
@@ -665,7 +648,7 @@ func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		if !connectorMatch { // pass if connector doesn't match
 			continue
 		}
-		crj := newComplianceReportJob(stack.StackID, stack.SourceType, benchmark.ID, scheduleJob.ID)
+		crj := newComplianceReportJob(stack.StackID, stack.SourceType, benchmark.ID)
 		crj.IsStack = true
 
 		err = s.db.CreateComplianceReportJob(&crj)
@@ -677,7 +660,7 @@ func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 			Type:      provider,
 			ConfigRef: "",
 		}
-		enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, *src, &crj, scheduleJob)
+		enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, *src, &crj)
 
 		evaluation := StackEvaluation{
 			EvaluatorID: benchmark.ID,

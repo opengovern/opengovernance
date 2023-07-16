@@ -604,12 +604,7 @@ func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/schedule/api/v0/compliance/trigger [get]
 func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
-	scheduleJob, err := h.DB.FetchLastCompletedScheduleJob()
-	if err != nil {
-		return err
-	}
-
-	_, err = h.Scheduler.RunComplianceReport(scheduleJob)
+	_, err := h.Scheduler.RunComplianceReport()
 	if err != nil {
 		return err
 	}
@@ -663,24 +658,7 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 		//TODO
 		// figure out connection ids and add them
 	}
-	//TODO
-	// which schedule job best fits for this ?
 
-	job := ScheduleJob{
-		Model:          gorm.Model{},
-		Status:         summarizerapi.SummarizerJobInProgress,
-		FailureMessage: "",
-	}
-	err := h.DB.AddScheduleJob(&job)
-	if err != nil {
-		errMsg := fmt.Sprintf("error adding schedule job: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
-	}
-
-	scheduleJob, err := h.DB.FetchLastScheduleJob()
-	if err != nil {
-		return err
-	}
 	var complianceJobs []ComplianceReportJob
 	for _, connectionID := range connectionIDs {
 		src, err := h.DB.GetSourceByID(connectionID)
@@ -688,7 +666,7 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 			return err
 		}
 
-		crj := newComplianceReportJob(connectionID, source.Type(src.Type), req.BenchmarkID, scheduleJob.ID)
+		crj := newComplianceReportJob(connectionID, src.Type, req.BenchmarkID)
 
 		err = h.DB.CreateComplianceReportJob(&crj)
 		if err != nil {
@@ -699,7 +677,7 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 			return errors.New("failed to find connection")
 		}
 
-		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, *src, &crj, scheduleJob)
+		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, *src, &crj)
 
 		err = h.DB.UpdateSourceReportGenerated(connectionID, h.Scheduler.complianceIntervalHours)
 		if err != nil {
@@ -1034,10 +1012,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error { // Retired
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
 	}
 	connectionId := stackRecord.StackID
-	scheduleJob, err := h.DB.FetchLastScheduleJob()
-	if err != nil {
-		return err
-	}
+
 	var complianceJobs []ComplianceReportJob
 	for _, benchmarkID := range req.Benchmarks {
 		src, err := h.DB.GetSourceByID(connectionId)
@@ -1045,7 +1020,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error { // Retired
 			return err
 		}
 
-		crj := newComplianceReportJob(connectionId, source.Type(src.Type), benchmarkID, scheduleJob.ID)
+		crj := newComplianceReportJob(connectionId, src.Type, benchmarkID)
 
 		err = h.DB.CreateComplianceReportJob(&crj)
 		if err != nil {
@@ -1056,7 +1031,7 @@ func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error { // Retired
 			return errors.New("failed to find connection")
 		}
 
-		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, *src, &crj, scheduleJob)
+		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, *src, &crj)
 
 		err = h.DB.UpdateSourceReportGenerated(connectionId, h.Scheduler.complianceIntervalHours)
 		if err != nil {
