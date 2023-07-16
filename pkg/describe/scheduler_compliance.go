@@ -51,7 +51,7 @@ func (s Scheduler) scheduleComplianceJob() error {
 		}
 
 		for _, b := range benchmarks {
-			timeAfter := time.Now().Add(time.Duration(-s.complianceIntervalHours) * time.Hour).UnixMilli()
+			timeAfter := time.Now().Add(time.Duration(-s.complianceIntervalHours) * time.Hour)
 			jobs, err := s.db.ListComplianceReportsWithFilter(&timeAfter, nil, &b.ConnectionId, nil, &b.BenchmarkId)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()

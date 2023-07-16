@@ -13,6 +13,7 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/lib/pq"
 	"github.com/sony/sonyflake"
@@ -707,8 +708,15 @@ func (h HttpServer) HandleListBenchmarkEvaluations(ctx echo.Context) error {
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+	var after, before *time.Time
+	if req.EvaluatedAtAfter != nil {
+		after = utils.GetPointer(time.Unix(*req.EvaluatedAtAfter, 0))
+	}
+	if req.EvaluatedAtBefore != nil {
+		before = utils.GetPointer(time.Unix(*req.EvaluatedAtBefore, 0))
+	}
 
-	cp, err := h.DB.ListComplianceReportsWithFilter(req.EvaluatedAtAfter, req.EvaluatedAtBefore, req.ConnectionID, req.Connector, req.BenchmarkID)
+	cp, err := h.DB.ListComplianceReportsWithFilter(after, before, req.ConnectionID, req.Connector, req.BenchmarkID)
 	if err != nil {
 		return err
 	}
