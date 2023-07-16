@@ -566,7 +566,7 @@ func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/schedule/api/v0/summarize/trigger [get]
 func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
-	err := h.Scheduler.scheduleMustSummarizerJob(nil)
+	err := h.Scheduler.scheduleMustSummarizerJob()
 	if err != nil {
 		errMsg := fmt.Sprintf("error scheduling summarize job: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
@@ -622,12 +622,7 @@ func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
 //	@Success	200
 //	@Router		/schedule/api/v0/compliance/summarizer/trigger [get]
 func (h HttpServer) TriggerComplianceSummarizerJob(ctx echo.Context) error {
-	scheduleJob, err := h.DB.FetchLastScheduleJob()
-	if err != nil {
-		return err
-	}
-
-	err = h.Scheduler.scheduleComplianceSummarizerJob(scheduleJob.ID)
+	err := h.Scheduler.scheduleComplianceSummarizerJob()
 	if err != nil {
 		return err
 	}
