@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type ComplianceSeverityResult struct {
+type ComplianceEvaluationResult struct {
 	ComplianceResultSummary types.ComplianceResultSummary
 	SeverityResult          types.SeverityResult
 }
@@ -40,7 +40,7 @@ type FetchBenchmarkSummariesByConnectionIDAtTimeResponse struct {
 
 func FetchBenchmarkSummariesByConnectionIDAtTime(
 	logger *zap.Logger, client keibi.Client,
-	benchmarkIDs []string, connectors []source.Type, connectionIDs []string, timeAt time.Time) (map[string]ComplianceSeverityResult, error) {
+	benchmarkIDs []string, connectors []source.Type, connectionIDs []string, timeAt time.Time) (map[string]ComplianceEvaluationResult, error) {
 	request := make(map[string]any)
 	filters := make([]any, 0)
 	filters = append(filters, map[string]any{
@@ -134,7 +134,7 @@ func FetchBenchmarkSummariesByConnectionIDAtTime(
 		return nil, err
 	}
 
-	benchmarkSummaries := make(map[string]ComplianceSeverityResult)
+	benchmarkSummaries := make(map[string]ComplianceEvaluationResult)
 	for _, connectionIDBucket := range response.Aggregations.ConnectionIDGroup.Buckets {
 		for _, benchmarkIDBucket := range connectionIDBucket.BenchmarkIDGroup.Buckets {
 			v := benchmarkSummaries[benchmarkIDBucket.Key]
@@ -173,7 +173,7 @@ type FetchBenchmarkSummariesByConnectorAtTimeResponse struct {
 
 func FetchBenchmarkSummariesByConnectorAtTime(
 	logger *zap.Logger, client keibi.Client,
-	benchmarkIDs []string, connectors []source.Type, timeAt time.Time) (map[string]ComplianceSeverityResult, error) {
+	benchmarkIDs []string, connectors []source.Type, timeAt time.Time) (map[string]ComplianceEvaluationResult, error) {
 	request := make(map[string]any)
 	filters := make([]any, 0)
 	filters = append(filters, map[string]any{
@@ -260,13 +260,19 @@ func FetchBenchmarkSummariesByConnectorAtTime(
 		return nil, err
 	}
 
-	benchmarkSummaries := make(map[string]ComplianceSeverityResult)
+	benchmarkSummaries := make(map[string]ComplianceEvaluationResult)
 	for _, connectorBucket := range response.Aggregations.ConnectorGroup.Buckets {
 		for _, benchmarkIDBucket := range connectorBucket.BenchmarkIDGroup.Buckets {
 			v := benchmarkSummaries[benchmarkIDBucket.Key]
 			for _, hit := range benchmarkIDBucket.Latest.Hits.Hits {
 				v.ComplianceResultSummary.AddComplianceResultSummary(hit.Source.TotalResult)
 				v.SeverityResult.AddSeverityResult(hit.Source.TotalSeverity)
+				logger.Info("FetchBenchmarkSummariesByConnectorAtTime",
+					zap.String("benchmark_id", hit.Source.BenchmarkID),
+					zap.Any("connector", connectorBucket.Key),
+					zap.Any("total_result", hit.Source.TotalResult),
+					zap.Any("total_severity", hit.Source.TotalSeverity),
+					zap.Int64("evaluated_at", hit.Source.EvaluatedAt))
 			}
 			benchmarkSummaries[benchmarkIDBucket.Key] = v
 		}
@@ -277,7 +283,7 @@ func FetchBenchmarkSummariesByConnectorAtTime(
 
 func FetchBenchmarkSummariesAtTime(
 	logger *zap.Logger, client keibi.Client,
-	benchmarkIDs []string, connectors []source.Type, connectionIDs []string, timeAt time.Time) (map[string]ComplianceSeverityResult, error) {
+	benchmarkIDs []string, connectors []source.Type, connectionIDs []string, timeAt time.Time) (map[string]ComplianceEvaluationResult, error) {
 	if len(connectionIDs) > 0 {
 		return FetchBenchmarkSummariesByConnectionIDAtTime(logger, client, benchmarkIDs, connectors, connectionIDs, timeAt)
 	}
