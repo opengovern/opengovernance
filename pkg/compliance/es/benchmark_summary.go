@@ -101,6 +101,15 @@ func FetchBenchmarkSummariesByConnectionIDAtTime(
 						"latest": map[string]any{
 							"top_hits": map[string]any{
 								"size": 1,
+								"_source": []string{
+									"benchmark_id",
+									"connection_id",
+									"connector_types",
+									"total_result",
+									"total_severity",
+									"evaluated_at",
+									"report_type",
+								},
 								"sort": map[string]string{
 									"evaluated_at": "desc",
 								},
@@ -218,6 +227,15 @@ func FetchBenchmarkSummariesByConnectorAtTime(
 						"latest": map[string]any{
 							"top_hits": map[string]any{
 								"size": 1,
+								"_source": []string{
+									"benchmark_id",
+									"connection_id",
+									"connector_types",
+									"total_result",
+									"total_severity",
+									"evaluated_at",
+									"report_type",
+								},
 								"sort": map[string]string{
 									"evaluated_at": "desc",
 								},
