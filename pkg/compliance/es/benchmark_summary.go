@@ -31,7 +31,7 @@ type FetchBenchmarkSummariesByConnectionIDAtTimeResponse struct {
 								} `json:"hits"`
 							} `json:"hits"`
 						} `json:"latest"`
-					} `json:"benchmark_id_group"`
+					} `json:"buckets"`
 				} `json:"benchmark_id_group"`
 			} `json:"buckets"`
 		} `json:"connection_id_group"`
@@ -164,7 +164,7 @@ type FetchBenchmarkSummariesByConnectorAtTimeResponse struct {
 								} `json:"hits"`
 							} `json:"hits"`
 						} `json:"latest"`
-					} `json:"benchmark_id_group"`
+					} `json:"buckets"`
 				} `json:"benchmark_id_group"`
 			} `json:"buckets"`
 		} `json:"connector_group"`
@@ -267,12 +267,6 @@ func FetchBenchmarkSummariesByConnectorAtTime(
 			for _, hit := range benchmarkIDBucket.Latest.Hits.Hits {
 				v.ComplianceResultSummary.AddComplianceResultSummary(hit.Source.TotalResult)
 				v.SeverityResult.AddSeverityResult(hit.Source.TotalSeverity)
-				logger.Info("FetchBenchmarkSummariesByConnectorAtTime",
-					zap.String("benchmark_id", hit.Source.BenchmarkID),
-					zap.Any("connector", connectorBucket.Key),
-					zap.Any("total_result", hit.Source.TotalResult),
-					zap.Any("total_severity", hit.Source.TotalSeverity),
-					zap.Int64("evaluated_at", hit.Source.EvaluatedAt))
 			}
 			benchmarkSummaries[benchmarkIDBucket.Key] = v
 		}
