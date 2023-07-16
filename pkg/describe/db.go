@@ -791,8 +791,7 @@ func (db Database) ListCompletedComplianceReportByDate(sourceID uuid.UUID, fromD
 	return jobs, nil
 }
 
-func (db Database) ListComplianceReportsWithFilter(timeAfter, timeBefore *int64, connectionID *string, connector *source.Type, benchmarkID *string) ([]ComplianceReportJob, error) {
-
+func (db Database) ListComplianceReportsWithFilter(timeAfter, timeBefore *time.Time, connectionID *string, connector *source.Type, benchmarkID *string) ([]ComplianceReportJob, error) {
 	var jobs []ComplianceReportJob
 	tx := db.orm
 	if timeAfter != nil {
