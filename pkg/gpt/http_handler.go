@@ -16,7 +16,6 @@ func InitializeHttpHandler(
 	h = &HttpHandler{}
 
 	fmt.Println("Initializing http handler")
-
 	h.logger = logger
 	return h, nil
 }
