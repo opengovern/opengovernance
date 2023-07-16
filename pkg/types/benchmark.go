@@ -69,6 +69,7 @@ type PolicySummary struct {
 	ConnectorType source.Type             `json:"connector_type"`
 	Resources     []ResourceResult        `json:"resources"`
 	TotalResult   ComplianceResultSummary `json:"total_result"`
+	TotalSeverity SeverityResult          `json:"total_severity"`
 }
 
 type BenchmarkSummary struct {
@@ -79,7 +80,8 @@ type BenchmarkSummary struct {
 	EvaluatedAt    int64           `json:"evaluated_at"`
 	Policies       []PolicySummary `json:"policies"`
 
-	TotalResult ComplianceResultSummary `json:"total_result"`
+	TotalResult   ComplianceResultSummary `json:"total_result"`
+	TotalSeverity SeverityResult          `json:"total_severity"`
 
 	ReportType BenchmarkReportType `json:"report_type"`
 

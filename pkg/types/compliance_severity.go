@@ -19,6 +19,15 @@ type SeverityResult struct {
 	CriticalCount int `json:"criticalCount" example:"1"`
 }
 
+func (r *SeverityResult) AddSeverityResult(severity SeverityResult) {
+	r.UnknownCount += severity.UnknownCount
+	r.PassedCount += severity.PassedCount
+	r.LowCount += severity.LowCount
+	r.MediumCount += severity.MediumCount
+	r.HighCount += severity.HighCount
+	r.CriticalCount += severity.CriticalCount
+}
+
 func (r *SeverityResult) IncreaseBySeverity(severity Severity) {
 	switch severity {
 	case SeverityCritical:

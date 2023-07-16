@@ -21,7 +21,6 @@ import (
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
-	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -39,10 +38,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/:benchmark_id", httpserver.AuthorizeHandler(h.GetBenchmark, api3.ViewerRole))
 	benchmarks.GET("/:benchmark_id/policies", httpserver.AuthorizeHandler(h.ListPolicies, api3.ViewerRole))
 	benchmarks.GET("/policies/:policy_id", httpserver.AuthorizeHandler(h.GetPolicy, api3.ViewerRole))
-	benchmarks.GET("/summary", httpserver.AuthorizeHandler(h.GetBenchmarksSummary, api3.ViewerRole))
+	benchmarks.GET("/summary", httpserver.AuthorizeHandler(h.ListBenchmarksSummary, api3.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
-	benchmarks.GET("/:benchmark_id/summary/result/trend", httpserver.AuthorizeHandler(h.GetBenchmarkResultTrend, api3.ViewerRole))
-	benchmarks.GET("/:benchmark_id/tree", httpserver.AuthorizeHandler(h.GetBenchmarkTree, api3.ViewerRole))
 
 	queries := v1.Group("/queries")
 	queries.GET("/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api3.ViewerRole))
@@ -179,7 +176,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetBenchmarksSummary godoc
+// ListBenchmarksSummary godoc
 //
 //	@Summary		List benchmarks summaries
 //	@Description	This API enables users to retrieve a summary of all benchmarks and their associated checks and results within a specified time interval. Users can use this API to obtain an overview of all benchmarks, including their names, descriptions, and other relevant information, as well as the checks and their corresponding results within the specified time period.
@@ -187,14 +184,36 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			timeAt			query		int				false	"timestamp for values in epoch seconds"
 //	@Success		200				{object}	api.GetBenchmarksSummaryResponse
 //	@Router			/compliance/api/v1/benchmarks/summary [get]
-func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
+func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	timeAt := time.Now()
+	if timeAtStr := ctx.QueryParam("timeAt"); timeAtStr != "" {
+		timeAtInt, err := strconv.ParseInt(timeAtStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		timeAt = time.Unix(timeAtInt, 0)
+	}
 	var response api.GetBenchmarksSummaryResponse
 	benchmarks, err := h.db.ListRootBenchmarks()
 	if err != nil {
+		return err
+	}
+
+	benchmarkIDs := make([]string, 0, len(benchmarks))
+	for _, b := range benchmarks {
+		benchmarkIDs = append(benchmarkIDs, b.ID)
+	}
+
+	summariesAtTime, err := es.FetchBenchmarkSummariesAtTime(h.logger, h.client, benchmarkIDs, connectors, connectionIDs, timeAt)
+	if err != nil {
+		h.logger.Error("failed to fetch benchmark summaries", zap.Error(err))
 		return err
 	}
 
@@ -204,12 +223,7 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
-
-		s, err := getBenchmarkEvaluationSummary(h.client, h.db, b, connectionIDs)
-		if err != nil {
-			return err
-		}
-
+		summaryAtTime := summariesAtTime[b.ID]
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkEvaluationSummary{
 			ID:          b.ID,
 			Title:       b.Title,
@@ -217,22 +231,12 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 			Connectors:  be.Connectors,
 			Tags:        be.Tags,
 			Enabled:     b.Enabled,
-			Result:      s.Result,
-			Checks:      s.Checks,
+			Result:      summaryAtTime.ComplianceResultSummary,
+			Checks:      summaryAtTime.SeverityResult,
 		})
 
-		response.TotalResult.OkCount += s.Result.OkCount
-		response.TotalResult.AlarmCount += s.Result.AlarmCount
-		response.TotalResult.InfoCount += s.Result.InfoCount
-		response.TotalResult.SkipCount += s.Result.SkipCount
-		response.TotalResult.ErrorCount += s.Result.ErrorCount
-
-		response.TotalChecks.UnknownCount += s.Checks.UnknownCount
-		response.TotalChecks.PassedCount += s.Checks.PassedCount
-		response.TotalChecks.LowCount += s.Checks.LowCount
-		response.TotalChecks.MediumCount += s.Checks.MediumCount
-		response.TotalChecks.HighCount += s.Checks.HighCount
-		response.TotalChecks.CriticalCount += s.Checks.CriticalCount
+		response.TotalResult.AddComplianceResultSummary(summaryAtTime.ComplianceResultSummary)
+		response.TotalChecks.AddSeverityResult(summaryAtTime.SeverityResult)
 	}
 
 	return ctx.JSON(http.StatusOK, response)
@@ -247,11 +251,22 @@ func (h *HttpHandler) GetBenchmarksSummary(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmark_id	path		string		true	"Benchmark ID"
-//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			timeAt			query		int				false	"timestamp for values in epoch seconds"
 //	@Success		200				{object}	api.BenchmarkEvaluationSummary
 //	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	timeAt := time.Now()
+	if timeAtStr := ctx.QueryParam("timeAt"); timeAtStr != "" {
+		timeAtInt, err := strconv.ParseInt(timeAtStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		timeAt = time.Unix(timeAtInt, 0)
+	}
 	benchmarkID := ctx.Param("benchmark_id")
 
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
@@ -269,10 +284,12 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		return err
 	}
 
-	s, err := getBenchmarkEvaluationSummary(h.client, h.db, *benchmark, connectionIDs)
+	summariesAtTime, err := es.FetchBenchmarkSummariesAtTime(h.logger, h.client, []string{benchmarkID}, connectors, connectionIDs, timeAt)
 	if err != nil {
 		return err
 	}
+
+	summaryAtTime := summariesAtTime[benchmarkID]
 
 	response := api.BenchmarkEvaluationSummary{
 		ID:          benchmark.ID,
@@ -281,97 +298,9 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		Connectors:  be.Connectors,
 		Tags:        be.Tags,
 		Enabled:     benchmark.Enabled,
-		Result:      s.Result,
-		Checks:      s.Checks,
+		Result:      summaryAtTime.ComplianceResultSummary,
+		Checks:      summaryAtTime.SeverityResult,
 	}
-	return ctx.JSON(http.StatusOK, response)
-}
-
-// GetBenchmarkResultTrend godoc
-//
-//	@Summary		Get compliance result trend
-//	@Description	This API allows users to retrieve datapoints of compliance severities over a specified time period, enabling users to keep track of and monitor changes in compliance.
-//	@Security		BearerToken
-//	@Tags			compliance
-//	@Accept			json
-//	@Produce		json
-//	@Param			start			query		int64	true	"Start time"
-//	@Param			end				query		int64	true	"End time"
-//	@Param			benchmark_id	path		string	true	"Benchmark ID"
-//	@Success		200				{object}	api.BenchmarkResultTrend
-//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/summary/result/trend [get]
-func (h *HttpHandler) GetBenchmarkResultTrend(ctx echo.Context) error {
-	startDateStr := ctx.QueryParam("start")
-	endDateStr := ctx.QueryParam("end")
-	if startDateStr == "" || endDateStr == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "start & end query params are required")
-	}
-	startDate, err := strconv.ParseInt(startDateStr, 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	endDate, err := strconv.ParseInt(endDateStr, 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	_, _ = startDate, endDate
-
-	benchmarkID := ctx.Param("benchmark_id")
-	benchmark, err := h.db.GetBenchmark(benchmarkID)
-	if err != nil {
-		return err
-	}
-	if benchmark == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
-	}
-
-	trend, err := h.BuildBenchmarkResultTrend(*benchmark, startDate, endDate)
-	if err != nil {
-		return err
-	}
-
-	return ctx.JSON(http.StatusOK, api.BenchmarkResultTrend{
-		ResultDatapoint: trend,
-	})
-}
-
-// GetBenchmarkTree godoc
-//
-//	@Summary		Get benchmark tree
-//	@Description	This API retrieves the benchmark tree, including all of its child benchmarks. Users can use this API to obtain a comprehensive overview of the benchmarks within a particular category or hierarchy.
-//	@Security		BearerToken
-//	@Tags			compliance
-//	@Accept			json
-//	@Produce		json
-//	@Param			benchmark_id	path		string		true	"Benchmark ID"
-//	@Param			status			query		[]string	true	"Status"	Enums(passed,failed,unknown)
-//	@Success		200				{object}	api.BenchmarkTree
-//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/tree [get]
-func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
-	var status []types.PolicyStatus
-	benchmarkID := ctx.Param("benchmark_id")
-	for k, va := range ctx.QueryParams() {
-		if k == "status" || k == "status[]" {
-			for _, v := range va {
-				status = append(status, types.PolicyStatus(v))
-			}
-		}
-	}
-
-	benchmark, err := h.db.GetBenchmark(benchmarkID)
-	if err != nil {
-		return err
-	}
-
-	if benchmark == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
-	}
-
-	response, err := GetBenchmarkTree(h.db, h.client, *benchmark, status)
-	if err != nil {
-		return err
-	}
-
 	return ctx.JSON(http.StatusOK, response)
 }
 
