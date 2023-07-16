@@ -80,9 +80,6 @@ definitions:
         type: string
       id:
         type: integer
-      scheduleJobId:
-        example: 1
-        type: integer
       updatedAt:
         type: string
     type: object
@@ -998,33 +995,6 @@ definitions:
       totalResult:
         $ref: '#/definitions/types.ComplianceResultSummary'
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsMetricsResponse:
-    properties:
-      failedFindings:
-        example: 10
-        type: integer
-      lastFailedFindings:
-        example: 10
-        type: integer
-      lastPassedFindings:
-        example: 90
-        type: integer
-      lastTotalFindings:
-        example: 100
-        type: integer
-      lastUnknownFindings:
-        example: 0
-        type: integer
-      passedFindings:
-        example: 90
-        type: integer
-      totalFindings:
-        example: 100
-        type: integer
-      unknownFindings:
-        example: 0
-        type: integer
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequest:
     properties:
       filters:
@@ -1042,30 +1012,11 @@ definitions:
     properties:
       findings:
         items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_es.Finding'
+          $ref: '#/definitions/types.Finding'
         type: array
       totalCount:
         example: 100
         type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldRequest:
-    properties:
-      count:
-        description: Number of items to return
-        example: 1
-        type: integer
-      field:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopField'
-        description: Field to get top values for
-        enum:
-        - resourceType
-        - serviceName
-        - sourceID
-        - resourceID
-        example: resourceType
-      filters:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse:
     properties:
@@ -1426,101 +1377,12 @@ definitions:
     - FieldBenchmarkID
     - FieldPolicyID
     - FieldPolicySeverity
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopField:
-    enum:
-    - resourceType
-    - serviceName
-    - sourceID
-    - resourceID
-    type: string
-    x-enum-varnames:
-    - TopField_ResourceType
-    - TopField_CloudService
-    - TopField_CloudAccount
-    - TopField_Resources
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord:
     properties:
       count:
         type: integer
       value:
         type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_es.Finding:
-    properties:
-      ID:
-        description: Finding ID
-        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1-azure_cis_v140_7_5
-        type: string
-      benchmarkID:
-        description: Benchmark ID
-        example: azure_cis_v140
-        type: string
-      complianceJobID:
-        description: Compliance job ID
-        example: 1
-        type: integer
-      connectionID:
-        description: Connection ID
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
-      connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        description: Cloud provider
-        example: Azure
-      describedAt:
-        description: Timestamp of the policy description
-        example: 1589395200
-        type: integer
-      evaluatedAt:
-        description: Timestamp of the policy evaluation
-        example: 1589395200
-        type: integer
-      evaluator:
-        description: Evaluator name
-        example: steampipe-v0.5
-        type: string
-      policyID:
-        description: Policy ID
-        example: azure_cis_v140_7_5
-        type: string
-      reason:
-        description: Reason for the policy evaluation result
-        example: The VM is not using managed disks
-        type: string
-      resourceID:
-        description: Resource ID
-        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
-        type: string
-      resourceLocation:
-        description: Resource location
-        example: eastus
-        type: string
-      resourceName:
-        description: Resource name
-        example: vm-1
-        type: string
-      resourceType:
-        description: Resource type
-        example: Microsoft.Compute/virtualMachines
-        type: string
-      result:
-        allOf:
-        - $ref: '#/definitions/types.ComplianceResult'
-        description: Compliance result
-        example: alarm
-      scheduleJobID:
-        description: Schedule job ID
-        example: 1
-        type: integer
-      severity:
-        description: Compliance severity
-        example: low
-        type: string
-      stateActive:
-        description: Whether the policy is active or not
-        example: true
-        type: boolean
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeResource:
     properties:
@@ -3233,12 +3095,10 @@ definitions:
     - CloudAzure
   summarizer.JobType:
     enum:
-    - resourceSummarizer
     - resourceMustSummarizer
     - complianceSummarizer
     type: string
     x-enum-varnames:
-    - JobType_ResourceSummarizer
     - JobType_ResourceMustSummarizer
     - JobType_ComplianceSummarizer
   types.ComplianceResult:
@@ -3272,6 +3132,83 @@ definitions:
       skipCount:
         example: 1
         type: integer
+    type: object
+  types.Finding:
+    properties:
+      ID:
+        description: Finding ID
+        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1-azure_cis_v140_7_5
+        type: string
+      benchmarkID:
+        description: Benchmark ID
+        example: azure_cis_v140
+        type: string
+      complianceJobID:
+        description: Compliance job ID
+        example: 1
+        type: integer
+      connectionID:
+        description: Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      connector:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Cloud provider
+        example: Azure
+      describedAt:
+        description: Timestamp of the policy description
+        example: 1589395200
+        type: integer
+      evaluatedAt:
+        description: Timestamp of the policy evaluation
+        example: 1589395200
+        type: integer
+      evaluator:
+        description: Evaluator name
+        example: steampipe-v0.5
+        type: string
+      policyID:
+        description: Policy ID
+        example: azure_cis_v140_7_5
+        type: string
+      reason:
+        description: Reason for the policy evaluation result
+        example: The VM is not using managed disks
+        type: string
+      resourceID:
+        description: Resource ID
+        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
+        type: string
+      resourceLocation:
+        description: Resource location
+        example: eastus
+        type: string
+      resourceName:
+        description: Resource name
+        example: vm-1
+        type: string
+      resourceType:
+        description: Resource type
+        example: Microsoft.Compute/virtualMachines
+        type: string
+      result:
+        allOf:
+        - $ref: '#/definitions/types.ComplianceResult'
+        description: Compliance result
+        example: alarm
+      scheduleJobID:
+        description: Schedule job ID
+        example: 1
+        type: integer
+      severity:
+        description: Compliance severity
+        example: low
+        type: string
+      stateActive:
+        description: Whether the policy is active or not
+        example: true
+        type: boolean
     type: object
   types.PolicyStatus:
     enum:
@@ -3310,6 +3247,33 @@ info:
   title: Keibi Service API
   version: "1.0"
 paths:
+  /ai/api/v1/gpt/run:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Description of query for KaytuGPT
+        in: body
+        name: query
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                type: string
+              type: array
+            type: object
+      security:
+      - BearerToken: []
+      summary: Runs the query on KaytuGPT and returns the generated query
+      tags:
+      - resource
   /auth/api/v1/key/{id}:
     get:
       description: Retrieves the details of a workspace key with specified ID.
@@ -3724,30 +3688,6 @@ paths:
       summary: Workspace user roleBindings.
       tags:
       - users
-  /compliance/api/v1/alarms/top:
-    post:
-      consumes:
-      - application/json
-      description: Returns top field by alarm count with respect to filters
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
-      security:
-      - BearerToken: []
-      summary: Top field by alarm count
-      tags:
-      - compliance
   /compliance/api/v1/assignments:
     get:
       consumes:
@@ -4167,34 +4107,6 @@ paths:
       security:
       - BearerToken: []
       summary: Get top field by finding count
-      tags:
-      - compliance
-  /compliance/api/v1/findings/metrics:
-    get:
-      consumes:
-      - application/json
-      description: |-
-        This API enables users to retrieve findings metrics for two given times, which includes the total number of findings, the number of passed findings, the number of failed findings, and the number of unknowns findings. Users can use this API to compare the compliance status of their resources between two different time periods.
-        The API will return the findings metrics for each time period separately, allowing users to easily compare the compliance status of their resources at each time period. This can be useful for monitoring the effectiveness of compliance measures over time and identifying any areas of improvement."
-      parameters:
-      - description: unix seconds for the start time
-        in: query
-        name: start
-        type: integer
-      - description: unix seconds for the end time
-        in: query
-        name: end
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsMetricsResponse'
-      security:
-      - BearerToken: []
-      summary: Returns findings metrics
       tags:
       - compliance
   /compliance/api/v1/insight:

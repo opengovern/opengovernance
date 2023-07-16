@@ -1,0 +1,5 @@
+FROM 435670955331.dkr.ecr.us-east-2.amazonaws.com/kaytu-ai:v0.0.2
+RUN apk --no-cache add ca-certificates
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY ./build/gpt-service /
+CMD [ "/gpt-service" ]
