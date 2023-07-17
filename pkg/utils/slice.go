@@ -1,8 +1,12 @@
 package utils
 
-import "strings"
+import (
+	"strings"
 
-func Includes[T string](arr []T, item T) bool {
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+)
+
+func Includes[T string | source.Type](arr []T, item T) bool {
 	for _, i := range arr {
 		if i == item {
 			return true
@@ -11,13 +15,22 @@ func Includes[T string](arr []T, item T) bool {
 	return false
 }
 
-func IncludesAll[T string](arr []T, items []T) bool {
+func IncludesAll[T string | source.Type](arr []T, items []T) bool {
 	for _, item := range items {
 		if !Includes(arr, item) {
 			return false
 		}
 	}
 	return true
+}
+
+func IncludesAny[T string | source.Type](arr, items []T) bool {
+	for _, item := range items {
+		if Includes(arr, item) {
+			return true
+		}
+	}
+	return false
 }
 
 func ToLowerStringSlice(arr []string) []string {

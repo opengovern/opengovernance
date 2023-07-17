@@ -265,9 +265,7 @@ func (b *BenchmarkSummaryBuilder) Cleanup(summarizeJobID uint) error {
 						"terms": map[string]any{
 							"report_type": []string{
 								string(types.BenchmarksSummary),
-								string(types.BenchmarksSummaryHistory),
 								string(types.BenchmarksConnectorSummary),
-								string(types.BenchmarksConnectorSummaryHistory),
 							},
 						},
 					},

@@ -226,6 +226,11 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
+
+		if !utils.IncludesAny(be.Connectors, connectors) {
+			continue
+		}
+
 		summaryAtTime := summariesAtTime[b.ID]
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkEvaluationSummary{
 			ID:          b.ID,
