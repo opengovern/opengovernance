@@ -3,6 +3,7 @@ package es
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
@@ -27,33 +28,57 @@ type LookupQueryHit struct {
 	Type    string            `json:"_type"`
 	Version int64             `json:"_version,omitempty"`
 	Source  es.LookupResource `json:"_source"`
-	Sort    []interface{}     `json:"sort"`
+	Sort    []any             `json:"sort"`
 }
 
-func FetchLookupsByResourceID(client keibi.Client, resourceID string) (LookupQueryResponse, error) {
-	res := make(map[string]interface{})
-	var filters []interface{}
-	filters = append(filters, map[string]interface{}{
-		"terms": map[string][]interface{}{"resource_id": {resourceID}},
-	})
-
-	res["size"] = 1
-	res["sort"] = []map[string]interface{}{
+func FetchLookupsByResourceIDWildcard(client keibi.Client, resourceID string) (LookupQueryResponse, error) {
+	request := make(map[string]any)
+	request["size"] = 1
+	request["sort"] = []map[string]any{
 		{
 			"_id": "desc",
 		},
 	}
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
-			"filter": filters,
+	request["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": map[string]any{
+				"term": map[string]any{
+					"resource_id": resourceID,
+				},
+			},
 		},
 	}
-	b, err := json.Marshal(res)
+	b, err := json.Marshal(request)
 	if err != nil {
 		return LookupQueryResponse{}, err
 	}
 
 	var response LookupQueryResponse
+	err = client.Search(context.Background(), InventorySummaryIndex, string(b), &response)
+	if err != nil {
+		return LookupQueryResponse{}, err
+	}
+	if response.Hits.Total.Value != 0 {
+		return response, nil
+	}
+
+	request["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": map[string]any{
+				"regexp": map[string]any{
+					"resource_id": map[string]any{
+						"value":            fmt.Sprintf(".*%s.*", resourceID),
+						"case_insensitive": true,
+					},
+				},
+			},
+		},
+	}
+
+	b, err = json.Marshal(request)
+	if err != nil {
+		return LookupQueryResponse{}, err
+	}
 	err = client.Search(context.Background(), InventorySummaryIndex, string(b), &response)
 	if err != nil {
 		return LookupQueryResponse{}, err
