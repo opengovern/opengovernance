@@ -397,6 +397,10 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 		})
 	}
 
+	sort.Slice(response, func(i, j int) bool {
+		return response[i].Timestamp < response[j].Timestamp
+	})
+
 	return ctx.JSON(http.StatusOK, response)
 }
 
