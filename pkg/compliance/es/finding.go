@@ -78,7 +78,7 @@ func FindingsQuery(client keibi.Client,
 
 	if len(resourceIDs) > 0 {
 		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"ID": resourceIDs},
+			"terms": map[string][]string{"resourceID": resourceIDs},
 		})
 	}
 
