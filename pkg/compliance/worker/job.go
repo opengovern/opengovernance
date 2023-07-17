@@ -128,7 +128,7 @@ func (j *Job) RunBenchmark(esk keibi.Client, benchmarkID string, complianceClien
 			return nil, err
 		}
 
-		f, err := j.ExtractFindings(benchmark, policy, query, res)
+		f, err := j.ExtractFindings(esk, benchmark, policy, query, res)
 		if err != nil {
 			return nil, err
 		}
@@ -303,28 +303,35 @@ func (j *Job) FilterFindings(esClient keibi.Client, policyID string, findings []
 	return findings, nil
 }
 
-func (j *Job) ExtractFindings(benchmark *api.Benchmark, policy *api.Policy, query *api.Query, res *steampipe.Result) ([]types.Finding, error) {
+func (j *Job) ExtractFindings(client keibi.Client, benchmark *api.Benchmark, policy *api.Policy, query *api.Query, res *steampipe.Result) ([]types.Finding, error) {
 	var findings []types.Finding
+	resourceType := ""
 	for _, record := range res.Data {
 		if len(record) != len(res.Headers) {
 			return nil, fmt.Errorf("invalid record length, record=%d headers=%d", len(record), len(res.Headers))
 		}
-		recordValue := map[string]interface{}{}
+		recordValue := make(map[string]any)
 		for idx, header := range res.Headers {
 			value := record[idx]
 			recordValue[header] = value
 		}
 
-		var resourceID, resourceName, resourceType, resourceLocation, reason string
+		var resourceID, resourceName, resourceLocation, reason string
 		var status types.ComplianceResult
 		if v, ok := recordValue["resource"].(string); ok {
 			resourceID = v
+			if resourceType == "" {
+				lookupResource, err := es.FetchLookupsByResourceIDWildcard(client, resourceID)
+				if err != nil {
+					return nil, err
+				}
+				if lookupResource.Hits.Total.Value > 0 {
+					resourceType = lookupResource.Hits.Hits[0].Source.ResourceType
+				}
+			}
 		}
 		if v, ok := recordValue["name"].(string); ok {
 			resourceName = v
-		}
-		if v, ok := recordValue["resourceType"].(string); ok {
-			resourceType = v
 		}
 		if v, ok := recordValue["location"].(string); ok {
 			resourceLocation = v
