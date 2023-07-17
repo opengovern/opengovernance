@@ -23,7 +23,7 @@ type Finding struct {
 	EvaluatedAt      int64            `json:"evaluatedAt" example:"1589395200"`                                                                                        // Timestamp of the policy evaluation
 	StateActive      bool             `json:"stateActive" example:"true"`                                                                                              // Whether the policy is active or not
 	Result           ComplianceResult `json:"result" example:"alarm"`                                                                                                  // Compliance result
-	Severity         Severity         `json:"severity" example:"low"`                                                                                                  // Compliance severity
+	Severity         FindingSeverity  `json:"severity" example:"low"`                                                                                                  // Compliance severity
 	Evaluator        string           `json:"evaluator" example:"steampipe-v0.5"`                                                                                      // Evaluator name
 	Connector        source.Type      `json:"connector" example:"Azure"`                                                                                               // Cloud provider
 	ResourceID       string           `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"`            // Resource ID

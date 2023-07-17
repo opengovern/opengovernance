@@ -21,6 +21,7 @@ import (
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	kaytuTypes "github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -73,7 +74,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
 }
 
-func bindValidate(ctx echo.Context, i interface{}) error {
+func bindValidate(ctx echo.Context, i any) error {
 	if err := ctx.Bind(i); err != nil {
 		return err
 	}
@@ -105,9 +106,9 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	lastIdx := (req.Page.No - 1) * req.Page.Size
 
 	var response api.GetFindingsResponse
-	var sorts []map[string]interface{}
+	var sorts []map[string]any
 	for _, sortItem := range req.Sorts {
-		item := map[string]interface{}{}
+		item := map[string]any{}
 		item[string(sortItem.Field)] = sortItem.Direction
 		sorts = append(sorts, item)
 	}
@@ -121,7 +122,9 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 
 		benchmarkIDs = append(benchmarkIDs, bs...)
 	}
-	res, err := es.FindingsQuery(h.client, nil, req.Filters.Connector, req.Filters.ResourceID, req.Filters.ConnectionID, benchmarkIDs, req.Filters.PolicyID, req.Filters.Severity,
+	res, err := es.FindingsQuery(
+		h.client, req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
+		benchmarkIDs, req.Filters.PolicyID, req.Filters.Severity,
 		sorts, lastIdx, req.Page.Size)
 	if err != nil {
 		return err
@@ -142,10 +145,13 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId	path		string	true	"BenchmarkID"
-//	@Param			field		path		string	true	"Field"	Enums(resourceType,serviceName,sourceID,resourceID)
-//	@Param			count		path		int		true	"Count"
-//	@Success		200			{object}	api.GetTopFieldResponse
+//	@Param			benchmarkId		path		string							true	"BenchmarkID"
+//	@Param			field			path		string							true	"Field"	Enums(resourceType,connectionID,resourceID)
+//	@Param			count			path		int								true	"Count"
+//	@Param			connectionId	query		[]string						false	"Connection IDs to filter by"
+//	@Param			connector		query		[]source.Type					false	"Connector type to filter by"
+//	@Param			severities		query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by"
+//	@Success		200				{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
@@ -156,13 +162,20 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		return err
 	}
 
+	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	severities := kaytuTypes.ParseFindingSeverities(ctx.QueryParams()["severities"])
+
 	benchmarkIDs, err := h.GetBenchmarkTreeIDs(benchmarkID)
 	if err != nil {
 		return err
 	}
 
 	var response api.GetTopFieldResponse
-	res, err := es.FindingsTopFieldQuery(h.client, field, nil, nil, nil, nil, benchmarkIDs, nil, nil, count)
+	res, err := es.FindingsTopFieldQuery(
+		h.logger, h.client, field,
+		connectors, nil, connectionIDs,
+		benchmarkIDs, nil, severities, count)
 	if err != nil {
 		return err
 	}

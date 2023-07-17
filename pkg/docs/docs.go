@@ -1335,8 +1335,7 @@ const docTemplate = `{
                     {
                         "enum": [
                             "resourceType",
-                            "serviceName",
-                            "sourceID",
+                            "connectionID",
                             "resourceID"
                         ],
                         "type": "string",
@@ -1351,6 +1350,48 @@ const docTemplate = `{
                         "name": "count",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "none",
+                                "low",
+                                "medium",
+                                "high",
+                                "critical"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Severities to filter by",
+                        "name": "severities",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -8568,7 +8609,11 @@ const docTemplate = `{
                     "example": "azure_ad_manual_control"
                 },
                 "severity": {
-                    "type": "string",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.FindingSeverity"
+                        }
+                    ],
                     "example": "low"
                 },
                 "tags": {
@@ -11254,7 +11299,11 @@ const docTemplate = `{
                 },
                 "severity": {
                     "description": "Compliance severity",
-                    "type": "string",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.FindingSeverity"
+                        }
+                    ],
                     "example": "low"
                 },
                 "stateActive": {
@@ -11263,6 +11312,23 @@ const docTemplate = `{
                     "example": true
                 }
             }
+        },
+        "types.FindingSeverity": {
+            "type": "string",
+            "enum": [
+                "none",
+                "low",
+                "medium",
+                "high",
+                "critical"
+            ],
+            "x-enum-varnames": [
+                "FindingSeverityNone",
+                "FindingSeverityLow",
+                "FindingSeverityMedium",
+                "FindingSeverityHigh",
+                "FindingSeverityCritical"
+            ]
         },
         "types.SeverityResult": {
             "type": "object",

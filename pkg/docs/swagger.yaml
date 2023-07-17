@@ -1243,8 +1243,9 @@ definitions:
         example: azure_ad_manual_control
         type: string
       severity:
+        allOf:
+        - $ref: '#/definitions/types.FindingSeverity'
         example: low
-        type: string
       tags:
         additionalProperties:
           items:
@@ -3152,14 +3153,29 @@ definitions:
         example: 1
         type: integer
       severity:
+        allOf:
+        - $ref: '#/definitions/types.FindingSeverity'
         description: Compliance severity
         example: low
-        type: string
       stateActive:
         description: Whether the policy is active or not
         example: true
         type: boolean
     type: object
+  types.FindingSeverity:
+    enum:
+    - none
+    - low
+    - medium
+    - high
+    - critical
+    type: string
+    x-enum-varnames:
+    - FindingSeverityNone
+    - FindingSeverityLow
+    - FindingSeverityMedium
+    - FindingSeverityHigh
+    - FindingSeverityCritical
   types.SeverityResult:
     properties:
       criticalCount:
@@ -4035,8 +4051,7 @@ paths:
       - description: Field
         enum:
         - resourceType
-        - serviceName
-        - sourceID
+        - connectionID
         - resourceID
         in: path
         name: field
@@ -4047,6 +4062,37 @@ paths:
         name: count
         required: true
         type: integer
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: Severities to filter by
+        in: query
+        items:
+          enum:
+          - none
+          - low
+          - medium
+          - high
+          - critical
+          type: string
+        name: severities
+        type: array
       produces:
       - application/json
       responses:

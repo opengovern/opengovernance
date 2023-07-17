@@ -149,11 +149,11 @@ type BenchmarkResultTrend struct {
 }
 
 type PolicyTree struct {
-	ID          string             `json:"id" example:"azure_cis_v140_7_5"`                                                            // Policy ID
-	Title       string             `json:"title" example:"7.5 Ensure that the latest OS Patches for all Virtual Machines are applied"` // Policy title
-	Severity    types.Severity     `json:"severity" example:"low"`                                                                     // Severity
-	Status      types.PolicyStatus `json:"status" example:"passed"`                                                                    // Status
-	LastChecked int64              `json:"lastChecked" example:"0"`                                                                    // Last checked
+	ID          string                `json:"id" example:"azure_cis_v140_7_5"`                                                            // Policy ID
+	Title       string                `json:"title" example:"7.5 Ensure that the latest OS Patches for all Virtual Machines are applied"` // Policy title
+	Severity    types.FindingSeverity `json:"severity" example:"low"`                                                                     // Severity
+	Status      types.PolicyStatus    `json:"status" example:"passed"`                                                                    // Status
+	LastChecked int64                 `json:"lastChecked" example:"0"`                                                                    // Last checked
 }
 
 type BenchmarkTree struct {
