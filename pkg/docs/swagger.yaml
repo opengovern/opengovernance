@@ -827,6 +827,17 @@ definitions:
         example: Azure CIS v1.4.0
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint:
+    properties:
+      checks:
+        $ref: '#/definitions/types.SeverityResult'
+      result:
+        $ref: '#/definitions/types.ComplianceResultSummary'
+      timestamp:
+        description: Time
+        example: 1686346668
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ComplianceReport:
     properties:
       failureMessage:
@@ -3860,6 +3871,58 @@ paths:
       security:
       - BearerToken: []
       summary: Get benchmark summary
+      tags:
+      - compliance
+  /compliance/api/v1/benchmarks/{benchmark_id}/trend:
+    get:
+      consumes:
+      - application/json
+      description: This API enables users to retrieve a trend of a benchmark result
+        and checks
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - description: timestamp for start of the chart in epoch seconds
+        in: query
+        name: startTime
+        type: integer
+      - description: timestamp for end of the chart in epoch seconds
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get benchmark trend
       tags:
       - compliance
   /compliance/api/v1/benchmarks/policies/{policy_id}:

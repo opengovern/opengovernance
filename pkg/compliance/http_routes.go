@@ -40,6 +40,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/policies/:policy_id", httpserver.AuthorizeHandler(h.GetPolicy, api3.ViewerRole))
 	benchmarks.GET("/summary", httpserver.AuthorizeHandler(h.ListBenchmarksSummary, api3.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
+	benchmarks.GET("/:benchmark_id/trend", httpserver.AuthorizeHandler(h.GetBenchmarkTrend, api3.ViewerRole))
 
 	queries := v1.Group("/queries")
 	queries.GET("/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api3.ViewerRole))
@@ -227,7 +228,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			return err
 		}
 
-		if !utils.IncludesAny(be.Connectors, connectors) {
+		if len(connectors) > 0 && !utils.IncludesAny(be.Connectors, connectors) {
 			continue
 		}
 
@@ -294,6 +295,9 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	if len(connectors) > 0 && !utils.IncludesAny(be.Connectors, connectors) {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
+	}
 
 	summariesAtTime, err := es.FetchBenchmarkSummariesAtTime(h.logger, h.client, []string{benchmarkID}, connectors, connectionIDs, timeAt)
 	if err != nil {
@@ -311,6 +315,88 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		Result:      summaryAtTime.ComplianceResultSummary,
 		Checks:      summaryAtTime.SeverityResult,
 	}
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetBenchmarkTrend godoc
+//
+//	@Summary		Get benchmark trend
+//	@Description	This API enables users to retrieve a trend of a benchmark result and checks
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			benchmark_id	path		string			true	"Benchmark ID"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			startTime		query		int				false	"timestamp for start of the chart in epoch seconds"
+//	@Param			endTime			query		int				false	"timestamp for end of the chart in epoch seconds"
+//	@Success		200				{object}	[]api.BenchmarkTrendDatapoint
+//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/trend [get]
+func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	if len(connectionIDs) > 20 {
+		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
+	}
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	endTime := time.Now()
+	if endTimeStr := ctx.QueryParam("timeAt"); endTimeStr != "" {
+		endTimeInt, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		endTime = time.Unix(endTimeInt, 0)
+	}
+	startTime := endTime.AddDate(0, 0, -7)
+	if startTimeStr := ctx.QueryParam("startTime"); startTimeStr != "" {
+		startTimeInt, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		startTime = time.Unix(startTimeInt, 0)
+	}
+	benchmarkID := ctx.Param("benchmark_id")
+
+	benchmark, err := h.db.GetBenchmark(benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
+	}
+
+	be := benchmark.ToApi()
+	err = benchmark.PopulateConnectors(h.db, &be)
+	if err != nil {
+		return err
+	}
+	if len(connectors) > 0 && !utils.IncludesAny(be.Connectors, connectors) {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
+	}
+
+	datapointCount := int(endTime.Sub(startTime).Hours() / 24)
+	if datapointCount > 30 {
+		datapointCount = 30
+	}
+	if datapointCount < 1 {
+		datapointCount = 1
+	}
+
+	evaluationAcrossTime, err := es.FetchBenchmarkSummaryTrend(h.logger, h.client, []string{benchmarkID}, connectors, connectionIDs, startTime, endTime, datapointCount)
+	if err != nil {
+		return err
+	}
+
+	response := make([]api.BenchmarkTrendDatapoint, 0, datapointCount)
+	for timeKey, datapoint := range evaluationAcrossTime[benchmarkID] {
+		response = append(response, api.BenchmarkTrendDatapoint{
+			Timestamp: timeKey,
+			Result:    datapoint.ComplianceResultSummary,
+			Checks:    datapoint.SeverityResult,
+		})
+	}
+
 	return ctx.JSON(http.StatusOK, response)
 }
 

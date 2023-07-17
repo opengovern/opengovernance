@@ -1190,6 +1190,83 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/benchmarks/{benchmark_id}/trend": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "This API enables users to retrieve a trend of a benchmark result and checks",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get benchmark trend",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "timestamp for start of the chart in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "timestamp for end of the chart in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/findings": {
             "post": {
                 "security": [
@@ -7895,6 +7972,22 @@ const docTemplate = `{
                     "description": "Benchmark title",
                     "type": "string",
                     "example": "Azure CIS v1.4.0"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint": {
+            "type": "object",
+            "properties": {
+                "checks": {
+                    "$ref": "#/definitions/types.SeverityResult"
+                },
+                "result": {
+                    "$ref": "#/definitions/types.ComplianceResultSummary"
+                },
+                "timestamp": {
+                    "description": "Time",
+                    "type": "integer",
+                    "example": 1686346668
                 }
             }
         },

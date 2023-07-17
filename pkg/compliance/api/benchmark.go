@@ -51,3 +51,9 @@ type Query struct {
 	CreatedAt      time.Time `json:"createdAt" example:"2023-06-07T14:00:15.677558Z"`
 	UpdatedAt      time.Time `json:"updatedAt" example:"2023-06-16T14:58:08.759554Z"`
 }
+
+type BenchmarkTrendDatapoint struct {
+	Timestamp int                           `json:"timestamp" example:"1686346668"` // Time
+	Result    types.ComplianceResultSummary `json:"result"`
+	Checks    types.SeverityResult          `json:"checks"`
+}
