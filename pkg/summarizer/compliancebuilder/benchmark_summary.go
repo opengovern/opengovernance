@@ -84,7 +84,12 @@ func (b *BenchmarkSummaryBuilder) Process(resource types.Finding) {
 	b.policySummaries[resource.PolicyID][resource.ConnectionID] = policySummary
 }
 
-func (b *BenchmarkSummaryBuilder) extractBenchmarkSummary(benchmark *complianceApi.Benchmark) {
+func (b *BenchmarkSummaryBuilder) extractBenchmarkSummary(benchmarkId string) {
+	benchmark, err := b.complianceClient.GetBenchmark(&httpclient.Context{UserRole: authApi.KeibiAdminRole}, benchmarkId)
+	if err != nil {
+		b.logger.Error("failed to get benchmark", zap.Error(err))
+		return
+	}
 	timeAt := time.Now().Unix()
 	connectorTypeMap := make(map[string]map[source.Type]bool)
 	if _, ok := b.benchmarkSummaries[benchmark.ID]; !ok {
@@ -92,12 +97,7 @@ func (b *BenchmarkSummaryBuilder) extractBenchmarkSummary(benchmark *complianceA
 	}
 	for _, child := range benchmark.Children {
 		if _, ok := b.benchmarkSummaries[child]; !ok {
-			childBenchmark, err := b.complianceClient.GetBenchmark(&httpclient.Context{UserRole: authApi.KeibiAdminRole}, child)
-			if err != nil {
-				b.logger.Error("failed to get benchmark", zap.Error(err))
-				continue
-			}
-			b.extractBenchmarkSummary(childBenchmark)
+			b.extractBenchmarkSummary(child)
 		}
 		childBenchmarkSummaryMap := b.benchmarkSummaries[child]
 		for connectionID, childBenchmarkSummary := range childBenchmarkSummaryMap {
@@ -193,7 +193,7 @@ func (b *BenchmarkSummaryBuilder) Build() []kafka.Doc {
 		return docs
 	}
 	for _, benchmark := range benchmarks {
-		b.extractBenchmarkSummary(&benchmark)
+		b.extractBenchmarkSummary(benchmark.ID)
 	}
 	for _, benchmarkSummaryMap := range b.benchmarkSummaries {
 		for _, benchmarkSummary := range benchmarkSummaryMap {

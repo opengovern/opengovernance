@@ -48,9 +48,11 @@ func (db Database) ListBenchmarks() ([]Benchmark, error) {
 	return s, nil
 }
 
+// ListRootBenchmarks returns all benchmarks that are not children of any other benchmark
+// is it important to note that this function does not return the children of the root benchmarks neither the policies
 func (db Database) ListRootBenchmarks() ([]Benchmark, error) {
 	var benchmarks []Benchmark
-	err := db.Orm.Model(&Benchmark{}).Preload(clause.Associations).
+	err := db.Orm.Model(&Benchmark{}).Preload("Tags").
 		Where("NOT EXISTS (SELECT 1 FROM benchmark_children WHERE benchmark_children.child_id = benchmarks.id)").
 		Find(&benchmarks).Error
 	if err != nil {

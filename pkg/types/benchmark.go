@@ -93,9 +93,10 @@ func (r BenchmarkSummary) KeysAndIndex() ([]string, string) {
 		r.BenchmarkID,
 		r.ConnectionID,
 		string(connectionsTypesStr),
-		string(BenchmarksSummary),
+		string(r.ReportType),
 	}
-	if r.ReportType == BenchmarksSummaryHistory {
+	if r.ReportType == BenchmarksSummaryHistory ||
+		r.ReportType == BenchmarksConnectorSummaryHistory {
 		keys = append(keys, fmt.Sprintf("%d", r.DescribedAt))
 	}
 	return keys, BenchmarkSummaryIndex
