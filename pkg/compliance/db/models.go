@@ -165,7 +165,7 @@ type Policy struct {
 	Enabled            bool
 	QueryID            *string
 	Benchmarks         []Benchmark `gorm:"many2many:benchmark_policies;"`
-	Severity           types.Severity
+	Severity           types.FindingSeverity
 	ManualVerification bool
 	Managed            bool
 	CreatedAt          time.Time

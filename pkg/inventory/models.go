@@ -11,7 +11,7 @@ import (
 
 type ResourceTypeTag struct {
 	model.Tag
-	ResourceType string `gorm:"primaryKey"`
+	ResourceType string `gorm:"primaryKey; type:citext"`
 }
 
 type ServiceTag struct {
@@ -29,7 +29,7 @@ type SmartQuery struct {
 
 type ResourceType struct {
 	Connector     source.Type `json:"connector" gorm:"index"`
-	ResourceType  string      `json:"resource_type" gorm:"primaryKey"`
+	ResourceType  string      `json:"resource_type" gorm:"primaryKey; type:citext"`
 	ResourceLabel string      `json:"resource_name"`
 	ServiceName   string      `json:"service_name" gorm:"index"`
 	DoSummarize   bool        `json:"do_summarize"`

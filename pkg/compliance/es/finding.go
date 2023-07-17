@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
+	"go.uber.org/zap"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
@@ -27,12 +28,12 @@ type FindingsQueryHit struct {
 	Type    string        `json:"_type"`
 	Version int64         `json:"_version,omitempty"`
 	Source  types.Finding `json:"_source"`
-	Sort    []interface{} `json:"sort"`
+	Sort    []any         `json:"sort"`
 }
 
 func GetActiveFindings(client keibi.Client, policyID string, from, size int) (*FindingsQueryResponse, error) {
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
 	filters = append(filters,
 		map[string]any{"term": map[string]any{"stateActive": true}},
@@ -41,14 +42,14 @@ func GetActiveFindings(client keibi.Client, policyID string, from, size int) (*F
 	res["size"] = size
 	res["from"] = from
 
-	res["sort"] = []map[string]interface{}{
+	res["sort"] = []map[string]any{
 		{
 			"_id": "desc",
 		},
 	}
 
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -63,58 +64,51 @@ func GetActiveFindings(client keibi.Client, policyID string, from, size int) (*F
 }
 
 func FindingsQuery(client keibi.Client,
-	id []string,
+	resourceIDs []string,
 	provider []source.Type,
-	resourceID []string,
 	connectionID []string,
 	benchmarkID []string,
 	policyID []string,
 	severity []string,
-	sort []map[string]interface{},
+	sort []map[string]any,
 	from, size int) (*FindingsQueryResponse, error) {
 
-	res := make(map[string]interface{})
-	var filters []interface{}
+	res := make(map[string]any)
+	var filters []any
 
-	if len(id) > 0 {
-		filters = append(filters, map[string]interface{}{
-			"terms": map[string][]string{"id": id},
+	if len(resourceIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"ID": resourceIDs},
 		})
 	}
 
 	if len(benchmarkID) > 0 {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"benchmarkID": benchmarkID},
 		})
 	}
 
 	if len(policyID) > 0 {
-		filters = append(filters, map[string]interface{}{
+		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"policyID": policyID},
 		})
 	}
 
 	if len(severity) > 0 {
-		filters = append(filters, map[string]interface{}{
-			"terms": map[string]interface{}{"policySeverity": severity},
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{"severity": severity},
 		})
 	}
 
 	if len(connectionID) > 0 {
-		filters = append(filters, map[string]interface{}{
-			"terms": map[string]interface{}{"connectionID": connectionID},
-		})
-	}
-
-	if len(resourceID) > 0 {
-		filters = append(filters, map[string]interface{}{
-			"terms": map[string]interface{}{"resourceID": resourceID},
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{"connectionID": connectionID},
 		})
 	}
 
 	if len(provider) > 0 {
-		filters = append(filters, map[string]interface{}{
-			"terms": map[string]interface{}{"sourceType": provider},
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{"connector": provider},
 		})
 	}
 	res["size"] = size
@@ -124,8 +118,8 @@ func FindingsQuery(client keibi.Client,
 		res["sort"] = sort
 	}
 
-	res["query"] = map[string]interface{}{
-		"bool": map[string]interface{}{
+	res["query"] = map[string]any{
+		"bool": map[string]any{
 			"filter": filters,
 		},
 	}
@@ -179,18 +173,10 @@ type FindingsTopFieldAggregations struct {
 	FieldFilter AggregationResult `json:"field_filter"`
 }
 
-func FindingsTopFieldQuery(client keibi.Client,
-	field string,
-	provider []source.Type,
-	resourceTypeID []string,
-	sourceID []string,
-	status []types.ComplianceResult,
-	benchmarkID []string,
-	policyID []string,
-	severity []string,
-	size int,
-) (*FindingsTopFieldResponse, error) {
-	terms := make(map[string]interface{})
+func FindingsTopFieldQuery(logger *zap.Logger, client keibi.Client,
+	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string,
+	benchmarkID []string, policyID []string, severity []types.FindingSeverity, size int) (*FindingsTopFieldResponse, error) {
+	terms := make(map[string]any)
 
 	if len(benchmarkID) > 0 {
 		terms["benchmarkID"] = benchmarkID
@@ -200,45 +186,41 @@ func FindingsTopFieldQuery(client keibi.Client,
 		terms["policyID"] = policyID
 	}
 
-	if len(status) > 0 {
-		terms["status"] = status
-	}
-
 	if len(severity) > 0 {
-		terms["policySeverity"] = severity
+		terms["severity"] = severity
 	}
 
-	if len(sourceID) > 0 {
-		terms["sourceID"] = sourceID
+	if len(connectionIDs) > 0 {
+		terms["connectionID"] = connectionIDs
 	}
 
 	if len(resourceTypeID) > 0 {
 		terms["resourceType"] = resourceTypeID
 	}
 
-	if len(provider) > 0 {
-		terms["sourceType"] = provider
+	if len(connectors) > 0 {
+		terms["connector"] = connectors
 	}
 
 	terms["stateActive"] = []bool{true}
 
-	root := map[string]interface{}{}
+	root := map[string]any{}
 	root["size"] = 0
 
-	fieldFilter := map[string]interface{}{
-		"terms": map[string]interface{}{"field": field, "size": size},
+	fieldFilter := map[string]any{
+		"terms": map[string]any{"field": field, "size": size},
 	}
-	aggs := map[string]interface{}{
+	aggs := map[string]any{
 		"field_filter": fieldFilter,
 	}
 	root["aggs"] = aggs
 
-	boolQuery := make(map[string]interface{})
+	boolQuery := make(map[string]any)
 	if terms != nil && len(terms) > 0 {
-		var filters []map[string]interface{}
+		var filters []map[string]any
 		for k, vs := range terms {
-			filters = append(filters, map[string]interface{}{
-				"terms": map[string]interface{}{
+			filters = append(filters, map[string]any{
+				"terms": map[string]any{
 					k: vs,
 				},
 			})
@@ -247,7 +229,7 @@ func FindingsTopFieldQuery(client keibi.Client,
 		boolQuery["filter"] = filters
 	}
 	if len(boolQuery) > 0 {
-		root["query"] = map[string]interface{}{
+		root["query"] = map[string]any{
 			"bool": boolQuery,
 		}
 	}
@@ -257,7 +239,7 @@ func FindingsTopFieldQuery(client keibi.Client,
 		return nil, err
 	}
 
-	fmt.Println("======", string(queryBytes))
+	logger.Info("FindingsTopFieldQuery", zap.String("query", string(queryBytes)), zap.String("index", types.FindingsIndex))
 	var resp FindingsTopFieldResponse
 	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
 	return &resp, err

@@ -344,7 +344,7 @@ func (j *Job) ExtractFindings(client keibi.Client, benchmark *api.Benchmark, pol
 		}
 		fmt.Println("======", recordValue)
 
-		severity := types.SeverityNone
+		severity := types.FindingSeverityNone
 		if status == types.ComplianceResultALARM {
 			severity = policy.Severity
 		}

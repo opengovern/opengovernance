@@ -27,19 +27,19 @@ type Benchmark struct {
 }
 
 type Policy struct {
-	ID                 string              `json:"id" example:"azure_cis_v140_1_1"`
-	Title              string              `json:"title" example:"1.1 Ensure that multi-factor authentication status is enabled for all privileged users"`
-	Description        string              `json:"description" example:"Enable multi-factor authentication for all user credentials who have write access to Azure resources. These include roles like 'Service Co-Administrators', 'Subscription Owners', 'Contributors'."`
-	Tags               map[string][]string `json:"tags" `
-	Connector          source.Type         `json:"connector" example:"Azure"`
-	Enabled            bool                `json:"enabled" example:"true"`
-	DocumentURI        string              `json:"documentURI" example:"benchmarks/azure_cis_v140_1_1.md"`
-	QueryID            *string             `json:"queryID" example:"azure_ad_manual_control"`
-	Severity           types.Severity      `json:"severity" example:"low"`
-	ManualVerification bool                `json:"manualVerification" example:"true"`
-	Managed            bool                `json:"managed" example:"true"`
-	CreatedAt          time.Time           `json:"createdAt" example:"2020-01-01T00:00:00Z"`
-	UpdatedAt          time.Time           `json:"updatedAt" example:"2020-01-01T00:00:00Z"`
+	ID                 string                `json:"id" example:"azure_cis_v140_1_1"`
+	Title              string                `json:"title" example:"1.1 Ensure that multi-factor authentication status is enabled for all privileged users"`
+	Description        string                `json:"description" example:"Enable multi-factor authentication for all user credentials who have write access to Azure resources. These include roles like 'Service Co-Administrators', 'Subscription Owners', 'Contributors'."`
+	Tags               map[string][]string   `json:"tags" `
+	Connector          source.Type           `json:"connector" example:"Azure"`
+	Enabled            bool                  `json:"enabled" example:"true"`
+	DocumentURI        string                `json:"documentURI" example:"benchmarks/azure_cis_v140_1_1.md"`
+	QueryID            *string               `json:"queryID" example:"azure_ad_manual_control"`
+	Severity           types.FindingSeverity `json:"severity" example:"low"`
+	ManualVerification bool                  `json:"manualVerification" example:"true"`
+	Managed            bool                  `json:"managed" example:"true"`
+	CreatedAt          time.Time             `json:"createdAt" example:"2020-01-01T00:00:00Z"`
+	UpdatedAt          time.Time             `json:"updatedAt" example:"2020-01-01T00:00:00Z"`
 }
 
 type Query struct {

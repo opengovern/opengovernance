@@ -1,14 +1,46 @@
 package types
 
-type Severity = string
+import "strings"
+
+type FindingSeverity string
 
 const (
-	SeverityNone     = "none"
-	SeverityLow      = "low"
-	SeverityMedium   = "medium"
-	SeverityHigh     = "high"
-	SeverityCritical = "critical"
+	FindingSeverityNone     FindingSeverity = "none"
+	FindingSeverityLow      FindingSeverity = "low"
+	FindingSeverityMedium   FindingSeverity = "medium"
+	FindingSeverityHigh     FindingSeverity = "high"
+	FindingSeverityCritical FindingSeverity = "critical"
 )
+
+func (s FindingSeverity) String() string {
+	return string(s)
+}
+
+var findingSeverities = []FindingSeverity{
+	FindingSeverityNone,
+	FindingSeverityLow,
+	FindingSeverityMedium,
+	FindingSeverityHigh,
+	FindingSeverityCritical,
+}
+
+func ParseFindingSeverity(s string) FindingSeverity {
+	s = strings.ToLower(s)
+	for _, sev := range findingSeverities {
+		if s == strings.ToLower(sev.String()) {
+			return sev
+		}
+	}
+	return ""
+}
+
+func ParseFindingSeverities(list []string) []FindingSeverity {
+	result := make([]FindingSeverity, 0, len(list))
+	for _, s := range list {
+		result = append(result, ParseFindingSeverity(s))
+	}
+	return result
+}
 
 type SeverityResult struct {
 	UnknownCount  int `json:"unknownCount" example:"1"`
@@ -28,32 +60,32 @@ func (r *SeverityResult) AddSeverityResult(severity SeverityResult) {
 	r.CriticalCount += severity.CriticalCount
 }
 
-func (r *SeverityResult) IncreaseBySeverity(severity Severity) {
+func (r *SeverityResult) IncreaseBySeverity(severity FindingSeverity) {
 	switch severity {
-	case SeverityCritical:
+	case FindingSeverityCritical:
 		r.CriticalCount++
-	case SeverityHigh:
+	case FindingSeverityHigh:
 		r.HighCount++
-	case SeverityMedium:
+	case FindingSeverityMedium:
 		r.MediumCount++
-	case SeverityLow:
+	case FindingSeverityLow:
 		r.LowCount++
-	case SeverityNone:
+	case FindingSeverityNone:
 		r.LowCount++
 	}
 }
 
-func (r *SeverityResult) IncreaseBySeverityByAmount(severity Severity, amount int) {
+func (r *SeverityResult) IncreaseBySeverityByAmount(severity FindingSeverity, amount int) {
 	switch severity {
-	case SeverityCritical:
+	case FindingSeverityCritical:
 		r.CriticalCount += amount
-	case SeverityHigh:
+	case FindingSeverityHigh:
 		r.HighCount += amount
-	case SeverityMedium:
+	case FindingSeverityMedium:
 		r.MediumCount += amount
-	case SeverityLow:
+	case FindingSeverityLow:
 		r.LowCount += amount
-	case SeverityNone:
+	case FindingSeverityNone:
 		r.LowCount += amount
 	}
 }

@@ -8,8 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
+	"github.com/kaytu-io/kaytu-util/pkg/model"
 )
 
 type GitParser struct {
@@ -78,7 +79,7 @@ func (g *GitParser) ExtractPolicies(compliancePath string) error {
 					Enabled:            true,
 					QueryID:            o.QueryID,
 					Benchmarks:         nil,
-					Severity:           o.Severity,
+					Severity:           types.ParseFindingSeverity(o.Severity),
 					ManualVerification: o.ManualVerification,
 					Managed:            o.Managed,
 				}
