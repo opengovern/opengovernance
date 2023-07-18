@@ -73,7 +73,7 @@ func NewConfig() *Config {
 		PipedriveBaseUrl:       PipedriveBaseUrl,
 		PipedriveApiToken:      PipedriveApiToken,
 		S3AccessKey:            S3AccessKey,
-		S3SecretKey:            S3AccessKey,
+		S3SecretKey:            S3SecretKey,
 	}
 }
 
