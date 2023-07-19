@@ -387,8 +387,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id	path		string		true	"Benchmark ID"
-//	@Param			status			query		[]string	true	"Status"	Enums(passed,failed,unknown)
+//	@Param			benchmark_id	path		string	true	"Benchmark ID"
 //	@Success		200				{object}	api.BenchmarkTree
 //	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/tree [get]
 func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {

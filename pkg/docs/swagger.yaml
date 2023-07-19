@@ -3969,18 +3969,6 @@ paths:
         name: benchmark_id
         required: true
         type: string
-      - collectionFormat: csv
-        description: Status
-        in: query
-        items:
-          enum:
-          - passed
-          - failed
-          - unknown
-          type: string
-        name: status
-        required: true
-        type: array
       produces:
       - application/json
       responses:

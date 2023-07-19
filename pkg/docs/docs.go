@@ -1215,22 +1215,6 @@ const docTemplate = `{
                         "name": "benchmark_id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "passed",
-                                "failed",
-                                "unknown"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Status",
-                        "name": "status",
-                        "in": "query",
-                        "required": true
                     }
                 ],
                 "responses": {
