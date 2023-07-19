@@ -14,10 +14,11 @@ type BenchmarkAssignment struct {
 }
 
 type BenchmarkAssignedSource struct {
-	ConnectionID   string      `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
-	ConnectionName string      `json:"connectionName"`                                              // Connection Name
-	Connector      source.Type `json:"connector" example:"Azure"`                                   // Clout Provider
-	Status         bool        `json:"status" example:"true"`                                       // Status
+	ConnectionID           string      `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
+	ProviderConnectionID   string      `json:"providerConnectionID" example:"1283192749"`                   // Provider Connection ID
+	ProviderConnectionName string      `json:"providerConnectionName"`                                      // Provider Connection Name
+	Connector              source.Type `json:"connector" example:"Azure"`                                   // Clout Provider
+	Status                 bool        `json:"status" example:"true"`                                       // Status
 }
 
 type FindingFilters struct {

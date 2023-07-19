@@ -721,10 +721,11 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 
 		for _, connection := range connections {
 			ba := api.BenchmarkAssignedSource{
-				ConnectionID:   connection.ConnectionID,
-				ConnectionName: connection.ConnectionName,
-				Connector:      connector,
-				Status:         false,
+				ConnectionID:           connection.ID.String(),
+				ProviderConnectionID:   connection.ConnectionID,
+				ProviderConnectionName: connection.ConnectionName,
+				Connector:              connector,
+				Status:                 false,
 			}
 			resp = append(resp, ba)
 		}

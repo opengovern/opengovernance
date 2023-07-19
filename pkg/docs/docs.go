@@ -7986,10 +7986,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
                 },
-                "connectionName": {
-                    "description": "Connection Name",
-                    "type": "string"
-                },
                 "connector": {
                     "description": "Clout Provider",
                     "allOf": [
@@ -7998,6 +7994,15 @@ const docTemplate = `{
                         }
                     ],
                     "example": "Azure"
+                },
+                "providerConnectionID": {
+                    "description": "Provider Connection ID",
+                    "type": "string",
+                    "example": "1283192749"
+                },
+                "providerConnectionName": {
+                    "description": "Provider Connection Name",
+                    "type": "string"
                 },
                 "status": {
                     "description": "Status",
