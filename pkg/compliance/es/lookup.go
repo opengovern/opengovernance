@@ -60,7 +60,8 @@ func FetchLookupsByResourceIDWildcard(client keibi.Client, resourceID string) (L
 	if err != nil {
 		return LookupQueryResponse{}, err
 	}
-	if response.Hits.Total.Value != 0 {
+	fmt.Println("response=", response)
+	if len(response.Hits.Hits) > 0 {
 		return response, nil
 	}
 
@@ -82,10 +83,12 @@ func FetchLookupsByResourceIDWildcard(client keibi.Client, resourceID string) (L
 		return LookupQueryResponse{}, err
 	}
 	fmt.Println("query=", string(b), "index=", InventorySummaryIndex)
+	response = LookupQueryResponse{}
 	err = client.Search(context.Background(), InventorySummaryIndex, string(b), &response)
 	if err != nil {
 		return LookupQueryResponse{}, err
 	}
+	fmt.Println("response=", response)
 
 	return response, nil
 }

@@ -325,7 +325,7 @@ func (j *Job) ExtractFindings(client keibi.Client, benchmark *api.Benchmark, pol
 				if err != nil {
 					return nil, err
 				}
-				if lookupResource.Hits.Total.Value > 0 {
+				if len(lookupResource.Hits.Hits) > 0 {
 					resourceType = lookupResource.Hits.Hits[0].Source.ResourceType
 				}
 			}
