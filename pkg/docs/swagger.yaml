@@ -807,6 +807,10 @@ definitions:
         description: Enabled
         example: true
         type: boolean
+      evaluatedAt:
+        description: Evaluated at
+        example: "2020-01-01T00:00:00Z"
+        type: string
       id:
         description: Benchmark ID
         example: azure_cis_v140
@@ -1009,6 +1013,9 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord'
         type: array
+      totalCount:
+        example: 100
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Insight:
     properties:
