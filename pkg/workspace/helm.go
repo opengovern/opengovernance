@@ -3,11 +3,15 @@ package workspace
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
+
 	"reflect"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -67,6 +71,10 @@ func (s *Server) createInsightBucket(ctx context.Context, workspace *Workspace) 
 	_, err := cli.CreateBucket(ctx, &s3.CreateBucketInput{
 		Bucket: aws.String(fmt.Sprintf("insights-%s", workspace.ID)),
 	})
+	var bucketAlreadyExists *s3Types.BucketAlreadyExists
+	if errors.As(err, &bucketAlreadyExists) {
+		return nil
+	}
 	return err
 }
 
