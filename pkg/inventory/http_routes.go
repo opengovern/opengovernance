@@ -3348,22 +3348,26 @@ func (h *HttpHandler) GetServiceMetadata(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			metadata
 //	@Produce		json
-//	@Param			connector	query		[]source.Type	true	"Filter by Connector"
-//	@Param			service		query		[]string		false	"Filter by service name"
-//	@Param			tag			query		[]string		false	"Key-Value tags in key=value format to filter by"
-//	@Param			pageSize	query		int				false	"page size - default is 20"
-//	@Param			pageNumber	query		int				false	"page number - default is 1"
-//	@Success		200			{object}	inventoryApi.ListResourceTypeMetadataResponse
+//	@Param			connector		query		[]source.Type	true	"Filter by Connector"
+//	@Param			service			query		[]string		false	"Filter by service name"
+//	@Param			resourceType	query		[]string		false	"Filter by resource type"
+//	@Param			summarzied		query		bool			false	"Return only summarized results or not"
+//	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			pageSize		query		int				false	"page size - default is 20"
+//	@Param			pageNumber		query		int				false	"page number - default is 1"
+//	@Success		200				{object}	inventoryApi.ListResourceTypeMetadataResponse
 //	@Router			/inventory/api/v2/metadata/resourcetype [get]
 func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	serviceNames := httpserver.QueryArrayParam(ctx, "service")
+	resourceTypeNames := httpserver.QueryArrayParam(ctx, "resourceType")
+	summarized := strings.ToLower(ctx.QueryParam("summarized")) == "true"
 	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
-	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, nil, serviceNames, connectors, true)
+	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, resourceTypeNames, serviceNames, connectors, summarized)
 	if err != nil {
 		return err
 	}

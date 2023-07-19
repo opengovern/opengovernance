@@ -1336,7 +1336,8 @@ const docTemplate = `{
                         "enum": [
                             "resourceType",
                             "connectionID",
-                            "resourceID"
+                            "resourceID",
+                            "service"
                         ],
                         "type": "string",
                         "description": "Field",
@@ -2736,6 +2737,22 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Filter by service name",
                         "name": "service",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Filter by resource type",
+                        "name": "resourceType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Return only summarized results or not",
+                        "name": "summarzied",
                         "in": "query"
                     },
                     {
