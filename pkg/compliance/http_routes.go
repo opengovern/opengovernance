@@ -13,7 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
-	api3 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
@@ -21,6 +21,7 @@ import (
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	kaytuTypes "github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
@@ -35,43 +36,43 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
 	benchmarks := v1.Group("/benchmarks")
-	benchmarks.GET("", httpserver.AuthorizeHandler(h.ListBenchmarks, api3.ViewerRole))
-	benchmarks.GET("/:benchmark_id", httpserver.AuthorizeHandler(h.GetBenchmark, api3.ViewerRole))
-	benchmarks.GET("/:benchmark_id/policies", httpserver.AuthorizeHandler(h.ListPolicies, api3.ViewerRole))
-	benchmarks.GET("/policies/:policy_id", httpserver.AuthorizeHandler(h.GetPolicy, api3.ViewerRole))
-	benchmarks.GET("/summary", httpserver.AuthorizeHandler(h.ListBenchmarksSummary, api3.ViewerRole))
-	benchmarks.GET("/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, api3.ViewerRole))
-	benchmarks.GET("/:benchmark_id/trend", httpserver.AuthorizeHandler(h.GetBenchmarkTrend, api3.ViewerRole))
+	benchmarks.GET("", httpserver.AuthorizeHandler(h.ListBenchmarks, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id", httpserver.AuthorizeHandler(h.GetBenchmark, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id/policies", httpserver.AuthorizeHandler(h.ListPolicies, authApi.ViewerRole))
+	benchmarks.GET("/policies/:policy_id", httpserver.AuthorizeHandler(h.GetPolicy, authApi.ViewerRole))
+	benchmarks.GET("/summary", httpserver.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id/trend", httpserver.AuthorizeHandler(h.GetBenchmarkTrend, authApi.ViewerRole))
 
 	queries := v1.Group("/queries")
-	queries.GET("/:query_id", httpserver.AuthorizeHandler(h.GetQuery, api3.ViewerRole))
-	queries.GET("/sync", httpserver.AuthorizeHandler(h.SyncQueries, api3.AdminRole))
+	queries.GET("/:query_id", httpserver.AuthorizeHandler(h.GetQuery, authApi.ViewerRole))
+	queries.GET("/sync", httpserver.AuthorizeHandler(h.SyncQueries, authApi.AdminRole))
 
 	assignments := v1.Group("/assignments")
-	assignments.GET("", httpserver.AuthorizeHandler(h.ListAssignments, api3.ViewerRole))
-	assignments.GET("/benchmark/:benchmark_id", httpserver.AuthorizeHandler(h.ListAssignmentsByBenchmark, api3.ViewerRole))
-	assignments.GET("/connection/:connection_id", httpserver.AuthorizeHandler(h.ListAssignmentsByConnection, api3.ViewerRole))
-	assignments.POST("/:benchmark_id/connection/:connection_id", httpserver.AuthorizeHandler(h.CreateBenchmarkAssignment, api3.EditorRole))
-	assignments.DELETE("/:benchmark_id/connection/:connection_id", httpserver.AuthorizeHandler(h.DeleteBenchmarkAssignment, api3.EditorRole))
+	assignments.GET("", httpserver.AuthorizeHandler(h.ListAssignments, authApi.ViewerRole))
+	assignments.GET("/benchmark/:benchmark_id", httpserver.AuthorizeHandler(h.ListAssignmentsByBenchmark, authApi.ViewerRole))
+	assignments.GET("/connection/:connection_id", httpserver.AuthorizeHandler(h.ListAssignmentsByConnection, authApi.ViewerRole))
+	assignments.POST("/:benchmark_id/connection/:connection_id", httpserver.AuthorizeHandler(h.CreateBenchmarkAssignment, authApi.EditorRole))
+	assignments.DELETE("/:benchmark_id/connection/:connection_id", httpserver.AuthorizeHandler(h.DeleteBenchmarkAssignment, authApi.EditorRole))
 
 	metadata := v1.Group("/metadata")
-	metadata.GET("/tag/insight", httpserver.AuthorizeHandler(h.ListInsightTags, api3.ViewerRole))
-	metadata.GET("/tag/insight/:key", httpserver.AuthorizeHandler(h.GetInsightTag, api3.ViewerRole))
-	metadata.GET("/insight", httpserver.AuthorizeHandler(h.ListInsightsMetadata, api3.ViewerRole))
-	metadata.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsightMetadata, api3.ViewerRole))
+	metadata.GET("/tag/insight", httpserver.AuthorizeHandler(h.ListInsightTags, authApi.ViewerRole))
+	metadata.GET("/tag/insight/:key", httpserver.AuthorizeHandler(h.GetInsightTag, authApi.ViewerRole))
+	metadata.GET("/insight", httpserver.AuthorizeHandler(h.ListInsightsMetadata, authApi.ViewerRole))
+	metadata.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsightMetadata, authApi.ViewerRole))
 
 	insights := v1.Group("/insight")
 	insightGroups := insights.Group("/group")
-	insightGroups.GET("", httpserver.AuthorizeHandler(h.ListInsightGroups, api3.ViewerRole))
-	insightGroups.GET("/:insightGroupId", httpserver.AuthorizeHandler(h.GetInsightGroup, api3.ViewerRole))
-	insightGroups.GET("/:insightGroupId/trend", httpserver.AuthorizeHandler(h.GetInsightGroupTrend, api3.ViewerRole))
-	insights.GET("", httpserver.AuthorizeHandler(h.ListInsights, api3.ViewerRole))
-	insights.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsight, api3.ViewerRole))
-	insights.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, api3.ViewerRole))
+	insightGroups.GET("", httpserver.AuthorizeHandler(h.ListInsightGroups, authApi.ViewerRole))
+	insightGroups.GET("/:insightGroupId", httpserver.AuthorizeHandler(h.GetInsightGroup, authApi.ViewerRole))
+	insightGroups.GET("/:insightGroupId/trend", httpserver.AuthorizeHandler(h.GetInsightGroupTrend, authApi.ViewerRole))
+	insights.GET("", httpserver.AuthorizeHandler(h.ListInsights, authApi.ViewerRole))
+	insights.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsight, authApi.ViewerRole))
+	insights.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, authApi.ViewerRole))
 
 	findings := v1.Group("/findings")
-	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, api3.ViewerRole))
-	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, api3.ViewerRole))
+	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
+	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -146,7 +147,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmarkId		path		string							true	"BenchmarkID"
-//	@Param			field			path		string							true	"Field"	Enums(resourceType,connectionID,resourceID)
+//	@Param			field			path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service)
 //	@Param			count			path		int								true	"Count"
 //	@Param			connectionId	query		[]string						false	"Connection IDs to filter by"
 //	@Param			connector		query		[]source.Type					false	"Connector type to filter by"
@@ -156,10 +157,17 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 	field := ctx.Param("field")
+	esField := field
 	countStr := ctx.Param("count")
 	count, err := strconv.Atoi(countStr)
 	if err != nil {
 		return err
+	}
+	esCount := count
+
+	if field == "service" {
+		esField = "resourceType"
+		esCount = 10000
 	}
 
 	connectionIDs := ctx.QueryParams()["connectionId"]
@@ -173,20 +181,55 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 
 	var response api.GetTopFieldResponse
 	res, err := es.FindingsTopFieldQuery(
-		h.logger, h.client, field,
+		h.logger, h.client, esField,
 		connectors, nil, connectionIDs,
-		benchmarkIDs, nil, severities, count)
+		benchmarkIDs, nil, severities, esCount)
 	if err != nil {
 		return err
 	}
 
-	for _, item := range res.Aggregations.FieldFilter.Buckets {
-		response.Records = append(response.Records, api.TopFieldRecord{
-			Value: item.Key,
-			Count: item.DocCount,
+	switch field {
+	case "service":
+		resourceTypeList := make([]string, 0, len(res.Aggregations.FieldFilter.Buckets))
+		for _, item := range res.Aggregations.FieldFilter.Buckets {
+			resourceTypeList = append(resourceTypeList, item.Key)
+		}
+		resourceTypeMetadata, err := h.inventoryClient.ListResourceTypesMetadata(httpclient.FromEchoContext(ctx),
+			nil, nil, resourceTypeList, false, nil, 10000, 1)
+		if err != nil {
+			return err
+		}
+		resourceTypeMetadataMap := make(map[string]inventoryApi.ResourceType)
+		for _, item := range resourceTypeMetadata.ResourceTypes {
+			resourceTypeMetadataMap[strings.ToLower(item.ResourceType)] = item
+		}
+		serviceCountMap := make(map[string]int)
+		for _, item := range res.Aggregations.FieldFilter.Buckets {
+			if rtMetadata, ok := resourceTypeMetadataMap[strings.ToLower(item.Key)]; ok {
+				serviceCountMap[rtMetadata.ServiceName] += item.DocCount
+			}
+		}
+		serviceCountList := make([]api.TopFieldRecord, 0, len(serviceCountMap))
+		for k, v := range serviceCountMap {
+			serviceCountList = append(serviceCountList, api.TopFieldRecord{
+				Value: k,
+				Count: v,
+			})
+		}
+		sort.Slice(serviceCountList, func(i, j int) bool {
+			return serviceCountList[i].Count > serviceCountList[j].Count
 		})
+		response.Records = serviceCountList[:count]
+		response.TotalCount = len(serviceCountList)
+	default:
+		for _, item := range res.Aggregations.FieldFilter.Buckets {
+			response.Records = append(response.Records, api.TopFieldRecord{
+				Value: item.Key,
+				Count: item.DocCount,
+			})
+		}
+		response.TotalCount = res.Aggregations.BucketCount.Value
 	}
-	response.TotalCount = res.Aggregations.BucketCount.Value
 
 	return ctx.JSON(http.StatusOK, response)
 }

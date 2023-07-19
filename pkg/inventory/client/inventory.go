@@ -21,6 +21,7 @@ type InventoryServiceClient interface {
 	GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, startTime, endTime *time.Time) (map[int][]insight.InsightResource, error)
 	ListConnectionsData(ctx *httpclient.Context, connectionIds []string, startTime, endTime *time.Time) (map[string]api.ConnectionData, error)
 	GetConnectionData(ctx *httpclient.Context, connectionId string, startTime, endTime *time.Time) (*api.ConnectionData, error)
+	ListResourceTypesMetadata(ctx *httpclient.Context, connectors []source.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error)
 }
 
 type inventoryClient struct {
@@ -256,6 +257,91 @@ func (s *inventoryClient) GetConnectionData(ctx *httpclient.Context, connectionI
 	}
 
 	var response api.ConnectionData
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &response, nil
+}
+
+func (s *inventoryClient) ListResourceTypesMetadata(ctx *httpclient.Context, connectors []source.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error) {
+	url := fmt.Sprintf("%s/api/v2/metadata/resourcetype", s.baseURL)
+	firstParamAttached := false
+	if len(connectors) > 0 {
+		for _, connector := range connectors {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("connector=%s", connector)
+		}
+	}
+	if len(services) > 0 {
+		for _, service := range services {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("service=%s", service)
+		}
+	}
+	if len(resourceTypes) > 0 {
+		for _, resourceType := range resourceTypes {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("resourceType=%s", resourceType)
+		}
+	}
+	if summarized {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += "summarized=true"
+	}
+	if len(tags) > 0 {
+		for key, value := range tags {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("tags=%s=%s", key, value)
+		}
+	}
+	if pageSize > 0 {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("pageSize=%d", pageSize)
+	}
+	if pageNumber > 0 {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("pageNumber=%d", pageNumber)
+	}
+
+	var response api.ListResourceTypeMetadataResponse
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())

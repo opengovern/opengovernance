@@ -4061,6 +4061,7 @@ paths:
         - resourceType
         - connectionID
         - resourceID
+        - service
         in: path
         name: field
         required: true
@@ -4995,6 +4996,17 @@ paths:
           type: string
         name: service
         type: array
+      - collectionFormat: csv
+        description: Filter by resource type
+        in: query
+        items:
+          type: string
+        name: resourceType
+        type: array
+      - description: Return only summarized results or not
+        in: query
+        name: summarzied
+        type: boolean
       - collectionFormat: csv
         description: Key-Value tags in key=value format to filter by
         in: query
