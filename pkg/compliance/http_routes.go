@@ -186,6 +186,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			Count: item.DocCount,
 		})
 	}
+	response.TotalCount = res.Aggregations.BucketCount.Value
 
 	return ctx.JSON(http.StatusOK, response)
 }
@@ -255,6 +256,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			Enabled:     b.Enabled,
 			Result:      summaryAtTime.ComplianceResultSummary,
 			Checks:      summaryAtTime.SeverityResult,
+			EvaluatedAt: summaryAtTime.EvaluatedAt,
 		})
 
 		response.TotalResult.AddComplianceResultSummary(summaryAtTime.ComplianceResultSummary)
@@ -327,6 +329,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		Enabled:     benchmark.Enabled,
 		Result:      summaryAtTime.ComplianceResultSummary,
 		Checks:      summaryAtTime.SeverityResult,
+		EvaluatedAt: summaryAtTime.EvaluatedAt,
 	}
 	return ctx.JSON(http.StatusOK, response)
 }
@@ -720,6 +723,37 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, resp)
 }
 
+func (h *HttpHandler) getBenchmarkPolicies(benchmarkID string) ([]db.Policy, error) {
+	b, err := h.db.GetBenchmark(benchmarkID)
+	if err != nil {
+		return nil, err
+	}
+
+	if b == nil {
+		return nil, echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
+
+	var policyIDs []string
+	for _, p := range b.Policies {
+		policyIDs = append(policyIDs, p.ID)
+	}
+
+	policies, err := h.db.GetPolicies(policyIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, child := range b.Children {
+		childPolicies, err := h.getBenchmarkPolicies(child.ID)
+		if err != nil {
+			return nil, err
+		}
+		policies = append(policies, childPolicies...)
+	}
+
+	return policies, nil
+}
+
 // ListPolicies godoc
 //
 //	@Summary		List Benchmark Policies
@@ -736,21 +770,8 @@ func (h *HttpHandler) ListPolicies(ctx echo.Context) error {
 	var response []api.Policy
 
 	benchmarkId := ctx.Param("benchmark_id")
-	b, err := h.db.GetBenchmark(benchmarkId)
-	if err != nil {
-		return err
-	}
 
-	if b == nil {
-		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
-	}
-
-	var policyIDs []string
-	for _, p := range b.Policies {
-		policyIDs = append(policyIDs, p.ID)
-	}
-
-	policies, err := h.db.GetPolicies(policyIDs)
+	policies, err := h.getBenchmarkPolicies(benchmarkId)
 	if err != nil {
 		return err
 	}
