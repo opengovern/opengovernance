@@ -207,6 +207,9 @@ func (p *Policy) PopulateConnector(db Database, api *api.Policy) error {
 		return nil
 	}
 
+	if p.QueryID == nil {
+		return nil
+	}
 	query, err := db.GetQuery(*p.QueryID)
 	if err != nil {
 		return err
