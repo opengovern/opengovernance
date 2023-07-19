@@ -36,7 +36,7 @@ type WorkspaceResponse struct {
 	OwnerId      string                `json:"ownerId"`
 	Tier         string                `json:"tier"`
 	URI          string                `json:"uri"`
-	Status       string                `json:"status"`
+	Status       string                `json:"status" example:"PROVISIONED"`
 	Version      string                `json:"version"`
 	Description  string                `json:"description"`
 	CreatedAt    time.Time             `json:"createdAt"`

@@ -7986,6 +7986,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "evaluatedAt": {
+                    "description": "Evaluated at",
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
+                },
                 "id": {
                     "description": "Benchmark ID",
                     "type": "string",
@@ -8277,6 +8282,10 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord"
                     }
+                },
+                "totalCount": {
+                    "type": "integer",
+                    "example": 100
                 }
             }
         },
@@ -11056,7 +11065,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "PROVISIONED"
                 },
                 "tier": {
                     "type": "string"
