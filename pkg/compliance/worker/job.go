@@ -82,7 +82,7 @@ func (j *Job) Do(
 	return result
 }
 
-func (j *Job) RunBenchmark(esk keibi.Client, benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]types.Finding, error) {
+func (j *Job) RunBenchmark(logger *zap.Logger, esk keibi.Client, benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]types.Finding, error) {
 	ctx := &httpclient.Context{
 		UserRole: api2.AdminRole,
 	}
@@ -96,7 +96,7 @@ func (j *Job) RunBenchmark(esk keibi.Client, benchmarkID string, complianceClien
 
 	var findings []types.Finding
 	for _, childBenchmarkID := range benchmark.Children {
-		f, err := j.RunBenchmark(esk, childBenchmarkID, complianceClient, steampipeConn, connector)
+		f, err := j.RunBenchmark(logger, esk, childBenchmarkID, complianceClient, steampipeConn, connector)
 		if err != nil {
 			return nil, err
 		}
@@ -116,6 +116,7 @@ func (j *Job) RunBenchmark(esk keibi.Client, benchmarkID string, complianceClien
 
 		query, err := complianceClient.GetQuery(ctx, *policy.QueryID)
 		if err != nil {
+			logger.Error("failed to get query", zap.Error(err))
 			return nil, err
 		}
 
@@ -125,7 +126,11 @@ func (j *Job) RunBenchmark(esk keibi.Client, benchmarkID string, complianceClien
 
 		res, err := steampipeConn.QueryAll(query.QueryToExecute)
 		if err != nil {
-			return nil, err
+			logger.Error("failed to execute query",
+				zap.Error(err),
+				zap.String("policyID", policyID),
+				zap.Uint("jobID", j.JobID))
+			continue
 		}
 
 		f, err := j.ExtractFindings(esk, benchmark, policy, query, res)
@@ -250,7 +255,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	fmt.Println("+++++ Steampipe database created")
 
-	findings, err := j.RunBenchmark(esk, j.BenchmarkID, complianceClient, steampipeConn, connector)
+	findings, err := j.RunBenchmark(logger, esk, j.BenchmarkID, complianceClient, steampipeConn, connector)
 	if err != nil {
 		return err
 	}
