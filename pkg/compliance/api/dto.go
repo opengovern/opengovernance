@@ -1,6 +1,8 @@
 package api
 
 import (
+	"time"
+
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
@@ -104,7 +106,8 @@ type TopFieldRecord struct {
 }
 
 type GetTopFieldResponse struct {
-	Records []TopFieldRecord `json:"records"`
+	TotalCount int              `json:"totalCount" example:"100"`
+	Records    []TopFieldRecord `json:"records"`
 }
 
 type GetFindingsResponse struct {
@@ -137,6 +140,7 @@ type BenchmarkEvaluationSummary struct {
 	Enabled     bool                          `json:"enabled" example:"true"`                                                                                                                                                            // Enabled
 	Result      types.ComplianceResultSummary `json:"result"`                                                                                                                                                                            // Compliance result summary
 	Checks      types.SeverityResult          `json:"checks"`                                                                                                                                                                            // Checks summary
+	EvaluatedAt time.Time                     `json:"evaluatedAt" example:"2020-01-01T00:00:00Z"`                                                                                                                                        // Evaluated at
 }
 
 type ResultDatapoint struct {

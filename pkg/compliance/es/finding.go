@@ -167,10 +167,16 @@ type Bucket struct {
 }
 
 type FindingsTopFieldResponse struct {
-	Aggregations FindingsTopFieldAggregations `json:"aggregations"`
-}
-type FindingsTopFieldAggregations struct {
-	FieldFilter AggregationResult `json:"field_filter"`
+	Aggregations struct {
+		FieldFilter struct {
+			DocCountErrorUpperBound int      `json:"doc_count_error_upper_bound"`
+			SumOtherDocCount        int      `json:"sum_other_doc_count"`
+			Buckets                 []Bucket `json:"buckets"`
+		} `json:"field_filter"`
+		BucketCount struct {
+			Value int `json:"value"`
+		} `json:"bucket_count"`
+	} `json:"aggregations"`
 }
 
 func FindingsTopFieldQuery(logger *zap.Logger, client keibi.Client,
@@ -207,13 +213,19 @@ func FindingsTopFieldQuery(logger *zap.Logger, client keibi.Client,
 	root := map[string]any{}
 	root["size"] = 0
 
-	fieldFilter := map[string]any{
-		"terms": map[string]any{"field": field, "size": size},
+	root["aggs"] = map[string]any{
+		"field_filter": map[string]any{
+			"terms": map[string]any{
+				"field": field,
+				"size":  size,
+			},
+		},
+		"bucket_count": map[string]any{
+			"cardinality": map[string]any{
+				"field": field,
+			},
+		},
 	}
-	aggs := map[string]any{
-		"field_filter": fieldFilter,
-	}
-	root["aggs"] = aggs
 
 	boolQuery := make(map[string]any)
 	if terms != nil && len(terms) > 0 {

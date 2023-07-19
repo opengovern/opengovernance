@@ -15,6 +15,7 @@ import (
 type ComplianceEvaluationResult struct {
 	ComplianceResultSummary types.ComplianceResultSummary
 	SeverityResult          types.SeverityResult
+	EvaluatedAt             time.Time
 }
 
 type FetchBenchmarkSummariesByConnectionIDAtTimeResponse struct {
@@ -144,6 +145,9 @@ func FetchBenchmarkSummariesByConnectionIDAtTime(
 			for _, hit := range benchmarkIDBucket.Latest.Hits.Hits {
 				v.ComplianceResultSummary.AddComplianceResultSummary(hit.Source.TotalResult)
 				v.SeverityResult.AddSeverityResult(hit.Source.TotalSeverity)
+				if v.EvaluatedAt.IsZero() || v.EvaluatedAt.After(time.Unix(hit.Source.EvaluatedAt, 0)) {
+					v.EvaluatedAt = time.Unix(hit.Source.EvaluatedAt, 0)
+				}
 			}
 			benchmarkSummaries[benchmarkIDBucket.Key] = v
 		}
@@ -272,6 +276,9 @@ func FetchBenchmarkSummariesByConnectorAtTime(
 			for _, hit := range benchmarkIDBucket.Latest.Hits.Hits {
 				v.ComplianceResultSummary.AddComplianceResultSummary(hit.Source.TotalResult)
 				v.SeverityResult.AddSeverityResult(hit.Source.TotalSeverity)
+				if v.EvaluatedAt.IsZero() || v.EvaluatedAt.After(time.Unix(hit.Source.EvaluatedAt, 0)) {
+					v.EvaluatedAt = time.Unix(hit.Source.EvaluatedAt, 0)
+				}
 			}
 			benchmarkSummaries[benchmarkIDBucket.Key] = v
 		}
@@ -445,6 +452,9 @@ func FetchBenchmarkSummaryTrendByConnectionID(
 				for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
 					evaluation.ComplianceResultSummary.AddComplianceResultSummary(hit.Source.TotalResult)
 					evaluation.SeverityResult.AddSeverityResult(hit.Source.TotalSeverity)
+					if evaluation.EvaluatedAt.IsZero() || evaluation.EvaluatedAt.After(time.Unix(hit.Source.EvaluatedAt, 0)) {
+						evaluation.EvaluatedAt = time.Unix(hit.Source.EvaluatedAt, 0)
+					}
 				}
 			}
 			v[rangeKey] = evaluation
@@ -604,6 +614,9 @@ func FetchBenchmarkSummaryTrendByConnector(
 				for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
 					evaluation.ComplianceResultSummary.AddComplianceResultSummary(hit.Source.TotalResult)
 					evaluation.SeverityResult.AddSeverityResult(hit.Source.TotalSeverity)
+					if evaluation.EvaluatedAt.IsZero() || evaluation.EvaluatedAt.After(time.Unix(hit.Source.EvaluatedAt, 0)) {
+						evaluation.EvaluatedAt = time.Unix(hit.Source.EvaluatedAt, 0)
+					}
 				}
 			}
 			v[rangeKey] = evaluation
