@@ -51,7 +51,7 @@ func (b *BenchmarkSummaryBuilder) Process(resource types.Finding) {
 			b.logger.Error("failed to get policy", zap.Error(err))
 			return
 		}
-		if policy == nil {
+		if policy != nil {
 			b.policyMap[resource.PolicyID] = *policy
 		}
 	}
