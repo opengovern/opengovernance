@@ -9,7 +9,7 @@ FROM ghcr.io/turbot/steampipe:0.20.2
 COPY --from=aws /steampipe-plugin-aws.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-aws.plugin
 COPY --from=azure /steampipe-plugin-azure.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azure@latest/steampipe-plugin-azure.plugin
 COPY --from=azuread /steampipe-plugin-azuread.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azuread@latest/steampipe-plugin-azuread.plugin
-COPY --from=kaytu /steampipe-plugin-kaytu.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/kaytu@latest/steampipe-plugin-kaytu.plugin
+COPY --from=kaytu /steampipe-plugin-kaytu.plugin /home/steampipe/.steampipe/plugins/local/kaytu/kaytu.plugin
 
 USER root
 RUN chown -R steampipe. /home/steampipe/.steampipe/plugins/*
