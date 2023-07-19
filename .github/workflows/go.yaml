@@ -37,7 +37,7 @@ jobs:
         summarizer-worker: ${{ steps.build_services.outputs.summarizer-worker }}
         swagger-ui: ${{ steps.build_services.outputs.swagger-ui }}
         workspace-service: ${{ steps.build_services.outputs.workspace-service }}
-        gpt-service: ${{ steps.build_services.outputs.gpt-service }}
+#        gpt-service: ${{ steps.build_services.outputs.gpt-service }}
     env:
       SERVICE_LIST: ${{ github.event.inputs.servicesList }}
       GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
@@ -705,41 +705,41 @@ jobs:
           tags: ${{ vars.DOCKER_REGISTRY }}/workspace-service:${{ needs.tag.outputs.latest_tag }}
           file: docker/WorkspaceServiceDockerfile
           context: .
-  deploy-gpt-service:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-      - tag
-    permissions:
-      id-token: write
-      contents: read
-    environment: docker
-    if: needs.build.outputs.gpt-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: build
-          path: .
-      - name: Unpack artifact
-        run: |
-          tar -xvf build.tar
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-region: ${{ vars.AWS_REGION }}
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-      - uses: docker/login-action@v2
-        with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v4
-        with:
-          push: true
-          tags: ${{ vars.DOCKER_REGISTRY }}/gpt-service:${{ needs.tag.outputs.latest_tag }}
-          file: docker/GPTServiceDockerfile
-          build-args: |
-            PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
-          context: .
+#  deploy-gpt-service:
+#    runs-on: ubuntu-latest
+#    needs:
+#      - build
+#      - tag
+#    permissions:
+#      id-token: write
+#      contents: read
+#    environment: docker
+#    if: needs.build.outputs.gpt-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v3
+#      - name: Download artifact
+#        uses: actions/download-artifact@v3
+#        with:
+#          name: build
+#          path: .
+#      - name: Unpack artifact
+#        run: |
+#          tar -xvf build.tar
+#      - name: Configure AWS credentials
+#        uses: aws-actions/configure-aws-credentials@v2
+#        with:
+#          aws-region: ${{ vars.AWS_REGION }}
+#          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+#      - uses: docker/login-action@v2
+#        with:
+#          registry: ${{ vars.DOCKER_REGISTRY }}
+#      - name: Build and push Docker images
+#        uses: docker/build-push-action@v4
+#        with:
+#          push: true
+#          tags: ${{ vars.DOCKER_REGISTRY }}/gpt-service:${{ needs.tag.outputs.latest_tag }}
+#          file: docker/GPTServiceDockerfile
+#          build-args: |
+#            PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
+#          context: .
