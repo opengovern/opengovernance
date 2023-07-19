@@ -1190,6 +1190,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/benchmarks/{benchmark_id}/tree": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "This API retrieves the benchmark tree, including all of its child benchmarks. Users can use this API to obtain a comprehensive overview of the benchmarks within a particular category or hierarchy.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get benchmark tree",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "passed",
+                                "failed",
+                                "unknown"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Status",
+                        "name": "status",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/benchmarks/{benchmark_id}/trend": {
             "get": {
                 "security": [
@@ -8038,6 +8091,33 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree": {
+            "type": "object",
+            "properties": {
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree"
+                    }
+                },
+                "id": {
+                    "description": "Benchmark ID",
+                    "type": "string",
+                    "example": "azure_cis_v140"
+                },
+                "policies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree"
+                    }
+                },
+                "title": {
+                    "description": "Benchmark title",
+                    "type": "string",
+                    "example": "CIS v1.4.0"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint": {
             "type": "object",
             "properties": {
@@ -8658,6 +8738,44 @@ const docTemplate = `{
                 "updatedAt": {
                     "type": "string",
                     "example": "2020-01-01T00:00:00Z"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "Policy ID",
+                    "type": "string",
+                    "example": "azure_cis_v140_7_5"
+                },
+                "lastChecked": {
+                    "description": "Last checked",
+                    "type": "integer",
+                    "example": 0
+                },
+                "severity": {
+                    "description": "Severity",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.FindingSeverity"
+                        }
+                    ],
+                    "example": "low"
+                },
+                "status": {
+                    "description": "Status",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.PolicyStatus"
+                        }
+                    ],
+                    "example": "passed"
+                },
+                "title": {
+                    "description": "Policy title",
+                    "type": "string",
+                    "example": "7.5 Ensure that the latest OS Patches for all Virtual Machines are applied"
                 }
             }
         },
@@ -11355,6 +11473,19 @@ const docTemplate = `{
                 "FindingSeverityMedium",
                 "FindingSeverityHigh",
                 "FindingSeverityCritical"
+            ]
+        },
+        "types.PolicyStatus": {
+            "type": "string",
+            "enum": [
+                "passed",
+                "failed",
+                "unknown"
+            ],
+            "x-enum-varnames": [
+                "PolicyStatusPASSED",
+                "PolicyStatusFAILED",
+                "PolicyStatusUNKNOWN"
             ]
         },
         "types.SeverityResult": {

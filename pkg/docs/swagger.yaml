@@ -831,6 +831,25 @@ definitions:
         example: Azure CIS v1.4.0
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
+        type: array
+      id:
+        description: Benchmark ID
+        example: azure_cis_v140
+        type: string
+      policies:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree'
+        type: array
+      title:
+        description: Benchmark title
+        example: CIS v1.4.0
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint:
     properties:
       checks:
@@ -1265,6 +1284,32 @@ definitions:
         type: string
       updatedAt:
         example: "2020-01-01T00:00:00Z"
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree:
+    properties:
+      id:
+        description: Policy ID
+        example: azure_cis_v140_7_5
+        type: string
+      lastChecked:
+        description: Last checked
+        example: 0
+        type: integer
+      severity:
+        allOf:
+        - $ref: '#/definitions/types.FindingSeverity'
+        description: Severity
+        example: low
+      status:
+        allOf:
+        - $ref: '#/definitions/types.PolicyStatus'
+        description: Status
+        example: passed
+      title:
+        description: Policy title
+        example: 7.5 Ensure that the latest OS Patches for all Virtual Machines are
+          applied
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query:
@@ -3184,6 +3229,16 @@ definitions:
     - FindingSeverityMedium
     - FindingSeverityHigh
     - FindingSeverityCritical
+  types.PolicyStatus:
+    enum:
+    - passed
+    - failed
+    - unknown
+    type: string
+    x-enum-varnames:
+    - PolicyStatusPASSED
+    - PolicyStatusFAILED
+    - PolicyStatusUNKNOWN
   types.SeverityResult:
     properties:
       criticalCount:
@@ -3895,6 +3950,43 @@ paths:
       security:
       - BearerToken: []
       summary: Get benchmark summary
+      tags:
+      - compliance
+  /compliance/api/v1/benchmarks/{benchmark_id}/tree:
+    get:
+      consumes:
+      - application/json
+      description: This API retrieves the benchmark tree, including all of its child
+        benchmarks. Users can use this API to obtain a comprehensive overview of the
+        benchmarks within a particular category or hierarchy.
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: Status
+        in: query
+        items:
+          enum:
+          - passed
+          - failed
+          - unknown
+          type: string
+        name: status
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
+      security:
+      - BearerToken: []
+      summary: Get benchmark tree
       tags:
       - compliance
   /compliance/api/v1/benchmarks/{benchmark_id}/trend:

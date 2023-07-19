@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"io"
 	"net/http"
 	"sort"
@@ -43,6 +44,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/summary", httpserver.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/trend", httpserver.AuthorizeHandler(h.GetBenchmarkTrend, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id/tree", httpserver.AuthorizeHandler(h.GetBenchmarkTree, authApi.ViewerRole))
 
 	queries := v1.Group("/queries")
 	queries.GET("/:query_id", httpserver.AuthorizeHandler(h.GetQuery, authApi.ViewerRole))
@@ -375,6 +377,112 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		EvaluatedAt: summaryAtTime.EvaluatedAt,
 	}
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetBenchmarkTree godoc
+//
+//	@Summary		Get benchmark tree
+//	@Description	This API retrieves the benchmark tree, including all of its child benchmarks. Users can use this API to obtain a comprehensive overview of the benchmarks within a particular category or hierarchy.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			benchmark_id	path		string		true	"Benchmark ID"
+//	@Param			status			query		[]string	true	"Status"	Enums(passed,failed,unknown)
+//	@Success		200				{object}	api.BenchmarkTree
+//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/tree [get]
+func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
+	var status []kaytuTypes.PolicyStatus
+	benchmarkID := ctx.Param("benchmark_id")
+	for k, va := range ctx.QueryParams() {
+		if k == "status" || k == "status[]" {
+			for _, v := range va {
+				status = append(status, kaytuTypes.PolicyStatus(v))
+			}
+		}
+	}
+
+	benchmark, err := h.db.GetBenchmark(benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
+	}
+
+	response, err := GetBenchmarkTree(h.db, h.client, *benchmark, status)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+func GetBenchmarkTree(db db.Database, client keibi.Client, b db.Benchmark, status []kaytuTypes.PolicyStatus) (api.BenchmarkTree, error) {
+	tree := api.BenchmarkTree{
+		ID:       b.ID,
+		Title:    b.Title,
+		Children: nil,
+		Policies: nil,
+	}
+	for _, child := range b.Children {
+		childObj, err := db.GetBenchmark(child.ID)
+		if err != nil {
+			return tree, err
+		}
+
+		childTree, err := GetBenchmarkTree(db, client, *childObj, status)
+		if err != nil {
+			return tree, err
+		}
+
+		tree.Children = append(tree.Children, childTree)
+	}
+
+	res, err := es.ListBenchmarkSummaries(client, &b.ID)
+	if err != nil {
+		return tree, err
+	}
+
+	for _, policy := range b.Policies {
+		pt := api.PolicyTree{
+			ID:          policy.ID,
+			Title:       policy.Title,
+			Severity:    policy.Severity,
+			Status:      kaytuTypes.PolicyStatusPASSED,
+			LastChecked: 0,
+		}
+
+		for _, bs := range res {
+			for _, ps := range bs.Policies {
+				if ps.PolicyID == policy.ID {
+					pt.LastChecked = bs.EvaluatedAt
+					pt.Status = kaytuTypes.PolicyStatusPASSED
+					if ps.TotalResult.AlarmCount > 0 || ps.TotalResult.ErrorCount > 0 {
+						pt.Status = kaytuTypes.PolicyStatusFAILED
+					} else if ps.TotalResult.InfoCount > 0 || ps.TotalResult.SkipCount > 0 {
+						pt.Status = kaytuTypes.PolicyStatusUNKNOWN
+					}
+				}
+			}
+		}
+		if len(status) > 0 {
+			contains := false
+			for _, s := range status {
+				if s == pt.Status {
+					contains = true
+				}
+			}
+
+			if !contains {
+				continue
+			}
+		}
+		tree.Policies = append(tree.Policies, pt)
+	}
+
+	return tree, nil
 }
 
 // GetBenchmarkTrend godoc
