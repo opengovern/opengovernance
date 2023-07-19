@@ -71,6 +71,7 @@ jobs:
         ./scripts/list_services > ./services
         cat ./services
         cat ./services | grep -v "steampipe" | grep -v "redoc" > ./build_services
+        cat ./build_services
         if [ ! -z "$(cat ./build_services)" ]; then
           cat ./build_services | xargs -P 1 -I{} bash -c "CC=/usr/bin/musl-gcc GOPRIVATE=\"github.com/kaytu-io\" GOOS=linux GOARCH=amd64 go build -v -ldflags \"-linkmode external -extldflags '-static' -s -w\" -tags musl -o ./build/ ./cmd/{}"
         fi
