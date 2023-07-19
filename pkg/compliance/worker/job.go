@@ -113,6 +113,9 @@ func (j *Job) RunBenchmark(logger *zap.Logger, esk keibi.Client, benchmarkID str
 		if policy.QueryID == nil {
 			continue
 		}
+		if policy.ManualVerification {
+			continue
+		}
 
 		query, err := complianceClient.GetQuery(ctx, *policy.QueryID)
 		if err != nil {
