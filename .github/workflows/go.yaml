@@ -67,6 +67,7 @@ jobs:
     - name: Build services
       id: build_services
       run: |
+        set -x
         ./scripts/list_services > ./services
         cat ./services
         cat ./services | grep -v "steampipe" | grep -v "redoc" > ./build_services
