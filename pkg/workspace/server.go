@@ -209,8 +209,8 @@ func (s *Server) handleAutoSuspend(workspace *Workspace) error {
 	if workspace.Tier != api.Tier_Free {
 		return nil
 	}
-	switch WorkspaceStatus(workspace.Status) {
-	case StatusDeleting, StatusDeleted:
+	switch api.WorkspaceStatus(workspace.Status) {
+	case api.StatusDeleting, api.StatusDeleted:
 		return nil
 	}
 
@@ -226,9 +226,9 @@ func (s *Server) handleAutoSuspend(workspace *Workspace) error {
 	fmt.Printf("last access: %d [%s]\n", lastAccess, res)
 
 	if time.Now().UnixMilli()-lastAccess > s.cfg.AutoSuspendDuration.Milliseconds() {
-		if workspace.Status == string(StatusProvisioned) {
+		if workspace.Status == api.StatusProvisioned {
 			fmt.Printf("suspending workspace %s\n", workspace.Name)
-			if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusSuspending); err != nil {
+			if err := s.db.UpdateWorkspaceStatus(workspace.ID, api.StatusSuspending); err != nil {
 				return fmt.Errorf("update workspace status: %w", err)
 			}
 		}
@@ -250,7 +250,7 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 	var httpIncludes []contourv1.Include
 	var grpcIncludes []contourv1.Include
 	for _, w := range workspaces {
-		if w.Status != string(StatusProvisioned) {
+		if w.Status != api.StatusProvisioned {
 			continue
 		}
 		httpIncludes = append(httpIncludes, contourv1.Include{
@@ -371,9 +371,9 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	status := WorkspaceStatus(workspace.Status)
+	status := api.WorkspaceStatus(workspace.Status)
 	switch status {
-	case StatusProvisioning:
+	case api.StatusProvisioning:
 		helmRelease, err := s.findHelmRelease(ctx, workspace)
 		if err != nil {
 			return fmt.Errorf("find helm release: %w", err)
@@ -439,7 +439,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 				return fmt.Errorf("set last access: %v", err)
 			}
 
-			newStatus = StatusProvisioned
+			newStatus = api.StatusProvisioned
 		} else if meta.IsStatusConditionFalse(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
 			if !helmRelease.Spec.Suspend {
 				helmRelease.Spec.Suspend = true
@@ -454,16 +454,16 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 					return fmt.Errorf("suspend helmrelease: %v", err)
 				}
 			}
-			newStatus = StatusProvisioning
+			newStatus = api.StatusProvisioning
 		} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
-			newStatus = StatusProvisioningFailed
+			newStatus = api.StatusProvisioningFailed
 		}
 		if newStatus != status {
 			if err := s.db.UpdateWorkspaceStatus(workspace.ID, newStatus); err != nil {
 				return fmt.Errorf("update workspace status: %w", err)
 			}
 		}
-	case StatusProvisioningFailed:
+	case api.StatusProvisioningFailed:
 		helmRelease, err := s.findHelmRelease(ctx, workspace)
 		if err != nil {
 			return fmt.Errorf("find helm release: %w", err)
@@ -475,18 +475,18 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		newStatus := status
 		// check the status of helm release
 		if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
-			newStatus = StatusProvisioning
+			newStatus = api.StatusProvisioning
 		} else if meta.IsStatusConditionFalse(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
-			newStatus = StatusProvisioning
+			newStatus = api.StatusProvisioning
 		} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
-			newStatus = StatusProvisioningFailed
+			newStatus = api.StatusProvisioningFailed
 		}
 		if newStatus != status {
 			if err := s.db.UpdateWorkspaceStatus(workspace.ID, newStatus); err != nil {
 				return fmt.Errorf("update workspace status: %w", err)
 			}
 		}
-	case StatusDeleting:
+	case api.StatusDeleting:
 		helmRelease, err := s.findHelmRelease(ctx, workspace)
 		if err != nil {
 			return fmt.Errorf("find helm release: %w", err)
@@ -517,7 +517,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		if err := s.db.DeleteWorkspace(workspace.ID); err != nil {
 			return fmt.Errorf("update workspace status: %w", err)
 		}
-	case StatusSuspending:
+	case api.StatusSuspending:
 		helmRelease, err := s.findHelmRelease(ctx, workspace)
 		if err != nil {
 			return fmt.Errorf("find helm release: %w", err)
@@ -569,7 +569,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 			return nil
 		}
 
-		if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusSuspended); err != nil {
+		if err := s.db.UpdateWorkspaceStatus(workspace.ID, api.StatusSuspended); err != nil {
 			return fmt.Errorf("update workspace status: %w", err)
 		}
 	}
@@ -625,7 +625,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		Name:        strings.ToLower(request.Name),
 		OwnerId:     userID,
 		URI:         uri,
-		Status:      StatusProvisioning.String(),
+		Status:      api.StatusProvisioning,
 		Description: request.Description,
 		Tier:        api.Tier(request.Tier),
 	}
@@ -672,7 +672,7 @@ func (s *Server) DeleteWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, "operation is forbidden")
 	}
 
-	if err := s.db.UpdateWorkspaceStatus(id, StatusDeleting); err != nil {
+	if err := s.db.UpdateWorkspaceStatus(id, api.StatusDeleting); err != nil {
 		c.Logger().Errorf("delete workspace: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
@@ -763,7 +763,7 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 		OwnerId:      workspace.OwnerId,
 		URI:          workspace.URI,
 		Name:         workspace.Name,
-		Tier:         string(workspace.Tier),
+		Tier:         workspace.Tier,
 		Version:      version,
 		Status:       workspace.Status,
 		Description:  workspace.Description,
@@ -797,7 +797,7 @@ func (s *Server) ResumeWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
 
-	if workspace.Status != string(StatusSuspended) {
+	if workspace.Status != api.StatusSuspended {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace is not suspended")
 	}
 
@@ -807,7 +807,7 @@ func (s *Server) ResumeWorkspace(c echo.Context) error {
 		return err
 	}
 
-	if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusProvisioning); err != nil {
+	if err := s.db.UpdateWorkspaceStatus(workspace.ID, api.StatusProvisioning); err != nil {
 		return fmt.Errorf("update workspace status: %w", err)
 	}
 
@@ -839,7 +839,7 @@ func (s *Server) SuspendWorkspace(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, ErrInternalServer)
 	}
 
-	if workspace.Status != string(StatusProvisioned) {
+	if workspace.Status != api.StatusProvisioned {
 		return echo.NewHTTPError(http.StatusBadRequest, "workspace is not provisioned")
 	}
 
@@ -847,7 +847,7 @@ func (s *Server) SuspendWorkspace(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := s.db.UpdateWorkspaceStatus(workspace.ID, StatusSuspending); err != nil {
+	if err := s.db.UpdateWorkspaceStatus(workspace.ID, api.StatusSuspending); err != nil {
 		return fmt.Errorf("update workspace status: %w", err)
 	}
 
@@ -878,7 +878,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 
 	workspaces := make([]*api.WorkspaceResponse, 0)
 	for _, workspace := range dbWorkspaces {
-		if workspace.Status == string(StatusDeleted) {
+		if workspace.Status == api.StatusDeleted {
 			continue
 		}
 
@@ -913,7 +913,7 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 			OwnerId:     workspace.OwnerId,
 			URI:         workspace.URI,
 			Name:        workspace.Name,
-			Tier:        string(workspace.Tier),
+			Tier:        workspace.Tier,
 			Version:     version,
 			Status:      workspace.Status,
 			Description: workspace.Description,
@@ -979,7 +979,7 @@ func (s *Server) GetCurrentWorkspace(c echo.Context) error {
 		OwnerId:      workspace.OwnerId,
 		URI:          workspace.URI,
 		Name:         workspace.Name,
-		Tier:         string(workspace.Tier),
+		Tier:         workspace.Tier,
 		Version:      version,
 		Status:       workspace.Status,
 		Description:  workspace.Description,

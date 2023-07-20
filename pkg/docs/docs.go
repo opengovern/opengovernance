@@ -10625,7 +10625,8 @@ const docTemplate = `{
                 "aws_compliance_git_url",
                 "azure_compliance_git_url",
                 "insights_git_url",
-                "queries_git_url"
+                "queries_git_url",
+                "analytics_git_url"
             ],
             "x-enum-varnames": [
                 "MetadataKeyWorkspaceOwnership",
@@ -10657,7 +10658,8 @@ const docTemplate = `{
                 "MetadataKeyAWSComplianceGitURL",
                 "MetadataKeyAzureComplianceGitURL",
                 "MetadataKeyInsightsGitURL",
-                "MetadataKeyQueriesGitURL"
+                "MetadataKeyQueriesGitURL",
+                "MetadataKeyAnalyticsGitURL"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredential": {
@@ -11319,7 +11321,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus"
                 },
                 "tier": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier"
@@ -11394,11 +11396,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "type": "string",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus"
+                        }
+                    ],
                     "example": "PROVISIONED"
                 },
                 "tier": {
-                    "type": "string"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier"
                 },
                 "uri": {
                     "type": "string"
@@ -11407,6 +11413,27 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus": {
+            "type": "string",
+            "enum": [
+                "PROVISIONING",
+                "PROVISIONED",
+                "PROVISIONING_FAILED",
+                "DELETING",
+                "DELETED",
+                "SUSPENDING",
+                "SUSPENDED"
+            ],
+            "x-enum-varnames": [
+                "StatusProvisioning",
+                "StatusProvisioned",
+                "StatusProvisioningFailed",
+                "StatusDeleting",
+                "StatusDeleted",
+                "StatusSuspending",
+                "StatusSuspended"
+            ]
         },
         "gorm.DeletedAt": {
             "type": "object",
