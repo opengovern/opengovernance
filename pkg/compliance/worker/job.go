@@ -113,32 +113,31 @@ func (j *Job) RunBenchmark(logger *zap.Logger, esk keibi.Client, benchmarkID str
 		if policy.QueryID == nil {
 			continue
 		}
-		if policy.ManualVerification {
-			continue
-		}
+		var f []types.Finding
+		if !policy.ManualVerification {
+			query, err := complianceClient.GetQuery(ctx, *policy.QueryID)
+			if err != nil {
+				logger.Error("failed to get query", zap.Error(err))
+				return nil, err
+			}
 
-		query, err := complianceClient.GetQuery(ctx, *policy.QueryID)
-		if err != nil {
-			logger.Error("failed to get query", zap.Error(err))
-			return nil, err
-		}
+			if query.Connector != string(connector) {
+				return nil, errors.New("connector doesn't match")
+			}
 
-		if query.Connector != string(connector) {
-			return nil, errors.New("connector doesn't match")
-		}
+			res, err := steampipeConn.QueryAll(query.QueryToExecute)
+			if err != nil {
+				logger.Error("failed to execute query",
+					zap.Error(err),
+					zap.String("policyID", policyID),
+					zap.Uint("jobID", j.JobID))
+				continue
+			}
 
-		res, err := steampipeConn.QueryAll(query.QueryToExecute)
-		if err != nil {
-			logger.Error("failed to execute query",
-				zap.Error(err),
-				zap.String("policyID", policyID),
-				zap.Uint("jobID", j.JobID))
-			continue
-		}
-
-		f, err := j.ExtractFindings(esk, benchmark, policy, query, res)
-		if err != nil {
-			return nil, err
+			f, err = j.ExtractFindings(esk, benchmark, policy, query, res)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if !j.IsStack {
