@@ -9,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/config"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"github.com/spf13/cobra"
@@ -172,7 +173,7 @@ func InitializeWorker(
 
 	w.jobResultQueue = resultQueue
 
-	producer, err := newKafkaProducer(strings.Split(conf.Kafka.Addresses, ","))
+	producer, err := kafka.NewDefaultKafkaProducer(strings.Split(conf.Kafka.Addresses, ","))
 	if err != nil {
 		return nil, err
 	}
@@ -243,15 +244,4 @@ func (w *Worker) Stop() {
 		w.jobResultQueue.Close()
 		w.jobResultQueue = nil
 	}
-}
-
-func newKafkaProducer(kafkaServers []string) (*confluent_kafka.Producer, error) {
-	return confluent_kafka.NewProducer(&confluent_kafka.ConfigMap{
-		"bootstrap.servers": strings.Join(kafkaServers, ","),
-		"acks":              "all",
-		"retries":           3,
-		"linger.ms":         1,
-		"batch.size":        1000000,
-		"compression.type":  "lz4",
-	})
 }
