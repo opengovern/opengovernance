@@ -100,6 +100,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	metadata.GET("/services/:serviceName", httpserver.AuthorizeHandler(h.GetServiceMetadata, authApi.ViewerRole))
 	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, authApi.ViewerRole))
 	metadata.GET("/resourcetype/:resourceType", httpserver.AuthorizeHandler(h.GetResourceTypeMetadata, authApi.ViewerRole))
+	metadata.GET("/tags/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeTagsMetadata, authApi.ViewerRole))
+	metadata.GET("/tags/resourcetype/:key", httpserver.AuthorizeHandler(h.GetResourceTypeTagsMetadata, authApi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -3474,6 +3476,136 @@ func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, result)
+}
+
+// ListResourceTypeTagsMetadata godoc
+//
+//	@Summary		Get Resource Type Tags
+//	@Description	Get a list of resource type tags metadata.
+//	@Description	The results could be filtered by provider name and service name.
+//	@Security		BearerToken
+//	@Tags			metadata
+//	@Produce		json
+//	@Param			connector		query		[]source.Type	true	"Filter by Connector"
+//	@Param			service			query		[]string		false	"Filter by service name"
+//	@Param			resourceType	query		[]string		false	"Filter by resource type"
+//	@Param			summarzied		query		bool			false	"Return only summarized results or not"
+//	@Param			pageSize		query		int				false	"page size - default is 20"
+//	@Param			pageNumber		query		int				false	"page number - default is 1"
+//	@Success		200				{object}	inventoryApi.ListResourceTypeTagsMetadataResponse
+//	@Router			/inventory/api/v2/metadata/tags/resourcetype [get]
+func (h *HttpHandler) ListResourceTypeTagsMetadata(ctx echo.Context) error {
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	serviceNames := httpserver.QueryArrayParam(ctx, "service")
+	resourceTypeNames := httpserver.QueryArrayParam(ctx, "resourceType")
+	summarized := strings.ToLower(ctx.QueryParam("summarized")) == "true"
+	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, resourceTypeNames, serviceNames, connectors, summarized)
+	if err != nil {
+		return err
+	}
+
+	resourceTypeTagsMetadataMap := make(map[string]inventoryApi.ResourceTypeTag)
+
+	for _, resourceType := range resourceTypes {
+		tags := model.TrimPrivateTags(resourceType.GetTagsMap())
+		for tagKey, tagValues := range tags {
+			if _, ok := resourceTypeTagsMetadataMap[tagKey]; !ok {
+				resourceTypeTagsMetadataMap[tagKey] = inventoryApi.ResourceTypeTag{
+					Key: tagKey,
+				}
+			}
+			v := resourceTypeTagsMetadataMap[tagKey]
+			for _, tagValue := range tagValues {
+				found := false
+				for i, value := range v.Values {
+					if tagValue == value.Value {
+						found = true
+						v.Values[i].ResourceTypes = append(v.Values[i].ResourceTypes, resourceType.ResourceType)
+						break
+					}
+				}
+				if !found {
+					v.Values = append(v.Values, inventoryApi.ResourceTypeTagValue{
+						Value:         tagValue,
+						ResourceTypes: []string{resourceType.ResourceType},
+					})
+				}
+			}
+			resourceTypeTagsMetadataMap[tagKey] = v
+		}
+	}
+
+	resourceTypeTagsMetadata := make([]inventoryApi.ResourceTypeTag, 0, len(resourceTypeTagsMetadataMap))
+	for _, v := range resourceTypeTagsMetadataMap {
+		resourceTypeTagsMetadata = append(resourceTypeTagsMetadata, v)
+	}
+	sort.Slice(resourceTypeTagsMetadata, func(i, j int) bool {
+		return resourceTypeTagsMetadata[i].Key < resourceTypeTagsMetadata[j].Key
+	})
+
+	result := inventoryApi.ListResourceTypeTagsMetadataResponse{
+		TotalResourceTypeTagCount: len(resourceTypeTagsMetadata),
+		ResourceTypes:             utils.Paginate(pageNumber, pageSize, resourceTypeTagsMetadata),
+	}
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetResourceTypeTagsMetadata godoc
+//
+//	@Summary		Get Resource Type Tags
+//	@Description	Get a singular resource type tag metadata.
+//	@Security		BearerToken
+//	@Tags			metadata
+//	@Produce		json
+//	@Param			key				path		string			true	"Tag key"
+//	@Param			connector		query		[]source.Type	true	"Filter by Connector"
+//	@Param			service			query		[]string		false	"Filter by service name"
+//	@Param			resourceType	query		[]string		false	"Filter by resource type"
+//	@Param			summarzied		query		bool			false	"Return only summarized results or not"
+//	@Success		200				{object}	inventoryApi.ResourceTypeTag
+//	@Router			/inventory/api/v2/metadata/tags/resourcetype/{key} [get]
+func (h *HttpHandler) GetResourceTypeTagsMetadata(ctx echo.Context) error {
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	serviceNames := httpserver.QueryArrayParam(ctx, "service")
+	resourceTypeNames := httpserver.QueryArrayParam(ctx, "resourceType")
+	summarized := strings.ToLower(ctx.QueryParam("summarized")) == "true"
+	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, resourceTypeNames, serviceNames, connectors, summarized)
+	if err != nil {
+		return err
+	}
+	key := ctx.Param("key")
+
+	resourceTypeTagsMetadata := inventoryApi.ResourceTypeTag{}
+
+	for _, resourceType := range resourceTypes {
+		tags := model.TrimPrivateTags(resourceType.GetTagsMap())
+		tagValues := tags[key]
+		for _, tagValue := range tagValues {
+			found := false
+			for i, value := range resourceTypeTagsMetadata.Values {
+				if tagValue == value.Value {
+					found = true
+					resourceTypeTagsMetadata.Values[i].ResourceTypes = append(resourceTypeTagsMetadata.Values[i].ResourceTypes, resourceType.ResourceType)
+					break
+				}
+			}
+			if !found {
+				resourceTypeTagsMetadata.Values = append(resourceTypeTagsMetadata.Values, inventoryApi.ResourceTypeTagValue{
+					Value:         tagValue,
+					ResourceTypes: []string{resourceType.ResourceType},
+				})
+			}
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, resourceTypeTagsMetadata)
 }
 
 func Csv(record []string, w io.Writer) error {

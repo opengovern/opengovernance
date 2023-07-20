@@ -2957,6 +2957,163 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/metadata/tags/resourcetype": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get a list of resource type tags metadata.\nThe results could be filtered by provider name and service name.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "metadata"
+                ],
+                "summary": "Get Resource Type Tags",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Filter by Connector",
+                        "name": "connector",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Filter by service name",
+                        "name": "service",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Filter by resource type",
+                        "name": "resourceType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Return only summarized results or not",
+                        "name": "summarzied",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size - default is 20",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number - default is 1",
+                        "name": "pageNumber",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeTagsMetadataResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/metadata/tags/resourcetype/{key}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get a singular resource type tag metadata.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "metadata"
+                ],
+                "summary": "Get Resource Type Tags",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tag key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Filter by Connector",
+                        "name": "connector",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Filter by service name",
+                        "name": "service",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Filter by resource type",
+                        "name": "resourceType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Return only summarized results or not",
+                        "name": "summarzied",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTag"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/resources/composition/{key}": {
             "get": {
                 "security": [
@@ -9782,6 +9939,21 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeTagsMetadataResponse": {
+            "type": "object",
+            "properties": {
+                "resource_types": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTag"
+                    }
+                },
+                "total_resource_type_tag_count": {
+                    "type": "integer",
+                    "example": 100
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceMetadataResponse": {
             "type": "object",
             "properties": {
@@ -10139,6 +10311,39 @@ const docTemplate = `{
                 },
                 "resource_type_name": {
                     "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTag": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "example": "environment"
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTagValue"
+                    }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTagValue": {
+            "type": "object",
+            "properties": {
+                "resource_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "Microsoft.Compute/virtualMachines"
+                    ]
+                },
+                "value": {
+                    "type": "string",
+                    "example": "dev"
                 }
             }
         },
