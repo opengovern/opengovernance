@@ -37,7 +37,7 @@ func (s *Database) CreateWorkspace(m *Workspace) error {
 	return s.orm.Model(&Workspace{}).Create(m).Error
 }
 
-func (s *Database) UpdateWorkspaceStatus(id string, status WorkspaceStatus) error {
+func (s *Database) UpdateWorkspaceStatus(id string, status api.WorkspaceStatus) error {
 	return s.orm.Model(&Workspace{}).Where("id = ?", id).Update("status", status.String()).Error
 }
 
@@ -77,7 +77,7 @@ func (s *Database) ListWorkspaces() ([]*Workspace, error) {
 	return workspaces, nil
 }
 
-func (s *Database) ListWorkspacesByStatus(status string) ([]*Workspace, error) {
+func (s *Database) ListWorkspacesByStatus(status api.WorkspaceStatus) ([]*Workspace, error) {
 	var workspaces []*Workspace
 	if err := s.orm.Model(&Workspace{}).Where(Workspace{Status: status}).Find(&workspaces).Error; err != nil {
 		return nil, err

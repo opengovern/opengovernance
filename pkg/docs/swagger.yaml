@@ -2509,6 +2509,7 @@ definitions:
     - azure_compliance_git_url
     - insights_git_url
     - queries_git_url
+    - analytics_git_url
     type: string
     x-enum-varnames:
     - MetadataKeyWorkspaceOwnership
@@ -2541,6 +2542,7 @@ definitions:
     - MetadataKeyAzureComplianceGitURL
     - MetadataKeyInsightsGitURL
     - MetadataKeyQueriesGitURL
+    - MetadataKeyAnalyticsGitURL
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredential:
     properties:
       accessKey:
@@ -2981,7 +2983,7 @@ definitions:
       owner_id:
         type: string
       status:
-        type: string
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus'
       tier:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier'
       uri:
@@ -3030,15 +3032,34 @@ definitions:
       ownerId:
         type: string
       status:
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus'
         example: PROVISIONED
-        type: string
       tier:
-        type: string
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier'
       uri:
         type: string
       version:
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus:
+    enum:
+    - PROVISIONING
+    - PROVISIONED
+    - PROVISIONING_FAILED
+    - DELETING
+    - DELETED
+    - SUSPENDING
+    - SUSPENDED
+    type: string
+    x-enum-varnames:
+    - StatusProvisioning
+    - StatusProvisioned
+    - StatusProvisioningFailed
+    - StatusDeleting
+    - StatusDeleted
+    - StatusSuspending
+    - StatusSuspended
   gorm.DeletedAt:
     properties:
       time:
