@@ -3,6 +3,7 @@ package migrator
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/migrator/analytics"
 	"net/http"
 	"os"
 
@@ -29,6 +30,7 @@ type GitConfig struct {
 	AzureComplianceGitURL string
 	InsightGitURL         string
 	QueryGitURL           string
+	AnalyticsGitURL       string
 	githubToken           string
 }
 
@@ -127,6 +129,7 @@ func (w *Job) Run() error {
 		AzureComplianceGitURL: w.conf.AzureComplianceGitURL,
 		InsightGitURL:         w.conf.InsightGitURL,
 		QueryGitURL:           w.conf.QueryGitURL,
+		AnalyticsGitURL:       w.conf.AnalyticsGitURL,
 		githubToken:           w.conf.GithubToken,
 	}
 
@@ -150,6 +153,11 @@ func (w *Job) Run() error {
 	}, models.MetadataKeyQueriesGitURL); err == nil && len(value.GetValue().(string)) > 0 {
 		gitConfig.QueryGitURL = value.GetValue().(string)
 	}
+	if value, err := w.metadataClient.GetConfigMetadata(&httpclient.Context{
+		UserRole: api.AdminRole,
+	}, models.MetadataKeyAnalyticsGitURL); err == nil && len(value.GetValue().(string)) > 0 {
+		gitConfig.AnalyticsGitURL = value.GetValue().(string)
+	}
 
 	w.logger.Info("Starting compliance migration")
 	if err := compliance.Run(w.db, []string{gitConfig.AWSComplianceGitURL, gitConfig.AzureComplianceGitURL}, gitConfig.QueryGitURL, gitConfig.githubToken); err != nil {
@@ -159,6 +167,11 @@ func (w *Job) Run() error {
 	w.logger.Info("Starting insight migration")
 	if err := insight.Run(w.logger, w.db, gitConfig.InsightGitURL, gitConfig.githubToken); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running insight migration: %v", err))
+	}
+
+	w.logger.Info("Starting analytics migration")
+	if err := analytics.Run(w.logger, w.db, gitConfig.AnalyticsGitURL, gitConfig.githubToken); err != nil {
+		w.logger.Error(fmt.Sprintf("Failure while running analytics migration: %v", err))
 	}
 
 	// run elasticsearch

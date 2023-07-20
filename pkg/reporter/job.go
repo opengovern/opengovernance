@@ -39,7 +39,7 @@ type Query struct {
 type JobConfig struct {
 	Steampipe       config.Postgres
 	SteampipeES     config.Postgres
-	Onboard         config.KeibiService
+	Onboard         config.KaytuService
 	ScheduleMinutes int
 }
 

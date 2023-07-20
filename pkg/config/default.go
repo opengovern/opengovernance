@@ -25,7 +25,7 @@ type KMS struct {
 	Region    string
 }
 
-type KeibiService struct {
+type KaytuService struct {
 	BaseURL string
 }
 

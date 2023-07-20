@@ -18,6 +18,8 @@ const (
 	CheckupResultsQueueName              = "checkup-results-queue"
 	SummarizerJobsQueueName              = "summarizer-jobs-queue"
 	SummarizerResultsQueueName           = "summarizer-results-queue"
+	AnalyticsJobsQueueName               = "analytics-jobs-queue"
+	AnalyticsResultsQueueName            = "analytics-results-queue"
 	SourceEventsQueueName                = "source-events-queue"
 )
 
@@ -55,6 +57,7 @@ var (
 	InsightIntervalHours       = os.Getenv("INSIGHT_INTERVAL_HOURS")
 	CheckupIntervalHours       = os.Getenv("CHECKUP_INTERVAL_HOURS")
 	MustSummarizeIntervalHours = os.Getenv("MUST_SUMMARIZE_INTERVAL_HOURS")
+	AnalyticsIntervalHours     = os.Getenv("ANALYTICS_INTERVAL_HOURS")
 	CurrentWorkspaceID         = os.Getenv("CURRENT_NAMESPACE")
 	WorkspaceBaseURL           = os.Getenv("WORKSPACE_BASE_URL")
 	MetadataBaseURL            = os.Getenv("METADATA_BASE_URL")
@@ -105,6 +108,8 @@ func SchedulerCommand() *cobra.Command {
 				CheckupResultsQueueName,
 				SummarizerJobsQueueName,
 				SummarizerResultsQueueName,
+				AnalyticsJobsQueueName,
+				AnalyticsResultsQueueName,
 				SourceEventsQueueName,
 				PostgreSQLUser,
 				PostgreSQLPassword,
@@ -121,6 +126,7 @@ func SchedulerCommand() *cobra.Command {
 				InsightIntervalHours,
 				CheckupIntervalHours,
 				MustSummarizeIntervalHours,
+				AnalyticsIntervalHours,
 				KaytuHelmChartLocation,
 				FluxSystemNamespace,
 			)
