@@ -29,6 +29,21 @@ type ListResourceTypeMetadataResponse struct {
 	ResourceTypes          []ResourceType `json:"resource_types"`
 }
 
+type ResourceTypeTagValue struct {
+	Value         string   `json:"value" example:"dev"`
+	ResourceTypes []string `json:"resource_types" example:"Microsoft.Compute/virtualMachines"`
+}
+
+type ResourceTypeTag struct {
+	Key    string                 `json:"key" example:"environment"`
+	Values []ResourceTypeTagValue `json:"values"`
+}
+
+type ListResourceTypeTagsMetadataResponse struct {
+	TotalResourceTypeTagCount int               `json:"total_resource_type_tag_count" example:"100"`
+	ResourceTypes             []ResourceTypeTag `json:"resource_types"`
+}
+
 type ListResourceTypeMetricsResponse struct {
 	TotalCount         int            `json:"total_count"`
 	TotalOldCount      int            `json:"total_old_count"`
