@@ -81,7 +81,7 @@ func (j *Job) Run(
 		for _, src := range srcs {
 			supportsConnector := false
 			for _, connector := range metric.Connectors {
-				if src.Connector == connector {
+				if src.Connector.String() == connector {
 					supportsConnector = true
 				}
 			}
