@@ -1,8 +1,10 @@
 package db
 
+import "github.com/lib/pq"
+
 type Metric struct {
-	ID         string `gorm:"primaryKey"`
-	Connectors []string
+	ID         string         `gorm:"primaryKey"`
+	Connectors pq.StringArray `gorm:"type:text[]"`
 	Name       string
 	Query      string
 }
