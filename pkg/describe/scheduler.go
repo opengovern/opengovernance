@@ -83,6 +83,13 @@ var SummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help:      "Count of summarizer jobs in scheduler service",
 }, []string{"status"})
 
+var AnalyticsJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Namespace: "keibi",
+	Subsystem: "scheduler",
+	Name:      "schedule_analytics_jobs_total",
+	Help:      "Count of analytics jobs in scheduler service",
+}, []string{"status"})
+
 var ComplianceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Name: "keibi_scheduler_schedule_compliance_job_total",
 	Help: "Count of describe jobs in scheduler service",
@@ -132,6 +139,11 @@ type Scheduler struct {
 	// summarizerJobResultQueue is used to consume the summarizer job results returned by the workers.
 	summarizerJobResultQueue queue.Interface
 
+	// analyticsJobQueue is used to publish analytics jobs to be performed by the workers.
+	analyticsJobQueue queue.Interface
+	// analyticsJobResultQueue is used to consume the analytics job results returned by the workers.
+	analyticsJobResultQueue queue.Interface
+
 	// watch the deleted source
 	deletedSources chan string
 
@@ -144,6 +156,7 @@ type Scheduler struct {
 	checkupIntervalHours       int64
 	summarizerIntervalHours    int64
 	mustSummarizeIntervalHours int64
+	analyticsIntervalHours     int64
 
 	logger              *zap.Logger
 	workspaceClient     workspaceClient.WorkspaceServiceClient
@@ -202,6 +215,8 @@ func InitializeScheduler(
 	checkupJobResultQueueName string,
 	summarizerJobQueueName string,
 	summarizerJobResultQueueName string,
+	analyticsJobQueueName string,
+	analyticsJobResultQueueName string,
 	sourceQueueName string,
 	postgresUsername string,
 	postgresPassword string,
@@ -218,6 +233,7 @@ func InitializeScheduler(
 	insightIntervalHours string,
 	checkupIntervalHours string,
 	mustSummarizeIntervalHours string,
+	analyticsIntervalHours string,
 	keibiHelmChartLocation string,
 	fluxSystemNamespace string,
 ) (s *Scheduler, err error) {
@@ -279,6 +295,16 @@ func InitializeScheduler(
 	}
 
 	s.summarizerJobResultQueue, err = initRabbitQueue(summarizerJobResultQueueName)
+	if err != nil {
+		return nil, err
+	}
+
+	s.analyticsJobQueue, err = initRabbitQueue(analyticsJobQueueName)
+	if err != nil {
+		return nil, err
+	}
+
+	s.analyticsJobResultQueue, err = initRabbitQueue(analyticsJobResultQueueName)
 	if err != nil {
 		return nil, err
 	}
@@ -378,6 +404,10 @@ func InitializeScheduler(
 		return nil, err
 	}
 	s.mustSummarizeIntervalHours, err = strconv.ParseInt(mustSummarizeIntervalHours, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	s.analyticsIntervalHours, err = strconv.ParseInt(analyticsIntervalHours, 10, 64)
 	if err != nil {
 		return nil, err
 	}
@@ -505,6 +535,15 @@ func (s *Scheduler) Run() error {
 		})
 		EnsureRunGoroutin(func() {
 			s.logger.Fatal("SummarizerJobResult consumer exited", zap.Error(s.RunSummarizerJobResultsConsumer()))
+		})
+		// ---------
+
+		// --------- inventory summarizer
+		EnsureRunGoroutin(func() {
+			s.RunAnalyticsJobScheduler()
+		})
+		EnsureRunGoroutin(func() {
+			s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer()))
 		})
 		// ---------
 

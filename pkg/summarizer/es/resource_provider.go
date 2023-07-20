@@ -22,6 +22,7 @@ const (
 	CostServiceSummaryMonthly        ProviderReportType = "CostPerService"
 	CostServiceSummaryDaily          ProviderReportType = "CostPerServiceDaily"
 	CostServiceConnectorSummaryDaily ProviderReportType = "CostPerServicePerConnectorDaily"
+	MetricTrendConnectorSummary      ProviderReportType = "MetricTrendConnectorHistory"
 )
 
 type ProviderTrendSummary struct {

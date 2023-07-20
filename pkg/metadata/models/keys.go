@@ -55,6 +55,7 @@ const (
 	MetadataKeyAzureComplianceGitURL MetadataKey = "azure_compliance_git_url"
 	MetadataKeyInsightsGitURL        MetadataKey = "insights_git_url"
 	MetadataKeyQueriesGitURL         MetadataKey = "queries_git_url"
+	MetadataKeyAnalyticsGitURL       MetadataKey = "analytics_git_url"
 )
 
 var MetadataKeys = []MetadataKey{
@@ -88,6 +89,7 @@ var MetadataKeys = []MetadataKey{
 	MetadataKeyAzureComplianceGitURL,
 	MetadataKeyInsightsGitURL,
 	MetadataKeyQueriesGitURL,
+	MetadataKeyAnalyticsGitURL,
 }
 
 func (k MetadataKey) String() string {
@@ -156,6 +158,8 @@ func (k MetadataKey) GetConfigMetadataType() ConfigMetadataType {
 		return ConfigMetadataTypeString
 	case MetadataKeyQueriesGitURL:
 		return ConfigMetadataTypeString
+	case MetadataKeyAnalyticsGitURL:
+		return ConfigMetadataTypeString
 	}
 	return ""
 }
@@ -221,6 +225,8 @@ func (k MetadataKey) GetMinAuthRole() api.Role {
 	case MetadataKeyInsightsGitURL:
 		return api.AdminRole
 	case MetadataKeyQueriesGitURL:
+		return api.AdminRole
+	case MetadataKeyAnalyticsGitURL:
 		return api.AdminRole
 	}
 	return ""

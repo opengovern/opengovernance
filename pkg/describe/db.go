@@ -3,6 +3,7 @@ package describe
 import (
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -30,7 +31,7 @@ type Database struct {
 
 func (db Database) Initialize() error {
 	return db.orm.AutoMigrate(&Source{}, &DescribeSourceJob{}, &CloudNativeDescribeSourceJob{}, &DescribeResourceJob{},
-		&ComplianceReportJob{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &ScheduleJob{}, &Stack{}, &StackTag{}, &StackEvaluation{},
+		&ComplianceReportJob{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &AnalyticsJob{}, &ScheduleJob{}, &Stack{}, &StackTag{}, &StackEvaluation{},
 		&StackCredential{},
 	)
 }
@@ -1138,6 +1139,64 @@ func (db Database) FetchLastSummarizerJob(jobType summarizer.JobType) (*Summariz
 		return nil, tx.Error
 	}
 	return &job, nil
+}
+
+func (db Database) FetchLastAnalyticsJob() (*AnalyticsJob, error) {
+	var job AnalyticsJob
+	tx := db.orm.Model(&AnalyticsJob{}).
+		Order("created_at DESC").First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return &job, nil
+}
+
+func (db Database) AddAnalyticsJob(job *AnalyticsJob) error {
+	tx := db.orm.Model(&AnalyticsJob{}).
+		Create(job)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) UpdateAnalyticsJobStatus(job AnalyticsJob) error {
+	tx := db.orm.Model(&AnalyticsJob{}).
+		Where("id = ?", job.ID).
+		Update("status", job.Status)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func (db Database) UpdateAnalyticsJobsTimedOut(analyticsIntervalHours int64) error {
+	tx := db.orm.
+		Model(&AnalyticsJob{}).
+		Where(fmt.Sprintf("created_at < NOW() - INTERVAL '%d HOURS'", analyticsIntervalHours*2)).
+		Where("status IN ?", []string{string(analytics.JobInProgress)}).
+		Updates(AnalyticsJob{Status: analytics.JobCompletedWithFailure, FailureMessage: "Job timed out"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) UpdateAnalyticsJob(jobID uint, status analytics.JobStatus, failedMessage string) error {
+	tx := db.orm.Model(&AnalyticsJob{}).
+		Where("id = ?", jobID).
+		Updates(AnalyticsJob{
+			Status:         status,
+			FailureMessage: failedMessage,
+		})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
 }
 
 func (db Database) AddScheduleJob(job *ScheduleJob) error {

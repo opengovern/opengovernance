@@ -2,6 +2,7 @@ package describe
 
 import (
 	"database/sql"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
 	"sort"
 	"strings"
 	"time"
@@ -121,6 +122,12 @@ type SummarizerJob struct {
 	ScheduleJobID  *uint
 	Status         summarizerapi.SummarizerJobStatus
 	JobType        summarizer.JobType
+	FailureMessage string
+}
+
+type AnalyticsJob struct {
+	gorm.Model
+	Status         analytics.JobStatus
 	FailureMessage string
 }
 

@@ -30,9 +30,9 @@ type WorkerConfig struct {
 	RabbitMQ              config.RabbitMQ
 	ElasticSearch         config.ElasticSearch
 	Kafka                 config.Kafka
-	Compliance            config.KeibiService
-	Onboard               config.KeibiService
-	Scheduler             config.KeibiService
+	Compliance            config.KaytuService
+	Onboard               config.KaytuService
+	Scheduler             config.KaytuService
 	PrometheusPushAddress string
 }
 
@@ -86,9 +86,9 @@ func WorkerCommand() *cobra.Command {
 type ServerConfig struct {
 	ES         config.ElasticSearch
 	PostgreSQL config.Postgres
-	Scheduler  config.KeibiService
-	Onboard    config.KeibiService
-	Inventory  config.KeibiService
+	Scheduler  config.KaytuService
+	Onboard    config.KaytuService
+	Inventory  config.KaytuService
 	RabbitMq   config.RabbitMQ
 	Http       config.HttpServer
 
