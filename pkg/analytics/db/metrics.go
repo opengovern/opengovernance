@@ -1,12 +1,8 @@
 package db
 
-import (
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-)
-
 type Metric struct {
 	ID         string `gorm:"primaryKey"`
-	Connectors []source.Type
+	Connectors []string
 	Name       string
 	Query      string
 }

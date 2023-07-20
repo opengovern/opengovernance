@@ -27,9 +27,13 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 				return err
 			}
 
+			var connectors []string
+			for _, c := range metric.Connectors {
+				connectors = append(connectors, c.String())
+			}
 			dbMetric := analyticsDB.Metric{
 				ID:         id,
-				Connectors: metric.Connectors,
+				Connectors: connectors,
 				Name:       metric.Name,
 				Query:      metric.Query,
 			}
