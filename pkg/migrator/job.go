@@ -169,8 +169,16 @@ func (w *Job) Run() error {
 		w.logger.Error(fmt.Sprintf("Failure while running insight migration: %v", err))
 	}
 
+	cfg := postgres.Config{
+		Host:    w.conf.PostgreSQL.Host,
+		Port:    w.conf.PostgreSQL.Port,
+		User:    w.conf.PostgreSQL.Username,
+		Passwd:  w.conf.PostgreSQL.Password,
+		SSLMode: w.conf.PostgreSQL.SSLMode,
+	}
+
 	w.logger.Info("Starting analytics migration")
-	if err := analytics.Run(w.logger, w.db, gitConfig.AnalyticsGitURL, gitConfig.githubToken); err != nil {
+	if err := analytics.Run(w.logger, cfg, gitConfig.AnalyticsGitURL, gitConfig.githubToken); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running analytics migration: %v", err))
 	}
 
@@ -178,14 +186,6 @@ func (w *Job) Run() error {
 	w.logger.Info("Starting elasticsearch migration")
 	if err := elasticsearch.Run(w.elastic, w.logger, "/elasticsearch-index-config"); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running elasticsearch migration: %v", err))
-	}
-
-	cfg := postgres.Config{
-		Host:    w.conf.PostgreSQL.Host,
-		Port:    w.conf.PostgreSQL.Port,
-		User:    w.conf.PostgreSQL.Username,
-		Passwd:  w.conf.PostgreSQL.Password,
-		SSLMode: w.conf.PostgreSQL.SSLMode,
 	}
 
 	w.logger.Info("Starting inventory migration")
