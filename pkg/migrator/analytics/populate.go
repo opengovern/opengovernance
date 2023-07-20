@@ -31,13 +31,13 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 			for _, c := range metric.Connectors {
 				connectors = append(connectors, c.String())
 			}
-			dbMetric := analyticsDB.Metric{
+			dbMetric := analyticsDB.AnalyticMetric{
 				ID:         id,
 				Connectors: connectors,
 				Name:       metric.Name,
 				Query:      metric.Query,
 			}
-			err = dbc.Model(&analyticsDB.Metric{}).Clauses(clause.OnConflict{
+			err = dbc.Model(&analyticsDB.AnalyticMetric{}).Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "id"}},                                    // key column
 				DoUpdates: clause.AssignmentColumns([]string{"connector", "name", "query"}), // column needed to be updated
 			}).Create(dbMetric).Error

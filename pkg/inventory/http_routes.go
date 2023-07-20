@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"io"
 	"math"
 	"mime"
@@ -70,6 +71,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	resourcesV2.GET("/regions/summary", httpserver.AuthorizeHandler(h.ListResourcesRegionsSummary, authApi.ViewerRole))
 	resourcesV2.GET("/regions/composition", httpserver.AuthorizeHandler(h.ListResourcesRegionsComposition, authApi.ViewerRole))
 	resourcesV2.GET("/regions/trend", httpserver.AuthorizeHandler(h.ListResourcesRegionsTrend, authApi.ViewerRole))
+
+	analyticsV2 := v2.Group("/analytics")
+	analyticsV2.GET("/metric", httpserver.AuthorizeHandler(h.ListAnalyticsMetricsHandler, authApi.ViewerRole))
 
 	servicesV2 := v2.Group("/services")
 	servicesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListServiceTags, authApi.ViewerRole))
@@ -643,6 +647,219 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 		TotalOldCount:      totalOldCount,
 		TotalResourceTypes: len(apiResourceTypes),
 		ResourceTypes:      utils.Paginate(pageNumber, pageSize, apiResourceTypes),
+	}
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+func (h *HttpHandler) ListAnalyticsMetrics(metrics []string, tagMap map[string][]string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []inventoryApi.Metric, error) {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+
+	mts, err := aDB.ListFilteredMetrics(tagMap, metrics, connectorTypes)
+	if err != nil {
+		return 0, nil, err
+	}
+	metricNames := make([]string, 0, len(mts))
+	for _, metric := range mts {
+		metricNames = append(metricNames, metric.Name)
+	}
+
+	var metricIndexed map[string]int
+	if len(connectionIDs) > 0 {
+		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, timeAt, metricNames, EsFetchPageSize)
+	} else {
+		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, timeAt, metricNames, EsFetchPageSize)
+	}
+	if err != nil {
+		return 0, nil, err
+	}
+
+	apiMetrics := make([]inventoryApi.Metric, 0, len(mts))
+	totalCount := 0
+	for _, metric := range mts {
+		apiMetric := inventoryApi.MetricToAPI(metric)
+		if count, ok := metricIndexed[metric.Name]; ok && count >= minCount {
+			apiMetric.Count = &count
+			totalCount += count
+		}
+		if (minCount == 0) || (apiMetric.Count != nil && *apiMetric.Count >= minCount) {
+			apiMetrics = append(apiMetrics, apiMetric)
+		}
+	}
+
+	return totalCount, apiMetrics, nil
+}
+
+// ListAnalyticsMetricsHandler godoc
+//
+//	@Summary		List analytics metrics
+//	@Description	Get list of analytics with metrics of each type based on the given input filters.
+//	@Security		BearerToken
+//	@Tags			analytics
+//	@Accept			json
+//	@Produce		json
+//	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			metricNames		query		[]string		false	"Metric Names"
+//	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
+//	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
+//	@Param			minCount		query		int				false	"Minimum number of resources with this tag value, default 1"
+//	@Param			sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count,growth,growth_rate)
+//	@Param			pageSize		query		int				false	"page size - default is 20"
+//	@Param			pageNumber		query		int				false	"page number - default is 1"
+//	@Success		200				{object}	inventoryApi.ListResourceTypeMetricsResponse
+//	@Router			/inventory/api/v2/analytics/metric [get]
+func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
+	var err error
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	metricNames := httpserver.QueryArrayParam(ctx, "metricNames")
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
+
+	connectorTypes, err = h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+	endTime := time.Now()
+	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
+		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid endTime value")
+		}
+		endTime = time.Unix(endTimeVal, 0)
+	}
+	startTime := endTime.AddDate(0, 0, -7)
+	if startTimeStr := ctx.QueryParam("startTime"); startTimeStr != "" {
+		startTimeVal, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid startTime value")
+		}
+		startTime = time.Unix(startTimeVal, 0)
+	}
+	minCount := 1
+	if minCountStr := ctx.QueryParam("minCount"); minCountStr != "" {
+		minCountVal, err := strconv.ParseInt(minCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "minCount must be a number")
+		}
+		minCount = int(minCountVal)
+	}
+	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+	sortBy := strings.ToLower(ctx.QueryParam("sortBy"))
+	if sortBy == "" {
+		sortBy = "count"
+	}
+	if sortBy != "name" && sortBy != "count" &&
+		sortBy != "growth" && sortBy != "growth_rate" {
+		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
+	}
+
+	totalCount, apiMetrics, err := h.ListAnalyticsMetrics(metricNames, tagMap, connectorTypes, connectionIDs, minCount, endTime)
+	if err != nil {
+		return err
+	}
+	apiMetricsMap := make(map[string]inventoryApi.Metric, len(apiMetrics))
+	for _, apiMetric := range apiMetrics {
+		apiMetricsMap[apiMetric.Name] = apiMetric
+	}
+
+	totalOldCount, oldApiMetrics, err := h.ListAnalyticsMetrics(metricNames, tagMap, connectorTypes, connectionIDs, 0, startTime)
+	if err != nil {
+		return err
+	}
+	for _, oldApiMetric := range oldApiMetrics {
+		if apiMetric, ok := apiMetricsMap[oldApiMetric.Name]; ok {
+			apiMetric.OldCount = oldApiMetric.Count
+			apiMetricsMap[oldApiMetric.Name] = apiMetric
+		}
+	}
+
+	apiMetrics = make([]inventoryApi.Metric, 0, len(apiMetricsMap))
+	for _, apiMetric := range apiMetricsMap {
+		apiMetrics = append(apiMetrics, apiMetric)
+	}
+
+	sort.Slice(apiMetrics, func(i, j int) bool {
+		switch sortBy {
+		case "name":
+			return apiMetrics[i].Name < apiMetrics[j].Name
+		case "count":
+			if apiMetrics[i].Count == nil && apiMetrics[j].Count == nil {
+				break
+			}
+			if apiMetrics[i].Count == nil {
+				return false
+			}
+			if apiMetrics[j].Count == nil {
+				return true
+			}
+			if *apiMetrics[i].Count != *apiMetrics[j].Count {
+				return *apiMetrics[i].Count > *apiMetrics[j].Count
+			}
+		case "growth":
+			diffi := utils.PSub(apiMetrics[i].Count, apiMetrics[i].OldCount)
+			diffj := utils.PSub(apiMetrics[j].Count, apiMetrics[j].OldCount)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if *diffi != *diffj {
+				return *diffi > *diffj
+			}
+		case "growth_rate":
+			diffi := utils.PSub(apiMetrics[i].Count, apiMetrics[i].OldCount)
+			diffj := utils.PSub(apiMetrics[j].Count, apiMetrics[j].OldCount)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if apiMetrics[i].OldCount == nil && apiMetrics[j].OldCount == nil {
+				break
+			}
+			if apiMetrics[i].OldCount == nil {
+				return true
+			}
+			if apiMetrics[j].OldCount == nil {
+				return false
+			}
+			if *apiMetrics[i].OldCount == 0 && *apiMetrics[j].OldCount == 0 {
+				break
+			}
+			if *apiMetrics[i].OldCount == 0 {
+				return false
+			}
+			if *apiMetrics[j].OldCount == 0 {
+				return true
+			}
+			if float64(*diffi)/float64(*apiMetrics[i].OldCount) != float64(*diffj)/float64(*apiMetrics[j].OldCount) {
+				return float64(*diffi)/float64(*apiMetrics[i].OldCount) > float64(*diffj)/float64(*apiMetrics[j].OldCount)
+			}
+		}
+		return apiMetrics[i].Name < apiMetrics[j].Name
+	})
+
+	result := inventoryApi.ListMetricsResponse{
+		TotalCount:    totalCount,
+		TotalOldCount: totalOldCount,
+		TotalMetrics:  len(apiMetrics),
+		Metrics:       utils.Paginate(pageNumber, pageSize, apiMetrics),
 	}
 
 	return ctx.JSON(http.StatusOK, result)

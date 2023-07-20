@@ -4911,6 +4911,86 @@ paths:
       summary: Returns top n regions of specified provider by resource count
       tags:
       - resource
+  /inventory/api/v2/analytics/metric:
+    get:
+      consumes:
+      - application/json
+      description: Get list of analytics with metrics of each type based on the given
+        input filters.
+      parameters:
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
+        in: query
+        items:
+          type: string
+        name: tag
+        type: array
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: Metric Names
+        in: query
+        items:
+          type: string
+        name: metricNames
+        type: array
+      - description: timestamp for resource count in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: timestamp for resource count change comparison in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      - description: Minimum number of resources with this tag value, default 1
+        in: query
+        name: minCount
+        type: integer
+      - description: Sort by field - default is count
+        enum:
+        - name
+        - count
+        - growth
+        - growth_rate
+        in: query
+        name: sortBy
+        type: string
+      - description: page size - default is 20
+        in: query
+        name: pageSize
+        type: integer
+      - description: page number - default is 1
+        in: query
+        name: pageNumber
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeMetricsResponse'
+      security:
+      - BearerToken: []
+      summary: List analytics metrics
+      tags:
+      - analytics
   /inventory/api/v2/cost/composition:
     get:
       consumes:
