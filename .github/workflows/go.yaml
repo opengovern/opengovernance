@@ -75,9 +75,9 @@ jobs:
         cat ./build_services
         if [ ! -z "$(cat ./build_services)" ]; then
           cat ./build_services | xargs -P 1 -I{} bash -c "CC=/usr/bin/musl-gcc GOPRIVATE=\"github.com/kaytu-io\" GOOS=linux GOARCH=amd64 go build -v -ldflags \"-linkmode external -extldflags '-static' -s -w\" -tags musl -o ./build/ ./cmd/{}"
+          chmod +x ./build/*
         fi
         for f in $(cat ./services); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
-        chmod +x ./build/*
     - name: Force update cache
       run: |
         STATE_CACHE_KEY="${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}"
