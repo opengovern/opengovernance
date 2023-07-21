@@ -11548,8 +11548,8 @@
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus": {
             "type": "string",
             "enum": [
-                "PROVISIONING",
                 "PROVISIONED",
+                "PROVISIONING",
                 "PROVISIONING_FAILED",
                 "DELETING",
                 "DELETED",
@@ -11557,8 +11557,8 @@
                 "SUSPENDED"
             ],
             "x-enum-varnames": [
-                "StatusProvisioning",
                 "StatusProvisioned",
+                "StatusProvisioning",
                 "StatusProvisioningFailed",
                 "StatusDeleting",
                 "StatusDeleted",

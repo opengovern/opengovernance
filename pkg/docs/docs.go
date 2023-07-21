@@ -11554,8 +11554,8 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus": {
             "type": "string",
             "enum": [
-                "PROVISIONING",
                 "PROVISIONED",
+                "PROVISIONING",
                 "PROVISIONING_FAILED",
                 "DELETING",
                 "DELETED",
@@ -11563,8 +11563,8 @@ const docTemplate = `{
                 "SUSPENDED"
             ],
             "x-enum-varnames": [
-                "StatusProvisioning",
                 "StatusProvisioned",
+                "StatusProvisioning",
                 "StatusProvisioningFailed",
                 "StatusDeleting",
                 "StatusDeleted",
