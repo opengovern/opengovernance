@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"fmt"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	es2 "github.com/kaytu-io/kaytu-engine/pkg/analytics/es"
@@ -94,6 +95,7 @@ func (j *Job) Run(
 			query = strings.ReplaceAll(query, "${ACCOUNT_ID}", src.ConnectionID)
 			query = strings.ReplaceAll(query, "${CONNECTION_ID}", src.ID.String())
 
+			fmt.Println(query)
 			var count int64
 			row := steampipeDB.Exec(query).Row()
 			if err = row.Scan(&count); err != nil {
