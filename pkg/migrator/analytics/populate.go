@@ -3,24 +3,26 @@ package analytics
 import (
 	"encoding/json"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
+	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"go.uber.org/zap"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) error {
 	err := filepath.Walk(analyticsPath, func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".json") {
 			id := strings.TrimSuffix(info.Name(), ".json")
+
 			content, err := os.ReadFile(path)
 			if err != nil {
 				return err
 			}
+
 			var metric Metric
 			err = json.Unmarshal(content, &metric)
 			if err != nil {
@@ -31,16 +33,30 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 			for _, c := range metric.Connectors {
 				connectors = append(connectors, c.String())
 			}
+
+			var tags []analyticsDB.MetricTag
+			for k, v := range metric.Tags {
+				tags = append(tags, analyticsDB.MetricTag{
+					Tag: model.Tag{
+						Key:   k,
+						Value: v,
+					},
+					Name: metric.Name,
+				})
+			}
 			dbMetric := analyticsDB.AnalyticMetric{
 				ID:         id,
 				Connectors: connectors,
 				Name:       metric.Name,
 				Query:      metric.Query,
+				Tags:       tags,
 			}
+
 			err = dbc.Model(&analyticsDB.AnalyticMetric{}).Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "id"}},                                    // key column
-				DoUpdates: clause.AssignmentColumns([]string{"connector", "name", "query"}), // column needed to be updated
+				Columns:   []clause.Column{{Name: "id"}},                                             // key column
+				DoUpdates: clause.AssignmentColumns([]string{"connectors", "name", "query", "tags"}), // column needed to be updated
 			}).Create(dbMetric).Error
+
 			if err != nil {
 				logger.Error("failure in insert", zap.Error(err))
 				return err
