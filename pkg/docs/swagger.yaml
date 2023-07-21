@@ -3061,8 +3061,8 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus:
     enum:
-    - PROVISIONING
     - PROVISIONED
+    - PROVISIONING
     - PROVISIONING_FAILED
     - DELETING
     - DELETED
@@ -3070,8 +3070,8 @@ definitions:
     - SUSPENDED
     type: string
     x-enum-varnames:
-    - StatusProvisioning
     - StatusProvisioned
+    - StatusProvisioning
     - StatusProvisioningFailed
     - StatusDeleting
     - StatusDeleted
