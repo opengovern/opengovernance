@@ -53,8 +53,8 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 			}
 
 			err = dbc.Model(&analyticsDB.AnalyticMetric{}).Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "id"}},                                             // key column
-				DoUpdates: clause.AssignmentColumns([]string{"connectors", "name", "query", "tags"}), // column needed to be updated
+				Columns:   []clause.Column{{Name: "id"}},                                     // key column
+				DoUpdates: clause.AssignmentColumns([]string{"connectors", "name", "query"}), // column needed to be updated
 			}).Create(dbMetric).Error
 
 			if err != nil {
