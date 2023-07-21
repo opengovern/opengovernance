@@ -3592,6 +3592,16 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	}
 
 	var resourceTypeMetadata []inventoryApi.ResourceType
+	tableCountMap := make(map[string]int)
+	insightList, err := h.complianceClient.ListInsightsMetadata(httpclient.FromEchoContext(ctx), connectors)
+	if err != nil {
+		return err
+	}
+	for _, insightEntity := range insightList {
+		for _, insightTable := range insightEntity.Query.ListOfTables {
+			tableCountMap[insightTable]++
+		}
+	}
 
 	for _, resourceType := range resourceTypes {
 		apiResourceType := resourceType.ToApi()
@@ -3605,18 +3615,7 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 		}
 		insightTableCount := 0
 		if table != "" {
-			insightList, err := h.complianceClient.ListInsightsMetadata(httpclient.FromEchoContext(ctx), []source.Type{resourceType.Connector})
-			if err != nil {
-				return err
-			}
-			for _, insightEntity := range insightList {
-				for _, insightTable := range insightEntity.Query.ListOfTables {
-					if insightTable == table {
-						insightTableCount++
-						break
-					}
-				}
-			}
+			insightTableCount = tableCountMap[table]
 		}
 		apiResourceType.InsightsCount = utils.GetPointerOrNil(insightTableCount)
 
@@ -3767,7 +3766,7 @@ func (h *HttpHandler) ListResourceTypeTagsMetadata(ctx echo.Context) error {
 
 	result := inventoryApi.ListResourceTypeTagsMetadataResponse{
 		TotalResourceTypeTagCount: len(resourceTypeTagsMetadata),
-		ResourceTypes:             utils.Paginate(pageNumber, pageSize, resourceTypeTagsMetadata),
+		ResourceTypeTags:          utils.Paginate(pageNumber, pageSize, resourceTypeTagsMetadata),
 	}
 
 	return ctx.JSON(http.StatusOK, result)

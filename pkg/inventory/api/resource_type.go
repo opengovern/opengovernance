@@ -41,7 +41,7 @@ type ResourceTypeTag struct {
 
 type ListResourceTypeTagsMetadataResponse struct {
 	TotalResourceTypeTagCount int               `json:"total_resource_type_tag_count" example:"100"`
-	ResourceTypes             []ResourceTypeTag `json:"resource_types"`
+	ResourceTypeTags          []ResourceTypeTag `json:"resource_type_tags"`
 }
 
 type ListResourceTypeMetricsResponse struct {

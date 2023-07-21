@@ -10059,7 +10059,7 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeTagsMetadataResponse": {
             "type": "object",
             "properties": {
-                "resource_types": {
+                "resource_type_tags": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTag"

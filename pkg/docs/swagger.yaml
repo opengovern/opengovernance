@@ -2037,7 +2037,7 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeTagsMetadataResponse:
     properties:
-      resource_types:
+      resource_type_tags:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTag'
         type: array
