@@ -3001,45 +3001,62 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceLimitsUsage:
     properties:
       currentConnections:
+        example: 100
         type: integer
       currentResources:
+        example: 10000
         type: integer
       currentUsers:
+        example: 10
         type: integer
       id:
+        example: ws-698542025141040315
         type: string
       maxConnections:
+        example: 1000
         type: integer
       maxResources:
+        example: 100000
         type: integer
       maxUsers:
+        example: 100
         type: integer
       name:
+        example: keibi
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceResponse:
     properties:
       createdAt:
+        example: "2023-05-17T14:39:02.707659Z"
         type: string
       description:
+        example: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         type: string
       id:
+        example: ws-698542025141040315
         type: string
       name:
+        example: keibi
         type: string
       organization:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.OrganizationResponse'
       ownerId:
+        example: google-oauth2|204590896945502695694
         type: string
       status:
         allOf:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus'
         example: PROVISIONED
       tier:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier'
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier'
+        example: ENTERPRISE
       uri:
+        example: https://app.kaytu.dev/keibi
         type: string
       version:
+        example: v0.45.4
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus:

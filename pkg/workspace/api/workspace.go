@@ -31,15 +31,15 @@ type ChangeWorkspaceOrganizationRequest struct {
 }
 
 type WorkspaceResponse struct {
-	ID           string                `json:"id"`
-	Name         string                `json:"name"`
-	OwnerId      string                `json:"ownerId"`
-	Tier         Tier                  `json:"tier"`
-	URI          string                `json:"uri"`
+	ID           string                `json:"id" example:"ws-698542025141040315"`
+	Name         string                `json:"name" example:"keibi"`
+	OwnerId      string                `json:"ownerId" example:"google-oauth2|204590896945502695694"`
+	Tier         Tier                  `json:"tier" example:"ENTERPRISE"`
+	URI          string                `json:"uri" example:"https://app.kaytu.dev/keibi"`
 	Status       WorkspaceStatus       `json:"status" example:"PROVISIONED"`
-	Version      string                `json:"version"`
-	Description  string                `json:"description"`
-	CreatedAt    time.Time             `json:"createdAt"`
+	Version      string                `json:"version" example:"v0.45.4"`
+	Description  string                `json:"description" example:"Lorem ipsum dolor sit amet, consectetur adipiscing elit."`
+	CreatedAt    time.Time             `json:"createdAt" example:"2023-05-17T14:39:02.707659Z"`
 	Organization *OrganizationResponse `json:"organization,omitempty"`
 }
 
@@ -76,14 +76,14 @@ type Workspace struct {
 }
 
 type WorkspaceLimitsUsage struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID   string `json:"id" example:"ws-698542025141040315"`
+	Name string `json:"name" example:"keibi"`
 
-	CurrentUsers       int64 `json:"currentUsers"`
-	CurrentConnections int64 `json:"currentConnections"`
-	CurrentResources   int64 `json:"currentResources"`
+	CurrentUsers       int64 `json:"currentUsers" example:"10"`
+	CurrentConnections int64 `json:"currentConnections" example:"100"`
+	CurrentResources   int64 `json:"currentResources" example:"10000"`
 
-	MaxUsers       int64 `json:"maxUsers"`
-	MaxConnections int64 `json:"maxConnections"`
-	MaxResources   int64 `json:"maxResources"`
+	MaxUsers       int64 `json:"maxUsers" example:"100"`
+	MaxConnections int64 `json:"maxConnections" example:"1000"`
+	MaxResources   int64 `json:"maxResources" example:"100000"`
 }
