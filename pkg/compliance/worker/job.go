@@ -261,6 +261,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	if err != nil {
 		return err
 	}
+	steampipeConn.Conn().Close()
 	fmt.Println("++++++ findings len: ", len(findings))
 	var docs []kafka.Doc
 	for _, finding := range findings {

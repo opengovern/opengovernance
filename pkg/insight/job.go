@@ -135,6 +135,7 @@ func (j Job) Do(client keibi.Client, steampipeOption *steampipe.Option, onboardC
 		fmt.Println("Initialized steampipe database: ", *steampipeConn)
 
 		res, err = steampipeConn.QueryAll(query)
+		steampipeConn.Conn().Close()
 		if res != nil {
 			count = int64(len(res.Data))
 			for colNo, col := range res.Headers {
