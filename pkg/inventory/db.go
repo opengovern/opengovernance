@@ -1,6 +1,8 @@
 package inventory
 
 import (
+	"time"
+
 	"github.com/jackc/pgx/v4"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -22,6 +24,7 @@ func (db Database) Initialize() error {
 		&Service{},
 		&ResourceType{},
 		&SmartQuery{},
+		&SmartQueryHistory{},
 		&Metric{},
 		&ResourceTypeTag{},
 		&ServiceTag{},
@@ -129,6 +132,47 @@ func (db Database) GetQuery(id string) (SmartQuery, error) {
 	}
 
 	return s, nil
+}
+
+func (db Database) GetQueryHistory() ([]SmartQueryHistory, error) {
+	var history []SmartQueryHistory
+	tx := db.orm.Order("executed_at desc").Find(&history)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return history, nil
+}
+
+func (db Database) UpdateQueryHistory(query string) error {
+	history := SmartQueryHistory{
+		Query:      query,
+		ExecutedAt: time.Now(),
+	}
+	// Upsert query history
+	err := db.orm.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "query"}},
+		DoUpdates: clause.AssignmentColumns([]string{"executed_at"}),
+	}).Create(&history).Error
+	if err != nil {
+		return err
+	}
+
+	// Only keep latest 100 queries in history
+	const keepNumber = 100
+	var count int64
+	err = db.orm.Model(&SmartQueryHistory{}).Count(&count).Error
+	if err != nil {
+		return err
+	}
+	if count > keepNumber {
+		err = db.orm.Model(&SmartQueryHistory{}).Order("executed_at asc").Limit(int(count - keepNumber)).Delete(&SmartQueryHistory{}).Error
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (db Database) CreateOrUpdateMetric(metric Metric) error {

@@ -2222,6 +2222,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v1/query/run/history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Get recently ran queries.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smart_query"
+                ],
+                "summary": "Get recently ran queries",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryHistory"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v1/query/run{queryId}": {
             "post": {
                 "security": [
@@ -10642,6 +10670,17 @@ const docTemplate = `{
                     "description": "Service Name",
                     "type": "string",
                     "example": "compute"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryHistory": {
+            "type": "object",
+            "properties": {
+                "executed_at": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
                 }
             }
         },

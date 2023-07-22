@@ -27,6 +27,18 @@ type SmartQuery struct {
 	Query       string
 }
 
+type SmartQueryHistory struct {
+	Query      string `gorm:"type:citext; primaryKey"`
+	ExecutedAt time.Time
+}
+
+func (s SmartQueryHistory) ToApi() api.SmartQueryHistory {
+	return api.SmartQueryHistory{
+		Query:      s.Query,
+		ExecutedAt: s.ExecutedAt,
+	}
+}
+
 type ResourceType struct {
 	Connector     source.Type `json:"connector" gorm:"index"`
 	ResourceType  string      `json:"resource_type" gorm:"primaryKey; type:citext"`
