@@ -1973,15 +1973,11 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest:
     properties:
-      labels:
-        description: Labels
+      connectorsFilter:
+        description: Specifies the Connectors
         items:
-          type: string
+          $ref: '#/definitions/source.Type'
         type: array
-      providerFilter:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        description: Specifies the Provider
       titleFilter:
         description: Specifies the Title
         type: string

@@ -10008,20 +10008,12 @@
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest": {
             "type": "object",
             "properties": {
-                "labels": {
-                    "description": "Labels",
+                "connectorsFilter": {
+                    "description": "Specifies the Connectors",
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/source.Type"
                     }
-                },
-                "providerFilter": {
-                    "description": "Specifies the Provider",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ]
                 },
                 "titleFilter": {
                     "description": "Specifies the Title",
