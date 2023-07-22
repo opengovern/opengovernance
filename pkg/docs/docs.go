@@ -2168,7 +2168,61 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v1/query/{queryId}": {
+        "/inventory/api/v1/query/run": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Run provided smart query and returns the result.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "smart_query"
+                ],
+                "summary": "Run provided smart query and returns the result",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "QueryID",
+                        "name": "queryId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryRequest"
+                        }
+                    },
+                    {
+                        "enum": [
+                            "application/json",
+                            "text/csv"
+                        ],
+                        "type": "string",
+                        "description": "Accept header",
+                        "name": "accept",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v1/query/run{queryId}": {
             "post": {
                 "security": [
                     {
@@ -10484,8 +10538,10 @@ const docTemplate = `{
                 "page": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Page"
                 },
+                "query": {
+                    "type": "string"
+                },
                 "sorts": {
-                    "description": "NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQuerySortItem"
@@ -10514,6 +10570,10 @@ const docTemplate = `{
                         "type": "array",
                         "items": {}
                     }
+                },
+                "rowCount": {
+                    "description": "Number of rows in result",
+                    "type": "integer"
                 },
                 "title": {
                     "description": "Query Title",

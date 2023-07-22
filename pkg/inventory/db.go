@@ -59,19 +59,20 @@ func (db Database) GetQueries() ([]SmartQuery, error) {
 }
 
 // GetQueriesWithFilters gets list of all queries filtered by tags and search
-func (db Database) GetQueriesWithFilters(search *string, labels []string, provider *source.Type) ([]SmartQuery, error) {
+func (db Database) GetQueriesWithFilters(search *string, connectors []source.Type) ([]SmartQuery, error) {
 	var s []SmartQuery
 
-	m := db.orm.Model(&SmartQuery{}).
-		Preload("Tags").
-		Joins("LEFT JOIN smartquery_tags on smart_queries.id = smart_query_id " +
-			"LEFT JOIN tags on smartquery_tags.tag_id = tags.id ")
+	m := db.orm.Model(&SmartQuery{})
 
 	if search != nil {
 		m = m.Where("title like ?", "%"+*search+"%")
 	}
-	if provider != nil {
-		m = m.Where("provider = ?", string(*provider))
+	if len(connectors) > 0 {
+		connectorStr := make([]string, 0, len(connectors))
+		for _, c := range connectors {
+			connectorStr = append(connectorStr, c.String())
+		}
+		m = m.Where("connector IN ?", connectorStr)
 	}
 	tx := m.Find(&s)
 
@@ -93,23 +94,20 @@ func (db Database) GetQueriesWithFilters(search *string, labels []string, provid
 }
 
 // CountQueriesWithFilters count list of all queries filtered by tags and search
-func (db Database) CountQueriesWithFilters(search *string, labels []string, provider *source.Type) (*int64, error) {
+func (db Database) CountQueriesWithFilters(search *string, connectors []source.Type) (*int64, error) {
 	var s int64
 
-	m := db.orm.Model(&SmartQuery{}).
-		Preload("Tags").
-		Joins("LEFT JOIN smartquery_tags on smart_queries.id = smart_query_id " +
-			"LEFT JOIN tags on smartquery_tags.tag_id = tags.id ").
-		Distinct("smart_queries.id")
+	m := db.orm.Model(&SmartQuery{}).Distinct("smart_queries.id")
 
-	if len(labels) != 0 {
-		m = m.Where("tags.value in ?", labels)
-	}
 	if search != nil {
 		m = m.Where("title like ?", "%"+*search+"%")
 	}
-	if provider != nil {
-		m = m.Where("provider = ?", string(*provider))
+	if len(connectors) > 0 {
+		connectorStr := make([]string, 0, len(connectors))
+		for _, c := range connectors {
+			connectorStr = append(connectorStr, c.String())
+		}
+		m = m.Where("connector IN ?", connectorStr)
 	}
 	tx := m.Count(&s)
 

@@ -2347,9 +2347,9 @@ definitions:
     properties:
       page:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Page'
+      query:
+        type: string
       sorts:
-        description: 'NOTE: we don''t support multi-field sort for now, if sort is
-          empty, results would be sorted by first column'
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQuerySortItem'
         type: array
@@ -2373,6 +2373,9 @@ definitions:
           items: {}
           type: array
         type: array
+      rowCount:
+        description: Number of rows in result
+        type: integer
       title:
         description: Query Title
         type: string
@@ -4707,7 +4710,64 @@ paths:
       summary: List smart queries
       tags:
       - smart_query
-  /inventory/api/v1/query/{queryId}:
+  /inventory/api/v1/query/count:
+    get:
+      description: Counting smart queries
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      security:
+      - BearerToken: []
+      summary: Count smart queries
+      tags:
+      - smart_query
+  /inventory/api/v1/query/run:
+    post:
+      description: Run provided smart query and returns the result.
+      parameters:
+      - description: QueryID
+        in: path
+        name: queryId
+        required: true
+        type: string
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryRequest'
+      - description: Accept header
+        enum:
+        - application/json
+        - text/csv
+        in: header
+        name: accept
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryResponse'
+      security:
+      - BearerToken: []
+      summary: Run provided smart query and returns the result
+      tags:
+      - smart_query
+  /inventory/api/v1/query/run{queryId}:
     post:
       description: |-
         Run a specific smart query.
@@ -4744,28 +4804,6 @@ paths:
       security:
       - BearerToken: []
       summary: Run a specific smart query
-      tags:
-      - smart_query
-  /inventory/api/v1/query/count:
-    get:
-      description: Counting smart queries
-      parameters:
-      - description: Request Body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: integer
-      security:
-      - BearerToken: []
-      summary: Count smart queries
       tags:
       - smart_query
   /inventory/api/v1/resource:

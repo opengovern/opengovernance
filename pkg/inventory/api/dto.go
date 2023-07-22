@@ -41,19 +41,6 @@ type LocationByProviderResponse struct {
 	Name string `json:"name"` // Name of the region
 }
 
-type RunQueryRequest struct {
-	Page Page `json:"page" validate:"required"`
-	// NOTE: we don't support multi-field sort for now, if sort is empty, results would be sorted by first column
-	Sorts []SmartQuerySortItem `json:"sorts"`
-}
-
-type RunQueryResponse struct {
-	Title   string          `json:"title"`   // Query Title
-	Query   string          `json:"query"`   // Query
-	Headers []string        `json:"headers"` // Column names
-	Result  [][]interface{} `json:"result"`  // Result of query. in order to access a specific cell please use Result[Row][Column]
-}
-
 type Page struct {
 	No   int `json:"no,omitempty"`
 	Size int `json:"size,omitempty"`
@@ -219,7 +206,7 @@ type SummaryQueryHit struct {
 	Type    string            `json:"_type"`
 	Version int64             `json:"_version,omitempty"`
 	Source  es.LookupResource `json:"_source"`
-	Sort    []interface{}     `json:"sort"`
+	Sort    []any             `json:"sort"`
 }
 
 type GenericQueryResponse struct {
@@ -230,13 +217,13 @@ type GenericQueryHits struct {
 	Hits  []GenericQueryHit `json:"hits"`
 }
 type GenericQueryHit struct {
-	ID      string                 `json:"_id"`
-	Score   float64                `json:"_score"`
-	Index   string                 `json:"_index"`
-	Type    string                 `json:"_type"`
-	Version int64                  `json:"_version,omitempty"`
-	Source  map[string]interface{} `json:"_source"`
-	Sort    []interface{}          `json:"sort"`
+	ID      string         `json:"_id"`
+	Score   float64        `json:"_score"`
+	Index   string         `json:"_index"`
+	Type    string         `json:"_type"`
+	Version int64          `json:"_version,omitempty"`
+	Source  map[string]any `json:"_source"`
+	Sort    []any          `json:"sort"`
 }
 
 type SmartQueryItem struct {
@@ -250,9 +237,8 @@ type SmartQueryItem struct {
 }
 
 type ListQueryRequest struct {
-	TitleFilter    string       `json:"titleFilter"`    // Specifies the Title
-	ProviderFilter *source.Type `json:"providerFilter"` // Specifies the Provider
-	Labels         []string     `json:"labels"`         // Labels
+	TitleFilter string        `json:"titleFilter"`      // Specifies the Title
+	Connectors  []source.Type `json:"connectorsFilter"` // Specifies the Connectors
 }
 
 type ConnectionResourceCountResponse struct {
