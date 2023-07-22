@@ -21,7 +21,7 @@ type ServiceTag struct {
 
 type SmartQuery struct {
 	gorm.Model
-	Provider    string
+	Connector   string
 	Title       string
 	Description string
 	Query       string

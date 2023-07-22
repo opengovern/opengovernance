@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"io"
 	"math"
 	"mime"
@@ -17,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/labstack/echo/v4"
 	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 	"go.uber.org/zap"
@@ -54,9 +54,11 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/resources/top/regions", httpserver.AuthorizeHandler(h.GetTopRegionsByResourceCount, authApi.ViewerRole))
 	v1.GET("/resources/regions", httpserver.AuthorizeHandler(h.GetRegionsByResourceCount, authApi.ViewerRole))
 
-	v1.GET("/query", httpserver.AuthorizeHandler(h.ListQueries, authApi.ViewerRole))
-	v1.GET("/query/count", httpserver.AuthorizeHandler(h.CountQueries, authApi.ViewerRole))
-	v1.POST("/query/:queryId", httpserver.AuthorizeHandler(h.RunQuery, authApi.EditorRole))
+	queryV1 := v1.Group("/query")
+	queryV1.GET("", httpserver.AuthorizeHandler(h.ListQueries, authApi.ViewerRole))
+	queryV1.GET("/count", httpserver.AuthorizeHandler(h.CountQueries, authApi.ViewerRole))
+	queryV1.POST("/run", httpserver.AuthorizeHandler(h.RunQuery, authApi.EditorRole))
+	queryV1.POST("/run/:queryId", httpserver.AuthorizeHandler(h.RunQueryById, authApi.EditorRole))
 
 	v2 := e.Group("/api/v2")
 
@@ -2852,7 +2854,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 		search = &req.TitleFilter
 	}
 
-	queries, err := h.db.GetQueriesWithFilters(search, req.Labels, req.ProviderFilter)
+	queries, err := h.db.GetQueriesWithFilters(search, req.Connectors)
 	if err != nil {
 		return err
 	}
@@ -2863,7 +2865,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 
 		result = append(result, inventoryApi.SmartQueryItem{
 			ID:          item.Model.ID,
-			Provider:    item.Provider,
+			Provider:    item.Connector,
 			Title:       item.Title,
 			Category:    category,
 			Description: item.Description,
@@ -2895,14 +2897,14 @@ func (h *HttpHandler) CountQueries(ctx echo.Context) error {
 		search = &req.TitleFilter
 	}
 
-	c, err := h.db.CountQueriesWithFilters(search, req.Labels, req.ProviderFilter)
+	c, err := h.db.CountQueriesWithFilters(search, req.Connectors)
 	if err != nil {
 		return err
 	}
 	return ctx.JSON(200, *c)
 }
 
-// RunQuery godoc
+// RunQueryById godoc
 //
 //	@Summary		Run a specific smart query
 //	@Description	Run a specific smart query.
@@ -2916,8 +2918,8 @@ func (h *HttpHandler) CountQueries(ctx echo.Context) error {
 //	@Param			request	body		inventoryApi.RunQueryRequest	true	"Request Body"
 //	@Param			accept	header		string							true	"Accept header"	Enums(application/json,text/csv)
 //	@Success		200		{object}	inventoryApi.RunQueryResponse
-//	@Router			/inventory/api/v1/query/{queryId} [post]
-func (h *HttpHandler) RunQuery(ctx echo.Context) error {
+//	@Router			/inventory/api/v1/query/run{queryId} [post]
+func (h *HttpHandler) RunQueryById(ctx echo.Context) error {
 	var req inventoryApi.RunQueryRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -2978,6 +2980,34 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 		return err
 	}
 	resp, err := h.RunSmartQuery(query.Title, query.Query, &req)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(200, resp)
+}
+
+// RunQuery godoc
+//
+//	@Summary		Run provided smart query and returns the result
+//	@Description	Run provided smart query and returns the result.
+//	@Security		BearerToken
+//	@Tags			smart_query
+//	@Accepts		json
+//	@Produce		json
+//	@Param			queryId	path		string							true	"QueryID"
+//	@Param			request	body		inventoryApi.RunQueryRequest	true	"Request Body"
+//	@Param			accept	header		string							true	"Accept header"	Enums(application/json,text/csv)
+//	@Success		200		{object}	inventoryApi.RunQueryResponse
+//	@Router			/inventory/api/v1/query/run [post]
+func (h *HttpHandler) RunQuery(ctx echo.Context) error {
+	var req inventoryApi.RunQueryRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if req.Query == nil || *req.Query == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Query is required")
+	}
+	resp, err := h.RunSmartQuery(*req.Query, *req.Query, &req)
 	if err != nil {
 		return err
 	}
@@ -3317,17 +3347,18 @@ func (h *HttpHandler) RunSmartQuery(title, query string,
 		return nil, errors.New("multiple sort items not supported")
 	}
 
-	fmt.Println("smart query is: ", query)
+	h.logger.Info("executing smart query", zap.String("query", query))
 	res, err := h.steampipeConn.Query(query, lastIdx, req.Page.Size, req.Sorts[0].Field, steampipe.DirectionType(req.Sorts[0].Direction))
 	if err != nil {
 		return nil, err
 	}
 
 	resp := inventoryApi.RunQueryResponse{
-		Title:   title,
-		Query:   query,
-		Headers: res.Headers,
-		Result:  res.Data,
+		Title:    title,
+		Query:    query,
+		RowCount: len(res.Data),
+		Headers:  res.Headers,
+		Result:   res.Data,
 	}
 	return &resp, nil
 }
