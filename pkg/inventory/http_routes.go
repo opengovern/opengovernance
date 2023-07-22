@@ -2946,7 +2946,7 @@ func (h *HttpHandler) RunQueryById(ctx echo.Context) error {
 				return err
 			}
 
-			resp, err := h.RunSmartQuery(query.Title, query.Query, &req)
+			resp, err := h.RunSmartQuery(ctx.Request().Context(), query.Title, query.Query, &req)
 			if err != nil {
 				return err
 			}
@@ -2979,7 +2979,7 @@ func (h *HttpHandler) RunQueryById(ctx echo.Context) error {
 		}
 		return err
 	}
-	resp, err := h.RunSmartQuery(query.Title, query.Query, &req)
+	resp, err := h.RunSmartQuery(ctx.Request().Context(), query.Title, query.Query, &req)
 	if err != nil {
 		return err
 	}
@@ -3007,7 +3007,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 	if req.Query == nil || *req.Query == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Query is required")
 	}
-	resp, err := h.RunSmartQuery(*req.Query, *req.Query, &req)
+	resp, err := h.RunSmartQuery(ctx.Request().Context(), *req.Query, *req.Query, &req)
 	if err != nil {
 		return err
 	}
@@ -3329,7 +3329,7 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	return ctx.JSON(200, resp)
 }
 
-func (h *HttpHandler) RunSmartQuery(title, query string,
+func (h *HttpHandler) RunSmartQuery(ctx context.Context, title, query string,
 	req *inventoryApi.RunQueryRequest) (*inventoryApi.RunQueryResponse, error) {
 
 	var err error
@@ -3348,7 +3348,7 @@ func (h *HttpHandler) RunSmartQuery(title, query string,
 	}
 
 	h.logger.Info("executing smart query", zap.String("query", query))
-	res, err := h.steampipeConn.Query(query, lastIdx, req.Page.Size, req.Sorts[0].Field, steampipe.DirectionType(req.Sorts[0].Direction))
+	res, err := h.steampipeConn.Query(ctx, query, lastIdx, req.Page.Size, req.Sorts[0].Field, steampipe.DirectionType(req.Sorts[0].Direction))
 	if err != nil {
 		return nil, err
 	}
