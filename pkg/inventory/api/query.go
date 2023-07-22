@@ -1,5 +1,7 @@
 package api
 
+import "time"
+
 type RunQueryRequest struct {
 	Page  Page                 `json:"page" validate:"required"`
 	Query *string              `json:"query"`
@@ -11,4 +13,9 @@ type RunQueryResponse struct {
 	Query   string   `json:"query"`   // Query
 	Headers []string `json:"headers"` // Column names
 	Result  [][]any  `json:"result"`  // Result of query. in order to access a specific cell please use Result[Row][Column]
+}
+
+type SmartQueryHistory struct {
+	Query      string    `json:"query"`
+	ExecutedAt time.Time `json:"executed_at"`
 }

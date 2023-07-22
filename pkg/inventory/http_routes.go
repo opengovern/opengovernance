@@ -58,6 +58,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	queryV1.GET("", httpserver.AuthorizeHandler(h.ListQueries, authApi.ViewerRole))
 	queryV1.GET("/count", httpserver.AuthorizeHandler(h.CountQueries, authApi.ViewerRole))
 	queryV1.POST("/run", httpserver.AuthorizeHandler(h.RunQuery, authApi.EditorRole))
+	queryV1.POST("/run/history", httpserver.AuthorizeHandler(h.GetRecentRanQueries, authApi.EditorRole))
 	queryV1.POST("/run/:queryId", httpserver.AuthorizeHandler(h.RunQueryById, authApi.EditorRole))
 
 	v2 := e.Group("/api/v2")
@@ -3014,6 +3015,31 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 	return ctx.JSON(200, resp)
 }
 
+// GetRecentRanQueries godoc
+//
+//	@Summary		Get recently ran queries
+//	@Description	Get recently ran queries.
+//	@Security		BearerToken
+//	@Tags			smart_query
+//	@Accepts		json
+//	@Produce		json
+//	@Success		200	{object}	[]inventoryApi.SmartQueryHistory
+//	@Router			/inventory/api/v1/query/run/history [get]
+func (h *HttpHandler) GetRecentRanQueries(ctx echo.Context) error {
+	smartQueryHistories, err := h.db.GetQueryHistory()
+	if err != nil {
+		h.logger.Error("Failed to get query history", zap.Error(err))
+		return err
+	}
+
+	res := make([]inventoryApi.SmartQueryHistory, 0, len(smartQueryHistories))
+	for _, history := range smartQueryHistories {
+		res = append(res, history.ToApi())
+	}
+
+	return ctx.JSON(200, res)
+}
+
 // GetLocations godoc
 //
 //	@Summary		Get locations
@@ -3350,6 +3376,12 @@ func (h *HttpHandler) RunSmartQuery(ctx context.Context, title, query string,
 	h.logger.Info("executing smart query", zap.String("query", query))
 	res, err := h.steampipeConn.Query(ctx, query, lastIdx, req.Page.Size, req.Sorts[0].Field, steampipe.DirectionType(req.Sorts[0].Direction))
 	if err != nil {
+		return nil, err
+	}
+
+	err = h.db.UpdateQueryHistory(query)
+	if err != nil {
+		h.logger.Error("failed to update query history", zap.Error(err))
 		return nil, err
 	}
 
