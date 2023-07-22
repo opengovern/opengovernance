@@ -4784,24 +4784,7 @@ paths:
       summary: Run provided smart query and returns the result
       tags:
       - smart_query
-  /inventory/api/v1/query/run/history:
-    get:
-      description: Get recently ran queries.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryHistory'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Get recently ran queries
-      tags:
-      - smart_query
-  /inventory/api/v1/query/run{queryId}:
+  /inventory/api/v1/query/run/{queryId}:
     post:
       description: |-
         Run a specific smart query.
@@ -4838,6 +4821,23 @@ paths:
       security:
       - BearerToken: []
       summary: Run a specific smart query
+      tags:
+      - smart_query
+  /inventory/api/v1/query/run/history:
+    get:
+      description: Get recently ran queries.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SmartQueryHistory'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get recently ran queries
       tags:
       - smart_query
   /inventory/api/v1/resource:

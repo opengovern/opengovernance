@@ -2250,7 +2250,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v1/query/run{queryId}": {
+        "/inventory/api/v1/query/run/{queryId}": {
             "post": {
                 "security": [
                     {

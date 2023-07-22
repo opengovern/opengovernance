@@ -2919,7 +2919,7 @@ func (h *HttpHandler) CountQueries(ctx echo.Context) error {
 //	@Param			request	body		inventoryApi.RunQueryRequest	true	"Request Body"
 //	@Param			accept	header		string							true	"Accept header"	Enums(application/json,text/csv)
 //	@Success		200		{object}	inventoryApi.RunQueryResponse
-//	@Router			/inventory/api/v1/query/run{queryId} [post]
+//	@Router			/inventory/api/v1/query/run/{queryId} [post]
 func (h *HttpHandler) RunQueryById(ctx echo.Context) error {
 	var req inventoryApi.RunQueryRequest
 	if err := bindValidate(ctx, &req); err != nil {
