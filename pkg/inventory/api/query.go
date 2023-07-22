@@ -7,9 +7,8 @@ type RunQueryRequest struct {
 }
 
 type RunQueryResponse struct {
-	Title    string   `json:"title"`    // Query Title
-	Query    string   `json:"query"`    // Query
-	RowCount int      `json:"rowCount"` // Number of rows in result
-	Headers  []string `json:"headers"`  // Column names
-	Result   [][]any  `json:"result"`   // Result of query. in order to access a specific cell please use Result[Row][Column]
+	Title   string   `json:"title"`   // Query Title
+	Query   string   `json:"query"`   // Query
+	Headers []string `json:"headers"` // Column names
+	Result  [][]any  `json:"result"`  // Result of query. in order to access a specific cell please use Result[Row][Column]
 }

@@ -10563,10 +10563,6 @@ const docTemplate = `{
                         "items": {}
                     }
                 },
-                "rowCount": {
-                    "description": "Number of rows in result",
-                    "type": "integer"
-                },
                 "title": {
                     "description": "Query Title",
                     "type": "string"

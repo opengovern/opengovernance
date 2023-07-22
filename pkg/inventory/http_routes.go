@@ -3354,11 +3354,10 @@ func (h *HttpHandler) RunSmartQuery(title, query string,
 	}
 
 	resp := inventoryApi.RunQueryResponse{
-		Title:    title,
-		Query:    query,
-		RowCount: len(res.Data),
-		Headers:  res.Headers,
-		Result:   res.Data,
+		Title:   title,
+		Query:   query,
+		Headers: res.Headers,
+		Result:  res.Data,
 	}
 	return &resp, nil
 }
