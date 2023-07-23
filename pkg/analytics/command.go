@@ -12,9 +12,9 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 	"strings"
 )
 
@@ -82,7 +82,7 @@ type Worker struct {
 	config         WorkerConfig
 	logger         *zap.Logger
 	db             db.Database
-	steampipeDB    *gorm.DB
+	steampipeDB    *steampipe.Database
 	onboardClient  onboardClient.OnboardServiceClient
 	kfkProducer    *confluent_kafka.Producer
 }
@@ -126,21 +126,17 @@ func InitializeWorker(
 	}
 	fmt.Println("Initialized postgres database: ", conf.PostgreSQL.DB)
 
-	// setup postgres connection
-	steampipeCfg := postgres.Config{
-		Host:    conf.Steampipe.Host,
-		Port:    conf.Steampipe.Port,
-		User:    conf.Steampipe.Username,
-		Passwd:  conf.Steampipe.Password,
-		DB:      conf.Steampipe.DB,
-		SSLMode: conf.Steampipe.SSLMode,
-	}
-	steampipeOrm, err := postgres.NewClient(&steampipeCfg, logger)
+	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
+		Host: "localhost",
+		Port: "9193",
+		User: "steampipe",
+		Pass: "abcd",
+		Db:   "steampipe",
+	})
 	if err != nil {
-		return nil, fmt.Errorf("new steampipe client: %w", err)
+		return nil, err
 	}
-
-	w.steampipeDB = steampipeOrm
+	w.steampipeDB = steampipeConn
 	fmt.Println("Connected to the steampipe database: ", conf.Steampipe.DB)
 
 	qCfg := queue.Config{}

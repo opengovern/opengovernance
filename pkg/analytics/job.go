@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"errors"
 	"fmt"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
@@ -10,8 +11,9 @@ import (
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -37,7 +39,7 @@ type JobResult struct {
 
 func (j *Job) Do(
 	db db.Database,
-	steampipeDB *gorm.DB,
+	steampipeDB *steampipe.Database,
 	kfkProducer *confluent_kafka.Producer,
 	kfkTopic string,
 	onboardClient onboardClient.OnboardServiceClient,
@@ -58,7 +60,7 @@ func (j *Job) Do(
 
 func (j *Job) Run(
 	db db.Database,
-	steampipeDB *gorm.DB,
+	steampipeDB *steampipe.Database,
 	kfkProducer *confluent_kafka.Producer,
 	kfkTopic string,
 	onboardClient onboardClient.OnboardServiceClient,
@@ -97,9 +99,21 @@ func (j *Job) Run(
 
 			fmt.Println(query)
 			var count int64
-			row := steampipeDB.Exec(query).Row()
-			if err = row.Scan(&count); err != nil {
+			res, err := steampipeDB.QueryAll(query)
+			if err != nil {
 				return err
+			}
+			if len(res.Data) == 0 {
+				return errors.New("empty result")
+			}
+			if len(res.Data[0]) == 0 {
+				return errors.New("empty row")
+			}
+			value := res.Data[0][0]
+			if v, ok := value.(int64); ok {
+				count = v
+			} else {
+				return fmt.Errorf("value is %s", reflect.TypeOf(value).Name())
 			}
 
 			var msgs []kafka.Doc
