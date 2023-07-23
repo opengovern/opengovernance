@@ -57,3 +57,21 @@ func (db Database) ListFilteredMetrics(tags map[string][]string, metricNames []s
 	}
 	return metrics, nil
 }
+
+func (db Database) ListMetricTagsKeysWithPossibleValues(connectorTypes []source.Type) (map[string][]string, error) {
+	var tags []MetricTag
+	tx := db.orm.Model(MetricTag{}).Joins("JOIN analytic_metrics ON metric_tags.name = analytic_metrics.name")
+	if len(connectorTypes) > 0 {
+		tx = tx.Where("analytic_metrics.connectors in ?", connectorTypes)
+	}
+	tx.Find(&tags)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	tagLikes := make([]model.TagLike, 0, len(tags))
+	for _, tag := range tags {
+		tagLikes = append(tagLikes, tag)
+	}
+	result := model.GetTagsMap(tagLikes)
+	return result, nil
+}
