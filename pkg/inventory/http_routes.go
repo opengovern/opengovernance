@@ -77,6 +77,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	analyticsV2 := v2.Group("/analytics")
 	analyticsV2.GET("/metric", httpserver.AuthorizeHandler(h.ListAnalyticsMetricsHandler, authApi.ViewerRole))
+	analyticsV2.GET("/tag", httpserver.AuthorizeHandler(h.ListAnalyticsTags, authApi.ViewerRole))
 
 	servicesV2 := v2.Group("/services")
 	servicesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListServiceTags, authApi.ViewerRole))
@@ -895,6 +896,84 @@ func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionID
 	}
 
 	return &apiResourceType, nil
+}
+
+// ListAnalyticsTags godoc
+//
+//	@Summary		List analytics tags
+//	@Description	This API allows users to retrieve a list of tag keys with their possible values for all analytic metrics.
+//	@Security		BearerToken
+//	@Tags			analytics
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector		query		[]string	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param			minCount		query		int			false	"Minimum number of resources with this tag value, default 1"
+//	@Param			endTime			query		int			false	"End time in unix timestamp format, default now"
+//	@Success		200				{object}	map[string][]string
+//	@Router			/inventory/api/v2/analytics/tag [get]
+func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
+	connectorTypes, err := h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+	minCount := 1
+	if minCountStr := ctx.QueryParam("minCount"); minCountStr != "" {
+		minCountVal, err := strconv.ParseInt(minCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "minCount must be a number")
+		}
+		minCount = int(minCountVal)
+	}
+	endTime := time.Now()
+	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
+		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "endTime must be a number")
+		}
+		endTime = time.Unix(endTimeVal, 0)
+	}
+
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	tags, err := aDB.ListMetricTagsKeysWithPossibleValues(connectorTypes)
+	if err != nil {
+		return err
+	}
+	tags = model.TrimPrivateTags(tags)
+
+	var metricCount map[string]int
+	if len(connectionIDs) > 0 {
+		metricCount, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, endTime, nil, EsFetchPageSize)
+	} else {
+		metricCount, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, endTime, nil, EsFetchPageSize)
+	}
+	if err != nil {
+		return err
+	}
+
+	filteredTags := map[string][]string{}
+	for key, values := range tags {
+		for _, tagValue := range values {
+			metricNames, err := aDB.ListFilteredMetrics(map[string][]string{key: {tagValue}}, nil, connectorTypes)
+			if err != nil {
+				return err
+			}
+			for _, metricName := range metricNames {
+				if metricCount[strings.ToLower(metricName.Name)] >= minCount {
+					filteredTags[key] = append(filteredTags[key], tagValue)
+					break
+				}
+			}
+		}
+	}
+	tags = filteredTags
+
+	return ctx.JSON(http.StatusOK, tags)
 }
 
 // GetResourceTypeMetricsHandler godoc

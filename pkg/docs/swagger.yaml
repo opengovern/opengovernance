@@ -5095,6 +5095,51 @@ paths:
       summary: List analytics metrics
       tags:
       - analytics
+  /inventory/api/v2/analytics/tag:
+    get:
+      consumes:
+      - application/json
+      description: This API allows users to retrieve a list of tag keys with their
+        possible values for all analytic metrics.
+      parameters:
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: Minimum number of resources with this tag value, default 1
+        in: query
+        name: minCount
+        type: integer
+      - description: End time in unix timestamp format, default now
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                type: string
+              type: array
+            type: object
+      security:
+      - BearerToken: []
+      summary: List analytics tags
+      tags:
+      - analytics
   /inventory/api/v2/cost/composition:
     get:
       consumes:
