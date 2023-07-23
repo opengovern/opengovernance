@@ -3074,7 +3074,6 @@ func (h *HttpHandler) RunQueryById(ctx echo.Context) error {
 //	@Tags			smart_query
 //	@Accepts		json
 //	@Produce		json
-//	@Param			queryId	path		string							true	"QueryID"
 //	@Param			request	body		inventoryApi.RunQueryRequest	true	"Request Body"
 //	@Param			accept	header		string							true	"Accept header"	Enums(application/json,text/csv)
 //	@Success		200		{object}	inventoryApi.RunQueryResponse
@@ -3103,7 +3102,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	[]inventoryApi.SmartQueryHistory
-//	@Router			/inventory/api/v1/query/run/history [get]
+//	@Router			/inventory/api/v1/query/run/history [post]
 func (h *HttpHandler) GetRecentRanQueries(ctx echo.Context) error {
 	smartQueryHistories, err := h.db.GetQueryHistory()
 	if err != nil {

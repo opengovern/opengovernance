@@ -2185,13 +2185,6 @@ const docTemplate = `{
                 "summary": "Run provided smart query and returns the result",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "QueryID",
-                        "name": "queryId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
                         "description": "Request Body",
                         "name": "request",
                         "in": "body",
@@ -2223,7 +2216,7 @@ const docTemplate = `{
             }
         },
         "/inventory/api/v1/query/run/history": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "BearerToken": []
