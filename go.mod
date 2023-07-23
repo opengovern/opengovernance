@@ -30,7 +30,7 @@ require (
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/kaytu-io/kaytu-aws-describer v0.0.39
-	github.com/kaytu-io/kaytu-azure-describer v0.0.53
+	github.com/kaytu-io/kaytu-azure-describer v0.0.56
 	github.com/kaytu-io/kaytu-util v0.0.0-20230722101100-11848cb80317
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/labstack/echo/v4 v4.10.2
@@ -400,7 +400,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230713070934-2d1d29891502 // indirect
-	github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230718083138-5dd091ae7e71 // indirect
+	github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230723115422-00dc0c0cb060 // indirect
 	github.com/kaytu-io/steampipe-plugin-azuread v0.0.0-20230718082348-6a343a735488 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
