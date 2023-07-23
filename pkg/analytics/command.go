@@ -175,6 +175,8 @@ func InitializeWorker(
 	}
 	w.kfkProducer = producer
 
+	fmt.Println(strings.Split(conf.Kafka.Addresses, ","), w.config.Kafka.Topic)
+
 	w.config = conf
 	w.logger = logger
 
