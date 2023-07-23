@@ -4753,11 +4753,6 @@ paths:
     post:
       description: Run provided smart query and returns the result.
       parameters:
-      - description: QueryID
-        in: path
-        name: queryId
-        required: true
-        type: string
       - description: Request Body
         in: body
         name: request
@@ -4824,7 +4819,7 @@ paths:
       tags:
       - smart_query
   /inventory/api/v1/query/run/history:
-    get:
+    post:
       description: Get recently ran queries.
       produces:
       - application/json
