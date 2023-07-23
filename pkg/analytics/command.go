@@ -127,11 +127,11 @@ func InitializeWorker(
 	fmt.Println("Initialized postgres database: ", conf.PostgreSQL.DB)
 
 	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
-		Host: "localhost",
-		Port: "9193",
-		User: "steampipe",
-		Pass: "abcd",
-		Db:   "steampipe",
+		Host: conf.Steampipe.Host,
+		Port: conf.Steampipe.Port,
+		User: conf.Steampipe.Username,
+		Pass: conf.Steampipe.Password,
+		Db:   conf.Steampipe.DB,
 	})
 	if err != nil {
 		return nil, err
