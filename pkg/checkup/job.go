@@ -88,14 +88,18 @@ func (j Job) Do(onboardClient client.OnboardServiceClient, logger *zap.Logger) (
 		logger.Error("failed to get sources list from onboard service", zap.Error(err))
 		fail(fmt.Errorf("failed to get sources list from onboard service: %w", err))
 	} else {
-		for _, source := range sources {
-			logger.Info("checking source health", zap.String("source_id", source.ID.String()))
+		for _, sourceObj := range sources {
+			if sourceObj.LastHealthCheckTime.Add(8 * time.Hour).After(time.Now()) {
+				logger.Info("skipping source health check", zap.String("source_id", sourceObj.ID.String()))
+				continue
+			}
+			logger.Info("checking source health", zap.String("source_id", sourceObj.ID.String()))
 			_, err := onboardClient.GetSourceHealthcheck(&httpclient.Context{
 				UserRole: api2.EditorRole,
-			}, source.ID.String())
+			}, sourceObj.ID.String())
 			if err != nil {
-				logger.Error("failed to check source health", zap.String("source_id", source.ID.String()), zap.Error(err))
-				fail(fmt.Errorf("failed to check source health %s: %w", source.ID.String(), err))
+				logger.Error("failed to check source health", zap.String("source_id", sourceObj.ID.String()), zap.Error(err))
+				fail(fmt.Errorf("failed to check source health %s: %w", sourceObj.ID.String(), err))
 			}
 		}
 	}
