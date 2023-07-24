@@ -2216,7 +2216,7 @@ const docTemplate = `{
             }
         },
         "/inventory/api/v1/query/run/history": {
-            "post": {
+            "get": {
                 "security": [
                     {
                         "BearerToken": []
@@ -11071,6 +11071,14 @@ const docTemplate = `{
                 "credentialName": {
                     "type": "string"
                 },
+                "credentialType": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.CredentialType"
+                        }
+                    ],
+                    "example": "manual"
+                },
                 "dailyCostAtEndTime": {
                     "type": "number",
                     "example": 1000
@@ -11264,9 +11272,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "config": {},
-                "name": {
-                    "type": "string"
-                },
                 "source_type": {
                     "allOf": [
                         {

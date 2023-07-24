@@ -2673,6 +2673,10 @@ definitions:
         type: string
       credentialName:
         type: string
+      credentialType:
+        allOf:
+        - $ref: '#/definitions/source.CredentialType'
+        example: manual
       dailyCostAtEndTime:
         example: 1000
         type: number
@@ -2805,8 +2809,6 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CreateCredentialRequest:
     properties:
       config: {}
-      name:
-        type: string
       source_type:
         allOf:
         - $ref: '#/definitions/source.Type'
@@ -4819,7 +4821,7 @@ paths:
       tags:
       - smart_query
   /inventory/api/v1/query/run/history:
-    post:
+    get:
       description: Get recently ran queries.
       produces:
       - application/json

@@ -58,7 +58,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	queryV1.GET("", httpserver.AuthorizeHandler(h.ListQueries, authApi.ViewerRole))
 	queryV1.GET("/count", httpserver.AuthorizeHandler(h.CountQueries, authApi.ViewerRole))
 	queryV1.POST("/run", httpserver.AuthorizeHandler(h.RunQuery, authApi.EditorRole))
-	queryV1.POST("/run/history", httpserver.AuthorizeHandler(h.GetRecentRanQueries, authApi.EditorRole))
+	queryV1.GET("/run/history", httpserver.AuthorizeHandler(h.GetRecentRanQueries, authApi.EditorRole))
 	queryV1.POST("/run/:queryId", httpserver.AuthorizeHandler(h.RunQueryById, authApi.EditorRole))
 
 	v2 := e.Group("/api/v2")
@@ -3102,7 +3102,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 //	@Accepts		json
 //	@Produce		json
 //	@Success		200	{object}	[]inventoryApi.SmartQueryHistory
-//	@Router			/inventory/api/v1/query/run/history [post]
+//	@Router			/inventory/api/v1/query/run/history [get]
 func (h *HttpHandler) GetRecentRanQueries(ctx echo.Context) error {
 	smartQueryHistories, err := h.db.GetQueryHistory()
 	if err != nil {

@@ -7,7 +7,6 @@ import (
 )
 
 type CreateCredentialRequest struct {
-	Name       string      `json:"name"`
 	SourceType source.Type `json:"source_type" example:"Azure"`
 	Config     any         `json:"config"`
 }

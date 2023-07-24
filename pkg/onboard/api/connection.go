@@ -41,6 +41,7 @@ type Connection struct {
 	Description          string                          `json:"description" example:"This is an example connection"`
 	CredentialID         string                          `json:"credentialID" example:"7r6123ac-ca1c-434f-b1a3-91w2w9d277c8"`
 	CredentialName       *string                         `json:"credentialName,omitempty"`
+	CredentialType       source.CredentialType           `json:"credentialType" example:"manual"`
 	OnboardDate          time.Time                       `json:"onboardDate" example:"2023-05-07T00:00:00Z"`
 	AssetDiscoveryMethod source.AssetDiscoveryMethodType `json:"assetDiscoveryMethod" example:"scheduled"`
 
