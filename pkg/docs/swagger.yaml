@@ -5157,6 +5157,71 @@ paths:
       summary: List analytics tags
       tags:
       - analytics
+  /inventory/api/v2/analytics/trend:
+    get:
+      consumes:
+      - application/json
+      description: This API allows users to retrieve a list of resource counts over
+        the course of the specified time frame based on the given input filters
+      parameters:
+      - collectionFormat: csv
+        description: Key-Value tags in key=value format to filter by
+        in: query
+        items:
+          type: string
+        name: tag
+        type: array
+      - collectionFormat: csv
+        description: Metric names to filter by
+        in: query
+        items:
+          type: string
+        name: name
+        type: array
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: timestamp for start in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      - description: timestamp for end in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: maximum number of datapoints to return, default is 30
+        in: query
+        name: datapointCount
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTrendDatapoint'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get metric trend
+      tags:
+      - inventory
   /inventory/api/v2/cost/composition:
     get:
       consumes:

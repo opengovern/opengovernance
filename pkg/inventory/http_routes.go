@@ -78,6 +78,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	analyticsV2 := v2.Group("/analytics")
 	analyticsV2.GET("/metric", httpserver.AuthorizeHandler(h.ListAnalyticsMetricsHandler, authApi.ViewerRole))
 	analyticsV2.GET("/tag", httpserver.AuthorizeHandler(h.ListAnalyticsTags, authApi.ViewerRole))
+	analyticsV2.GET("/trend", httpserver.AuthorizeHandler(h.ListAnalyticsMetricTrend, authApi.ViewerRole))
 
 	servicesV2 := v2.Group("/services")
 	servicesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListServiceTags, authApi.ViewerRole))
@@ -974,6 +975,101 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	tags = filteredTags
 
 	return ctx.JSON(http.StatusOK, tags)
+}
+
+// ListAnalyticsMetricTrend godoc
+//
+//	@Summary		Get metric trend
+//
+//	@Description	This API allows users to retrieve a list of resource counts over the course of the specified time frame based on the given input filters
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			name			query		[]string		false	"Metric names to filter by"
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
+//	@Success		200				{object}	[]inventoryApi.ResourceTypeTrendDatapoint
+//	@Router			/inventory/api/v2/analytics/trend [get]
+func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
+	var err error
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	names := httpserver.QueryArrayParam(ctx, "name")
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	if len(connectionIDs) > 20 {
+		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
+	}
+
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now()
+	if endTimeStr != "" {
+		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		endTime = time.Unix(endTimeVal, 0)
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := endTime.AddDate(0, -1, 0)
+	if startTimeStr != "" {
+		startTimeVal, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		startTime = time.Unix(startTimeVal, 0)
+	}
+
+	datapointCountStr := ctx.QueryParam("datapointCount")
+	datapointCount := int64(30)
+	if datapointCountStr != "" {
+		datapointCount, err = strconv.ParseInt(datapointCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
+		}
+	}
+
+	metrics, err := aDB.ListFilteredMetrics(tagMap, names, connectorTypes)
+	if err != nil {
+		return err
+	}
+	metricStrings := make([]string, 0, len(metrics))
+	for _, metric := range metrics {
+		metricStrings = append(metricStrings, metric.Name)
+	}
+
+	timeToCountMap := make(map[int]int)
+	esDatapointCount := int(math.Ceil(endTime.Sub(startTime).Hours() / 24))
+	if esDatapointCount == 0 {
+		esDatapointCount = 1
+	}
+	if len(connectionIDs) != 0 {
+		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(h.client, connectionIDs, metricStrings, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		if err != nil {
+			return err
+		}
+	} else {
+		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(h.client, connectorTypes, metricStrings, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		if err != nil {
+			return err
+		}
+	}
+
+	apiDatapoints := make([]inventoryApi.ResourceTypeTrendDatapoint, 0, len(timeToCountMap))
+	for timeAt, count := range timeToCountMap {
+		apiDatapoints = append(apiDatapoints, inventoryApi.ResourceTypeTrendDatapoint{Count: count, Date: time.UnixMilli(int64(timeAt))})
+	}
+	sort.Slice(apiDatapoints, func(i, j int) bool {
+		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
+	})
+	apiDatapoints = internal.DownSampleResourceTypeTrendDatapoints(apiDatapoints, int(datapointCount))
+
+	return ctx.JSON(http.StatusOK, apiDatapoints)
 }
 
 // GetResourceTypeMetricsHandler godoc

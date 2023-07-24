@@ -8,6 +8,7 @@ import (
 	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"math"
 	"strconv"
 	"time"
 )
@@ -204,4 +205,118 @@ func FetchConnectorAnalyticMetricCountAtTime(client keibi.Client, connectors []s
 		}
 	}
 	return result, nil
+}
+
+type ConnectionMetricTrendSummaryQueryResponse struct {
+	Aggregations struct {
+		MetricGroup struct {
+			Buckets []struct {
+				Key                   string `json:"key"`
+				EvaluatedAtRangeGroup struct {
+					Buckets []struct {
+						From   float64 `json:"from"`
+						To     float64 `json:"to"`
+						Latest struct {
+							Hits struct {
+								Hits []struct {
+									Source es.ConnectionMetricTrendSummary `json:"_source"`
+								} `json:"hits"`
+							} `json:"hits"`
+						} `json:"latest"`
+					} `json:"buckets"`
+				} `json:"evaluated_at_range_group"`
+			} `json:"buckets"`
+		} `json:"metric_group"`
+	} `json:"aggregations"`
+}
+
+func FetchConnectionMetricTrendSummaryPage(client keibi.Client, connectionIDs, metricNames []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
+	res := make(map[string]any)
+	var filters []any
+
+	filters = append(filters, map[string]any{
+		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendConnectionSummary)}},
+	})
+	filters = append(filters, map[string]any{
+		"terms": map[string][]string{"metric_name": metricNames},
+	})
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"evaluated_at": map[string]string{
+				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
+			},
+		},
+	})
+	res["size"] = 0
+	startTimeUnixMilli := startTime.UnixMilli()
+	endTimeUnixMilli := endTime.UnixMilli()
+	step := int(math.Ceil(float64(endTimeUnixMilli-startTimeUnixMilli) / float64(datapointCount)))
+	ranges := make([]map[string]any, 0, datapointCount)
+	for i := 0; i < datapointCount; i++ {
+		ranges = append(ranges, map[string]any{
+			"from": float64(startTimeUnixMilli + int64(step*i)),
+			"to":   float64(startTimeUnixMilli + int64(step*(i+1))),
+		})
+	}
+	res["aggs"] = map[string]any{
+		"metric_group": map[string]any{
+			"terms": map[string]any{
+				"field": "metric_name",
+				"size":  size,
+			},
+			"aggs": map[string]any{
+				"evaluated_at_range_group": map[string]any{
+					"range": map[string]any{
+						"field":  "evaluated_at",
+						"ranges": ranges,
+					},
+					"aggs": map[string]any{
+						"latest": map[string]any{
+							"top_hits": map[string]any{
+								"size": 1,
+								"sort": map[string]string{
+									"evaluated_at": "desc",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	hits := make(map[int]int)
+	for _, connectionID := range connectionIDs {
+		localFilters := append(filters, map[string]any{
+			"term": map[string]string{"connection_id": connectionID},
+		})
+		res["query"] = map[string]any{
+			"bool": map[string]any{
+				"filter": localFilters,
+			},
+		}
+
+		b, err := json.Marshal(res)
+		if err != nil {
+			return nil, err
+		}
+		query := string(b)
+		fmt.Println("query=", query, "index=", summarizer.ConnectionSummaryIndex)
+		var response ConnectionMetricTrendSummaryQueryResponse
+		err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
+		if err != nil {
+			return nil, err
+		}
+		for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
+			for _, evaluatedAtRangeBucket := range metricBucket.EvaluatedAtRangeGroup.Buckets {
+				rangeKey := int((evaluatedAtRangeBucket.From + evaluatedAtRangeBucket.To) / 2)
+				for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
+					hits[rangeKey] += hit.Source.ResourceCount
+				}
+			}
+		}
+	}
+
+	return hits, nil
 }
