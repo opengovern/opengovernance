@@ -2754,6 +2754,102 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/analytics/trend": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "This API allows users to retrieve a list of resource counts over the course of the specified time frame based on the given input filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Get metric trend",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Key-Value tags in key=value format to filter by",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Metric names to filter by",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for start in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for end in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "maximum number of datapoints to return, default is 30",
+                        "name": "datapointCount",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTrendDatapoint"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/cost/composition": {
             "get": {
                 "security": [
