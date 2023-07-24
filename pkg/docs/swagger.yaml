@@ -1827,6 +1827,7 @@ definitions:
       count:
         type: number
       date:
+        format: date
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair:
@@ -2049,6 +2050,7 @@ definitions:
         type: array
       total_service_count:
         example: 100
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceMetricsResponse:
@@ -2059,12 +2061,15 @@ definitions:
         type: array
       total_count:
         example: 10000
+        minimum: 0
         type: integer
       total_old_count:
         example: 9000
+        minimum: 0
         type: integer
       total_services:
         example: 50
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceSummariesResponse:
@@ -2257,6 +2262,7 @@ definitions:
         type: array
       compliance_count:
         description: Number of Compliance that use this Resource Type - Metadata
+        minimum: 0
         type: integer
       connector:
         allOf:
@@ -2266,6 +2272,7 @@ definitions:
       count:
         description: Number of Resources of this Resource Type - Metric
         example: 100
+        minimum: 0
         type: integer
       insights:
         description: List of Insights that support this Resource Type - Metadata (GET
@@ -2275,13 +2282,16 @@ definitions:
         type: array
       insights_count:
         description: Number of Insights that use this Resource Type - Metadata
+        minimum: 0
         type: integer
       logo_uri:
         description: Logo URI
+        example: https://kaytu.io/logo.png
         type: string
       old_count:
         description: Number of Resources of this Resource Type in the past - Metric
         example: 90
+        minimum: 0
         type: integer
       resource_name:
         description: Resource Name
@@ -2296,12 +2306,16 @@ definitions:
         example: compute
         type: string
       tags:
-        additionalProperties:
-          items:
-            type: string
-          type: array
         description: Tags
-        type: object
+        example:
+        - category:[Data and Analytics
+        - Database
+        - Integration
+        - Management Governance
+        - Storage]
+        items:
+          type: string
+        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeFull:
     properties:
@@ -2335,8 +2349,11 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTrendDatapoint:
     properties:
       count:
+        example: 100
+        minimum: 0
         type: integer
       date:
+        format: date
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryRequest:
@@ -2380,12 +2397,15 @@ definitions:
         - $ref: '#/definitions/source.Type'
         example: Azure
       logo_uri:
+        example: https://kaytu.io/logo.png
         type: string
       old_resource_count:
         example: 90
+        minimum: 0
         type: integer
       resource_count:
         example: 100
+        minimum: 0
         type: integer
       resource_types:
         items:

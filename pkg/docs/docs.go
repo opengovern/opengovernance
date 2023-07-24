@@ -9894,7 +9894,8 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "date": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "date"
                 }
             }
         },
@@ -10217,6 +10218,7 @@ const docTemplate = `{
                 },
                 "total_service_count": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 100
                 }
             }
@@ -10232,14 +10234,17 @@ const docTemplate = `{
                 },
                 "total_count": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 10000
                 },
                 "total_old_count": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 9000
                 },
                 "total_services": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 50
                 }
             }
@@ -10492,7 +10497,8 @@ const docTemplate = `{
                 },
                 "compliance_count": {
                     "description": "Number of Compliance that use this Resource Type - Metadata",
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 },
                 "connector": {
                     "description": "Cloud Provider",
@@ -10506,6 +10512,7 @@ const docTemplate = `{
                 "count": {
                     "description": "Number of Resources of this Resource Type - Metric",
                     "type": "integer",
+                    "minimum": 0,
                     "example": 100
                 },
                 "insights": {
@@ -10517,15 +10524,18 @@ const docTemplate = `{
                 },
                 "insights_count": {
                     "description": "Number of Insights that use this Resource Type - Metadata",
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 },
                 "logo_uri": {
                     "description": "Logo URI",
-                    "type": "string"
+                    "type": "string",
+                    "example": "https://kaytu.io/logo.png"
                 },
                 "old_count": {
                     "description": "Number of Resources of this Resource Type in the past - Metric",
                     "type": "integer",
+                    "minimum": 0,
                     "example": 90
                 },
                 "resource_name": {
@@ -10545,13 +10555,17 @@ const docTemplate = `{
                 },
                 "tags": {
                     "description": "Tags",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "category:[Data and Analytics",
+                        "Database",
+                        "Integration",
+                        "Management Governance",
+                        "Storage]"
+                    ]
                 }
             }
         },
@@ -10603,10 +10617,13 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 100
                 },
                 "date": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "date"
                 }
             }
         },
@@ -10670,14 +10687,17 @@ const docTemplate = `{
                     "example": "Azure"
                 },
                 "logo_uri": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "https://kaytu.io/logo.png"
                 },
                 "old_resource_count": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 90
                 },
                 "resource_count": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 100
                 },
                 "resource_types": {
