@@ -2613,6 +2613,8 @@ definitions:
         type: string
       assumeRoleName:
         type: string
+      assumeRolePolicyName:
+        type: string
       externalId:
         type: string
       regions:
@@ -7204,6 +7206,19 @@ paths:
       summary: Count sources
       tags:
       - onboard
+  /schedule/api/v0/checkup/trigger:
+    get:
+      description: Triggers a checkup job to run immediately
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Triggers a checkup job to run immediately
+      tags:
+      - describe
   /schedule/api/v0/compliance/summarizer/trigger:
     get:
       produces:
