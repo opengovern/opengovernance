@@ -1833,7 +1833,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 				h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", src.SourceId))
 				return err
 			}
-			isAttached, err = keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, awsCnf.AssumeRolePolicyName)
+			isAttached, err = keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, keibiaws.GetPolicyArnFromName(src.SourceId, awsCnf.AssumeRolePolicyName))
 			if err == nil && isAttached {
 				if sdkCnf.Region == "" {
 					sdkCnf.Region = "us-east-1"
