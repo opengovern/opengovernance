@@ -17,6 +17,7 @@ import (
 	describe2 "github.com/kaytu-io/kaytu-util/pkg/describe/enums"
 	"github.com/lib/pq"
 	"github.com/sony/sonyflake"
+	"go.uber.org/zap"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 
@@ -71,6 +72,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v0.GET("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, api3.AdminRole))
 	v0.GET("/insight/trigger", httpserver.AuthorizeHandler(h.TriggerInsightJob, api3.AdminRole))
 	v0.GET("/compliance/trigger", httpserver.AuthorizeHandler(h.TriggerComplianceJob, api3.AdminRole))
+	v0.GET("/checkup/trigger", httpserver.AuthorizeHandler(h.TriggerCheckupJob, api3.AdminRole))
 	v0.GET("/compliance/summarizer/trigger", httpserver.AuthorizeHandler(h.TriggerComplianceSummarizerJob, api3.AdminRole))
 	v1.PUT("/benchmark/evaluation/trigger", httpserver.AuthorizeHandler(h.TriggerBenchmarkEvaluation, api3.AdminRole))
 	v1.PUT("/insight/evaluation/trigger", httpserver.AuthorizeHandler(h.TriggerInsightEvaluation, api3.AdminRole))
@@ -609,6 +611,38 @@ func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+// TriggerCheckupJob godoc
+//
+//	@Summary		Triggers a checkup job to run immediately
+//	@Description	Triggers a checkup job to run immediately
+//	@Security		BearerToken
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200
+//	@Router			/schedule/api/v0/checkup/trigger [get]
+func (h HttpServer) TriggerCheckupJob(ctx echo.Context) error {
+	job := newCheckupJob()
+	err := h.DB.AddCheckupJob(&job)
+	if err != nil {
+		CheckupJobsCount.WithLabelValues("failure").Inc()
+		h.Scheduler.logger.Error("Failed to create CheckupJob",
+			zap.Uint("jobId", job.ID),
+			zap.Error(err),
+		)
+	}
+	err = enqueueCheckupJobs(h.DB, h.Scheduler.checkupJobQueue, job)
+	if err != nil {
+		CheckupJobsCount.WithLabelValues("failure").Inc()
+		h.Scheduler.logger.Error("Failed to enqueue CheckupJob",
+			zap.Uint("jobId", job.ID),
+			zap.Error(err),
+		)
+	}
+	CheckupJobsCount.WithLabelValues("successful").Inc()
 
 	return ctx.NoContent(http.StatusOK)
 }

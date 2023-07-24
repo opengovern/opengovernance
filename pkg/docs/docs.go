@@ -5852,6 +5852,28 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v0/checkup/trigger": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Triggers a checkup job to run immediately",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Triggers a checkup job to run immediately",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/schedule/api/v0/compliance/summarizer/trigger": {
             "get": {
                 "security": [
@@ -11068,6 +11090,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "assumeRoleName": {
+                    "type": "string"
+                },
+                "assumeRolePolicyName": {
                     "type": "string"
                 },
                 "externalId": {
