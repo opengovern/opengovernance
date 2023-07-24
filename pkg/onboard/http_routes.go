@@ -1828,7 +1828,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 				assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
 				cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
 				if err != nil {
-					h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", src.SourceId)))
+					h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", src.SourceId))
 					return err
 				}
 				if cfg.Region == "" {
@@ -1878,7 +1878,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 			}
 		}
 		if err != nil {
-			h.logger.Warn("failed to check read permission", zap.Error(err), zap.String("sourceId", src.SourceId)))
+			h.logger.Warn("failed to check read permission", zap.Error(err), zap.String("sourceId", src.SourceId))
 		}
 
 		if !isAttached {
@@ -1890,13 +1890,13 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 			}
 			src, err = h.updateConnectionHealth(src, source.HealthStatusUnhealthy, &healthMessage)
 			if err != nil {
-				h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", src.SourceId)))
+				h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", src.SourceId))
 				return err
 			}
 		} else {
 			src, err = h.updateConnectionHealth(src, source.HealthStatusHealthy, utils.GetPointer(""))
 			if err != nil {
-				h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", src.SourceId)))
+				h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", src.SourceId))
 				return err
 			}
 		}
