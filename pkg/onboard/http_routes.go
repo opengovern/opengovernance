@@ -313,7 +313,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, "", keibiaws.SecurityAuditPolicyARN)
+	isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, "", "")
 	if err != nil {
 		fmt.Printf("error in checking security audit permission: %v", err)
 		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
@@ -537,7 +537,7 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 		cred.HealthStatus = source.HealthStatusUnhealthy
 	} else {
 		cred.HealthStatus = source.HealthStatusHealthy
-		cred.HealthReason = nil
+		cred.HealthReason = utils.GetPointer("")
 	}
 	cred.LastHealthCheckTime = time.Now()
 
@@ -1894,7 +1894,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 				return err
 			}
 		} else {
-			src, err = h.updateConnectionHealth(src, source.HealthStatusHealthy, nil)
+			src, err = h.updateConnectionHealth(src, source.HealthStatusHealthy, utils.GetPointer(""))
 			if err != nil {
 				h.logger.Warn("failed to update source health", zap.Error(err))
 				return err
@@ -1962,7 +1962,7 @@ func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
-		isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, "", keibiaws.SecurityAuditPolicyARN)
+		isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, "", "")
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
