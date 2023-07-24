@@ -80,34 +80,42 @@ func (j Job) Do(onboardClient client.OnboardServiceClient, logger *zap.Logger) (
 	}
 
 	// Healthcheck
+	logger.Info("starting healthcheck")
 	sources, err := onboardClient.ListSources(&httpclient.Context{
 		UserRole: api2.EditorRole,
 	}, nil)
 	if err != nil {
+		logger.Error("failed to get sources list from onboard service", zap.Error(err))
 		fail(fmt.Errorf("failed to get sources list from onboard service: %w", err))
 	} else {
 		for _, source := range sources {
+			logger.Info("checking source health", zap.String("source_id", source.ID.String()))
 			_, err := onboardClient.GetSourceHealthcheck(&httpclient.Context{
 				UserRole: api2.EditorRole,
 			}, source.ID.String())
 			if err != nil {
+				logger.Error("failed to check source health", zap.String("source_id", source.ID.String()), zap.Error(err))
 				fail(fmt.Errorf("failed to check source health %s: %w", source.ID.String(), err))
 			}
 		}
 	}
 
 	// Auto Onboard
+	logger.Info("starting auto onboard")
 	credentials, err := onboardClient.ListCredentials(&httpclient.Context{
 		UserRole: api2.EditorRole,
 	}, nil, utils.GetPointer(source.CredentialTypeManual), utils.GetPointer("healthy"), 10000, 1)
 	if err != nil {
+		logger.Error("failed to get credentials list from onboard service", zap.Error(err))
 		fail(fmt.Errorf("failed to get credentials list from onboard service: %w", err))
 	}
 	for _, cred := range credentials.Credentials {
+		logger.Info("triggering auto onboard", zap.String("credential_id", cred.ID))
 		_, err := onboardClient.TriggerAutoOnboard(&httpclient.Context{
 			UserRole: api2.EditorRole,
 		}, cred.ID)
 		if err != nil {
+			logger.Error("failed to trigger auto onboard", zap.String("credential_id", cred.ID), zap.Error(err))
 			fail(fmt.Errorf("failed to trigger auto onboard for credential %s: %w", cred.ID, err))
 		}
 	}
