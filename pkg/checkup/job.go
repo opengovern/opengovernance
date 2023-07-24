@@ -2,9 +2,12 @@ package checkup
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"strconv"
 	"time"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
@@ -76,6 +79,7 @@ func (j Job) Do(onboardClient client.OnboardServiceClient, logger *zap.Logger) (
 		}
 	}
 
+	// Healthcheck
 	sources, err := onboardClient.ListSources(&httpclient.Context{
 		UserRole: api2.EditorRole,
 	}, nil)
@@ -89,6 +93,22 @@ func (j Job) Do(onboardClient client.OnboardServiceClient, logger *zap.Logger) (
 			if err != nil {
 				fail(fmt.Errorf("failed to check source health %s: %w", source.ID.String(), err))
 			}
+		}
+	}
+
+	// Auto Onboard
+	credentials, err := onboardClient.ListCredentials(&httpclient.Context{
+		UserRole: api2.EditorRole,
+	}, nil, utils.GetPointer(source.CredentialTypeManual), utils.GetPointer("healthy"), 10000, 1)
+	if err != nil {
+		fail(fmt.Errorf("failed to get credentials list from onboard service: %w", err))
+	}
+	for _, cred := range credentials.Credentials {
+		_, err := onboardClient.TriggerAutoOnboard(&httpclient.Context{
+			UserRole: api2.EditorRole,
+		}, cred.ID)
+		if err != nil {
+			fail(fmt.Errorf("failed to trigger auto onboard for credential %s: %w", cred.ID, err))
 		}
 	}
 

@@ -85,6 +85,7 @@ func (s Source) toAPI() api.Connection {
 		Description:          s.Description,
 		CredentialID:         s.CredentialID.String(),
 		CredentialName:       s.Credential.Name,
+		CredentialType:       s.Credential.CredentialType,
 		OnboardDate:          s.CreatedAt,
 		LifecycleState:       api.ConnectionLifecycleState(s.LifecycleState),
 		AssetDiscoveryMethod: s.AssetDiscoveryMethod,

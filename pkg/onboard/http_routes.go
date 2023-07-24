@@ -563,6 +563,9 @@ func createAzureCredential(ctx context.Context, name string, credType source.Cre
 	if err != nil {
 		return nil, err
 	}
+	if credType == source.CredentialTypeManual {
+		name = metadata.SpnName
+	}
 	cred, err := NewAzureCredential(name, credType, metadata)
 	if err != nil {
 		return nil, err
@@ -581,7 +584,7 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 		return ctx.JSON(http.StatusBadRequest, "invalid config")
 	}
 
-	cred, err := createAzureCredential(ctx.Request().Context(), req.Name, source.CredentialTypeManual, config)
+	cred, err := createAzureCredential(ctx.Request().Context(), "", source.CredentialTypeManual, config)
 	if err != nil {
 		return err
 	}
@@ -629,14 +632,13 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 	if err != nil {
 		return err
 	}
-	if req.Name == "" {
-		if metadata.OrganizationID != nil {
-			req.Name = *metadata.OrganizationID
-		} else {
-			req.Name = metadata.AccountID
-		}
+
+	name := metadata.AccountID
+	if metadata.OrganizationID != nil {
+		name = *metadata.OrganizationID
 	}
-	cred, err := NewAWSCredential(req.Name, metadata)
+
+	cred, err := NewAWSCredential(name, metadata)
 	if err != nil {
 		return err
 	}
@@ -833,6 +835,288 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, apiCredential)
 }
 
+func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credential Credential, maxConnections int64) ([]api.Connection, error) {
+	onboardedSources := make([]api.Connection, 0)
+	cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+	if err != nil {
+		return nil, err
+	}
+	azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+	if err != nil {
+		return nil, err
+	}
+	h.logger.Info("discovering subscriptions", zap.String("credentialId", credential.ID.String()))
+	subs, err := discoverAzureSubscriptions(ctx, keibiazure.AuthConfig{
+		TenantID:     azureCnf.TenantID,
+		ObjectID:     azureCnf.ObjectID,
+		SecretID:     azureCnf.SecretID,
+		ClientID:     azureCnf.ClientID,
+		ClientSecret: azureCnf.ClientSecret,
+	})
+	if err != nil {
+		h.logger.Error("failed to discover subscriptions", zap.Error(err))
+		return nil, err
+	}
+	h.logger.Info("discovered subscriptions", zap.Int("count", len(subs)))
+
+	existingConnections, err := h.db.GetSourcesOfType(credential.ConnectorType)
+	if err != nil {
+		return nil, err
+	}
+
+	existingConnectionSubIDs := make([]string, 0, len(existingConnections))
+	subsToOnboard := make([]azureSubscription, 0)
+	for _, conn := range existingConnections {
+		existingConnectionSubIDs = append(existingConnectionSubIDs, conn.SourceId)
+	}
+	for _, sub := range subs {
+		if !utils.Includes(existingConnectionSubIDs, sub.SubscriptionID) {
+			subsToOnboard = append(subsToOnboard, sub)
+		} else {
+			for _, conn := range existingConnections {
+				if conn.SourceId == sub.SubscriptionID {
+					name := sub.SubscriptionID
+					if sub.SubModel.DisplayName != nil {
+						name = *sub.SubModel.DisplayName
+					}
+					if conn.Name != name {
+						localConn := conn
+						localConn.Name = name
+						_, err := h.db.UpdateSource(&localConn)
+						if err != nil {
+							h.logger.Error("failed to update source", zap.Error(err))
+							return nil, err
+						}
+					}
+				}
+			}
+		}
+	}
+
+	h.logger.Info("onboarding subscriptions", zap.Int("count", len(subsToOnboard)))
+
+	for _, sub := range subsToOnboard {
+		h.logger.Info("onboarding subscription", zap.String("subscriptionId", sub.SubscriptionID))
+		count, err := h.db.CountSources()
+		if err != nil {
+			return nil, err
+		}
+		if count >= maxConnections {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+		}
+
+		isAttached, err := keibiazure.CheckRole(keibiazure.AuthConfig{
+			TenantID:     azureCnf.TenantID,
+			ObjectID:     azureCnf.ObjectID,
+			SecretID:     azureCnf.SecretID,
+			ClientID:     azureCnf.ClientID,
+			ClientSecret: azureCnf.ClientSecret,
+		}, sub.SubscriptionID, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
+		if err != nil {
+			h.logger.Warn("failed to check role", zap.Error(err))
+			continue
+		}
+		if !isAttached {
+			h.logger.Warn("role not attached", zap.String("subscriptionId", sub.SubscriptionID))
+			continue
+		}
+
+		src := NewAzureConnectionWithCredentials(
+			sub,
+			source.SourceCreationMethodAutoOnboard,
+			fmt.Sprintf("Auto onboarded subscription %s", sub.SubscriptionID),
+			credential,
+		)
+
+		err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+			err := h.db.CreateSource(&src)
+			if err != nil {
+				return err
+			}
+
+			if err := h.sourceEventsQueue.Publish(api.SourceEvent{
+				Action:     api.SourceCreated,
+				SourceID:   src.ID,
+				AccountID:  src.SourceId,
+				SourceType: src.Type,
+				Secret:     src.Credential.Secret,
+			}); err != nil {
+				return err
+			}
+
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		metadata := make(map[string]any)
+		if src.Metadata.String() != "" {
+			err := json.Unmarshal(src.Metadata, &metadata)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		onboardedSources = append(onboardedSources, api.Connection{
+			ID:                   src.ID,
+			ConnectionID:         src.SourceId,
+			ConnectionName:       src.Name,
+			Email:                src.Email,
+			Connector:            src.Type,
+			Description:          src.Description,
+			CredentialID:         src.CredentialID.String(),
+			CredentialName:       src.Credential.Name,
+			OnboardDate:          src.CreatedAt,
+			LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
+			AssetDiscoveryMethod: src.AssetDiscoveryMethod,
+			LastHealthCheckTime:  src.LastHealthCheckTime,
+			HealthReason:         src.HealthReason,
+			Metadata:             metadata,
+		})
+	}
+
+	return onboardedSources, nil
+}
+
+func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Credential, maxConnections int64) ([]api.Connection, error) {
+	onboardedSources := make([]api.Connection, 0)
+	cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+	if err != nil {
+		return nil, err
+	}
+	awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := keibiaws.GetConfig(
+		ctx,
+		awsCnf.AccessKey,
+		awsCnf.SecretKey,
+		"",
+		"",
+		nil)
+	h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
+	if cfg.Region == "" {
+		cfg.Region = "us-east-1"
+	}
+	accounts, err := discoverAWSAccounts(ctx, cfg)
+	if err != nil {
+		h.logger.Error("failed to discover accounts", zap.Error(err))
+		return nil, err
+	}
+	h.logger.Info("discovered accounts", zap.Int("count", len(accounts)))
+	existingConnections, err := h.db.GetSourcesOfType(credential.ConnectorType)
+	if err != nil {
+		return nil, err
+	}
+	existingConnectionAccountIDs := make([]string, 0, len(existingConnections))
+	for _, conn := range existingConnections {
+		existingConnectionAccountIDs = append(existingConnectionAccountIDs, conn.SourceId)
+	}
+	accountsToOnboard := make([]awsAccount, 0)
+	for _, account := range accounts {
+		if !utils.Includes(existingConnectionAccountIDs, account.AccountID) {
+			accountsToOnboard = append(accountsToOnboard, account)
+		} else {
+			for _, conn := range existingConnections {
+				if conn.SourceId == account.AccountID {
+					name := account.AccountID
+					if account.AccountName != nil {
+						name = *account.AccountName
+					}
+					if conn.Name != name {
+						localConn := conn
+						localConn.Name = name
+						_, err := h.db.UpdateSource(&localConn)
+						if err != nil {
+							h.logger.Error("failed to update source", zap.Error(err))
+							return nil, err
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// TODO add tag filter
+
+	h.logger.Info("onboarding accounts", zap.Int("count", len(accountsToOnboard)))
+	for _, account := range accountsToOnboard {
+		//assumeRoleArn := keibiaws.GetRoleArnFromName(account.AccountID, awsCnf.AssumeRoleName)
+		//sdkCnf, err := keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, assumeRoleArn, assumeRoleArn, awsCnf.ExternalID)
+		//if err != nil {
+		//	h.logger.Warn("failed to get config", zap.Error(err))
+		//	return err
+		//}
+		//isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, keibiaws.SecurityAuditPolicyARN)
+		//if err != nil {
+		//	h.logger.Warn("failed to check get user permission", zap.Error(err))
+		//	continue
+		//}
+		//if !isAttached {
+		//	h.logger.Warn("security audit policy not attached", zap.String("accountID", account.AccountID))
+		//	continue
+		//}
+		h.logger.Info("onboarding account", zap.String("accountID", account.AccountID))
+		count, err := h.db.CountSources()
+		if err != nil {
+			return nil, err
+		}
+		if count >= maxConnections {
+			return nil, echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
+		}
+
+		src := NewAWSConnectionWithCredentials(
+			account,
+			source.SourceCreationMethodAutoOnboard,
+			fmt.Sprintf("Auto onboarded account %s", account.AccountID),
+			credential,
+		)
+
+		err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+			err := h.db.CreateSource(&src)
+			if err != nil {
+				return err
+			}
+
+			//TODO: add enable account
+
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		metadata := make(map[string]any)
+		if src.Metadata.String() != "" {
+			err := json.Unmarshal(src.Metadata, &metadata)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		onboardedSources = append(onboardedSources, api.Connection{
+			ID:                   src.ID,
+			ConnectionID:         src.SourceId,
+			ConnectionName:       src.Name,
+			Email:                src.Email,
+			Connector:            src.Type,
+			Description:          src.Description,
+			CredentialID:         src.CredentialID.String(),
+			CredentialName:       src.Credential.Name,
+			OnboardDate:          src.CreatedAt,
+			LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
+			AssetDiscoveryMethod: src.AssetDiscoveryMethod,
+			LastHealthCheckTime:  src.LastHealthCheckTime,
+			HealthReason:         src.HealthReason,
+			Metadata:             metadata,
+		})
+	}
+
+	return onboardedSources, nil
+}
+
 // AutoOnboardCredential godoc
 //
 //	@Summary		Onboard all available connections for a credential
@@ -857,243 +1141,19 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	maxConns := httpserver.GetMaxConnections(ctx)
+
 	onboardedSources := make([]api.Connection, 0)
 	switch credential.ConnectorType {
 	case source.CloudAzure:
-		cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+		onboardedSources, err = h.autoOnboardAzureSubscriptions(ctx.Request().Context(), *credential, maxConns)
 		if err != nil {
 			return err
-		}
-		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
-		if err != nil {
-			return err
-		}
-		h.logger.Info("discovering subscriptions", zap.String("credentialId", credential.ID.String()))
-		subs, err := discoverAzureSubscriptions(ctx.Request().Context(), keibiazure.AuthConfig{
-			TenantID:     azureCnf.TenantID,
-			ObjectID:     azureCnf.ObjectID,
-			SecretID:     azureCnf.SecretID,
-			ClientID:     azureCnf.ClientID,
-			ClientSecret: azureCnf.ClientSecret,
-		})
-		if err != nil {
-			h.logger.Error("failed to discover subscriptions", zap.Error(err))
-			return err
-		}
-		h.logger.Info("discovered subscriptions", zap.Int("count", len(subs)))
-
-		existingConnections, err := h.db.GetSourcesOfType(credential.ConnectorType)
-		if err != nil {
-			return err
-		}
-
-		existingConnectionSubIDs := make([]string, 0, len(existingConnections))
-		for _, conn := range existingConnections {
-			existingConnectionSubIDs = append(existingConnectionSubIDs, conn.SourceId)
-		}
-		subsToOnboard := make([]azureSubscription, 0)
-		for _, sub := range subs {
-			if !utils.Includes(existingConnectionSubIDs, sub.SubscriptionID) {
-				subsToOnboard = append(subsToOnboard, sub)
-			}
-		}
-
-		h.logger.Info("onboarding subscriptions", zap.Int("count", len(subsToOnboard)))
-
-		for _, sub := range subsToOnboard {
-			h.logger.Info("onboarding subscription", zap.String("subscriptionId", sub.SubscriptionID))
-			count, err := h.db.CountSources()
-			if err != nil {
-				return err
-			}
-			if count >= httpserver.GetMaxConnections(ctx) {
-				return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
-			}
-
-			isAttached, err := keibiazure.CheckRole(keibiazure.AuthConfig{
-				TenantID:     azureCnf.TenantID,
-				ObjectID:     azureCnf.ObjectID,
-				SecretID:     azureCnf.SecretID,
-				ClientID:     azureCnf.ClientID,
-				ClientSecret: azureCnf.ClientSecret,
-			}, sub.SubscriptionID, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
-			if err != nil {
-				h.logger.Warn("failed to check role", zap.Error(err))
-				continue
-			}
-			if !isAttached {
-				h.logger.Warn("role not attached", zap.String("subscriptionId", sub.SubscriptionID))
-				continue
-			}
-
-			src := NewAzureConnectionWithCredentials(
-				sub,
-				source.SourceCreationMethodAutoOnboard,
-				fmt.Sprintf("Auto onboarded subscription %s", sub.SubscriptionID),
-				*credential,
-			)
-
-			err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-				err := h.db.CreateSource(&src)
-				if err != nil {
-					return err
-				}
-
-				if err := h.sourceEventsQueue.Publish(api.SourceEvent{
-					Action:     api.SourceCreated,
-					SourceID:   src.ID,
-					AccountID:  src.SourceId,
-					SourceType: src.Type,
-					Secret:     src.Credential.Secret,
-				}); err != nil {
-					return err
-				}
-
-				return nil
-			})
-			if err != nil {
-				return err
-			}
-
-			metadata := make(map[string]any)
-			if src.Metadata.String() != "" {
-				err := json.Unmarshal(src.Metadata, &metadata)
-				if err != nil {
-					return err
-				}
-			}
-
-			onboardedSources = append(onboardedSources, api.Connection{
-				ID:                   src.ID,
-				ConnectionID:         src.SourceId,
-				ConnectionName:       src.Name,
-				Email:                src.Email,
-				Connector:            src.Type,
-				Description:          src.Description,
-				CredentialID:         src.CredentialID.String(),
-				CredentialName:       src.Credential.Name,
-				OnboardDate:          src.CreatedAt,
-				LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
-				AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-				LastHealthCheckTime:  src.LastHealthCheckTime,
-				HealthReason:         src.HealthReason,
-				Metadata:             metadata,
-			})
 		}
 	case source.CloudAWS:
-		cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+		onboardedSources, err = h.autoOnboardAWSAccounts(ctx.Request().Context(), *credential, maxConns)
 		if err != nil {
 			return err
-		}
-		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
-		if err != nil {
-			return err
-		}
-		cfg, err := keibiaws.GetConfig(
-			ctx.Request().Context(),
-			awsCnf.AccessKey,
-			awsCnf.SecretKey,
-			"",
-			"",
-			nil)
-		h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
-		if cfg.Region == "" {
-			cfg.Region = "us-east-1"
-		}
-		accounts, err := discoverAWSAccounts(ctx.Request().Context(), cfg)
-		if err != nil {
-			h.logger.Error("failed to discover accounts", zap.Error(err))
-			return err
-		}
-		h.logger.Info("discovered accounts", zap.Int("count", len(accounts)))
-		existingConnections, err := h.db.GetSourcesOfType(credential.ConnectorType)
-		if err != nil {
-			return err
-		}
-		existingConnectionAccountIDs := make([]string, 0, len(existingConnections))
-		for _, conn := range existingConnections {
-			existingConnectionAccountIDs = append(existingConnectionAccountIDs, conn.SourceId)
-		}
-		accountsToOnboard := make([]awsAccount, 0)
-		for _, account := range accounts {
-			if !utils.Includes(existingConnectionAccountIDs, account.AccountID) {
-				accountsToOnboard = append(accountsToOnboard, account)
-			}
-		}
-
-		// TODO add tag filter
-
-		h.logger.Info("onboarding accounts", zap.Int("count", len(accountsToOnboard)))
-		for _, account := range accountsToOnboard {
-			//assumeRoleArn := keibiaws.GetRoleArnFromName(account.AccountID, awsCnf.AssumeRoleName)
-			//sdkCnf, err := keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, assumeRoleArn, assumeRoleArn, awsCnf.ExternalID)
-			//if err != nil {
-			//	h.logger.Warn("failed to get config", zap.Error(err))
-			//	return err
-			//}
-			//isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, keibiaws.SecurityAuditPolicyARN)
-			//if err != nil {
-			//	h.logger.Warn("failed to check get user permission", zap.Error(err))
-			//	continue
-			//}
-			//if !isAttached {
-			//	h.logger.Warn("security audit policy not attached", zap.String("accountID", account.AccountID))
-			//	continue
-			//}
-			h.logger.Info("onboarding account", zap.String("accountID", account.AccountID))
-			count, err := h.db.CountSources()
-			if err != nil {
-				return err
-			}
-			if count >= httpserver.GetMaxConnections(ctx) {
-				return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
-			}
-
-			src := NewAWSConnectionWithCredentials(
-				account,
-				source.SourceCreationMethodAutoOnboard,
-				fmt.Sprintf("Auto onboarded account %s", account.AccountID),
-				*credential,
-			)
-
-			err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-				err := h.db.CreateSource(&src)
-				if err != nil {
-					return err
-				}
-
-				//TODO: add enable account
-
-				return nil
-			})
-			if err != nil {
-				return err
-			}
-
-			metadata := make(map[string]any)
-			if src.Metadata.String() != "" {
-				err := json.Unmarshal(src.Metadata, &metadata)
-				if err != nil {
-					return err
-				}
-			}
-
-			onboardedSources = append(onboardedSources, api.Connection{
-				ID:                   src.ID,
-				ConnectionID:         src.SourceId,
-				ConnectionName:       src.Name,
-				Email:                src.Email,
-				Connector:            src.Type,
-				Description:          src.Description,
-				CredentialID:         src.CredentialID.String(),
-				CredentialName:       src.Credential.Name,
-				OnboardDate:          src.CreatedAt,
-				LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
-				AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-				LastHealthCheckTime:  src.LastHealthCheckTime,
-				HealthReason:         src.HealthReason,
-				Metadata:             metadata,
-			})
 		}
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, "connector doesn't support auto onboard")

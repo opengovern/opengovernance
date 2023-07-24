@@ -30,6 +30,8 @@ type OnboardServiceClient interface {
 	GetSourceHealthcheck(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
 	SetConnectionLifecycleState(ctx *httpclient.Context, connectionId string, state api.ConnectionLifecycleState) (*api.Connection, error)
 	GetSourcesByAccount(ctx *httpclient.Context, accountID string) (api.Connection, error)
+	ListCredentials(ctx *httpclient.Context, connector []source.Type, credentialType *source.CredentialType, health *string, pageSize, pageNumber int) (api.ListCredentialResponse, error)
+	TriggerAutoOnboard(ctx *httpclient.Context, credentialId string) ([]api.Connection, error)
 }
 
 type onboardClient struct {
@@ -274,4 +276,81 @@ func (s *onboardClient) GetSourcesByAccount(ctx *httpclient.Context, connectionI
 		return api.Connection{}, err
 	}
 	return source, nil
+}
+
+// api/v1/credential [get]
+func (s *onboardClient) ListCredentials(ctx *httpclient.Context, connector []source.Type, credentialType *source.CredentialType, health *string, pageSize, pageNumber int) (api.ListCredentialResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/credential", s.baseURL)
+
+	firstParamAttached := false
+	if len(connector) > 0 {
+		for _, v := range connector {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += "connector=" + string(v)
+		}
+	}
+	if credentialType != nil && *credentialType != "" {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += "credentialType=" + string(*credentialType)
+	}
+	if health != nil && *health != "" {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += "health=" + string(*health)
+	}
+	if pageSize > 0 {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("pageSize=%d", pageSize)
+	}
+	if pageNumber > 0 {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("pageNumber=%d", pageNumber)
+	}
+
+	var response api.ListCredentialResponse
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return api.ListCredentialResponse{}, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return api.ListCredentialResponse{}, err
+	}
+	return response, nil
+}
+
+func (s *onboardClient) TriggerAutoOnboard(ctx *httpclient.Context, credentialId string) ([]api.Connection, error) {
+	url := fmt.Sprintf("%s/api/v1/credential/%s/autoonboard", s.baseURL, credentialId)
+
+	var response []api.Connection
+	if statusCode, err := httpclient.DoRequest(http.MethodPost, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+
+	return response, nil
 }
