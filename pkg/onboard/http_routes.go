@@ -824,11 +824,12 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 			return err
 		}
 		apiCredential.Config = api.AWSCredentialConfig{
-			AccountId:      awsCnf.AccountID,
-			Regions:        awsCnf.Regions,
-			AccessKey:      awsCnf.AccessKey,
-			AssumeRoleName: awsCnf.AssumeRoleName,
-			ExternalId:     awsCnf.ExternalID,
+			AccountId:            awsCnf.AccountID,
+			Regions:              awsCnf.Regions,
+			AccessKey:            awsCnf.AccessKey,
+			AssumeRoleName:       awsCnf.AssumeRoleName,
+			AssumeRolePolicyName: awsCnf.AssumeRolePolicyName,
+			ExternalId:           awsCnf.ExternalID,
 		}
 	}
 
@@ -1425,6 +1426,9 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		if newConfig.AssumeRoleName != "" {
 			config.AssumeRoleName = newConfig.AssumeRoleName
 		}
+		if newConfig.AssumeRolePolicyName != "" {
+			config.AssumeRolePolicyName = newConfig.AssumeRolePolicyName
+		}
 		if newConfig.ExternalId != nil {
 			config.ExternalID = newConfig.ExternalId
 		}
@@ -1819,7 +1823,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 				h.logger.Error("failed to get aws config", zap.Error(err))
 				return err
 			}
-			isAttached, err = keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, keibiaws.SecurityAuditPolicyARN)
+			isAttached, err = keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, awsCnf.AssumeRolePolicyName)
 			if err == nil && isAttached {
 				assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
 				cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
