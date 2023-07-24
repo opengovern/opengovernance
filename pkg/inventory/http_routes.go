@@ -1054,7 +1054,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(h.client, connectorTypes, metricStrings, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectorMetricTrendSummaryPage(h.client, connectorTypes, metricStrings, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
