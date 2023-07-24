@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"go.uber.org/zap"
@@ -485,8 +486,9 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		sdkCnf, err2 := keibiaws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
-		if err2 != nil {
+		var sdkCnf aws.Config
+		sdkCnf, err = keibiaws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
+		if err != nil {
 			return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		err = keibiaws.CheckGetUserPermission(h.logger, sdkCnf)
@@ -1785,6 +1787,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 
 	src, err := h.db.GetSource(sourceUUID)
 	if err != nil {
+		h.logger.Error("failed to get source", zap.Error(err), zap.String("sourceId", sourceUUID.String()))
 		return err
 	}
 
@@ -1792,9 +1795,11 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 	if err != nil {
 		if herr, ok := err.(*echo.HTTPError); ok {
 			if herr.Code == http.StatusInternalServerError {
+				h.logger.Error("failed to check credential health", zap.Error(err), zap.String("sourceId", src.SourceId))
 				return herr
 			}
 		} else {
+			h.logger.Error("failed to check credential health", zap.Error(err), zap.String("sourceId", src.SourceId))
 			return err
 		}
 	}
@@ -1805,50 +1810,52 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		cnf, err := h.kms.Decrypt(src.Credential.Secret, h.keyARN)
+		var cnf map[string]any
+		cnf, err = h.kms.Decrypt(src.Credential.Secret, h.keyARN)
 		if err != nil {
+			h.logger.Error("failed to decrypt credential", zap.Error(err), zap.String("sourceId", src.SourceId))
 			return err
 		}
 
 		var isAttached bool
 		switch src.Type {
 		case source.CloudAWS:
-			awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+			var awsCnf describe.AWSAccountConfig
+			awsCnf, err = describe.AWSAccountConfigFromMap(cnf)
 			if err != nil {
+				h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", src.SourceId))
 				return err
 			}
 			assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
-			sdkCnf, err := keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
+			var sdkCnf aws.Config
+			sdkCnf, err = keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
 			if err != nil {
 				h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", src.SourceId))
 				return err
 			}
 			isAttached, err = keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, awsCnf.AssumeRolePolicyName)
 			if err == nil && isAttached {
-				assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
-				cfg, err := keibiaws.GetConfig(context.Background(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
-				if err != nil {
-					h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", src.SourceId))
-					return err
+				if sdkCnf.Region == "" {
+					sdkCnf.Region = "us-east-1"
 				}
-				if cfg.Region == "" {
-					cfg.Region = "us-east-1"
-				}
-				awsAccount, err := currentAwsAccount(ctx.Request().Context(), h.logger, cfg)
+				var awsAccount *awsAccount
+				awsAccount, err = currentAwsAccount(ctx.Request().Context(), h.logger, sdkCnf)
 				if err != nil {
 					h.logger.Error("failed to get current aws account", zap.Error(err), zap.String("sourceId", src.SourceId))
 					return err
 				}
 				metadata := NewAWSConnectionMetadata(*awsAccount)
-				jsonMetadata, err := json.Marshal(metadata)
-				if err != nil {
+				jsonMetadata, err2 := json.Marshal(metadata)
+				if err2 != nil {
 					return err
 				}
 				src.Metadata = jsonMetadata
 			}
 		case source.CloudAzure:
-			azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
+			var azureCnf describe.AzureSubscriptionConfig
+			azureCnf, err = describe.AzureSubscriptionConfigFromMap(cnf)
 			if err != nil {
+				h.logger.Error("failed to get azure config", zap.Error(err), zap.String("sourceId", src.SourceId))
 				return err
 			}
 			authCnf := keibiazure.AuthConfig{
@@ -1865,13 +1872,17 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 			isAttached, err = keibiazure.CheckRole(authCnf, src.SourceId, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
 
 			if err == nil && isAttached {
-				azSub, err := currentAzureSubscription(ctx.Request().Context(), src.SourceId, authCnf)
+				var azSub *azureSubscription
+				azSub, err = currentAzureSubscription(ctx.Request().Context(), src.SourceId, authCnf)
 				if err != nil {
+					h.logger.Error("failed to get current azure subscription", zap.Error(err), zap.String("sourceId", src.SourceId))
 					return err
 				}
 				metadata := NewAzureConnectionMetadata(*azSub)
-				jsonMetadata, err := json.Marshal(metadata)
+				var jsonMetadata []byte
+				jsonMetadata, err = json.Marshal(metadata)
 				if err != nil {
+					h.logger.Error("failed to marshal azure metadata", zap.Error(err), zap.String("sourceId", src.SourceId))
 					return err
 				}
 				src.Metadata = jsonMetadata
