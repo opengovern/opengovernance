@@ -22,21 +22,22 @@ const (
 )
 
 type AWSCredentialConfig struct {
-	AccountId      string   `json:"accountId"`
-	Regions        []string `json:"regions,omitempty"`
-	AccessKey      string   `json:"accessKey" validate:"required"`
-	SecretKey      string   `json:"secretKey" validate:"required"`
-	AssumeRoleName string   `json:"assumeRoleName,omitempty"`
-	ExternalId     *string  `json:"externalId,omitempty"`
+	AccountId            string   `json:"accountId"`
+	Regions              []string `json:"regions,omitempty"`
+	AccessKey            string   `json:"accessKey" validate:"required"`
+	SecretKey            string   `json:"secretKey" validate:"required"`
+	AssumeRoleName       string   `json:"assumeRoleName,omitempty"`
+	AssumeRolePolicyName string   `json:"assumeRolePolicyName,omitempty"`
+	ExternalId           *string  `json:"externalId,omitempty"`
 }
 
-func (s AWSCredentialConfig) AsMap() map[string]interface{} {
+func (s AWSCredentialConfig) AsMap() map[string]any {
 	in, err := json.Marshal(s)
 	if err != nil {
 		panic(err) // Don't expect any error
 	}
 
-	var out map[string]interface{}
+	var out map[string]any
 	if err := json.Unmarshal(in, &out); err != nil {
 		panic(err) // Don't expect any error
 	}
@@ -60,13 +61,13 @@ type AzureCredentialConfig struct {
 	ClientSecret   string `json:"clientSecret" validate:"required"`
 }
 
-func (s AzureCredentialConfig) AsMap() map[string]interface{} {
+func (s AzureCredentialConfig) AsMap() map[string]any {
 	in, err := json.Marshal(s)
 	if err != nil {
 		panic(err) // Don't expect any error
 	}
 
-	var out map[string]interface{}
+	var out map[string]any
 	if err := json.Unmarshal(in, &out); err != nil {
 		panic(err) // Don't expect any error
 	}
