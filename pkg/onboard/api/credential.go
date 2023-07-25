@@ -36,12 +36,13 @@ const (
 )
 
 type Credential struct {
-	ID             string         `json:"id"`
-	Name           *string        `json:"name,omitempty"`
-	ConnectorType  source.Type    `json:"connectorType"`
-	CredentialType CredentialType `json:"credentialType"`
-	Enabled        bool           `json:"enabled"`
-	OnboardDate    time.Time      `json:"onboardDate"`
+	ID                 string         `json:"id"`
+	Name               *string        `json:"name,omitempty"`
+	ConnectorType      source.Type    `json:"connectorType"`
+	CredentialType     CredentialType `json:"credentialType"`
+	Enabled            bool           `json:"enabled"`
+	AutoOnboardEnabled bool           `json:"autoOnboardEnabled"`
+	OnboardDate        time.Time      `json:"onboardDate"`
 
 	Config any `json:"config"`
 
