@@ -1856,7 +1856,6 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 				metadata, err2 := NewAWSConnectionMetadata(h.logger, awsCnf, *awsAccount)
 				if err2 != nil {
 					h.logger.Error("failed to get aws connection metadata", zap.Error(err2), zap.String("sourceId", src.SourceId))
-					return err
 				}
 				jsonMetadata, err2 := json.Marshal(metadata)
 				if err2 != nil {
