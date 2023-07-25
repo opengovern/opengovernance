@@ -2848,6 +2848,8 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential:
     properties:
+      autoOnboardEnabled:
+        type: boolean
       config: {}
       connections:
         items:
@@ -3842,7 +3844,7 @@ paths:
         name: benchmark_id
         required: true
         type: string
-      - description: Connection ID
+      - description: Connection ID or 'all' for everything
         in: path
         name: connection_id
         required: true
@@ -3867,7 +3869,7 @@ paths:
         name: benchmark_id
         required: true
         type: string
-      - description: Connection ID
+      - description: Connection ID or 'all' for everything
         in: path
         name: connection_id
         required: true
@@ -3878,7 +3880,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment'
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment'
+            type: array
       security:
       - BearerToken: []
       summary: Create benchmark assignment for inventory service

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"io"
 	"net/http"
 	"sort"
@@ -15,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	api "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/internal"
@@ -23,8 +22,10 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
+	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	kaytuTypes "github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -579,8 +580,8 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmark_id	path		string	true	"Benchmark ID"
-//	@Param			connection_id	path		string	true	"Connection ID"
-//	@Success		200				{object}	api.BenchmarkAssignment
+//	@Param			connection_id	path		string	true	"Connection ID or 'all' for everything"
+//	@Success		200				{object}	[]api.BenchmarkAssignment
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [post]
 func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	connectionID := ctx.Param("connection_id")
@@ -602,11 +603,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark %s not found", benchmarkId))
 	}
 
-	src, err := h.schedulerClient.GetSource(httpclient.FromEchoContext(ctx), connectionID)
-	if err != nil {
-		return err
-	}
-
+	connectorType := source.Nil
 	for _, policy := range benchmark.Policies {
 		if policy.QueryID == nil {
 			continue
@@ -621,26 +618,51 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 			return fmt.Errorf("query %s not found", *policy.QueryID)
 		}
 
-		if q.Connector != string(src.Type) {
-			return echo.NewHTTPError(http.StatusBadRequest, "connector not match")
+		if t, _ := source.ParseType(q.Connector); t != source.Nil {
+			connectorType = t
+			break
 		}
 	}
 
-	assignment := &db.BenchmarkAssignment{
-		BenchmarkId:  benchmarkId,
-		ConnectionId: connectionID,
-		AssignedAt:   time.Now(),
-	}
-	if err := h.db.AddBenchmarkAssignment(assignment); err != nil {
-		ctx.Logger().Errorf("add benchmark assignment: %v", err)
-		return err
+	connections := make([]onboardApi.Connection, 0)
+	if strings.ToLower(connectionID) == "all" {
+		srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), nil)
+		if err != nil {
+			return err
+		}
+		for _, src := range srcs {
+			if src.Connector == connectorType &&
+				src.LifecycleState == onboardApi.ConnectionLifecycleStateOnboard || src.LifecycleState == onboardApi.ConnectionLifecycleStateInProgress {
+				connections = append(connections, src)
+			}
+		}
+	} else {
+		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), connectionID)
+		if err != nil {
+			return err
+		}
+		connections = append(connections, *src)
 	}
 
-	return ctx.JSON(http.StatusOK, api.BenchmarkAssignment{
-		BenchmarkId:  benchmarkId,
-		ConnectionId: connectionID,
-		AssignedAt:   assignment.AssignedAt.Unix(),
-	})
+	result := make([]api.BenchmarkAssignment, 0, len(connections))
+	for _, src := range connections {
+		assignment := &db.BenchmarkAssignment{
+			BenchmarkId:  benchmarkId,
+			ConnectionId: src.ConnectionID,
+			AssignedAt:   time.Now(),
+		}
+		if err := h.db.AddBenchmarkAssignment(assignment); err != nil {
+			ctx.Logger().Errorf("add benchmark assignment: %v", err)
+			return err
+		}
+		result = append(result, api.BenchmarkAssignment{
+			BenchmarkId:  benchmarkId,
+			ConnectionId: connectionID,
+			AssignedAt:   assignment.AssignedAt.Unix(),
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }
 
 // ListAssignmentsByConnection godoc
@@ -785,7 +807,7 @@ func (h *HttpHandler) ListAssignments(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmark_id	path	string	true	"Benchmark ID"
-//	@Param			connection_id	path	string	true	"Connection ID"
+//	@Param			connection_id	path	string	true	"Connection ID or 'all' for everything"
 //	@Success		200
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [delete]
 func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
@@ -797,18 +819,24 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 	if benchmarkId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
 	}
-
-	if _, err := h.db.GetBenchmarkAssignmentByIds(connectionId, benchmarkId); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusFound, "benchmark assignment not found")
+	if strings.ToLower(connectionId) == "all" {
+		if err := h.db.DeleteBenchmarkAssignmentByBenchmarkId(benchmarkId); err != nil {
+			h.logger.Error("delete benchmark assignment by benchmark id", zap.Error(err))
+			return err
 		}
-		ctx.Logger().Errorf("find benchmark assignment: %v", err)
-		return err
-	}
+	} else {
+		if _, err := h.db.GetBenchmarkAssignmentByIds(connectionId, benchmarkId); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return echo.NewHTTPError(http.StatusFound, "benchmark assignment not found")
+			}
+			ctx.Logger().Errorf("find benchmark assignment: %v", err)
+			return err
+		}
 
-	if err := h.db.DeleteBenchmarkAssignmentById(connectionId, benchmarkId); err != nil {
-		ctx.Logger().Errorf("delete benchmark assignment: %v", err)
-		return err
+		if err := h.db.DeleteBenchmarkAssignmentByIds(connectionId, benchmarkId); err != nil {
+			ctx.Logger().Errorf("delete benchmark assignment: %v", err)
+			return err
+		}
 	}
 
 	return ctx.NoContent(http.StatusOK)
