@@ -8629,7 +8629,7 @@ const docTemplate = `{
             "properties": {
                 "assignedAt": {
                     "description": "Unix timestamp",
-                    "type": "integer"
+                    "type": "string"
                 },
                 "benchmarkId": {
                     "description": "Benchmark ID",

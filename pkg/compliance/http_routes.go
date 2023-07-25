@@ -658,7 +658,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		result = append(result, api.BenchmarkAssignment{
 			BenchmarkId:  benchmarkId,
 			ConnectionId: connectionID,
-			AssignedAt:   assignment.AssignedAt.Unix(),
+			AssignedAt:   assignment.AssignedAt,
 		})
 	}
 
@@ -696,7 +696,7 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 		assignments = append(assignments, api.BenchmarkAssignment{
 			BenchmarkId:  assignment.BenchmarkId,
 			ConnectionId: assignment.ConnectionId,
-			AssignedAt:   assignment.AssignedAt.Unix(),
+			AssignedAt:   assignment.AssignedAt,
 		})
 	}
 
@@ -790,7 +790,7 @@ func (h *HttpHandler) ListAssignments(ctx echo.Context) error {
 		ba := api.BenchmarkAssignment{
 			BenchmarkId:  assignment.BenchmarkId,
 			ConnectionId: assignment.ConnectionId,
-			AssignedAt:   assignment.AssignedAt.Unix(),
+			AssignedAt:   assignment.AssignedAt,
 		}
 		sources = append(sources, ba)
 	}

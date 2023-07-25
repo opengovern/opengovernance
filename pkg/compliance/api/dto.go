@@ -8,9 +8,9 @@ import (
 )
 
 type BenchmarkAssignment struct {
-	BenchmarkId  string `json:"benchmarkId" example:"azure_cis_v140"`                    // Benchmark ID
-	ConnectionId string `json:"sourceId" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
-	AssignedAt   int64  `json:"assignedAt"`                                              // Unix timestamp
+	BenchmarkId  string    `json:"benchmarkId" example:"azure_cis_v140"`                    // Benchmark ID
+	ConnectionId string    `json:"sourceId" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
+	AssignedAt   time.Time `json:"assignedAt"`                                              // Unix timestamp
 }
 
 type BenchmarkAssignedSource struct {
