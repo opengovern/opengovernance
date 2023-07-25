@@ -9,10 +9,11 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/subscription/mgmt/subscription"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/google/uuid"
+	keibiaws "github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
@@ -112,7 +113,7 @@ type AWSConnectionMetadata struct {
 	OrganizationTags    map[string]string   `json:"organization_tags,omitempty"`
 }
 
-func NewAWSConnectionMetadata(logger *zap.Logger, cfg aws.Config, account awsAccount) (AWSConnectionMetadata, error) {
+func NewAWSConnectionMetadata(logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount) (AWSConnectionMetadata, error) {
 	metadata := AWSConnectionMetadata{
 		AccountID: account.AccountID,
 	}
@@ -122,7 +123,13 @@ func NewAWSConnectionMetadata(logger *zap.Logger, cfg aws.Config, account awsAcc
 	metadata.Organization = account.Organization
 	metadata.OrganizationAccount = account.Account
 	if account.Organization != nil {
-		organizationClient := organizations.NewFromConfig(cfg)
+		sdkCnf, err := keibiaws.GetConfig(context.TODO(), cfg.AccessKey, cfg.SecretKey, "", "", nil)
+		if err != nil {
+			logger.Error("failed to get aws config", zap.Error(err), zap.String("account_id", metadata.AccountID))
+			return metadata, err
+		}
+		organizationClient := organizations.NewFromConfig(sdkCnf)
+
 		tags, err := organizationClient.ListTagsForResource(context.TODO(), &organizations.ListTagsForResourceInput{
 			ResourceId: &metadata.AccountID,
 		})
@@ -151,7 +158,7 @@ func NewAWSConnectionMetadata(logger *zap.Logger, cfg aws.Config, account awsAcc
 	return metadata, nil
 }
 
-func NewAWSSource(logger *zap.Logger, cfg aws.Config, account awsAccount, description string) Source {
+func NewAWSSource(logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, description string) Source {
 	id := uuid.New()
 	provider := source.CloudAWS
 
@@ -252,7 +259,7 @@ func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod sou
 	return s
 }
 
-func NewAWSConnectionWithCredentials(logger *zap.Logger, cfg aws.Config, account awsAccount, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
+func NewAWSConnectionWithCredentials(logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
 	id := uuid.New()
 
 	name := account.AccountID
