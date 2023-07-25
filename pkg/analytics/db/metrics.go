@@ -36,7 +36,7 @@ func (db Database) ListFilteredMetrics(tags map[string][]string, metricNames []s
 	var metrics []AnalyticMetric
 	query := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations)
 	if len(tags) != 0 {
-		query = query.Joins("JOIN metric_tags AS tags ON tags.name = analytic_metrics.name")
+		query = query.Joins("JOIN metric_tags AS tags ON tags.id = analytic_metrics.id")
 		for key, values := range tags {
 			if len(values) != 0 {
 				query = query.Where("tags.key = ? AND (tags.value && ?)", key, pq.StringArray(values))
@@ -60,7 +60,7 @@ func (db Database) ListFilteredMetrics(tags map[string][]string, metricNames []s
 
 func (db Database) ListMetricTagsKeysWithPossibleValues(connectorTypes []source.Type) (map[string][]string, error) {
 	var tags []MetricTag
-	tx := db.orm.Model(MetricTag{}).Joins("JOIN analytic_metrics ON metric_tags.name = analytic_metrics.name")
+	tx := db.orm.Model(MetricTag{}).Joins("JOIN analytic_metrics ON metric_tags.id = analytic_metrics.id")
 	if len(connectorTypes) > 0 {
 		tx = tx.Where("analytic_metrics.connectors in ?", connectorTypes)
 	}
