@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"go.uber.org/zap"
 	"gorm.io/datatypes"
 )
 
@@ -111,7 +112,7 @@ type AWSConnectionMetadata struct {
 	OrganizationTags    map[string]string   `json:"organization_tags,omitempty"`
 }
 
-func NewAWSConnectionMetadata(cfg aws.Config, account awsAccount) (AWSConnectionMetadata, error) {
+func NewAWSConnectionMetadata(logger *zap.Logger, cfg aws.Config, account awsAccount) (AWSConnectionMetadata, error) {
 	metadata := AWSConnectionMetadata{
 		AccountID: account.AccountID,
 	}
@@ -125,7 +126,8 @@ func NewAWSConnectionMetadata(cfg aws.Config, account awsAccount) (AWSConnection
 		tags, err := organizationClient.ListTagsForResource(context.TODO(), &organizations.ListTagsForResourceInput{
 			ResourceId: &metadata.AccountID,
 		})
-		if err == nil {
+		if err != nil {
+			logger.Error("failed to get organization tags", zap.Error(err), zap.String("account_id", metadata.AccountID))
 			return metadata, err
 		}
 		metadata.OrganizationTags = make(map[string]string)
@@ -149,11 +151,11 @@ func NewAWSConnectionMetadata(cfg aws.Config, account awsAccount) (AWSConnection
 	return metadata, nil
 }
 
-func NewAWSSource(cfg aws.Config, account awsAccount, description string) Source {
+func NewAWSSource(logger *zap.Logger, cfg aws.Config, account awsAccount, description string) Source {
 	id := uuid.New()
 	provider := source.CloudAWS
 
-	metadata, err := NewAWSConnectionMetadata(cfg, account)
+	metadata, err := NewAWSConnectionMetadata(logger, cfg, account)
 	if err != nil {
 		// TODO: log error
 	}
@@ -250,7 +252,7 @@ func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod sou
 	return s
 }
 
-func NewAWSConnectionWithCredentials(cfg aws.Config, account awsAccount, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
+func NewAWSConnectionWithCredentials(logger *zap.Logger, cfg aws.Config, account awsAccount, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
 	id := uuid.New()
 
 	name := account.AccountID
@@ -258,7 +260,7 @@ func NewAWSConnectionWithCredentials(cfg aws.Config, account awsAccount, creatio
 		name = *account.AccountName
 	}
 
-	metadata, err := NewAWSConnectionMetadata(cfg, account)
+	metadata, err := NewAWSConnectionMetadata(logger, cfg, account)
 	if err != nil {
 		// TODO: log error
 	}

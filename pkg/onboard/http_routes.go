@@ -349,7 +349,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
 	}
 
-	src := NewAWSSource(cfg, *acc, req.Description)
+	src := NewAWSSource(h.logger, cfg, *acc, req.Description)
 	secretBytes, err := h.kms.Encrypt(req.Config.AsMap(), h.keyARN)
 	if err != nil {
 		return err
@@ -1078,6 +1078,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 		}
 
 		src := NewAWSConnectionWithCredentials(
+			h.logger,
 			cfg,
 			account,
 			source.SourceCreationMethodAutoOnboard,
@@ -1852,7 +1853,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 					h.logger.Error("failed to get current aws account", zap.Error(err), zap.String("sourceId", src.SourceId))
 					return err
 				}
-				metadata, err2 := NewAWSConnectionMetadata(sdkCnf, *awsAccount)
+				metadata, err2 := NewAWSConnectionMetadata(h.logger, sdkCnf, *awsAccount)
 				if err2 != nil {
 					h.logger.Error("failed to get aws connection metadata", zap.Error(err2), zap.String("sourceId", src.SourceId))
 					return err
