@@ -41,7 +41,7 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 						Key:   k,
 						Value: v,
 					},
-					Name: metric.Name,
+					ID: id,
 				})
 			}
 			dbMetric := analyticsDB.AnalyticMetric{
