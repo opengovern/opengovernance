@@ -25,7 +25,7 @@ type ResourceType struct {
 }
 
 type ListResourceTypeMetadataResponse struct {
-	TotalResourceTypeCount int            `json:"total_resource_type_count" example:"100"`
+	TotalResourceTypeCount int            `json:"total_resource_type_count" example:"100" minimum:"0"`
 	ResourceTypes          []ResourceType `json:"resource_types"`
 }
 
@@ -40,25 +40,25 @@ type ResourceTypeTag struct {
 }
 
 type ListResourceTypeTagsMetadataResponse struct {
-	TotalResourceTypeTagCount int               `json:"total_resource_type_tag_count" example:"100"`
+	TotalResourceTypeTagCount int               `json:"total_resource_type_tag_count" example:"100" minimum:"0"`
 	ResourceTypeTags          []ResourceTypeTag `json:"resource_type_tags"`
 }
 
 type ListResourceTypeMetricsResponse struct {
-	TotalCount         int            `json:"total_count"`
-	TotalOldCount      int            `json:"total_old_count"`
-	TotalResourceTypes int            `json:"total_resource_types"`
+	TotalCount         int            `json:"total_count" minimum:"0"`
+	TotalOldCount      int            `json:"total_old_count" minimum:"0"`
+	TotalResourceTypes int            `json:"total_resource_types" minimum:"0"`
 	ResourceTypes      []ResourceType `json:"resource_types"`
 }
 
 type CountPair struct {
-	OldCount int `json:"old_count"`
-	Count    int `json:"count"`
+	OldCount int `json:"old_count" minimum:"0"`
+	Count    int `json:"count" minimum:"0"`
 }
 
 type ListResourceTypeCompositionResponse struct {
-	TotalCount      int                  `json:"total_count"`
-	TotalValueCount int                  `json:"total_value_count"`
+	TotalCount      int                  `json:"total_count" minimum:"0"`
+	TotalValueCount int                  `json:"total_value_count" minimum:"0"`
 	TopValues       map[string]CountPair `json:"top_values"`
 	Others          CountPair            `json:"others"`
 }
@@ -69,19 +69,19 @@ type ResourceTypeTrendDatapoint struct {
 }
 
 type LocationResponse struct {
-	Location         string `json:"location"`                              // Region
-	ResourceCount    *int   `json:"resourceCount,omitempty" example:"100"` // Number of resources in the region
-	ResourceOldCount *int   `json:"resourceOldCount,omitempty" example:"50"`
+	Location         string `json:"location" example:"na-west"`                        // Region
+	ResourceCount    *int   `json:"resourceCount,omitempty" example:"100" minimum:"0"` // Number of resources in the region
+	ResourceOldCount *int   `json:"resourceOldCount,omitempty" example:"50" minimum:"0"`
 }
 
 type RegionsResourceCountResponse struct {
-	TotalCount int                `json:"totalCount"`
+	TotalCount int                `json:"totalCount" minimum:"0"`
 	Regions    []LocationResponse `json:"regions"`
 }
 
 type ListRegionsResourceCountCompositionResponse struct {
-	TotalCount      int                  `json:"total_count"`
-	TotalValueCount int                  `json:"total_value_count"`
+	TotalCount      int                  `json:"total_count" minimum:"0"`
+	TotalValueCount int                  `json:"total_value_count" minimum:"0"`
 	TopValues       map[string]CountPair `json:"top_values"`
 	Others          CountPair            `json:"others"`
 }
