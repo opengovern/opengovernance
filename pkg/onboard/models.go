@@ -120,10 +120,10 @@ func NewAWSConnectionMetadata(cfg aws.Config, account awsAccount) (AWSConnection
 	}
 	metadata.Organization = account.Organization
 	metadata.OrganizationAccount = account.Account
-	if account.Organization != nil && account.Account != nil {
+	if account.Organization != nil {
 		organizationClient := organizations.NewFromConfig(cfg)
 		tags, err := organizationClient.ListTagsForResource(context.TODO(), &organizations.ListTagsForResourceInput{
-			ResourceId: account.Account.Id,
+			ResourceId: &metadata.AccountID,
 		})
 		if err == nil {
 			return metadata, err
@@ -134,6 +134,15 @@ func NewAWSConnectionMetadata(cfg aws.Config, account awsAccount) (AWSConnection
 				continue
 			}
 			metadata.OrganizationTags[*tag.Key] = *tag.Value
+		}
+		if account.Account == nil {
+			orgAccount, err := organizationClient.DescribeAccount(context.TODO(), &organizations.DescribeAccountInput{
+				AccountId: &metadata.AccountID,
+			})
+			if err == nil {
+				return metadata, err
+			}
+			metadata.OrganizationAccount = orgAccount.Account
 		}
 	}
 
