@@ -1812,19 +1812,27 @@ definitions:
       connector:
         allOf:
         - $ref: '#/definitions/source.Type'
-        example: azure
+        example: Azure
       cost_dimension_name:
+        example: microsoft.compute/disks
         type: string
       daily_cost_at_end_time:
+        example: 14118.81523108568
+        minimum: 0
         type: number
       daily_cost_at_start_time:
+        example: 21232.10443638001
+        minimum: 0
         type: number
       total_cost:
+        example: 621041.2436112489
+        minimum: 0
         type: number
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostTrendDatapoint:
     properties:
       count:
+        minimum: 0
         type: number
       date:
         format: date
@@ -1833,8 +1841,10 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair:
     properties:
       count:
+        minimum: 0
         type: integer
       old_count:
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.DirectionType:
@@ -1947,6 +1957,7 @@ definitions:
     properties:
       others:
         example: 100
+        minimum: 0
         type: number
       top_values:
         additionalProperties:
@@ -1954,9 +1965,11 @@ definitions:
         type: object
       total_cost_value:
         example: 1000
+        minimum: 0
         type: number
       total_count:
         example: 10
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostMetricsResponse:
@@ -1967,9 +1980,11 @@ definitions:
         type: array
       total_cost:
         example: 1000
+        minimum: 0
         type: number
       total_count:
         example: 10
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest:
@@ -1992,8 +2007,10 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair'
         type: object
       total_count:
+        minimum: 0
         type: integer
       total_value_count:
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeCompositionResponse:
@@ -2005,8 +2022,10 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair'
         type: object
       total_count:
+        minimum: 0
         type: integer
       total_value_count:
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeMetadataResponse:
@@ -2017,6 +2036,7 @@ definitions:
         type: array
       total_resource_type_count:
         example: 100
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeMetricsResponse:
@@ -2026,10 +2046,13 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType'
         type: array
       total_count:
+        minimum: 0
         type: integer
       total_old_count:
+        minimum: 0
         type: integer
       total_resource_types:
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeTagsMetadataResponse:
@@ -2040,6 +2063,7 @@ definitions:
         type: array
       total_resource_type_tag_count:
         example: 100
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServiceMetadataResponse:
@@ -2094,13 +2118,16 @@ definitions:
     properties:
       location:
         description: Region
+        example: na-west
         type: string
       resourceCount:
         description: Number of resources in the region
         example: 100
+        minimum: 0
         type: integer
       resourceOldCount:
         example: 50
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Page:
@@ -2117,6 +2144,7 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse'
         type: array
       totalCount:
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceFilters:
@@ -2418,11 +2446,15 @@ definitions:
         example: compute
         type: string
       tags:
-        additionalProperties:
-          items:
-            type: string
-          type: array
-        type: object
+        example:
+        - category:[Data and Analytics
+        - Database
+        - Integration
+        - Management Governance
+        - Storage]
+        items:
+          type: string
+        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ServiceSummary:
     properties:
@@ -2748,24 +2780,28 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionCountRequest:
     properties:
       connectors:
+        example:
+        - Azure
         items:
           type: string
         type: array
       state:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState'
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState'
+        example: enabled
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState:
     enum:
+    - ONBOARD
     - NOT_ONBOARD
     - IN_PROGRESS
-    - ONBOARD
     - UNHEALTHY
     - ARCHIVED
     type: string
     x-enum-varnames:
+    - ConnectionLifecycleStateOnboard
     - ConnectionLifecycleStateNotOnboard
     - ConnectionLifecycleStateInProgress
-    - ConnectionLifecycleStateOnboard
     - ConnectionLifecycleStateUnhealthy
     - ConnectionLifecycleStateArchived
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connector:
@@ -2899,6 +2935,7 @@ definitions:
     properties:
       connectionCount:
         example: 10
+        minimum: 0
         type: integer
       connections:
         items:
@@ -2906,21 +2943,27 @@ definitions:
         type: array
       oldConnectionCount:
         example: 10
+        minimum: 0
         type: integer
       totalCost:
         example: 1000
+        minimum: 0
         type: number
       totalDisabledCount:
         example: 10
+        minimum: 0
         type: integer
       totalOldResourceCount:
         example: 100
+        minimum: 0
         type: integer
       totalResourceCount:
         example: 100
+        minimum: 0
         type: integer
       totalUnhealthyCount:
         example: 10
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ListCredentialResponse:

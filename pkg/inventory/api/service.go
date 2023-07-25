@@ -9,7 +9,7 @@ type Service struct {
 	ServiceName   string              `json:"service_name" example:"compute"`
 	ServiceLabel  string              `json:"service_label" example:"Compute"`
 	ResourceTypes []ResourceType      `json:"resource_types"`
-	Tags          map[string][]string `json:"tags,omitempty"`
+	Tags          map[string][]string `json:"tags,omitempty" swaggertype:"array,string" example:"category:[Data and Analytics,Database,Integration,Management Governance,Storage]"`
 	LogoURI       *string             `json:"logo_uri,omitempty" example:"https://kaytu.io/logo.png"`
 
 	ResourceCount    *int `json:"resource_count" example:"100" minimum:"0"`

@@ -11,9 +11,9 @@ import (
 type ConnectionLifecycleState string
 
 const (
+	ConnectionLifecycleStateOnboard    ConnectionLifecycleState = "ONBOARD"
 	ConnectionLifecycleStateNotOnboard ConnectionLifecycleState = "NOT_ONBOARD"
 	ConnectionLifecycleStateInProgress ConnectionLifecycleState = "IN_PROGRESS"
-	ConnectionLifecycleStateOnboard    ConnectionLifecycleState = "ONBOARD"
 	ConnectionLifecycleStateUnhealthy  ConnectionLifecycleState = "UNHEALTHY"
 	ConnectionLifecycleStateArchived   ConnectionLifecycleState = "ARCHIVED"
 )
@@ -28,8 +28,8 @@ func (c ConnectionLifecycleState) Validate() error {
 }
 
 type ConnectionCountRequest struct {
-	ConnectorsNames []string                  `json:"connectors"`
-	State           *ConnectionLifecycleState `json:"state"`
+	ConnectorsNames []string                  `json:"connectors" example:"Azure"`
+	State           *ConnectionLifecycleState `json:"state" example:"enabled"`
 }
 
 type Connection struct {
@@ -65,12 +65,12 @@ type ChangeConnectionLifecycleStateRequest struct {
 }
 
 type ListConnectionSummaryResponse struct {
-	ConnectionCount       int          `json:"connectionCount" example:"10"`
-	OldConnectionCount    int          `json:"oldConnectionCount" example:"10"`
-	TotalCost             float64      `json:"totalCost" example:"1000.00"`
-	TotalResourceCount    int          `json:"totalResourceCount" example:"100"`
-	TotalOldResourceCount int          `json:"totalOldResourceCount" example:"100"`
-	TotalUnhealthyCount   int          `json:"totalUnhealthyCount" example:"10"`
-	TotalDisabledCount    int          `json:"totalDisabledCount" example:"10"`
+	ConnectionCount       int          `json:"connectionCount" example:"10" minimum:"0"`
+	OldConnectionCount    int          `json:"oldConnectionCount" example:"10" minimum:"0"`
+	TotalCost             float64      `json:"totalCost" example:"1000.00" minimum:"0"`
+	TotalResourceCount    int          `json:"totalResourceCount" example:"100" minimum:"0"`
+	TotalOldResourceCount int          `json:"totalOldResourceCount" example:"100" minimum:"0"`
+	TotalUnhealthyCount   int          `json:"totalUnhealthyCount" example:"10" minimum:"0"`
+	TotalDisabledCount    int          `json:"totalDisabledCount" example:"10" minimum:"0"`
 	Connections           []Connection `json:"connections"`
 }

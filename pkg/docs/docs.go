@@ -10003,19 +10003,26 @@ const docTemplate = `{
                             "$ref": "#/definitions/source.Type"
                         }
                     ],
-                    "example": "azure"
+                    "example": "Azure"
                 },
                 "cost_dimension_name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "microsoft.compute/disks"
                 },
                 "daily_cost_at_end_time": {
-                    "type": "number"
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 14118.81523108568
                 },
                 "daily_cost_at_start_time": {
-                    "type": "number"
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 21232.10443638001
                 },
                 "total_cost": {
-                    "type": "number"
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 621041.2436112489
                 }
             }
         },
@@ -10023,7 +10030,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "count": {
-                    "type": "number"
+                    "type": "number",
+                    "minimum": 0
                 },
                 "date": {
                     "type": "string",
@@ -10035,10 +10043,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 },
                 "old_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 }
             }
         },
@@ -10196,6 +10206,7 @@ const docTemplate = `{
             "properties": {
                 "others": {
                     "type": "number",
+                    "minimum": 0,
                     "example": 100
                 },
                 "top_values": {
@@ -10206,10 +10217,12 @@ const docTemplate = `{
                 },
                 "total_cost_value": {
                     "type": "number",
+                    "minimum": 0,
                     "example": 1000
                 },
                 "total_count": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 10
                 }
             }
@@ -10225,10 +10238,12 @@ const docTemplate = `{
                 },
                 "total_cost": {
                     "type": "number",
+                    "minimum": 0,
                     "example": 1000
                 },
                 "total_count": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 10
                 }
             }
@@ -10262,10 +10277,12 @@ const docTemplate = `{
                     }
                 },
                 "total_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 },
                 "total_value_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 }
             }
         },
@@ -10282,10 +10299,12 @@ const docTemplate = `{
                     }
                 },
                 "total_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 },
                 "total_value_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 }
             }
         },
@@ -10300,6 +10319,7 @@ const docTemplate = `{
                 },
                 "total_resource_type_count": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 100
                 }
             }
@@ -10314,13 +10334,16 @@ const docTemplate = `{
                     }
                 },
                 "total_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 },
                 "total_old_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 },
                 "total_resource_types": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 }
             }
         },
@@ -10335,6 +10358,7 @@ const docTemplate = `{
                 },
                 "total_resource_type_tag_count": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 100
                 }
             }
@@ -10412,15 +10436,18 @@ const docTemplate = `{
             "properties": {
                 "location": {
                     "description": "Region",
-                    "type": "string"
+                    "type": "string",
+                    "example": "na-west"
                 },
                 "resourceCount": {
                     "description": "Number of resources in the region",
                     "type": "integer",
+                    "minimum": 0,
                     "example": 100
                 },
                 "resourceOldCount": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 50
                 }
             }
@@ -10446,7 +10473,8 @@ const docTemplate = `{
                     }
                 },
                 "totalCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 }
             }
         },
@@ -10847,13 +10875,17 @@ const docTemplate = `{
                     "example": "compute"
                 },
                 "tags": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "category:[Data and Analytics",
+                        "Database",
+                        "Integration",
+                        "Management Governance",
+                        "Storage]"
+                    ]
                 }
             }
         },
@@ -11306,26 +11338,34 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "Azure"
+                    ]
                 },
                 "state": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState"
+                        }
+                    ],
+                    "example": "enabled"
                 }
             }
         },
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState": {
             "type": "string",
             "enum": [
+                "ONBOARD",
                 "NOT_ONBOARD",
                 "IN_PROGRESS",
-                "ONBOARD",
                 "UNHEALTHY",
                 "ARCHIVED"
             ],
             "x-enum-varnames": [
+                "ConnectionLifecycleStateOnboard",
                 "ConnectionLifecycleStateNotOnboard",
                 "ConnectionLifecycleStateInProgress",
-                "ConnectionLifecycleStateOnboard",
                 "ConnectionLifecycleStateUnhealthy",
                 "ConnectionLifecycleStateArchived"
             ]
@@ -11528,6 +11568,7 @@ const docTemplate = `{
             "properties": {
                 "connectionCount": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 10
                 },
                 "connections": {
@@ -11538,26 +11579,32 @@ const docTemplate = `{
                 },
                 "oldConnectionCount": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 10
                 },
                 "totalCost": {
                     "type": "number",
+                    "minimum": 0,
                     "example": 1000
                 },
                 "totalDisabledCount": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 10
                 },
                 "totalOldResourceCount": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 100
                 },
                 "totalResourceCount": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 100
                 },
                 "totalUnhealthyCount": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 10
                 }
             }
