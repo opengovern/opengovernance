@@ -1987,6 +1987,19 @@ definitions:
         minimum: 0
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListMetricsResponse:
+    properties:
+      metrics:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Metric'
+        type: array
+      total_count:
+        type: integer
+      total_metrics:
+        type: integer
+      total_old_count:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest:
     properties:
       connectorsFilter:
@@ -2129,6 +2142,35 @@ definitions:
         example: 50
         minimum: 0
         type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Metric:
+    properties:
+      connectors:
+        description: Cloud Provider
+        example:
+        - '[Azure]'
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
+      count:
+        description: Number of Resources of this Resource Type - Metric
+        example: 100
+        type: integer
+      name:
+        description: Resource Type
+        example: VMs
+        type: string
+      old_count:
+        description: Number of Resources of this Resource Type in the past - Metric
+        example: 90
+        type: integer
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        description: Tags
+        type: object
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Page:
     properties:
@@ -5159,7 +5201,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeMetricsResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListMetricsResponse'
       security:
       - BearerToken: []
       summary: List analytics metrics

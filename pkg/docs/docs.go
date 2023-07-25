@@ -2683,7 +2683,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeMetricsResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListMetricsResponse"
                         }
                     }
                 }
@@ -10248,6 +10248,26 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListMetricsResponse": {
+            "type": "object",
+            "properties": {
+                "metrics": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Metric"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
+                },
+                "total_metrics": {
+                    "type": "integer"
+                },
+                "total_old_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest": {
             "type": "object",
             "properties": {
@@ -10449,6 +10469,46 @@ const docTemplate = `{
                     "type": "integer",
                     "minimum": 0,
                     "example": 50
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Metric": {
+            "type": "object",
+            "properties": {
+                "connectors": {
+                    "description": "Cloud Provider",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    },
+                    "example": [
+                        "[Azure]"
+                    ]
+                },
+                "count": {
+                    "description": "Number of Resources of this Resource Type - Metric",
+                    "type": "integer",
+                    "example": 100
+                },
+                "name": {
+                    "description": "Resource Type",
+                    "type": "string",
+                    "example": "VMs"
+                },
+                "old_count": {
+                    "description": "Number of Resources of this Resource Type in the past - Metric",
+                    "type": "integer",
+                    "example": 90
+                },
+                "tags": {
+                    "description": "Tags",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },
