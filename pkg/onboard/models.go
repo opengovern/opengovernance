@@ -1,6 +1,7 @@
 package onboard
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,8 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/subscription/mgmt/subscription"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
@@ -105,9 +108,10 @@ type AWSConnectionMetadata struct {
 	AccountName         string              `json:"account_name"`
 	Organization        *types.Organization `json:"account_organization,omitempty"`
 	OrganizationAccount *types.Account      `json:"organization_account,omitempty"`
+	OrganizationTags    map[string]string   `json:"organization_tags,omitempty"`
 }
 
-func NewAWSConnectionMetadata(account awsAccount) AWSConnectionMetadata {
+func NewAWSConnectionMetadata(cfg aws.Config, account awsAccount) (AWSConnectionMetadata, error) {
 	metadata := AWSConnectionMetadata{
 		AccountID: account.AccountID,
 	}
@@ -116,15 +120,34 @@ func NewAWSConnectionMetadata(account awsAccount) AWSConnectionMetadata {
 	}
 	metadata.Organization = account.Organization
 	metadata.OrganizationAccount = account.Account
+	if account.Organization != nil && account.Account != nil {
+		organizationClient := organizations.NewFromConfig(cfg)
+		tags, err := organizationClient.ListTagsForResource(context.TODO(), &organizations.ListTagsForResourceInput{
+			ResourceId: account.Account.Id,
+		})
+		if err == nil {
+			return metadata, err
+		}
+		metadata.OrganizationTags = make(map[string]string)
+		for _, tag := range tags.Tags {
+			if tag.Key == nil || tag.Value == nil {
+				continue
+			}
+			metadata.OrganizationTags[*tag.Key] = *tag.Value
+		}
+	}
 
-	return metadata
+	return metadata, nil
 }
 
-func NewAWSSource(account awsAccount, description string) Source {
+func NewAWSSource(cfg aws.Config, account awsAccount, description string) Source {
 	id := uuid.New()
 	provider := source.CloudAWS
 
-	metadata := NewAWSConnectionMetadata(account)
+	metadata, err := NewAWSConnectionMetadata(cfg, account)
+	if err != nil {
+		// TODO: log error
+	}
 
 	marshalMetadata, err := json.Marshal(metadata)
 	if err != nil {
@@ -218,7 +241,7 @@ func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod sou
 	return s
 }
 
-func NewAWSConnectionWithCredentials(account awsAccount, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
+func NewAWSConnectionWithCredentials(cfg aws.Config, account awsAccount, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
 	id := uuid.New()
 
 	name := account.AccountID
@@ -226,7 +249,10 @@ func NewAWSConnectionWithCredentials(account awsAccount, creationMethod source.S
 		name = *account.AccountName
 	}
 
-	metadata := NewAWSConnectionMetadata(account)
+	metadata, err := NewAWSConnectionMetadata(cfg, account)
+	if err != nil {
+		// TODO: log error
+	}
 	jsonMetadata, err := json.Marshal(metadata)
 	if err != nil {
 		jsonMetadata = []byte("{}")
@@ -368,6 +394,7 @@ func (credential *Credential) ToAPI() api.Credential {
 		ConnectorType:       credential.ConnectorType,
 		CredentialType:      credential.CredentialType.ToApi(),
 		Enabled:             credential.Enabled,
+		AutoOnboardEnabled:  credential.AutoOnboardEnabled,
 		OnboardDate:         credential.CreatedAt,
 		LastHealthCheckTime: credential.LastHealthCheckTime,
 		HealthStatus:        credential.HealthStatus,
@@ -385,7 +412,7 @@ func (credential *Credential) ToAPI() api.Credential {
 	return apiCredential
 }
 
-func NewAzureCredential(name string, credentialType CredentialType, metadata *source.AzureCredentialMetadata) (*Credential, error) {
+func NewAzureCredential(name string, credentialType CredentialType, metadata *AzureCredentialMetadata) (*Credential, error) {
 	id := uuid.New()
 	jsonMetadata, err := json.Marshal(metadata)
 	if err != nil {
@@ -401,7 +428,7 @@ func NewAzureCredential(name string, credentialType CredentialType, metadata *so
 	}, nil
 }
 
-func NewAWSCredential(name string, metadata *source.AWSCredentialMetadata, credentialType CredentialType) (*Credential, error) {
+func NewAWSCredential(name string, metadata *AWSCredentialMetadata, credentialType CredentialType) (*Credential, error) {
 	id := uuid.New()
 	jsonMetadata, err := json.Marshal(metadata)
 	if err != nil {
@@ -415,4 +442,26 @@ func NewAWSCredential(name string, metadata *source.AWSCredentialMetadata, crede
 		CredentialType: credentialType,
 		Metadata:       jsonMetadata,
 	}, nil
+}
+
+type AWSCredentialMetadata struct {
+	AccountID                          string    `json:"account_id"`
+	IamUserName                        *string   `json:"iam_user_name"`
+	IamApiKeyCreationDate              time.Time `json:"iam_api_key_creation_date"`
+	AttachedPolicies                   []string  `json:"attached_policies"`
+	OrganizationID                     *string   `json:"organization_id"`
+	OrganizationMasterAccountEmail     *string   `json:"organization_master_account_email"`
+	OrganizationMasterAccountId        *string   `json:"organization_master_account_id"`
+	OrganizationDiscoveredAccountCount *int      `json:"organization_discovered_account_count"`
+}
+
+type AzureCredentialMetadata struct {
+	SpnName              string    `json:"spn_name"`
+	ObjectId             string    `json:"object_id"`
+	SecretId             string    `json:"secret_id"`
+	SecretExpirationDate time.Time `json:"secret_expiration_date"`
+}
+
+func (m AzureCredentialMetadata) GetExpirationDate() time.Time {
+	return m.SecretExpirationDate
 }

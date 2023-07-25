@@ -112,6 +112,9 @@ func (j Job) Do(onboardClient client.OnboardServiceClient, logger *zap.Logger) (
 		fail(fmt.Errorf("failed to get credentials list from onboard service: %w", err))
 	}
 	for _, cred := range credentials.Credentials {
+		if !cred.AutoOnboardEnabled {
+			continue
+		}
 		logger.Info("triggering auto onboard", zap.String("credential_id", cred.ID))
 		_, err := onboardClient.TriggerAutoOnboard(&httpclient.Context{
 			UserRole: api2.EditorRole,

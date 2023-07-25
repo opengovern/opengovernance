@@ -8,7 +8,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	absauth "github.com/microsoft/kiota-abstractions-go/authentication"
 	authentication "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
@@ -74,7 +73,7 @@ func currentAzureSubscription(ctx context.Context, subId string, authConfig azur
 	}, nil
 }
 
-func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubscriptionConfig) (*source.AzureCredentialMetadata, error) {
+func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubscriptionConfig) (*AzureCredentialMetadata, error) {
 	identity, err := azidentity.NewClientSecretCredential(
 		config.TenantID,
 		config.ClientID,
@@ -101,7 +100,7 @@ func getAzureCredentialsMetadata(ctx context.Context, config describe.AzureSubsc
 		return nil, err
 	}
 
-	metadata := source.AzureCredentialMetadata{
+	metadata := AzureCredentialMetadata{
 		SpnName:  *result.GetDisplayName(),
 		ObjectId: *result.GetId(),
 	}

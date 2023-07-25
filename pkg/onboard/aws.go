@@ -12,7 +12,7 @@ import (
 	keibiaws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -60,7 +60,7 @@ func currentAwsAccount(ctx context.Context, logger *zap.Logger, cfg aws.Config) 
 	}, nil
 }
 
-func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config describe.AWSAccountConfig) (*source.AWSCredentialMetadata, error) {
+func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config describe.AWSAccountConfig) (*AWSCredentialMetadata, error) {
 	creds, err := keibiaws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "", nil)
 	if err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config d
 		}
 	}
 
-	metadata := source.AWSCredentialMetadata{
+	metadata := AWSCredentialMetadata{
 		AccountID:        accID,
 		IamUserName:      user.User.UserName,
 		AttachedPolicies: policyARNs,
@@ -128,6 +128,12 @@ func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config d
 		metadata.OrganizationID = organization.Id
 		metadata.OrganizationMasterAccountEmail = organization.MasterAccountEmail
 		metadata.OrganizationMasterAccountId = organization.MasterAccountId
+		accounts, err := discoverAWSAccounts(ctx, creds)
+		if err != nil {
+			logger.Warn("failed to get accounts", zap.Error(err))
+			return nil, err
+		}
+		metadata.OrganizationDiscoveredAccountCount = utils.GetPointer(len(accounts))
 	}
 
 	return &metadata, nil
