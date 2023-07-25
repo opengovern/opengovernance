@@ -706,8 +706,8 @@ func (h HttpHandler) PostCredentials(ctx echo.Context) error {
 //	@Param			connector		query		source.Type				false	"filter by connector type"
 //	@Param			health			query		string					false	"filter by health status"	Enums(healthy, unhealthy)
 //	@Param			credentialType	query		[]api.CredentialType	false	"filter by credential type"
-//	@Param			pageSize		query		int						false	"page size"					default(50)
-//	@Param			pageNumber		query		int						false	"page number"				default(1)
+//	@Param			pageSize		query		int						false	"page size"		default(50)
+//	@Param			pageNumber		query		int						false	"page number"	default(1)
 //	@Router			/onboard/api/v1/credential [get]
 func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 	connector, _ := source.ParseType(ctx.QueryParam("connector"))
@@ -1211,8 +1211,8 @@ func (h HttpHandler) GetCredentialHealth(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		source.Type				false	"filter by connector type"
 //	@Param			credentialType	query		[]api.CredentialType	false	"filter by credential type"
-//	@Param			pageSize		query		int						false	"page size"					default(50)
-//	@Param			pageNumber		query		int						false	"page number"				default(1)
+//	@Param			pageSize		query		int						false	"page size"		default(50)
+//	@Param			pageNumber		query		int						false	"page number"	default(1)
 //	@Success		200				{object}	api.ListCredentialResponse
 //	@Router			/onboard/api/v1/credential/sources/list [get]
 func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
