@@ -341,7 +341,7 @@ type Credential struct {
 	Name               *string        `json:"name,omitempty"`
 	ConnectorType      source.Type    `gorm:"not null" json:"connectorType"`
 	Secret             string         `json:"-"`
-	CredentialType     CredentialType `gorm:"default:'auto-generated'" json:"credentialType"`
+	CredentialType     CredentialType `json:"credentialType"`
 	Enabled            bool           `gorm:"default:true" json:"enabled"`
 	AutoOnboardEnabled bool           `gorm:"default:false" json:"autoOnboardEnabled"`
 
