@@ -5052,6 +5052,61 @@ paths:
       summary: Returns top n regions of specified provider by resource count
       tags:
       - resource
+  /inventory/api/v2/analytics/composition/{key}:
+    get:
+      consumes:
+      - application/json
+      description: This API allows users to retrieve tag values with the most resources
+        for the given key.
+      parameters:
+      - description: Tag key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: How many top values to return default is 5
+        in: query
+        name: top
+        required: true
+        type: integer
+      - collectionFormat: csv
+        description: Connector types to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: timestamp for resource count in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: timestamp for resource count change comparison in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeCompositionResponse'
+      security:
+      - BearerToken: []
+      summary: List analytics composition
+      tags:
+      - analytics
   /inventory/api/v2/analytics/metric:
     get:
       consumes:
@@ -5241,7 +5296,7 @@ paths:
       - BearerToken: []
       summary: Get metric trend
       tags:
-      - inventory
+      - analytics
   /inventory/api/v2/cost/composition:
     get:
       consumes:

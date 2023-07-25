@@ -79,6 +79,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	analyticsV2.GET("/metric", httpserver.AuthorizeHandler(h.ListAnalyticsMetricsHandler, authApi.ViewerRole))
 	analyticsV2.GET("/tag", httpserver.AuthorizeHandler(h.ListAnalyticsTags, authApi.ViewerRole))
 	analyticsV2.GET("/trend", httpserver.AuthorizeHandler(h.ListAnalyticsMetricTrend, authApi.ViewerRole))
+	analyticsV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListAnalyticsComposition, authApi.ViewerRole))
 
 	servicesV2 := v2.Group("/services")
 	servicesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListServiceTags, authApi.ViewerRole))
@@ -983,7 +984,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 //
 //	@Description	This API allows users to retrieve a list of resource counts over the course of the specified time frame based on the given input filters
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
 //	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
@@ -1070,6 +1071,148 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	apiDatapoints = internal.DownSampleResourceTypeTrendDatapoints(apiDatapoints, int(datapointCount))
 
 	return ctx.JSON(http.StatusOK, apiDatapoints)
+}
+
+// ListAnalyticsComposition godoc
+//
+//	@Summary		List analytics composition
+//	@Description	This API allows users to retrieve tag values with the most resources for the given key.
+//	@Security		BearerToken
+//	@Tags			analytics
+//	@Accept			json
+//	@Produce		json
+//	@Param			key				path		string			true	"Tag key"
+//	@Param			top				query		int				true	"How many top values to return default is 5"
+//	@Param			connector		query		[]source.Type	false	"Connector types to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
+//	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
+//	@Success		200				{object}	inventoryApi.ListResourceTypeCompositionResponse
+//	@Router			/inventory/api/v2/analytics/composition/{key} [get]
+func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+
+	var err error
+	tagKey := ctx.Param("key")
+	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
+		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
+	}
+	topStr := ctx.QueryParam("top")
+	top := int64(5)
+	if topStr != "" {
+		top, err = strconv.ParseInt(topStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid top value")
+		}
+
+	}
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	if len(connectionIDs) > 20 {
+		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	}
+
+	endTime := time.Now()
+	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
+		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid endTime value")
+		}
+		endTime = time.Unix(endTimeVal, 0)
+	}
+	startTime := endTime.AddDate(0, 0, -7)
+	if startTimeStr := ctx.QueryParam("startTime"); startTimeStr != "" {
+		startTimeVal, err := strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "invalid startTime value")
+		}
+		startTime = time.Unix(startTimeVal, 0)
+	}
+
+	metrics, err := aDB.ListFilteredMetrics(map[string][]string{tagKey: nil}, nil, connectorTypes)
+	if err != nil {
+		return err
+	}
+	metricStrings := make([]string, 0, len(metrics))
+	for _, metric := range metrics {
+		metricStrings = append(metricStrings, metric.Name)
+	}
+
+	var metricIndexed map[string]int
+	if len(connectionIDs) > 0 {
+		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, endTime, metricStrings, EsFetchPageSize)
+	} else {
+		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, endTime, metricStrings, EsFetchPageSize)
+	}
+	if err != nil {
+		return err
+	}
+
+	var oldMetricIndexed map[string]int
+	if len(connectionIDs) > 0 {
+		oldMetricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, startTime, metricStrings, EsFetchPageSize)
+	} else {
+		oldMetricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, startTime, metricStrings, EsFetchPageSize)
+	}
+	if err != nil {
+		return err
+	}
+
+	type currentAndOldCount struct {
+		current int
+		old     int
+	}
+
+	valueCountMap := make(map[string]currentAndOldCount)
+	totalCount := 0
+	totalOldCount := 0
+	for _, metric := range metrics {
+		for _, tagValue := range metric.GetTagsMap()[tagKey] {
+			if _, ok := valueCountMap[tagValue]; !ok {
+				valueCountMap[tagValue] = currentAndOldCount{}
+			}
+			v := valueCountMap[tagValue]
+			v.current += metricIndexed[strings.ToLower(metric.Name)]
+			v.old += oldMetricIndexed[strings.ToLower(metric.Name)]
+			totalCount += metricIndexed[strings.ToLower(metric.Name)]
+			totalOldCount += oldMetricIndexed[strings.ToLower(metric.Name)]
+			valueCountMap[tagValue] = v
+			break
+		}
+	}
+
+	type strIntPair struct {
+		str    string
+		counts currentAndOldCount
+	}
+	valueCountPairs := make([]strIntPair, 0, len(valueCountMap))
+	for value, count := range valueCountMap {
+		valueCountPairs = append(valueCountPairs, strIntPair{str: value, counts: count})
+	}
+	sort.Slice(valueCountPairs, func(i, j int) bool {
+		return valueCountPairs[i].counts.current > valueCountPairs[j].counts.current
+	})
+
+	apiResult := inventoryApi.ListResourceTypeCompositionResponse{
+		TotalCount:      totalCount,
+		TotalValueCount: len(valueCountMap),
+		TopValues:       make(map[string]inventoryApi.CountPair),
+		Others:          inventoryApi.CountPair{},
+	}
+
+	for i, pair := range valueCountPairs {
+		if i < int(top) {
+			apiResult.TopValues[pair.str] = inventoryApi.CountPair{
+				Count:    pair.counts.current,
+				OldCount: pair.counts.old,
+			}
+		} else {
+			apiResult.Others.Count += pair.counts.current
+			apiResult.Others.OldCount += pair.counts.old
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, apiResult)
 }
 
 // GetResourceTypeMetricsHandler godoc
