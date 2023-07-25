@@ -861,7 +861,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Connection ID",
+                        "description": "Connection ID or 'all' for everything",
                         "name": "connection_id",
                         "in": "path",
                         "required": true
@@ -871,7 +871,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment"
+                            }
                         }
                     }
                 }
@@ -903,7 +906,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Connection ID",
+                        "description": "Connection ID or 'all' for everything",
                         "name": "connection_id",
                         "in": "path",
                         "required": true
@@ -11453,6 +11456,9 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential": {
             "type": "object",
             "properties": {
+                "autoOnboardEnabled": {
+                    "type": "boolean"
+                },
                 "config": {},
                 "connections": {
                     "type": "array",

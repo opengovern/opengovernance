@@ -238,8 +238,18 @@ func (db Database) GetBenchmarkAssignmentByIds(connectionId string, benchmarkId 
 	return &s, nil
 }
 
-func (db Database) DeleteBenchmarkAssignmentById(connectionId string, benchmarkId string) error {
+func (db Database) DeleteBenchmarkAssignmentByIds(connectionId string, benchmarkId string) error {
 	tx := db.Orm.Unscoped().Where(BenchmarkAssignment{BenchmarkId: benchmarkId, ConnectionId: connectionId}).Delete(&BenchmarkAssignment{})
+
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) DeleteBenchmarkAssignmentByBenchmarkId(benchmarkId string) error {
+	tx := db.Orm.Unscoped().Where(BenchmarkAssignment{BenchmarkId: benchmarkId}).Delete(&BenchmarkAssignment{})
 
 	if tx.Error != nil {
 		return tx.Error
