@@ -942,6 +942,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	}
 
 	aDB := analyticsDB.NewDatabase(h.db.orm)
+	fmt.Println("connectorTypes", connectorTypes)
 	tags, err := aDB.ListMetricTagsKeysWithPossibleValues(connectorTypes)
 	if err != nil {
 		return err
@@ -950,14 +951,17 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 
 	var metricCount map[string]int
 	if len(connectionIDs) > 0 {
+		fmt.Println("FetchConnectionAnalyticMetricCountAtTime", connectorTypes, connectionIDs, endTime)
 		metricCount, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, endTime, nil, EsFetchPageSize)
 	} else {
+		fmt.Println("FetchConnectorAnalyticMetricCountAtTime", connectorTypes, endTime)
 		metricCount, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, endTime, nil, EsFetchPageSize)
 	}
 	if err != nil {
 		return err
 	}
 
+	fmt.Println("tags", tags)
 	filteredTags := map[string][]string{}
 	for key, values := range tags {
 		for _, tagValue := range values {
@@ -974,6 +978,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 		}
 	}
 	tags = filteredTags
+	fmt.Println("filteredTags", filteredTags)
 
 	return ctx.JSON(http.StatusOK, tags)
 }
