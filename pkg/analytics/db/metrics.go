@@ -9,7 +9,7 @@ import (
 
 type MetricTag struct {
 	model.Tag
-	Name string `gorm:"primaryKey; type:citext"`
+	ID string `gorm:"primaryKey; type:citext"`
 }
 
 type AnalyticMetric struct {
@@ -17,7 +17,7 @@ type AnalyticMetric struct {
 	Connectors pq.StringArray `gorm:"type:text[]"`
 	Name       string
 	Query      string
-	Tags       []MetricTag         `gorm:"foreignKey:Name;references:Name;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Tags       []MetricTag         `gorm:"foreignKey:ID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	tagsMap    map[string][]string `gorm:"-:all"`
 }
 
