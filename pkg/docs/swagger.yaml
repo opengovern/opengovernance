@@ -2396,6 +2396,10 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTag:
     properties:
+      absent_resource_types:
+        items:
+          type: string
+        type: array
       key:
         example: environment
         type: string
@@ -6701,7 +6705,6 @@ paths:
           - Azure
           type: string
         name: connector
-        required: true
         type: array
       - collectionFormat: csv
         description: Connection IDs

@@ -2503,7 +2503,7 @@ func (h HttpHandler) CountConnections(ctx echo.Context) error {
 //	@Tags			connections
 //	@Accept			json
 //	@Produce		json
-//	@Param			connector		query		[]source.Type	true	"Connector"
+//	@Param			connector		query		[]source.Type	false	"Connector"
 //	@Param			connectionId	query		[]string		false	"Connection IDs"
 //	@Param			lifecycleState	query		string			false	"lifecycle state filter"
 //	@Param			pageSize		query		int				false	"page size - default is 20"

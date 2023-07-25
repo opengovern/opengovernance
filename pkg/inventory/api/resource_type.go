@@ -35,8 +35,9 @@ type ResourceTypeTagValue struct {
 }
 
 type ResourceTypeTag struct {
-	Key    string                 `json:"key" example:"environment"`
-	Values []ResourceTypeTagValue `json:"values"`
+	Key                 string                 `json:"key" example:"environment"`
+	Values              []ResourceTypeTagValue `json:"values"`
+	AbsentResourceTypes []string               `json:"absent_resource_types,omitempty"`
 }
 
 type ListResourceTypeTagsMetadataResponse struct {
