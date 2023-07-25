@@ -5,12 +5,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/utils"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
 
@@ -108,7 +106,7 @@ func (j Job) Do(onboardClient client.OnboardServiceClient, logger *zap.Logger) (
 	logger.Info("starting auto onboard")
 	credentials, err := onboardClient.ListCredentials(&httpclient.Context{
 		UserRole: api2.EditorRole,
-	}, nil, utils.GetPointer(source.CredentialTypeManual), utils.GetPointer("healthy"), 10000, 1)
+	}, nil, nil, utils.GetPointer("healthy"), 10000, 1)
 	if err != nil {
 		logger.Error("failed to get credentials list from onboard service", zap.Error(err))
 		fail(fmt.Errorf("failed to get credentials list from onboard service: %w", err))

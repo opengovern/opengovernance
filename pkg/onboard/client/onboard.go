@@ -30,7 +30,7 @@ type OnboardServiceClient interface {
 	GetSourceHealthcheck(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
 	SetConnectionLifecycleState(ctx *httpclient.Context, connectionId string, state api.ConnectionLifecycleState) (*api.Connection, error)
 	GetSourcesByAccount(ctx *httpclient.Context, accountID string) (api.Connection, error)
-	ListCredentials(ctx *httpclient.Context, connector []source.Type, credentialType *source.CredentialType, health *string, pageSize, pageNumber int) (api.ListCredentialResponse, error)
+	ListCredentials(ctx *httpclient.Context, connector []source.Type, credentialType *api.CredentialType, health *string, pageSize, pageNumber int) (api.ListCredentialResponse, error)
 	TriggerAutoOnboard(ctx *httpclient.Context, credentialId string) ([]api.Connection, error)
 }
 
@@ -279,7 +279,7 @@ func (s *onboardClient) GetSourcesByAccount(ctx *httpclient.Context, connectionI
 }
 
 // api/v1/credential [get]
-func (s *onboardClient) ListCredentials(ctx *httpclient.Context, connector []source.Type, credentialType *source.CredentialType, health *string, pageSize, pageNumber int) (api.ListCredentialResponse, error) {
+func (s *onboardClient) ListCredentials(ctx *httpclient.Context, connector []source.Type, credentialType *api.CredentialType, health *string, pageSize, pageNumber int) (api.ListCredentialResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/credential", s.baseURL)
 
 	firstParamAttached := false

@@ -303,7 +303,7 @@ func (db Database) CountSourcesWithFilters(query string, args ...interface{}) (i
 	return count, nil
 }
 
-func (db Database) GetCredentialsByFilters(connector source.Type, health source.HealthStatus, credentialType source.CredentialType) ([]Credential, error) {
+func (db Database) GetCredentialsByFilters(connector source.Type, health source.HealthStatus, credentialType []CredentialType) ([]Credential, error) {
 	var creds []Credential
 	tx := db.orm.Model(&Credential{})
 	if connector != source.Nil {
@@ -312,8 +312,8 @@ func (db Database) GetCredentialsByFilters(connector source.Type, health source.
 	if health != source.HealthStatusNil {
 		tx = tx.Where("health_status = ?", health)
 	}
-	if credentialType != "" {
-		tx = tx.Where("credential_type = ?", credentialType)
+	if len(credentialType) > 0 {
+		tx = tx.Where("credential_type IN ?", credentialType)
 	}
 	tx = tx.Find(&creds)
 	if tx.Error != nil {
@@ -331,6 +331,15 @@ func (db Database) GetCredentialByID(id uuid.UUID) (*Credential, error) {
 		return nil, gorm.ErrRecordNotFound
 	}
 	return &cred, nil
+}
+
+func (db Database) CountConnectionsByCredential(credentialId string) (int, error) {
+	var count int64
+	tx := db.orm.Model(&Source{}).Where("credential_id = ?", credentialId).Count(&count)
+	if tx.Error != nil {
+		return 0, tx.Error
+	}
+	return int(count), nil
 }
 
 func (db Database) UpdateCredential(creds *Credential) (*Credential, error) {
