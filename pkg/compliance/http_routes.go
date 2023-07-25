@@ -626,7 +626,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 
 	connections := make([]onboardApi.Connection, 0)
 	if strings.ToLower(connectionID) == "all" {
-		srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), nil)
+		srcs, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
 		if err != nil {
 			return err
 		}
