@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
+	"strconv"
+	"time"
+
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es"
 	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"math"
-	"strconv"
-	"time"
 )
 
 type FetchConnectionAnalyticMetricCountAtTimeResponse struct {
@@ -233,6 +234,8 @@ type ConnectionMetricTrendSummaryQueryResponse struct {
 func FetchConnectionMetricTrendSummaryPage(client keibi.Client, connectionIDs, metricNames []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
 	res := make(map[string]any)
 	var filters []any
+	startTime = startTime.Round(time.Hour * 24)
+	endTime = endTime.Round(time.Hour * 24)
 
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.MetricTrendConnectionSummary)}},
@@ -347,6 +350,8 @@ type ConnectorMetricTrendSummaryQueryResponse struct {
 func FetchConnectorMetricTrendSummaryPage(client keibi.Client, connectors []source.Type, metricNames []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
 	res := make(map[string]any)
 	var filters []any
+	startTime = startTime.Round(time.Hour * 24)
+	endTime = endTime.Round(time.Hour * 24)
 
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.MetricTrendConnectorSummary)}},

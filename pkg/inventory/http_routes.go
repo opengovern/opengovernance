@@ -1044,7 +1044,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	}
 
 	timeToCountMap := make(map[int]int)
-	esDatapointCount := int(math.Ceil(endTime.Sub(startTime).Hours() / 24))
+	esDatapointCount := int(math.Floor(endTime.Sub(startTime).Hours() / 24))
 	if esDatapointCount == 0 {
 		esDatapointCount = 1
 	}
@@ -1330,7 +1330,7 @@ func (h *HttpHandler) ListResourceTypeTrend(ctx echo.Context) error {
 	}
 
 	timeToCountMap := make(map[int]int)
-	esDatapointCount := int(math.Ceil(endTime.Sub(startTime).Hours() / 24))
+	esDatapointCount := int(math.Floor(endTime.Sub(startTime).Hours() / 24))
 	if esDatapointCount == 0 {
 		esDatapointCount = 1
 	}
