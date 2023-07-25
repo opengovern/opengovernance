@@ -21,6 +21,18 @@ type AnalyticMetric struct {
 	tagsMap    map[string][]string `gorm:"-:all"`
 }
 
+func (m *AnalyticMetric) GetTagsMap() map[string][]string {
+	if m.tagsMap != nil {
+		return m.tagsMap
+	}
+
+	m.tagsMap = map[string][]string{}
+	for _, tag := range m.Tags {
+		m.tagsMap[tag.GetKey()] = tag.GetValue()
+	}
+	return m.tagsMap
+}
+
 func (db Database) ListMetrics() ([]AnalyticMetric, error) {
 	var s []AnalyticMetric
 	tx := db.orm.Find(&s)
@@ -62,7 +74,9 @@ func (db Database) ListMetricTagsKeysWithPossibleValues(connectorTypes []source.
 	var tags []MetricTag
 	tx := db.orm.Model(MetricTag{}).Joins("JOIN analytic_metrics ON metric_tags.id = analytic_metrics.id")
 	if len(connectorTypes) > 0 {
-		tx = tx.Where("analytic_metrics.connectors in ?", connectorTypes)
+		for _, ct := range connectorTypes {
+			tx = tx.Where("? IN analytic_metrics.connectors", ct)
+		}
 	}
 	tx.Find(&tags)
 	if tx.Error != nil {
