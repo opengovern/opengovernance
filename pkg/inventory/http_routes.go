@@ -715,7 +715,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(metrics []string, tagMap map[string][
 //	@Param			sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count,growth,growth_rate)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
-//	@Success		200				{object}	inventoryApi.ListResourceTypeMetricsResponse
+//	@Success		200				{object}	inventoryApi.ListMetricsResponse
 //	@Router			/inventory/api/v2/analytics/metric [get]
 func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	var err error
