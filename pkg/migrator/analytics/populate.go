@@ -61,6 +61,13 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 				logger.Error("failure in insert", zap.Error(err))
 				return err
 			}
+
+			for _, t := range dbMetric.Tags {
+				err = dbc.Model(&analyticsDB.MetricTag{}).Clauses(clause.OnConflict{
+					Columns:   []clause.Column{{Name: "key"}, {Name: "name"}}, // key column
+					DoUpdates: clause.AssignmentColumns([]string{"value"}),    // column needed to be updated
+				}).Create(t).Error
+			}
 		}
 		return nil
 	})
