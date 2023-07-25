@@ -16,14 +16,9 @@ import (
 	"strings"
 	"time"
 
-	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	"github.com/labstack/echo/v4"
-	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	"go.uber.org/zap"
-	"gorm.io/gorm"
-
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
+	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
@@ -38,6 +33,10 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"github.com/labstack/echo/v4"
+	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 const EsFetchPageSize = 10000
@@ -4035,6 +4034,7 @@ func (h *HttpHandler) GetResourceTypeTagsMetadata(ctx echo.Context) error {
 	key := ctx.Param("key")
 
 	resourceTypeTagsMetadata := inventoryApi.ResourceTypeTag{}
+	presentResourceTypes := make(map[string]bool)
 
 	for _, resourceType := range resourceTypes {
 		tags := model.TrimPrivateTags(resourceType.GetTagsMap())
@@ -4045,6 +4045,7 @@ func (h *HttpHandler) GetResourceTypeTagsMetadata(ctx echo.Context) error {
 				if tagValue == value.Value {
 					found = true
 					resourceTypeTagsMetadata.Values[i].ResourceTypes = append(resourceTypeTagsMetadata.Values[i].ResourceTypes, resourceType.ResourceType)
+					presentResourceTypes[resourceType.ResourceType] = true
 					break
 				}
 			}
@@ -4053,7 +4054,14 @@ func (h *HttpHandler) GetResourceTypeTagsMetadata(ctx echo.Context) error {
 					Value:         tagValue,
 					ResourceTypes: []string{resourceType.ResourceType},
 				})
+				presentResourceTypes[resourceType.ResourceType] = true
 			}
+		}
+	}
+
+	for _, resourceType := range resourceTypes {
+		if isPresent, ok := presentResourceTypes[resourceType.ResourceType]; !ok || !isPresent {
+			resourceTypeTagsMetadata.AbsentResourceTypes = append(resourceTypeTagsMetadata.AbsentResourceTypes, resourceType.ResourceType)
 		}
 	}
 

@@ -4887,8 +4887,7 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Connector",
                         "name": "connector",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "array",
@@ -10803,6 +10802,12 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTag": {
             "type": "object",
             "properties": {
+                "absent_resource_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "key": {
                     "type": "string",
                     "example": "environment"
