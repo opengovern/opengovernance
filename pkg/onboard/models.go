@@ -148,7 +148,7 @@ func NewAWSConnectionMetadata(logger *zap.Logger, cfg describe.AWSAccountConfig,
 			orgAccount, err := organizationClient.DescribeAccount(context.TODO(), &organizations.DescribeAccountInput{
 				AccountId: &metadata.AccountID,
 			})
-			if err == nil {
+			if err != nil {
 				return metadata, err
 			}
 			metadata.OrganizationAccount = orgAccount.Account
