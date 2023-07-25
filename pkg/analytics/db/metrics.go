@@ -17,7 +17,7 @@ type AnalyticMetric struct {
 	Connectors pq.StringArray `gorm:"type:text[]"`
 	Name       string
 	Query      string
-	Tags       []MetricTag         `gorm:"foreignKey:Name;references:Name;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Tags       []MetricTag         `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	tagsMap    map[string][]string `gorm:"-:all"`
 }
 
