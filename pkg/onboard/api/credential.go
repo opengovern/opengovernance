@@ -22,7 +22,7 @@ type UpdateCredentialRequest struct {
 }
 
 type ListCredentialResponse struct {
-	TotalCredentialCount int          `json:"totalCredentialCount"`
+	TotalCredentialCount int          `json:"totalCredentialCount" example:"5" minimum:"0"`
 	Credentials          []Credential `json:"credentials"`
 }
 
@@ -36,25 +36,25 @@ const (
 )
 
 type Credential struct {
-	ID                 string         `json:"id"`
-	Name               *string        `json:"name,omitempty"`
-	ConnectorType      source.Type    `json:"connectorType"`
-	CredentialType     CredentialType `json:"credentialType"`
-	Enabled            bool           `json:"enabled"`
-	AutoOnboardEnabled bool           `json:"autoOnboardEnabled"`
-	OnboardDate        time.Time      `json:"onboardDate"`
+	ID                 string         `json:"id" example:"1028642a-b22e-26ha-c5h2-22nl254678m5"`
+	Name               *string        `json:"name,omitempty" example:"a-1mahsl7lzk"`
+	ConnectorType      source.Type    `json:"connectorType" example:"AWS"`
+	CredentialType     CredentialType `json:"credentialType" example:"manual-aws-org"`
+	Enabled            bool           `json:"enabled" example:"true"`
+	AutoOnboardEnabled bool           `json:"autoOnboardEnabled" example:"false"`
+	OnboardDate        time.Time      `json:"onboardDate" format:"date-time" example:"2023-06-03T12:21:33.406928Z"`
 
 	Config any `json:"config"`
 
-	LastHealthCheckTime time.Time           `json:"lastHealthCheckTime"`
-	HealthStatus        source.HealthStatus `json:"healthStatus"`
-	HealthReason        *string             `json:"healthReason,omitempty"`
+	LastHealthCheckTime time.Time           `json:"lastHealthCheckTime" format:"date-time" example:"2023-06-03T12:21:33.406928Z"`
+	HealthStatus        source.HealthStatus `json:"healthStatus" example:"healthy"`
+	HealthReason        *string             `json:"healthReason,omitempty" example:""`
 
-	Metadata map[string]any `json:"metadata,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty" swaggertype:"object" example:"{account_id: 196427215431,attached_policies: [],iam_api_key_creation_date: 2023-06-03T10:26:08Z, iam_user_name: gbs-aes-inventory-scripts, organization_discovered_account_count: 420, organization_id: a-1mahsl7lzk, organization_master_account_email: asghar@taraghe.com, organization_master_account_id: 196427215431}"`
 
 	Connections []Connection `json:"connections,omitempty"`
 
-	TotalConnections     *int `json:"total_connections"`
-	EnabledConnections   *int `json:"enabled_connections"`
-	UnhealthyConnections *int `json:"unhealthy_connections"`
+	TotalConnections     *int `json:"total_connections" example:"300" minimum:"0"`
+	EnabledConnections   *int `json:"enabled_connections" example:"250" minimum:"0"`
+	UnhealthyConnections *int `json:"unhealthy_connections" example:"50" minimum:"0"`
 }
