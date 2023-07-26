@@ -811,7 +811,7 @@ definitions:
     properties:
       assignedAt:
         description: Unix timestamp
-        type: string
+        type: integer
       benchmarkId:
         description: Benchmark ID
         example: azure_cis_v140
@@ -2020,19 +2020,6 @@ definitions:
         minimum: 0
         type: integer
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListMetricsResponse:
-    properties:
-      metrics:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Metric'
-        type: array
-      total_count:
-        type: integer
-      total_metrics:
-        type: integer
-      total_old_count:
-        type: integer
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest:
     properties:
       connectorsFilter:
@@ -2175,35 +2162,6 @@ definitions:
         example: 50
         minimum: 0
         type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Metric:
-    properties:
-      connectors:
-        description: Cloud Provider
-        example:
-        - '[Azure]'
-        items:
-          $ref: '#/definitions/source.Type'
-        type: array
-      count:
-        description: Number of Resources of this Resource Type - Metric
-        example: 100
-        type: integer
-      name:
-        description: Resource Type
-        example: VMs
-        type: string
-      old_count:
-        description: Number of Resources of this Resource Type in the past - Metric
-        example: 90
-        type: integer
-      tags:
-        additionalProperties:
-          items:
-            type: string
-          type: array
-        description: Tags
-        type: object
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Page:
     properties:
@@ -2429,10 +2387,6 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceTypeTag:
     properties:
-      absent_resource_types:
-        items:
-          type: string
-        type: array
       key:
         example: environment
         type: string
@@ -5164,61 +5118,6 @@ paths:
       summary: Returns top n regions of specified provider by resource count
       tags:
       - resource
-  /inventory/api/v2/analytics/composition/{key}:
-    get:
-      consumes:
-      - application/json
-      description: This API allows users to retrieve tag values with the most resources
-        for the given key.
-      parameters:
-      - description: Tag key
-        in: path
-        name: key
-        required: true
-        type: string
-      - description: How many top values to return default is 5
-        in: query
-        name: top
-        required: true
-        type: integer
-      - collectionFormat: csv
-        description: Connector types to filter by
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
-        type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - description: timestamp for resource count in epoch seconds
-        in: query
-        name: endTime
-        type: string
-      - description: timestamp for resource count change comparison in epoch seconds
-        in: query
-        name: startTime
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeCompositionResponse'
-      security:
-      - BearerToken: []
-      summary: List analytics composition
-      tags:
-      - analytics
   /inventory/api/v2/analytics/metric:
     get:
       consumes:
@@ -5293,7 +5192,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListMetricsResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListResourceTypeMetricsResponse'
       security:
       - BearerToken: []
       summary: List analytics metrics
@@ -5408,7 +5307,7 @@ paths:
       - BearerToken: []
       summary: Get metric trend
       tags:
-      - analytics
+      - inventory
   /inventory/api/v2/cost/composition:
     get:
       consumes:
@@ -6793,6 +6692,7 @@ paths:
           - Azure
           type: string
         name: connector
+        required: true
         type: array
       - collectionFormat: csv
         description: Connection IDs
