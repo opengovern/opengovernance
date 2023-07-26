@@ -120,14 +120,19 @@ type FetchConnectorAnalyticMetricCountAtTimeResponse struct {
 	Aggregations struct {
 		MetricGroup struct {
 			Buckets []struct {
-				Key    string `json:"key"`
-				Latest struct {
-					Hits struct {
-						Hits []struct {
-							Source es.ConnectorMetricTrendSummary `json:"_source"`
-						} `json:"hits"`
-					} `json:"hits"`
-				} `json:"latest"`
+				Key            string `json:"key"`
+				ConnectorGroup struct {
+					Buckets []struct {
+						Key    string `json:"key"`
+						Latest struct {
+							Hits struct {
+								Hits []struct {
+									Source es.ConnectionMetricTrendSummary `json:"_source"`
+								} `json:"hits"`
+							} `json:"hits"`
+						} `json:"latest"`
+					} `json:"buckets"`
+				} `json:"connector_group"`
 			} `json:"buckets"`
 		} `json:"metric_group"`
 	} `json:"aggregations"`
@@ -174,11 +179,19 @@ func FetchConnectorAnalyticMetricCountAtTime(client keibi.Client, connectors []s
 				"size":  size,
 			},
 			"aggs": map[string]any{
-				"latest": map[string]any{
-					"top_hits": map[string]any{
-						"size": 1,
-						"sort": map[string]string{
-							"evaluated_at": "desc",
+				"connector_group": map[string]any{
+					"terms": map[string]any{
+						"field": "connector",
+						"size":  size,
+					},
+					"aggs": map[string]any{
+						"latest": map[string]any{
+							"top_hits": map[string]any{
+								"size": 1,
+								"sort": map[string]string{
+									"evaluated_at": "desc",
+								},
+							},
 						},
 					},
 				},
@@ -202,8 +215,10 @@ func FetchConnectorAnalyticMetricCountAtTime(client keibi.Client, connectors []s
 
 	result := make(map[string]int)
 	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
-		for _, hit := range metricBucket.Latest.Hits.Hits {
-			result[hit.Source.MetricID] += hit.Source.ResourceCount
+		for _, connector := range metricBucket.ConnectorGroup.Buckets {
+			for _, hit := range connector.Latest.Hits.Hits {
+				result[hit.Source.MetricID] += hit.Source.ResourceCount
+			}
 		}
 	}
 	return result, nil
@@ -329,20 +344,25 @@ type ConnectorMetricTrendSummaryQueryResponse struct {
 	Aggregations struct {
 		MetricGroup struct {
 			Buckets []struct {
-				Key                   string `json:"key"`
-				EvaluatedAtRangeGroup struct {
+				Key            string `json:"key"`
+				ConnectorGroup struct {
 					Buckets []struct {
-						From   float64 `json:"from"`
-						To     float64 `json:"to"`
-						Latest struct {
-							Hits struct {
-								Hits []struct {
-									Source es.ConnectionMetricTrendSummary `json:"_source"`
-								} `json:"hits"`
-							} `json:"hits"`
-						} `json:"latest"`
+						Key                   string `json:"key"`
+						EvaluatedAtRangeGroup struct {
+							Buckets []struct {
+								From   float64 `json:"from"`
+								To     float64 `json:"to"`
+								Latest struct {
+									Hits struct {
+										Hits []struct {
+											Source es.ConnectionMetricTrendSummary `json:"_source"`
+										} `json:"hits"`
+									} `json:"hits"`
+								} `json:"latest"`
+							} `json:"buckets"`
+						} `json:"evaluated_at_range_group"`
 					} `json:"buckets"`
-				} `json:"evaluated_at_range_group"`
+				} `json:"connector_group"`
 			} `json:"buckets"`
 		} `json:"metric_group"`
 	} `json:"aggregations"`
@@ -404,17 +424,25 @@ func FetchConnectorMetricTrendSummaryPage(client keibi.Client, connectors []sour
 				"size":  size,
 			},
 			"aggs": map[string]any{
-				"evaluated_at_range_group": map[string]any{
-					"range": map[string]any{
-						"field":  "evaluated_at",
-						"ranges": ranges,
+				"connector_group": map[string]any{
+					"terms": map[string]any{
+						"field": "connector",
+						"size":  size,
 					},
 					"aggs": map[string]any{
-						"latest": map[string]any{
-							"top_hits": map[string]any{
-								"size": 1,
-								"sort": map[string]string{
-									"evaluated_at": "desc",
+						"evaluated_at_range_group": map[string]any{
+							"range": map[string]any{
+								"field":  "evaluated_at",
+								"ranges": ranges,
+							},
+							"aggs": map[string]any{
+								"latest": map[string]any{
+									"top_hits": map[string]any{
+										"size": 1,
+										"sort": map[string]string{
+											"evaluated_at": "desc",
+										},
+									},
 								},
 							},
 						},
@@ -439,10 +467,12 @@ func FetchConnectorMetricTrendSummaryPage(client keibi.Client, connectors []sour
 
 	hits := make(map[int]int)
 	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
-		for _, evaluatedAtRangeBucket := range metricBucket.EvaluatedAtRangeGroup.Buckets {
-			rangeKey := int((evaluatedAtRangeBucket.From + evaluatedAtRangeBucket.To) / 2)
-			for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
-				hits[rangeKey] += hit.Source.ResourceCount
+		for _, connector := range metricBucket.ConnectorGroup.Buckets {
+			for _, evaluatedAtRangeBucket := range connector.EvaluatedAtRangeGroup.Buckets {
+				rangeKey := int((evaluatedAtRangeBucket.From + evaluatedAtRangeBucket.To) / 2)
+				for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
+					hits[rangeKey] += hit.Source.ResourceCount
+				}
 			}
 		}
 	}
