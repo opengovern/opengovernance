@@ -1,20 +1,19 @@
 package analytics
 
 import (
-	"errors"
 	"fmt"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	es2 "github.com/kaytu-io/kaytu-engine/pkg/analytics/es"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
 	"reflect"
-	"strings"
 	"time"
 )
 
@@ -71,55 +70,53 @@ func (j *Job) Run(
 		return err
 	}
 
-	srcs, err := onboardClient.ListSources(&httpclient.Context{
-		UserRole: api.AdminRole,
-	}, nil)
-	if err != nil {
-		return err
-	}
+	connectionCache := map[string]api.Connection{}
 
 	for _, metric := range metrics {
 		providerResultMap := map[string]es2.ConnectorMetricTrendSummary{}
+		regionResultMap := map[string]es2.RegionMetricTrendSummary{}
 
-		for _, src := range srcs {
-			supportsConnector := false
-			for _, connector := range metric.Connectors {
-				if src.Connector.String() == connector {
-					supportsConnector = true
+		res, err := steampipeDB.QueryAll(metric.Query)
+		if err != nil {
+			return err
+		}
+
+		for _, record := range res.Data {
+			if len(record) != 3 {
+				return fmt.Errorf("invalid query: %s", metric.Query)
+			}
+
+			sourceID, ok := record[0].(string)
+			if !ok {
+				return fmt.Errorf("invalid format for sourceID: [%s] %v", reflect.TypeOf(record[0]), record[0])
+			}
+			region, ok := record[1].(string)
+			if !ok {
+				return fmt.Errorf("invalid format for region: [%s] %v", reflect.TypeOf(record[1]), record[1])
+			}
+			count, ok := record[2].(int64)
+			if !ok {
+				return fmt.Errorf("invalid format for count: [%s] %v", reflect.TypeOf(record[2]), record[2])
+			}
+
+			var conn *api.Connection
+			if cached, ok := connectionCache[sourceID]; ok {
+				conn = &cached
+			} else {
+				conn, err = onboardClient.GetSource(&httpclient.Context{UserRole: api2.AdminRole}, sourceID)
+				if err != nil {
+					return err
 				}
 			}
 
-			if !supportsConnector {
-				continue
-			}
-
-			query := metric.Query
-			query = strings.ReplaceAll(query, "${ACCOUNT_ID}", src.ConnectionID)
-			query = strings.ReplaceAll(query, "${CONNECTION_ID}", src.ID.String())
-
-			fmt.Println(query)
-			var count int64
-			res, err := steampipeDB.QueryAll(query)
-			if err != nil {
-				return err
-			}
-			if len(res.Data) == 0 {
-				return errors.New("empty result")
-			}
-			if len(res.Data[0]) == 0 {
-				return errors.New("empty row")
-			}
-			value := res.Data[0][0]
-			if v, ok := value.(int64); ok {
-				count = v
-			} else {
-				return fmt.Errorf("value is %s", reflect.TypeOf(value).Name())
+			if conn == nil {
+				return fmt.Errorf("connection not found: %s", sourceID)
 			}
 
 			var msgs []kafka.Doc
 			msgs = append(msgs, es2.ConnectionMetricTrendSummary{
-				ConnectionID:  src.ID,
-				Connector:     src.Connector,
+				ConnectionID:  conn.ID,
+				Connector:     conn.Connector,
 				MetricID:      metric.ID,
 				ResourceCount: int(count),
 				EvaluatedAt:   startTime.UnixMilli(),
@@ -129,22 +126,44 @@ func (j *Job) Run(
 				return err
 			}
 
-			if v, ok := providerResultMap[src.Connector.String()]; ok {
+			if v, ok := providerResultMap[conn.Connector.String()]; ok {
 				v.ResourceCount += int(count)
-				providerResultMap[src.Connector.String()] = v
+				providerResultMap[conn.Connector.String()] = v
 			} else {
 				vn := es2.ConnectorMetricTrendSummary{
-					Connector:     src.Connector,
+					Connector:     conn.Connector,
 					EvaluatedAt:   startTime.UnixMilli(),
 					MetricID:      metric.ID,
 					ResourceCount: int(count),
 					ReportType:    es.MetricTrendConnectorSummary,
 				}
-				providerResultMap[src.Connector.String()] = vn
+				providerResultMap[conn.Connector.String()] = vn
+			}
+
+			if v, ok := regionResultMap[region]; ok {
+				v.ResourceCount += int(count)
+				regionResultMap[region] = v
+			} else {
+				vn := es2.RegionMetricTrendSummary{
+					Region:        region,
+					EvaluatedAt:   startTime.UnixMilli(),
+					MetricID:      metric.ID,
+					ResourceCount: int(count),
+					ReportType:    es.MetricTrendConnectorSummary,
+				}
+				regionResultMap[region] = vn
 			}
 		}
 
 		for _, res := range providerResultMap {
+			var msgs []kafka.Doc
+			msgs = append(msgs, res)
+			if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger); err != nil {
+				return err
+			}
+		}
+
+		for _, res := range regionResultMap {
 			var msgs []kafka.Doc
 			msgs = append(msgs, res)
 			if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger); err != nil {

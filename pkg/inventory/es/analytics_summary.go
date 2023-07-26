@@ -204,7 +204,6 @@ func FetchConnectorAnalyticMetricCountAtTime(client keibi.Client, connectors []s
 	}
 
 	query := string(b)
-	fmt.Println("FetchConnectorAnalyticMetricCountAtTime query = ", query)
 
 	var response FetchConnectorAnalyticMetricCountAtTimeResponse
 	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
@@ -318,7 +317,7 @@ func FetchConnectionMetricTrendSummaryPage(client keibi.Client, connectionIDs, m
 			return nil, err
 		}
 		query := string(b)
-		fmt.Println("query=", query, "index=", summarizer.ConnectionSummaryIndex)
+
 		var response ConnectionMetricTrendSummaryQueryResponse
 		err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
 		if err != nil {
@@ -453,7 +452,7 @@ func FetchConnectorMetricTrendSummaryPage(client keibi.Client, connectors []sour
 	}
 
 	query := string(b)
-	fmt.Println("query=", query, "index=", summarizer.ProviderSummaryIndex)
+
 	var response ConnectorMetricTrendSummaryQueryResponse
 	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
 	if err != nil {
