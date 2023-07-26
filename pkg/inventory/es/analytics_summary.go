@@ -478,3 +478,112 @@ func FetchConnectorMetricTrendSummaryPage(client keibi.Client, connectors []sour
 
 	return hits, nil
 }
+
+type RegionSummaryQueryResponse struct {
+	Aggregations struct {
+		ConnectionIDGroup struct {
+			Buckets []struct {
+				Key         string `json:"key"`
+				RegionGroup struct {
+					Buckets []struct {
+						Key    string `json:"key"`
+						Latest struct {
+							Hits struct {
+								Hits []struct {
+									Source es.RegionMetricTrendSummary `json:"_source"`
+								} `json:"hits"`
+							} `json:"hits"`
+						} `json:"latest"`
+					} `json:"buckets"`
+				} `json:"region_group"`
+			} `json:"buckets"`
+		} `json:"connection_id_group"`
+	} `json:"aggregations"`
+}
+
+func FetchRegionSummaryPage(client keibi.Client, connectors []source.Type, connectionIDs []string, sort []map[string]any, timeAt time.Time, size int) (map[string]int, error) {
+	res := make(map[string]any)
+
+	var filters []any
+	filters = append(filters, map[string]any{
+		"terms": map[string][]string{"report_type": {string(summarizer.MetricTrendRegionSummary)}},
+	})
+	if len(connectors) > 0 {
+		connectorStr := make([]string, 0, len(connectors))
+		for _, connector := range connectors {
+			connectorStr = append(connectorStr, connector.String())
+		}
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"connector": connectorStr},
+		})
+	}
+	if len(connectionIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"connection_id": connectionIDs},
+		})
+	}
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"evaluated_at": map[string]any{
+				"lte": timeAt.Unix(),
+			},
+		},
+	})
+	res["size"] = 0
+	if sort != nil {
+		res["sort"] = sort
+	}
+	res["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	res["aggs"] = map[string]any{
+		"connection_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "connection_id",
+				"size":  size,
+			},
+			"aggs": map[string]any{
+				"region_group": map[string]any{
+					"terms": map[string]any{
+						"field": "region",
+						"size":  size,
+					},
+					"aggs": map[string]any{
+						"latest": map[string]any{
+							"top_hits": map[string]any{
+								"size": 1,
+								"sort": map[string]string{
+									"evaluated_at": "desc",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+	query := string(b)
+
+	var response RegionSummaryQueryResponse
+	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	hits := make(map[string]int)
+	for _, connectionIdBucket := range response.Aggregations.ConnectionIDGroup.Buckets {
+		for _, regionBucket := range connectionIdBucket.RegionGroup.Buckets {
+			for _, hit := range regionBucket.Latest.Hits.Hits {
+				hits[hit.Source.Region] += hit.Source.ResourceCount
+			}
+		}
+	}
+	return hits, nil
+}
