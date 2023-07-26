@@ -9,7 +9,7 @@ import (
 type ConnectorMetricTrendSummary struct {
 	Connector     source.Type           `json:"connector"`
 	EvaluatedAt   int64                 `json:"evaluated_at"`
-	MetricName    string                `json:"metric_name"`
+	MetricID      string                `json:"metric_id"`
 	ResourceCount int                   `json:"resource_count"`
 	ReportType    es.ProviderReportType `json:"report_type"`
 }
@@ -17,7 +17,7 @@ type ConnectorMetricTrendSummary struct {
 func (r ConnectorMetricTrendSummary) KeysAndIndex() ([]string, string) {
 	keys := []string{
 		r.Connector.String(),
-		r.MetricName,
+		r.MetricID,
 		strconv.FormatInt(r.EvaluatedAt, 10),
 		string(es.MetricTrendConnectorSummary),
 	}

@@ -7,6 +7,7 @@ import (
 )
 
 type Metric struct {
+	ID         string              `json:"id" example:"vms"`
 	Connectors []source.Type       `json:"connectors" example:"[Azure]"` // Cloud Provider
 	Name       string              `json:"name" example:"VMs"`           // Resource Type
 	Tags       map[string][]string `json:"tags,omitempty"`               // Tags
@@ -17,6 +18,7 @@ type Metric struct {
 
 func MetricToAPI(metric analyticsDB.AnalyticMetric) Metric {
 	return Metric{
+		ID:         metric.ID,
 		Connectors: source.ParseTypes(metric.Connectors),
 		Name:       metric.Name,
 		Tags:       model.TrimPrivateTags(GetTagsMap(metric)),

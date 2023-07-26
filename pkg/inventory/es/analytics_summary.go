@@ -31,7 +31,7 @@ type FetchConnectionAnalyticMetricCountAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionAnalyticMetricCountAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, t time.Time, metricNames []string, size int) (map[string]int, error) {
+func FetchConnectionAnalyticMetricCountAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, t time.Time, metricIDs []string, size int) (map[string]int, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -42,9 +42,9 @@ func FetchConnectionAnalyticMetricCountAtTime(client keibi.Client, connectors []
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.MetricTrendConnectionSummary)}},
 	})
-	if len(metricNames) > 0 {
+	if len(metricIDs) > 0 {
 		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"metric_name": metricNames},
+			"terms": map[string][]string{"metric_id": metricIDs},
 		})
 	}
 
@@ -68,7 +68,7 @@ func FetchConnectionAnalyticMetricCountAtTime(client keibi.Client, connectors []
 	res["aggs"] = map[string]any{
 		"metric_group": map[string]any{
 			"terms": map[string]any{
-				"field": "metric_name",
+				"field": "metric_id",
 				"size":  size,
 			},
 			"aggs": map[string]any{
@@ -108,7 +108,7 @@ func FetchConnectionAnalyticMetricCountAtTime(client keibi.Client, connectors []
 		}
 		for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
 			for _, hit := range metricBucket.Latest.Hits.Hits {
-				result[hit.Source.MetricName] += hit.Source.ResourceCount
+				result[hit.Source.MetricID] += hit.Source.ResourceCount
 			}
 		}
 	}
@@ -133,16 +133,16 @@ type FetchConnectorAnalyticMetricCountAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorAnalyticMetricCountAtTime(client keibi.Client, connectors []source.Type, t time.Time, metricNames []string, size int) (map[string]int, error) {
+func FetchConnectorAnalyticMetricCountAtTime(client keibi.Client, connectors []source.Type, t time.Time, metricIDs []string, size int) (map[string]int, error) {
 	res := make(map[string]any)
 	var filters []any
 
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.MetricTrendConnectorSummary)}},
 	})
-	if len(metricNames) > 0 {
+	if len(metricIDs) > 0 {
 		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"metric_name": metricNames},
+			"terms": map[string][]string{"metric_id": metricIDs},
 		})
 	}
 	if len(connectors) > 0 {
@@ -170,7 +170,7 @@ func FetchConnectorAnalyticMetricCountAtTime(client keibi.Client, connectors []s
 	res["aggs"] = map[string]any{
 		"metric_group": map[string]any{
 			"terms": map[string]any{
-				"field": "metric_name",
+				"field": "metric_id",
 				"size":  size,
 			},
 			"aggs": map[string]any{
@@ -203,7 +203,7 @@ func FetchConnectorAnalyticMetricCountAtTime(client keibi.Client, connectors []s
 	result := make(map[string]int)
 	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
 		for _, hit := range metricBucket.Latest.Hits.Hits {
-			result[hit.Source.MetricName] += hit.Source.ResourceCount
+			result[hit.Source.MetricID] += hit.Source.ResourceCount
 		}
 	}
 	return result, nil
@@ -232,7 +232,7 @@ type ConnectionMetricTrendSummaryQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionMetricTrendSummaryPage(client keibi.Client, connectionIDs, metricNames []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
+func FetchConnectionMetricTrendSummaryPage(client keibi.Client, connectionIDs, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
 	res := make(map[string]any)
 	var filters []any
 	startTime = startTime.Round(time.Hour * 24)
@@ -242,7 +242,7 @@ func FetchConnectionMetricTrendSummaryPage(client keibi.Client, connectionIDs, m
 		"terms": map[string][]string{"report_type": {string(summarizer.MetricTrendConnectionSummary)}},
 	})
 	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"metric_name": metricNames},
+		"terms": map[string][]string{"metric_id": metricIDs},
 	})
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
@@ -266,7 +266,7 @@ func FetchConnectionMetricTrendSummaryPage(client keibi.Client, connectionIDs, m
 	res["aggs"] = map[string]any{
 		"metric_group": map[string]any{
 			"terms": map[string]any{
-				"field": "metric_name",
+				"field": "metric_id",
 				"size":  size,
 			},
 			"aggs": map[string]any{
@@ -348,7 +348,7 @@ type ConnectorMetricTrendSummaryQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorMetricTrendSummaryPage(client keibi.Client, connectors []source.Type, metricNames []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
+func FetchConnectorMetricTrendSummaryPage(client keibi.Client, connectors []source.Type, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
 	res := make(map[string]any)
 	var filters []any
 	startTime = startTime.Round(time.Hour * 24)
@@ -359,7 +359,7 @@ func FetchConnectorMetricTrendSummaryPage(client keibi.Client, connectors []sour
 	})
 
 	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"metric_name": metricNames},
+		"terms": map[string][]string{"metric_id": metricIDs},
 	})
 
 	if len(connectors) > 0 {
@@ -400,7 +400,7 @@ func FetchConnectorMetricTrendSummaryPage(client keibi.Client, connectors []sour
 	res["aggs"] = map[string]any{
 		"metric_group": map[string]any{
 			"terms": map[string]any{
-				"field": "metric_name",
+				"field": "metric_id",
 				"size":  size,
 			},
 			"aggs": map[string]any{
