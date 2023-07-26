@@ -65,7 +65,7 @@ type ListResourceTypeCompositionResponse struct {
 
 type ResourceTypeTrendDatapoint struct {
 	Count int       `json:"count" example:"100" minimum:"0"`
-	Date  time.Time `json:"date" format:"date"`
+	Date  time.Time `json:"date" format:"date-time"`
 }
 
 type LocationResponse struct {
