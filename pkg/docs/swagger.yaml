@@ -5190,6 +5190,66 @@ paths:
       summary: List analytics metrics
       tags:
       - analytics
+  /inventory/api/v2/analytics/regions/summary:
+    get:
+      consumes:
+      - application/json
+      description: Returns list of regions analytics summary
+      parameters:
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: start time in unix seconds - default is now
+        in: query
+        name: startTime
+        type: integer
+      - description: end time in unix seconds - default is one week ago
+        in: query
+        name: endTime
+        type: integer
+      - description: column to sort by - default is resource_count
+        enum:
+        - resource_count
+        - growth
+        - growth_rate
+        in: query
+        name: sortBy
+        type: string
+      - description: page size - default is 20
+        in: query
+        name: pageSize
+        type: integer
+      - description: page number - default is 1
+        in: query
+        name: pageNumber
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse'
+      security:
+      - BearerToken: []
+      summary: List Regions Summary
+      tags:
+      - analytics
   /inventory/api/v2/analytics/tag:
     get:
       consumes:
