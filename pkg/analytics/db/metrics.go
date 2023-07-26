@@ -44,7 +44,7 @@ func (db Database) ListMetrics() ([]AnalyticMetric, error) {
 	return s, nil
 }
 
-func (db Database) ListFilteredMetrics(tags map[string][]string, metricNames []string, connectorTypes []source.Type) ([]AnalyticMetric, error) {
+func (db Database) ListFilteredMetrics(tags map[string][]string, metricIDs []string, connectorTypes []source.Type) ([]AnalyticMetric, error) {
 	var metrics []AnalyticMetric
 	query := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations)
 	if len(tags) != 0 {
@@ -60,8 +60,8 @@ func (db Database) ListFilteredMetrics(tags map[string][]string, metricNames []s
 	if len(connectorTypes) != 0 {
 		query = query.Where("connector IN ?", connectorTypes)
 	}
-	if len(metricNames) != 0 {
-		query = query.Where("analytic_metrics.name IN ?", metricNames)
+	if len(metricIDs) != 0 {
+		query = query.Where("analytic_metrics.id IN ?", metricIDs)
 	}
 	tx := query.Find(&metrics)
 	if tx.Error != nil {

@@ -120,7 +120,7 @@ func (j *Job) Run(
 			msgs = append(msgs, es2.ConnectionMetricTrendSummary{
 				ConnectionID:  src.ID,
 				Connector:     src.Connector,
-				MetricName:    metric.Name,
+				MetricID:      metric.ID,
 				ResourceCount: int(count),
 				EvaluatedAt:   startTime.UnixMilli(),
 				ReportType:    es.MetricTrendConnectionSummary,
@@ -136,7 +136,7 @@ func (j *Job) Run(
 				vn := es2.ConnectorMetricTrendSummary{
 					Connector:     src.Connector,
 					EvaluatedAt:   startTime.UnixMilli(),
-					MetricName:    metric.Name,
+					MetricID:      metric.ID,
 					ResourceCount: int(count),
 					ReportType:    es.MetricTrendConnectorSummary,
 				}

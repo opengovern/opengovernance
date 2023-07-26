@@ -2124,6 +2124,9 @@ definitions:
         description: Number of Resources of this Resource Type - Metric
         example: 100
         type: integer
+      id:
+        example: vms
+        type: string
       name:
         description: Resource Type
         example: VMs
@@ -5140,11 +5143,11 @@ paths:
         name: connectionId
         type: array
       - collectionFormat: csv
-        description: Metric Names
+        description: Metric IDs
         in: query
         items:
           type: string
-        name: metricNames
+        name: metricIDs
         type: array
       - description: timestamp for resource count in epoch seconds
         in: query
@@ -5247,11 +5250,11 @@ paths:
         name: tag
         type: array
       - collectionFormat: csv
-        description: Metric names to filter by
+        description: Metric IDs to filter by
         in: query
         items:
           type: string
-        name: name
+        name: ids
         type: array
       - collectionFormat: csv
         description: Connector type to filter by

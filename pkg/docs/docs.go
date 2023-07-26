@@ -2710,8 +2710,8 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Metric Names",
-                        "name": "metricNames",
+                        "description": "Metric IDs",
+                        "name": "metricIDs",
                         "in": "query"
                     },
                     {
@@ -2870,8 +2870,8 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Metric names to filter by",
-                        "name": "name",
+                        "description": "Metric IDs to filter by",
+                        "name": "ids",
                         "in": "query"
                     },
                     {
@@ -10502,6 +10502,10 @@ const docTemplate = `{
                     "description": "Number of Resources of this Resource Type - Metric",
                     "type": "integer",
                     "example": 100
+                },
+                "id": {
+                    "type": "string",
+                    "example": "vms"
                 },
                 "name": {
                     "description": "Resource Type",

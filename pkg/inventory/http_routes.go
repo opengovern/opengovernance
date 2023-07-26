@@ -660,23 +660,23 @@ func (h *HttpHandler) ListResourceTypeMetricsHandler(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, result)
 }
 
-func (h *HttpHandler) ListAnalyticsMetrics(metrics []string, tagMap map[string][]string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []inventoryApi.Metric, error) {
+func (h *HttpHandler) ListAnalyticsMetrics(metricIDs []string, tagMap map[string][]string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []inventoryApi.Metric, error) {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 
-	mts, err := aDB.ListFilteredMetrics(tagMap, metrics, connectorTypes)
+	mts, err := aDB.ListFilteredMetrics(tagMap, metricIDs, connectorTypes)
 	if err != nil {
 		return 0, nil, err
 	}
-	metricNames := make([]string, 0, len(mts))
+	filteredMetricIDs := make([]string, 0, len(mts))
 	for _, metric := range mts {
-		metricNames = append(metricNames, metric.Name)
+		filteredMetricIDs = append(filteredMetricIDs, metric.ID)
 	}
 
 	var metricIndexed map[string]int
 	if len(connectionIDs) > 0 {
-		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, timeAt, metricNames, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, timeAt, filteredMetricIDs, EsFetchPageSize)
 	} else {
-		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, timeAt, metricNames, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, timeAt, filteredMetricIDs, EsFetchPageSize)
 	}
 	if err != nil {
 		return 0, nil, err
@@ -686,7 +686,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(metrics []string, tagMap map[string][
 	totalCount := 0
 	for _, metric := range mts {
 		apiMetric := inventoryApi.MetricToAPI(metric)
-		if count, ok := metricIndexed[metric.Name]; ok && count >= minCount {
+		if count, ok := metricIndexed[metric.ID]; ok && count >= minCount {
 			apiMetric.Count = &count
 			totalCount += count
 		}
@@ -709,7 +709,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(metrics []string, tagMap map[string][
 //	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param			metricNames		query		[]string		false	"Metric Names"
+//	@Param			metricIDs		query		[]string		false	"Metric IDs"
 //	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
 //	@Param			minCount		query		int				false	"Minimum number of resources with this tag value, default 1"
@@ -723,10 +723,10 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
-	metricNames := httpserver.QueryArrayParam(ctx, "metricNames")
 	if len(connectionIDs) > 20 {
 		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
 	}
+	metricIDs := httpserver.QueryArrayParam(ctx, "metricIDs")
 
 	connectorTypes, err = h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
 	if err != nil {
@@ -769,23 +769,23 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
 	}
 
-	totalCount, apiMetrics, err := h.ListAnalyticsMetrics(metricNames, tagMap, connectorTypes, connectionIDs, minCount, endTime)
+	totalCount, apiMetrics, err := h.ListAnalyticsMetrics(metricIDs, tagMap, connectorTypes, connectionIDs, minCount, endTime)
 	if err != nil {
 		return err
 	}
 	apiMetricsMap := make(map[string]inventoryApi.Metric, len(apiMetrics))
 	for _, apiMetric := range apiMetrics {
-		apiMetricsMap[apiMetric.Name] = apiMetric
+		apiMetricsMap[apiMetric.ID] = apiMetric
 	}
 
-	totalOldCount, oldApiMetrics, err := h.ListAnalyticsMetrics(metricNames, tagMap, connectorTypes, connectionIDs, 0, startTime)
+	totalOldCount, oldApiMetrics, err := h.ListAnalyticsMetrics(metricIDs, tagMap, connectorTypes, connectionIDs, 0, startTime)
 	if err != nil {
 		return err
 	}
 	for _, oldApiMetric := range oldApiMetrics {
-		if apiMetric, ok := apiMetricsMap[oldApiMetric.Name]; ok {
+		if apiMetric, ok := apiMetricsMap[oldApiMetric.ID]; ok {
 			apiMetric.OldCount = oldApiMetric.Count
-			apiMetricsMap[oldApiMetric.Name] = apiMetric
+			apiMetricsMap[oldApiMetric.ID] = apiMetric
 		}
 	}
 
@@ -873,33 +873,6 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, result)
 }
 
-func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionIDs []string, timeAt int64) (*inventoryApi.ResourceType, error) {
-	resourceType, err := h.db.GetResourceType(resourceTypeStr)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, echo.NewHTTPError(http.StatusNotFound, "resource type not found")
-		}
-		return nil, err
-	}
-
-	var metricIndexed map[string]int
-	if len(connectionIDs) > 0 {
-		metricIndexed, err = es.FetchConnectionResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(timeAt, 0), []string{resourceTypeStr}, EsFetchPageSize)
-	} else {
-		metricIndexed, err = es.FetchConnectorResourceTypeCountAtTime(h.client, nil, time.Unix(timeAt, 0), []string{resourceTypeStr}, EsFetchPageSize)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	apiResourceType := resourceType.ToApi()
-	if count, ok := metricIndexed[strings.ToLower(resourceType.ResourceType)]; ok {
-		apiResourceType.Count = &count
-	}
-
-	return &apiResourceType, nil
-}
-
 // ListAnalyticsTags godoc
 //
 //	@Summary		List analytics tags
@@ -966,13 +939,13 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	filteredTags := map[string][]string{}
 	for key, values := range tags {
 		for _, tagValue := range values {
-			metricNames, err := aDB.ListFilteredMetrics(map[string][]string{key: {tagValue}}, nil, connectorTypes)
+			metrics, err := aDB.ListFilteredMetrics(map[string][]string{key: {tagValue}}, nil, connectorTypes)
 			if err != nil {
 				return err
 			}
-			fmt.Println("metricNames", key, tagValue, metricNames)
-			for _, metricName := range metricNames {
-				if metricCount[metricName.Name] >= minCount {
+			fmt.Println("metrics", key, tagValue, metrics)
+			for _, metric := range metrics {
+				if metricCount[metric.ID] >= minCount {
 					filteredTags[key] = append(filteredTags[key], tagValue)
 					break
 				}
@@ -995,7 +968,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
-//	@Param			name			query		[]string		false	"Metric names to filter by"
+//	@Param			ids				query		[]string		false	"Metric IDs to filter by"
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
 //	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
@@ -1007,7 +980,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	var err error
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
-	names := httpserver.QueryArrayParam(ctx, "name")
+	ids := httpserver.QueryArrayParam(ctx, "ids")
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) > 20 {
@@ -1042,13 +1015,13 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		}
 	}
 
-	metrics, err := aDB.ListFilteredMetrics(tagMap, names, connectorTypes)
+	metrics, err := aDB.ListFilteredMetrics(tagMap, ids, connectorTypes)
 	if err != nil {
 		return err
 	}
-	metricStrings := make([]string, 0, len(metrics))
+	metricIDs := make([]string, 0, len(metrics))
 	for _, metric := range metrics {
-		metricStrings = append(metricStrings, metric.Name)
+		metricIDs = append(metricIDs, metric.ID)
 	}
 
 	timeToCountMap := make(map[int]int)
@@ -1057,12 +1030,12 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		esDatapointCount = 1
 	}
 	if len(connectionIDs) != 0 {
-		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(h.client, connectionIDs, metricStrings, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(h.client, connectionIDs, metricIDs, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
 	} else {
-		timeToCountMap, err = es.FetchConnectorMetricTrendSummaryPage(h.client, connectorTypes, metricStrings, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectorMetricTrendSummaryPage(h.client, connectorTypes, metricIDs, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1140,16 +1113,16 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	metricStrings := make([]string, 0, len(metrics))
+	metricsIDs := make([]string, 0, len(metrics))
 	for _, metric := range metrics {
-		metricStrings = append(metricStrings, metric.Name)
+		metricsIDs = append(metricsIDs, metric.ID)
 	}
 
 	var metricIndexed map[string]int
 	if len(connectionIDs) > 0 {
-		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, endTime, metricStrings, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, endTime, metricsIDs, EsFetchPageSize)
 	} else {
-		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, endTime, metricStrings, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, endTime, metricsIDs, EsFetchPageSize)
 	}
 	if err != nil {
 		return err
@@ -1157,9 +1130,9 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 
 	var oldMetricIndexed map[string]int
 	if len(connectionIDs) > 0 {
-		oldMetricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, startTime, metricStrings, EsFetchPageSize)
+		oldMetricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, startTime, metricsIDs, EsFetchPageSize)
 	} else {
-		oldMetricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, startTime, metricStrings, EsFetchPageSize)
+		oldMetricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, startTime, metricsIDs, EsFetchPageSize)
 	}
 	if err != nil {
 		return err
@@ -1179,10 +1152,10 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 				valueCountMap[tagValue] = currentAndOldCount{}
 			}
 			v := valueCountMap[tagValue]
-			v.current += metricIndexed[strings.ToLower(metric.Name)]
-			v.old += oldMetricIndexed[strings.ToLower(metric.Name)]
-			totalCount += metricIndexed[strings.ToLower(metric.Name)]
-			totalOldCount += oldMetricIndexed[strings.ToLower(metric.Name)]
+			v.current += metricIndexed[metric.ID]
+			v.old += oldMetricIndexed[metric.ID]
+			totalCount += metricIndexed[metric.ID]
+			totalOldCount += oldMetricIndexed[metric.ID]
 			valueCountMap[tagValue] = v
 			break
 		}
@@ -1272,6 +1245,33 @@ func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 	apiResourceType.OldCount = oldApiResourceType.Count
 
 	return ctx.JSON(http.StatusOK, *apiResourceType)
+}
+
+func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionIDs []string, timeAt int64) (*inventoryApi.ResourceType, error) {
+	resourceType, err := h.db.GetResourceType(resourceTypeStr)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, echo.NewHTTPError(http.StatusNotFound, "resource type not found")
+		}
+		return nil, err
+	}
+
+	var metricIndexed map[string]int
+	if len(connectionIDs) > 0 {
+		metricIndexed, err = es.FetchConnectionResourceTypeCountAtTime(h.client, nil, connectionIDs, time.Unix(timeAt, 0), []string{resourceTypeStr}, EsFetchPageSize)
+	} else {
+		metricIndexed, err = es.FetchConnectorResourceTypeCountAtTime(h.client, nil, time.Unix(timeAt, 0), []string{resourceTypeStr}, EsFetchPageSize)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	apiResourceType := resourceType.ToApi()
+	if count, ok := metricIndexed[strings.ToLower(resourceType.ResourceType)]; ok {
+		apiResourceType.Count = &count
+	}
+
+	return &apiResourceType, nil
 }
 
 // ListResourceTypeComposition godoc
