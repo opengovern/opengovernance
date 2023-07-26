@@ -736,12 +736,22 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 
 	apiCredentials := make([]api.Credential, 0, len(credentials))
 	for _, cred := range credentials {
-		connectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String())
+		totalConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), nil)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		enabledConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), GetConnectionLifecycleStateEnabledStates())
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		unhealthyConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []ConnectionLifecycleState{ConnectionLifecycleStateUnhealthy})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		apiCredential := cred.ToAPI()
-		apiCredential.TotalConnections = &connectionCount
+		apiCredential.TotalConnections = &totalConnectionCount
+		apiCredential.EnabledConnections = &enabledConnectionCount
+		apiCredential.UnhealthyConnections = &unhealthyConnectionCount
 		apiCredentials = append(apiCredentials, apiCredential)
 	}
 

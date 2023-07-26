@@ -333,9 +333,13 @@ func (db Database) GetCredentialByID(id uuid.UUID) (*Credential, error) {
 	return &cred, nil
 }
 
-func (db Database) CountConnectionsByCredential(credentialId string) (int, error) {
+func (db Database) CountConnectionsByCredential(credentialId string, state []ConnectionLifecycleState) (int, error) {
 	var count int64
-	tx := db.orm.Model(&Source{}).Where("credential_id = ?", credentialId).Count(&count)
+	tx := db.orm.Model(&Source{}).Where("credential_id = ?", credentialId)
+	if len(state) > 0 {
+		tx = tx.Where("lifecycle_state IN ?", state)
+	}
+	tx = tx.Count(&count)
 	if tx.Error != nil {
 		return 0, tx.Error
 	}

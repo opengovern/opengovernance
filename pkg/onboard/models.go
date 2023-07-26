@@ -31,13 +31,16 @@ const (
 )
 
 func (c ConnectionLifecycleState) IsEnabled() bool {
-	enabledStates := []ConnectionLifecycleState{ConnectionLifecycleStateOnboard, ConnectionLifecycleStateInProgress, ConnectionLifecycleStateUnhealthy}
-	for _, state := range enabledStates {
+	for _, state := range GetConnectionLifecycleStateEnabledStates() {
 		if c == state {
 			return true
 		}
 	}
 	return false
+}
+
+func GetConnectionLifecycleStateEnabledStates() []ConnectionLifecycleState {
+	return []ConnectionLifecycleState{ConnectionLifecycleStateOnboard, ConnectionLifecycleStateInProgress, ConnectionLifecycleStateUnhealthy}
 }
 
 func (c ConnectionLifecycleState) ToApi() api.ConnectionLifecycleState {
