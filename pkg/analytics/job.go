@@ -105,7 +105,7 @@ func (j *Job) Run(
 			} else {
 				conn, err = onboardClient.GetSource(&httpclient.Context{UserRole: api2.AdminRole}, sourceID)
 				if err != nil {
-					return err
+					return fmt.Errorf("GetSource id=%s err=%v", sourceID, err)
 				}
 			}
 
