@@ -961,6 +961,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 		return err
 	}
 
+	fmt.Println("metricCount", metricCount)
 	fmt.Println("tags", tags)
 	filteredTags := map[string][]string{}
 	for key, values := range tags {
@@ -969,6 +970,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 			if err != nil {
 				return err
 			}
+			fmt.Println("metricNames", key, tagValue, metricNames)
 			for _, metricName := range metricNames {
 				if metricCount[strings.ToLower(metricName.Name)] >= minCount {
 					filteredTags[key] = append(filteredTags[key], tagValue)
