@@ -972,7 +972,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 			}
 			fmt.Println("metricNames", key, tagValue, metricNames)
 			for _, metricName := range metricNames {
-				if metricCount[strings.ToLower(metricName.Name)] >= minCount {
+				if metricCount[metricName.Name] >= minCount {
 					filteredTags[key] = append(filteredTags[key], tagValue)
 					break
 				}
