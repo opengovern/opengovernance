@@ -2758,6 +2758,15 @@ definitions:
       state:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState'
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionRequest:
+    properties:
+      description:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection:
     properties:
       assetDiscoveryMethod:
@@ -6700,15 +6709,42 @@ paths:
       summary: Get catalog metrics
       tags:
       - onboard
-  /onboard/api/v1/connections/{connectionId}/state:
-    post:
-      description: Enabling a single source either with connection ID.
+  /onboard/api/v1/connections/{connectionId}:
+    put:
+      description: Update a connection with connection ID.
       parameters:
       - description: ConnectionID
         in: path
         name: connectionId
         required: true
-        type: integer
+        type: string
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
+      security:
+      - BearerToken: []
+      summary: Update a connection
+      tags:
+      - onboard
+  /onboard/api/v1/connections/{connectionId}/state:
+    post:
+      description: Change connection lifecycle state with connection ID.
+      parameters:
+      - description: ConnectionID
+        in: path
+        name: connectionId
+        required: true
+        type: string
       - description: Request
         in: body
         name: request
@@ -6722,7 +6758,7 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Enable a single source
+      summary: Change connection lifecycle state
       tags:
       - onboard
   /onboard/api/v1/connections/count:

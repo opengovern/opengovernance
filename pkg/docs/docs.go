@@ -5085,6 +5085,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/connections/{connectionId}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Update a connection with connection ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Update a connection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ConnectionID",
+                        "name": "connectionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
+                        }
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/connections/{connectionId}/state": {
             "post": {
                 "security": [
@@ -5092,17 +5135,17 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Enabling a single source either with connection ID.",
+                "description": "Change connection lifecycle state with connection ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Enable a single source",
+                "summary": "Change connection lifecycle state",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ConnectionID",
                         "name": "connectionId",
                         "in": "path",
@@ -11375,6 +11418,20 @@ const docTemplate = `{
             "properties": {
                 "state": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },
