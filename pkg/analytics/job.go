@@ -159,21 +159,22 @@ func (j *Job) Run(
 			}
 		}
 
-		for _, res := range providerResultMap {
+		for _, item := range providerResultMap {
 			var msgs []kafka.Doc
-			msgs = append(msgs, res)
+			msgs = append(msgs, item)
 			if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger); err != nil {
 				return err
 			}
 		}
 
-		for _, res := range regionResultMap {
+		for _, item := range regionResultMap {
 			var msgs []kafka.Doc
-			msgs = append(msgs, res)
+			msgs = append(msgs, item)
 			if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger); err != nil {
 				return err
 			}
 		}
+		fmt.Printf("Write %d region docs, %d provider docs, %d connection docs\n", len(regionResultMap), len(providerResultMap), len(res.Data))
 	}
 
 	return nil
