@@ -11885,7 +11885,8 @@ const docTemplate = `{
                     "example": "2023-06-03T12:21:33.406928Z"
                 },
                 "metadata": {
-                    "type": "object"
+                    "type": "object",
+                    "additionalProperties": {}
                 },
                 "name": {
                     "type": "string",

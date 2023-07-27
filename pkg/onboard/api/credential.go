@@ -50,7 +50,7 @@ type Credential struct {
 	HealthStatus        source.HealthStatus `json:"healthStatus" example:"healthy"`
 	HealthReason        *string             `json:"healthReason,omitempty" example:""`
 
-	Metadata map[string]any `json:"metadata,omitempty" swaggertype:"object"`
+	Metadata map[string]any `json:"metadata,omitempty"`
 
 	Connections []Connection `json:"connections,omitempty"`
 
