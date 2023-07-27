@@ -57,8 +57,10 @@ func (db Database) ListFilteredMetrics(tags map[string][]string, metricIDs []str
 			}
 		}
 	}
-	if len(connectorTypes) != 0 {
-		query = query.Where("connector IN ?", connectorTypes)
+	if len(connectorTypes) > 0 {
+		for _, ct := range connectorTypes {
+			query = query.Where("? IN analytic_metrics.connectors", ct)
+		}
 	}
 	if len(metricIDs) != 0 {
 		query = query.Where("analytic_metrics.id IN ?", metricIDs)
