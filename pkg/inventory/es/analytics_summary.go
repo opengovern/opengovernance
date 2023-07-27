@@ -525,7 +525,7 @@ func FetchRegionSummaryPage(client keibi.Client, connectors []source.Type, conne
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
 			"evaluated_at": map[string]any{
-				"lte": timeAt.Unix(),
+				"lte": strconv.FormatInt(timeAt.UnixMilli(), 10),
 			},
 		},
 	})
