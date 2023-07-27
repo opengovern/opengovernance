@@ -153,7 +153,7 @@ func (j *Job) Run(
 					EvaluatedAt:   startTime.UnixMilli(),
 					MetricID:      metric.ID,
 					ResourceCount: int(count),
-					ReportType:    es.MetricTrendConnectorSummary,
+					ReportType:    es.MetricTrendRegionSummary,
 				}
 				regionResultMap[region] = vn
 			}
