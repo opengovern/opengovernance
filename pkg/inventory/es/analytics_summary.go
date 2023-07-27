@@ -603,3 +603,118 @@ func FetchRegionSummaryPage(client keibi.Client, connectors []source.Type, conne
 	}
 	return hits, nil
 }
+
+type FetchConnectionAnalyticsResourcesCountAtResponse struct {
+	Aggregations struct {
+		ConnectionIDGroup struct {
+			Key     string `json:"key"`
+			Buckets []struct {
+				Key         string `json:"key"`
+				MetricGroup struct {
+					Key     string `json:"key"`
+					Buckets []struct {
+						Latest struct {
+							Hits struct {
+								Hits []struct {
+									Source es.ConnectionMetricTrendSummary `json:"_source"`
+								} `json:"hits"`
+							} `json:"hits"`
+						} `json:"latest"`
+					} `json:"buckets"`
+				} `json:"metric_group"`
+			} `json:"buckets"`
+		} `json:"connection_id_group"`
+	} `json:"aggregations"`
+}
+
+func FetchConnectionAnalyticsResourcesCountAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, t time.Time, size int) ([]es.ConnectionMetricTrendSummary, error) {
+	var hits []es.ConnectionMetricTrendSummary
+	res := make(map[string]any)
+	var filters []any
+
+	t = t.Truncate(24 * time.Hour)
+
+	filters = append(filters, map[string]any{
+		"terms": map[string][]string{"report_type": {string(summarizer.MetricTrendConnectionSummary)}},
+	})
+
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"evaluated_at": map[string]any{
+				"lte": t.UnixMilli(),
+			},
+		},
+	})
+
+	if len(connectors) > 0 {
+		connectorsStr := make([]string, 0, len(connectors))
+		for _, c := range connectors {
+			connectorsStr = append(connectorsStr, c.String())
+		}
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"connector": connectorsStr},
+		})
+	}
+
+	if len(connectionIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"connection_id": connectionIDs},
+		})
+	}
+
+	res["size"] = 0
+	res["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+
+	res["aggs"] = map[string]any{
+		"connection_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "connection_id",
+				"size":  size,
+			},
+			"aggs": map[string]any{
+				"metric_group": map[string]any{
+					"terms": map[string]any{
+						"field": "metric_id",
+						"size":  size,
+					},
+					"aggs": map[string]any{
+						"latest": map[string]any{
+							"top_hits": map[string]any{
+								"size": 1,
+								"sort": map[string]string{
+									"described_at": "desc",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+	fmt.Println("FetchConnectionAnalyticsResourcesCountAtTime query =", query)
+	var response FetchConnectionAnalyticsResourcesCountAtResponse
+	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, connectionIdBucket := range response.Aggregations.ConnectionIDGroup.Buckets {
+		for _, metricBucket := range connectionIdBucket.MetricGroup.Buckets {
+			for _, hit := range metricBucket.Latest.Hits.Hits {
+				hits = append(hits, hit.Source)
+			}
+		}
+	}
+	return hits, nil
+}
