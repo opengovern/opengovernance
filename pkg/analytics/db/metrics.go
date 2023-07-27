@@ -59,7 +59,7 @@ func (db Database) ListFilteredMetrics(tags map[string][]string, metricIDs []str
 	}
 	if len(connectorTypes) > 0 {
 		for _, ct := range connectorTypes {
-			query = query.Where("? IN analytic_metrics.connectors", ct)
+			query = query.Where("? = ANY (analytic_metrics.connectors)", ct)
 		}
 	}
 	if len(metricIDs) != 0 {
@@ -77,7 +77,7 @@ func (db Database) ListMetricTagsKeysWithPossibleValues(connectorTypes []source.
 	tx := db.orm.Model(MetricTag{}).Joins("JOIN analytic_metrics ON metric_tags.id = analytic_metrics.id")
 	if len(connectorTypes) > 0 {
 		for _, ct := range connectorTypes {
-			tx = tx.Where("? IN analytic_metrics.connectors", ct)
+			tx = tx.Where("? = ANY (analytic_metrics.connectors)", ct)
 		}
 	}
 	tx.Find(&tags)
