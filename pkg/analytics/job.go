@@ -1,7 +1,12 @@
 package analytics
 
 import (
+	"context"
 	"fmt"
+	"reflect"
+	"strings"
+	"time"
+
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	es2 "github.com/kaytu-io/kaytu-engine/pkg/analytics/es"
@@ -13,9 +18,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
-	"reflect"
-	"strings"
-	"time"
 )
 
 type JobStatus string
@@ -77,7 +79,7 @@ func (j *Job) Run(
 		providerResultMap := map[string]es2.ConnectorMetricTrendSummary{}
 		regionResultMap := map[string]es2.RegionMetricTrendSummary{}
 
-		res, err := steampipeDB.QueryAll(metric.Query)
+		res, err := steampipeDB.QueryAll(context.TODO(), metric.Query)
 		if err != nil {
 			return err
 		}

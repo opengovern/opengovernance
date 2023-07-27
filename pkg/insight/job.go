@@ -1,6 +1,7 @@
 package insight
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -134,7 +135,7 @@ func (j Job) Do(client keibi.Client, steampipeOption *steampipe.Option, onboardC
 		}
 		fmt.Println("Initialized steampipe database: ", *steampipeConn)
 
-		res, err = steampipeConn.QueryAll(query)
+		res, err = steampipeConn.QueryAll(context.TODO(), query)
 		steampipeConn.Conn().Close()
 		if res != nil {
 			count = int64(len(res.Data))

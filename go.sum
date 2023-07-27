@@ -2270,8 +2270,8 @@ github.com/kaytu-io/kaytu-aws-describer v0.0.42 h1:bxcLdvTV5JKleOszBUus78z1+FMT6
 github.com/kaytu-io/kaytu-aws-describer v0.0.42/go.mod h1:B2D+gmhfoKESXYRL6yVcilRO18u3HjUwkvKOq2HBJJU=
 github.com/kaytu-io/kaytu-azure-describer v0.0.56 h1:HmfJFa60GcMoz4RkJZFv3tk0EYo1nFb2tgcnCIQje84=
 github.com/kaytu-io/kaytu-azure-describer v0.0.56/go.mod h1:rJz1E3Ex9gWXhfvbXZRXrD/rp+YhYFnc/mBo14v0S/c=
-github.com/kaytu-io/kaytu-util v0.0.0-20230725062648-605ffd5a1487 h1:j2LLeCKdM7+n/TYxVTeEbi3zRipktsCOFJ+M6QeJBzM=
-github.com/kaytu-io/kaytu-util v0.0.0-20230725062648-605ffd5a1487/go.mod h1:QULmP8Hug87ctExrOBAzZgwKJ7BXEWUcs0vIJAV1Hrs=
+github.com/kaytu-io/kaytu-util v0.0.0-20230727093925-93dc2fef98af h1:vRujfU3J1V6JpMl67kWy8VkqyUwwRq1Xk0zRtmEne1Q=
+github.com/kaytu-io/kaytu-util v0.0.0-20230727093925-93dc2fef98af/go.mod h1:CGTQE0vK1k8QnJ/szvGxQLmTsiQLbaxgq8YzoVyfkBI=
 github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230713070934-2d1d29891502 h1:vDJRyGAk6MjoFawOhekpyIMfqvIFsxmuyuUra/w/zdM=
 github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230713070934-2d1d29891502/go.mod h1:XXJmFYC1bEJbBeN989tceseQ2LP/sqe9HVykT/NBGZ0=
 github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230723115422-00dc0c0cb060 h1:bEx8DMwvMvB2/3matxAbIl/hClXq9vKwNUzKhC2K7oY=
@@ -2636,6 +2636,8 @@ github.com/pelletier/go-toml v1.9.3/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCko
 github.com/pelletier/go-toml v1.9.4/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
 github.com/performancecopilot/speed v3.0.0+incompatible/go.mod h1:/CLtqpZ5gBg1M9iaPbIdPPGyKcA8hKdoy6hAWba7Yac=
 github.com/peterbourgon/diskv v2.0.1+incompatible/go.mod h1:uqqh8zWWbv1HBMNONnaR/tNboyR3/BZd58JJSHlUSCU=
+github.com/pganalyze/pg_query_go/v4 v4.2.1 h1:id/vuyIQccb9f6Yx3pzH5l4QYrxE3v6/m8RPlgMrprc=
+github.com/pganalyze/pg_query_go/v4 v4.2.1/go.mod h1:aEkDNOXNM5j0YGzaAapwJ7LB3dLNj+bvbWcLv1hOVqA=
 github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2/go.mod h1:iIss55rKnNBTvrwdmkUpLnDpZoAHvWaiq5+iMmen4AE=
 github.com/phpdave11/gofpdf v1.4.2/go.mod h1:zpO6xFn9yxo3YLyMvW8HcKWVdbNqgIfOOp2dXMnm1mY=
 github.com/phpdave11/gofpdi v1.0.12/go.mod h1:vBmVV0Do6hSBHC8uKUQ71JGW+ZGQq74llk/7bXwjDoI=
