@@ -681,7 +681,7 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client keibi.Client, connector
 							"top_hits": map[string]any{
 								"size": 1,
 								"sort": map[string]string{
-									"described_at": "desc",
+									"evaluated_at": "desc",
 								},
 							},
 						},
