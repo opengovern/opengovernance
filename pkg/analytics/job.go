@@ -150,9 +150,10 @@ func (j *Job) Run(
 				providerResultMap[conn.Connector.String()] = vn
 			}
 
-			if v, ok := regionResultMap[region]; ok {
+			regionKey := region + "-" + conn.ID.String()
+			if v, ok := regionResultMap[regionKey]; ok {
 				v.ResourceCount += int(count)
-				regionResultMap[region] = v
+				regionResultMap[regionKey] = v
 			} else {
 				vn := es2.RegionMetricTrendSummary{
 					Region:        region,
@@ -163,7 +164,7 @@ func (j *Job) Run(
 					ResourceCount: int(count),
 					ReportType:    es.MetricTrendRegionSummary,
 				}
-				regionResultMap[region] = vn
+				regionResultMap[regionKey] = vn
 			}
 		}
 
