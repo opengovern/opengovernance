@@ -125,7 +125,7 @@ func (j *Job) RunBenchmark(logger *zap.Logger, esk keibi.Client, benchmarkID str
 				return nil, errors.New("connector doesn't match")
 			}
 
-			res, err := steampipeConn.QueryAll(query.QueryToExecute)
+			res, err := steampipeConn.QueryAll(context.TODO(), query.QueryToExecute)
 			if err != nil {
 				logger.Error("failed to execute query",
 					zap.Error(err),

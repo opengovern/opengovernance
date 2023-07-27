@@ -3829,12 +3829,9 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 	return ctx.JSON(200, resp)
 }
 
-func (h *HttpHandler) RunSmartQuery(ctx context.Context, title, query string,
-	req *inventoryApi.RunQueryRequest) (*inventoryApi.RunQueryResponse, error) {
-
+func (h *HttpHandler) RunSmartQuery(ctx context.Context, title, query string, req *inventoryApi.RunQueryRequest) (*inventoryApi.RunQueryResponse, error) {
 	var err error
 	lastIdx := (req.Page.No - 1) * req.Page.Size
-
 	if req.Sorts == nil || len(req.Sorts) == 0 {
 		req.Sorts = []inventoryApi.SmartQuerySortItem{
 			{
@@ -3848,7 +3845,7 @@ func (h *HttpHandler) RunSmartQuery(ctx context.Context, title, query string,
 	}
 
 	h.logger.Info("executing smart query", zap.String("query", query))
-	res, err := h.steampipeConn.Query(ctx, query, lastIdx, req.Page.Size, req.Sorts[0].Field, steampipe.DirectionType(req.Sorts[0].Direction))
+	res, err := h.steampipeConn.Query(ctx, query, &lastIdx, &req.Page.Size, req.Sorts[0].Field, steampipe.DirectionType(req.Sorts[0].Direction))
 	if err != nil {
 		return nil, err
 	}

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/subscription/mgmt/subscription"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/google/uuid"
@@ -217,8 +217,8 @@ func NewAWSSource(logger *zap.Logger, cfg describe.AWSAccountConfig, account aws
 }
 
 type AzureConnectionMetadata struct {
-	SubscriptionID string             `json:"subscription_id"`
-	SubModel       subscription.Model `json:"subscription_model"`
+	SubscriptionID string                       `json:"subscription_id"`
+	SubModel       armsubscription.Subscription `json:"subscription_model"`
 }
 
 func NewAzureConnectionMetadata(sub azureSubscription) AzureConnectionMetadata {
