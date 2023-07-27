@@ -114,10 +114,11 @@ func (j *Job) Run(
 					}
 					return fmt.Errorf("GetSource id=%s err=%v", sourceID, err)
 				}
-			}
+				if conn == nil {
+					return fmt.Errorf("connection not found: %s", sourceID)
+				}
 
-			if conn == nil {
-				return fmt.Errorf("connection not found: %s", sourceID)
+				connectionCache[sourceID] = *conn
 			}
 
 			if v, ok := connectionResultMap[conn.ID.String()]; ok {
@@ -132,7 +133,7 @@ func (j *Job) Run(
 					EvaluatedAt:   startTime.UnixMilli(),
 					ReportType:    es.MetricTrendConnectionSummary,
 				}
-				connectionResultMap[conn.Connector.String()] = vn
+				connectionResultMap[conn.ID.String()] = vn
 			}
 
 			if v, ok := providerResultMap[conn.Connector.String()]; ok {
