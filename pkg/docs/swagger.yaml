@@ -31,39 +31,6 @@ x-tagGroups:
   - name: workspace
     tags:
     - workspace
-x-tagGroups:
-  - name: auth
-    tags:
-    - users
-    - roles
-    - keys
-  - name: compliance
-    tags:
-    - compliance
-    - benchmarks_assignemnt
-  - name: inventory
-    tags:
-    - insights
-    - benchmarks
-    - inventory
-    - cost
-    - location
-    - smart_query
-    - resource
-    - metadata
-    - services
-  - name: onboard
-    tags:
-    - onboard
-  - name: schedule
-    tags:
-    - describe
-    - schedule
-    - jobs
-    - stack
-  - name: workspace
-    tags:
-    - workspace
 definitions:
   aws.Resources:
     properties:
@@ -1868,7 +1835,7 @@ definitions:
         minimum: 0
         type: number
       date:
-        format: date
+        format: date-time
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair:
@@ -2466,7 +2433,7 @@ definitions:
         minimum: 0
         type: integer
       date:
-        format: date
+        format: date-time
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryRequest:
@@ -2778,15 +2745,19 @@ definitions:
     properties:
       connectionsEnabled:
         example: 20
+        minimum: 0
         type: integer
       healthyConnections:
         example: 15
+        minimum: 0
         type: integer
       totalConnections:
         example: 20
+        minimum: 0
         type: integer
       unhealthyConnections:
         example: 5
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionLifecycleStateRequest:
@@ -2901,10 +2872,14 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connector:
     properties:
       allowNewConnections:
+        example: true
         type: boolean
       autoOnboardSupport:
+        example: false
         type: boolean
       description:
+        example: This is a long volume of words for just showing the case of the description
+          for the demo and checking value purposes only and has no meaning whatsoever
         type: string
       direction:
         $ref: '#/definitions/source.ConnectorDirectionType'
@@ -2912,17 +2887,23 @@ definitions:
         example: Azure
         type: string
       logo:
+        example: https://kaytu.io/logo.png
         type: string
       maxConnectionLimit:
+        example: 10000
+        minimum: 0
         type: integer
       name:
         allOf:
         - $ref: '#/definitions/source.Type'
         example: Azure
       shortDescription:
+        example: This is a short Description for this connector
         type: string
       status:
-        $ref: '#/definitions/source.ConnectorStatus'
+        allOf:
+        - $ref: '#/definitions/source.ConnectorStatus'
+        example: enabled
       tags:
         additionalProperties: {}
         type: object
@@ -2930,12 +2911,18 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectorCount:
     properties:
       allowNewConnections:
+        example: true
         type: boolean
       autoOnboardSupport:
+        example: false
         type: boolean
       connection_count:
+        example: 1024
+        minimum: 0
         type: integer
       description:
+        example: This is a long volume of words for just showing the case of the description
+          for the demo and checking value purposes only and has no meaning whatsoever
         type: string
       direction:
         $ref: '#/definitions/source.ConnectorDirectionType'
@@ -2943,17 +2930,23 @@ definitions:
         example: Azure
         type: string
       logo:
+        example: https://kaytu.io/logo.png
         type: string
       maxConnectionLimit:
+        example: 10000
+        minimum: 0
         type: integer
       name:
         allOf:
         - $ref: '#/definitions/source.Type'
         example: Azure
       shortDescription:
+        example: This is a short Description for this connector
         type: string
       status:
-        $ref: '#/definitions/source.ConnectorStatus'
+        allOf:
+        - $ref: '#/definitions/source.ConnectorStatus'
+        example: enabled
       tags:
         additionalProperties: {}
         type: object
@@ -2979,6 +2972,7 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential:
     properties:
       autoOnboardEnabled:
+        example: false
         type: boolean
       config: {}
       connections:
@@ -2986,31 +2980,50 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
         type: array
       connectorType:
-        $ref: '#/definitions/source.Type'
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: AWS
       credentialType:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CredentialType'
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CredentialType'
+        example: manual-aws-org
       enabled:
+        example: true
         type: boolean
       enabled_connections:
+        example: 250
+        minimum: 0
         type: integer
       healthReason:
+        example: ""
         type: string
       healthStatus:
-        $ref: '#/definitions/source.HealthStatus'
+        allOf:
+        - $ref: '#/definitions/source.HealthStatus'
+        example: healthy
       id:
+        example: 1028642a-b22e-26ha-c5h2-22nl254678m5
         type: string
       lastHealthCheckTime:
+        example: "2023-06-03T12:21:33.406928Z"
+        format: date-time
         type: string
       metadata:
-        additionalProperties: {}
         type: object
       name:
+        example: a-1mahsl7lzk
         type: string
       onboardDate:
+        example: "2023-06-03T12:21:33.406928Z"
+        format: date-time
         type: string
       total_connections:
+        example: 300
+        minimum: 0
         type: integer
       unhealthy_connections:
+        example: 50
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CredentialType:
@@ -3067,6 +3080,8 @@ definitions:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential'
         type: array
       totalCredentialCount:
+        example: 5
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.SourceAwsRequest:

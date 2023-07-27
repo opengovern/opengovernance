@@ -50,7 +50,7 @@ type Credential struct {
 	HealthStatus        source.HealthStatus `json:"healthStatus" example:"healthy"`
 	HealthReason        *string             `json:"healthReason,omitempty" example:""`
 
-	Metadata map[string]any `json:"metadata,omitempty" swaggertype:"object" example:"{account_id: 196427215431,attached_policies: [],iam_api_key_creation_date: 2023-06-03T10:26:08Z, iam_user_name: gbs-aes-inventory-scripts, organization_discovered_account_count: 420, organization_id: a-1mahsl7lzk, organization_master_account_email: asghar@taraghe.com, organization_master_account_id: 196427215431}"`
+	Metadata map[string]any `json:"metadata,omitempty" swaggertype:"object"`
 
 	Connections []Connection `json:"connections,omitempty"`
 
