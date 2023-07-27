@@ -3009,6 +3009,7 @@ definitions:
         format: date-time
         type: string
       metadata:
+        additionalProperties: {}
         type: object
       name:
         example: a-1mahsl7lzk
