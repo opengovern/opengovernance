@@ -571,6 +571,7 @@ func FetchRegionSummaryPage(client keibi.Client, connectors []source.Type, conne
 	}
 	query := string(b)
 
+	fmt.Println("FetchRegionSummaryPage query = ", query)
 	var response RegionSummaryQueryResponse
 	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
 	if err != nil {
