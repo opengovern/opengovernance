@@ -1246,24 +1246,15 @@ func (h *HttpHandler) ListAnalyticsRegionsSummary(ctx echo.Context) error {
 	if sortBy == "" {
 		sortBy = "resource_count"
 	}
-	currentLocationDistribution := map[string]int{}
 
-	currentHits, err := es.FetchRegionSummaryPage(h.client, connectors, connectionIDs, nil, endTime, 10000)
+	currentLocationDistribution, err := es.FetchRegionSummaryPage(h.client, connectors, connectionIDs, nil, endTime, 10000)
 	if err != nil {
 		return err
 	}
-	for k, v := range currentHits {
-		currentLocationDistribution[k] += v
-	}
 
-	oldLocationDistribution := map[string]int{}
-
-	oldtHits, err := es.FetchRegionSummaryPage(h.client, connectors, connectionIDs, nil, startTime, 10000)
+	oldLocationDistribution, err := es.FetchRegionSummaryPage(h.client, connectors, connectionIDs, nil, startTime, 10000)
 	if err != nil {
 		return err
-	}
-	for k, v := range oldtHits {
-		oldLocationDistribution[k] += v
 	}
 
 	var locationResponses []inventoryApi.LocationResponse
