@@ -3832,20 +3832,19 @@ func (h *HttpHandler) GetResourcesFilters(ctx echo.Context) error {
 func (h *HttpHandler) RunSmartQuery(ctx context.Context, title, query string, req *inventoryApi.RunQueryRequest) (*inventoryApi.RunQueryResponse, error) {
 	var err error
 	lastIdx := (req.Page.No - 1) * req.Page.Size
-	if req.Sorts == nil || len(req.Sorts) == 0 {
-		req.Sorts = []inventoryApi.SmartQuerySortItem{
-			{
-				Field:     "1",
-				Direction: inventoryApi.DirectionAscending,
-			},
-		}
+
+	direction := inventoryApi.DirectionType("")
+	orderBy := ""
+	if req.Sorts != nil && len(req.Sorts) > 0 {
+		direction = req.Sorts[0].Direction
+		orderBy = req.Sorts[0].Field
 	}
 	if len(req.Sorts) > 1 {
 		return nil, errors.New("multiple sort items not supported")
 	}
 
 	h.logger.Info("executing smart query", zap.String("query", query))
-	res, err := h.steampipeConn.Query(ctx, query, &lastIdx, &req.Page.Size, req.Sorts[0].Field, steampipe.DirectionType(req.Sorts[0].Direction))
+	res, err := h.steampipeConn.Query(ctx, query, &lastIdx, &req.Page.Size, orderBy, steampipe.DirectionType(direction))
 	if err != nil {
 		return nil, err
 	}
