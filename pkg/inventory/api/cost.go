@@ -8,7 +8,7 @@ import (
 
 type CostTrendDatapoint struct {
 	Cost float64   `json:"count" minimum:"0"`
-	Date time.Time `json:"date" format:"date"`
+	Date time.Time `json:"date" format:"date-time"`
 }
 
 type ListServicesCostTrendDatapoint struct {
