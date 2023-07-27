@@ -127,7 +127,7 @@ type FetchConnectorAnalyticMetricCountAtTimeResponse struct {
 						Latest struct {
 							Hits struct {
 								Hits []struct {
-									Source es.ConnectionMetricTrendSummary `json:"_source"`
+									Source es.ConnectorMetricTrendSummary `json:"_source"`
 								} `json:"hits"`
 							} `json:"hits"`
 						} `json:"latest"`
@@ -354,7 +354,7 @@ type ConnectorMetricTrendSummaryQueryResponse struct {
 								Latest struct {
 									Hits struct {
 										Hits []struct {
-											Source es.ConnectionMetricTrendSummary `json:"_source"`
+											Source es.ConnectorMetricTrendSummary `json:"_source"`
 										} `json:"hits"`
 									} `json:"hits"`
 								} `json:"latest"`
@@ -481,23 +481,28 @@ func FetchConnectorMetricTrendSummaryPage(client keibi.Client, connectors []sour
 
 type RegionSummaryQueryResponse struct {
 	Aggregations struct {
-		ConnectionIDGroup struct {
+		MetricGroup struct {
 			Buckets []struct {
-				Key         string `json:"key"`
-				RegionGroup struct {
+				Key               string `json:"key"`
+				ConnectionIDGroup struct {
 					Buckets []struct {
-						Key    string `json:"key"`
-						Latest struct {
-							Hits struct {
-								Hits []struct {
-									Source es.RegionMetricTrendSummary `json:"_source"`
-								} `json:"hits"`
-							} `json:"hits"`
-						} `json:"latest"`
+						Key         string `json:"key"`
+						RegionGroup struct {
+							Buckets []struct {
+								Key    string `json:"key"`
+								Latest struct {
+									Hits struct {
+										Hits []struct {
+											Source es.RegionMetricTrendSummary `json:"_source"`
+										} `json:"hits"`
+									} `json:"hits"`
+								} `json:"latest"`
+							} `json:"buckets"`
+						} `json:"region_group"`
 					} `json:"buckets"`
-				} `json:"region_group"`
+				} `json:"connection_id_group"`
 			} `json:"buckets"`
-		} `json:"connection_id_group"`
+		} `json:"metric_group"`
 	} `json:"aggregations"`
 }
 
@@ -539,23 +544,31 @@ func FetchRegionSummaryPage(client keibi.Client, connectors []source.Type, conne
 		},
 	}
 	res["aggs"] = map[string]any{
-		"connection_id_group": map[string]any{
+		"metric_group": map[string]any{
 			"terms": map[string]any{
-				"field": "connection_id",
+				"field": "metric_id",
 				"size":  size,
 			},
 			"aggs": map[string]any{
-				"region_group": map[string]any{
+				"connection_id_group": map[string]any{
 					"terms": map[string]any{
-						"field": "region",
+						"field": "connection_id",
 						"size":  size,
 					},
 					"aggs": map[string]any{
-						"latest": map[string]any{
-							"top_hits": map[string]any{
-								"size": 1,
-								"sort": map[string]string{
-									"evaluated_at": "desc",
+						"region_group": map[string]any{
+							"terms": map[string]any{
+								"field": "region",
+								"size":  size,
+							},
+							"aggs": map[string]any{
+								"latest": map[string]any{
+									"top_hits": map[string]any{
+										"size": 1,
+										"sort": map[string]string{
+											"evaluated_at": "desc",
+										},
+									},
 								},
 							},
 						},
@@ -579,10 +592,12 @@ func FetchRegionSummaryPage(client keibi.Client, connectors []source.Type, conne
 	}
 
 	hits := make(map[string]int)
-	for _, connectionIdBucket := range response.Aggregations.ConnectionIDGroup.Buckets {
-		for _, regionBucket := range connectionIdBucket.RegionGroup.Buckets {
-			for _, hit := range regionBucket.Latest.Hits.Hits {
-				hits[hit.Source.Region] += hit.Source.ResourceCount
+	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
+		for _, connectionIDBucket := range metricBucket.ConnectionIDGroup.Buckets {
+			for _, regionBucket := range connectionIDBucket.RegionGroup.Buckets {
+				for _, hit := range regionBucket.Latest.Hits.Hits {
+					hits[hit.Source.Region] += hit.Source.ResourceCount
+				}
 			}
 		}
 	}
