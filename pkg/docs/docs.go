@@ -10607,6 +10607,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 90
                 },
+                "query": {
+                    "type": "string",
+                    "example": "select * from kaytu_resources where resource_type = 'aws::ec2::instance'"
+                },
                 "tags": {
                     "description": "Tags",
                     "type": "object",
