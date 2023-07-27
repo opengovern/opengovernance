@@ -46,10 +46,10 @@ func (s AWSCredentialConfig) AsMap() map[string]any {
 }
 
 type SourceAwsRequest struct {
-	Name        string              `json:"name"`
-	Description string              `json:"description"`
-	Email       string              `json:"email"`
-	Config      AWSCredentialConfig `json:"config"`
+	Name        string               `json:"name"`
+	Description string               `json:"description"`
+	Email       string               `json:"email"`
+	Config      *AWSCredentialConfig `json:"config,omitempty"`
 }
 
 type AzureCredentialConfig struct {

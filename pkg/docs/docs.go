@@ -2713,8 +2713,8 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Metric Names",
-                        "name": "metricNames",
+                        "description": "Metric IDs",
+                        "name": "metricIDs",
                         "in": "query"
                     },
                     {
@@ -2765,6 +2765,96 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListMetricsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/inventory/api/v2/analytics/regions/summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns list of regions analytics summary",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "List Regions Summary",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "start time in unix seconds - default is now",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "end time in unix seconds - default is one week ago",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "resource_count",
+                            "growth",
+                            "growth_rate"
+                        ],
+                        "type": "string",
+                        "description": "column to sort by - default is resource_count",
+                        "name": "sortBy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size - default is 20",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number - default is 1",
+                        "name": "pageNumber",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse"
                         }
                     }
                 }
@@ -2873,8 +2963,8 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Metric names to filter by",
-                        "name": "name",
+                        "description": "Metric IDs to filter by",
+                        "name": "ids",
                         "in": "query"
                     },
                     {
@@ -5085,6 +5175,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/connections/{connectionId}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Update a connection with connection ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "onboard"
+                ],
+                "summary": "Update a connection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ConnectionID",
+                        "name": "connectionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
+                        }
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/connections/{connectionId}/state": {
             "post": {
                 "security": [
@@ -5092,17 +5225,17 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Enabling a single source either with connection ID.",
+                "description": "Change connection lifecycle state with connection ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Enable a single source",
+                "summary": "Change connection lifecycle state",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "ConnectionID",
                         "name": "connectionId",
                         "in": "path",
@@ -10570,6 +10703,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 100
                 },
+                "id": {
+                    "type": "string",
+                    "example": "vms"
+                },
                 "name": {
                     "description": "Resource Type",
                     "type": "string",
@@ -11371,6 +11508,20 @@ const docTemplate = `{
             "properties": {
                 "state": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ChangeConnectionRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },

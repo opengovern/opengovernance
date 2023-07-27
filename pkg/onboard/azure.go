@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/subscription/mgmt/subscription"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	absauth "github.com/microsoft/kiota-abstractions-go/authentication"
@@ -15,38 +15,36 @@ import (
 
 type azureSubscription struct {
 	SubscriptionID string
-	SubModel       subscription.Model
+	SubModel       armsubscription.Subscription
 }
 
 func discoverAzureSubscriptions(ctx context.Context, authConfig azure.AuthConfig) ([]azureSubscription, error) {
-	authorizer, err := azure.NewAuthorizerFromConfig(authConfig)
+	identity, err := azidentity.NewClientSecretCredential(
+		authConfig.TenantID,
+		authConfig.ClientID,
+		authConfig.ClientSecret,
+		nil)
+	if err != nil {
+		return nil, err
+	}
+	client, err := armsubscription.NewSubscriptionsClient(identity, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	client := subscription.NewSubscriptionsClient()
-	client.Authorizer = authorizer
-	authorizer.WithAuthorization()
-
-	it, err := client.List(ctx)
-	if err != nil {
-		return nil, err
-	}
+	it := client.NewListPager(nil)
 	subs := make([]azureSubscription, 0)
-	for it.NotDone() {
-		for _, v := range it.Values() {
-			if v.State != subscription.Enabled {
+	for it.More() {
+		page, err := it.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range page.Value {
+			if v == nil || v.State == nil || *v.State != armsubscription.SubscriptionStateEnabled {
 				continue
 			}
-			subs = append(subs, azureSubscription{SubscriptionID: *v.SubscriptionID, SubModel: v})
-		}
-		if it.NotDone() {
-			err := it.NextWithContext(ctx)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			break
+			localV := v
+			subs = append(subs, azureSubscription{SubscriptionID: *v.SubscriptionID, SubModel: *localV})
 		}
 	}
 
@@ -54,22 +52,26 @@ func discoverAzureSubscriptions(ctx context.Context, authConfig azure.AuthConfig
 }
 
 func currentAzureSubscription(ctx context.Context, subId string, authConfig azure.AuthConfig) (*azureSubscription, error) {
-	authorizer, err := azure.NewAuthorizerFromConfig(authConfig)
+	identity, err := azidentity.NewClientSecretCredential(
+		authConfig.TenantID,
+		authConfig.ClientID,
+		authConfig.ClientSecret,
+		nil)
 	if err != nil {
 		return nil, err
 	}
-	client := subscription.NewSubscriptionsClient()
-	client.Authorizer = authorizer
-	authorizer.WithAuthorization()
-
-	sub, err := client.Get(ctx, subId)
+	client, err := armsubscription.NewSubscriptionsClient(identity, nil)
+	if err != nil {
+		return nil, err
+	}
+	sub, err := client.Get(ctx, subId, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	return &azureSubscription{
 		SubscriptionID: subId,
-		SubModel:       sub,
+		SubModel:       sub.Subscription,
 	}, nil
 }
 

@@ -76,6 +76,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	connections.GET("/summary", httpserver.AuthorizeHandler(h.ListConnectionsSummaries, api3.ViewerRole))
 	connections.GET("/summary/:connectionId", httpserver.AuthorizeHandler(h.GetConnectionSummary, api3.ViewerRole))
 	connections.POST("/:connectionId/state", httpserver.AuthorizeHandler(h.ChangeConnectionLifecycleState, api3.EditorRole))
+	connections.PUT("/:connectionId", httpserver.AuthorizeHandler(h.UpdateConnection, api3.EditorRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -735,12 +736,22 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 
 	apiCredentials := make([]api.Credential, 0, len(credentials))
 	for _, cred := range credentials {
-		connectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String())
+		totalConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), nil)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		enabledConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), GetConnectionLifecycleStateEnabledStates())
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		unhealthyConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []ConnectionLifecycleState{ConnectionLifecycleStateUnhealthy})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		apiCredential := cred.ToAPI()
-		apiCredential.TotalConnections = &connectionCount
+		apiCredential.TotalConnections = &totalConnectionCount
+		apiCredential.EnabledConnections = &enabledConnectionCount
+		apiCredential.UnhealthyConnections = &unhealthyConnectionCount
 		apiCredentials = append(apiCredentials, apiCredential)
 	}
 
@@ -2131,13 +2142,13 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 
 // ChangeConnectionLifecycleState godoc
 //
-//	@Summary		Enable a single source
-//	@Description	Enabling a single source either with connection ID.
+//	@Summary		Change connection lifecycle state
+//	@Description	Change connection lifecycle state with connection ID.
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
 //	@Success		200
-//	@Param			connectionId	path	integer										true	"ConnectionID"
+//	@Param			connectionId	path	string										true	"ConnectionID"
 //	@Param			request			body	api.ChangeConnectionLifecycleStateRequest	true	"Request"
 //	@Router			/onboard/api/v1/connections/{connectionId}/state [post]
 func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
@@ -2196,6 +2207,56 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 	}
 
 	return ctx.NoContent(http.StatusOK)
+}
+
+// UpdateConnection godoc
+//
+//	@Summary		Update a connection
+//	@Description	Update a connection with connection ID.
+//	@Security		BearerToken
+//	@Tags			onboard
+//	@Produce		json
+//	@Success		200
+//	@Param			connectionId	path		string						true	"ConnectionID"
+//	@Param			request			body		api.ChangeConnectionRequest	true	"Request"
+//	@Success		200				{object}	api.Connection
+//	@Router			/onboard/api/v1/connections/{connectionId} [put]
+func (h HttpHandler) UpdateConnection(ctx echo.Context) error {
+	connectionId, err := uuid.Parse(ctx.Param("connectionId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection id")
+	}
+
+	var req api.ChangeConnectionRequest
+	if err := bindValidate(ctx, &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	connection, err := h.db.GetSource(connectionId)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusBadRequest, "connection not found")
+		}
+		return err
+	}
+
+	if req.Name != "" {
+		connection.Name = req.Name
+	}
+	if req.Description != "" {
+		connection.Description = req.Description
+	}
+	if req.Email != "" {
+		connection.Email = req.Email
+	}
+
+	con, err := h.db.UpdateSource(&connection)
+	if err != nil {
+		h.logger.Error("failed to update connection", zap.Error(err))
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update connection")
+	}
+
+	return ctx.JSON(http.StatusOK, con.toAPI())
 }
 
 // ListSources godoc
@@ -2560,7 +2621,12 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		return err
 	}
 
-	connectionData, err := h.inventoryClient.ListConnectionsData(httpclient.FromEchoContext(ctx), nil, &startTime, &endTime)
+	var filteredConnectionIDs []string
+	for _, conn := range connections {
+		filteredConnectionIDs = append(filteredConnectionIDs, conn.ID.String())
+	}
+
+	connectionData, err := h.inventoryClient.ListConnectionsData(httpclient.FromEchoContext(ctx), filteredConnectionIDs, &startTime, &endTime)
 	if err != nil {
 		return err
 	}

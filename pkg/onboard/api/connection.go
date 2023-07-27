@@ -74,3 +74,9 @@ type ListConnectionSummaryResponse struct {
 	TotalDisabledCount    int          `json:"totalDisabledCount" example:"10" minimum:"0"`
 	Connections           []Connection `json:"connections"`
 }
+
+type ChangeConnectionRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Email       string `json:"email"`
+}
