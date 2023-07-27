@@ -2621,11 +2621,6 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		return err
 	}
 
-	var filteredConnectionIDs []string
-	for _, conn := range connections {
-		filteredConnectionIDs = append(filteredConnectionIDs, conn.ID.String())
-	}
-
 	connectionData, err := h.inventoryClient.ListConnectionsData(httpclient.FromEchoContext(ctx), filteredConnectionIDs, &startTime, &endTime)
 	if err != nil {
 		return err
