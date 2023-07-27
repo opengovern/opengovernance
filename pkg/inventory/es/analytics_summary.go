@@ -632,8 +632,6 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client keibi.Client, connector
 	res := make(map[string]any)
 	var filters []any
 
-	t = t.Truncate(24 * time.Hour)
-
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.MetricTrendConnectionSummary)}},
 	})
