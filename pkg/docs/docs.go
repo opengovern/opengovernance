@@ -10248,7 +10248,7 @@ const docTemplate = `{
                 },
                 "date": {
                     "type": "string",
-                    "format": "date"
+                    "format": "date-time"
                 }
             }
         },
@@ -11070,7 +11070,7 @@ const docTemplate = `{
                 },
                 "date": {
                     "type": "string",
-                    "format": "date"
+                    "format": "date-time"
                 }
             }
         },
@@ -11491,18 +11491,22 @@ const docTemplate = `{
             "properties": {
                 "connectionsEnabled": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 20
                 },
                 "healthyConnections": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 15
                 },
                 "totalConnections": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 20
                 },
                 "unhealthyConnections": {
                     "type": "integer",
+                    "minimum": 0,
                     "example": 5
                 }
             }
@@ -11675,13 +11679,16 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "allowNewConnections": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "autoOnboardSupport": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": false
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "This is a long volume of words for just showing the case of the description for the demo and checking value purposes only and has no meaning whatsoever"
                 },
                 "direction": {
                     "$ref": "#/definitions/source.ConnectorDirectionType"
@@ -11691,10 +11698,13 @@ const docTemplate = `{
                     "example": "Azure"
                 },
                 "logo": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "https://kaytu.io/logo.png"
                 },
                 "maxConnectionLimit": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 10000
                 },
                 "name": {
                     "allOf": [
@@ -11705,10 +11715,16 @@ const docTemplate = `{
                     "example": "Azure"
                 },
                 "shortDescription": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "This is a short Description for this connector"
                 },
                 "status": {
-                    "$ref": "#/definitions/source.ConnectorStatus"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.ConnectorStatus"
+                        }
+                    ],
+                    "example": "enabled"
                 },
                 "tags": {
                     "type": "object",
@@ -11720,16 +11736,21 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "allowNewConnections": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "autoOnboardSupport": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": false
                 },
                 "connection_count": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 1024
                 },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "This is a long volume of words for just showing the case of the description for the demo and checking value purposes only and has no meaning whatsoever"
                 },
                 "direction": {
                     "$ref": "#/definitions/source.ConnectorDirectionType"
@@ -11739,10 +11760,13 @@ const docTemplate = `{
                     "example": "Azure"
                 },
                 "logo": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "https://kaytu.io/logo.png"
                 },
                 "maxConnectionLimit": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 10000
                 },
                 "name": {
                     "allOf": [
@@ -11753,10 +11777,16 @@ const docTemplate = `{
                     "example": "Azure"
                 },
                 "shortDescription": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "This is a short Description for this connector"
                 },
                 "status": {
-                    "$ref": "#/definitions/source.ConnectorStatus"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.ConnectorStatus"
+                        }
+                    ],
+                    "example": "enabled"
                 },
                 "tags": {
                     "type": "object",
@@ -11798,7 +11828,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "autoOnboardEnabled": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": false
                 },
                 "config": {},
                 "connections": {
@@ -11808,44 +11839,72 @@ const docTemplate = `{
                     }
                 },
                 "connectorType": {
-                    "$ref": "#/definitions/source.Type"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "AWS"
                 },
                 "credentialType": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CredentialType"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CredentialType"
+                        }
+                    ],
+                    "example": "manual-aws-org"
                 },
                 "enabled": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 },
                 "enabled_connections": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 250
                 },
                 "healthReason": {
-                    "type": "string"
+                    "type": "string",
+                    "example": ""
                 },
                 "healthStatus": {
-                    "$ref": "#/definitions/source.HealthStatus"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.HealthStatus"
+                        }
+                    ],
+                    "example": "healthy"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "1028642a-b22e-26ha-c5h2-22nl254678m5"
                 },
                 "lastHealthCheckTime": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2023-06-03T12:21:33.406928Z"
                 },
                 "metadata": {
-                    "type": "object",
-                    "additionalProperties": {}
+                    "type": "object"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "a-1mahsl7lzk"
                 },
                 "onboardDate": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2023-06-03T12:21:33.406928Z"
                 },
                 "total_connections": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 300
                 },
                 "unhealthy_connections": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 50
                 }
             }
         },
@@ -11920,7 +11979,9 @@ const docTemplate = `{
                     }
                 },
                 "totalCredentialCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 5
                 }
             }
         },
