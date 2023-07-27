@@ -150,6 +150,8 @@ func (j *Job) Run(
 			} else {
 				vn := es2.RegionMetricTrendSummary{
 					Region:        region,
+					ConnectionID:  conn.ID,
+					Connector:     conn.Connector,
 					EvaluatedAt:   startTime.UnixMilli(),
 					MetricID:      metric.ID,
 					ResourceCount: int(count),
