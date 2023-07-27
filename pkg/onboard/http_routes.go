@@ -432,7 +432,7 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return err
 	}
 
-	azSub, err := currentAzureSubscription(ctx.Request().Context(), req.Config.SubscriptionId, keibiazure.AuthConfig{
+	azSub, err := currentAzureSubscription(ctx.Request().Context(), h.logger, req.Config.SubscriptionId, keibiazure.AuthConfig{
 		TenantID:     req.Config.TenantId,
 		ObjectID:     req.Config.ObjectId,
 		SecretID:     req.Config.SecretId,
@@ -867,7 +867,7 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 		return nil, err
 	}
 	h.logger.Info("discovering subscriptions", zap.String("credentialId", credential.ID.String()))
-	subs, err := discoverAzureSubscriptions(ctx, keibiazure.AuthConfig{
+	subs, err := discoverAzureSubscriptions(ctx, h.logger, keibiazure.AuthConfig{
 		TenantID:     azureCnf.TenantID,
 		ObjectID:     azureCnf.ObjectID,
 		SecretID:     azureCnf.SecretID,
@@ -1896,7 +1896,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 
 			if err == nil && isAttached {
 				var azSub *azureSubscription
-				azSub, err = currentAzureSubscription(ctx.Request().Context(), src.SourceId, authCnf)
+				azSub, err = currentAzureSubscription(ctx.Request().Context(), h.logger, src.SourceId, authCnf)
 				if err != nil {
 					h.logger.Error("failed to get current azure subscription", zap.Error(err), zap.String("sourceId", src.SourceId))
 					return err
