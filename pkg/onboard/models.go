@@ -219,12 +219,26 @@ func NewAWSSource(logger *zap.Logger, cfg describe.AWSAccountConfig, account aws
 type AzureConnectionMetadata struct {
 	SubscriptionID string                       `json:"subscription_id"`
 	SubModel       armsubscription.Subscription `json:"subscription_model"`
+	SubTags        map[string][]string          `json:"subscription_tags"`
 }
 
 func NewAzureConnectionMetadata(sub azureSubscription) AzureConnectionMetadata {
 	metadata := AzureConnectionMetadata{
 		SubscriptionID: sub.SubscriptionID,
 		SubModel:       sub.SubModel,
+		SubTags:        make(map[string][]string),
+	}
+	for _, tag := range sub.SubTags {
+		if tag.TagName == nil || tag.Count == nil {
+			continue
+		}
+		metadata.SubTags[*tag.TagName] = make([]string, 0, len(tag.Values))
+		for _, value := range tag.Values {
+			if value == nil || value.TagValue == nil {
+				continue
+			}
+			metadata.SubTags[*tag.TagName] = append(metadata.SubTags[*tag.TagName], *value.TagValue)
+		}
 	}
 
 	return metadata
