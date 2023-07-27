@@ -74,6 +74,7 @@ func (j *Job) Run(
 	connectionCache := map[string]api.Connection{}
 
 	for _, metric := range metrics {
+		connectionResultMap := map[string]es2.ConnectionMetricTrendSummary{}
 		providerResultMap := map[string]es2.ConnectorMetricTrendSummary{}
 		regionResultMap := map[string]es2.RegionMetricTrendSummary{}
 
@@ -117,17 +118,19 @@ func (j *Job) Run(
 				return fmt.Errorf("connection not found: %s", sourceID)
 			}
 
-			var msgs []kafka.Doc
-			msgs = append(msgs, es2.ConnectionMetricTrendSummary{
-				ConnectionID:  conn.ID,
-				Connector:     conn.Connector,
-				MetricID:      metric.ID,
-				ResourceCount: int(count),
-				EvaluatedAt:   startTime.UnixMilli(),
-				ReportType:    es.MetricTrendConnectionSummary,
-			})
-			if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger); err != nil {
-				return err
+			if v, ok := connectionResultMap[conn.ID.String()]; ok {
+				v.ResourceCount += int(count)
+				connectionResultMap[conn.ID.String()] = v
+			} else {
+				vn := es2.ConnectionMetricTrendSummary{
+					ConnectionID:  conn.ID,
+					Connector:     conn.Connector,
+					MetricID:      metric.ID,
+					ResourceCount: int(count),
+					EvaluatedAt:   startTime.UnixMilli(),
+					ReportType:    es.MetricTrendConnectionSummary,
+				}
+				connectionResultMap[conn.Connector.String()] = vn
 			}
 
 			if v, ok := providerResultMap[conn.Connector.String()]; ok {
@@ -161,22 +164,21 @@ func (j *Job) Run(
 			}
 		}
 
-		for _, item := range providerResultMap {
-			var msgs []kafka.Doc
+		var msgs []kafka.Doc
+		for _, item := range connectionResultMap {
 			msgs = append(msgs, item)
-			if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger); err != nil {
-				return err
-			}
+		}
+		for _, item := range providerResultMap {
+			msgs = append(msgs, item)
+		}
+		for _, item := range regionResultMap {
+			msgs = append(msgs, item)
+		}
+		if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger); err != nil {
+			return err
 		}
 
-		for _, item := range regionResultMap {
-			var msgs []kafka.Doc
-			msgs = append(msgs, item)
-			if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger); err != nil {
-				return err
-			}
-		}
-		fmt.Printf("Write %d region docs, %d provider docs, %d connection docs\n", len(regionResultMap), len(providerResultMap), len(res.Data))
+		fmt.Printf("Write %d region docs, %d provider docs, %d connection docs\n", len(regionResultMap), len(providerResultMap), len(connectionResultMap))
 	}
 
 	return nil
