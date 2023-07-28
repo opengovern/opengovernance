@@ -30,7 +30,7 @@ func (s Scheduler) RunInsightJobScheduler() {
 }
 
 func (s Scheduler) scheduleInsightJob(forceCreate bool) {
-	srcs, err := s.db.ListSources()
+	srcs, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.KeibiAdminRole}, nil)
 	if err != nil {
 		s.logger.Error("Failed to fetch list of sources", zap.Error(err))
 		InsightJobsCount.WithLabelValues("failure").Inc()
@@ -46,12 +46,12 @@ func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 
 	for _, ins := range insights {
 		for _, src := range srcs {
-			if ins.Connector != source.Nil && src.Type != ins.Connector {
+			if ins.Connector != source.Nil && src.Connector != ins.Connector {
 				// insight is not for this source
 				continue
 			}
 
-			err := s.runInsightJob(forceCreate, ins, src.ID, src.AccountID, src.Type)
+			err := s.runInsightJob(forceCreate, ins, src.ID.String(), src.ConnectionID, src.Connector)
 			if err != nil {
 				s.logger.Error("Failed to run InsightJob", zap.Error(err))
 				InsightJobsCount.WithLabelValues("failure").Inc()

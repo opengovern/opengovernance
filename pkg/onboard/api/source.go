@@ -11,8 +11,6 @@ import (
 type SourceAction string
 
 const (
-	SourceCreated SourceAction = "CREATE"
-	SourceUpdated SourceAction = "UPDATE"
 	SourceDeleted SourceAction = "DELETE"
 )
 

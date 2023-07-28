@@ -886,19 +886,6 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 			continue
 		}
 
-		err := ProcessSourceAction(s.db, event)
-		if err != nil {
-			s.logger.Error("Failed to process event for Source",
-				zap.String("sourceId", event.SourceID),
-				zap.Error(err),
-			)
-			err = msg.Nack(false, false)
-			if err != nil {
-				s.logger.Error("Failed nacking message", zap.Error(err))
-			}
-			continue
-		}
-
 		if err := msg.Ack(false); err != nil {
 			s.logger.Error("Failed acking message", zap.Error(err))
 		}
@@ -961,24 +948,27 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 func (s *Scheduler) RunComplianceReport() (int, error) {
 	createdJobCount := 0
 
-	sources, err := s.db.ListSources()
+	sources, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.KeibiAdminRole}, nil)
 	if err != nil {
 		ComplianceJobsCount.WithLabelValues("failure").Inc()
 		return createdJobCount, fmt.Errorf("error while listing sources: %v", err)
 	}
 
 	for _, src := range sources {
+		if !src.IsEnabled() {
+			continue
+		}
 		ctx := &httpclient.Context{
 			UserRole: api2.ViewerRole,
 		}
-		benchmarks, err := s.complianceClient.GetAllBenchmarkAssignmentsBySourceId(ctx, src.ID)
+		benchmarks, err := s.complianceClient.GetAllBenchmarkAssignmentsBySourceId(ctx, src.ID.String())
 		if err != nil {
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
 			return createdJobCount, fmt.Errorf("error while getting benchmark assignments: %v", err)
 		}
 
 		for _, b := range benchmarks {
-			crj := newComplianceReportJob(src.ID, src.Type, b.BenchmarkId)
+			crj := newComplianceReportJob(src.ID.String(), src.Connector, b.BenchmarkId)
 			err := s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
@@ -988,12 +978,6 @@ func (s *Scheduler) RunComplianceReport() (int, error) {
 
 			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, src, &crj)
 
-			err = s.db.UpdateSourceReportGenerated(src.ID, s.complianceIntervalHours)
-			if err != nil {
-				ComplianceJobsCount.WithLabelValues("failure").Inc()
-				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				return createdJobCount, fmt.Errorf("error while updating compliance job: %v", err)
-			}
 			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
 			createdJobCount++
 		}

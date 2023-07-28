@@ -6576,68 +6576,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v1/sources": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieves list of all of Keibi sources",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "schedule"
-                ],
-                "summary": "List Sources",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Source"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/schedule/api/v1/sources/{source_id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieves Keibi source details by id\nGetting Keibi source by id",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "schedule"
-                ],
-                "summary": "Get source",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "source_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Source"
-                        }
-                    }
-                }
-            }
-        },
         "/schedule/api/v1/sources/{source_id}/jobs/compliance": {
             "get": {
                 "security": [
@@ -6687,37 +6625,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v1/sources/{source_id}/jobs/compliance/refresh": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Run compliance report jobs",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "schedule"
-                ],
-                "summary": "Run compliance report jobs",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "source_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
         "/schedule/api/v1/sources/{source_id}/jobs/describe": {
             "get": {
                 "security": [
@@ -6751,37 +6658,6 @@ const docTemplate = `{
                                 "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.DescribeSource"
                             }
                         }
-                    }
-                }
-            }
-        },
-        "/schedule/api/v1/sources/{source_id}/jobs/describe/refresh": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Run describe jobs",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "schedule"
-                ],
-                "summary": "Run describe jobs",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "SourceID",
-                        "name": "source_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
                     }
                 }
             }
@@ -9868,39 +9744,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_describe_api.Source": {
-            "type": "object",
-            "properties": {
-                "accountId": {
-                    "type": "string",
-                    "example": "123456789012"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
-                },
-                "lastComplianceReportAt": {
-                    "type": "string",
-                    "example": "2021-01-01T00:00:00Z"
-                },
-                "lastDescribeJobStatus": {
-                    "type": "string",
-                    "example": "COMPLETED"
-                },
-                "lastDescribedAt": {
-                    "type": "string",
-                    "example": "2021-01-01T00:00:00Z"
-                },
-                "type": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
-                    "example": "Azure"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack": {
             "type": "object",
             "required": [
@@ -11555,6 +11398,9 @@ const docTemplate = `{
                 "cost": {
                     "type": "number",
                     "example": 1000
+                },
+                "credential": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential"
                 },
                 "credentialID": {
                     "type": "string",

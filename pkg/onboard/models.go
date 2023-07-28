@@ -436,7 +436,7 @@ func (credential *Credential) ToAPI() api.Credential {
 		HealthReason:        credential.HealthReason,
 		Metadata:            metadata,
 
-		Config: nil,
+		Config: "",
 
 		Connections:          nil,
 		TotalConnections:     nil,
