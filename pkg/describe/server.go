@@ -533,6 +533,9 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 	}
 
 	for _, connection := range connections {
+		if !connection.IsEnabled() {
+			continue
+		}
 
 		crj := newComplianceReportJob(connection.ID.String(), connection.Connector, req.BenchmarkID)
 
@@ -1151,6 +1154,9 @@ func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
 
 	var insightJobs []InsightJob
 	for _, connection := range connections {
+		if !connection.IsEnabled() {
+			continue
+		}
 		job := newInsightJob(*insight, connection.Connector.String(), connection.ID.String(), connection.ConnectionID, "")
 		err = h.Scheduler.db.AddInsightJob(&job)
 		if err != nil {

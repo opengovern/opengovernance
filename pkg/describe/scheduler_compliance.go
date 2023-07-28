@@ -41,6 +41,9 @@ func (s Scheduler) scheduleComplianceJob() error {
 	}
 
 	for _, src := range sources {
+		if !src.IsEnabled() {
+			continue
+		}
 		ctx := &httpclient.Context{
 			UserRole: api2.ViewerRole,
 		}

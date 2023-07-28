@@ -46,6 +46,9 @@ func (s Scheduler) scheduleInsightJob(forceCreate bool) {
 
 	for _, ins := range insights {
 		for _, src := range srcs {
+			if !src.IsEnabled() {
+				continue
+			}
 			if ins.Connector != source.Nil && src.Connector != ins.Connector {
 				// insight is not for this source
 				continue

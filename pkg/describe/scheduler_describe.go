@@ -114,6 +114,9 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 			case enums.DescribeTriggerTypeStack:
 			default:
 				src, err = s.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.KeibiAdminRole}, ds.SourceID)
+				if !src.IsEnabled() {
+					continue
+				}
 				if err != nil {
 					s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dr.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
@@ -196,6 +199,9 @@ func (s Scheduler) scheduleDescribeJob() {
 		return
 	}
 	for _, connection := range connections {
+		if !connection.IsEnabled() {
+			continue
+		}
 		err = s.describeConnection(connection, true)
 		if err != nil {
 			s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
