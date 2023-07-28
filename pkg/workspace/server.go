@@ -17,7 +17,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	httpserver2 "github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client/pipedrive"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	"github.com/go-redis/cache/v8"
@@ -65,7 +64,6 @@ type Server struct {
 	cfg                  *Config
 	db                   *Database
 	authClient           authclient.AuthServiceClient
-	pipedriveClient      pipedrive.PipedriveServiceClient
 	kubeClient           k8sclient.Client // the kubernetes client
 	rdb                  *redis.Client
 	cache                *cache.Cache
@@ -107,7 +105,6 @@ func NewServer(cfg *Config) (*Server, error) {
 	}
 
 	s.authClient = authclient.NewAuthServiceClient(cfg.AuthBaseUrl)
-	s.pipedriveClient = pipedrive.NewPipedriveServiceClient(logger, cfg.PipedriveBaseUrl, cfg.PipedriveApiToken)
 
 	s.rdb = redis.NewClient(&redis.Options{
 		Addr:     cfg.RedisAddress,
@@ -142,22 +139,29 @@ func NewServer(cfg *Config) (*Server, error) {
 }
 
 func (s *Server) Register(e *echo.Echo) {
-	v1 := e.Group("/api/v1")
+	v1Group := e.Group("/api/v1")
 
-	v1.POST("/workspace", httpserver2.AuthorizeHandler(s.CreateWorkspace, authapi.EditorRole))
-	v1.DELETE("/workspace/:workspace_id", httpserver2.AuthorizeHandler(s.DeleteWorkspace, authapi.EditorRole))
-	v1.POST("/workspace/:workspace_id/suspend", httpserver2.AuthorizeHandler(s.SuspendWorkspace, authapi.EditorRole))
-	v1.POST("/workspace/:workspace_id/resume", httpserver2.AuthorizeHandler(s.ResumeWorkspace, authapi.EditorRole))
-	v1.GET("/workspaces/limits/:workspace_name", httpserver2.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
-	v1.GET("/workspaces/limits/byid/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspaceLimitsByID, authapi.ViewerRole))
-	v1.GET("/workspaces/byid/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspaceByID, authapi.ViewerRole))
-	v1.GET("/workspaces", httpserver2.AuthorizeHandler(s.ListWorkspaces, authapi.ViewerRole))
-	v1.GET("/workspace/current", httpserver2.AuthorizeHandler(s.GetCurrentWorkspace, authapi.ViewerRole))
-	v1.GET("/workspaces/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspace, authapi.ViewerRole))
-	v1.POST("/workspace/:workspace_id/owner", httpserver2.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
-	v1.POST("/workspace/:workspace_id/name", httpserver2.AuthorizeHandler(s.ChangeName, authapi.KeibiAdminRole))
-	v1.POST("/workspace/:workspace_id/tier", httpserver2.AuthorizeHandler(s.ChangeTier, authapi.KeibiAdminRole))
-	v1.POST("/workspace/:workspace_id/organization", httpserver2.AuthorizeHandler(s.ChangeOrganization, authapi.KeibiAdminRole))
+	workspaceGroup := v1Group.Group("/workspace")
+	workspaceGroup.POST("", httpserver2.AuthorizeHandler(s.CreateWorkspace, authapi.EditorRole))
+	workspaceGroup.DELETE("/:workspace_id", httpserver2.AuthorizeHandler(s.DeleteWorkspace, authapi.EditorRole))
+	workspaceGroup.POST("/:workspace_id/suspend", httpserver2.AuthorizeHandler(s.SuspendWorkspace, authapi.EditorRole))
+	workspaceGroup.POST("/:workspace_id/resume", httpserver2.AuthorizeHandler(s.ResumeWorkspace, authapi.EditorRole))
+	workspaceGroup.GET("/current", httpserver2.AuthorizeHandler(s.GetCurrentWorkspace, authapi.ViewerRole))
+	workspaceGroup.POST("/:workspace_id/owner", httpserver2.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
+	workspaceGroup.POST("/:workspace_id/name", httpserver2.AuthorizeHandler(s.ChangeName, authapi.KeibiAdminRole))
+	workspaceGroup.POST("/:workspace_id/tier", httpserver2.AuthorizeHandler(s.ChangeTier, authapi.KeibiAdminRole))
+	workspaceGroup.POST("/:workspace_id/organization", httpserver2.AuthorizeHandler(s.ChangeOrganization, authapi.KeibiAdminRole))
+
+	workspacesGroup := v1Group.Group("/workspaces")
+	workspacesGroup.GET("/limits/:workspace_name", httpserver2.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
+	workspacesGroup.GET("/limits/byid/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspaceLimitsByID, authapi.ViewerRole))
+	workspacesGroup.GET("/byid/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspaceByID, authapi.ViewerRole))
+	workspacesGroup.GET("", httpserver2.AuthorizeHandler(s.ListWorkspaces, authapi.ViewerRole))
+	workspacesGroup.GET("/:workspace_id", httpserver2.AuthorizeHandler(s.GetWorkspace, authapi.ViewerRole))
+
+	organizationGroup := v1Group.Group("/organization")
+	organizationGroup.POST("", httpserver2.AuthorizeHandler(s.CreateOrganization, authapi.EditorRole))
+	organizationGroup.DELETE("/:organizationId", httpserver2.AuthorizeHandler(s.DeleteOrganization, authapi.EditorRole))
 }
 
 func (s *Server) Start() error {
@@ -737,38 +741,9 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 		fmt.Printf("failed to load version due to %v\n", err)
 	}
 
-	var organization *api.OrganizationResponse
-	if workspace.OrganizationID != nil {
-		org, err := s.pipedriveClient.GetPipedriveOrganization(c.Request().Context(), *workspace.OrganizationID)
-		if err != nil {
-			s.logger.Error("failed to get organization from pipedrive", zap.Error(err))
-		} else {
-			organization = &api.OrganizationResponse{
-				ID:            *workspace.OrganizationID,
-				CompanyName:   org.Name,
-				Url:           org.URL,
-				AddressLine1:  org.Address,
-				City:          org.AddressLocality,
-				State:         org.AddressAdminAreaLevel1,
-				Country:       org.AddressCountry,
-				ContactPhone:  pipedrive.GetPrimaryValue(org.Contact.Phones),
-				ContactEmail:  pipedrive.GetPrimaryValue(org.Contact.Emails),
-				ContactPerson: org.Contact.Name,
-			}
-		}
-	}
-
 	return c.JSON(http.StatusOK, api.WorkspaceResponse{
-		ID:           workspace.ID,
-		OwnerId:      workspace.OwnerId,
-		URI:          workspace.URI,
-		Name:         workspace.Name,
-		Tier:         workspace.Tier,
-		Version:      version,
-		Status:       workspace.Status,
-		Description:  workspace.Description,
-		CreatedAt:    workspace.CreatedAt,
-		Organization: organization,
+		Workspace: workspace.ToAPI(),
+		Version:   version,
 	})
 }
 
@@ -909,15 +884,8 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 		}
 
 		workspaces = append(workspaces, &api.WorkspaceResponse{
-			ID:          workspace.ID,
-			OwnerId:     workspace.OwnerId,
-			URI:         workspace.URI,
-			Name:        workspace.Name,
-			Tier:        workspace.Tier,
-			Version:     version,
-			Status:      workspace.Status,
-			Description: workspace.Description,
-			CreatedAt:   workspace.CreatedAt,
+			Workspace: workspace.ToAPI(),
+			Version:   version,
 		})
 	}
 	return c.JSON(http.StatusOK, workspaces)
@@ -953,38 +921,9 @@ func (s *Server) GetCurrentWorkspace(c echo.Context) error {
 		fmt.Printf("failed to load version due to %v\n", err)
 	}
 
-	var organization *api.OrganizationResponse
-	if workspace.OrganizationID != nil {
-		org, err := s.pipedriveClient.GetPipedriveOrganization(c.Request().Context(), *workspace.OrganizationID)
-		if err != nil {
-			s.logger.Error("failed to get organization from pipedrive", zap.Error(err))
-		} else {
-			organization = &api.OrganizationResponse{
-				ID:            *workspace.OrganizationID,
-				CompanyName:   org.Name,
-				Url:           org.URL,
-				AddressLine1:  org.Address,
-				City:          org.AddressLocality,
-				State:         org.AddressAdminAreaLevel1,
-				Country:       org.AddressCountry,
-				ContactPhone:  pipedrive.GetPrimaryValue(org.Contact.Phones),
-				ContactEmail:  pipedrive.GetPrimaryValue(org.Contact.Emails),
-				ContactPerson: org.Contact.Name,
-			}
-		}
-	}
-
 	return c.JSON(http.StatusOK, api.WorkspaceResponse{
-		ID:           workspace.ID,
-		OwnerId:      workspace.OwnerId,
-		URI:          workspace.URI,
-		Name:         workspace.Name,
-		Tier:         workspace.Tier,
-		Version:      version,
-		Status:       workspace.Status,
-		Description:  workspace.Description,
-		CreatedAt:    workspace.CreatedAt,
-		Organization: organization,
+		Workspace: workspace.ToAPI(),
+		Version:   version,
 	})
 }
 
@@ -1141,6 +1080,14 @@ func (s *Server) ChangeOrganization(c echo.Context) error {
 		return err
 	}
 
+	_, err = s.db.GetOrganization(request.NewOrgID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "organization not found")
+		}
+		return err
+	}
+
 	err = s.db.UpdateWorkspaceOrganization(workspaceID, request.NewOrgID)
 	if err != nil {
 		return err
@@ -1238,14 +1185,72 @@ func (s *Server) GetWorkspaceByID(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, api.Workspace{
-		ID:             dbWorkspace.ID,
-		Name:           dbWorkspace.Name,
-		OwnerId:        dbWorkspace.OwnerId,
-		URI:            dbWorkspace.URI,
-		Status:         dbWorkspace.Status,
-		Description:    dbWorkspace.Description,
-		Tier:           dbWorkspace.Tier,
-		OrganizationID: dbWorkspace.OrganizationID,
-	})
+	return c.JSON(http.StatusOK, dbWorkspace.ToAPI())
+}
+
+// CreateOrganization godoc
+//
+//	@Summary	Create an organization
+//	@Security	BearerToken
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		request	body		api.Organization	true	"Organization"
+//	@Success	201		{object}	api.Organization
+//	@Router		/workspace/api/v1/organization [post]
+func (s *Server) CreateOrganization(c echo.Context) error {
+	var request api.Organization
+	if err := c.Bind(&request); err != nil {
+		return err
+	}
+
+	dbOrg := Organization{
+		CompanyName:  request.CompanyName,
+		Url:          request.Url,
+		Address:      request.Address,
+		City:         request.City,
+		State:        request.State,
+		Country:      request.Country,
+		ContactPhone: request.ContactPhone,
+		ContactEmail: request.ContactEmail,
+		ContactName:  request.ContactName,
+	}
+	err := s.db.CreateOrganization(&dbOrg)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusCreated, dbOrg.ToAPI())
+}
+
+// DeleteOrganization godoc
+//
+//	@Summary	Create an organization
+//	@Security	BearerToken
+//	@Tags		workspace
+//	@Accept		json
+//	@Produce	json
+//	@Param		organizationId	path	int	true	"Organization ID"
+//	@Success	202
+//	@Router		/workspace/api/v1/organization/{organizationId} [delete]
+func (s *Server) DeleteOrganization(c echo.Context) error {
+	organizationIDStr := c.Param("organizationId")
+	organizationID, err := strconv.ParseInt(organizationIDStr, 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid organization ID")
+	}
+	_, err = s.db.GetOrganization(uint(organizationID))
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "Organization not found")
+		}
+		return err
+	}
+
+	err = s.db.DeleteOrganization(uint(organizationID))
+	if err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusAccepted)
 }
