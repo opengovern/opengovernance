@@ -7065,6 +7065,77 @@ const docTemplate = `{
                 }
             }
         },
+        "/workspace/api/v1/organization": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Create an organization",
+                "parameters": [
+                    {
+                        "description": "Organization",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Organization"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Organization"
+                        }
+                    }
+                }
+            }
+        },
+        "/workspace/api/v1/organization/{organizationId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workspace"
+                ],
+                "summary": "Create an organization",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Organization ID",
+                        "name": "organizationId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    }
+                }
+            }
+        },
         "/workspace/api/v1/workspace": {
             "post": {
                 "security": [
@@ -11947,16 +12018,10 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.OrganizationResponse": {
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Organization": {
             "type": "object",
             "properties": {
-                "addressLine1": {
-                    "type": "string"
-                },
-                "addressLine2": {
-                    "type": "string"
-                },
-                "addressLine3": {
+                "address": {
                     "type": "string"
                 },
                 "city": {
@@ -11968,7 +12033,7 @@ const docTemplate = `{
                 "contactEmail": {
                     "type": "string"
                 },
-                "contactPerson": {
+                "contactName": {
                     "type": "string"
                 },
                 "contactPhone": {
@@ -12004,29 +12069,48 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Workspace": {
             "type": "object",
             "properties": {
+                "createdAt": {
+                    "type": "string",
+                    "example": "2023-05-17T14:39:02.707659Z"
+                },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
                 },
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "ws-698542025141040315"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "kaytu"
                 },
-                "organization_id": {
-                    "type": "integer"
+                "organization": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Organization"
                 },
-                "owner_id": {
-                    "type": "string"
+                "ownerId": {
+                    "type": "string",
+                    "example": "google-oauth2|204590896945502695694"
                 },
                 "status": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus"
+                        }
+                    ],
+                    "example": "PROVISIONED"
                 },
                 "tier": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier"
+                        }
+                    ],
+                    "example": "ENTERPRISE"
                 },
                 "uri": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "https://app.kaytu.dev/kaytu"
                 }
             }
         },
@@ -12098,10 +12182,10 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string",
-                    "example": "keibi"
+                    "example": "kaytu"
                 },
                 "organization": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.OrganizationResponse"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Organization"
                 },
                 "ownerId": {
                     "type": "string",
@@ -12125,7 +12209,7 @@ const docTemplate = `{
                 },
                 "uri": {
                     "type": "string",
-                    "example": "https://app.kaytu.dev/keibi"
+                    "example": "https://app.kaytu.dev/kaytu"
                 },
                 "version": {
                     "type": "string",
