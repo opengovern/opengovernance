@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func (s Scheduler) RunMustSummerizeJobScheduler() {
+func (s *Scheduler) RunMustSummerizeJobScheduler() {
 	s.logger.Info("Scheduling must summerize jobs on a timer")
 
 	t := time.NewTicker(JobSchedulingInterval)
@@ -45,7 +45,7 @@ func (s Scheduler) RunMustSummerizeJobScheduler() {
 	}
 }
 
-func (s Scheduler) scheduleMustSummarizerJob() error {
+func (s *Scheduler) scheduleMustSummarizerJob() error {
 	ongoingJobs, err := s.db.GetOngoingSummarizerJobsByType(summarizer.JobType_ResourceMustSummarizer)
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()

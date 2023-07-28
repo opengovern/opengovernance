@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s Scheduler) RunInsightJobScheduler() {
+func (s *Scheduler) RunInsightJobScheduler() {
 	s.logger.Info("Scheduling insight jobs on a timer")
 
 	t := time.NewTicker(JobSchedulingInterval)
@@ -29,7 +29,7 @@ func (s Scheduler) RunInsightJobScheduler() {
 	}
 }
 
-func (s Scheduler) scheduleInsightJob(forceCreate bool) {
+func (s *Scheduler) scheduleInsightJob(forceCreate bool) {
 	srcs, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.KeibiAdminRole}, nil)
 	if err != nil {
 		s.logger.Error("Failed to fetch list of sources", zap.Error(err))

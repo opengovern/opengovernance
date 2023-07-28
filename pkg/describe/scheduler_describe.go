@@ -44,7 +44,7 @@ type CloudNativeCall struct {
 	src *apiOnboard.Connection
 }
 
-func (s Scheduler) RunDescribeJobScheduler() {
+func (s *Scheduler) RunDescribeJobScheduler() {
 	s.logger.Info("Scheduling describe jobs on a timer")
 
 	t := time.NewTicker(1 * time.Minute)
@@ -56,7 +56,7 @@ func (s Scheduler) RunDescribeJobScheduler() {
 	}
 }
 
-func (s Scheduler) RunDescribeResourceJobCycle() error {
+func (s *Scheduler) RunDescribeResourceJobCycle() error {
 	count, err := s.db.CountQueuedDescribeResourceJobs()
 	if err != nil {
 		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeResourceJobs"), zap.Error(err))
@@ -175,7 +175,7 @@ func (s Scheduler) RunDescribeResourceJobCycle() error {
 	return nil
 }
 
-func (s Scheduler) RunDescribeResourceJobs() {
+func (s *Scheduler) RunDescribeResourceJobs() {
 	for {
 		if err := s.RunDescribeResourceJobCycle(); err != nil {
 			time.Sleep(5 * time.Second)
@@ -184,7 +184,7 @@ func (s Scheduler) RunDescribeResourceJobs() {
 	}
 }
 
-func (s Scheduler) scheduleDescribeJob() {
+func (s *Scheduler) scheduleDescribeJob() {
 	err := s.CheckWorkspaceResourceLimit()
 	if err != nil {
 		s.logger.Error("failed to get limits", zap.String("spot", "CheckWorkspaceResourceLimit"), zap.Error(err))
@@ -211,7 +211,7 @@ func (s Scheduler) scheduleDescribeJob() {
 	DescribeJobsCount.WithLabelValues("successful").Inc()
 }
 
-func (s Scheduler) describeConnection(connection apiOnboard.Connection, scheduled bool) error {
+func (s *Scheduler) describeConnection(connection apiOnboard.Connection, scheduled bool) error {
 	job, err := s.db.GetLastDescribeSourceJob(connection.ID.String())
 	if err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
@@ -318,7 +318,7 @@ func newDescribeSourceJob(a apiOnboard.Connection, describedAt time.Time, trigge
 	return daj
 }
 
-func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds DescribeSourceJob, cipherText string, workspaceName string, kafkaTopic string) error {
+func (s *Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds DescribeSourceJob, cipherText string, workspaceName string, kafkaTopic string) error {
 	s.logger.Debug("enqueueCloudNativeDescribeJob",
 		zap.Uint("sourceJobID", ds.ID),
 		zap.Uint("jobID", dr.ID),
@@ -402,7 +402,7 @@ func (s Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds Desc
 
 // ================================================ STACKS ================================================
 
-func (s Scheduler) scheduleStackJobs() error {
+func (s *Scheduler) scheduleStackJobs() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
@@ -550,7 +550,7 @@ func (s Scheduler) scheduleStackJobs() error {
 	return nil
 }
 
-func (s Scheduler) triggerStackDescriberJob(stack apiDescribe.Stack) error {
+func (s *Scheduler) triggerStackDescriberJob(stack apiDescribe.Stack) error {
 	var provider source.Type
 	for _, resource := range stack.Resources {
 		if strings.Contains(resource, "aws") {
@@ -588,7 +588,7 @@ func (s Scheduler) triggerStackDescriberJob(stack apiDescribe.Stack) error {
 	return nil
 }
 
-func (s Scheduler) storeStackCredentials(stack apiDescribe.Stack, configStr string) error {
+func (s *Scheduler) storeStackCredentials(stack apiDescribe.Stack, configStr string) error {
 	var provider source.Type
 	for _, resource := range stack.Resources {
 		if strings.Contains(resource, "aws") {
@@ -631,7 +631,7 @@ func (s Scheduler) storeStackCredentials(stack apiDescribe.Stack, configStr stri
 	return nil
 }
 
-func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
+func (s *Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 	ctx := &httpclient.Context{
 		UserRole: apiAuth.AdminRole,
 	}
@@ -685,7 +685,7 @@ func (s Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 	return nil
 }
 
-func (s Scheduler) runStackInsights(stack apiDescribe.Stack) error {
+func (s *Scheduler) runStackInsights(stack apiDescribe.Stack) error {
 	var provider source.Type
 	for _, resource := range stack.Resources {
 		if strings.Contains(resource, "aws") {
@@ -728,7 +728,7 @@ func (s Scheduler) runStackInsights(stack apiDescribe.Stack) error {
 	return nil
 }
 
-func (s Scheduler) updateStackJobs(stack apiDescribe.Stack) (bool, error) { // returns true if all jobs are completed
+func (s *Scheduler) updateStackJobs(stack apiDescribe.Stack) (bool, error) { // returns true if all jobs are completed
 	isAllDone := true
 	for _, evaluation := range stack.Evaluations {
 		if evaluation.Status != apiDescribe.StackEvaluationStatusInProgress {
@@ -763,7 +763,7 @@ func (s Scheduler) updateStackJobs(stack apiDescribe.Stack) (bool, error) { // r
 	return isAllDone, nil
 }
 
-func (s Scheduler) getKafkaLag(topic string) (int, error) {
+func (s *Scheduler) getKafkaLag(topic string) (int, error) {
 	err := s.kafkaConsumer.Subscribe(topic, nil)
 	if err != nil {
 		return 0, err

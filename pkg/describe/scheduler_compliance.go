@@ -15,7 +15,7 @@ import (
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 )
 
-func (s Scheduler) RunComplianceJobScheduler() {
+func (s *Scheduler) RunComplianceJobScheduler() {
 	s.logger.Info("Scheduling compliance jobs on a timer")
 
 	t := time.NewTicker(JobSchedulingInterval)
@@ -30,7 +30,7 @@ func (s Scheduler) RunComplianceJobScheduler() {
 	}
 }
 
-func (s Scheduler) scheduleComplianceJob() error {
+func (s *Scheduler) scheduleComplianceJob() error {
 	s.logger.Info("scheduleComplianceJob")
 
 	sources, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.KeibiAdminRole}, nil)

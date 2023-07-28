@@ -809,7 +809,7 @@ func (s *Scheduler) RunDeletedSourceCleanup() {
 	}
 }
 
-func (s Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
+func (s *Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
 	err := s.cleanupDeletedConnectionResources(sourceId)
 	if err != nil {
 		s.logger.Error("Failed to cleanup deleted connection resources",
@@ -820,7 +820,7 @@ func (s Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
 	}
 }
 
-func (s Scheduler) cleanupComplianceReportJobForDeletedSource(sourceId string) {
+func (s *Scheduler) cleanupComplianceReportJobForDeletedSource(sourceId string) {
 	jobs, err := s.db.QueryComplianceReportJobs(sourceId)
 	if err != nil {
 		s.logger.Error("Failed to find all completed ComplianceReportJobs for source",
@@ -832,7 +832,7 @@ func (s Scheduler) cleanupComplianceReportJobForDeletedSource(sourceId string) {
 	s.handleComplianceReportJobs(jobs)
 }
 
-func (s Scheduler) handleComplianceReportJobs(jobs []ComplianceReportJob) {
+func (s *Scheduler) handleComplianceReportJobs(jobs []ComplianceReportJob) {
 	for _, job := range jobs {
 		if err := s.complianceReportCleanupJobQueue.Publish(complianceworker.ComplianceReportCleanupJob{
 			JobID: job.ID,
@@ -854,7 +854,7 @@ func (s Scheduler) handleComplianceReportJobs(jobs []ComplianceReportJob) {
 	}
 }
 
-func (s Scheduler) cleanupComplianceReportJob() {
+func (s *Scheduler) cleanupComplianceReportJob() {
 	jobs, err := s.db.QueryOlderThanNRecentCompletedComplianceReportJobs(5)
 	if err != nil {
 		s.logger.Error("Failed to find older than 5 recent completed ComplianceReportJobs for each source",
@@ -865,7 +865,7 @@ func (s Scheduler) cleanupComplianceReportJob() {
 	s.handleComplianceReportJobs(jobs)
 }
 
-// Consume events from the source queue. Based on the action of the event,
+// RunSourceEventsConsumer Consume events from the source queue. Based on the action of the event,
 // update the list of sources that need to be described. Either create a source
 // or update/delete the source.
 func (s *Scheduler) RunSourceEventsConsumer() error {
@@ -1057,8 +1057,8 @@ func (s *Scheduler) Stop() {
 		s.summarizerJobResultQueue,
 	}
 
-	for _, queue := range queues {
-		queue.Close()
+	for _, openQueues := range queues {
+		openQueues.Close()
 	}
 }
 
@@ -1090,7 +1090,7 @@ func isPublishingBlocked(logger *zap.Logger, queue queue.Interface) bool {
 	return false
 }
 
-func (s Scheduler) RunCheckupJobScheduler() {
+func (s *Scheduler) RunCheckupJobScheduler() {
 	s.logger.Info("Scheduling insight jobs on a timer")
 
 	t := time.NewTicker(JobSchedulingInterval)
@@ -1101,7 +1101,7 @@ func (s Scheduler) RunCheckupJobScheduler() {
 	}
 }
 
-func (s Scheduler) scheduleCheckupJob() {
+func (s *Scheduler) scheduleCheckupJob() {
 	checkupJob, err := s.db.FetchLastCheckupJob()
 	if err != nil {
 		s.logger.Error("Failed to find the last job to check for CheckupJob", zap.Error(err))
@@ -1155,7 +1155,7 @@ func newSummarizerJob(jobType summarizer.JobType) SummarizerJob {
 	}
 }
 
-func (s Scheduler) scheduleComplianceSummarizerJob() error {
+func (s *Scheduler) scheduleComplianceSummarizerJob() error {
 	job := newSummarizerJob(summarizer.JobType_ComplianceSummarizer)
 	err := s.db.AddSummarizerJob(&job)
 	if err != nil {
@@ -1167,7 +1167,7 @@ func (s Scheduler) scheduleComplianceSummarizerJob() error {
 		return err
 	}
 
-	err = enqueueComplianceSummarizerJobs(s.db, s.summarizerJobQueue, job)
+	err = enqueueComplianceSummarizerJobs(s.summarizerJobQueue, job)
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to enqueue SummarizerJob",
@@ -1188,7 +1188,7 @@ func (s Scheduler) scheduleComplianceSummarizerJob() error {
 	return nil
 }
 
-func enqueueComplianceSummarizerJobs(db Database, q queue.Interface, job SummarizerJob) error {
+func enqueueComplianceSummarizerJobs(q queue.Interface, job SummarizerJob) error {
 	if err := q.Publish(summarizer.SummarizeJob{
 		JobID:   job.ID,
 		JobType: summarizer.JobType_ComplianceSummarizer,
