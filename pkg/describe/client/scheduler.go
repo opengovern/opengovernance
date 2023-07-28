@@ -16,7 +16,6 @@ type TimeRangeFilter struct {
 	To   int64 // from epoch millisecond
 }
 type SchedulerServiceClient interface {
-	GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error)
 	ListComplianceReportJobs(ctx *httpclient.Context, sourceID string, filter *TimeRangeFilter) ([]*compliance.ComplianceReport, error)
 	GetLastComplianceReportID(ctx *httpclient.Context) (uint, error)
 	GetInsightJobById(ctx *httpclient.Context, jobId string) (api.InsightJob, error)
@@ -29,19 +28,6 @@ type schedulerClient struct {
 
 func NewSchedulerServiceClient(baseURL string) SchedulerServiceClient {
 	return &schedulerClient{baseURL: baseURL}
-}
-
-func (s *schedulerClient) GetSource(ctx *httpclient.Context, sourceID string) (*api.Source, error) {
-	url := fmt.Sprintf("%s/api/v1/sources/%s", s.baseURL, sourceID)
-
-	var source api.Source
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return nil, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return nil, err
-	}
-	return &source, nil
 }
 
 func (s *schedulerClient) ListComplianceReportJobs(ctx *httpclient.Context, sourceID string, filter *TimeRangeFilter) ([]*compliance.ComplianceReport, error) {

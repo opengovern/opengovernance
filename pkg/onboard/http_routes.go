@@ -357,24 +357,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	}
 	src.Credential.Secret = string(secretBytes)
 
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		err := h.db.CreateSource(&src)
-		if err != nil {
-			return err
-		}
-
-		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
-			Action:     api.SourceCreated,
-			SourceID:   src.ID,
-			AccountID:  src.SourceId,
-			SourceType: src.Type,
-			Secret:     src.Credential.Secret,
-		}); err != nil {
-			return err
-		}
-
-		return nil
-	})
+	err = h.db.CreateSource(&src)
 	if err != nil {
 		return err
 	}
@@ -450,24 +433,7 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	}
 	src.Credential.Secret = string(secretBytes)
 
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		err = h.db.CreateSource(&src)
-		if err != nil {
-			return err
-		}
-
-		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
-			Action:     api.SourceCreated,
-			SourceID:   src.ID,
-			AccountID:  src.SourceId,
-			SourceType: src.Type,
-			Secret:     src.Credential.Secret,
-		}); err != nil {
-			return err
-		}
-
-		return nil
-	})
+	err = h.db.CreateSource(&src)
 	if err != nil {
 		return err
 	}
@@ -949,24 +915,7 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 			credential,
 		)
 
-		err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-			err := h.db.CreateSource(&src)
-			if err != nil {
-				return err
-			}
-
-			if err := h.sourceEventsQueue.Publish(api.SourceEvent{
-				Action:     api.SourceCreated,
-				SourceID:   src.ID,
-				AccountID:  src.SourceId,
-				SourceType: src.Type,
-				Secret:     src.Credential.Secret,
-			}); err != nil {
-				return err
-			}
-
-			return nil
-		})
+		err = h.db.CreateSource(&src)
 		if err != nil {
 			return nil, err
 		}
@@ -1561,15 +1510,6 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateNotOnboard); err != nil {
 				return err
 			}
-
-			if err := h.sourceEventsQueue.Publish(api.SourceEvent{
-				Action:     api.SourceDeleted,
-				SourceID:   src.ID,
-				SourceType: src.Type,
-				Secret:     src.Credential.Secret,
-			}); err != nil {
-				return err
-			}
 		}
 		return nil
 	})
@@ -1621,15 +1561,6 @@ func (h HttpHandler) DisableCredential(ctx echo.Context) error {
 
 		for _, src := range sources {
 			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateNotOnboard); err != nil {
-				return err
-			}
-
-			if err := h.sourceEventsQueue.Publish(api.SourceEvent{
-				Action:     api.SourceDeleted,
-				SourceID:   src.ID,
-				SourceType: src.Type,
-				Secret:     src.Credential.Secret,
-			}); err != nil {
 				return err
 			}
 		}
@@ -2068,22 +1999,13 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, &api.Connection{
-		ID:                   src.ID,
-		ConnectionID:         src.SourceId,
-		ConnectionName:       src.Name,
-		Email:                src.Email,
-		Connector:            src.Type,
-		Description:          src.Description,
-		CredentialID:         src.CredentialID.String(),
-		CredentialName:       src.Credential.Name,
-		OnboardDate:          src.CreatedAt,
-		LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
-		AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-		LastHealthCheckTime:  src.LastHealthCheckTime,
-		HealthReason:         src.HealthReason,
-		Metadata:             metadata,
-	})
+	apiRes := src.toAPI()
+	if httpserver.GetUserRole(ctx) == api3.KeibiAdminRole {
+		apiRes.Credential = src.Credential.ToAPI()
+		apiRes.Credential.Config = src.Credential.Secret
+	}
+
+	return ctx.JSON(http.StatusOK, apiRes)
 }
 
 // DeleteSource godoc
@@ -2178,27 +2100,9 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 	}
 
 	if reqState.IsEnabled() != connection.LifecycleState.IsEnabled() {
-		err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-			if err := h.db.UpdateSourceLifecycleState(connectionId, reqState); err != nil {
-				return err
-			}
-
-			action := api.SourceDeleted
-			if reqState.IsEnabled() {
-				action = api.SourceCreated
-			}
-
-			if err := h.sourceEventsQueue.Publish(api.SourceEvent{
-				Action:     action,
-				SourceID:   connection.ID,
-				AccountID:  connection.SourceId,
-				SourceType: connection.Type,
-				Secret:     connection.Credential.Secret,
-			}); err != nil {
-				return err
-			}
-			return nil
-		})
+		if err := h.db.UpdateSourceLifecycleState(connectionId, reqState); err != nil {
+			return err
+		}
 	} else {
 		err = h.db.UpdateSourceLifecycleState(connectionId, reqState)
 	}
@@ -2288,7 +2192,12 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
-		resp = append(resp, s.toAPI())
+		apiRes := s.toAPI()
+		if httpserver.GetUserRole(ctx) == api3.KeibiAdminRole {
+			apiRes.Credential = s.Credential.ToAPI()
+			apiRes.Credential.Config = s.Credential.Secret
+		}
+		resp = append(resp, apiRes)
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
@@ -2318,29 +2227,13 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 
 	var res []api.Connection
 	for _, src := range srcs {
-		metadata := make(map[string]any)
-		if src.Metadata.String() != "" {
-			err := json.Unmarshal(src.Metadata, &metadata)
-			if err != nil {
-				return err
-			}
+		apiRes := src.toAPI()
+		if httpserver.GetUserRole(ctx) == api3.KeibiAdminRole {
+			apiRes.Credential = src.Credential.ToAPI()
+			apiRes.Credential.Config = src.Credential.Secret
 		}
-		res = append(res, api.Connection{
-			ID:                   src.ID,
-			ConnectionID:         src.SourceId,
-			ConnectionName:       src.Name,
-			Email:                src.Email,
-			Connector:            src.Type,
-			Description:          src.Description,
-			CredentialID:         src.CredentialID.String(),
-			CredentialName:       src.Credential.Name,
-			OnboardDate:          src.CreatedAt,
-			LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
-			AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-			LastHealthCheckTime:  src.LastHealthCheckTime,
-			HealthReason:         src.HealthReason,
-			Metadata:             metadata,
-		})
+
+		res = append(res, apiRes)
 	}
 	return ctx.JSON(http.StatusOK, res)
 }

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
 	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
@@ -32,7 +33,7 @@ func (s Scheduler) RunComplianceJobScheduler() {
 func (s Scheduler) scheduleComplianceJob() error {
 	s.logger.Info("scheduleComplianceJob")
 
-	sources, err := s.db.ListSources()
+	sources, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.KeibiAdminRole}, nil)
 	if err != nil {
 		ComplianceJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("error while listing sources", zap.Error(err))
@@ -43,7 +44,7 @@ func (s Scheduler) scheduleComplianceJob() error {
 		ctx := &httpclient.Context{
 			UserRole: api2.ViewerRole,
 		}
-		benchmarks, err := s.complianceClient.GetAllBenchmarkAssignmentsBySourceId(ctx, src.ID)
+		benchmarks, err := s.complianceClient.GetAllBenchmarkAssignmentsBySourceId(ctx, src.ID.String())
 		if err != nil {
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
 			s.logger.Error("error while getting benchmark assignments", zap.Error(err))
@@ -64,7 +65,7 @@ func (s Scheduler) scheduleComplianceJob() error {
 				continue
 			}
 
-			crj := newComplianceReportJob(src.ID, src.Type, b.BenchmarkId)
+			crj := newComplianceReportJob(src.ID.String(), src.Connector, b.BenchmarkId)
 			err = s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
@@ -75,13 +76,6 @@ func (s Scheduler) scheduleComplianceJob() error {
 
 			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, src, &crj)
 
-			err = s.db.UpdateSourceReportGenerated(src.ID, s.complianceIntervalHours)
-			if err != nil {
-				ComplianceJobsCount.WithLabelValues("failure").Inc()
-				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("error while updating compliance job", zap.Error(err))
-				return fmt.Errorf("error while updating compliance job: %v", err)
-			}
 			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
 		}
 	}
@@ -90,7 +84,7 @@ func (s Scheduler) scheduleComplianceJob() error {
 
 }
 
-func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interface, a Source, crj *ComplianceReportJob) {
+func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interface, a onboardApi.Connection, crj *ComplianceReportJob) {
 	nextStatus := complianceapi.ComplianceReportJobInProgress
 	errMsg := ""
 
@@ -101,8 +95,8 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 		EvaluatedAt:  nowTime,
 		ConnectionID: crj.SourceID,
 		BenchmarkID:  crj.BenchmarkID,
-		ConfigReg:    a.ConfigRef,
-		Connector:    a.Type,
+		ConfigReg:    a.Credential.Config.(string),
+		Connector:    a.Connector,
 		IsStack:      crj.IsStack,
 	}); err != nil {
 		logger.Error("Failed to queue ComplianceReportJob",

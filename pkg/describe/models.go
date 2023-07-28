@@ -1,11 +1,11 @@
 package describe
 
 import (
-	"database/sql"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 
@@ -36,22 +36,6 @@ func trimPrivateTags(tags map[string][]string) map[string][]string {
 		}
 	}
 	return tags
-}
-
-type Source struct {
-	ID                     string `gorm:"type:text;default:uuid_generate_v4()"`
-	AccountID              string
-	Type                   source.Type
-	ConfigRef              string
-	LastDescribedAt        sql.NullTime
-	NextDescribeAt         sql.NullTime
-	LastComplianceReportAt sql.NullTime
-	NextComplianceReportAt sql.NullTime
-	NextComplianceReportID uint `gorm:"default:0"`
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt sql.NullTime `gorm:"index"`
 }
 
 type ComplianceReportJob struct {
