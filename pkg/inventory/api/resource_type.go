@@ -86,3 +86,7 @@ type ListRegionsResourceCountCompositionResponse struct {
 	TopValues       map[string]CountPair `json:"top_values"`
 	Others          CountPair            `json:"others"`
 }
+
+type AnalyticsCategoriesResponse struct {
+	CategoryResourceType map[string][]string `json:"categoryResourceType"`
+}

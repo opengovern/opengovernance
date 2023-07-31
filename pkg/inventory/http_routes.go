@@ -80,6 +80,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	analyticsV2.GET("/trend", httpserver.AuthorizeHandler(h.ListAnalyticsMetricTrend, authApi.ViewerRole))
 	analyticsV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListAnalyticsComposition, authApi.ViewerRole))
 	analyticsV2.GET("/regions/summary", httpserver.AuthorizeHandler(h.ListAnalyticsRegionsSummary, authApi.ViewerRole))
+	analyticsV2.GET("/categories", httpserver.AuthorizeHandler(h.ListAnalyticsCategories, authApi.ViewerRole))
 
 	servicesV2 := v2.Group("/services")
 	servicesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListServiceTags, authApi.ViewerRole))
@@ -1354,6 +1355,43 @@ func (h *HttpHandler) ListAnalyticsRegionsSummary(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// ListAnalyticsCategories godoc
+//
+//	@Summary		List Analytics categories
+//	@Description	Returns list of categories for analytics summary
+//	@Security		BearerToken
+//	@Tags			analytics
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	inventoryApi.AnalyticsCategoriesResponse
+//	@Router			/inventory/api/v2/analytics/categories [get]
+func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+
+	metrics, err := aDB.ListMetrics()
+	if err != nil {
+		return err
+	}
+
+	categoryResourceTypeMap := map[string][]string{}
+	for _, metric := range metrics {
+		for _, tag := range metric.Tags {
+			if tag.Key == "category" {
+				for _, category := range tag.GetValue() {
+					categoryResourceTypeMap[category] = append(
+						categoryResourceTypeMap[category],
+						metric.Tables...,
+					)
+				}
+			}
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, inventoryApi.AnalyticsCategoriesResponse{
+		CategoryResourceType: categoryResourceTypeMap,
+	})
 }
 
 // GetResourceTypeMetricsHandler godoc

@@ -1778,6 +1778,15 @@ definitions:
         description: Resource Type Label
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AnalyticsCategoriesResponse:
+    properties:
+      categoryResourceType:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ConnectionFull:
     properties:
       id:
@@ -5204,6 +5213,23 @@ paths:
       summary: Returns top n regions of specified provider by resource count
       tags:
       - resource
+  /inventory/api/v2/analytics/categories:
+    get:
+      consumes:
+      - application/json
+      description: Returns list of categories for analytics summary
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AnalyticsCategoriesResponse'
+      security:
+      - BearerToken: []
+      summary: List Analytics categories
+      tags:
+      - analytics
   /inventory/api/v2/analytics/composition/{key}:
     get:
       consumes:
