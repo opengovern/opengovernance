@@ -53,7 +53,14 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 			if metric.Tables == nil || len(metric.Tables) == 0 {
 				awsTables := awsR.FindAllString(metric.Query, -1)
 				azureTables := azureR.FindAllString(metric.Query, -1)
-				metric.Tables = append(awsTables, azureTables...)
+				for _, t := range awsTables {
+					t = strings.Trim(t, "'")
+					metric.Tables = append(metric.Tables, t)
+				}
+				for _, t := range azureTables {
+					t = strings.Trim(t, "'")
+					metric.Tables = append(metric.Tables, t)
+				}
 			}
 
 			if len(metric.FinderQuery) == 0 {
