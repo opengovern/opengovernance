@@ -2786,6 +2786,8 @@ definitions:
         example: Azure
       cost:
         example: 1000
+        maximum: 10000000
+        minimum: 0
         type: number
       credentialID:
         example: 7r6123ac-ca1c-434f-b1a3-91w2w9d277c8
@@ -2798,9 +2800,13 @@ definitions:
         example: manual
       dailyCostAtEndTime:
         example: 1000
+        maximum: 10000000
+        minimum: 0
         type: number
       dailyCostAtStartTime:
         example: 1000
+        maximum: 10000000
+        minimum: 0
         type: number
       description:
         example: This is an example connection
@@ -2828,6 +2834,8 @@ definitions:
         type: object
       oldResourceCount:
         example: 100
+        maximum: 1000000
+        minimum: 0
         type: integer
       onboardDate:
         example: "2023-05-07T00:00:00Z"
@@ -2840,6 +2848,8 @@ definitions:
         type: string
       resourceCount:
         example: 100
+        maximum: 1000000
+        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionCountRequest:
@@ -2992,6 +3002,7 @@ definitions:
         type: boolean
       enabled_connections:
         example: 250
+        maximum: 1000
         minimum: 0
         type: integer
       healthReason:
@@ -3020,10 +3031,12 @@ definitions:
         type: string
       total_connections:
         example: 300
+        maximum: 1000
         minimum: 0
         type: integer
       unhealthy_connections:
         example: 50
+        maximum: 100
         minimum: 0
         type: integer
     type: object
@@ -3043,6 +3056,7 @@ definitions:
     properties:
       connectionCount:
         example: 10
+        maximum: 1000
         minimum: 0
         type: integer
       connections:
@@ -3051,26 +3065,32 @@ definitions:
         type: array
       oldConnectionCount:
         example: 10
+        maximum: 1000
         minimum: 0
         type: integer
       totalCost:
         example: 1000
+        maximum: 10000000
         minimum: 0
         type: number
       totalDisabledCount:
         example: 10
+        maximum: 100
         minimum: 0
         type: integer
       totalOldResourceCount:
         example: 100
+        maximum: 1000000
         minimum: 0
         type: integer
       totalResourceCount:
         example: 100
+        maximum: 1000000
         minimum: 0
         type: integer
       totalUnhealthyCount:
         example: 10
+        maximum: 100
         minimum: 0
         type: integer
     type: object
@@ -3082,6 +3102,7 @@ definitions:
         type: array
       totalCredentialCount:
         example: 5
+        maximum: 20
         minimum: 0
         type: integer
     type: object

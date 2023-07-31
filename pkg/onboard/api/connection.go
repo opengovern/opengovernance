@@ -51,11 +51,11 @@ type Connection struct {
 	HealthReason        *string   `json:"healthReason,omitempty"`
 
 	LastInventory        *time.Time `json:"lastInventory" example:"2023-05-07T00:00:00Z"`
-	Cost                 *float64   `json:"cost" example:"1000.00"`
-	DailyCostAtStartTime *float64   `json:"dailyCostAtStartTime" example:"1000.00"`
-	DailyCostAtEndTime   *float64   `json:"dailyCostAtEndTime" example:"1000.00"`
-	ResourceCount        *int       `json:"resourceCount" example:"100"`
-	OldResourceCount     *int       `json:"oldResourceCount" example:"100"`
+	Cost                 *float64   `json:"cost" example:"1000.00" minimum:"0" maximum:"10000000"`
+	DailyCostAtStartTime *float64   `json:"dailyCostAtStartTime" example:"1000.00" minimum:"0" maximum:"10000000"`
+	DailyCostAtEndTime   *float64   `json:"dailyCostAtEndTime" example:"1000.00"  minimum:"0" maximum:"10000000"`
+	ResourceCount        *int       `json:"resourceCount" example:"100" minimum:"0" maximum:"1000000"`
+	OldResourceCount     *int       `json:"oldResourceCount" example:"100" minimum:"0" maximum:"1000000"`
 
 	Metadata map[string]any `json:"metadata"`
 }
@@ -65,13 +65,13 @@ type ChangeConnectionLifecycleStateRequest struct {
 }
 
 type ListConnectionSummaryResponse struct {
-	ConnectionCount       int          `json:"connectionCount" example:"10" minimum:"0"`
-	OldConnectionCount    int          `json:"oldConnectionCount" example:"10" minimum:"0"`
-	TotalCost             float64      `json:"totalCost" example:"1000.00" minimum:"0"`
-	TotalResourceCount    int          `json:"totalResourceCount" example:"100" minimum:"0"`
-	TotalOldResourceCount int          `json:"totalOldResourceCount" example:"100" minimum:"0"`
-	TotalUnhealthyCount   int          `json:"totalUnhealthyCount" example:"10" minimum:"0"`
-	TotalDisabledCount    int          `json:"totalDisabledCount" example:"10" minimum:"0"`
+	ConnectionCount       int          `json:"connectionCount" example:"10" minimum:"0" maximum:"1000"`
+	OldConnectionCount    int          `json:"oldConnectionCount" example:"10" minimum:"0" maximum:"1000"`
+	TotalCost             float64      `json:"totalCost" example:"1000.00" minimum:"0" maximum:"10000000"`
+	TotalResourceCount    int          `json:"totalResourceCount" example:"100" minimum:"0" maximum:"1000000"`
+	TotalOldResourceCount int          `json:"totalOldResourceCount" example:"100" minimum:"0" maximum:"1000000"`
+	TotalUnhealthyCount   int          `json:"totalUnhealthyCount" example:"10" minimum:"0" maximum:"100"`
+	TotalDisabledCount    int          `json:"totalDisabledCount" example:"10" minimum:"0" maximum:"100"`
 	Connections           []Connection `json:"connections"`
 }
 

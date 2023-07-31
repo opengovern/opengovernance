@@ -11554,6 +11554,8 @@ const docTemplate = `{
                 },
                 "cost": {
                     "type": "number",
+                    "maximum": 10000000,
+                    "minimum": 0,
                     "example": 1000
                 },
                 "credentialID": {
@@ -11573,10 +11575,14 @@ const docTemplate = `{
                 },
                 "dailyCostAtEndTime": {
                     "type": "number",
+                    "maximum": 10000000,
+                    "minimum": 0,
                     "example": 1000
                 },
                 "dailyCostAtStartTime": {
                     "type": "number",
+                    "maximum": 10000000,
+                    "minimum": 0,
                     "example": 1000
                 },
                 "description": {
@@ -11616,6 +11622,8 @@ const docTemplate = `{
                 },
                 "oldResourceCount": {
                     "type": "integer",
+                    "maximum": 1000000,
+                    "minimum": 0,
                     "example": 100
                 },
                 "onboardDate": {
@@ -11632,6 +11640,8 @@ const docTemplate = `{
                 },
                 "resourceCount": {
                     "type": "integer",
+                    "maximum": 1000000,
+                    "minimum": 0,
                     "example": 100
                 }
             }
@@ -11860,6 +11870,7 @@ const docTemplate = `{
                 },
                 "enabled_connections": {
                     "type": "integer",
+                    "maximum": 1000,
                     "minimum": 0,
                     "example": 250
                 },
@@ -11899,11 +11910,13 @@ const docTemplate = `{
                 },
                 "total_connections": {
                     "type": "integer",
+                    "maximum": 1000,
                     "minimum": 0,
                     "example": 300
                 },
                 "unhealthy_connections": {
                     "type": "integer",
+                    "maximum": 100,
                     "minimum": 0,
                     "example": 50
                 }
@@ -11929,6 +11942,7 @@ const docTemplate = `{
             "properties": {
                 "connectionCount": {
                     "type": "integer",
+                    "maximum": 1000,
                     "minimum": 0,
                     "example": 10
                 },
@@ -11940,31 +11954,37 @@ const docTemplate = `{
                 },
                 "oldConnectionCount": {
                     "type": "integer",
+                    "maximum": 1000,
                     "minimum": 0,
                     "example": 10
                 },
                 "totalCost": {
                     "type": "number",
+                    "maximum": 10000000,
                     "minimum": 0,
                     "example": 1000
                 },
                 "totalDisabledCount": {
                     "type": "integer",
+                    "maximum": 100,
                     "minimum": 0,
                     "example": 10
                 },
                 "totalOldResourceCount": {
                     "type": "integer",
+                    "maximum": 1000000,
                     "minimum": 0,
                     "example": 100
                 },
                 "totalResourceCount": {
                     "type": "integer",
+                    "maximum": 1000000,
                     "minimum": 0,
                     "example": 100
                 },
                 "totalUnhealthyCount": {
                     "type": "integer",
+                    "maximum": 100,
                     "minimum": 0,
                     "example": 10
                 }
@@ -11981,6 +12001,7 @@ const docTemplate = `{
                 },
                 "totalCredentialCount": {
                     "type": "integer",
+                    "maximum": 20,
                     "minimum": 0,
                     "example": 5
                 }
