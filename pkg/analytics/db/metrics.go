@@ -37,7 +37,7 @@ func (m *AnalyticMetric) GetTagsMap() map[string][]string {
 
 func (db Database) ListMetrics() ([]AnalyticMetric, error) {
 	var s []AnalyticMetric
-	tx := db.orm.Find(&s)
+	tx := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations).Find(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
