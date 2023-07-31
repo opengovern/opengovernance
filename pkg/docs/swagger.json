@@ -11462,6 +11462,8 @@
                 },
                 "cost": {
                     "type": "number",
+                    "maximum": 10000000,
+                    "minimum": 0,
                     "example": 1000
                 },
                 "credential": {
@@ -11484,10 +11486,14 @@
                 },
                 "dailyCostAtEndTime": {
                     "type": "number",
+                    "maximum": 10000000,
+                    "minimum": 0,
                     "example": 1000
                 },
                 "dailyCostAtStartTime": {
                     "type": "number",
+                    "maximum": 10000000,
+                    "minimum": 0,
                     "example": 1000
                 },
                 "description": {
@@ -11527,6 +11533,8 @@
                 },
                 "oldResourceCount": {
                     "type": "integer",
+                    "maximum": 1000000,
+                    "minimum": 0,
                     "example": 100
                 },
                 "onboardDate": {
@@ -11543,6 +11551,8 @@
                 },
                 "resourceCount": {
                     "type": "integer",
+                    "maximum": 1000000,
+                    "minimum": 0,
                     "example": 100
                 }
             }
@@ -11771,6 +11781,7 @@
                 },
                 "enabled_connections": {
                     "type": "integer",
+                    "maximum": 1000,
                     "minimum": 0,
                     "example": 250
                 },
@@ -11810,11 +11821,13 @@
                 },
                 "total_connections": {
                     "type": "integer",
+                    "maximum": 1000,
                     "minimum": 0,
                     "example": 300
                 },
                 "unhealthy_connections": {
                     "type": "integer",
+                    "maximum": 100,
                     "minimum": 0,
                     "example": 50
                 }
@@ -11840,6 +11853,7 @@
             "properties": {
                 "connectionCount": {
                     "type": "integer",
+                    "maximum": 1000,
                     "minimum": 0,
                     "example": 10
                 },
@@ -11851,31 +11865,37 @@
                 },
                 "oldConnectionCount": {
                     "type": "integer",
+                    "maximum": 1000,
                     "minimum": 0,
                     "example": 10
                 },
                 "totalCost": {
                     "type": "number",
+                    "maximum": 10000000,
                     "minimum": 0,
                     "example": 1000
                 },
                 "totalDisabledCount": {
                     "type": "integer",
+                    "maximum": 100,
                     "minimum": 0,
                     "example": 10
                 },
                 "totalOldResourceCount": {
                     "type": "integer",
+                    "maximum": 1000000,
                     "minimum": 0,
                     "example": 100
                 },
                 "totalResourceCount": {
                     "type": "integer",
+                    "maximum": 1000000,
                     "minimum": 0,
                     "example": 100
                 },
                 "totalUnhealthyCount": {
                     "type": "integer",
+                    "maximum": 100,
                     "minimum": 0,
                     "example": 10
                 }
@@ -11892,6 +11912,7 @@
                 },
                 "totalCredentialCount": {
                     "type": "integer",
+                    "maximum": 20,
                     "minimum": 0,
                     "example": 5
                 }

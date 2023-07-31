@@ -22,7 +22,7 @@ type UpdateCredentialRequest struct {
 }
 
 type ListCredentialResponse struct {
-	TotalCredentialCount int          `json:"totalCredentialCount" example:"5" minimum:"0"`
+	TotalCredentialCount int          `json:"totalCredentialCount" example:"5" minimum:"0" maximum:"20"`
 	Credentials          []Credential `json:"credentials"`
 }
 
@@ -54,7 +54,7 @@ type Credential struct {
 
 	Connections []Connection `json:"connections,omitempty"`
 
-	TotalConnections     *int `json:"total_connections" example:"300" minimum:"0"`
-	EnabledConnections   *int `json:"enabled_connections" example:"250" minimum:"0"`
-	UnhealthyConnections *int `json:"unhealthy_connections" example:"50" minimum:"0"`
+	TotalConnections     *int `json:"total_connections" example:"300" minimum:"0" maximum:"1000"`
+	EnabledConnections   *int `json:"enabled_connections" example:"250" minimum:"0" maximum:"1000"`
+	UnhealthyConnections *int `json:"unhealthy_connections" example:"50" minimum:"0" maximum:"100"`
 }
