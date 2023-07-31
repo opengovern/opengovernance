@@ -10617,6 +10617,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 100
                 },
+                "finderQuery": {
+                    "type": "string",
+                    "example": "select * from kaytu_resources where resource_type = 'aws::ec2::instance'"
+                },
                 "id": {
                     "type": "string",
                     "example": "vms"
@@ -10630,10 +10634,6 @@ const docTemplate = `{
                     "description": "Number of Resources of this Resource Type in the past - Metric",
                     "type": "integer",
                     "example": 90
-                },
-                "query": {
-                    "type": "string",
-                    "example": "select * from kaytu_resources where resource_type = 'aws::ec2::instance'"
                 },
                 "tags": {
                     "description": "Tags",

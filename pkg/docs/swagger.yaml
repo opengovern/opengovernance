@@ -2134,6 +2134,9 @@ definitions:
         description: Number of Resources of this Resource Type - Metric
         example: 100
         type: integer
+      finderQuery:
+        example: select * from kaytu_resources where resource_type = 'aws::ec2::instance'
+        type: string
       id:
         example: vms
         type: string
@@ -2145,9 +2148,6 @@ definitions:
         description: Number of Resources of this Resource Type in the past - Metric
         example: 90
         type: integer
-      query:
-        example: select * from kaytu_resources where resource_type = 'aws::ec2::instance'
-        type: string
       tags:
         additionalProperties:
           items:

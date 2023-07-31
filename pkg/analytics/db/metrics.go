@@ -13,12 +13,14 @@ type MetricTag struct {
 }
 
 type AnalyticMetric struct {
-	ID         string         `gorm:"primaryKey"`
-	Connectors pq.StringArray `gorm:"type:text[]"`
-	Name       string
-	Query      string
-	Tags       []MetricTag         `gorm:"foreignKey:ID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	tagsMap    map[string][]string `gorm:"-:all"`
+	ID          string         `gorm:"primaryKey"`
+	Connectors  pq.StringArray `gorm:"type:text[]"`
+	Name        string
+	Query       string
+	Tables      []string
+	FinderQuery string
+	Tags        []MetricTag         `gorm:"foreignKey:ID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	tagsMap     map[string][]string `gorm:"-:all"`
 }
 
 func (m *AnalyticMetric) GetTagsMap() map[string][]string {
