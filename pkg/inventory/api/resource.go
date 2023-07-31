@@ -17,7 +17,7 @@ import (
 	awsmodel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	azuremodel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
-	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
+	proto "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
 )
 
 type ResourceObj struct {
