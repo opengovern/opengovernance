@@ -8,8 +8,7 @@ import (
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/neo4j"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	v4plugin "github.com/turbot/steampipe-plugin-sdk/v4/plugin"
-	v5plugin "github.com/turbot/steampipe-plugin-sdk/v5/plugin"
+	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 
 	"github.com/go-redis/cache/v8"
 
@@ -42,8 +41,7 @@ type HttpHandler struct {
 
 	logger *zap.Logger
 
-	awsPlg               *v4plugin.Plugin
-	azurePlg, azureADPlg *v5plugin.Plugin
+	awsPlg, azurePlg, azureADPlg *plugin.Plugin
 }
 
 func InitializeHttpHandler(

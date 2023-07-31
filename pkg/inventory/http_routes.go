@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 	"io"
 	"math"
 	"mime"
@@ -35,9 +34,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/labstack/echo/v4"
-	protov4 "github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
-	protov5 "github.com/turbot/steampipe-plugin-sdk/v5/grpc/proto"
-
+	"github.com/turbot/steampipe-plugin-sdk/v4/grpc/proto"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -3225,8 +3222,7 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 		sourceMap = hit.Source
 	}
 
-	var v5cells map[string]*protov5.Column
-	var v4cells map[string]*protov4.Column
+	var cells map[string]*proto.Column
 	pluginProvider := steampipe.ExtractPlugin(req.ResourceType)
 	if pluginProvider == steampipe.SteampipePluginAWS {
 		pluginTableName := awsSteampipe.ExtractTableName(req.ResourceType)
@@ -3235,7 +3231,7 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 			return err
 		}
 
-		v4cells, err = awsSteampipe.AWSDescriptionToRecord(desc, pluginTableName)
+		cells, err = awsSteampipe.AWSDescriptionToRecord(desc, pluginTableName)
 		if err != nil {
 			return err
 		}
@@ -3247,12 +3243,12 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 		}
 
 		if pluginProvider == steampipe.SteampipePluginAzure {
-			v5cells, err = azureSteampipe.AzureDescriptionToRecord(desc, pluginTableName)
+			cells, err = azureSteampipe.AzureDescriptionToRecord(desc, pluginTableName)
 			if err != nil {
 				return err
 			}
 		} else {
-			v5cells, err = azureSteampipe.AzureADDescriptionToRecord(desc, pluginTableName)
+			cells, err = azureSteampipe.AzureADDescriptionToRecord(desc, pluginTableName)
 			if err != nil {
 				return err
 			}
@@ -3262,101 +3258,51 @@ func (h *HttpHandler) GetResource(ctx echo.Context) error {
 	}
 
 	resp := map[string]interface{}{}
-	if pluginProvider == steampipe.SteampipePluginAzure || pluginProvider == steampipe.SteampipePluginAzureAD {
-		for k, v := range v5cells {
-			if k == "tags" {
-				var respTags []interface{}
-				if jsonBytes := v.GetJsonValue(); jsonBytes != nil {
-					var tags map[string]interface{}
-					err = json.Unmarshal(jsonBytes, &tags)
-					if err != nil {
-						return err
-					}
-					for tagKey, tagValue := range tags {
-						respTags = append(respTags, map[string]interface{}{
-							"key":   tagKey,
-							"value": tagValue,
-						})
-					}
+	for k, v := range cells {
+		if k == "tags" {
+			var respTags []interface{}
+			if jsonBytes := v.GetJsonValue(); jsonBytes != nil {
+				var tags map[string]interface{}
+				err = json.Unmarshal(jsonBytes, &tags)
+				if err != nil {
+					return err
 				}
-				resp["tags"] = respTags
-				continue
+				for tagKey, tagValue := range tags {
+					respTags = append(respTags, map[string]interface{}{
+						"key":   tagKey,
+						"value": tagValue,
+					})
+				}
 			}
-
-			var val string
-			if x, ok := v.GetValue().(*protov5.Column_DoubleValue); ok {
-				val = fmt.Sprintf("%f", x.DoubleValue)
-			} else if x, ok := v.GetValue().(*protov5.Column_IntValue); ok {
-				val = fmt.Sprintf("%d", x.IntValue)
-			} else if x, ok := v.GetValue().(*protov5.Column_StringValue); ok {
-				val = x.StringValue
-			} else if x, ok := v.GetValue().(*protov5.Column_BoolValue); ok {
-				val = fmt.Sprintf("%v", x.BoolValue)
-			} else if x, ok := v.GetValue().(*protov5.Column_TimestampValue); ok {
-				val = fmt.Sprintf("%v", x.TimestampValue.AsTime())
-			} else if x, ok := v.GetValue().(*protov5.Column_IpAddrValue); ok {
-				val = x.IpAddrValue
-			} else if x, ok := v.GetValue().(*protov5.Column_CidrRangeValue); ok {
-				val = x.CidrRangeValue
-			} else if x, ok := v.GetValue().(*protov5.Column_JsonValue); ok {
-				val = string(x.JsonValue)
-			} else if _, ok := v.GetValue().(*protov5.Column_NullValue); ok {
-				val = ""
-			} else {
-				val = fmt.Sprintf("unknown type: %v", v.GetValue())
-			}
-
-			if len(val) > 0 {
-				resp[k] = val
-			}
+			resp["tags"] = respTags
+			continue
 		}
-	} else if pluginProvider == steampipe.SteampipePluginAWS {
-		for k, v := range v4cells {
-			if k == "tags" {
-				var respTags []interface{}
-				if jsonBytes := v.GetJsonValue(); jsonBytes != nil {
-					var tags map[string]interface{}
-					err = json.Unmarshal(jsonBytes, &tags)
-					if err != nil {
-						return err
-					}
-					for tagKey, tagValue := range tags {
-						respTags = append(respTags, map[string]interface{}{
-							"key":   tagKey,
-							"value": tagValue,
-						})
-					}
-				}
-				resp["tags"] = respTags
-				continue
-			}
 
-			var val string
-			if x, ok := v.GetValue().(*protov4.Column_DoubleValue); ok {
-				val = fmt.Sprintf("%f", x.DoubleValue)
-			} else if x, ok := v.GetValue().(*protov4.Column_IntValue); ok {
-				val = fmt.Sprintf("%d", x.IntValue)
-			} else if x, ok := v.GetValue().(*protov4.Column_StringValue); ok {
-				val = x.StringValue
-			} else if x, ok := v.GetValue().(*protov4.Column_BoolValue); ok {
-				val = fmt.Sprintf("%v", x.BoolValue)
-			} else if x, ok := v.GetValue().(*protov4.Column_TimestampValue); ok {
-				val = fmt.Sprintf("%v", x.TimestampValue.AsTime())
-			} else if x, ok := v.GetValue().(*protov4.Column_IpAddrValue); ok {
-				val = x.IpAddrValue
-			} else if x, ok := v.GetValue().(*protov4.Column_CidrRangeValue); ok {
-				val = x.CidrRangeValue
-			} else if x, ok := v.GetValue().(*protov4.Column_JsonValue); ok {
-				val = string(x.JsonValue)
-			} else if _, ok := v.GetValue().(*protov4.Column_NullValue); ok {
-				val = ""
-			} else {
-				val = fmt.Sprintf("unknown type: %v", v.GetValue())
-			}
+		var val string
+		if x, ok := v.GetValue().(*proto.Column_DoubleValue); ok {
+			val = fmt.Sprintf("%f", x.DoubleValue)
+		} else if x, ok := v.GetValue().(*proto.Column_IntValue); ok {
+			val = fmt.Sprintf("%d", x.IntValue)
+		} else if x, ok := v.GetValue().(*proto.Column_StringValue); ok {
+			val = x.StringValue
+		} else if x, ok := v.GetValue().(*proto.Column_BoolValue); ok {
+			val = fmt.Sprintf("%v", x.BoolValue)
+		} else if x, ok := v.GetValue().(*proto.Column_TimestampValue); ok {
+			val = fmt.Sprintf("%v", x.TimestampValue.AsTime())
+		} else if x, ok := v.GetValue().(*proto.Column_IpAddrValue); ok {
+			val = x.IpAddrValue
+		} else if x, ok := v.GetValue().(*proto.Column_CidrRangeValue); ok {
+			val = x.CidrRangeValue
+		} else if x, ok := v.GetValue().(*proto.Column_JsonValue); ok {
+			val = string(x.JsonValue)
+		} else if _, ok := v.GetValue().(*proto.Column_NullValue); ok {
+			val = ""
+		} else {
+			val = fmt.Sprintf("unknown type: %v", v.GetValue())
+		}
 
-			if len(val) > 0 {
-				resp[k] = val
-			}
+		if len(val) > 0 {
+			resp[k] = val
 		}
 	}
 
@@ -4268,7 +4214,7 @@ func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 
 		switch resourceType.Connector {
 		case source.CloudAWS:
-			result.Attributes, _ = Cells(h.awsPlg, table)
+			result.Attributes, _ = steampipe.Cells(h.awsPlg, table)
 		case source.CloudAzure:
 			result.Attributes, err = steampipe.Cells(h.azurePlg, table)
 			if err != nil {
@@ -4278,24 +4224,6 @@ func (h *HttpHandler) GetResourceTypeMetadata(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, result)
-}
-
-func Cells(plg *plugin.Plugin, indexName string) ([]string, error) { // Temporary for resolving package version conflicts
-	var cells []string
-	table, ok := plg.TableMap[indexName]
-	if !ok {
-		return cells, fmt.Errorf("invalid index name: %s", indexName)
-	}
-	table.Plugin = plg
-	for _, column := range table.Columns {
-		if column != nil && column.Transform != nil {
-			cells = append(cells, column.Name)
-		} else {
-			fmt.Println("column or transform is null", column, column.Transform)
-		}
-	}
-
-	return cells, nil
 }
 
 // ListResourceTypeTagsMetadata godoc
