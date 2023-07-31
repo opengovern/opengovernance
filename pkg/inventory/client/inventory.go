@@ -15,7 +15,6 @@ import (
 
 type InventoryServiceClient interface {
 	CountResources(ctx *httpclient.Context) (int64, error)
-	GetAccountsResourceCount(ctx *httpclient.Context, provider source.Type, sourceId *string) ([]api.ConnectionResourceCountResponse, error)
 	ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error)
 	GetInsightResult(ctx *httpclient.Context, connectionIds []string, insightId uint, timeAt *time.Time) ([]insight.InsightResource, error)
 	GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, startTime, endTime *time.Time) (map[int][]insight.InsightResource, error)
@@ -43,22 +42,6 @@ func (s *inventoryClient) CountResources(ctx *httpclient.Context) (int64, error)
 		return 0, err
 	}
 	return count, nil
-}
-
-func (s *inventoryClient) GetAccountsResourceCount(ctx *httpclient.Context, provider source.Type, sourceId *string) ([]api.ConnectionResourceCountResponse, error) {
-	url := fmt.Sprintf("%s/api/v1/accounts/resource/count?provider=%s", s.baseURL, provider.String())
-	if sourceId != nil {
-		url += "&sourceId=" + *sourceId
-	}
-
-	var response []api.ConnectionResourceCountResponse
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return nil, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return nil, err
-	}
-	return response, nil
 }
 
 func (s *inventoryClient) ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error) {

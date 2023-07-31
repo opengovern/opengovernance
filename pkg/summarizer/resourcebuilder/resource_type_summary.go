@@ -82,20 +82,6 @@ func (b *resourceTypeSummaryBuilder) Build() []kafka.Doc {
 	var docs []kafka.Doc
 	for _, v := range b.connectionSummary {
 		docs = append(docs, v)
-		if err := b.db.CreateOrUpdateMetric(inventory.Metric{
-			SourceID:         v.SourceID,
-			Provider:         v.SourceType.String(),
-			ResourceType:     v.ResourceType,
-			ScheduleJobID:    v.ScheduleJobID,
-			SummarizeJobID:   &v.SummarizeJobID,
-			LastDayCount:     v.LastDayCount,
-			LastWeekCount:    v.LastWeekCount,
-			LastQuarterCount: v.LastQuarterCount,
-			LastYearCount:    v.LastYearCount,
-			Count:            v.ResourceCount,
-		}); err != nil {
-			b.logger.Error("failed to create metrics due to error", zap.Error(err))
-		}
 
 		h := v
 		h.ReportType = h.ReportType + "History"

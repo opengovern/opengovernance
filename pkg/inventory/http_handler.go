@@ -6,7 +6,6 @@ import (
 
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
-	"github.com/kaytu-io/kaytu-util/pkg/neo4j"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/turbot/steampipe-plugin-sdk/v4/plugin"
 
@@ -31,7 +30,6 @@ type HttpHandler struct {
 	awsClient        keibiaws.Client
 	azureClient      keibiazure.Client
 	db               Database
-	graphDb          GraphDatabase
 	steampipeConn    *steampipe.Database
 	schedulerClient  describeClient.SchedulerServiceClient
 	onboardClient    onboardClient.OnboardServiceClient
@@ -47,7 +45,6 @@ type HttpHandler struct {
 func InitializeHttpHandler(
 	elasticSearchAddress string, elasticSearchUsername string, elasticSearchPassword string,
 	postgresHost string, postgresPort string, postgresDb string, postgresUsername string, postgresPassword string, postgresSSLMode string,
-	neo4jHost string, neo4jPort string, neo4jUsername string, neo4jPassword string,
 	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
 	schedulerBaseUrl string, onboardBaseUrl string, complianceBaseUrl string,
 	logger *zap.Logger,
@@ -80,22 +77,6 @@ func InitializeHttpHandler(
 		return nil, err
 	}
 	fmt.Println("Initialized postgres database: ", postgresDb)
-
-	neo4jCfg := neo4j.Config{
-		Host:   neo4jHost,
-		Port:   neo4jPort,
-		User:   neo4jUsername,
-		Passwd: neo4jPassword,
-	}
-	driver, err := neo4j.NewDriver(&neo4jCfg, logger)
-	if err != nil {
-		return nil, fmt.Errorf("new neo4j driver: %w", err)
-	}
-	h.graphDb, err = NewGraphDatabase(driver)
-	if err != nil {
-		return nil, fmt.Errorf("new graph database: %w", err)
-	}
-	fmt.Println("Connected to the neo4j database")
 
 	// setup steampipe connection
 	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{

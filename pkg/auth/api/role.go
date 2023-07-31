@@ -8,6 +8,7 @@ import (
 type Role string
 
 const (
+	InternalRole   Role = "internal"
 	KeibiAdminRole Role = "keibi-admin"
 	AdminRole      Role = "admin"
 	EditorRole     Role = "editor"
@@ -16,6 +17,8 @@ const (
 
 func GetRole(s string) Role {
 	switch strings.TrimSpace(strings.ToLower(s)) {
+	case string(InternalRole):
+		return InternalRole
 	case string(KeibiAdminRole):
 		return KeibiAdminRole
 	case string(AdminRole):

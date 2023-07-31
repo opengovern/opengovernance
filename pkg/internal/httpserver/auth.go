@@ -2,8 +2,8 @@ package httpserver
 
 import (
 	"fmt"
-	"github.com/labstack/echo/v4"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 	"strings"
@@ -122,6 +122,8 @@ func roleToPriority(role api.Role) int {
 	case api.AdminRole:
 		return 2
 	case api.KeibiAdminRole:
+		return 98
+	case api.InternalRole:
 		return 99
 	default:
 		panic("unsupported role: " + role)
