@@ -29,29 +29,6 @@ type ListResourceTypeMetadataResponse struct {
 	ResourceTypes          []ResourceType `json:"resource_types"`
 }
 
-type ResourceTypeTagValue struct {
-	Value         string   `json:"value" example:"dev"`
-	ResourceTypes []string `json:"resource_types" example:"Microsoft.Compute/virtualMachines"`
-}
-
-type ResourceTypeTag struct {
-	Key                 string                 `json:"key" example:"environment"`
-	Values              []ResourceTypeTagValue `json:"values"`
-	AbsentResourceTypes []string               `json:"absent_resource_types,omitempty"`
-}
-
-type ListResourceTypeTagsMetadataResponse struct {
-	TotalResourceTypeTagCount int               `json:"total_resource_type_tag_count" example:"100" minimum:"0"`
-	ResourceTypeTags          []ResourceTypeTag `json:"resource_type_tags"`
-}
-
-type ListResourceTypeMetricsResponse struct {
-	TotalCount         int            `json:"total_count" minimum:"0"`
-	TotalOldCount      int            `json:"total_old_count" minimum:"0"`
-	TotalResourceTypes int            `json:"total_resource_types" minimum:"0"`
-	ResourceTypes      []ResourceType `json:"resource_types"`
-}
-
 type CountPair struct {
 	OldCount int `json:"old_count" minimum:"0"`
 	Count    int `json:"count" minimum:"0"`
@@ -78,13 +55,6 @@ type LocationResponse struct {
 type RegionsResourceCountResponse struct {
 	TotalCount int                `json:"totalCount" minimum:"0"`
 	Regions    []LocationResponse `json:"regions"`
-}
-
-type ListRegionsResourceCountCompositionResponse struct {
-	TotalCount      int                  `json:"total_count" minimum:"0"`
-	TotalValueCount int                  `json:"total_value_count" minimum:"0"`
-	TopValues       map[string]CountPair `json:"top_values"`
-	Others          CountPair            `json:"others"`
 }
 
 type AnalyticsCategoriesResponse struct {

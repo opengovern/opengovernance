@@ -65,24 +65,8 @@ func Run(conf postgres.Config, logger *zap.Logger, folder string) error {
 			logger.Error("failed to delete aws resource types", zap.Error(err))
 			return err
 		}
-		err = tx.Model(&inventory.Service{}).Where("connector = ?", source.CloudAWS).Unscoped().Delete(&inventory.Service{}).Error
-		if err != nil {
-			logger.Error("failed to delete aws services", zap.Error(err))
-			return err
-		}
 
 		for _, resourceType := range awsResourceTypes {
-			err = tx.Clauses(clause.OnConflict{
-				DoNothing: true,
-			}).Create(&inventory.Service{
-				ServiceName:  strings.ToLower(resourceType.ServiceName),
-				ServiceLabel: resourceType.ServiceName,
-				Connector:    source.CloudAWS,
-			}).Error
-			if err != nil {
-				logger.Error("failed to create aws service", zap.Error(err))
-				return err
-			}
 			err = tx.Clauses(clause.OnConflict{
 				DoNothing: true,
 			}).Create(&inventory.ResourceType{
@@ -123,24 +107,7 @@ func Run(conf postgres.Config, logger *zap.Logger, folder string) error {
 			logger.Error("failed to delete azure resource types", zap.Error(err))
 			return err
 		}
-		err = tx.Model(&inventory.Service{}).Where("connector = ?", source.CloudAzure).Unscoped().Delete(&inventory.Service{}).Error
-		if err != nil {
-			logger.Error("failed to delete azure services", zap.Error(err))
-			return err
-		}
-
 		for _, resourceType := range azureResourceTypes {
-			err = tx.Clauses(clause.OnConflict{
-				DoNothing: true,
-			}).Create(&inventory.Service{
-				ServiceName:  strings.ToLower(resourceType.ServiceName),
-				ServiceLabel: resourceType.ServiceName,
-				Connector:    source.CloudAzure,
-			}).Error
-			if err != nil {
-				logger.Error("failed to create azure service", zap.Error(err))
-				return err
-			}
 			err = tx.Clauses(clause.OnConflict{
 				DoNothing: true,
 			}).Create(&inventory.ResourceType{
