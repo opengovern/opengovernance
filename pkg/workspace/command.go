@@ -26,8 +26,6 @@ var (
 	KeibiHelmChartLocation    = os.Getenv("KEIBI_HELM_CHART_LOCATION")
 	KeibiOctopusNamespace     = os.Getenv("KEIBI_OCTOPUS_NAMESPACE")
 	FluxSystemNamespace       = os.Getenv("FLUX_SYSTEM_NAMESPACE")
-	PipedriveBaseUrl          = os.Getenv("PIPEDRIVE_BASE_URL")
-	PipedriveApiToken         = os.Getenv("PIPEDRIVE_API_TOKEN")
 	S3AccessKey               = os.Getenv("S3_ACCESS_KEY")
 	S3SecretKey               = os.Getenv("S3_SECRET_KEY")
 )
@@ -47,8 +45,6 @@ type Config struct {
 	KeibiOctopusNamespace  string
 	FluxSystemNamespace    string
 	AutoSuspendDuration    time.Duration
-	PipedriveBaseUrl       string
-	PipedriveApiToken      string
 	S3AccessKey            string
 	S3SecretKey            string
 }
@@ -70,8 +66,6 @@ func NewConfig() *Config {
 		KeibiOctopusNamespace:  KeibiOctopusNamespace,
 		FluxSystemNamespace:    FluxSystemNamespace,
 		AutoSuspendDuration:    time.Duration(d) * time.Minute,
-		PipedriveBaseUrl:       PipedriveBaseUrl,
-		PipedriveApiToken:      PipedriveApiToken,
 		S3AccessKey:            S3AccessKey,
 		S3SecretKey:            S3SecretKey,
 	}

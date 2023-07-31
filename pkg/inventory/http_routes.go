@@ -554,6 +554,17 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	}
 
 	timeToCountMap := make(map[int]int)
+	if endTime.Round(24 * time.Hour).Before(endTime) {
+		endTime = endTime.Round(24 * time.Hour).Add(24 * time.Hour)
+	} else {
+		endTime = endTime.Round(24 * time.Hour)
+	}
+	if startTime.Round(24 * time.Hour).After(startTime) {
+		startTime = startTime.Round(24 * time.Hour).Add(-24 * time.Hour)
+	} else {
+		startTime = startTime.Round(24 * time.Hour)
+	}
+
 	esDatapointCount := int(math.Floor(endTime.Sub(startTime).Hours() / 24))
 	if esDatapointCount == 0 {
 		esDatapointCount = 1
@@ -1326,6 +1337,17 @@ func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 		}
 	}
 
+	if endTime.Round(24 * time.Hour).Before(endTime) {
+		endTime = endTime.Round(24 * time.Hour).Add(24 * time.Hour)
+	} else {
+		endTime = endTime.Round(24 * time.Hour)
+	}
+	if startTime.Round(24 * time.Hour).After(startTime) {
+		startTime = startTime.Round(24 * time.Hour).Add(-24 * time.Hour)
+	} else {
+		startTime = startTime.Round(24 * time.Hour)
+	}
+
 	esDataPointCount := int(endTime.Sub(startTime).Hours() / 24)
 	if esDataPointCount == 0 {
 		esDataPointCount = 1
@@ -1603,6 +1625,17 @@ func (h *HttpHandler) GetServiceCostTrend(ctx echo.Context) error {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
 		}
+	}
+
+	if endTime.Round(24 * time.Hour).Before(endTime) {
+		endTime = endTime.Round(24 * time.Hour).Add(24 * time.Hour)
+	} else {
+		endTime = endTime.Round(24 * time.Hour)
+	}
+	if startTime.Round(24 * time.Hour).After(startTime) {
+		startTime = startTime.Round(24 * time.Hour).Add(-24 * time.Hour)
+	} else {
+		startTime = startTime.Round(24 * time.Hour)
 	}
 
 	esDataPointCount := int(endTime.Sub(startTime).Hours() / 24)

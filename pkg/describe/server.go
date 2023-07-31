@@ -85,13 +85,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.GET("/summarize/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingSummarizeJobs, api3.ViewerRole))
 	v1.GET("/insight/jobs/pending", httpserver.AuthorizeHandler(h.HandleListPendingInsightJobs, api3.ViewerRole))
 
-	v1.GET("/sources", httpserver.AuthorizeHandler(h.HandleListSources, api3.ViewerRole))
-	v1.GET("/sources/:source_id", httpserver.AuthorizeHandler(h.HandleGetSource, api3.ViewerRole))
 	v1.GET("/sources/:source_id/jobs/describe", httpserver.AuthorizeHandler(h.HandleListSourceDescribeJobs, api3.ViewerRole))
 	v1.GET("/sources/:source_id/jobs/compliance", httpserver.AuthorizeHandler(h.HandleListSourceComplianceReports, api3.ViewerRole))
-
-	v1.POST("/sources/:source_id/jobs/describe/refresh", httpserver.AuthorizeHandler(h.RunDescribeJobs, api3.EditorRole))
-	v1.POST("/sources/:source_id/jobs/compliance/refresh", httpserver.AuthorizeHandler(h.RunComplianceReportJobs, api3.EditorRole))
 
 	v1.GET("/resource_type/:provider", httpserver.AuthorizeHandler(h.GetResourceTypesByProvider, api3.ViewerRole))
 
@@ -102,7 +97,6 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.POST("/describe/resource", httpserver.AuthorizeHandler(h.DescribeSingleResource, api3.AdminRole))
 
 	stacks := v1.Group("/stacks")
-	stacks.POST("/benchmark/trigger", httpserver.AuthorizeHandler(h.TriggerStackBenchmark, api3.AdminRole))
 	stacks.GET("", httpserver.AuthorizeHandler(h.ListStack, api3.ViewerRole))
 	stacks.GET("/:stackId", httpserver.AuthorizeHandler(h.GetStack, api3.ViewerRole))
 	stacks.POST("/create", httpserver.AuthorizeHandler(h.CreateStack, api3.AdminRole))
@@ -110,111 +104,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 	stacks.POST("/:stackId/findings", httpserver.AuthorizeHandler(h.GetStackFindings, api3.ViewerRole))
 	stacks.GET("/:stackId/insight", httpserver.AuthorizeHandler(h.GetStackInsight, api3.ViewerRole))
 	stacks.GET("/resource", httpserver.AuthorizeHandler(h.ListResourceStack, api3.ViewerRole))
-	stacks.POST("/insight/trigger", httpserver.AuthorizeHandler(h.TriggerStackInsight, api3.AdminRole))
 	stacks.POST("/describer/trigger", httpserver.AuthorizeHandler(h.TriggerStackDescriber, api3.AdminRole))
 	stacks.GET("/:stackId/insights", httpserver.AuthorizeHandler(h.ListStackInsights, api3.ViewerRole))
-}
-
-// HandleListSources godoc
-//
-//	@Summary		List Sources
-//	@Description	Retrieves list of all of Keibi sources
-//	@Security		BearerToken
-//	@Tags			schedule
-//	@Produce		json
-//	@Success		200	{object}	[]api.Source
-//	@Router			/schedule/api/v1/sources [get]
-func (h HttpServer) HandleListSources(ctx echo.Context) error {
-	sources, err := h.DB.ListSources()
-	if err != nil {
-		ctx.Logger().Errorf("fetching sources: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
-	}
-
-	var objs []api.Source
-	for _, source := range sources {
-		lastDescribeAt := time.Time{}
-		lastComplianceReportAt := time.Time{}
-		if source.LastDescribedAt.Valid {
-			lastDescribeAt = source.LastDescribedAt.Time
-		}
-		if source.LastComplianceReportAt.Valid {
-			lastComplianceReportAt = source.LastComplianceReportAt.Time
-		}
-
-		job, err := h.DB.GetLastDescribeSourceJob(source.ID)
-		if err != nil {
-			ctx.Logger().Errorf("fetching source last describe job %s: %v", source.ID, err)
-			return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "fetching source last describe job"})
-		}
-		lastJobStatus := ""
-		if job != nil {
-			lastJobStatus = string(job.Status)
-		}
-
-		objs = append(objs, api.Source{
-			ID:                     source.ID,
-			Type:                   source.Type,
-			LastDescribedAt:        lastDescribeAt,
-			LastComplianceReportAt: lastComplianceReportAt,
-			LastDescribeJobStatus:  lastJobStatus,
-		})
-	}
-
-	return ctx.JSON(http.StatusOK, objs)
-}
-
-// HandleGetSource godoc
-//
-//	@Summary		Get source
-//	@Description	Retrieves Keibi source details by id
-//	@Security		BearerToken
-//	@Description	Getting Keibi source by id
-//	@Tags			schedule
-//	@Produce		json
-//	@Param			source_id	path		string	true	"SourceID"
-//	@Success		200			{object}	api.Source
-//	@Router			/schedule/api/v1/sources/{source_id} [get]
-func (h HttpServer) HandleGetSource(ctx echo.Context) error {
-	sourceID := ctx.Param("source_id")
-	_, err := uuid.Parse(sourceID)
-	if err != nil {
-		ctx.Logger().Errorf("parsing uuid: %v", err)
-		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
-	}
-	source, err := h.DB.GetSourceByUUID(sourceID)
-	if err != nil {
-		ctx.Logger().Errorf("fetching source %s: %v", sourceID, err)
-		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "fetching source"})
-	}
-
-	job, err := h.DB.GetLastDescribeSourceJob(sourceID)
-	if err != nil {
-		ctx.Logger().Errorf("fetching source last describe job %s: %v", sourceID, err)
-		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "fetching source last describe job"})
-	}
-
-	lastDescribeAt := time.Time{}
-	lastComplianceReportAt := time.Time{}
-	if source.LastDescribedAt.Valid {
-		lastDescribeAt = source.LastDescribedAt.Time
-	}
-	if source.LastComplianceReportAt.Valid {
-		lastComplianceReportAt = source.LastComplianceReportAt.Time
-	}
-	lastJobStatus := ""
-	if job != nil {
-		lastJobStatus = string(job.Status)
-	}
-
-	return ctx.JSON(http.StatusOK, api.Source{
-		ID:                     source.ID,
-		AccountID:              source.AccountID,
-		Type:                   source.Type,
-		LastDescribedAt:        lastDescribeAt,
-		LastComplianceReportAt: lastComplianceReportAt,
-		LastDescribeJobStatus:  lastJobStatus,
-	})
 }
 
 // HandleListPendingDescribeSourceJobs godoc
@@ -396,33 +287,6 @@ func (h HttpServer) HandleListSourceComplianceReports(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, objs)
 }
 
-// RunComplianceReportJobs godoc
-//
-//	@Summary		Run compliance report jobs
-//	@Description	Run compliance report jobs
-//	@Security		BearerToken
-//	@Tags			schedule
-//	@Produce		json
-//	@Param			source_id	path	string	true	"SourceID"
-//	@Success		200
-//	@Router			/schedule/api/v1/sources/{source_id}/jobs/compliance/refresh [post]
-func (h HttpServer) RunComplianceReportJobs(ctx echo.Context) error {
-	sourceID := ctx.Param("source_id")
-	sourceUUID, err := uuid.Parse(sourceID)
-	if err != nil {
-		ctx.Logger().Errorf("parsing uuid: %v", err)
-		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
-	}
-
-	err = h.DB.UpdateSourceNextComplianceReportToNow(sourceUUID)
-	if err != nil {
-		ctx.Logger().Errorf("update source next compliance report run: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
-	}
-
-	return ctx.String(http.StatusOK, "")
-}
-
 // HandleGetLastCompletedComplianceReport godoc
 //
 //	@Summary	Get last completed compliance report
@@ -438,33 +302,6 @@ func (h HttpServer) HandleGetLastCompletedComplianceReport(ctx echo.Context) err
 	}
 
 	return ctx.JSON(http.StatusOK, id)
-}
-
-// RunDescribeJobs godoc
-//
-//	@Summary		Run describe jobs
-//	@Description	Run describe jobs
-//	@Security		BearerToken
-//	@Tags			schedule
-//	@Produce		json
-//	@Param			source_id	path	string	true	"SourceID"
-//	@Success		200
-//	@Router			/schedule/api/v1/sources/{source_id}/jobs/describe/refresh [post]
-func (h HttpServer) RunDescribeJobs(ctx echo.Context) error {
-	sourceID := ctx.Param("source_id")
-	sourceUUID, err := uuid.Parse(sourceID)
-	if err != nil {
-		ctx.Logger().Errorf("parsing uuid: %v", err)
-		return ctx.JSON(http.StatusBadRequest, api.ErrorResponse{Message: "invalid source uuid"})
-	}
-
-	err = h.DB.UpdateSourceNextDescribeAtToNow(sourceUUID)
-	if err != nil {
-		ctx.Logger().Errorf("update source next describe run: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: "internal error"})
-	}
-
-	return ctx.String(http.StatusOK, "")
 }
 
 // GetResourceTypesByProvider godoc
@@ -546,7 +383,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 	connectionID := ctx.Param("connection_id")
 
-	src, err := h.DB.GetSourceByID(connectionID)
+	src, err := h.Scheduler.onboardClient.GetSource(&httpclient.Context{UserRole: api3.KeibiAdminRole}, connectionID)
 	if err != nil || src == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection id")
 	}
@@ -690,29 +527,25 @@ func (h HttpServer) TriggerBenchmarkEvaluation(ctx echo.Context) error {
 	}
 
 	var complianceJobs []ComplianceReportJob
-	for _, connectionID := range connectionIDs {
-		src, err := h.DB.GetSourceByID(connectionID)
-		if err != nil {
-			return err
+	connections, err := h.Scheduler.onboardClient.GetSources(&httpclient.Context{UserRole: api3.KeibiAdminRole}, connectionIDs)
+	if err != nil {
+		return err
+	}
+
+	for _, connection := range connections {
+		if !connection.IsEnabled() {
+			continue
 		}
 
-		crj := newComplianceReportJob(connectionID, src.Type, req.BenchmarkID)
+		crj := newComplianceReportJob(connection.ID.String(), connection.Connector, req.BenchmarkID)
 
 		err = h.DB.CreateComplianceReportJob(&crj)
 		if err != nil {
 			return err
 		}
 
-		if src == nil {
-			return errors.New("failed to find connection")
-		}
+		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, connection, &crj)
 
-		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, *src, &crj)
-
-		err = h.DB.UpdateSourceReportGenerated(connectionID, h.Scheduler.complianceIntervalHours)
-		if err != nil {
-			return err
-		}
 		complianceJobs = append(complianceJobs, crj)
 	}
 
@@ -1023,74 +856,6 @@ func (h HttpServer) DeleteStack(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-func (h HttpServer) TriggerStackBenchmark(ctx echo.Context) error { // Retired
-	var req api.StackBenchmarkRequest
-	err := bindValidate(ctx, &req)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	stackRecord, err := h.DB.GetStack(req.StackID)
-	if err != nil {
-		return err
-	}
-	if stackRecord.StackID == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
-	}
-
-	job := ScheduleJob{
-		Model:          gorm.Model{},
-		Status:         summarizerapi.SummarizerJobInProgress,
-		FailureMessage: "",
-	}
-	err = h.DB.AddScheduleJob(&job)
-	if err != nil {
-		errMsg := fmt.Sprintf("error adding schedule job: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
-	}
-	connectionId := stackRecord.StackID
-
-	var complianceJobs []ComplianceReportJob
-	for _, benchmarkID := range req.Benchmarks {
-		src, err := h.DB.GetSourceByID(connectionId)
-		if err != nil {
-			return err
-		}
-
-		crj := newComplianceReportJob(connectionId, src.Type, benchmarkID)
-
-		err = h.DB.CreateComplianceReportJob(&crj)
-		if err != nil {
-			return err
-		}
-
-		if src == nil {
-			return errors.New("failed to find connection")
-		}
-
-		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, *src, &crj)
-
-		err = h.DB.UpdateSourceReportGenerated(connectionId, h.Scheduler.complianceIntervalHours)
-		if err != nil {
-			return err
-		}
-		evaluation := StackEvaluation{
-			EvaluatorID: benchmarkID,
-			Type:        api.EvaluationTypeBenchmark,
-			StackID:     stackRecord.StackID,
-			JobID:       crj.ID,
-			Status:      api.StackEvaluationStatusInProgress,
-		}
-		err = h.DB.AddEvaluation(&evaluation)
-		if err != nil {
-			return err
-		}
-		complianceJobs = append(complianceJobs, crj)
-	}
-
-	return ctx.JSON(http.StatusOK, complianceJobs)
-}
-
 // GetStackFindings godoc
 //
 //	@Summary		Get Stack Findings
@@ -1382,13 +1147,17 @@ func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
 		return err
 	}
 
+	connections, err := h.Scheduler.onboardClient.GetSources(&httpclient.Context{UserRole: api3.KeibiAdminRole}, connectionIDs)
+	if err != nil {
+		return err
+	}
+
 	var insightJobs []InsightJob
-	for _, srcID := range connectionIDs {
-		src, err := h.DB.GetSourceByID(srcID)
-		if err != nil {
-			return err
+	for _, connection := range connections {
+		if !connection.IsEnabled() {
+			continue
 		}
-		job := newInsightJob(*insight, string(src.Type), srcID, src.AccountID, "")
+		job := newInsightJob(*insight, connection.Connector.String(), connection.ID.String(), connection.ConnectionID, "")
 		err = h.Scheduler.db.AddInsightJob(&job)
 		if err != nil {
 			return err
@@ -1401,72 +1170,6 @@ func (h HttpServer) TriggerInsightEvaluation(ctx echo.Context) error {
 			h.Scheduler.db.UpdateInsightJobStatus(job)
 		}
 		insightJobs = append(insightJobs, job)
-	}
-	return ctx.JSON(http.StatusOK, insightJobs)
-}
-
-func (h HttpServer) TriggerStackInsight(ctx echo.Context) error { // Retired
-	var req api.StackInsightRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	stackRecord, err := h.DB.GetStack(req.StackID)
-	if err != nil {
-		return err
-	}
-	if stackRecord.StackID == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "stack not found")
-	}
-	stackId := stackRecord.StackID
-
-	src, err := h.DB.GetSourceByID(stackId)
-	if err != nil {
-		return err
-	}
-
-	var insightJobs []api.InsightJob
-
-	for _, insightId := range req.Insights {
-		insight, err := h.Scheduler.complianceClient.GetInsightMetadataById(httpclient.FromEchoContext(ctx), insightId)
-		if err != nil {
-			return err
-		}
-
-		job := newInsightJob(*insight, string(src.Type), src.ID, src.AccountID, "")
-		err = h.Scheduler.db.AddInsightJob(&job)
-		if err != nil {
-			return err
-		}
-
-		err = enqueueInsightJobs(h.Scheduler.insightJobQueue, job, *insight)
-		if err != nil {
-			job.Status = insightapi.InsightJobFailed
-			job.FailureMessage = "Failed to enqueue InsightJob"
-			h.Scheduler.db.UpdateInsightJobStatus(job)
-		}
-		evaluation := StackEvaluation{
-			EvaluatorID: strconv.FormatUint(uint64(insightId), 10),
-			Type:        api.EvaluationTypeInsight,
-			StackID:     stackRecord.StackID,
-			JobID:       job.ID,
-			Status:      api.StackEvaluationStatusInProgress,
-		}
-		err = h.DB.AddEvaluation(&evaluation)
-		if err != nil {
-			return err
-		}
-		insightJobs = append(insightJobs, api.InsightJob{
-			ID:             job.ID,
-			InsightID:      job.InsightID,
-			SourceID:       job.SourceID,
-			AccountID:      job.AccountID,
-			SourceType:     job.SourceType,
-			Status:         job.Status,
-			FailureMessage: job.FailureMessage,
-			CreatedAt:      job.CreatedAt,
-			UpdatedAt:      job.UpdatedAt,
-		})
 	}
 	return ctx.JSON(http.StatusOK, insightJobs)
 }

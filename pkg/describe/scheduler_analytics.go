@@ -3,15 +3,16 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
 	"time"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
 
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
-func (s Scheduler) RunAnalyticsJobScheduler() {
+func (s *Scheduler) RunAnalyticsJobScheduler() {
 	s.logger.Info("Scheduling analytics jobs on a timer")
 
 	t := time.NewTicker(JobSchedulingInterval)
@@ -32,7 +33,7 @@ func (s Scheduler) RunAnalyticsJobScheduler() {
 	}
 }
 
-func (s Scheduler) scheduleAnalyticsJob() error {
+func (s *Scheduler) scheduleAnalyticsJob() error {
 	lastJob, err := s.db.FetchLastAnalyticsJob()
 	if err != nil {
 		AnalyticsJobsCount.WithLabelValues("failure").Inc()

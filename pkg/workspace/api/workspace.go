@@ -1,8 +1,6 @@
 package api
 
-import (
-	"time"
-)
+import "time"
 
 type CreateWorkspaceRequest struct {
 	Name        string `json:"name"`
@@ -27,52 +25,43 @@ type ChangeWorkspaceTierRequest struct {
 }
 
 type ChangeWorkspaceOrganizationRequest struct {
-	NewOrgID int `json:"newOrgID"`
+	NewOrgID uint `json:"newOrgID"`
+}
+
+type Workspace struct {
+	ID           string          `json:"id" example:"ws-698542025141040315"`
+	Name         string          `json:"name" example:"kaytu"`
+	OwnerId      string          `json:"ownerId" example:"google-oauth2|204590896945502695694"`
+	URI          string          `json:"uri" example:"https://app.kaytu.dev/kaytu"`
+	Status       WorkspaceStatus `json:"status" example:"PROVISIONED"`
+	Description  string          `json:"description" example:"Lorem ipsum dolor sit amet, consectetur adipiscing elit."`
+	Tier         Tier            `json:"tier" example:"ENTERPRISE"`
+	Organization Organization    `json:"organization,omitempty"`
+	CreatedAt    time.Time       `json:"createdAt" example:"2023-05-17T14:39:02.707659Z"`
 }
 
 type WorkspaceResponse struct {
-	ID           string                `json:"id" example:"ws-698542025141040315"`
-	Name         string                `json:"name" example:"keibi"`
-	OwnerId      string                `json:"ownerId" example:"google-oauth2|204590896945502695694"`
-	Tier         Tier                  `json:"tier" example:"ENTERPRISE"`
-	URI          string                `json:"uri" example:"https://app.kaytu.dev/keibi"`
-	Status       WorkspaceStatus       `json:"status" example:"PROVISIONED"`
-	Version      string                `json:"version" example:"v0.45.4"`
-	Description  string                `json:"description" example:"Lorem ipsum dolor sit amet, consectetur adipiscing elit."`
-	CreatedAt    time.Time             `json:"createdAt" example:"2023-05-17T14:39:02.707659Z"`
-	Organization *OrganizationResponse `json:"organization,omitempty"`
+	Workspace
+	Version string `json:"version" example:"v0.45.4"`
 }
 
-type OrganizationResponse struct {
-	ID            int    `json:"id"`
-	CompanyName   string `json:"companyName"`
-	Url           string `json:"url"`
-	AddressLine1  string `json:"addressLine1"`
-	AddressLine2  string `json:"addressLine2"`
-	AddressLine3  string `json:"addressLine3"`
-	City          string `json:"city"`
-	State         string `json:"state"`
-	Country       string `json:"country"`
-	ContactPhone  string `json:"contactPhone"`
-	ContactEmail  string `json:"contactEmail"`
-	ContactPerson string `json:"contactPerson"`
+type Organization struct {
+	ID           uint   `json:"id"`
+	CompanyName  string `json:"companyName"`
+	Url          string `json:"url"`
+	Address      string `json:"address"`
+	City         string `json:"city"`
+	State        string `json:"state"`
+	Country      string `json:"country"`
+	ContactPhone string `json:"contactPhone"`
+	ContactEmail string `json:"contactEmail"`
+	ContactName  string `json:"contactName"`
 }
 
 type WorkspaceLimits struct {
 	MaxUsers       int64 `json:"maxUsers"`
 	MaxConnections int64 `json:"maxConnections"`
 	MaxResources   int64 `json:"maxResources"`
-}
-
-type Workspace struct {
-	ID             string          `json:"id"`
-	Name           string          `gorm:"uniqueIndex" json:"name"`
-	OwnerId        string          `json:"owner_id"`
-	URI            string          `json:"uri"`
-	Status         WorkspaceStatus `json:"status"`
-	Description    string          `json:"description"`
-	Tier           Tier            `json:"tier"`
-	OrganizationID *int            `json:"organization_id"`
 }
 
 type WorkspaceLimitsUsage struct {

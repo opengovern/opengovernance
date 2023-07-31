@@ -39,11 +39,13 @@ type Connection struct {
 	Email                string                          `json:"email" example:"johndoe@example.com"`
 	Connector            source.Type                     `json:"connector" example:"Azure"`
 	Description          string                          `json:"description" example:"This is an example connection"`
-	CredentialID         string                          `json:"credentialID" example:"7r6123ac-ca1c-434f-b1a3-91w2w9d277c8"`
-	CredentialName       *string                         `json:"credentialName,omitempty"`
-	CredentialType       CredentialType                  `json:"credentialType" example:"manual"`
 	OnboardDate          time.Time                       `json:"onboardDate" example:"2023-05-07T00:00:00Z"`
 	AssetDiscoveryMethod source.AssetDiscoveryMethodType `json:"assetDiscoveryMethod" example:"scheduled"`
+
+	CredentialID   string         `json:"credentialID" example:"7r6123ac-ca1c-434f-b1a3-91w2w9d277c8"`
+	CredentialName *string        `json:"credentialName,omitempty"`
+	CredentialType CredentialType `json:"credentialType" example:"manual"`
+	Credential     Credential     `json:"credential,omitempty"`
 
 	LifecycleState ConnectionLifecycleState `json:"lifecycleState" example:"enabled"`
 
@@ -58,6 +60,15 @@ type Connection struct {
 	OldResourceCount     *int       `json:"oldResourceCount" example:"100" minimum:"0" maximum:"1000000"`
 
 	Metadata map[string]any `json:"metadata"`
+}
+
+func (c Connection) IsEnabled() bool {
+	if c.LifecycleState == ConnectionLifecycleStateOnboard ||
+		c.LifecycleState == ConnectionLifecycleStateInProgress ||
+		c.LifecycleState == ConnectionLifecycleStateUnhealthy {
+		return true
+	}
+	return false
 }
 
 type ChangeConnectionLifecycleStateRequest struct {

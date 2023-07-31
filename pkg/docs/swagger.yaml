@@ -1566,28 +1566,6 @@ definitions:
       resourceTypeName:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_describe_api.Source:
-    properties:
-      accountId:
-        example: "123456789012"
-        type: string
-      id:
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
-      lastComplianceReportAt:
-        example: "2021-01-01T00:00:00Z"
-        type: string
-      lastDescribeJobStatus:
-        example: COMPLETED
-        type: string
-      lastDescribedAt:
-        example: "2021-01-01T00:00:00Z"
-        type: string
-      type:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        example: Azure
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack:
     properties:
       accountIds:
@@ -2325,6 +2303,8 @@ definitions:
         maximum: 10000000
         minimum: 0
         type: number
+      credential:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential'
       credentialID:
         example: 7r6123ac-ca1c-434f-b1a3-91w2w9d277c8
         type: string
@@ -2716,13 +2696,9 @@ definitions:
       id:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.OrganizationResponse:
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Organization:
     properties:
-      addressLine1:
-        type: string
-      addressLine2:
-        type: string
-      addressLine3:
+      address:
         type: string
       city:
         type: string
@@ -2730,7 +2706,7 @@ definitions:
         type: string
       contactEmail:
         type: string
-      contactPerson:
+      contactName:
         type: string
       contactPhone:
         type: string
@@ -2755,21 +2731,33 @@ definitions:
     - Tier_Enterprise
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Workspace:
     properties:
+      createdAt:
+        example: "2023-05-17T14:39:02.707659Z"
+        type: string
       description:
+        example: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         type: string
       id:
+        example: ws-698542025141040315
         type: string
       name:
+        example: kaytu
         type: string
-      organization_id:
-        type: integer
-      owner_id:
+      organization:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Organization'
+      ownerId:
+        example: google-oauth2|204590896945502695694
         type: string
       status:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus'
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus'
+        example: PROVISIONED
       tier:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier'
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier'
+        example: ENTERPRISE
       uri:
+        example: https://app.kaytu.dev/kaytu
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceLimits:
@@ -2820,10 +2808,10 @@ definitions:
         example: ws-698542025141040315
         type: string
       name:
-        example: keibi
+        example: kaytu
         type: string
       organization:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.OrganizationResponse'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Organization'
       ownerId:
         example: google-oauth2|204590896945502695694
         type: string
@@ -2836,7 +2824,7 @@ definitions:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Tier'
         example: ENTERPRISE
       uri:
-        example: https://app.kaytu.dev/keibi
+        example: https://app.kaytu.dev/kaytu
         type: string
       version:
         example: v0.45.4
@@ -6177,46 +6165,6 @@ paths:
       summary: get resource type by provider
       tags:
       - schedule
-  /schedule/api/v1/sources:
-    get:
-      description: Retrieves list of all of Keibi sources
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Source'
-            type: array
-      security:
-      - BearerToken: []
-      summary: List Sources
-      tags:
-      - schedule
-  /schedule/api/v1/sources/{source_id}:
-    get:
-      description: |-
-        Retrieves Keibi source details by id
-        Getting Keibi source by id
-      parameters:
-      - description: SourceID
-        in: path
-        name: source_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Source'
-      security:
-      - BearerToken: []
-      summary: Get source
-      tags:
-      - schedule
   /schedule/api/v1/sources/{source_id}/jobs/compliance:
     get:
       description: Retrieves list of source compliance reports for a source by the
@@ -6249,25 +6197,6 @@ paths:
       summary: List source compliance reports
       tags:
       - schedule
-  /schedule/api/v1/sources/{source_id}/jobs/compliance/refresh:
-    post:
-      description: Run compliance report jobs
-      parameters:
-      - description: SourceID
-        in: path
-        name: source_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Run compliance report jobs
-      tags:
-      - schedule
   /schedule/api/v1/sources/{source_id}/jobs/describe:
     get:
       description: Retrieves list of source describe jobs for a source by the given
@@ -6290,25 +6219,6 @@ paths:
       security:
       - BearerToken: []
       summary: List source describe jobs
-      tags:
-      - schedule
-  /schedule/api/v1/sources/{source_id}/jobs/describe/refresh:
-    post:
-      description: Run describe jobs
-      parameters:
-      - description: SourceID
-        in: path
-        name: source_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Run describe jobs
       tags:
       - schedule
   /schedule/api/v1/stacks:
@@ -6569,6 +6479,49 @@ paths:
       summary: Listing summarize jobs
       tags:
       - schedule
+  /workspace/api/v1/organization:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Organization'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.Organization'
+      security:
+      - BearerToken: []
+      summary: Create an organization
+      tags:
+      - workspace
+  /workspace/api/v1/organization/{organizationId}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: path
+        name: organizationId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+      security:
+      - BearerToken: []
+      summary: Create an organization
+      tags:
+      - workspace
   /workspace/api/v1/workspace:
     post:
       consumes:

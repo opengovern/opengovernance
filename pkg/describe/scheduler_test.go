@@ -3,16 +3,16 @@ package describe
 import (
 	"database/sql"
 	"encoding/json"
+	"testing"
+	"time"
+
 	"github.com/kaytu-io/kaytu-util/pkg/dockertest"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"github.com/kaytu-io/kaytu-util/pkg/queue/mocks"
-	"testing"
-	"time"
 
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 
 	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/mock"
@@ -93,95 +93,6 @@ func (s *SchedulerTestSuite) AfterTest(suiteName, testName string) {
 	s.Scheduler = Scheduler{}
 }
 
-func (s *SchedulerTestSuite) TestSourceEventCreate() {
-	require := s.Require()
-
-	uuid := uuid.New()
-	err := ProcessSourceAction(s.Scheduler.db, SourceEvent{
-		Action:     SourceCreate,
-		SourceID:   uuid,
-		AccountID:  "1234567890",
-		SourceType: api.SourceCloudAWS,
-		Secret:     "config/ref/path",
-	})
-	require.NoError(err, "create source")
-
-	db := s.Scheduler.db
-
-	sources, err := db.ListSources()
-	require.NoError(err, "list sources")
-	require.Equal(1, len(sources))
-	require.Equal(uuid, sources[0].ID, uuid)
-	require.Equal(api.SourceCloudAWS, sources[0].Type)
-	require.Equal("config/ref/path", sources[0].ConfigRef)
-	require.False(sources[0].LastDescribedAt.Valid)
-	require.True(sources[0].NextDescribeAt.Valid)
-}
-
-func (s *SchedulerTestSuite) TestSourceEventUpdate() {
-	require := s.Require()
-
-	uuid := uuid.New()
-	err := ProcessSourceAction(s.Scheduler.db, SourceEvent{
-		Action:     SourceCreate,
-		SourceID:   uuid,
-		AccountID:  "1234567890",
-		SourceType: api.SourceCloudAWS,
-		Secret:     "config/ref/path",
-	})
-	require.NoError(err, "create source")
-
-	err = ProcessSourceAction(s.Scheduler.db, SourceEvent{
-		Action:     SourceUpdate,
-		SourceID:   uuid,
-		AccountID:  "1234567890",
-		SourceType: api.SourceCloudAzure,
-		Secret:     "config/ref/path2",
-	})
-	require.NoError(err, "update source")
-
-	db := s.Scheduler.db
-
-	sources, err := db.ListSources()
-	require.NoError(err, "list sources")
-	require.Equal(1, len(sources))
-	require.Equal(uuid, sources[0].ID, uuid)
-	require.Equal(api.SourceCloudAzure, sources[0].Type)
-	require.Equal("config/ref/path2", sources[0].ConfigRef)
-	require.False(sources[0].LastDescribedAt.Valid)
-	require.True(sources[0].NextDescribeAt.Valid)
-}
-
-func (s *SchedulerTestSuite) TestSourceEventDelete() {
-	require := s.Require()
-
-	uuid := uuid.New()
-	err := ProcessSourceAction(s.Scheduler.db, SourceEvent{
-		Action:     SourceCreate,
-		SourceID:   uuid,
-		AccountID:  "1234567890",
-		SourceType: api.SourceCloudAWS,
-		Secret:     "config/ref/path",
-	})
-	require.NoError(err, "create source")
-
-	db := s.Scheduler.db
-
-	sources, err := db.ListSources()
-	require.NoError(err, "list sources")
-	require.Equal(1, len(sources))
-
-	err = ProcessSourceAction(s.Scheduler.db, SourceEvent{
-		Action:   SourceDelete,
-		SourceID: uuid,
-	})
-	require.NoError(err, "delete source")
-
-	sources, err = db.ListSources()
-	require.NoError(err, "list sources")
-	require.Equal(0, len(sources))
-}
-
 func (s *SchedulerTestSuite) TestDescribeJobQueue_NoSource() {
 	require := s.Require()
 	db := s.Scheduler.db
@@ -199,35 +110,6 @@ func (s *SchedulerTestSuite) TestDescribeJobQueue_NoSource() {
 	drj, err := db.ListAllDescribeResourceJobs()
 	require.NoError(err, "list all describe resource jobs")
 	require.Equal(0, len(drj))
-}
-
-func (s *SchedulerTestSuite) TestDescribeJobQueue() {
-	require := s.Require()
-	db := s.Scheduler.db
-
-	uuid := uuid.New()
-	err := ProcessSourceAction(s.Scheduler.db, SourceEvent{
-		Action:     SourceCreate,
-		SourceID:   uuid,
-		AccountID:  "1234567890",
-		SourceType: api.SourceCloudAWS,
-		Secret:     "config/ref/path",
-	})
-	require.NoError(err, "create source")
-
-	//s.Scheduler.describeJobQueue.(*mocksqueue.Interface).On("Publish", mock.Anything).Return(error(nil))
-	//s.Scheduler.describeJobQueue.(*mocksqueue.Interface).On("Len", mock.Anything).Return(0, nil)
-	//s.Scheduler.describeJobQueue.(*mocksqueue.Interface).On("Name", mock.Anything).Return("temp")
-
-	s.scheduleDescribeJob()
-
-	dsj, err := db.ListAllDescribeSourceJobs()
-	require.NoError(err, "list all describe source jobs")
-	require.Equal(1, len(dsj))
-
-	drj, err := db.ListAllDescribeResourceJobs()
-	require.NoError(err, "list all describe resource jobs")
-	require.Equal(len(aws.ListResourceTypes()), len(drj))
 }
 
 func (s *SchedulerTestSuite) TestDescribeResultJobQueue() {

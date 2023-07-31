@@ -264,8 +264,6 @@ type FetchDailyCostTrendByServicesBetweenResponse struct {
 }
 
 func FetchDailyCostTrendByServicesBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, startTime, endTime time.Time, datapointCount int) (map[string]map[int]float64, error) {
-	startTime = startTime.Truncate(time.Hour * 24)
-	endTime = endTime.Truncate(time.Hour * 24)
 
 	query := make(map[string]any)
 	var filters []any
@@ -388,9 +386,6 @@ type FetchDailyCostTrendBetweenResponse struct {
 }
 
 func FetchDailyCostTrendBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time, datapointCount int) (map[int]float64, error) {
-	startTime = startTime.Truncate(time.Hour * 24)
-	endTime = endTime.Truncate(time.Hour * 24)
-
 	query := make(map[string]any)
 	var filters []any
 	filters = append(filters, map[string]any{
