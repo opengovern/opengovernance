@@ -53,11 +53,7 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 			if metric.Tables == nil || len(metric.Tables) == 0 {
 				awsTables := awsR.FindAllString(metric.Query, -1)
 				azureTables := azureR.FindAllString(metric.Query, -1)
-				fmt.Println(id, "aws tables: ", awsTables)
-				fmt.Println(id, "azure tables: ", azureTables)
 				metric.Tables = append(awsTables, azureTables...)
-			} else {
-				fmt.Println(id, "tables are already populated", metric.Tables, len(metric.Tables))
 			}
 
 			if len(metric.FinderQuery) == 0 {
@@ -66,8 +62,6 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 					tarr = append(tarr, fmt.Sprintf("'%s'", t))
 				}
 				metric.FinderQuery = fmt.Sprintf(`select * from kaytu_lookup where resource_type in (%s)`, strings.Join(tarr, ","))
-			} else {
-				fmt.Println(id, "finder query already available", len(metric.FinderQuery))
 			}
 
 			dbMetric := analyticsDB.AnalyticMetric{
@@ -81,8 +75,9 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 			}
 
 			err = dbc.Model(&analyticsDB.AnalyticMetric{}).Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "id"}},                                     // key column
-				DoUpdates: clause.AssignmentColumns([]string{"connectors", "name", "query"}), // column needed to be updated
+				Columns: []clause.Column{{Name: "id"}}, // key column
+				DoUpdates: clause.AssignmentColumns([]string{"connectors", "name", "query",
+					"tables", "finder_query"}), // column needed to be updated
 			}).Create(dbMetric).Error
 
 			if err != nil {
