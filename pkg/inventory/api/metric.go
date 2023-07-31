@@ -7,11 +7,11 @@ import (
 )
 
 type Metric struct {
-	ID         string              `json:"id" example:"vms"`
-	Query      string              `json:"query" example:"select * from kaytu_resources where resource_type = 'aws::ec2::instance'"`
-	Connectors []source.Type       `json:"connectors" example:"[Azure]"` // Cloud Provider
-	Name       string              `json:"name" example:"VMs"`           // Resource Type
-	Tags       map[string][]string `json:"tags,omitempty"`               // Tags
+	ID          string              `json:"id" example:"vms"`
+	FinderQuery string              `json:"finderQuery" example:"select * from kaytu_resources where resource_type = 'aws::ec2::instance'"`
+	Connectors  []source.Type       `json:"connectors" example:"[Azure]"` // Cloud Provider
+	Name        string              `json:"name" example:"VMs"`           // Resource Type
+	Tags        map[string][]string `json:"tags,omitempty"`               // Tags
 
 	Count    *int `json:"count" example:"100"`    // Number of Resources of this Resource Type - Metric
 	OldCount *int `json:"old_count" example:"90"` // Number of Resources of this Resource Type in the past - Metric
@@ -19,11 +19,11 @@ type Metric struct {
 
 func MetricToAPI(metric analyticsDB.AnalyticMetric) Metric {
 	return Metric{
-		ID:         metric.ID,
-		Query:      metric.Query,
-		Connectors: source.ParseTypes(metric.Connectors),
-		Name:       metric.Name,
-		Tags:       model.TrimPrivateTags(GetTagsMap(metric)),
+		ID:          metric.ID,
+		FinderQuery: metric.FinderQuery,
+		Connectors:  source.ParseTypes(metric.Connectors),
+		Name:        metric.Name,
+		Tags:        model.TrimPrivateTags(GetTagsMap(metric)),
 	}
 }
 

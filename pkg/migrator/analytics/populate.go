@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"encoding/json"
+	"fmt"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"go.uber.org/zap"
@@ -10,6 +11,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -44,12 +46,30 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 					ID: id,
 				})
 			}
+			awsR := regexp.MustCompile(`'(aws::[\w\d]+::[\w\d]+)'`)
+			azureR := regexp.MustCompile(`'(microsoft.[\w\d/]+)'`)
+			if metric.Tables == nil || len(metric.Tables) == 0 {
+				awsTables := awsR.FindAllString(metric.Query, -1)
+				azureTables := azureR.FindAllString(metric.Query, -1)
+				metric.Tables = append(awsTables, azureTables...)
+			}
+
+			if len(metric.FinderQuery) == 0 {
+				var tarr []string
+				for _, t := range metric.Tables {
+					tarr = append(tarr, fmt.Sprintf("'%s'", t))
+				}
+				metric.FinderQuery = fmt.Sprintf(`select * from kaytu_lookup where resource_type in (%s)`, strings.Join(tarr, ","))
+			}
+
 			dbMetric := analyticsDB.AnalyticMetric{
-				ID:         id,
-				Connectors: connectors,
-				Name:       metric.Name,
-				Query:      metric.Query,
-				Tags:       tags,
+				ID:          id,
+				Connectors:  connectors,
+				Name:        metric.Name,
+				Query:       metric.Query,
+				Tables:      metric.Tables,
+				FinderQuery: metric.FinderQuery,
+				Tags:        tags,
 			}
 
 			err = dbc.Model(&analyticsDB.AnalyticMetric{}).Clauses(clause.OnConflict{
