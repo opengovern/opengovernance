@@ -513,8 +513,6 @@ type ConnectionResourceTypeTrendSummaryQueryResponse struct {
 func FetchConnectionResourceTypeTrendSummaryPage(client keibi.Client, connectionIDs, resourceTypes []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
 	res := make(map[string]any)
 	var filters []any
-	startTime = startTime.Round(time.Hour * 24)
-	endTime = endTime.Round(time.Hour * 24)
 
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendConnectionSummary)}},
@@ -706,8 +704,6 @@ type ConnectorResourceTypeTrendSummaryQueryResponse struct {
 func FetchConnectorResourceTypeTrendSummaryPage(client keibi.Client, connectors []source.Type, resourceTypes []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
 	res := make(map[string]any)
 	var filters []any
-	startTime = startTime.Round(time.Hour * 24)
-	endTime = endTime.Round(time.Hour * 24)
 
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.ResourceTypeTrendProviderSummary)}},
