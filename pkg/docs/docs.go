@@ -2572,6 +2572,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/analytics/categories": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns list of categories for analytics summary",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "List Analytics categories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AnalyticsCategoriesResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/analytics/composition/{key}": {
             "get": {
                 "security": [
@@ -10193,6 +10221,20 @@ const docTemplate = `{
                 "resourceTypeLabel": {
                     "description": "Resource Type Label",
                     "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AnalyticsCategoriesResponse": {
+            "type": "object",
+            "properties": {
+                "categoryResourceType": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },
