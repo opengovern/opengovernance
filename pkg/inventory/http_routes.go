@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	es2 "github.com/kaytu-io/kaytu-engine/pkg/analytics/es"
+	es3 "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"math"
 	"net/http"
 	"sort"
@@ -74,6 +78,91 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	metadata := v2.Group("/metadata")
 	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, authApi.ViewerRole))
+
+	v1.GET("/migrate-analytics", httpserver.AuthorizeHandler(h.MigrateAnalytics, authApi.AdminRole))
+}
+
+func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+
+	connectionMap := map[string]es2.ConnectionMetricTrendSummary{}
+	connectorMap := map[string]es2.ConnectorMetricTrendSummary{}
+
+	var searchAfter interface{}
+	for {
+		resp, err := es.GetConnectionResourceTypeSummary(h.client, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		if len(resp.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range resp.Hits.Hits {
+			searchAfter = hit.Sort
+
+			connectionID, err := uuid.Parse(hit.Source.SourceID)
+			if err != nil {
+				return err
+			}
+
+			metric, err := aDB.GetMetric(hit.Source.ResourceType)
+			if err != nil {
+				return err
+			}
+
+			if metric == nil {
+				return fmt.Errorf("resource type %s not found", hit.Source.ResourceType)
+			}
+
+			connection := es2.ConnectionMetricTrendSummary{
+				ConnectionID:  connectionID,
+				Connector:     hit.Source.SourceType,
+				EvaluatedAt:   hit.Source.DescribedAt,
+				MetricID:      metric.ID,
+				ResourceCount: hit.Source.ResourceCount,
+				ReportType:    es3.MetricTrendConnectionSummary,
+			}
+			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metric.ID, hit.Source.DescribedAt)
+			if v, ok := connectionMap[key]; ok {
+				v.ResourceCount += connection.ResourceCount
+				connectionMap[key] = v
+			} else {
+				connectionMap[key] = connection
+			}
+
+			connector := es2.ConnectorMetricTrendSummary{
+				Connector:     hit.Source.SourceType,
+				EvaluatedAt:   hit.Source.DescribedAt,
+				MetricID:      metric.ID,
+				ResourceCount: hit.Source.ResourceCount,
+				ReportType:    es3.MetricTrendConnectorSummary,
+			}
+			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metric.ID, hit.Source.DescribedAt)
+			if v, ok := connectorMap[key]; ok {
+				v.ResourceCount += connector.ResourceCount
+				connectorMap[key] = v
+			} else {
+				connectorMap[key] = connector
+			}
+		}
+	}
+	var docs []kafka.Doc
+
+	for _, c := range connectionMap {
+		docs = append(docs, c)
+	}
+
+	for _, c := range connectorMap {
+		docs = append(docs, c)
+	}
+
+	err := kafka.DoSend(h.kafkaProducer, "kaytu_resources", 0, docs, h.logger)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {

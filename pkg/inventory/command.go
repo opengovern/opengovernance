@@ -31,6 +31,8 @@ var (
 	SteampipeUser     = os.Getenv("STEAMPIPE_USERNAME")
 	SteampipePassword = os.Getenv("STEAMPIPE_PASSWORD")
 
+	KafkaService = os.Getenv("KAFKA_SERVICE")
+
 	SchedulerBaseUrl  = os.Getenv("SCHEDULER_BASE_URL")
 	OnboardBaseUrl    = os.Getenv("ONBOARD_BASE_URL")
 	ComplianceBaseUrl = os.Getenv("COMPLIANCE_BASE_URL")
@@ -56,6 +58,7 @@ func start(ctx context.Context) error {
 		ElasticSearchAddress, ElasticSearchUsername, ElasticSearchPassword,
 		PostgreSQLHost, PostgreSQLPort, PostgreSQLDb, PostgreSQLUser, PostgreSQLPassword, PostgreSQLSSLMode,
 		SteampipeHost, SteampipePort, SteampipeDb, SteampipeUser, SteampipePassword,
+		KafkaService,
 		SchedulerBaseUrl, OnboardBaseUrl, ComplianceBaseUrl,
 		logger,
 		RedisAddress,
