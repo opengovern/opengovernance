@@ -48,7 +48,7 @@ func (db Database) ListMetrics() ([]AnalyticMetric, error) {
 
 func (db Database) GetMetric(resourceType string) (*AnalyticMetric, error) {
 	var s *AnalyticMetric
-	tx := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations).Where("? IN tables", resourceType).Find(&s)
+	tx := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations).Where("? = ANY (tables)", resourceType).Find(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
