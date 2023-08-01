@@ -46,6 +46,17 @@ func (db Database) ListMetrics() ([]AnalyticMetric, error) {
 	return s, nil
 }
 
+func (db Database) GetMetric(resourceType string) (*AnalyticMetric, error) {
+	var s *AnalyticMetric
+	tx := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations).Where("? IN tables", resourceType).Find(&s)
+
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
 func (db Database) ListFilteredMetrics(tags map[string][]string, metricIDs []string, connectorTypes []source.Type) ([]AnalyticMetric, error) {
 	var metrics []AnalyticMetric
 	query := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations)
