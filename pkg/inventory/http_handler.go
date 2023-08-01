@@ -2,6 +2,8 @@ package inventory
 
 import (
 	"fmt"
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"strings"
 	"time"
 
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
@@ -36,6 +38,7 @@ type HttpHandler struct {
 	complianceClient complianceClient.ComplianceServiceClient
 	rdb              *redis.Client
 	cache            *cache.Cache
+	kafkaProducer    *confluent_kafka.Producer
 
 	logger *zap.Logger
 
@@ -46,6 +49,7 @@ func InitializeHttpHandler(
 	elasticSearchAddress string, elasticSearchUsername string, elasticSearchPassword string,
 	postgresHost string, postgresPort string, postgresDb string, postgresUsername string, postgresPassword string, postgresSSLMode string,
 	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
+	KafkaService string,
 	schedulerBaseUrl string, onboardBaseUrl string, complianceBaseUrl string,
 	logger *zap.Logger,
 	redisAddress string,
@@ -127,5 +131,18 @@ func InitializeHttpHandler(
 	h.awsPlg = awsSteampipe.Plugin()
 	h.azurePlg = azureSteampipe.Plugin()
 	h.azureADPlg = azureSteampipe.ADPlugin()
+
+	kafkaProducer, err := confluent_kafka.NewProducer(&confluent_kafka.ConfigMap{
+		"bootstrap.servers":            strings.Join(strings.Split(KafkaService, ","), ","),
+		"linger.ms":                    100,
+		"compression.type":             "lz4",
+		"message.timeout.ms":           10000,
+		"queue.buffering.max.messages": 100000,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	h.kafkaProducer = kafkaProducer
 	return h, nil
 }
