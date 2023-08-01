@@ -5,6 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
+	es2 "github.com/kaytu-io/kaytu-engine/pkg/analytics/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory/es"
+	es3 "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -106,6 +111,91 @@ func (h HttpServer) Register(e *echo.Echo) {
 	stacks.GET("/resource", httpserver.AuthorizeHandler(h.ListResourceStack, api3.ViewerRole))
 	stacks.POST("/describer/trigger", httpserver.AuthorizeHandler(h.TriggerStackDescriber, api3.AdminRole))
 	stacks.GET("/:stackId/insights", httpserver.AuthorizeHandler(h.ListStackInsights, api3.ViewerRole))
+
+	v1.GET("/migrate-analytics", httpserver.AuthorizeHandler(h.MigrateAnalytics, api3.AdminRole))
+}
+
+func (h *HttpServer) MigrateAnalytics(ctx echo.Context) error {
+	aDB := analyticsDB.NewDatabase(h.DB.orm)
+
+	connectionMap := map[string]es2.ConnectionMetricTrendSummary{}
+	connectorMap := map[string]es2.ConnectorMetricTrendSummary{}
+
+	var searchAfter interface{}
+	for {
+		resp, err := es.GetConnectionResourceTypeSummary(h.Scheduler.es, searchAfter)
+		if err != nil {
+			return err
+		}
+
+		if len(resp.Hits.Hits) == 0 {
+			break
+		}
+
+		for _, hit := range resp.Hits.Hits {
+			searchAfter = hit.Sort
+
+			connectionID, err := uuid.Parse(hit.Source.SourceID)
+			if err != nil {
+				return err
+			}
+
+			metric, err := aDB.GetMetric(hit.Source.ResourceType)
+			if err != nil {
+				return err
+			}
+
+			if metric == nil {
+				return fmt.Errorf("resource type %s not found", hit.Source.ResourceType)
+			}
+
+			connection := es2.ConnectionMetricTrendSummary{
+				ConnectionID:  connectionID,
+				Connector:     hit.Source.SourceType,
+				EvaluatedAt:   hit.Source.DescribedAt,
+				MetricID:      metric.ID,
+				ResourceCount: hit.Source.ResourceCount,
+				ReportType:    es3.MetricTrendConnectionSummary,
+			}
+			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metric.ID, hit.Source.DescribedAt)
+			if v, ok := connectionMap[key]; ok {
+				v.ResourceCount += connection.ResourceCount
+				connectionMap[key] = v
+			} else {
+				connectionMap[key] = connection
+			}
+
+			connector := es2.ConnectorMetricTrendSummary{
+				Connector:     hit.Source.SourceType,
+				EvaluatedAt:   hit.Source.DescribedAt,
+				MetricID:      metric.ID,
+				ResourceCount: hit.Source.ResourceCount,
+				ReportType:    es3.MetricTrendConnectorSummary,
+			}
+			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metric.ID, hit.Source.DescribedAt)
+			if v, ok := connectorMap[key]; ok {
+				v.ResourceCount += connector.ResourceCount
+				connectorMap[key] = v
+			} else {
+				connectorMap[key] = connector
+			}
+		}
+	}
+	var docs []kafka.Doc
+
+	for _, c := range connectionMap {
+		docs = append(docs, c)
+	}
+
+	for _, c := range connectorMap {
+		docs = append(docs, c)
+	}
+
+	err := kafka.DoSend(h.Scheduler.kafkaProducer, "kaytu_resources", 0, docs, h.Scheduler.logger)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // HandleListPendingDescribeSourceJobs godoc
