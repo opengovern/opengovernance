@@ -85,9 +85,13 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 
+	connectionMapTable := map[string][]string{}
+
 	connectionMap := map[string]es2.ConnectionMetricTrendSummary{}
 	connectorMap := map[string]es2.ConnectorMetricTrendSummary{}
+
 	resourceTypeMetricIDCache := map[string]string{}
+	metricResourceTypeLenCache := map[string]int{}
 
 	var searchAfter interface{} = nil
 	for {
@@ -123,6 +127,7 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 				}
 
 				resourceTypeMetricIDCache[hit.Source.ResourceType] = metric.ID
+				metricResourceTypeLenCache[metric.ID] = len(metric.Tables)
 				metricID = metric.ID
 			}
 
@@ -140,6 +145,17 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 				connectionMap[key] = v
 			} else {
 				connectionMap[key] = connection
+			}
+			connectionMapTable[key] = append(connectionMapTable[key], hit.Source.ResourceType)
+			if len(connectionMapTable[key]) == metricResourceTypeLenCache[metricID] {
+				var docs = []kafka.Doc{connectionMap[key]}
+				err := kafka.DoSend(h.kafkaProducer, "kaytu_resources", 0, docs, h.logger)
+				if err != nil {
+					return err
+				}
+
+				delete(connectionMapTable, key)
+				delete(connectionMap, key)
 			}
 
 			connector := es2.ConnectorMetricTrendSummary{
