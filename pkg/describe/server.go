@@ -378,7 +378,8 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 //	@Tags			describe
 //	@Produce		json
 //	@Success		200
-//	@Param			connection_id	path	string	true	"Connection ID"
+//	@Param			connection_id	path	string		true	"Connection ID"
+//	@Param			resource_type	query	[]string	true	"Resource Type"
 //	@Router			/schedule/api/v1/describe/trigger/{connection_id} [put]
 func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 	connectionID := ctx.Param("connection_id")
@@ -388,7 +389,9 @@ func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection id")
 	}
 
-	err = h.Scheduler.describeConnection(*src, false)
+	resourceTypes := ctx.QueryParams()["resource_type"]
+
+	err = h.Scheduler.describeConnection(*src, false, resourceTypes)
 	if err != nil {
 		return err
 	}
