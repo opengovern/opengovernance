@@ -194,7 +194,7 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 		docs = append(docs, c)
 	}
 
-	err = kafka.DoSend(h.kafkaProducer, "kaytu_resources", 0, docs, h.logger)
+	err = kafka.DoSend(h.kafkaProducer, "kaytu-resources", 0, docs, h.logger)
 	if err != nil {
 		return err
 	}
