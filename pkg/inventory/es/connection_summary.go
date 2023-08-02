@@ -43,7 +43,7 @@ func GetConnectionResourceTypeSummary(client keibi.Client, searchAfter interface
 		},
 	}
 	res["sort"] = map[string]any{
-		"described_at": "asc",
+		"described_at": "desc",
 		"_id":          "asc",
 	}
 
