@@ -9180,14 +9180,16 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "ONBOARD",
-                "NOT_ONBOARD",
+                "DISABLED",
+                "DISCOVERED",
                 "IN_PROGRESS",
                 "UNHEALTHY",
                 "ARCHIVED"
             ],
             "x-enum-varnames": [
                 "ConnectionLifecycleStateOnboard",
-                "ConnectionLifecycleStateNotOnboard",
+                "ConnectionLifecycleStateDisabled",
+                "ConnectionLifecycleStateDiscovered",
                 "ConnectionLifecycleStateInProgress",
                 "ConnectionLifecycleStateUnhealthy",
                 "ConnectionLifecycleStateArchived"
