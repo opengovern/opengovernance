@@ -270,6 +270,10 @@ func (s *Scheduler) describeConnection(connection apiOnboard.Connection, schedul
 		isFullDiscovery = true
 	}
 	daj := newDescribeSourceJob(connection, describedAt, triggerType, isFullDiscovery, resourceTypeList)
+	if len(daj.DescribeResourceJobs) == 0 {
+		s.logger.Debug("No resources to describe", zap.String("sourceId", connection.ID.String()), zap.Any("resourceTypeList", resourceTypeList))
+		return nil
+	}
 	err = s.db.CreateDescribeSourceJob(&daj)
 	if err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
