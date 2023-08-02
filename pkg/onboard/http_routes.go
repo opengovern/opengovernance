@@ -1037,7 +1037,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
 		}
 
-		src := NewAWSConnectionWithCredentials(
+		src := NewAWSAutoOnboardedConnection(
 			h.logger,
 			awsCnf,
 			account,

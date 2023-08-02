@@ -24,6 +24,7 @@ type ConnectionLifecycleState string
 
 const (
 	ConnectionLifecycleStateNotOnboard ConnectionLifecycleState = "NOT_ONBOARD"
+	ConnectionLifecycleStateDiscovered ConnectionLifecycleState = "DISCOVERED"
 	ConnectionLifecycleStateInProgress ConnectionLifecycleState = "IN_PROGRESS"
 	ConnectionLifecycleStateOnboard    ConnectionLifecycleState = "ONBOARD"
 	ConnectionLifecycleStateUnhealthy  ConnectionLifecycleState = "UNHEALTHY"
@@ -296,7 +297,7 @@ func NewAzureConnectionWithCredentials(sub azureSubscription, creationMethod sou
 	return s
 }
 
-func NewAWSConnectionWithCredentials(logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
+func NewAWSAutoOnboardedConnection(logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount, creationMethod source.SourceCreationMethod, description string, creds Credential) Source {
 	id := uuid.New()
 
 	name := account.AccountID
@@ -312,7 +313,7 @@ func NewAWSConnectionWithCredentials(logger *zap.Logger, cfg describe.AWSAccount
 		Type:                 source.CloudAWS,
 		CredentialID:         creds.ID,
 		Credential:           creds,
-		LifecycleState:       ConnectionLifecycleStateNotOnboard,
+		LifecycleState:       ConnectionLifecycleStateDiscovered,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       creationMethod,
