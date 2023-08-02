@@ -141,8 +141,8 @@ func NewAWSConnectionMetadata(logger *zap.Logger, cfg describe.AWSAccountConfig,
 	}
 	metadata.Organization = account.Organization
 	metadata.OrganizationAccount = account.Account
-	if metadata.OrganizationAccount != nil && metadata.OrganizationAccount.Id != nil &&
-		*metadata.OrganizationAccount.Id == metadata.AccountID {
+	if metadata.Organization != nil && metadata.Organization.MasterAccountId != nil &&
+		*metadata.Organization.MasterAccountId == account.AccountID {
 		metadata.AccountType = AWSAccountTypeOrganizationManager
 	}
 	if account.Organization != nil {
