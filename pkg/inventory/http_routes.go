@@ -87,6 +87,7 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 
 	connectionMap := map[string]es2.ConnectionMetricTrendSummary{}
 	connectorMap := map[string]es2.ConnectorMetricTrendSummary{}
+	resourceTypeMetricIDCache := map[string]string{}
 
 	var searchAfter interface{} = nil
 	for {
@@ -107,24 +108,33 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 				return err
 			}
 
-			metric, err := aDB.GetMetric(hit.Source.ResourceType)
-			if err != nil {
-				return err
-			}
+			var metricID string
 
-			if metric == nil {
-				return fmt.Errorf("resource type %s not found", hit.Source.ResourceType)
+			if v, ok := resourceTypeMetricIDCache[hit.Source.ResourceType]; ok {
+				metricID = v
+			} else {
+				metric, err := aDB.GetMetric(hit.Source.ResourceType)
+				if err != nil {
+					return err
+				}
+
+				if metric == nil {
+					return fmt.Errorf("resource type %s not found", hit.Source.ResourceType)
+				}
+
+				resourceTypeMetricIDCache[hit.Source.ResourceType] = metric.ID
+				metricID = metric.ID
 			}
 
 			connection := es2.ConnectionMetricTrendSummary{
 				ConnectionID:  connectionID,
 				Connector:     hit.Source.SourceType,
 				EvaluatedAt:   hit.Source.DescribedAt,
-				MetricID:      metric.ID,
+				MetricID:      metricID
 				ResourceCount: hit.Source.ResourceCount,
 				ReportType:    es3.MetricTrendConnectionSummary,
 			}
-			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metric.ID, hit.Source.DescribedAt)
+			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metricID, hit.Source.DescribedAt)
 			if v, ok := connectionMap[key]; ok {
 				v.ResourceCount += connection.ResourceCount
 				connectionMap[key] = v
@@ -135,11 +145,11 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 			connector := es2.ConnectorMetricTrendSummary{
 				Connector:     hit.Source.SourceType,
 				EvaluatedAt:   hit.Source.DescribedAt,
-				MetricID:      metric.ID,
+				MetricID:      metricID,
 				ResourceCount: hit.Source.ResourceCount,
 				ReportType:    es3.MetricTrendConnectorSummary,
 			}
-			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metric.ID, hit.Source.DescribedAt)
+			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metricID, hit.Source.DescribedAt)
 			if v, ok := connectorMap[key]; ok {
 				v.ResourceCount += connector.ResourceCount
 				connectorMap[key] = v
