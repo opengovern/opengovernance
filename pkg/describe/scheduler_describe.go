@@ -39,6 +39,10 @@ const (
 	MaxResourceTypeConcurrentQueued = 50
 )
 
+var (
+	ErrJobInProgress = errors.New("job already in progress")
+)
+
 type CloudNativeCall struct {
 	dr  DescribeResourceJob
 	ds  DescribeSourceJob
@@ -217,6 +221,10 @@ func (s *Scheduler) describeConnection(connection apiOnboard.Connection, schedul
 	if err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		return err
+	}
+
+	if !scheduled && job != nil && job.Status == api.DescribeSourceJobInProgress {
+		return ErrJobInProgress
 	}
 
 	if scheduled && job != nil && job.UpdatedAt.After(time.Now().Add(time.Duration(-s.describeIntervalHours)*time.Hour)) {

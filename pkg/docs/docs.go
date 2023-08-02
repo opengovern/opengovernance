@@ -4352,28 +4352,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/schedule/api/v0/describe/trigger": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Triggers a describe job to run immediately",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "describe"
-                ],
-                "summary": "Triggers a describe job to run immediately",
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    }
-                }
-            }
-        },
         "/schedule/api/v0/insight/trigger": {
             "get": {
                 "security": [
@@ -4609,6 +4587,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v1/describe/trigger": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Triggers a describe job to run immediately",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Triggers a describe job to run immediately",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Resource Type",
+                        "name": "resource_type",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/describe/trigger/{connection_id}": {
             "put": {
                 "security": [
@@ -4630,6 +4643,17 @@ const docTemplate = `{
                         "description": "Connection ID",
                         "name": "connection_id",
                         "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Resource Type",
+                        "name": "resource_type",
+                        "in": "query",
                         "required": true
                     }
                 ],

@@ -32,7 +32,7 @@ type Database struct {
 
 func (db Database) Initialize() error {
 	return db.orm.AutoMigrate(&DescribeSourceJob{}, &CloudNativeDescribeSourceJob{}, &DescribeResourceJob{},
-		&ComplianceReportJob{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &AnalyticsJob{}, &ScheduleJob{}, &Stack{}, &StackTag{}, &StackEvaluation{},
+		&ComplianceReportJob{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &AnalyticsJob{}, &Stack{}, &StackTag{}, &StackEvaluation{},
 		&StackCredential{},
 	)
 }
@@ -561,18 +561,6 @@ func (db Database) GetComplianceReportJobByID(ID uint) (*ComplianceReportJob, er
 	return &job, nil
 }
 
-func (db Database) GetComplianceReportJobsByScheduleID(scheduleJobID uint) ([]ComplianceReportJob, error) {
-	var jobs []ComplianceReportJob
-	tx := db.orm.Where("schedule_job_id = ?", scheduleJobID).Find(&jobs)
-	if tx.Error != nil {
-		if tx.Error == gorm.ErrRecordNotFound {
-			return nil, nil
-		}
-		return nil, tx.Error
-	}
-	return jobs, nil
-}
-
 // GetLastCompletedComplianceReportID returns id of last completed compliance report.
 func (db Database) GetLastCompletedComplianceReportID() (uint, error) {
 	var id uint
@@ -909,21 +897,6 @@ func (db Database) UpdateSummarizerJobStatus(job SummarizerJob) error {
 	return nil
 }
 
-func (db Database) GetSummarizerJobByScheduleID(scheduleJobID uint, jobType summarizer.JobType) (*SummarizerJob, error) {
-	var job SummarizerJob
-	tx := db.orm.Model(&SummarizerJob{}).
-		Where("schedule_job_id = ?", scheduleJobID).
-		Where("job_type = ?", jobType).
-		First(&job)
-	if tx.Error != nil {
-		if tx.Error == gorm.ErrRecordNotFound {
-			return nil, nil
-		}
-		return nil, tx.Error
-	}
-	return &job, nil
-}
-
 func (db Database) GetOngoingSummarizerJobsByType(jobType summarizer.JobType) ([]SummarizerJob, error) {
 	var jobs []SummarizerJob
 	tx := db.orm.Model(&SummarizerJob{}).
@@ -1006,92 +979,6 @@ func (db Database) UpdateAnalyticsJob(jobID uint, status analytics.JobStatus, fa
 		return tx.Error
 	}
 	return nil
-}
-
-func (db Database) AddScheduleJob(job *ScheduleJob) error {
-	tx := db.orm.Model(&ScheduleJob{}).
-		Create(&job)
-	if tx.Error != nil {
-		return tx.Error
-	}
-	return nil
-}
-
-func (db Database) FetchLastScheduleJob() (*ScheduleJob, error) {
-	var job *ScheduleJob
-	tx := db.orm.Model(&ScheduleJob{}).
-		Order("updated_at DESC").
-		First(&job)
-	if tx.Error != nil {
-		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, tx.Error
-	} else if tx.RowsAffected != 1 {
-		return nil, nil
-	}
-	return job, nil
-}
-
-func (db Database) FetchLastCompletedScheduleJob() (*ScheduleJob, error) {
-	var job *ScheduleJob
-	tx := db.orm.Model(&ScheduleJob{}).
-		Where("status = ?", summarizerapi.SummarizerJobSucceeded).
-		Order("updated_at DESC").
-		First(&job)
-	if tx.Error != nil {
-		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, tx.Error
-	} else if tx.RowsAffected != 1 {
-		return nil, nil
-	}
-	return job, nil
-}
-
-func (db Database) QueryDescribeSourceJobsForScheduleJob(job *ScheduleJob) ([]DescribeSourceJob, error) {
-	var res []DescribeSourceJob
-	tx := db.orm.Model(&DescribeSourceJob{}).
-		Where("schedule_job_id = ?", job.ID).
-		Find(&res)
-	if tx.Error != nil {
-		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, tx.Error
-	}
-	return res, nil
-}
-
-func (db Database) UpdateScheduleJobStatus(id uint, status summarizerapi.SummarizerJobStatus) error {
-	tx := db.orm.Model(&ScheduleJob{}).
-		Where("id = ?", id).
-		Update("status", status)
-	if tx.Error != nil {
-		return tx.Error
-	}
-	return nil
-}
-
-// GetOldCompletedScheduleJob returns the last ScheduleJob at nDaysBefore
-func (db Database) GetOldCompletedScheduleJob(nDaysBefore int) (*ScheduleJob, error) {
-	var job *ScheduleJob
-	tx := db.orm.Model(&ScheduleJob{}).
-		Where("status = ?", string(summarizerapi.SummarizerJobSucceeded)).
-		Where(fmt.Sprintf("created_at < now() - interval '%d days'", nDaysBefore)).
-		Where(fmt.Sprintf("created_at >= now() - interval '%d days'", nDaysBefore+1)).
-		Order("created_at DESC").
-		First(&job)
-	if tx.Error != nil {
-		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, tx.Error
-	} else if tx.RowsAffected == 0 {
-		return nil, nil
-	}
-	return job, nil
 }
 
 type GetLatestSuccessfulDescribeJobIDsPerResourcePerAccountResult struct {
