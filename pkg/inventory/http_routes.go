@@ -109,13 +109,16 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 	var docs []kafka.Doc
 	for {
 		if !pagination.HasNext() {
+			fmt.Println("MigrateAnalytics = page done")
 			break
 		}
 
+		fmt.Println("MigrateAnalytics = ask page")
 		page, err := pagination.NextPage(cctx)
 		if err != nil {
 			return err
 		}
+		fmt.Println("MigrateAnalytics = next page")
 
 		for _, hit := range page {
 			connectionID, err := uuid.Parse(hit.SourceID)
