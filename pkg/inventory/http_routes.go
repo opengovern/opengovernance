@@ -130,7 +130,7 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 				ConnectionID:  connectionID,
 				Connector:     hit.Source.SourceType,
 				EvaluatedAt:   hit.Source.DescribedAt,
-				MetricID:      metricID
+				MetricID:      metricID,
 				ResourceCount: hit.Source.ResourceCount,
 				ReportType:    es3.MetricTrendConnectionSummary,
 			}
