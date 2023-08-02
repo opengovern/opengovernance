@@ -2384,14 +2384,16 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState:
     enum:
     - ONBOARD
-    - NOT_ONBOARD
+    - DISABLED
+    - DISCOVERED
     - IN_PROGRESS
     - UNHEALTHY
     - ARCHIVED
     type: string
     x-enum-varnames:
     - ConnectionLifecycleStateOnboard
-    - ConnectionLifecycleStateNotOnboard
+    - ConnectionLifecycleStateDisabled
+    - ConnectionLifecycleStateDiscovered
     - ConnectionLifecycleStateInProgress
     - ConnectionLifecycleStateUnhealthy
     - ConnectionLifecycleStateArchived

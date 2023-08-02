@@ -12,7 +12,8 @@ type ConnectionLifecycleState string
 
 const (
 	ConnectionLifecycleStateOnboard    ConnectionLifecycleState = "ONBOARD"
-	ConnectionLifecycleStateNotOnboard ConnectionLifecycleState = "NOT_ONBOARD"
+	ConnectionLifecycleStateDisabled   ConnectionLifecycleState = "DISABLED"
+	ConnectionLifecycleStateDiscovered ConnectionLifecycleState = "DISCOVERED"
 	ConnectionLifecycleStateInProgress ConnectionLifecycleState = "IN_PROGRESS"
 	ConnectionLifecycleStateUnhealthy  ConnectionLifecycleState = "UNHEALTHY"
 	ConnectionLifecycleStateArchived   ConnectionLifecycleState = "ARCHIVED"
@@ -20,7 +21,7 @@ const (
 
 func (c ConnectionLifecycleState) Validate() error {
 	switch c {
-	case ConnectionLifecycleStateInProgress, ConnectionLifecycleStateOnboard, ConnectionLifecycleStateNotOnboard:
+	case ConnectionLifecycleStateInProgress, ConnectionLifecycleStateOnboard, ConnectionLifecycleStateDisabled:
 		return nil
 	default:
 		return fmt.Errorf("invalid connection lifecycle state: %s", c)
