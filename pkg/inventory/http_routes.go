@@ -8,6 +8,7 @@ import (
 	es2 "github.com/kaytu-io/kaytu-engine/pkg/analytics/es"
 	es3 "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"math"
 	"net/http"
 	"sort"
@@ -93,61 +94,70 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 	resourceTypeMetricIDCache := map[string]string{}
 	metricResourceTypeLenCache := map[string]int{}
 
+	cctx := context.Background()
+	pagination, err := es.NewConnectionResourceTypePaginator(
+		h.client,
+		[]keibi.BoolFilter{
+			keibi.NewTermFilter("report_type", string(es3.ResourceTypeTrendConnectionSummary)),
+		},
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
 	var docs []kafka.Doc
-	var searchAfter interface{} = nil
 	for {
-		resp, err := es.GetConnectionResourceTypeSummary(h.client, searchAfter)
+		if !pagination.HasNext() {
+			break
+		}
+
+		page, err := pagination.NextPage(cctx)
 		if err != nil {
 			return err
 		}
 
-		if len(resp.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range resp.Hits.Hits {
-			searchAfter = hit.Sort
-
-			connectionID, err := uuid.Parse(hit.Source.SourceID)
+		for _, hit := range page {
+			connectionID, err := uuid.Parse(hit.SourceID)
 			if err != nil {
 				return err
 			}
 
 			var metricID string
 
-			if v, ok := resourceTypeMetricIDCache[hit.Source.ResourceType]; ok {
+			if v, ok := resourceTypeMetricIDCache[hit.ResourceType]; ok {
 				metricID = v
 			} else {
-				metric, err := aDB.GetMetric(hit.Source.ResourceType)
+				metric, err := aDB.GetMetric(hit.ResourceType)
 				if err != nil {
 					return err
 				}
 
 				if metric == nil {
-					return fmt.Errorf("resource type %s not found", hit.Source.ResourceType)
+					return fmt.Errorf("resource type %s not found", hit.ResourceType)
 				}
 
-				resourceTypeMetricIDCache[hit.Source.ResourceType] = metric.ID
+				resourceTypeMetricIDCache[hit.ResourceType] = metric.ID
 				metricResourceTypeLenCache[metric.ID] = len(metric.Tables)
 				metricID = metric.ID
 			}
 
 			connection := es2.ConnectionMetricTrendSummary{
 				ConnectionID:  connectionID,
-				Connector:     hit.Source.SourceType,
-				EvaluatedAt:   hit.Source.DescribedAt,
+				Connector:     hit.SourceType,
+				EvaluatedAt:   hit.DescribedAt,
 				MetricID:      metricID,
-				ResourceCount: hit.Source.ResourceCount,
+				ResourceCount: hit.ResourceCount,
 				ReportType:    es3.MetricTrendConnectionSummary,
 			}
-			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metricID, hit.Source.DescribedAt)
+			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metricID, hit.DescribedAt)
 			if v, ok := connectionMap[key]; ok {
 				v.ResourceCount += connection.ResourceCount
 				connectionMap[key] = v
 			} else {
 				connectionMap[key] = connection
 			}
-			connectionMapTable[key] = append(connectionMapTable[key], hit.Source.ResourceType)
+			connectionMapTable[key] = append(connectionMapTable[key], hit.ResourceType)
 			if len(connectionMapTable[key]) == metricResourceTypeLenCache[metricID] {
 				docs = append(docs, connectionMap[key])
 				delete(connectionMapTable, key)
@@ -163,13 +173,13 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 			}
 
 			connector := es2.ConnectorMetricTrendSummary{
-				Connector:     hit.Source.SourceType,
-				EvaluatedAt:   hit.Source.DescribedAt,
+				Connector:     hit.SourceType,
+				EvaluatedAt:   hit.DescribedAt,
 				MetricID:      metricID,
-				ResourceCount: hit.Source.ResourceCount,
+				ResourceCount: hit.ResourceCount,
 				ReportType:    es3.MetricTrendConnectorSummary,
 			}
-			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metricID, hit.Source.DescribedAt)
+			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metricID, hit.DescribedAt)
 			if v, ok := connectorMap[key]; ok {
 				v.ResourceCount += connector.ResourceCount
 				connectorMap[key] = v
@@ -187,7 +197,7 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 		docs = append(docs, c)
 	}
 
-	err := kafka.DoSend(h.kafkaProducer, "kaytu_resources", 0, docs, h.logger)
+	err = kafka.DoSend(h.kafkaProducer, "kaytu_resources", 0, docs, h.logger)
 	if err != nil {
 		return err
 	}
