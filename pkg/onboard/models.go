@@ -23,7 +23,7 @@ import (
 type ConnectionLifecycleState string
 
 const (
-	ConnectionLifecycleStateNotOnboard ConnectionLifecycleState = "NOT_ONBOARD"
+	ConnectionLifecycleStateDisabled   ConnectionLifecycleState = "DISABLED"
 	ConnectionLifecycleStateDiscovered ConnectionLifecycleState = "DISCOVERED"
 	ConnectionLifecycleStateInProgress ConnectionLifecycleState = "IN_PROGRESS"
 	ConnectionLifecycleStateOnboard    ConnectionLifecycleState = "ONBOARD"
@@ -459,10 +459,11 @@ func (credential *Credential) ToAPI() api.Credential {
 
 		Config: "",
 
-		Connections:          nil,
-		TotalConnections:     nil,
-		EnabledConnections:   nil,
-		UnhealthyConnections: nil,
+		Connections:           nil,
+		TotalConnections:      nil,
+		EnabledConnections:    nil,
+		UnhealthyConnections:  nil,
+		DiscoveredConnections: nil,
 	}
 
 	return apiCredential

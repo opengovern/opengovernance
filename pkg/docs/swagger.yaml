@@ -2513,6 +2513,11 @@ definitions:
         allOf:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CredentialType'
         example: manual-aws-org
+      discovered_connections:
+        example: 50
+        maximum: 100
+        minimum: 0
+        type: integer
       enabled:
         example: true
         type: boolean
@@ -2590,6 +2595,11 @@ definitions:
         minimum: 0
         type: number
       totalDisabledCount:
+        example: 10
+        maximum: 100
+        minimum: 0
+        type: integer
+      totalDiscoveredCount:
         example: 10
         maximum: 100
         minimum: 0

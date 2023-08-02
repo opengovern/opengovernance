@@ -82,6 +82,7 @@ type ListConnectionSummaryResponse struct {
 	TotalResourceCount    int          `json:"totalResourceCount" example:"100" minimum:"0" maximum:"1000000"`
 	TotalOldResourceCount int          `json:"totalOldResourceCount" example:"100" minimum:"0" maximum:"1000000"`
 	TotalUnhealthyCount   int          `json:"totalUnhealthyCount" example:"10" minimum:"0" maximum:"100"`
+	TotalDiscoveredCount  int          `json:"totalDiscoveredCount" example:"10" minimum:"0" maximum:"100"`
 	TotalDisabledCount    int          `json:"totalDisabledCount" example:"10" minimum:"0" maximum:"100"`
 	Connections           []Connection `json:"connections"`
 }

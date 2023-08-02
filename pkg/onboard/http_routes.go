@@ -714,10 +714,15 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
+		discoveredConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []ConnectionLifecycleState{ConnectionLifecycleStateDiscovered})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
 		apiCredential := cred.ToAPI()
 		apiCredential.TotalConnections = &totalConnectionCount
 		apiCredential.EnabledConnections = &enabledConnectionCount
 		apiCredential.UnhealthyConnections = &unhealthyConnectionCount
+		apiCredential.DiscoveredConnections = &discoveredConnectionCount
 		apiCredentials = append(apiCredentials, apiCredential)
 	}
 
@@ -774,8 +779,11 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 	}
 	for _, conn := range connections {
 		apiCredential.Connections = append(apiCredential.Connections, conn.toAPI())
-		if conn.LifecycleState == ConnectionLifecycleStateUnhealthy {
+		switch conn.LifecycleState {
+		case ConnectionLifecycleStateUnhealthy:
 			apiCredential.UnhealthyConnections = utils.PAdd(apiCredential.UnhealthyConnections, utils.GetPointer(1))
+		case ConnectionLifecycleStateDiscovered:
+			apiCredential.DiscoveredConnections = utils.PAdd(apiCredential.DiscoveredConnections, utils.GetPointer(1))
 		}
 		if conn.LifecycleState.IsEnabled() {
 			apiCredential.EnabledConnections = utils.PAdd(apiCredential.EnabledConnections, utils.GetPointer(1))
@@ -1224,8 +1232,11 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 			if src.LifecycleState.IsEnabled() {
 				v.EnabledConnections = utils.PAdd(v.EnabledConnections, utils.GetPointer(1))
 			}
-			if src.LifecycleState == ConnectionLifecycleStateUnhealthy {
+			switch src.LifecycleState {
+			case ConnectionLifecycleStateUnhealthy:
 				v.UnhealthyConnections = utils.PAdd(v.UnhealthyConnections, utils.GetPointer(1))
+			case ConnectionLifecycleStateDiscovered:
+				v.DiscoveredConnections = utils.PAdd(v.DiscoveredConnections, utils.GetPointer(1))
 			}
 
 			apiCredentials[src.CredentialID.String()] = v
@@ -1507,7 +1518,7 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 		}
 
 		for _, src := range sources {
-			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateNotOnboard); err != nil {
+			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateDisabled); err != nil {
 				return err
 			}
 		}
@@ -1560,7 +1571,7 @@ func (h HttpHandler) DisableCredential(ctx echo.Context) error {
 		}
 
 		for _, src := range sources {
-			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateNotOnboard); err != nil {
+			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateDisabled); err != nil {
 				return err
 			}
 		}
@@ -1703,7 +1714,7 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 }
 
 func (h HttpHandler) updateConnectionHealth(connection Source, healthStatus source.HealthStatus, reason *string) (Source, error) {
-	if connection.LifecycleState != ConnectionLifecycleStateNotOnboard && connection.LifecycleState != ConnectionLifecycleStateArchived {
+	if connection.LifecycleState != ConnectionLifecycleStateDisabled && connection.LifecycleState != ConnectionLifecycleStateArchived {
 		if healthStatus == source.HealthStatusUnhealthy {
 			connection.LifecycleState = ConnectionLifecycleStateUnhealthy
 		} else if healthStatus == source.HealthStatusHealthy {
@@ -2555,11 +2566,12 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 			result.Connections = append(result.Connections, connection.toAPI())
 		}
 		switch connection.LifecycleState {
-		case ConnectionLifecycleStateNotOnboard:
+		case ConnectionLifecycleStateDiscovered:
+			result.TotalDiscoveredCount++
+		case ConnectionLifecycleStateDisabled:
 			result.TotalDisabledCount++
 		case ConnectionLifecycleStateUnhealthy:
 			result.TotalUnhealthyCount++
-
 		}
 	}
 
