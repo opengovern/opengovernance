@@ -9372,6 +9372,12 @@ const docTemplate = `{
                     ],
                     "example": "manual-aws-org"
                 },
+                "discovered_connections": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "example": 50
+                },
                 "enabled": {
                     "type": "boolean",
                     "example": true
@@ -9473,6 +9479,12 @@ const docTemplate = `{
                     "example": 1000
                 },
                 "totalDisabledCount": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "example": 10
+                },
+                "totalDiscoveredCount": {
                     "type": "integer",
                     "maximum": 100,
                     "minimum": 0,
