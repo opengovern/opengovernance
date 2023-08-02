@@ -49,12 +49,6 @@ type ComplianceReportJob struct {
 	IsStack         bool                           `json:"IsStack" example:"false"`
 }
 
-type ScheduleJob struct {
-	gorm.Model
-	Status         summarizerapi.SummarizerJobStatus
-	FailureMessage string
-}
-
 type DescribeSourceJob struct {
 	gorm.Model
 	DescribedAt          time.Time

@@ -5901,19 +5901,6 @@ paths:
       summary: Triggers a compliance job to run immediately
       tags:
       - describe
-  /schedule/api/v0/describe/trigger:
-    get:
-      description: Triggers a describe job to run immediately
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerToken: []
-      summary: Triggers a describe job to run immediately
-      tags:
-      - describe
   /schedule/api/v0/insight/trigger:
     get:
       description: Triggers an insight job to run immediately
@@ -6057,6 +6044,28 @@ paths:
       summary: Listing describe source jobs
       tags:
       - schedule
+  /schedule/api/v1/describe/trigger:
+    put:
+      description: Triggers a describe job to run immediately
+      parameters:
+      - collectionFormat: csv
+        description: Resource Type
+        in: query
+        items:
+          type: string
+        name: resource_type
+        required: true
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Triggers a describe job to run immediately
+      tags:
+      - describe
   /schedule/api/v1/describe/trigger/{connection_id}:
     put:
       description: Triggers a describe job to run immediately
@@ -6066,6 +6075,14 @@ paths:
         name: connection_id
         required: true
         type: string
+      - collectionFormat: csv
+        description: Resource Type
+        in: query
+        items:
+          type: string
+        name: resource_type
+        required: true
+        type: array
       produces:
       - application/json
       responses:

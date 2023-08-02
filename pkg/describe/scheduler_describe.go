@@ -25,6 +25,7 @@ import (
 	apiInsight "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
@@ -36,6 +37,10 @@ const (
 	MaxQueued                       = 5000
 	MaxAccountConcurrentQueued      = 10
 	MaxResourceTypeConcurrentQueued = 50
+)
+
+var (
+	ErrJobInProgress = errors.New("job already in progress")
 )
 
 type CloudNativeCall struct {
@@ -202,7 +207,7 @@ func (s *Scheduler) scheduleDescribeJob() {
 		if !connection.IsEnabled() {
 			continue
 		}
-		err = s.describeConnection(connection, true)
+		err = s.describeConnection(connection, true, nil)
 		if err != nil {
 			s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 		}
@@ -211,75 +216,81 @@ func (s *Scheduler) scheduleDescribeJob() {
 	DescribeJobsCount.WithLabelValues("successful").Inc()
 }
 
-func (s *Scheduler) describeConnection(connection apiOnboard.Connection, scheduled bool) error {
+func (s *Scheduler) describeConnection(connection apiOnboard.Connection, scheduled bool, resourceTypeList []string) error {
 	job, err := s.db.GetLastDescribeSourceJob(connection.ID.String())
 	if err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		return err
 	}
 
-	if !scheduled || // manual
-		job == nil || job.UpdatedAt.Before(time.Now().Add(time.Duration(-s.describeIntervalHours)*time.Hour)) {
+	if !scheduled && job != nil && job.Status == api.DescribeSourceJobInProgress {
+		return ErrJobInProgress
+	}
 
-		healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
+	if scheduled && job != nil && job.UpdatedAt.After(time.Now().Add(time.Duration(-s.describeIntervalHours)*time.Hour)) {
+		return nil
+	}
+
+	healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
+		UserRole: apiAuth.EditorRole,
+	}, connection.ID.String())
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		return err
+	}
+
+	if scheduled && healthCheckedSrc.AssetDiscoveryMethod != source.AssetDiscoveryMethodTypeScheduled {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		return errors.New("asset discovery is not scheduled")
+	}
+
+	if healthCheckedSrc.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard &&
+		healthCheckedSrc.LifecycleState != apiOnboard.ConnectionLifecycleStateInProgress {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		return errors.New("connection is not healthy or disabled")
+	}
+
+	describedAt := time.Now()
+	triggerType := enums.DescribeTriggerTypeScheduled
+	if healthCheckedSrc.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
+		triggerType = enums.DescribeTriggerTypeInitialDiscovery
+	}
+	s.logger.Debug("Source is due for a describe. Creating a job now", zap.String("sourceId", connection.ID.String()))
+
+	fullDiscoveryJob, err := s.db.GetLastFullDiscoveryDescribeSourceJob(connection.ID.String())
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		return err
+	}
+
+	isFullDiscovery := false
+	if job == nil ||
+		fullDiscoveryJob == nil ||
+		fullDiscoveryJob.UpdatedAt.Add(time.Duration(s.fullDiscoveryIntervalHours)*time.Hour).Before(time.Now()) {
+		isFullDiscovery = true
+	}
+	daj := newDescribeSourceJob(connection, describedAt, triggerType, isFullDiscovery, resourceTypeList)
+	err = s.db.CreateDescribeSourceJob(&daj)
+	if err != nil {
+		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		return err
+	}
+	DescribeSourceJobsCount.WithLabelValues("successful").Inc()
+
+	if healthCheckedSrc.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
+		_, err = s.onboardClient.SetConnectionLifecycleState(&httpclient.Context{
 			UserRole: apiAuth.EditorRole,
-		}, connection.ID.String())
+		}, connection.ID.String(), apiOnboard.ConnectionLifecycleStateOnboard)
 		if err != nil {
-			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			return err
-		}
-
-		if scheduled && healthCheckedSrc.AssetDiscoveryMethod != source.AssetDiscoveryMethodTypeScheduled {
-			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			return errors.New("asset discovery is not scheduled")
-		}
-
-		if healthCheckedSrc.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard &&
-			healthCheckedSrc.LifecycleState != apiOnboard.ConnectionLifecycleStateInProgress {
-			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			return errors.New("connection is not healthy or disabled")
-		}
-
-		describedAt := time.Now()
-		triggerType := enums.DescribeTriggerTypeScheduled
-		if healthCheckedSrc.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
-			triggerType = enums.DescribeTriggerTypeInitialDiscovery
-		}
-		s.logger.Debug("Source is due for a describe. Creating a job now", zap.String("sourceId", connection.ID.String()))
-
-		fullDiscoveryJob, err := s.db.GetLastFullDiscoveryDescribeSourceJob(connection.ID.String())
-		if err != nil {
-			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			return err
-		}
-
-		isFullDiscovery := false
-		if job == nil ||
-			fullDiscoveryJob == nil ||
-			fullDiscoveryJob.UpdatedAt.Add(time.Duration(s.fullDiscoveryIntervalHours)*time.Hour).Before(time.Now()) {
-			isFullDiscovery = true
-		}
-		daj := newDescribeSourceJob(connection, describedAt, triggerType, isFullDiscovery)
-		err = s.db.CreateDescribeSourceJob(&daj)
-		if err != nil {
-			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			return err
-		}
-		DescribeSourceJobsCount.WithLabelValues("successful").Inc()
-
-		if healthCheckedSrc.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
-			_, err = s.onboardClient.SetConnectionLifecycleState(&httpclient.Context{
-				UserRole: apiAuth.EditorRole,
-			}, connection.ID.String(), apiOnboard.ConnectionLifecycleStateOnboard)
-			if err != nil {
-				s.logger.Warn("Failed to set connection lifecycle state", zap.String("connection_id", connection.ID.String()), zap.Error(err))
-			}
+			s.logger.Warn("Failed to set connection lifecycle state", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 		}
 	}
+
 	return nil
 }
 
-func newDescribeSourceJob(a apiOnboard.Connection, describedAt time.Time, triggerType enums.DescribeTriggerType, isFullDiscovery bool) DescribeSourceJob {
+func newDescribeSourceJob(a apiOnboard.Connection, describedAt time.Time,
+	triggerType enums.DescribeTriggerType, isFullDiscovery bool, resourceTypeList []string) DescribeSourceJob {
 	daj := DescribeSourceJob{
 		DescribedAt:          describedAt,
 		SourceID:             a.ID.String(),
@@ -291,15 +302,30 @@ func newDescribeSourceJob(a apiOnboard.Connection, describedAt time.Time, trigge
 		FullDiscovery:        isFullDiscovery,
 	}
 	var resourceTypes []string
+	resourceTypeList = utils.ToLowerStringSlice(resourceTypeList)
 	switch a.Connector {
 	case source.CloudAWS:
-		if isFullDiscovery {
+		if len(resourceTypeList) > 0 {
+			all := aws.ListResourceTypes()
+			for _, rType := range all {
+				if utils.Includes(resourceTypeList, strings.ToLower(rType)) {
+					resourceTypes = append(resourceTypes, rType)
+				}
+			}
+		} else if isFullDiscovery {
 			resourceTypes = aws.ListResourceTypes()
 		} else {
 			resourceTypes = aws.ListFastDiscoveryResourceTypes()
 		}
 	case source.CloudAzure:
-		if isFullDiscovery {
+		if len(resourceTypeList) > 0 {
+			all := azure.ListResourceTypes()
+			for _, rType := range all {
+				if utils.Includes(resourceTypeList, strings.ToLower(rType)) {
+					resourceTypes = append(resourceTypes, rType)
+				}
+			}
+		} else if isFullDiscovery {
 			resourceTypes = azure.ListResourceTypes()
 		} else {
 			resourceTypes = azure.ListFastDiscoveryResourceTypes()

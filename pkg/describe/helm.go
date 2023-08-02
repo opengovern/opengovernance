@@ -31,7 +31,7 @@ type HelmConfig struct {
 	FluxSystemNamespace    string
 }
 
-func (s *HttpServer) newKubeClient() (client.Client, error) {
+func (h HttpServer) newKubeClient() (client.Client, error) {
 	scheme := runtime.NewScheme()
 	if err := helmv2.AddToScheme(scheme); err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (s *HttpServer) newKubeClient() (client.Client, error) {
 	return kubeClient, nil
 }
 
-func (s *HttpServer) createStackHelmRelease(ctx context.Context, workspaceId string, stack api.Stack) error {
+func (h HttpServer) createStackHelmRelease(ctx context.Context, workspaceId string, stack api.Stack) error {
 
 	settings := StackReleaseConfig{
 		KafkaTopics: KafkaTopics{
@@ -74,11 +74,11 @@ func (s *HttpServer) createStackHelmRelease(ctx context.Context, workspaceId str
 			ReleaseName:     stack.StackID,
 			Chart: helmv2.HelmChartTemplate{
 				Spec: helmv2.HelmChartTemplateSpec{
-					Chart: s.helmConfig.KeibiHelmChartLocation,
+					Chart: h.helmConfig.KeibiHelmChartLocation,
 					SourceRef: helmv2.CrossNamespaceObjectReference{
 						Kind:      "GitRepository",
 						Name:      "flux-system",
-						Namespace: s.helmConfig.FluxSystemNamespace,
+						Namespace: h.helmConfig.FluxSystemNamespace,
 					},
 					Interval: &metav1.Duration{
 						Duration: time.Minute,
@@ -94,19 +94,19 @@ func (s *HttpServer) createStackHelmRelease(ctx context.Context, workspaceId str
 			},
 		},
 	}
-	if err := s.kubeClient.Create(ctx, &helmRelease); err != nil {
+	if err := h.kubeClient.Create(ctx, &helmRelease); err != nil {
 		return fmt.Errorf("create helm release: %w", err)
 	}
 	return nil
 }
 
-func (s *HttpServer) findHelmRelease(ctx context.Context, stack api.Stack, workspaceId string) (*helmv2.HelmRelease, error) {
+func (h HttpServer) findHelmRelease(ctx context.Context, stack api.Stack, workspaceId string) (*helmv2.HelmRelease, error) {
 	key := types.NamespacedName{
 		Name:      stack.StackID,
 		Namespace: workspaceId,
 	}
 	var helmRelease helmv2.HelmRelease
-	if err := s.kubeClient.Get(ctx, key, &helmRelease); err != nil {
+	if err := h.kubeClient.Get(ctx, key, &helmRelease); err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, nil
 		}
@@ -115,7 +115,7 @@ func (s *HttpServer) findHelmRelease(ctx context.Context, stack api.Stack, works
 	return &helmRelease, nil
 }
 
-func (s *HttpServer) deleteStackHelmRelease(stack api.Stack, workspaceId string) error {
+func (h HttpServer) deleteStackHelmRelease(stack api.Stack, workspaceId string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	helmRelease := helmv2.HelmRelease{
@@ -124,5 +124,5 @@ func (s *HttpServer) deleteStackHelmRelease(stack api.Stack, workspaceId string)
 			Namespace: workspaceId,
 		},
 	}
-	return s.kubeClient.Delete(ctx, &helmRelease)
+	return h.kubeClient.Delete(ctx, &helmRelease)
 }
