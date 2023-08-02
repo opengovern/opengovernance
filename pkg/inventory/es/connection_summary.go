@@ -33,7 +33,7 @@ func GetConnectionResourceTypeSummary(client keibi.Client, searchAfter interface
 		"terms": map[string][]string{"report_type": {string(es.ResourceTypeTrendConnectionSummary)}},
 	})
 
-	res["size"] = 1000
+	res["size"] = 10000
 	if searchAfter != nil {
 		res["search_after"] = searchAfter
 	}
