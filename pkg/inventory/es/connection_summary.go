@@ -34,7 +34,7 @@ func GetConnectionResourceTypeSummary(client keibi.Client, searchAfter interface
 
 	res["size"] = 1000
 	if searchAfter != nil {
-		res["searchAfter"] = searchAfter
+		res["search_after"] = searchAfter
 	}
 	res["query"] = map[string]any{
 		"bool": map[string]any{
