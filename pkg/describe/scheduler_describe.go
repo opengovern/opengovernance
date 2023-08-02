@@ -295,6 +295,9 @@ func (s *Scheduler) describeConnection(connection apiOnboard.Connection, schedul
 
 func newDescribeSourceJob(a apiOnboard.Connection, describedAt time.Time,
 	triggerType enums.DescribeTriggerType, isFullDiscovery bool, resourceTypeList []string) DescribeSourceJob {
+	if len(resourceTypeList) > 0 {
+		isFullDiscovery = false
+	}
 	daj := DescribeSourceJob{
 		DescribedAt:          describedAt,
 		SourceID:             a.ID.String(),

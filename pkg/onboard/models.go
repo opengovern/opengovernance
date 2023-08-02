@@ -108,23 +108,43 @@ func (s Source) toAPI() api.Connection {
 	return apiCon
 }
 
+type AWSAccountType string
+
+const (
+	AWSAccountTypeStandalone          AWSAccountType = "standalone"
+	AWSAccountTypeOrganizationMember  AWSAccountType = "organization_member"
+	AWSAccountTypeOrganizationManager AWSAccountType = "organization_manager"
+)
+
 type AWSConnectionMetadata struct {
 	AccountID           string              `json:"account_id"`
 	AccountName         string              `json:"account_name"`
+	AccountType         AWSAccountType      `json:"account_type"`
 	Organization        *types.Organization `json:"account_organization,omitempty"`
 	OrganizationAccount *types.Account      `json:"organization_account,omitempty"`
 	OrganizationTags    map[string]string   `json:"organization_tags,omitempty"`
 }
 
-func NewAWSConnectionMetadata(logger *zap.Logger, cfg describe.AWSAccountConfig, account awsAccount) (AWSConnectionMetadata, error) {
+func NewAWSConnectionMetadata(logger *zap.Logger, cfg describe.AWSAccountConfig, connection Source, account awsAccount) (AWSConnectionMetadata, error) {
 	metadata := AWSConnectionMetadata{
 		AccountID: account.AccountID,
 	}
+
+	if connection.Credential.CredentialType == CredentialTypeAutoAws {
+		metadata.AccountType = AWSAccountTypeStandalone
+	} else {
+		metadata.AccountType = AWSAccountTypeOrganizationMember
+	}
+
 	if account.AccountName != nil {
 		metadata.AccountName = *account.AccountName
 	}
 	metadata.Organization = account.Organization
 	metadata.OrganizationAccount = account.Account
+	if metadata.OrganizationAccount != nil && metadata.OrganizationAccount.Id != nil &&
+		*metadata.OrganizationAccount.Id == metadata.AccountID {
+		metadata.AccountType = AWSAccountTypeOrganizationManager
+	}
 	if account.Organization != nil {
 		sdkCnf, err := keibiaws.GetConfig(context.TODO(), cfg.AccessKey, cfg.SecretKey, "", "", nil)
 		if err != nil {
@@ -165,16 +185,6 @@ func NewAWSSource(logger *zap.Logger, cfg describe.AWSAccountConfig, account aws
 	id := uuid.New()
 	provider := source.CloudAWS
 
-	metadata, err := NewAWSConnectionMetadata(logger, cfg, account)
-	if err != nil {
-		// TODO: log error
-	}
-
-	marshalMetadata, err := json.Marshal(metadata)
-	if err != nil {
-		marshalMetadata = []byte("{}")
-	}
-
 	credName := fmt.Sprintf("%s - %s - default credentials", provider, account.AccountID)
 	creds := Credential{
 		ID:             uuid.New(),
@@ -206,12 +216,22 @@ func NewAWSSource(logger *zap.Logger, cfg describe.AWSAccountConfig, account aws
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       source.SourceCreationMethodManual,
-		Metadata:             datatypes.JSON(marshalMetadata),
 	}
 
 	if len(strings.TrimSpace(s.Name)) == 0 {
 		s.Name = s.SourceId
 	}
+
+	metadata, err := NewAWSConnectionMetadata(logger, cfg, s, account)
+	if err != nil {
+		// TODO: log error
+	}
+
+	marshalMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		marshalMetadata = []byte("{}")
+	}
+	s.Metadata = marshalMetadata
 
 	return s
 }
@@ -284,15 +304,6 @@ func NewAWSConnectionWithCredentials(logger *zap.Logger, cfg describe.AWSAccount
 		name = *account.AccountName
 	}
 
-	metadata, err := NewAWSConnectionMetadata(logger, cfg, account)
-	if err != nil {
-		// TODO: log error
-	}
-	jsonMetadata, err := json.Marshal(metadata)
-	if err != nil {
-		jsonMetadata = []byte("{}")
-	}
-
 	s := Source{
 		ID:                   id,
 		SourceId:             account.AccountID,
@@ -305,8 +316,17 @@ func NewAWSConnectionWithCredentials(logger *zap.Logger, cfg describe.AWSAccount
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       creationMethod,
-		Metadata:             datatypes.JSON(jsonMetadata),
 	}
+
+	metadata, err := NewAWSConnectionMetadata(logger, cfg, s, account)
+	if err != nil {
+		// TODO: log error
+	}
+	jsonMetadata, err := json.Marshal(metadata)
+	if err != nil {
+		jsonMetadata = []byte("{}")
+	}
+	s.Metadata = jsonMetadata
 
 	return s
 }

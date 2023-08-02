@@ -1795,7 +1795,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 					h.logger.Error("failed to get current aws account", zap.Error(err), zap.String("sourceId", src.SourceId))
 					return err
 				}
-				metadata, err2 := NewAWSConnectionMetadata(h.logger, awsCnf, *awsAccount)
+				metadata, err2 := NewAWSConnectionMetadata(h.logger, awsCnf, src, *awsAccount)
 				if err2 != nil {
 					h.logger.Error("failed to get aws connection metadata", zap.Error(err2), zap.String("sourceId", src.SourceId))
 				}
