@@ -84,21 +84,30 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 }
 
 func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
-	aDB := analyticsDB.NewDatabase(h.db.orm)
+	for i := 0; i < 1000; i++ {
+		err := h.MigrateAnalyticsPart(i)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-	connectionMapTable := map[string][]string{}
+func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
 
 	connectionMap := map[string]es2.ConnectionMetricTrendSummary{}
 	connectorMap := map[string]es2.ConnectorMetricTrendSummary{}
 
 	resourceTypeMetricIDCache := map[string]string{}
-	metricResourceTypeLenCache := map[string]int{}
 
 	cctx := context.Background()
+
 	pagination, err := es.NewConnectionResourceTypePaginator(
 		h.client,
 		[]keibi.BoolFilter{
 			keibi.NewTermFilter("report_type", string(es3.ResourceTypeTrendConnectionSummary)),
+			keibi.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
 		},
 		nil,
 	)
@@ -109,16 +118,16 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 	var docs []kafka.Doc
 	for {
 		if !pagination.HasNext() {
-			fmt.Println("MigrateAnalytics = page done")
+			fmt.Println("MigrateAnalytics = page done", summarizerJobID)
 			break
 		}
 
-		fmt.Println("MigrateAnalytics = ask page")
+		fmt.Println("MigrateAnalytics = ask page", summarizerJobID)
 		page, err := pagination.NextPage(cctx)
 		if err != nil {
 			return err
 		}
-		fmt.Println("MigrateAnalytics = next page")
+		fmt.Println("MigrateAnalytics = next page", summarizerJobID)
 
 		for _, hit := range page {
 			connectionID, err := uuid.Parse(hit.SourceID)
@@ -141,7 +150,6 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 				}
 
 				resourceTypeMetricIDCache[hit.ResourceType] = metric.ID
-				metricResourceTypeLenCache[metric.ID] = len(metric.Tables)
 				metricID = metric.ID
 			}
 
@@ -159,20 +167,6 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 				connectionMap[key] = v
 			} else {
 				connectionMap[key] = connection
-			}
-			connectionMapTable[key] = append(connectionMapTable[key], hit.ResourceType)
-			if len(connectionMapTable[key]) == metricResourceTypeLenCache[metricID] {
-				docs = append(docs, connectionMap[key])
-				delete(connectionMapTable, key)
-				delete(connectionMap, key)
-
-				if len(docs) == 100 {
-					err := kafka.DoSend(h.kafkaProducer, "kaytu_resources", 0, docs, h.logger)
-					if err != nil {
-						return err
-					}
-					docs = nil
-				}
 			}
 
 			connector := es2.ConnectorMetricTrendSummary{
