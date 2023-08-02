@@ -88,7 +88,7 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 	connectionMap := map[string]es2.ConnectionMetricTrendSummary{}
 	connectorMap := map[string]es2.ConnectorMetricTrendSummary{}
 
-	var searchAfter interface{}
+	var searchAfter interface{} = nil
 	for {
 		resp, err := es.GetConnectionResourceTypeSummary(h.client, searchAfter)
 		if err != nil {

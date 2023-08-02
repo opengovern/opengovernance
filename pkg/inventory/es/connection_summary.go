@@ -3,6 +3,7 @@ package es
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 )
@@ -48,6 +49,7 @@ func GetConnectionResourceTypeSummary(client keibi.Client, searchAfter interface
 	}
 
 	query := string(b)
+	fmt.Println(query)
 	var response ConnectionResourceTypeQueryResponse
 	err = client.Search(context.Background(), es.ConnectionSummaryIndex, query, &response)
 	if err != nil {
