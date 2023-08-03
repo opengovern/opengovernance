@@ -159,7 +159,6 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 				EvaluatedAt:   hit.DescribedAt,
 				MetricID:      metricID,
 				ResourceCount: hit.ResourceCount,
-				ReportType:    es3.MetricTrendConnectionSummary,
 			}
 			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metricID, hit.DescribedAt)
 			if v, ok := connectionMap[key]; ok {
@@ -174,7 +173,6 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 				EvaluatedAt:   hit.DescribedAt,
 				MetricID:      metricID,
 				ResourceCount: hit.ResourceCount,
-				ReportType:    es3.MetricTrendConnectorSummary,
 			}
 			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metricID, hit.DescribedAt)
 			if v, ok := connectorMap[key]; ok {
@@ -194,7 +192,7 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 		docs = append(docs, c)
 	}
 
-	err = kafka.DoSend(h.kafkaProducer, "kaytu-resources", 0, docs, h.logger)
+	err = kafka.DoSend(h.kafkaProducer, "cloud-resources", 0, docs, h.logger)
 	if err != nil {
 		return err
 	}
