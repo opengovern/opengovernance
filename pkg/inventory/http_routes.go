@@ -160,7 +160,7 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 				MetricID:      metricID,
 				ResourceCount: hit.ResourceCount,
 			}
-			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metricID, hit.DescribedAt)
+			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metricID, hit.SummarizeJobID)
 			if v, ok := connectionMap[key]; ok {
 				v.ResourceCount += connection.ResourceCount
 				connectionMap[key] = v
@@ -174,7 +174,7 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 				MetricID:      metricID,
 				ResourceCount: hit.ResourceCount,
 			}
-			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metricID, hit.DescribedAt)
+			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metricID, hit.SummarizeJobID)
 			if v, ok := connectorMap[key]; ok {
 				v.ResourceCount += connector.ResourceCount
 				connectorMap[key] = v
