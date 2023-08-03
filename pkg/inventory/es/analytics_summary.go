@@ -97,6 +97,7 @@ func FetchConnectionAnalyticMetricCountAtTime(client keibi.Client, connectors []
 
 		query := string(b)
 
+		fmt.Println("FetchConnectionAnalyticMetricCountAtTime = ", query)
 		var response FetchConnectionAnalyticMetricCountAtTimeResponse
 		err = client.Search(context.Background(), es.AnalyticsConnectionSummaryIndex, query, &response)
 		if err != nil {
