@@ -153,6 +153,10 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 				metricID = metric.ID
 			}
 
+			if metricID == "" {
+				continue
+			}
+
 			connection := es2.ConnectionMetricTrendSummary{
 				ConnectionID:  connectionID,
 				Connector:     hit.SourceType,

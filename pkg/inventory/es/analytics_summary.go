@@ -309,6 +309,7 @@ func FetchConnectionMetricTrendSummaryPage(client keibi.Client, connectionIDs, m
 		}
 		query := string(b)
 
+		fmt.Println("FetchConnectionMetricTrendSummaryPage = ", query)
 		var response ConnectionMetricTrendSummaryQueryResponse
 		err = client.Search(context.Background(), es.AnalyticsConnectionSummaryIndex, query, &response)
 		if err != nil {
