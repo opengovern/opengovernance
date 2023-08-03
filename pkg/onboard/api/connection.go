@@ -15,7 +15,6 @@ const (
 	ConnectionLifecycleStateDisabled   ConnectionLifecycleState = "DISABLED"
 	ConnectionLifecycleStateDiscovered ConnectionLifecycleState = "DISCOVERED"
 	ConnectionLifecycleStateInProgress ConnectionLifecycleState = "IN_PROGRESS"
-	ConnectionLifecycleStateUnhealthy  ConnectionLifecycleState = "UNHEALTHY"
 	ConnectionLifecycleStateArchived   ConnectionLifecycleState = "ARCHIVED"
 )
 
@@ -50,8 +49,9 @@ type Connection struct {
 
 	LifecycleState ConnectionLifecycleState `json:"lifecycleState" example:"enabled"`
 
-	LastHealthCheckTime time.Time `json:"lastHealthCheckTime" example:"2023-05-07T00:00:00Z"`
-	HealthReason        *string   `json:"healthReason,omitempty"`
+	HealthState         source.HealthStatus `json:"healthState" example:"healthy"`
+	LastHealthCheckTime time.Time           `json:"lastHealthCheckTime" example:"2023-05-07T00:00:00Z"`
+	HealthReason        *string             `json:"healthReason,omitempty"`
 
 	LastInventory        *time.Time `json:"lastInventory" example:"2023-05-07T00:00:00Z"`
 	Cost                 *float64   `json:"cost" example:"1000.00" minimum:"0" maximum:"10000000"`
@@ -65,8 +65,7 @@ type Connection struct {
 
 func (c Connection) IsEnabled() bool {
 	if c.LifecycleState == ConnectionLifecycleStateOnboard ||
-		c.LifecycleState == ConnectionLifecycleStateInProgress ||
-		c.LifecycleState == ConnectionLifecycleStateUnhealthy {
+		c.LifecycleState == ConnectionLifecycleStateInProgress {
 		return true
 	}
 	return false

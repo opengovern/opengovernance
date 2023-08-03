@@ -27,7 +27,6 @@ const (
 	ConnectionLifecycleStateDiscovered ConnectionLifecycleState = "DISCOVERED"
 	ConnectionLifecycleStateInProgress ConnectionLifecycleState = "IN_PROGRESS"
 	ConnectionLifecycleStateOnboard    ConnectionLifecycleState = "ONBOARD"
-	ConnectionLifecycleStateUnhealthy  ConnectionLifecycleState = "UNHEALTHY"
 	ConnectionLifecycleStateArchived   ConnectionLifecycleState = "ARCHIVED"
 )
 
@@ -41,7 +40,7 @@ func (c ConnectionLifecycleState) IsEnabled() bool {
 }
 
 func GetConnectionLifecycleStateEnabledStates() []ConnectionLifecycleState {
-	return []ConnectionLifecycleState{ConnectionLifecycleStateOnboard, ConnectionLifecycleStateInProgress, ConnectionLifecycleStateUnhealthy}
+	return []ConnectionLifecycleState{ConnectionLifecycleStateOnboard, ConnectionLifecycleStateInProgress}
 }
 
 func (c ConnectionLifecycleState) ToApi() api.ConnectionLifecycleState {
@@ -65,6 +64,7 @@ type Source struct {
 
 	AssetDiscoveryMethod source.AssetDiscoveryMethodType `gorm:"not null;default:'scheduled'"`
 
+	HealthState         source.HealthStatus
 	LastHealthCheckTime time.Time `gorm:"not null;default:now()"`
 	HealthReason        *string
 
@@ -96,6 +96,7 @@ func (s Source) toAPI() api.Connection {
 		CredentialName:       s.Credential.Name,
 		CredentialType:       s.Credential.CredentialType.ToApi(),
 		OnboardDate:          s.CreatedAt,
+		HealthState:          s.HealthState,
 		LifecycleState:       api.ConnectionLifecycleState(s.LifecycleState),
 		AssetDiscoveryMethod: s.AssetDiscoveryMethod,
 		LastHealthCheckTime:  s.LastHealthCheckTime,

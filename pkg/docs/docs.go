@@ -9104,6 +9104,14 @@ const docTemplate = `{
                 "healthReason": {
                     "type": "string"
                 },
+                "healthState": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.HealthStatus"
+                        }
+                    ],
+                    "example": "healthy"
+                },
                 "id": {
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
@@ -9183,7 +9191,6 @@ const docTemplate = `{
                 "DISABLED",
                 "DISCOVERED",
                 "IN_PROGRESS",
-                "UNHEALTHY",
                 "ARCHIVED"
             ],
             "x-enum-varnames": [
@@ -9191,7 +9198,6 @@ const docTemplate = `{
                 "ConnectionLifecycleStateDisabled",
                 "ConnectionLifecycleStateDiscovered",
                 "ConnectionLifecycleStateInProgress",
-                "ConnectionLifecycleStateUnhealthy",
                 "ConnectionLifecycleStateArchived"
             ]
         },
