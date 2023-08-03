@@ -702,19 +702,19 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 
 	apiCredentials := make([]api.Credential, 0, len(credentials))
 	for _, cred := range credentials {
-		totalConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), nil)
+		totalConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), nil, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		enabledConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), GetConnectionLifecycleStateEnabledStates())
+		enabledConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), GetConnectionLifecycleStateEnabledStates(), nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		unhealthyConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []ConnectionLifecycleState{ConnectionLifecycleStateUnhealthy})
+		unhealthyConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), nil, []source.HealthStatus{source.HealthStatusUnhealthy})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		discoveredConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []ConnectionLifecycleState{ConnectionLifecycleStateDiscovered})
+		discoveredConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), []ConnectionLifecycleState{ConnectionLifecycleStateDiscovered}, nil)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -780,13 +780,14 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 	for _, conn := range connections {
 		apiCredential.Connections = append(apiCredential.Connections, conn.toAPI())
 		switch conn.LifecycleState {
-		case ConnectionLifecycleStateUnhealthy:
-			apiCredential.UnhealthyConnections = utils.PAdd(apiCredential.UnhealthyConnections, utils.GetPointer(1))
 		case ConnectionLifecycleStateDiscovered:
 			apiCredential.DiscoveredConnections = utils.PAdd(apiCredential.DiscoveredConnections, utils.GetPointer(1))
 		}
 		if conn.LifecycleState.IsEnabled() {
 			apiCredential.EnabledConnections = utils.PAdd(apiCredential.EnabledConnections, utils.GetPointer(1))
+		}
+		if conn.HealthState == source.HealthStatusUnhealthy {
+			apiCredential.UnhealthyConnections = utils.PAdd(apiCredential.UnhealthyConnections, utils.GetPointer(1))
 		}
 		apiCredential.TotalConnections = utils.PAdd(apiCredential.TotalConnections, utils.GetPointer(1))
 	}
@@ -1233,10 +1234,11 @@ func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
 				v.EnabledConnections = utils.PAdd(v.EnabledConnections, utils.GetPointer(1))
 			}
 			switch src.LifecycleState {
-			case ConnectionLifecycleStateUnhealthy:
-				v.UnhealthyConnections = utils.PAdd(v.UnhealthyConnections, utils.GetPointer(1))
 			case ConnectionLifecycleStateDiscovered:
 				v.DiscoveredConnections = utils.PAdd(v.DiscoveredConnections, utils.GetPointer(1))
+			}
+			if src.HealthState == source.HealthStatusUnhealthy {
+				v.UnhealthyConnections = utils.PAdd(v.UnhealthyConnections, utils.GetPointer(1))
 			}
 
 			apiCredentials[src.CredentialID.String()] = v
@@ -1714,13 +1716,7 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 }
 
 func (h HttpHandler) updateConnectionHealth(connection Source, healthStatus source.HealthStatus, reason *string) (Source, error) {
-	if connection.LifecycleState != ConnectionLifecycleStateDisabled && connection.LifecycleState != ConnectionLifecycleStateArchived {
-		if healthStatus == source.HealthStatusUnhealthy {
-			connection.LifecycleState = ConnectionLifecycleStateUnhealthy
-		} else if healthStatus == source.HealthStatusHealthy {
-			connection.LifecycleState = ConnectionLifecycleStateOnboard
-		}
-	}
+	connection.HealthState = healthStatus
 	connection.HealthReason = reason
 	connection.LastHealthCheckTime = time.Now()
 	_, err := h.db.UpdateSource(&connection)
@@ -1753,131 +1749,138 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		return err
 	}
 
-	isHealthy, err := h.checkCredentialHealth(src.Credential)
-	if err != nil {
-		if herr, ok := err.(*echo.HTTPError); ok {
-			if herr.Code == http.StatusInternalServerError {
-				h.logger.Error("failed to check credential health", zap.Error(err), zap.String("sourceId", src.SourceId))
-				return herr
-			}
-		} else {
-			h.logger.Error("failed to check credential health", zap.Error(err), zap.String("sourceId", src.SourceId))
-			return err
-		}
-	}
-	if !isHealthy {
-		src, err = h.updateConnectionHealth(src, source.HealthStatusUnhealthy, utils.GetPointer("Credential is not healthy"))
+	if !src.LifecycleState.IsEnabled() {
+		src, err = h.updateConnectionHealth(src, source.HealthStatusNil, utils.GetPointer("Connection is not enabled"))
 		if err != nil {
 			h.logger.Error("failed to update source health", zap.Error(err), zap.String("sourceId", src.SourceId))
 			return err
 		}
 	} else {
-		var cnf map[string]any
-		cnf, err = h.kms.Decrypt(src.Credential.Secret, h.keyARN)
+		isHealthy, err := h.checkCredentialHealth(src.Credential)
 		if err != nil {
-			h.logger.Error("failed to decrypt credential", zap.Error(err), zap.String("sourceId", src.SourceId))
-			return err
-		}
-
-		var isAttached bool
-		switch src.Type {
-		case source.CloudAWS:
-			var awsCnf describe.AWSAccountConfig
-			awsCnf, err = describe.AWSAccountConfigFromMap(cnf)
-			if err != nil {
-				h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", src.SourceId))
-				return err
-			}
-			assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
-			var sdkCnf aws.Config
-			sdkCnf, err = keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
-			if err != nil {
-				h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", src.SourceId))
-				return err
-			}
-			isAttached, err = keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, keibiaws.GetPolicyArnFromName(src.SourceId, awsCnf.AssumeRolePolicyName))
-			if err == nil && isAttached {
-				if sdkCnf.Region == "" {
-					sdkCnf.Region = "us-east-1"
+			if herr, ok := err.(*echo.HTTPError); ok {
+				if herr.Code == http.StatusInternalServerError {
+					h.logger.Error("failed to check credential health", zap.Error(err), zap.String("sourceId", src.SourceId))
+					return herr
 				}
-				var awsAccount *awsAccount
-				awsAccount, err = currentAwsAccount(ctx.Request().Context(), h.logger, sdkCnf)
-				if err != nil {
-					h.logger.Error("failed to get current aws account", zap.Error(err), zap.String("sourceId", src.SourceId))
-					return err
-				}
-				metadata, err2 := NewAWSConnectionMetadata(h.logger, awsCnf, src, *awsAccount)
-				if err2 != nil {
-					h.logger.Error("failed to get aws connection metadata", zap.Error(err2), zap.String("sourceId", src.SourceId))
-				}
-				jsonMetadata, err2 := json.Marshal(metadata)
-				if err2 != nil {
-					return err
-				}
-				src.Metadata = jsonMetadata
-			}
-		case source.CloudAzure:
-			var azureCnf describe.AzureSubscriptionConfig
-			azureCnf, err = describe.AzureSubscriptionConfigFromMap(cnf)
-			if err != nil {
-				h.logger.Error("failed to get azure config", zap.Error(err), zap.String("sourceId", src.SourceId))
-				return err
-			}
-			authCnf := keibiazure.AuthConfig{
-				TenantID:            azureCnf.TenantID,
-				ClientID:            azureCnf.ClientID,
-				ObjectID:            azureCnf.ObjectID,
-				SecretID:            azureCnf.SecretID,
-				ClientSecret:        azureCnf.ClientSecret,
-				CertificatePath:     azureCnf.CertificatePath,
-				CertificatePassword: azureCnf.CertificatePass,
-				Username:            azureCnf.Username,
-				Password:            azureCnf.Password,
-			}
-			isAttached, err = keibiazure.CheckRole(authCnf, src.SourceId, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
-
-			if err == nil && isAttached {
-				var azSub *azureSubscription
-				azSub, err = currentAzureSubscription(ctx.Request().Context(), h.logger, src.SourceId, authCnf)
-				if err != nil {
-					h.logger.Error("failed to get current azure subscription", zap.Error(err), zap.String("sourceId", src.SourceId))
-					return err
-				}
-				metadata := NewAzureConnectionMetadata(*azSub)
-				var jsonMetadata []byte
-				jsonMetadata, err = json.Marshal(metadata)
-				if err != nil {
-					h.logger.Error("failed to marshal azure metadata", zap.Error(err), zap.String("sourceId", src.SourceId))
-					return err
-				}
-				src.Metadata = jsonMetadata
-			}
-		}
-		if err != nil {
-			h.logger.Warn("failed to check read permission", zap.Error(err), zap.String("sourceId", src.SourceId))
-		}
-
-		if !isAttached {
-			var healthMessage string
-			if err == nil {
-				healthMessage = "Failed to find read permission"
 			} else {
-				healthMessage = err.Error()
+				h.logger.Error("failed to check credential health", zap.Error(err), zap.String("sourceId", src.SourceId))
+				return err
 			}
-			src, err = h.updateConnectionHealth(src, source.HealthStatusUnhealthy, &healthMessage)
+		}
+		if !isHealthy {
+			src, err = h.updateConnectionHealth(src, source.HealthStatusUnhealthy, utils.GetPointer("Credential is not healthy"))
 			if err != nil {
-				h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", src.SourceId))
+				h.logger.Error("failed to update source health", zap.Error(err), zap.String("sourceId", src.SourceId))
 				return err
 			}
 		} else {
-			src, err = h.updateConnectionHealth(src, source.HealthStatusHealthy, utils.GetPointer(""))
+			var cnf map[string]any
+			cnf, err = h.kms.Decrypt(src.Credential.Secret, h.keyARN)
 			if err != nil {
-				h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", src.SourceId))
+				h.logger.Error("failed to decrypt credential", zap.Error(err), zap.String("sourceId", src.SourceId))
 				return err
+			}
+
+			var isAttached bool
+			switch src.Type {
+			case source.CloudAWS:
+				var awsCnf describe.AWSAccountConfig
+				awsCnf, err = describe.AWSAccountConfigFromMap(cnf)
+				if err != nil {
+					h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", src.SourceId))
+					return err
+				}
+				assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
+				var sdkCnf aws.Config
+				sdkCnf, err = keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
+				if err != nil {
+					h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", src.SourceId))
+					return err
+				}
+				isAttached, err = keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, keibiaws.GetPolicyArnFromName(src.SourceId, awsCnf.AssumeRolePolicyName))
+				if err == nil && isAttached {
+					if sdkCnf.Region == "" {
+						sdkCnf.Region = "us-east-1"
+					}
+					var awsAccount *awsAccount
+					awsAccount, err = currentAwsAccount(ctx.Request().Context(), h.logger, sdkCnf)
+					if err != nil {
+						h.logger.Error("failed to get current aws account", zap.Error(err), zap.String("sourceId", src.SourceId))
+						return err
+					}
+					metadata, err2 := NewAWSConnectionMetadata(h.logger, awsCnf, src, *awsAccount)
+					if err2 != nil {
+						h.logger.Error("failed to get aws connection metadata", zap.Error(err2), zap.String("sourceId", src.SourceId))
+					}
+					jsonMetadata, err2 := json.Marshal(metadata)
+					if err2 != nil {
+						return err
+					}
+					src.Metadata = jsonMetadata
+				}
+			case source.CloudAzure:
+				var azureCnf describe.AzureSubscriptionConfig
+				azureCnf, err = describe.AzureSubscriptionConfigFromMap(cnf)
+				if err != nil {
+					h.logger.Error("failed to get azure config", zap.Error(err), zap.String("sourceId", src.SourceId))
+					return err
+				}
+				authCnf := keibiazure.AuthConfig{
+					TenantID:            azureCnf.TenantID,
+					ClientID:            azureCnf.ClientID,
+					ObjectID:            azureCnf.ObjectID,
+					SecretID:            azureCnf.SecretID,
+					ClientSecret:        azureCnf.ClientSecret,
+					CertificatePath:     azureCnf.CertificatePath,
+					CertificatePassword: azureCnf.CertificatePass,
+					Username:            azureCnf.Username,
+					Password:            azureCnf.Password,
+				}
+				isAttached, err = keibiazure.CheckRole(authCnf, src.SourceId, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
+
+				if err == nil && isAttached {
+					var azSub *azureSubscription
+					azSub, err = currentAzureSubscription(ctx.Request().Context(), h.logger, src.SourceId, authCnf)
+					if err != nil {
+						h.logger.Error("failed to get current azure subscription", zap.Error(err), zap.String("sourceId", src.SourceId))
+						return err
+					}
+					metadata := NewAzureConnectionMetadata(*azSub)
+					var jsonMetadata []byte
+					jsonMetadata, err = json.Marshal(metadata)
+					if err != nil {
+						h.logger.Error("failed to marshal azure metadata", zap.Error(err), zap.String("sourceId", src.SourceId))
+						return err
+					}
+					src.Metadata = jsonMetadata
+				}
+			}
+			if err != nil {
+				h.logger.Warn("failed to check read permission", zap.Error(err), zap.String("sourceId", src.SourceId))
+			}
+
+			if !isAttached {
+				var healthMessage string
+				if err == nil {
+					healthMessage = "Failed to find read permission"
+				} else {
+					healthMessage = err.Error()
+				}
+				src, err = h.updateConnectionHealth(src, source.HealthStatusUnhealthy, &healthMessage)
+				if err != nil {
+					h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", src.SourceId))
+					return err
+				}
+			} else {
+				src, err = h.updateConnectionHealth(src, source.HealthStatusHealthy, utils.GetPointer(""))
+				if err != nil {
+					h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", src.SourceId))
+					return err
+				}
 			}
 		}
 	}
-
 	metadata := make(map[string]any)
 	if src.Metadata.String() != "" {
 		err := json.Unmarshal(src.Metadata, &metadata)
@@ -1886,22 +1889,10 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, &api.Connection{
-		ID:                   src.ID,
-		ConnectionID:         src.SourceId,
-		ConnectionName:       src.Name,
-		Email:                src.Email,
-		Connector:            src.Type,
-		Description:          src.Description,
-		CredentialID:         src.CredentialID.String(),
-		CredentialName:       src.Credential.Name,
-		OnboardDate:          src.CreatedAt,
-		LifecycleState:       api.ConnectionLifecycleState(src.LifecycleState),
-		AssetDiscoveryMethod: src.AssetDiscoveryMethod,
-		LastHealthCheckTime:  src.LastHealthCheckTime,
-		HealthReason:         src.HealthReason,
-		Metadata:             metadata,
-	})
+	apiRes := src.toAPI()
+	apiRes.Metadata = metadata
+
+	return ctx.JSON(http.StatusOK, apiRes)
 }
 
 // PutSourceCred godoc
@@ -2329,11 +2320,11 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 		if src.LifecycleState.IsEnabled() {
 			metrics.ConnectionsEnabled++
 		}
-
-		if src.LifecycleState == ConnectionLifecycleStateUnhealthy {
-			metrics.UnhealthyConnections++
-		} else if src.LifecycleState == ConnectionLifecycleStateOnboard {
+		switch src.HealthState {
+		case source.HealthStatusHealthy:
 			metrics.HealthyConnections++
+		case source.HealthStatusUnhealthy:
+			metrics.UnhealthyConnections++
 		}
 	}
 
@@ -2570,7 +2561,8 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 			result.TotalDiscoveredCount++
 		case ConnectionLifecycleStateDisabled:
 			result.TotalDisabledCount++
-		case ConnectionLifecycleStateUnhealthy:
+		}
+		if connection.HealthState == source.HealthStatusUnhealthy {
 			result.TotalUnhealthyCount++
 		}
 	}
