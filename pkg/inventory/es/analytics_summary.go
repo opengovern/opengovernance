@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es"
-	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
@@ -39,9 +38,6 @@ func FetchConnectionAnalyticMetricCountAtTime(client keibi.Client, connectors []
 		return nil, fmt.Errorf("no connection IDs provided")
 	}
 
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"report_type": {string(summarizer.MetricTrendConnectionSummary)}},
-	})
 	if len(metricIDs) > 0 {
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"metric_id": metricIDs},
@@ -102,7 +98,7 @@ func FetchConnectionAnalyticMetricCountAtTime(client keibi.Client, connectors []
 		query := string(b)
 
 		var response FetchConnectionAnalyticMetricCountAtTimeResponse
-		err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
+		err = client.Search(context.Background(), es.AnalyticsConnectionSummaryIndex, query, &response)
 		if err != nil {
 			return nil, err
 		}
@@ -142,9 +138,6 @@ func FetchConnectorAnalyticMetricCountAtTime(client keibi.Client, connectors []s
 	res := make(map[string]any)
 	var filters []any
 
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"report_type": {string(summarizer.MetricTrendConnectorSummary)}},
-	})
 	if len(metricIDs) > 0 {
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"metric_id": metricIDs},
@@ -207,7 +200,7 @@ func FetchConnectorAnalyticMetricCountAtTime(client keibi.Client, connectors []s
 	query := string(b)
 
 	var response FetchConnectorAnalyticMetricCountAtTimeResponse
-	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
+	err = client.Search(context.Background(), es.AnalyticsConnectorSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -250,9 +243,6 @@ func FetchConnectionMetricTrendSummaryPage(client keibi.Client, connectionIDs, m
 	res := make(map[string]any)
 	var filters []any
 
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"report_type": {string(summarizer.MetricTrendConnectionSummary)}},
-	})
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"metric_id": metricIDs},
 	})
@@ -320,7 +310,7 @@ func FetchConnectionMetricTrendSummaryPage(client keibi.Client, connectionIDs, m
 		query := string(b)
 
 		var response ConnectionMetricTrendSummaryQueryResponse
-		err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
+		err = client.Search(context.Background(), es.AnalyticsConnectionSummaryIndex, query, &response)
 		if err != nil {
 			return nil, err
 		}
@@ -368,10 +358,6 @@ type ConnectorMetricTrendSummaryQueryResponse struct {
 func FetchConnectorMetricTrendSummaryPage(client keibi.Client, connectors []source.Type, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
 	res := make(map[string]any)
 	var filters []any
-
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"report_type": {string(summarizer.MetricTrendConnectorSummary)}},
-	})
 
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"metric_id": metricIDs},
@@ -455,7 +441,7 @@ func FetchConnectorMetricTrendSummaryPage(client keibi.Client, connectors []sour
 	query := string(b)
 
 	var response ConnectorMetricTrendSummaryQueryResponse
-	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
+	err = client.Search(context.Background(), es.AnalyticsConnectorSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -506,9 +492,7 @@ func FetchRegionSummaryPage(client keibi.Client, connectors []source.Type, conne
 	res := make(map[string]any)
 
 	var filters []any
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"report_type": {string(summarizer.MetricTrendRegionSummary)}},
-	})
+
 	if len(connectors) > 0 {
 		connectorStr := make([]string, 0, len(connectors))
 		for _, connector := range connectors {
@@ -582,7 +566,7 @@ func FetchRegionSummaryPage(client keibi.Client, connectors []source.Type, conne
 
 	fmt.Println("FetchRegionSummaryPage query = ", query)
 	var response RegionSummaryQueryResponse
-	err = client.Search(context.Background(), summarizer.ProviderSummaryIndex, query, &response)
+	err = client.Search(context.Background(), es.AnalyticsRegionSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -627,10 +611,6 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client keibi.Client, connector
 	var hits []es.ConnectionMetricTrendSummary
 	res := make(map[string]any)
 	var filters []any
-
-	filters = append(filters, map[string]any{
-		"terms": map[string][]string{"report_type": {string(summarizer.MetricTrendConnectionSummary)}},
-	})
 
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
@@ -698,7 +678,7 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client keibi.Client, connector
 	query := string(b)
 	fmt.Println("FetchConnectionAnalyticsResourcesCountAtTime query =", query)
 	var response FetchConnectionAnalyticsResourcesCountAtResponse
-	err = client.Search(context.Background(), summarizer.ConnectionSummaryIndex, query, &response)
+	err = client.Search(context.Background(), es.AnalyticsConnectionSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}

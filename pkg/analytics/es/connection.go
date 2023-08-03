@@ -2,18 +2,20 @@ package es
 
 import (
 	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strconv"
 )
 
+const (
+	AnalyticsConnectionSummaryIndex = "analytics_connection_summary"
+)
+
 type ConnectionMetricTrendSummary struct {
-	ConnectionID  uuid.UUID               `json:"connection_id"`
-	Connector     source.Type             `json:"connector"`
-	EvaluatedAt   int64                   `json:"evaluated_at"`
-	MetricID      string                  `json:"metric_id"`
-	ResourceCount int                     `json:"resource_count"`
-	ReportType    es.ConnectionReportType `json:"report_type"`
+	ConnectionID  uuid.UUID   `json:"connection_id"`
+	Connector     source.Type `json:"connector"`
+	EvaluatedAt   int64       `json:"evaluated_at"`
+	MetricID      string      `json:"metric_id"`
+	ResourceCount int         `json:"resource_count"`
 }
 
 func (r ConnectionMetricTrendSummary) KeysAndIndex() ([]string, string) {
@@ -21,7 +23,6 @@ func (r ConnectionMetricTrendSummary) KeysAndIndex() ([]string, string) {
 		strconv.FormatInt(r.EvaluatedAt, 10),
 		r.ConnectionID.String(),
 		r.MetricID,
-		string(es.MetricTrendConnectionSummary),
 	}
-	return keys, es.ConnectionSummaryIndex
+	return keys, AnalyticsConnectionSummaryIndex
 }

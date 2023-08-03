@@ -14,7 +14,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
@@ -131,7 +130,6 @@ func (j *Job) Run(
 					MetricID:      metric.ID,
 					ResourceCount: int(count),
 					EvaluatedAt:   startTime.UnixMilli(),
-					ReportType:    es.MetricTrendConnectionSummary,
 				}
 				connectionResultMap[conn.ID.String()] = vn
 			}
@@ -145,7 +143,6 @@ func (j *Job) Run(
 					EvaluatedAt:   startTime.UnixMilli(),
 					MetricID:      metric.ID,
 					ResourceCount: int(count),
-					ReportType:    es.MetricTrendConnectorSummary,
 				}
 				providerResultMap[conn.Connector.String()] = vn
 			}
@@ -162,7 +159,6 @@ func (j *Job) Run(
 					EvaluatedAt:   startTime.UnixMilli(),
 					MetricID:      metric.ID,
 					ResourceCount: int(count),
-					ReportType:    es.MetricTrendRegionSummary,
 				}
 				regionResultMap[regionKey] = vn
 			}
