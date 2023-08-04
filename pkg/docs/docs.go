@@ -3250,6 +3250,74 @@ const docTemplate = `{
                 }
             }
         },
+        "/onboard/api/v1/connection-groups": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns a list of connection groups",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "connection-groups"
+                ],
+                "summary": "List connection groups",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Populate connections",
+                        "name": "populateConnections",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionGroup"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/connection-groups/{connectionGroupName}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns a connection group",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "connection-groups"
+                ],
+                "summary": "Get connection group",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionGroup"
+                        }
+                    }
+                }
+            }
+        },
         "/onboard/api/v1/connections/count": {
             "get": {
                 "security": [
@@ -9233,6 +9301,25 @@ const docTemplate = `{
                         }
                     ],
                     "example": "enabled"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionGroup": {
+            "type": "object",
+            "properties": {
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
+                    }
+                },
+                "name": {
+                    "type": "string",
+                    "example": "UltraSightApplication"
+                },
+                "query": {
+                    "type": "string",
+                    "example": "SELECT id FROM kaytu_connections WHERE tags-\u003e'application' IS NOT NULL AND tags-\u003e'application' @\u003e '\"UltraSight\"'"
                 }
             }
         },
