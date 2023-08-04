@@ -1,4 +1,4 @@
-package es
+package resource
 
 import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
