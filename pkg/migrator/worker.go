@@ -129,4 +129,5 @@ func (w *Worker) Stop() {
 	os.RemoveAll(internal.ComplianceGitPath)
 	os.RemoveAll(internal.QueriesGitPath)
 	os.RemoveAll(internal.InsightsGitPath)
+	os.RemoveAll(internal.AnalyticsGitPath)
 }

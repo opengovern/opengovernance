@@ -2385,6 +2385,20 @@ definitions:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState'
         example: enabled
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionGroup:
+    properties:
+      connections:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
+        type: array
+      name:
+        example: UltraSightApplication
+        type: string
+      query:
+        example: SELECT id FROM kaytu_connections WHERE tags->'application' IS NOT
+          NULL AND tags->'application' @> '"UltraSight"'
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState:
     enum:
     - ONBOARD
@@ -5217,6 +5231,48 @@ paths:
       summary: Get catalog metrics
       tags:
       - onboard
+  /onboard/api/v1/connection-groups:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of connection groups
+      parameters:
+      - default: false
+        description: Populate connections
+        in: query
+        name: populateConnections
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionGroup'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List connection groups
+      tags:
+      - connection-groups
+  /onboard/api/v1/connection-groups/{connectionGroupName}:
+    get:
+      consumes:
+      - application/json
+      description: Returns a connection group
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionGroup'
+      security:
+      - BearerToken: []
+      summary: Get connection group
+      tags:
+      - connection-groups
   /onboard/api/v1/connections/{connectionId}:
     put:
       description: Update a connection with connection ID.

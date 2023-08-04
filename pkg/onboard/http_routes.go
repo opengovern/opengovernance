@@ -77,6 +77,10 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	connections.GET("/summary/:connectionId", httpserver.AuthorizeHandler(h.GetConnectionSummary, api3.ViewerRole))
 	connections.POST("/:connectionId/state", httpserver.AuthorizeHandler(h.ChangeConnectionLifecycleState, api3.EditorRole))
 	connections.PUT("/:connectionId", httpserver.AuthorizeHandler(h.UpdateConnection, api3.EditorRole))
+
+	connectionGroups := v1.Group("/connection-groups")
+	connectionGroups.GET("", httpserver.AuthorizeHandler(h.ListConnectionGroups, api3.ViewerRole))
+	connectionGroups.GET("/:connectionGroupName", httpserver.AuthorizeHandler(h.GetConnectionGroup, api3.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -2211,15 +2215,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	var reqUUIDs []uuid.UUID
-	for _, item := range req.SourceIDs {
-		u, err := uuid.Parse(item)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid uuid:"+item)
-		}
-		reqUUIDs = append(reqUUIDs, u)
-	}
-	srcs, err := h.db.GetSources(reqUUIDs)
+	srcs, err := h.db.GetSources(req.SourceIDs)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
@@ -2755,4 +2751,81 @@ func (h HttpHandler) GetConnectionSummary(ctx echo.Context) error {
 	result.LastInventory = connectionData.LastInventory
 
 	return ctx.JSON(http.StatusOK, result)
+}
+
+// ListConnectionGroups godoc
+//
+//	@Summary		List connection groups
+//	@Description	Returns a list of connection groups
+//	@Security		BearerToken
+//	@Tags			connection-groups
+//	@Accept			json
+//	@Produce		json
+//	@Param			populateConnections	query		bool	false	"Populate connections"	default(false)
+//	@Success		200					{object}	[]api.ConnectionGroup
+//	@Router			/onboard/api/v1/connection-groups [get]
+func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
+	var err error
+	populateConnections := false
+	if populateConnectionsStr := ctx.QueryParam("populateConnections"); populateConnectionsStr != "" {
+		populateConnections, err = strconv.ParseBool(populateConnectionsStr)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "populateConnections is not a valid boolean")
+		}
+	}
+
+	connectionGroups, err := h.db.ListConnectionGroups()
+	if err != nil {
+		h.logger.Error("error listing connection groups", zap.Error(err))
+		return err
+	}
+
+	result := make([]api.ConnectionGroup, 0, len(connectionGroups))
+	for _, connectionGroup := range connectionGroups {
+		if populateConnections {
+			apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), &h.db, h.steampipeConn)
+			if err != nil {
+				h.logger.Error("error populating connection group", zap.Error(err))
+				continue
+			}
+			result = append(result, *apiCg)
+		} else {
+			apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), nil, nil)
+			if err != nil {
+				h.logger.Error("error populating connection group", zap.Error(err))
+				continue
+			}
+			result = append(result, *apiCg)
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetConnectionGroup godoc
+//
+//	@Summary		Get connection group
+//	@Description	Returns a connection group
+//	@Security		BearerToken
+//	@Tags			connection-groups
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	api.ConnectionGroup
+//	@Router			/onboard/api/v1/connection-groups/{connectionGroupName} [get]
+func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
+	connectionGroupName := ctx.Param("connectionGroupName")
+
+	connectionGroup, err := h.db.GetConnectionGroupByName(connectionGroupName)
+	if err != nil {
+		h.logger.Error("error getting connection group", zap.Error(err))
+		return err
+	}
+
+	apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), &h.db, h.steampipeConn)
+	if err != nil {
+		h.logger.Error("error populating connection group", zap.Error(err))
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, apiCg)
 }
