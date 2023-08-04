@@ -60,6 +60,11 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	analyticsV2.GET("/regions/summary", httpserver.AuthorizeHandler(h.ListAnalyticsRegionsSummary, authApi.ViewerRole))
 	analyticsV2.GET("/categories", httpserver.AuthorizeHandler(h.ListAnalyticsCategories, authApi.ViewerRole))
 
+	analyticsSpend := analyticsV2.Group("/spend")
+	analyticsSpend.GET("/metric", httpserver.AuthorizeHandler(h.ListCostMetricsHandler, authApi.ViewerRole))
+	analyticsSpend.GET("/composition", httpserver.AuthorizeHandler(h.ListCostComposition, authApi.ViewerRole))
+	analyticsSpend.GET("/trend", httpserver.AuthorizeHandler(h.GetCostTrend, authApi.ViewerRole))
+
 	servicesV2 := v2.Group("/services")
 	servicesV2.GET("/cost/trend", httpserver.AuthorizeHandler(h.GetServiceCostTrend, authApi.ViewerRole))
 
@@ -807,9 +812,28 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 		startTime = time.Unix(startTimeVal, 0)
 	}
 
-	metrics, err := aDB.ListFilteredMetrics(tagMap, nil, connectorTypes)
+	filteredMetrics, err := aDB.ListFilteredMetrics(map[string][]string{tagKey: nil}, nil, connectorTypes)
 	if err != nil {
 		return err
+	}
+	var metrics []analyticsDB.AnalyticMetric
+	for _, metric := range filteredMetrics {
+		isValid := false
+		for _, tag := range metric.Tags {
+			if tag.GetKey() == analyticsDB.MetricTypeKey {
+				if len(tag.GetValue()) > 0 {
+					if tag.GetValue()[0] == metricType {
+						isValid = true
+					}
+				}
+			}
+		}
+
+		if !isValid {
+			continue
+		}
+
+		metrics = append(metrics, metric)
 	}
 	metricsIDs := make([]string, 0, len(metrics))
 	for _, metric := range metrics {
