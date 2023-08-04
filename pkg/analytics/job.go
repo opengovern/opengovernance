@@ -276,8 +276,8 @@ func (j *Job) DoSpendMetric(
 	providerResultMap := map[string]spend.ConnectorMetricTrendSummary{}
 
 	query := metric.Query
-	query = strings.ReplaceAll(query, "$startTime", fmt.Sprintf("%d", startTime.UnixMilli()))
-	query = strings.ReplaceAll(query, "$endTime", fmt.Sprintf("%d", endTime.UnixMilli()))
+	query = strings.ReplaceAll(query, "$startTime", fmt.Sprintf("%d", startTime.Unix()))
+	query = strings.ReplaceAll(query, "$endTime", fmt.Sprintf("%d", endTime.Unix()))
 
 	res, err := steampipeDB.QueryAll(context.TODO(), query)
 	if err != nil {
