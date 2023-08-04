@@ -2297,8 +2297,8 @@ github.com/kaytu-io/kaytu-aws-describer v0.0.45 h1:2Y1mkXaK5kY6YtyVUN666H4v2gFgQ
 github.com/kaytu-io/kaytu-aws-describer v0.0.45/go.mod h1:5qVQgcd/AWAbdaBmW8GBMtt8N5VsAXRDcoAUjCVNKvQ=
 github.com/kaytu-io/kaytu-azure-describer v0.0.59 h1:yT+0U7K3+NtXGyPKZol1qWUo9U2aSXy+iFZ0IqE+1mE=
 github.com/kaytu-io/kaytu-azure-describer v0.0.59/go.mod h1:MvG+3NMwi70woMt7QkLNxrIgGMNmoKas2cZgFg2Kglo=
-github.com/kaytu-io/kaytu-util v0.0.0-20230801140906-583b4d799d87 h1:gZNsJYqUHDJBSKATz2lkVvjcPiNSgvt2Ka/+rB1hIqQ=
-github.com/kaytu-io/kaytu-util v0.0.0-20230801140906-583b4d799d87/go.mod h1:8nqEFGMSX/jTQNn2MmURj9RRaWlyNWDEeHUKYxf4uK8=
+github.com/kaytu-io/kaytu-util v0.0.0-20230804063502-2ce877ebab0c h1:roIHcWUDwxCo+yTLYh9PaAZtNZYezo44Eo6MIUkbtJU=
+github.com/kaytu-io/kaytu-util v0.0.0-20230804063502-2ce877ebab0c/go.mod h1:8nqEFGMSX/jTQNn2MmURj9RRaWlyNWDEeHUKYxf4uK8=
 github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230803110842-473d5fad54ca h1:5tLPL688xMyeYUba6iL++fODBPMnN91pLzz3cxMcUXw=
 github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230803110842-473d5fad54ca/go.mod h1:pejS4mBS8A2SPJiu4QqHdO+SMBkS3QS1hMQWHO+H2m8=
 github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230730080940-69744a43099f h1:pKdmBwu/P2Iom1FHr75NRvHabdOljv88u0YrF6izdqk=
