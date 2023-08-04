@@ -4500,6 +4500,14 @@ paths:
       consumes:
       - application/json
       description: Returns list of categories for analytics summary
+      parameters:
+      - description: 'Metric type, default: assets'
+        enum:
+        - assets
+        - spend
+        in: query
+        name: metricType
+        type: string
       produces:
       - application/json
       responses:
@@ -4523,6 +4531,13 @@ paths:
         in: path
         name: key
         required: true
+        type: string
+      - description: 'Metric type, default: assets'
+        enum:
+        - assets
+        - spend
+        in: query
+        name: metricType
         type: string
       - description: How many top values to return default is 5
         in: query
@@ -4581,6 +4596,13 @@ paths:
           type: string
         name: tag
         type: array
+      - description: 'Metric type, default: assets'
+        enum:
+        - assets
+        - spend
+        in: query
+        name: metricType
+        type: string
       - collectionFormat: csv
         description: Connector type to filter by
         in: query
@@ -4736,6 +4758,13 @@ paths:
         in: query
         name: endTime
         type: integer
+      - description: 'Metric type, default: assets'
+        enum:
+        - assets
+        - spend
+        in: query
+        name: metricType
+        type: string
       produces:
       - application/json
       responses:
@@ -4766,6 +4795,13 @@ paths:
           type: string
         name: tag
         type: array
+      - description: 'Metric type, default: assets'
+        enum:
+        - assets
+        - spend
+        in: query
+        name: metricType
+        type: string
       - collectionFormat: csv
         description: Metric IDs to filter by
         in: query

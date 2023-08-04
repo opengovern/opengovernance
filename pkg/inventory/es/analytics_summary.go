@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
 	"math"
 	"strconv"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
@@ -21,7 +21,7 @@ type FetchConnectionAnalyticMetricCountAtTimeResponse struct {
 				Latest struct {
 					Hits struct {
 						Hits []struct {
-							Source es.ConnectionMetricTrendSummary `json:"_source"`
+							Source resource.ConnectionMetricTrendSummary `json:"_source"`
 						} `json:"hits"`
 					} `json:"hits"`
 				} `json:"latest"`
@@ -99,7 +99,7 @@ func FetchConnectionAnalyticMetricCountAtTime(client keibi.Client, connectors []
 
 		fmt.Println("FetchConnectionAnalyticMetricCountAtTime = ", query)
 		var response FetchConnectionAnalyticMetricCountAtTimeResponse
-		err = client.Search(context.Background(), es.AnalyticsConnectionSummaryIndex, query, &response)
+		err = client.Search(context.Background(), resource.AnalyticsConnectionSummaryIndex, query, &response)
 		if err != nil {
 			return nil, err
 		}
@@ -124,7 +124,7 @@ type FetchConnectorAnalyticMetricCountAtTimeResponse struct {
 						Latest struct {
 							Hits struct {
 								Hits []struct {
-									Source es.ConnectorMetricTrendSummary `json:"_source"`
+									Source resource.ConnectorMetricTrendSummary `json:"_source"`
 								} `json:"hits"`
 							} `json:"hits"`
 						} `json:"latest"`
@@ -201,7 +201,7 @@ func FetchConnectorAnalyticMetricCountAtTime(client keibi.Client, connectors []s
 	query := string(b)
 
 	var response FetchConnectorAnalyticMetricCountAtTimeResponse
-	err = client.Search(context.Background(), es.AnalyticsConnectorSummaryIndex, query, &response)
+	err = client.Search(context.Background(), resource.AnalyticsConnectorSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +229,7 @@ type ConnectionMetricTrendSummaryQueryResponse struct {
 						Latest struct {
 							Hits struct {
 								Hits []struct {
-									Source es.ConnectionMetricTrendSummary `json:"_source"`
+									Source resource.ConnectionMetricTrendSummary `json:"_source"`
 								} `json:"hits"`
 							} `json:"hits"`
 						} `json:"latest"`
@@ -312,7 +312,7 @@ func FetchConnectionMetricTrendSummaryPage(client keibi.Client, connectionIDs, m
 
 		fmt.Println("FetchConnectionMetricTrendSummaryPage = ", query)
 		var response ConnectionMetricTrendSummaryQueryResponse
-		err = client.Search(context.Background(), es.AnalyticsConnectionSummaryIndex, query, &response)
+		err = client.Search(context.Background(), resource.AnalyticsConnectionSummaryIndex, query, &response)
 		if err != nil {
 			return nil, err
 		}
@@ -344,7 +344,7 @@ type ConnectorMetricTrendSummaryQueryResponse struct {
 								Latest struct {
 									Hits struct {
 										Hits []struct {
-											Source es.ConnectorMetricTrendSummary `json:"_source"`
+											Source resource.ConnectorMetricTrendSummary `json:"_source"`
 										} `json:"hits"`
 									} `json:"hits"`
 								} `json:"latest"`
@@ -443,7 +443,7 @@ func FetchConnectorMetricTrendSummaryPage(client keibi.Client, connectors []sour
 	query := string(b)
 
 	var response ConnectorMetricTrendSummaryQueryResponse
-	err = client.Search(context.Background(), es.AnalyticsConnectorSummaryIndex, query, &response)
+	err = client.Search(context.Background(), resource.AnalyticsConnectorSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -477,7 +477,7 @@ type RegionSummaryQueryResponse struct {
 								Latest struct {
 									Hits struct {
 										Hits []struct {
-											Source es.RegionMetricTrendSummary `json:"_source"`
+											Source resource.RegionMetricTrendSummary `json:"_source"`
 										} `json:"hits"`
 									} `json:"hits"`
 								} `json:"latest"`
@@ -568,7 +568,7 @@ func FetchRegionSummaryPage(client keibi.Client, connectors []source.Type, conne
 
 	fmt.Println("FetchRegionSummaryPage query = ", query)
 	var response RegionSummaryQueryResponse
-	err = client.Search(context.Background(), es.AnalyticsRegionSummaryIndex, query, &response)
+	err = client.Search(context.Background(), resource.AnalyticsRegionSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -598,7 +598,7 @@ type FetchConnectionAnalyticsResourcesCountAtResponse struct {
 						Latest struct {
 							Hits struct {
 								Hits []struct {
-									Source es.ConnectionMetricTrendSummary `json:"_source"`
+									Source resource.ConnectionMetricTrendSummary `json:"_source"`
 								} `json:"hits"`
 							} `json:"hits"`
 						} `json:"latest"`
@@ -609,8 +609,8 @@ type FetchConnectionAnalyticsResourcesCountAtResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionAnalyticsResourcesCountAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, t time.Time, size int) ([]es.ConnectionMetricTrendSummary, error) {
-	var hits []es.ConnectionMetricTrendSummary
+func FetchConnectionAnalyticsResourcesCountAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, t time.Time, size int) ([]resource.ConnectionMetricTrendSummary, error) {
+	var hits []resource.ConnectionMetricTrendSummary
 	res := make(map[string]any)
 	var filters []any
 
@@ -680,7 +680,7 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client keibi.Client, connector
 	query := string(b)
 	fmt.Println("FetchConnectionAnalyticsResourcesCountAtTime query =", query)
 	var response FetchConnectionAnalyticsResourcesCountAtResponse
-	err = client.Search(context.Background(), es.AnalyticsConnectionSummaryIndex, query, &response)
+	err = client.Search(context.Background(), resource.AnalyticsConnectionSummaryIndex, query, &response)
 	if err != nil {
 		return nil, err
 	}

@@ -7,6 +7,13 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+const (
+	MetricTypeKey = "x-kaytu-metric-type"
+
+	MetricTypeAssets = "assets"
+	MetricTypeSpend  = "spend"
+)
+
 type MetricTag struct {
 	model.Tag
 	ID string `gorm:"primaryKey; type:citext"`

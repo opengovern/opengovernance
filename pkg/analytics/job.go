@@ -61,14 +61,14 @@ func (j *Job) Do(
 }
 
 func (j *Job) Run(
-	db db.Database,
+	dbc db.Database,
 	steampipeDB *steampipe.Database,
 	kfkProducer *confluent_kafka.Producer,
 	kfkTopic string,
 	onboardClient onboardClient.OnboardServiceClient,
 	logger *zap.Logger) error {
 	startTime := time.Now()
-	metrics, err := db.ListMetrics()
+	metrics, err := dbc.ListMetrics()
 	if err != nil {
 		return err
 	}
@@ -77,10 +77,10 @@ func (j *Job) Run(
 
 	for _, metric := range metrics {
 		tagMap := metric.GetTagsMap()
-		tagValue := tagMap["x-kaytu-metric-type"]
+		tagValue := tagMap[db.MetricTypeKey]
 		isAsset := true
 		if tagValue != nil && len(tagValue) > 0 {
-			if tagValue[0] == "spend" {
+			if tagValue[0] == db.MetricTypeSpend {
 				isAsset = false
 			}
 		}

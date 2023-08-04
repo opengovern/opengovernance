@@ -69,13 +69,13 @@ func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 		})
 	}
 
-	metricType := "asset"
+	metricType := analyticsDB.MetricTypeAssets
 	if !isAsset {
-		metricType = "spend"
+		metricType = analyticsDB.MetricTypeSpend
 	}
 	tags = append(tags, analyticsDB.MetricTag{
 		Tag: model.Tag{
-			Key:   "x-kaytu-metric-type",
+			Key:   analyticsDB.MetricTypeKey,
 			Value: []string{metricType},
 		},
 		ID: id,
