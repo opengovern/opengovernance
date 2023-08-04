@@ -1757,9 +1757,11 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostMetric:
     properties:
       connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        example: Azure
+        example:
+        - Azure
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
       cost_dimension_name:
         example: microsoft.compute/disks
         type: string
@@ -4729,6 +4731,69 @@ paths:
       summary: List Regions Summary
       tags:
       - analytics
+  /inventory/api/v2/analytics/spend/metric:
+    get:
+      consumes:
+      - application/json
+      description: This API allows users to retrieve cost metrics with respect to
+        specified filters. The API returns information such as the total cost and
+        costs per each service based on the specified filters.
+      parameters:
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: timestamp for start in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      - description: timestamp for end in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: Sort by field - default is cost
+        enum:
+        - dimension
+        - cost
+        - growth
+        - growth_rate
+        in: query
+        name: sortBy
+        type: string
+      - description: page size - default is 20
+        in: query
+        name: pageSize
+        type: integer
+      - description: page number - default is 1
+        in: query
+        name: pageNumber
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostMetricsResponse'
+      security:
+      - BearerToken: []
+      summary: List spend metrics
+      tags:
+      - inventory
   /inventory/api/v2/analytics/tag:
     get:
       consumes:
