@@ -326,8 +326,8 @@ func (j *Job) DoSpendMetric(
 				Date:         startTime.Format("2006-01-02"),
 				MetricID:     metric.ID,
 				CostValue:    sum,
-				StartTime:    startTime.UnixMilli(),
-				EndTime:      endTime.UnixMilli(),
+				PeriodStart:  startTime.UnixMilli(),
+				PeriodEnd:    endTime.UnixMilli(),
 			}
 			connectionResultMap[conn.ID.String()] = vn
 		}
@@ -337,12 +337,12 @@ func (j *Job) DoSpendMetric(
 			providerResultMap[conn.Connector.String()] = v
 		} else {
 			vn := spend.ConnectorMetricTrendSummary{
-				Connector: conn.Connector,
-				Date:      startTime.Format("2006-01-02"),
-				MetricID:  metric.ID,
-				CostValue: sum,
-				StartTime: startTime.UnixMilli(),
-				EndTime:   endTime.UnixMilli(),
+				Connector:   conn.Connector,
+				Date:        startTime.Format("2006-01-02"),
+				MetricID:    metric.ID,
+				CostValue:   sum,
+				PeriodStart: startTime.UnixMilli(),
+				PeriodEnd:   endTime.UnixMilli(),
 			}
 			providerResultMap[conn.Connector.String()] = vn
 		}
