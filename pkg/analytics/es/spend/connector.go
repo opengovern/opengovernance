@@ -13,6 +13,8 @@ type ConnectorMetricTrendSummary struct {
 	Date      string      `json:"date"`
 	MetricID  string      `json:"metric_id"`
 	CostValue float64     `json:"cost_value"`
+	StartTime int64       `json:"start_time"`
+	EndTime   int64       `json:"end_time"`
 }
 
 func (r ConnectorMetricTrendSummary) KeysAndIndex() ([]string, string) {

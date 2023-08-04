@@ -61,7 +61,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	analyticsV2.GET("/categories", httpserver.AuthorizeHandler(h.ListAnalyticsCategories, authApi.ViewerRole))
 
 	analyticsSpend := analyticsV2.Group("/spend")
-	analyticsSpend.GET("/metric", httpserver.AuthorizeHandler(h.ListCostMetricsHandler, authApi.ViewerRole))
+	analyticsSpend.GET("/metric", httpserver.AuthorizeHandler(h.ListAnalyticsSpendMetricsHandler, authApi.ViewerRole))
 	analyticsSpend.GET("/composition", httpserver.AuthorizeHandler(h.ListCostComposition, authApi.ViewerRole))
 	analyticsSpend.GET("/trend", httpserver.AuthorizeHandler(h.GetCostTrend, authApi.ViewerRole))
 
@@ -1125,6 +1125,252 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 	})
 }
 
+// ListAnalyticsSpendMetricsHandler godoc
+//
+//	@Summary		List spend metrics
+//	@Description	This API allows users to retrieve cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param			sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost,growth,growth_rate)
+//	@Param			pageSize		query		int				false	"page size - default is 20"
+//	@Param			pageNumber		query		int				false	"page number - default is 1"
+//	@Success		200				{object}	inventoryApi.ListCostMetricsResponse
+//	@Router			/inventory/api/v2/analytics/spend/metric [get]
+func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
+	var err error
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	endTimeStr := ctx.QueryParam("endTime")
+	endTime := time.Now().Unix()
+	if endTimeStr != "" {
+		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+	}
+	startTimeStr := ctx.QueryParam("startTime")
+	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
+	if startTimeStr != "" {
+		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+	}
+	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+	sortBy := strings.ToLower(ctx.QueryParam("sortBy"))
+	if sortBy == "" {
+		sortBy = "cost"
+	}
+	if sortBy != "dimension" && sortBy != "cost" &&
+		sortBy != "growth" && sortBy != "growth_rate" {
+		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
+	}
+
+	costMetricMap := make(map[string]inventoryApi.CostMetric)
+	if len(connectionIDs) > 0 {
+		hits, err := es.FetchConnectionDailySpendHistoryByMetric(h.client, connectionIDs, connectorTypes, nil, time.Unix(startTime, 0), time.Unix(endTime, 0), EsFetchPageSize)
+		if err != nil {
+			return err
+		}
+		for _, hit := range hits {
+			connector, _ := source.ParseType(hit.Connector)
+			if v, ok := costMetricMap[hit.MetricID]; ok {
+				exists := false
+				for _, cnt := range v.Connector {
+					if cnt.String() == connector.String() {
+						exists = true
+						break
+					}
+				}
+				if !exists {
+					v.Connector = append(v.Connector, connector)
+				}
+				v.TotalCost = utils.PAdd(v.TotalCost, &hit.TotalCost)
+				v.DailyCostAtStartTime = utils.PAdd(v.DailyCostAtStartTime, &hit.StartDateCost)
+				v.DailyCostAtEndTime = utils.PAdd(v.DailyCostAtEndTime, &hit.EndDateCost)
+				costMetricMap[hit.MetricID] = v
+			} else {
+				costMetricMap[hit.MetricID] = inventoryApi.CostMetric{
+					Connector:            []source.Type{connector},
+					CostDimensionName:    hit.MetricID,
+					TotalCost:            &hit.TotalCost,
+					DailyCostAtStartTime: &hit.StartDateCost,
+					DailyCostAtEndTime:   &hit.EndDateCost,
+				}
+			}
+		}
+	} else {
+		hits, err := es.FetchConnectorDailySpendHistoryByMetric(h.client, connectorTypes, nil, time.Unix(startTime, 0), time.Unix(endTime, 0), EsFetchPageSize)
+		if err != nil {
+			return err
+		}
+		for _, hit := range hits {
+			connector, _ := source.ParseType(hit.Connector)
+			if v, ok := costMetricMap[hit.MetricID]; ok {
+				exists := false
+				for _, cnt := range v.Connector {
+					if cnt.String() == connector.String() {
+						exists = true
+						break
+					}
+				}
+				if !exists {
+					v.Connector = append(v.Connector, connector)
+				}
+				v.TotalCost = utils.PAdd(v.TotalCost, &hit.TotalCost)
+				v.DailyCostAtStartTime = utils.PAdd(v.DailyCostAtStartTime, &hit.StartDateCost)
+				v.DailyCostAtEndTime = utils.PAdd(v.DailyCostAtEndTime, &hit.EndDateCost)
+				costMetricMap[hit.MetricID] = v
+			} else {
+				costMetricMap[hit.MetricID] = inventoryApi.CostMetric{
+					Connector:            []source.Type{connector},
+					CostDimensionName:    hit.MetricID,
+					TotalCost:            &hit.TotalCost,
+					DailyCostAtStartTime: &hit.StartDateCost,
+					DailyCostAtEndTime:   &hit.EndDateCost,
+				}
+			}
+		}
+	}
+
+	//costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, connectionIDs, connectorTypes, nil, time.Unix(startTime, 0), time.Unix(endTime, 0), EsFetchPageSize)
+	//if err != nil {
+	//	return err
+	//}
+	//costMetricMap := make(map[string]inventoryApi.CostMetric)
+	//for connector, serviceToCostMap := range costHits {
+	//	for dimension, costVal := range serviceToCostMap {
+	//		connectorTyped, _ := source.ParseType(connector)
+	//		localCostVal := costVal
+	//		costMetricMap[dimension] = inventoryApi.CostMetric{
+	//			Connector:         connectorTyped,
+	//			CostDimensionName: dimension,
+	//			TotalCost:         &localCostVal,
+	//		}
+	//
+	//	}
+	//}
+	//
+	//endTimeCostHits, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, connectorTypes, nil, time.Unix(endTime, 0), EsFetchPageSize)
+	//if err != nil {
+	//	return err
+	//}
+	//aggregatedEndTimeCostHits := internal.AggregateServiceCosts(endTimeCostHits)
+	//for dimension, costVal := range aggregatedEndTimeCostHits {
+	//	if costMetric, ok := costMetricMap[dimension]; ok {
+	//		localCostVal := costVal
+	//		costMetric.DailyCostAtEndTime = utils.PAdd(costMetric.DailyCostAtEndTime, &localCostVal)
+	//		costMetricMap[dimension] = costMetric
+	//	}
+	//}
+	//
+	//startTimeCostHits, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, connectorTypes, nil, time.Unix(startTime, 0), EsFetchPageSize)
+	//if err != nil {
+	//	return err
+	//}
+	//aggregatedStartTimeCostHits := internal.AggregateServiceCosts(startTimeCostHits)
+	//for dimension, costVal := range aggregatedStartTimeCostHits {
+	//	if costMetric, ok := costMetricMap[dimension]; ok {
+	//		localCostVal := costVal
+	//		costMetric.DailyCostAtStartTime = utils.PAdd(costMetric.DailyCostAtStartTime, &localCostVal)
+	//		costMetricMap[dimension] = costMetric
+	//	}
+	//}
+
+	var costMetrics []inventoryApi.CostMetric
+	totalCost := float64(0)
+	for _, costMetric := range costMetricMap {
+		costMetrics = append(costMetrics, costMetric)
+		if costMetric.TotalCost != nil {
+			totalCost += *costMetric.TotalCost
+		}
+	}
+
+	sort.Slice(costMetrics, func(i, j int) bool {
+		switch sortBy {
+		case "dimension":
+			return costMetrics[i].CostDimensionName < costMetrics[j].CostDimensionName
+		case "cost":
+			if costMetrics[i].TotalCost == nil && costMetrics[j].TotalCost == nil {
+				break
+			}
+			if costMetrics[i].TotalCost == nil {
+				return false
+			}
+			if costMetrics[j].TotalCost == nil {
+				return true
+			}
+			if *costMetrics[i].TotalCost != *costMetrics[j].TotalCost {
+				return *costMetrics[i].TotalCost > *costMetrics[j].TotalCost
+			}
+		case "growth":
+			diffi := utils.PSub(costMetrics[i].DailyCostAtEndTime, costMetrics[i].DailyCostAtStartTime)
+			diffj := utils.PSub(costMetrics[j].DailyCostAtEndTime, costMetrics[j].DailyCostAtStartTime)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if *diffi != *diffj {
+				return *diffi > *diffj
+			}
+		case "growth_rate":
+			diffi := utils.PSub(costMetrics[i].DailyCostAtEndTime, costMetrics[i].DailyCostAtStartTime)
+			diffj := utils.PSub(costMetrics[j].DailyCostAtEndTime, costMetrics[j].DailyCostAtStartTime)
+			if diffi == nil && diffj == nil {
+				break
+			}
+			if diffi == nil {
+				return false
+			}
+			if diffj == nil {
+				return true
+			}
+			if costMetrics[i].DailyCostAtStartTime == nil && costMetrics[j].DailyCostAtStartTime == nil {
+				break
+			}
+			if costMetrics[i].DailyCostAtStartTime == nil {
+				return true
+			}
+			if costMetrics[j].DailyCostAtStartTime == nil {
+				return false
+			}
+			if *costMetrics[i].DailyCostAtStartTime == 0 && *costMetrics[j].DailyCostAtStartTime == 0 {
+				break
+			}
+			if *costMetrics[i].DailyCostAtStartTime == 0 {
+				return false
+			}
+			if *costMetrics[j].DailyCostAtStartTime == 0 {
+				return true
+			}
+			if *diffi/(*costMetrics[i].DailyCostAtStartTime) != *diffj/(*costMetrics[j].DailyCostAtStartTime) {
+				return *diffi/(*costMetrics[i].DailyCostAtStartTime) > *diffj/(*costMetrics[j].DailyCostAtStartTime)
+			}
+		}
+		return costMetrics[i].CostDimensionName < costMetrics[j].CostDimensionName
+	})
+
+	return ctx.JSON(http.StatusOK, inventoryApi.ListCostMetricsResponse{
+		TotalCount: len(costMetrics),
+		TotalCost:  totalCost,
+		Metrics:    utils.Paginate(pageNumber, pageSize, costMetrics),
+	})
+}
+
 // GetResourceTypeMetricsHandler godoc
 //
 //	@Summary		Get resource metrics
@@ -1264,11 +1510,10 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 			connectorTyped, _ := source.ParseType(connector)
 			localCostVal := costVal
 			costMetricMap[dimension] = inventoryApi.CostMetric{
-				Connector:         connectorTyped,
+				Connector:         []source.Type{connectorTyped},
 				CostDimensionName: dimension,
 				TotalCost:         &localCostVal,
 			}
-
 		}
 	}
 
@@ -1437,7 +1682,7 @@ func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 			connectorTyped, _ := source.ParseType(connector)
 			localCostVal := costVal
 			costMetricMap[dimension] = inventoryApi.CostMetric{
-				Connector:         connectorTyped,
+				Connector:         []source.Type{connectorTyped},
 				CostDimensionName: dimension,
 				TotalCost:         &localCostVal,
 			}
