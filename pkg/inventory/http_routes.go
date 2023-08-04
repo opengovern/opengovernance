@@ -2244,7 +2244,7 @@ func (h *HttpHandler) RunSmartQuery(ctx context.Context, title, query string, re
 	h.logger.Info("executing smart query", zap.String("query", query))
 	res, err := h.steampipeConn.Query(ctx, query, &lastIdx, &req.Page.Size, orderBy, steampipe.DirectionType(direction))
 	if err != nil {
-		return nil, err
+		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	err = h.db.UpdateQueryHistory(query)
