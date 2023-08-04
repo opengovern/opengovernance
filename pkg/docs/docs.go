@@ -9411,7 +9411,7 @@ const docTemplate = `{
                 },
                 "query": {
                     "type": "string",
-                    "example": "SELECT id FROM kaytu_connections WHERE tags-\u003e'application' IS NOT NULL AND tags-\u003e'application' @\u003e '\"UltraSight\"'"
+                    "example": "SELECT kaytu_id FROM kaytu_connections WHERE tags-\u003e'application' IS NOT NULL AND tags-\u003e'application' @\u003e '\"UltraSight\"'"
                 }
             }
         },

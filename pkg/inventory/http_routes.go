@@ -4,17 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
-	es3 "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"math"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
+	es3 "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
@@ -42,8 +43,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	queryV1 := v1.Group("/query")
 	queryV1.GET("", httpserver.AuthorizeHandler(h.ListQueries, authApi.ViewerRole))
-	queryV1.POST("/run", httpserver.AuthorizeHandler(h.RunQuery, authApi.EditorRole))
-	queryV1.GET("/run/history", httpserver.AuthorizeHandler(h.GetRecentRanQueries, authApi.EditorRole))
+	queryV1.POST("/run", httpserver.AuthorizeHandler(h.RunQuery, authApi.ViewerRole))
+	queryV1.GET("/run/history", httpserver.AuthorizeHandler(h.GetRecentRanQueries, authApi.ViewerRole))
 
 	v2 := e.Group("/api/v2")
 

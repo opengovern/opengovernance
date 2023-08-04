@@ -2397,8 +2397,8 @@ definitions:
         example: UltraSightApplication
         type: string
       query:
-        example: SELECT id FROM kaytu_connections WHERE tags->'application' IS NOT
-          NULL AND tags->'application' @> '"UltraSight"'
+        example: SELECT kaytu_id FROM kaytu_connections WHERE tags->'application'
+          IS NOT NULL AND tags->'application' @> '"UltraSight"'
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState:
