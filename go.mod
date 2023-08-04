@@ -31,7 +31,7 @@ require (
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/kaytu-io/kaytu-aws-describer v0.0.45
 	github.com/kaytu-io/kaytu-azure-describer v0.0.59
-	github.com/kaytu-io/kaytu-util v0.0.0-20230801140906-583b4d799d87
+	github.com/kaytu-io/kaytu-util v0.0.0-20230804063502-2ce877ebab0c
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/labstack/gommon v0.4.0
