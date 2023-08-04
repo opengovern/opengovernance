@@ -69,7 +69,7 @@ func (db Database) GetQueriesWithFilters(search *string, connectors []source.Typ
 
 func (db Database) GetQueryHistory() ([]SmartQueryHistory, error) {
 	var history []SmartQueryHistory
-	tx := db.orm.Order("executed_at desc").Find(&history)
+	tx := db.orm.Order("executed_at desc").Limit(3).Find(&history)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}

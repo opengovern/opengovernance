@@ -17,11 +17,11 @@ type ListServicesCostTrendDatapoint struct {
 }
 
 type CostMetric struct {
-	Connector            source.Type `json:"connector" example:"Azure"`
-	CostDimensionName    string      `json:"cost_dimension_name" example:"microsoft.compute/disks"`
-	TotalCost            *float64    `json:"total_cost,omitempty" example:"621041.2436112489" minimum:"0"`
-	DailyCostAtStartTime *float64    `json:"daily_cost_at_start_time,omitempty" example:"21232.10443638001" minimum:"0"`
-	DailyCostAtEndTime   *float64    `json:"daily_cost_at_end_time,omitempty" example:"14118.815231085681" minimum:"0"`
+	Connector            []source.Type `json:"connector" example:"Azure"`
+	CostDimensionName    string        `json:"cost_dimension_name" example:"microsoft.compute/disks"`
+	TotalCost            *float64      `json:"total_cost,omitempty" example:"621041.2436112489" minimum:"0"`
+	DailyCostAtStartTime *float64      `json:"daily_cost_at_start_time,omitempty" example:"21232.10443638001" minimum:"0"`
+	DailyCostAtEndTime   *float64      `json:"daily_cost_at_end_time,omitempty" example:"14118.815231085681" minimum:"0"`
 }
 
 type ListCostMetricsResponse struct {
