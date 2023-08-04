@@ -2185,6 +2185,18 @@
                     "analytics"
                 ],
                 "summary": "List Analytics categories",
+                "parameters": [
+                    {
+                        "enum": [
+                            "assets",
+                            "spend"
+                        ],
+                        "type": "string",
+                        "description": "Metric type, default: assets",
+                        "name": "metricType",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2220,6 +2232,16 @@
                         "name": "key",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "assets",
+                            "spend"
+                        ],
+                        "type": "string",
+                        "description": "Metric type, default: assets",
+                        "name": "metricType",
+                        "in": "query"
                     },
                     {
                         "type": "integer",
@@ -2303,6 +2325,16 @@
                         "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "assets",
+                            "spend"
+                        ],
+                        "type": "string",
+                        "description": "Metric type, default: assets",
+                        "name": "metricType",
                         "in": "query"
                     },
                     {
@@ -2533,6 +2565,16 @@
                         "description": "End time in unix timestamp format, default now",
                         "name": "endTime",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "assets",
+                            "spend"
+                        ],
+                        "type": "string",
+                        "description": "Metric type, default: assets",
+                        "name": "metricType",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2578,6 +2620,16 @@
                         "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "assets",
+                            "spend"
+                        ],
+                        "type": "string",
+                        "description": "Metric type, default: assets",
+                        "name": "metricType",
                         "in": "query"
                     },
                     {

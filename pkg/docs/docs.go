@@ -2191,6 +2191,18 @@ const docTemplate = `{
                     "analytics"
                 ],
                 "summary": "List Analytics categories",
+                "parameters": [
+                    {
+                        "enum": [
+                            "assets",
+                            "spend"
+                        ],
+                        "type": "string",
+                        "description": "Metric type, default: assets",
+                        "name": "metricType",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2226,6 +2238,16 @@ const docTemplate = `{
                         "name": "key",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "assets",
+                            "spend"
+                        ],
+                        "type": "string",
+                        "description": "Metric type, default: assets",
+                        "name": "metricType",
+                        "in": "query"
                     },
                     {
                         "type": "integer",
@@ -2309,6 +2331,16 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "assets",
+                            "spend"
+                        ],
+                        "type": "string",
+                        "description": "Metric type, default: assets",
+                        "name": "metricType",
                         "in": "query"
                     },
                     {
@@ -2539,6 +2571,16 @@ const docTemplate = `{
                         "description": "End time in unix timestamp format, default now",
                         "name": "endTime",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "assets",
+                            "spend"
+                        ],
+                        "type": "string",
+                        "description": "Metric type, default: assets",
+                        "name": "metricType",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2584,6 +2626,16 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Key-Value tags in key=value format to filter by",
                         "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "assets",
+                            "spend"
+                        ],
+                        "type": "string",
+                        "description": "Metric type, default: assets",
+                        "name": "metricType",
                         "in": "query"
                     },
                     {

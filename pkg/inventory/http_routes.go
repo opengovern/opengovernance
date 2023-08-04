@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	es2 "github.com/kaytu-io/kaytu-engine/pkg/analytics/es"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
 	es3 "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
@@ -96,8 +96,8 @@ func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
 func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 
-	connectionMap := map[string]es2.ConnectionMetricTrendSummary{}
-	connectorMap := map[string]es2.ConnectorMetricTrendSummary{}
+	connectionMap := map[string]resource.ConnectionMetricTrendSummary{}
+	connectorMap := map[string]resource.ConnectorMetricTrendSummary{}
 
 	resourceTypeMetricIDCache := map[string]string{}
 
@@ -157,7 +157,7 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 				continue
 			}
 
-			connection := es2.ConnectionMetricTrendSummary{
+			connection := resource.ConnectionMetricTrendSummary{
 				ConnectionID:  connectionID,
 				Connector:     hit.SourceType,
 				EvaluatedAt:   hit.DescribedAt,
@@ -172,7 +172,7 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 				connectionMap[key] = connection
 			}
 
-			connector := es2.ConnectorMetricTrendSummary{
+			connector := resource.ConnectorMetricTrendSummary{
 				Connector:     hit.SourceType,
 				EvaluatedAt:   hit.DescribedAt,
 				MetricID:      metricID,
@@ -363,6 +363,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(metricIDs []string, tagMap map[string
 //	@Accept			json
 //	@Produce		json
 //	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			metricType		query		string			false	"Metric type, default: assets"	Enums(assets, spend)
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
 //	@Param			metricIDs		query		[]string		false	"Metric IDs"
@@ -377,6 +378,11 @@ func (h *HttpHandler) ListAnalyticsMetrics(metricIDs []string, tagMap map[string
 func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	var err error
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	metricType := ctx.QueryParam("metricType")
+	if metricType == "" {
+		metricType = analyticsDB.MetricTypeAssets
+	}
+	tagMap[analyticsDB.MetricTypeKey] = []string{metricType}
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) > 20 {
@@ -541,6 +547,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
 //	@Param			minCount		query		int			false	"Minimum number of resources with this tag value, default 1"
 //	@Param			endTime			query		int			false	"End time in unix timestamp format, default now"
+//	@Param			metricType		query		string		false	"Metric type, default: assets"	Enums(assets, spend)
 //	@Success		200				{object}	map[string][]string
 //	@Router			/inventory/api/v2/analytics/tag [get]
 func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
@@ -592,10 +599,18 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 
 	fmt.Println("metricCount", metricCount)
 	fmt.Println("tags", tags)
+	metricType := ctx.QueryParam("metricType")
+	if metricType == "" {
+		metricType = analyticsDB.MetricTypeAssets
+	}
+
 	filteredTags := map[string][]string{}
 	for key, values := range tags {
 		for _, tagValue := range values {
-			metrics, err := aDB.ListFilteredMetrics(map[string][]string{key: {tagValue}}, nil, connectorTypes)
+			metrics, err := aDB.ListFilteredMetrics(map[string][]string{
+				key:                       {tagValue},
+				analyticsDB.MetricTypeKey: {metricType},
+			}, nil, connectorTypes)
 			if err != nil {
 				return err
 			}
@@ -624,6 +639,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			metricType		query		string			false	"Metric type, default: assets"	Enums(assets, spend)
 //	@Param			ids				query		[]string		false	"Metric IDs to filter by"
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
@@ -636,6 +652,11 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	var err error
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
+	metricType := ctx.QueryParam("metricType")
+	if metricType == "" {
+		metricType = analyticsDB.MetricTypeAssets
+	}
+	tagMap[analyticsDB.MetricTypeKey] = []string{metricType}
 	ids := httpserver.QueryArrayParam(ctx, "ids")
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
@@ -729,6 +750,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			key				path		string			true	"Tag key"
+//	@Param			metricType		query		string			false	"Metric type, default: assets"	Enums(assets, spend)
 //	@Param			top				query		int				true	"How many top values to return default is 5"
 //	@Param			connector		query		[]source.Type	false	"Connector types to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
@@ -744,6 +766,15 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
 		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
+	tagMap := map[string][]string{
+		tagKey: nil,
+	}
+	metricType := ctx.QueryParam("metricType")
+	if metricType == "" {
+		metricType = analyticsDB.MetricTypeAssets
+	}
+	tagMap[analyticsDB.MetricTypeKey] = []string{metricType}
+
 	topStr := ctx.QueryParam("top")
 	top := int64(5)
 	if topStr != "" {
@@ -776,7 +807,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 		startTime = time.Unix(startTimeVal, 0)
 	}
 
-	metrics, err := aDB.ListFilteredMetrics(map[string][]string{tagKey: nil}, nil, connectorTypes)
+	metrics, err := aDB.ListFilteredMetrics(tagMap, nil, connectorTypes)
 	if err != nil {
 		return err
 	}
@@ -1020,10 +1051,16 @@ func (h *HttpHandler) ListAnalyticsRegionsSummary(ctx echo.Context) error {
 //	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	inventoryApi.AnalyticsCategoriesResponse
+//	@Param			metricType	query		string	false	"Metric type, default: assets"	Enums(assets, spend)
+//	@Success		200			{object}	inventoryApi.AnalyticsCategoriesResponse
 //	@Router			/inventory/api/v2/analytics/categories [get]
 func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
+
+	metricType := ctx.QueryParam("metricType")
+	if metricType == "" {
+		metricType = analyticsDB.MetricTypeAssets
+	}
 
 	metrics, err := aDB.ListMetrics()
 	if err != nil {
@@ -1032,6 +1069,21 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 
 	categoryResourceTypeMap := map[string][]string{}
 	for _, metric := range metrics {
+		metricTypeValid := false
+		for _, tag := range metric.Tags {
+			if tag.GetKey() == analyticsDB.MetricTypeKey {
+				if len(tag.GetValue()) > 0 {
+					if tag.GetValue()[0] == metricType {
+						metricTypeValid = true
+					}
+				}
+			}
+		}
+
+		if !metricTypeValid {
+			continue
+		}
+
 		for _, tag := range metric.Tags {
 			if tag.Key == "category" {
 				for _, category := range tag.GetValue() {

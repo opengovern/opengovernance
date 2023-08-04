@@ -1,4 +1,4 @@
-package es
+package resource
 
 import (
 	"github.com/google/uuid"
