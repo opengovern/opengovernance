@@ -547,7 +547,7 @@ func (cg ConnectionGroup) ToAPI(ctx context.Context, database *Database, steampi
 
 	var connectionIds []string
 	for i, header := range connectionsQueryResult.Headers {
-		if header != "id" {
+		if header != "kaytu_id" {
 			continue
 		}
 		for _, row := range connectionsQueryResult.Data {
