@@ -2521,6 +2521,97 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/analytics/spend/metric": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "This API allows users to retrieve cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "List spend metrics",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for start in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for end in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "dimension",
+                            "cost",
+                            "growth",
+                            "growth_rate"
+                        ],
+                        "type": "string",
+                        "description": "Sort by field - default is cost",
+                        "name": "sortBy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size - default is 20",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number - default is 1",
+                        "name": "pageNumber",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostMetricsResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/analytics/tag": {
             "get": {
                 "security": [
@@ -8431,12 +8522,13 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "connector": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/source.Type"
-                        }
-                    ],
-                    "example": "Azure"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    },
+                    "example": [
+                        "Azure"
+                    ]
                 },
                 "cost_dimension_name": {
                     "type": "string",
