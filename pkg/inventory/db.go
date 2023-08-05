@@ -99,7 +99,13 @@ func (db Database) UpdateQueryHistory(query string) error {
 		return err
 	}
 	if count > keepNumber {
-		err = db.orm.Model(&SmartQueryHistory{}).Order("executed_at asc").Limit(int(count - keepNumber)).Delete(&SmartQueryHistory{}).Error
+		var time time.Time
+		err = db.orm.Model(&SmartQueryHistory{}).Order("executed_at desc").Offset(keepNumber - 1).Limit(1).Find(&time).Error
+		if err != nil {
+			return err
+		}
+
+		err = db.orm.Model(&SmartQueryHistory{}).Where("executed_at < ?", time).Delete(&SmartQueryHistory{}).Error
 		if err != nil {
 			return err
 		}
