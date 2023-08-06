@@ -40,7 +40,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks := v1.Group("/benchmarks")
 	benchmarks.GET("", httpserver.AuthorizeHandler(h.ListBenchmarks, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id", httpserver.AuthorizeHandler(h.GetBenchmark, authApi.ViewerRole))
-	benchmarks.GET("/:benchmark_id/policies", httpserver.AuthorizeHandler(h.ListPolicies, authApi.ViewerRole))
 	benchmarks.GET("/policies/:policy_id", httpserver.AuthorizeHandler(h.GetPolicy, authApi.ViewerRole))
 	benchmarks.GET("/summary", httpserver.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
@@ -52,7 +51,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	queries.GET("/sync", httpserver.AuthorizeHandler(h.SyncQueries, authApi.AdminRole))
 
 	assignments := v1.Group("/assignments")
-	assignments.GET("", httpserver.AuthorizeHandler(h.ListAssignments, authApi.ViewerRole))
 	assignments.GET("/benchmark/:benchmark_id", httpserver.AuthorizeHandler(h.ListAssignmentsByBenchmark, authApi.ViewerRole))
 	assignments.GET("/connection/:connection_id", httpserver.AuthorizeHandler(h.ListAssignmentsByConnection, authApi.ViewerRole))
 	assignments.POST("/:benchmark_id/connection/:connection_id", httpserver.AuthorizeHandler(h.CreateBenchmarkAssignment, authApi.EditorRole))
@@ -60,15 +58,12 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	metadata := v1.Group("/metadata")
 	metadata.GET("/tag/insight", httpserver.AuthorizeHandler(h.ListInsightTags, authApi.ViewerRole))
-	metadata.GET("/tag/insight/:key", httpserver.AuthorizeHandler(h.GetInsightTag, authApi.ViewerRole))
 	metadata.GET("/insight", httpserver.AuthorizeHandler(h.ListInsightsMetadata, authApi.ViewerRole))
 	metadata.GET("/insight/:insightId", httpserver.AuthorizeHandler(h.GetInsightMetadata, authApi.ViewerRole))
 
 	insights := v1.Group("/insight")
 	insightGroups := insights.Group("/group")
 	insightGroups.GET("", httpserver.AuthorizeHandler(h.ListInsightGroups, authApi.ViewerRole))
-	insightGroups.GET("/:insightGroupId", httpserver.AuthorizeHandler(h.GetInsightGroup, authApi.ViewerRole))
-	insightGroups.GET("/:insightGroupId/trend", httpserver.AuthorizeHandler(h.GetInsightGroupTrend, authApi.ViewerRole))
 	insights.GET("", httpserver.AuthorizeHandler(h.ListInsights, authApi.ViewerRole))
 	insights.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsight, authApi.ViewerRole))
 	insights.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, authApi.ViewerRole))
@@ -665,17 +660,6 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, result)
 }
 
-// ListAssignmentsByConnection godoc
-//
-//	@Summary		Get all benchmark assignments with source id
-//	@Description	Returns all benchmark assignments with source id
-//	@Security		BearerToken
-//	@Tags			benchmarks_assignment
-//	@Accept			json
-//	@Produce		json
-//	@Param			connection_id	path		string	true	"Connection ID"
-//	@Success		200				{object}	[]api.BenchmarkAssignment
-//	@Router			/compliance/api/v1/assignments/connection/{connection_id} [get]
 func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 	connectionId := ctx.Param("connection_id")
 	if connectionId == "" {
@@ -769,35 +753,6 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, resp)
 }
 
-// ListAssignments godoc
-//
-//	@Summary		Get all assignments
-//	@Description	Returns all assignments
-//	@Security		BearerToken
-//	@Tags			benchmarks_assignment
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	[]api.BenchmarkAssignment
-//	@Router			/compliance/api/v1/assignments [get]
-func (h *HttpHandler) ListAssignments(ctx echo.Context) error {
-	dbAssignments, err := h.db.ListBenchmarkAssignments()
-	if err != nil {
-		return err
-	}
-
-	var sources []api.BenchmarkAssignment
-	for _, assignment := range dbAssignments {
-		ba := api.BenchmarkAssignment{
-			BenchmarkId:  assignment.BenchmarkId,
-			ConnectionId: assignment.ConnectionId,
-			AssignedAt:   assignment.AssignedAt,
-		}
-		sources = append(sources, ba)
-	}
-
-	return ctx.JSON(http.StatusOK, sources)
-}
-
 // DeleteBenchmarkAssignment godoc
 //
 //	@Summary		Delete benchmark assignment for inventory service
@@ -842,16 +797,6 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-// ListBenchmarks godoc
-//
-//	@Summary		List benchmarks
-//	@Description	This API returns a comprehensive list of all available benchmarks. Users can use this API to obtain an overview of the entire set of benchmarks and their corresponding details, such as their names, descriptions, and IDs.
-//	@Security		BearerToken
-//	@Tags			compliance
-//	@Accept			json
-//	@Produce		json
-//	@Success		200	{object}	[]api.Benchmark
-//	@Router			/compliance/api/v1/benchmarks [get]
 func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 	var response []api.Benchmark
 
@@ -872,17 +817,6 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetBenchmark godoc
-//
-//	@Summary		Get benchmark
-//	@Description	This API enables users to retrieve benchmark details by specifying the benchmark ID. Users can use this API to obtain specific details about a particular benchmark, such as its name, description, and other relevant information.
-//	@Security		BearerToken
-//	@Tags			compliance
-//	@Accept			json
-//	@Produce		json
-//	@Success		200				{object}	api.Benchmark
-//	@Param			benchmark_id	path		string	true	"BenchmarkID"
-//	@Router			/compliance/api/v1/benchmarks/{benchmark_id} [get]
 func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 	benchmarkId := ctx.Param("benchmark_id")
 	benchmark, err := h.db.GetBenchmark(benchmarkId)
@@ -933,45 +867,6 @@ func (h *HttpHandler) getBenchmarkPolicies(benchmarkID string) ([]db.Policy, err
 	return policies, nil
 }
 
-// ListPolicies godoc
-//
-//	@Summary		List Benchmark Policies
-//	@Description	This API returns a list of all policies associated with a specific benchmark. Users can use this API to obtain a comprehensive overview of the policies related to a particular benchmark and their corresponding details, such as their names, descriptions, and IDs.
-//
-//	@Security		BearerToken
-//	@Tags			compliance
-//	@Accept			json
-//	@Produce		json
-//	@Success		200				{object}	[]api.Policy
-//	@Param			benchmark_id	path		string	true	"Benchmark ID"
-//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/policies [get]
-func (h *HttpHandler) ListPolicies(ctx echo.Context) error {
-	var response []api.Policy
-
-	benchmarkId := ctx.Param("benchmark_id")
-
-	policies, err := h.getBenchmarkPolicies(benchmarkId)
-	if err != nil {
-		return err
-	}
-
-	for _, p := range policies {
-		response = append(response, p.ToApi())
-	}
-	return ctx.JSON(http.StatusOK, response)
-}
-
-// GetPolicy godoc
-//
-//	@Summary		Get policy
-//	@Description	This API enables users to retrieve policy details by specifying the policy ID. Users can use this API to obtain specific details about a particular policy, such as its title, description, and other relevant information.
-//	@Security		BearerToken
-//	@Tags			compliance
-//	@Accept			json
-//	@Produce		json
-//	@Param			policy_id	path		string	true	"Policy ID"
-//	@Success		200			{object}	api.Policy
-//	@Router			/compliance/api/v1/benchmarks/policies/{policy_id} [get]
 func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 	policyId := ctx.Param("policy_id")
 	policy, err := h.db.GetPolicy(policyId)
@@ -992,19 +887,6 @@ func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, pa)
 }
 
-// GetQuery godoc
-//
-//	@Summary		Get query
-//
-//	@Description	This API enables users to retrieve query details by specifying the query ID.
-//
-//	@Security		BearerToken
-//	@Tags			compliance
-//	@Accept			json
-//	@Produce		json
-//	@Success		200			{object}	api.Query
-//	@Param			query_id	path		string	true	"Query ID"
-//	@Router			/compliance/api/v1/queries/{query_id} [get]
 func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	queryID := ctx.Param("query_id")
 	q, err := h.db.GetQuery(queryID)
@@ -1058,40 +940,6 @@ func (h *HttpHandler) ListInsightTags(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, tags)
 }
 
-// GetInsightTag godoc
-//
-//	@Summary		Get insights tag key
-//	@Description	This API allows users to retrieve an insights tag key with the possible values for it.
-//	@Security		BearerToken
-//	@Tags			insights
-//	@Accept			json
-//	@Produce		json
-//	@Param			key	path		string	true	"Tag key"
-//	@Success		200	{object}	[]string
-//	@Router			/compliance/api/v1/metadata/tag/insight/{key} [get]
-func (h *HttpHandler) GetInsightTag(ctx echo.Context) error {
-	tagKey := ctx.Param("key")
-	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
-		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
-	}
-
-	tags, err := h.db.GetInsightTagTagPossibleValues(tagKey)
-	if err != nil {
-		return err
-	}
-	return ctx.JSON(http.StatusOK, tags)
-}
-
-// ListInsightsMetadata godoc
-//
-//	@Summary		List insights metadata
-//	@Description	Retrieves all insights metadata.
-//	@Security		BearerToken
-//	@Tags			insights
-//	@Produce		json
-//	@Param			connector	query		[]source.Type	false	"filter by connector"
-//	@Success		200			{object}	[]api.Insight
-//	@Router			/compliance/api/v1/metadata/insight [get]
 func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	enabled := true
@@ -1531,247 +1379,6 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 			apiRes.OldTotalResultValue = nil
 		}
 		result = append(result, apiRes)
-	}
-
-	return ctx.JSON(200, result)
-}
-
-// GetInsightGroup godoc
-//
-//	@Summary		Get insight group
-//	@Description	This API returns the specified insight group with ID. The API provides details of the insight, including results during the specified time period for the specified connection.
-//	@Description	Returns "all:provider" job results if connectionId is not defined.
-//	@Security		BearerToken
-//	@Tags			insights
-//	@Accept			json
-//	@Produce		json
-//	@Param			insightGroupId	path		string		true	"Insight Group ID"
-//	@Param			connectionId	query		[]string	false	"filter the result by source id"
-//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
-//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
-//	@Success		200				{object}	api.InsightGroup
-//	@Router			/compliance/api/v1/insight/group/{insightGroupId} [get]
-func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
-	insightGroupIdStr := ctx.Param("insightGroupId")
-	insightGroupId, err := strconv.ParseUint(insightGroupIdStr, 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
-	}
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
-	endTime := time.Now()
-	if ctx.QueryParam("endTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-		endTime = time.Unix(t, 0)
-	}
-	startTime := endTime.Add(-1 * 7 * 24 * time.Hour)
-	if ctx.QueryParam("startTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-		startTime = time.Unix(t, 0)
-	}
-
-	insightGroupRow, err := h.db.GetInsightGroup(uint(insightGroupId))
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return echo.NewHTTPError(http.StatusNotFound, "insight group not found")
-		}
-		return err
-	}
-
-	insightIDList := make([]uint, 0, len(insightGroupRow.Insights))
-	for _, insightRow := range insightGroupRow.Insights {
-		insightIDList = append(insightIDList, insightRow.ID)
-	}
-	insightResultsMap, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), nil, connectionIDs, insightIDList, &endTime)
-	if err != nil {
-		return err
-	}
-
-	oldInsightResultsMap, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), nil, connectionIDs, insightIDList, &startTime)
-	if err != nil {
-		h.logger.Warn("failed to get old insight results", zap.Error(err))
-		oldInsightResultsMap = make(map[uint][]insight.InsightResource)
-	}
-
-	apiRes := insightGroupRow.ToApi()
-	apiRes.Insights = make([]api.Insight, 0, len(insightGroupRow.Insights))
-	for _, insightRow := range insightGroupRow.Insights {
-		insightApiRes := insightRow.ToApi()
-		if insightResults, ok := insightResultsMap[insightRow.ID]; ok {
-			for _, insightResult := range insightResults {
-				connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
-				for _, connection := range insightResult.IncludedConnections {
-					connections = append(connections, api.InsightConnection{
-						ConnectionID: connection.ConnectionID,
-						OriginalID:   connection.OriginalID,
-					})
-				}
-
-				bucket, key, err := utils.ParseHTTPSubpathS3URIToBucketAndKey(insightResult.S3Location)
-				getObjectOutput, err := h.s3Client.GetObject(ctx.Request().Context(), &s3.GetObjectInput{
-					Bucket: aws.String(bucket),
-					Key:    aws.String(key),
-				})
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-				}
-				objectBuffer, err := io.ReadAll(getObjectOutput.Body)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-				}
-				var steampipeResults steampipe.Result
-				err = json.Unmarshal(objectBuffer, &steampipeResults)
-				if err != nil {
-					return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-				}
-
-				insightApiRes.Results = append(insightApiRes.Results, api.InsightResult{
-					JobID:        insightResult.JobID,
-					InsightID:    insightRow.ID,
-					ConnectionID: insightResult.SourceID,
-					ExecutedAt:   time.UnixMilli(insightResult.ExecutedAt),
-					Result:       insightResult.Result,
-					Locations:    insightResult.Locations,
-					Connections:  connections,
-					Details: &api.InsightDetail{
-						Headers: steampipeResults.Headers,
-						Rows:    steampipeResults.Data,
-					},
-				})
-				insightApiRes.TotalResultValue = utils.PAdd(insightApiRes.TotalResultValue, &insightResult.Result)
-			}
-		}
-		if oldInsightResults, ok := oldInsightResultsMap[insightRow.ID]; ok {
-			for _, oldInsightResult := range oldInsightResults {
-				localOldInsightResult := oldInsightResult.Result
-				insightApiRes.OldTotalResultValue = utils.PAdd(insightApiRes.OldTotalResultValue, &localOldInsightResult)
-				if insightApiRes.FirstOldResultDate == nil || insightApiRes.FirstOldResultDate.After(time.UnixMilli(oldInsightResult.ExecutedAt)) {
-					insightApiRes.FirstOldResultDate = utils.GetPointer(time.UnixMilli(oldInsightResult.ExecutedAt))
-				}
-			}
-		}
-		if insightApiRes.FirstOldResultDate != nil && insightApiRes.FirstOldResultDate.After(startTime) {
-			insightApiRes.OldTotalResultValue = nil
-		}
-
-		apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, insightApiRes.TotalResultValue)
-		apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, insightApiRes.OldTotalResultValue)
-		if apiRes.FirstOldResultDate == nil || insightApiRes.FirstOldResultDate != nil && apiRes.FirstOldResultDate.After(*insightApiRes.FirstOldResultDate) {
-			apiRes.FirstOldResultDate = insightApiRes.FirstOldResultDate
-		}
-		apiRes.Insights = append(apiRes.Insights, insightApiRes)
-	}
-	if apiRes.FirstOldResultDate != nil && apiRes.FirstOldResultDate.After(startTime) {
-		apiRes.OldTotalResultValue = nil
-	}
-
-	return ctx.JSON(200, apiRes)
-}
-
-// GetInsightGroupTrend godoc
-//
-//	@Summary		Get insight group trend
-//	@Description	This API allows users to retrieve insight group results datapoints for a specified connection during a specified time period.
-//	@Description	Returns "all:provider" job results if connectionId is not defined.
-//	@Security		BearerToken
-//	@Tags			insights
-//	@Produce		json
-//	@Param			insightGroupId	path		string		true	"Insight ID"
-//	@Param			connectionId	query		[]string	false	"filter the result by source id"
-//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
-//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
-//	@Param			datapointCount	query		int			false	"number of datapoints to return"
-//	@Success		200				{object}	api.InsightGroupTrendResponse
-//	@Router			/compliance/api/v1/insight/group/{insightGroupId}/trend [get]
-func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
-	insightGroupIdStr := ctx.Param("insightGroupId")
-	insightGroupId, err := strconv.ParseUint(insightGroupIdStr, 10, 64)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
-	}
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
-	var startTime *time.Time
-	if ctx.QueryParam("startTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-		tt := time.Unix(t, 0)
-		startTime = &tt
-	}
-	var endTime *time.Time
-	if ctx.QueryParam("endTime") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-		tt := time.Unix(t, 0)
-		endTime = &tt
-	}
-	var datapointCount *int
-	if ctx.QueryParam("datapointCount") != "" {
-		t, err := strconv.ParseInt(ctx.QueryParam("datapointCount"), 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
-		}
-		tt := int(t)
-		datapointCount = &tt
-	}
-
-	insightGroupRow, err := h.db.GetInsightGroup(uint(insightGroupId))
-	if err != nil {
-		return err
-	}
-
-	result := api.InsightGroupTrendResponse{
-		TrendPerInsight: make(map[uint][]api.InsightTrendDatapoint),
-	}
-	trendMap := make(map[int]int)
-	for _, insightRow := range insightGroupRow.Insights {
-		timeAtToInsightResults, err := h.inventoryClient.GetInsightTrendResults(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, startTime, endTime)
-		if err != nil {
-			return err
-		}
-		perInsightResult := make([]api.InsightTrendDatapoint, 0, len(timeAtToInsightResults))
-		for timeAt, insightResults := range timeAtToInsightResults {
-			datapoint := api.InsightTrendDatapoint{
-				Timestamp: timeAt,
-				Value:     0,
-			}
-			for _, insightResult := range insightResults {
-				datapoint.Value += int(insightResult.Result)
-			}
-			perInsightResult = append(perInsightResult, datapoint)
-		}
-
-		if datapointCount != nil {
-			perInsightResult = internal.DownSampleInsightTrendDatapoints(perInsightResult, *datapointCount)
-		}
-		for _, datapoint := range perInsightResult {
-			trendMap[datapoint.Timestamp] += datapoint.Value
-		}
-
-		sort.Slice(perInsightResult, func(i, j int) bool {
-			return perInsightResult[i].Timestamp < perInsightResult[j].Timestamp
-		})
-		result.TrendPerInsight[insightRow.ID] = perInsightResult
-	}
-	for timestamp, value := range trendMap {
-		result.Trend = append(result.Trend, api.InsightTrendDatapoint{
-			Timestamp: timestamp,
-			Value:     value,
-		})
-	}
-	sort.Slice(result.Trend, func(i, j int) bool {
-		return result.Trend[i].Timestamp < result.Trend[j].Timestamp
-	})
-	if datapointCount != nil {
-		result.Trend = internal.DownSampleInsightTrendDatapoints(result.Trend, *datapointCount)
 	}
 
 	return ctx.JSON(200, result)

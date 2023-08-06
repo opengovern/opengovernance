@@ -7,7 +7,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/labstack/echo/v4"
 
-	compliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 )
 
@@ -16,9 +15,6 @@ type TimeRangeFilter struct {
 	To   int64 // from epoch millisecond
 }
 type SchedulerServiceClient interface {
-	ListComplianceReportJobs(ctx *httpclient.Context, sourceID string, filter *TimeRangeFilter) ([]*compliance.ComplianceReport, error)
-	GetLastComplianceReportID(ctx *httpclient.Context) (uint, error)
-	GetInsightJobById(ctx *httpclient.Context, jobId string) (api.InsightJob, error)
 	GetStack(ctx *httpclient.Context, stackID string) (*api.Stack, error)
 }
 
@@ -28,45 +24,6 @@ type schedulerClient struct {
 
 func NewSchedulerServiceClient(baseURL string) SchedulerServiceClient {
 	return &schedulerClient{baseURL: baseURL}
-}
-
-func (s *schedulerClient) ListComplianceReportJobs(ctx *httpclient.Context, sourceID string, filter *TimeRangeFilter) ([]*compliance.ComplianceReport, error) {
-	url := fmt.Sprintf("%s/api/v1/sources/%s/jobs/compliance", s.baseURL, sourceID)
-	if filter != nil {
-		url = fmt.Sprintf("%s?from=%d&to=%d", url, filter.From, filter.To)
-	}
-
-	reports := []*compliance.ComplianceReport{}
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &reports); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return nil, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return nil, err
-	}
-	return reports, nil
-}
-
-func (s *schedulerClient) GetLastComplianceReportID(ctx *httpclient.Context) (uint, error) {
-	url := fmt.Sprintf("%s/api/v1/compliance/report/last/completed", s.baseURL)
-
-	var id uint
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &id); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return 0, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return 0, err
-	}
-	return id, nil
-}
-
-func (s *schedulerClient) GetInsightJobById(ctx *httpclient.Context, jobId string) (api.InsightJob, error) {
-	url := fmt.Sprintf("%s/api/v1/insight/job/%s", s.baseURL, jobId)
-
-	var job api.InsightJob
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &job); err != nil {
-		return api.InsightJob{}, err
-	}
-	return job, nil
 }
 
 func (s *schedulerClient) GetStack(ctx *httpclient.Context, stackID string) (*api.Stack, error) {

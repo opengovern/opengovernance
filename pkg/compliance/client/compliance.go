@@ -18,8 +18,6 @@ type ComplianceServiceClient interface {
 	GetPolicy(ctx *httpclient.Context, policyID string) (*compliance.Policy, error)
 	GetQuery(ctx *httpclient.Context, queryID string) (*compliance.Query, error)
 	ListInsightsMetadata(ctx *httpclient.Context, connectors []source.Type) ([]compliance.Insight, error)
-	GetInsightMetadataById(ctx *httpclient.Context, id uint) (*compliance.Insight, error)
-	ListInsights(ctx *httpclient.Context, tags map[string][]string, connectors []source.Type, connectionIDs []string, timeAt *time.Time) ([]compliance.Insight, error)
 	GetFindings(ctx *httpclient.Context, req compliance.GetFindingsRequest) (compliance.GetFindingsResponse, error)
 	GetInsight(ctx *httpclient.Context, insightId string, connectionId []string, startTime *time.Time, endTime *time.Time) (compliance.Insight, error)
 	ListBenchmarks(ctx *httpclient.Context) ([]compliance.Benchmark, error)
@@ -86,69 +84,6 @@ func (s *complianceClient) ListInsightsMetadata(ctx *httpclient.Context, connect
 			}
 			url += fmt.Sprintf("connector=%s", connector)
 		}
-	}
-
-	var insights []compliance.Insight
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insights); err != nil {
-		return nil, err
-	}
-	return insights, nil
-}
-
-func (s *complianceClient) GetInsightMetadataById(ctx *httpclient.Context, id uint) (*compliance.Insight, error) {
-	url := fmt.Sprintf("%s/api/v1/metadata/insight/%d", s.baseURL, id)
-
-	var insight compliance.Insight
-	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &insight); err != nil {
-		return nil, err
-	}
-	return &insight, nil
-}
-
-func (s *complianceClient) ListInsights(ctx *httpclient.Context, tags map[string][]string, connectors []source.Type, connectionIDs []string, timeAt *time.Time) ([]compliance.Insight, error) {
-	url := fmt.Sprintf("%s/api/v1/insight", s.baseURL)
-	firstParamAttached := false
-	if len(connectors) > 0 {
-		for _, connector := range connectors {
-			if !firstParamAttached {
-				url += "?"
-				firstParamAttached = true
-			} else {
-				url += "&"
-			}
-			url += fmt.Sprintf("connector=%s", connector)
-		}
-	}
-	if len(connectionIDs) > 0 {
-		for _, connectionID := range connectionIDs {
-			if !firstParamAttached {
-				url += "?"
-				firstParamAttached = true
-			} else {
-				url += "&"
-			}
-			url += fmt.Sprintf("connection=%s", connectionID)
-		}
-	}
-	for tag, values := range tags {
-		for _, value := range values {
-			if !firstParamAttached {
-				url += "?"
-				firstParamAttached = true
-			} else {
-				url += "&"
-			}
-			url += fmt.Sprintf("tag=%s=%s", tag, value)
-		}
-	}
-	if timeAt != nil {
-		if !firstParamAttached {
-			url += "?"
-			firstParamAttached = true
-		} else {
-			url += "&"
-		}
-		url += fmt.Sprintf("time=%d", timeAt.Unix())
 	}
 
 	var insights []compliance.Insight
