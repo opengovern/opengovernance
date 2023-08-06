@@ -20,6 +20,7 @@ func (db Database) Initialize() error {
 		&Connector{},
 		&Credential{},
 		&Source{},
+		&ConnectionGroup{},
 	)
 	if err != nil {
 		return err
@@ -90,9 +91,9 @@ func (db Database) ListSourcesWithFilters(
 }
 
 // GetSources gets sources by id
-func (db Database) GetSources(ids []uuid.UUID) ([]Source, error) {
+func (db Database) GetSources(ids []string) ([]Source, error) {
 	var s []Source
-	tx := db.orm.Find(&s, "id in ?", ids)
+	tx := db.orm.Preload(clause.Associations).Find(&s, "id in ?", ids)
 
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -374,4 +375,22 @@ func (db Database) DeleteCredentialByID(id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (db Database) ListConnectionGroups() ([]ConnectionGroup, error) {
+	var cgs []ConnectionGroup
+	tx := db.orm.Find(&cgs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return cgs, nil
+}
+
+func (db Database) GetConnectionGroupByName(name string) (*ConnectionGroup, error) {
+	var cg ConnectionGroup
+	err := db.orm.First(&cg, "name = ?", name).Error
+	if err != nil {
+		return nil, err
+	}
+	return &cg, nil
 }

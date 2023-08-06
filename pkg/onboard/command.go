@@ -3,11 +3,12 @@ package onboard
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/connector"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
-	"os"
 )
 
 const (
@@ -26,6 +27,12 @@ var (
 	PostgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
 	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
+
+	SteampipeHost     = os.Getenv("STEAMPIPE_HOST")
+	SteampipePort     = os.Getenv("STEAMPIPE_PORT")
+	SteampipeDb       = os.Getenv("STEAMPIPE_DB")
+	SteampipeUser     = os.Getenv("STEAMPIPE_USERNAME")
+	SteampipePassword = os.Getenv("STEAMPIPE_PASSWORD")
 
 	AWSPermissionCheckURL = os.Getenv("AWS_PERMISSION_CHECK_URL")
 	InventoryBaseURL      = os.Getenv("INVENTORY_BASE_URL")
@@ -58,17 +65,10 @@ func start(ctx context.Context) error {
 	}
 
 	handler, err := InitializeHttpHandler(
-		RabbitMQUsername,
-		RabbitMQPassword,
-		RabbitMQService,
-		RabbitMQPort,
+		RabbitMQUsername, RabbitMQPassword, RabbitMQService, RabbitMQPort,
 		SourceEventsQueueName,
-		PostgreSQLUser,
-		PostgreSQLPassword,
-		PostgreSQLHost,
-		PostgreSQLPort,
-		PostgreSQLDb,
-		PostgreSQLSSLMode,
+		PostgreSQLUser, PostgreSQLPassword, PostgreSQLHost, PostgreSQLPort, PostgreSQLDb, PostgreSQLSSLMode,
+		SteampipeHost, SteampipePort, SteampipeDb, SteampipeUser, SteampipePassword,
 		logger,
 		AWSPermissionCheckURL,
 		KeyARN,

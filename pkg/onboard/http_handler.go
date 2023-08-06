@@ -3,8 +3,10 @@ package onboard
 import (
 	"context"
 	"fmt"
+
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
 
 	"go.uber.org/zap"
@@ -15,6 +17,7 @@ import (
 
 type HttpHandler struct {
 	db                    Database
+	steampipeConn         *steampipe.Database
 	sourceEventsQueue     queue.Interface
 	kms                   *vault.KMSVaultSourceConfig
 	awsPermissionCheckURL string
@@ -25,17 +28,10 @@ type HttpHandler struct {
 }
 
 func InitializeHttpHandler(
-	rabbitMQUsername string,
-	rabbitMQPassword string,
-	rabbitMQHost string,
-	rabbitMQPort int,
+	rabbitMQUsername string, rabbitMQPassword string, rabbitMQHost string, rabbitMQPort int,
 	sourceEventsQueueName string,
-	postgresUsername string,
-	postgresPassword string,
-	postgresHost string,
-	postgresPort string,
-	postgresDb string,
-	postgresSSLMode string,
+	postgresUsername string, postgresPassword string, postgresHost string, postgresPort string, postgresDb string, postgresSSLMode string,
+	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
 	logger *zap.Logger,
 	awsPermissionCheckURL string,
 	keyARN string,
@@ -74,6 +70,18 @@ func InitializeHttpHandler(
 	}
 	logger.Info("Connected to the postgres database", zap.String("database", postgresDb))
 
+	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
+		Host: steampipeHost,
+		Port: steampipePort,
+		User: steampipeUsername,
+		Pass: steampipePassword,
+		Db:   steampipeDb,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("new steampipe client: %w", err)
+	}
+	logger.Info("Connected to the steampipe database", zap.String("database", steampipeDb))
+
 	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), KMSAccessKey, KMSSecretKey, KMSAccountRegion)
 	if err != nil {
 		return nil, err
@@ -92,6 +100,7 @@ func InitializeHttpHandler(
 		logger:                logger,
 		kms:                   kms,
 		db:                    db,
+		steampipeConn:         steampipeConn,
 		sourceEventsQueue:     sourceEventsQueue,
 		awsPermissionCheckURL: awsPermissionCheckURL,
 		inventoryClient:       inventoryClient,

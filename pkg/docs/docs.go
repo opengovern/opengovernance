@@ -1478,8 +1478,14 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
+                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -1565,8 +1571,14 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
+                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -1672,8 +1684,14 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
+                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -1762,8 +1780,14 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
+                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -1848,8 +1872,14 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
+                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -1961,8 +1991,14 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
+                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -2037,8 +2073,14 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
+                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -2110,8 +2152,14 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
+                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -2201,8 +2249,14 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
+                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -2262,8 +2316,14 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
+                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -2331,8 +2391,14 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
+                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -2414,8 +2480,14 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
+                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -2537,6 +2609,90 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogMetrics"
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/connection-groups": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns a list of connection groups",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "connection-groups"
+                ],
+                "summary": "List connection groups",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Populate connections",
+                        "name": "populateConnections",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionGroup"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/onboard/api/v1/connection-groups/{connectionGroupName}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns a connection group",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "connection-groups"
+                ],
+                "summary": "Get connection group",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Populate connections",
+                        "name": "populateConnections",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "ConnectionGroupName",
+                        "name": "connectionGroupName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionGroup"
                         }
                     }
                 }
@@ -6299,6 +6455,34 @@ const docTemplate = `{
                     "maximum": 1000000,
                     "minimum": 0,
                     "example": 100
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionGroup": {
+            "type": "object",
+            "properties": {
+                "connectionIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[\"1e8ac3bf-c268-4a87-9374-ce04cc40a596\"]"
+                    ]
+                },
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
+                    }
+                },
+                "name": {
+                    "type": "string",
+                    "example": "UltraSightApplication"
+                },
+                "query": {
+                    "type": "string",
+                    "example": "SELECT kaytu_id FROM kaytu_connections WHERE tags-\u003e'application' IS NOT NULL AND tags-\u003e'application' @\u003e '\"UltraSight\"'"
                 }
             }
         },

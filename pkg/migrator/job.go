@@ -3,9 +3,12 @@ package migrator
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/migrator/analytics"
 	"net/http"
 	"os"
+	"path"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/migrator/analytics"
+	"github.com/kaytu-io/kaytu-engine/pkg/migrator/onboard"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -179,23 +182,28 @@ func (w *Job) Run() error {
 
 	w.logger.Info("Starting analytics migration")
 	if err := analytics.Run(w.logger, cfg, gitConfig.AnalyticsGitURL, gitConfig.githubToken); err != nil {
-		w.logger.Error(fmt.Sprintf("Failure while running analytics migration: %v", err))
+		w.logger.Error("Failure while running analytics migration", zap.Error(err))
+	}
+
+	w.logger.Info("Starting onboard migration")
+	if err := onboard.Run(w.logger, cfg, path.Join(internal.AnalyticsGitPath, "connection_groups")); err != nil {
+		w.logger.Error("Failure while running onboard migration", zap.Error(err))
 	}
 
 	// run elasticsearch
 	w.logger.Info("Starting elasticsearch migration")
 	if err := elasticsearch.Run(w.elastic, w.logger, "/elasticsearch-index-config"); err != nil {
-		w.logger.Error(fmt.Sprintf("Failure while running elasticsearch migration: %v", err))
+		w.logger.Error("Failure while running elasticsearch migration", zap.Error(err))
 	}
 
 	w.logger.Info("Starting inventory migration")
 	if err := inventory.Run(cfg, w.logger, "/inventory-data-config"); err != nil {
-		w.logger.Error(fmt.Sprintf("Failure while running inventory migration: %v", err))
+		w.logger.Error("Failure while running inventory migration", zap.Error(err))
 	}
 
 	w.logger.Info("Starting workspace migration")
 	if err := workspace.Run(cfg, w.logger, "/workspace-migration"); err != nil {
-		w.logger.Error(fmt.Sprintf("Failure while running workspace migration: %v", err))
+		w.logger.Error("Failure while running workspace migration", zap.Error(err))
 	}
 
 	err := os.RemoveAll(internal.ComplianceGitPath)
@@ -210,6 +218,10 @@ func (w *Job) Run() error {
 	if err != nil {
 		w.logger.Error("Failure while removing insights git path", zap.Error(err))
 	}
+	err = os.RemoveAll(internal.AnalyticsGitPath)
+	if err != nil {
+		w.logger.Error("Failure while removing analytics git path", zap.Error(err))
+	}
 
 	return nil
 }
@@ -218,4 +230,5 @@ func (w *Job) Stop() {
 	os.RemoveAll(internal.ComplianceGitPath)
 	os.RemoveAll(internal.QueriesGitPath)
 	os.RemoveAll(internal.InsightsGitPath)
+	os.RemoveAll(internal.AnalyticsGitPath)
 }

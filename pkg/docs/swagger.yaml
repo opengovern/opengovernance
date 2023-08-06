@@ -1640,6 +1640,26 @@ definitions:
         minimum: 0
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionGroup:
+    properties:
+      connectionIds:
+        example:
+        - '["1e8ac3bf-c268-4a87-9374-ce04cc40a596"]'
+        items:
+          type: string
+        type: array
+      connections:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
+        type: array
+      name:
+        example: UltraSightApplication
+        type: string
+      query:
+        example: SELECT kaytu_id FROM kaytu_connections WHERE tags->'application'
+          IS NOT NULL AND tags->'application' @> '"UltraSight"'
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionLifecycleState:
     enum:
     - ONBOARD
@@ -3229,12 +3249,16 @@ paths:
         name: connector
         type: array
       - collectionFormat: csv
-        description: Connection IDs to filter by
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
         in: query
         items:
           type: string
         name: connectionId
         type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
+        type: string
       - description: timestamp for resource count in epoch seconds
         in: query
         name: endTime
@@ -3288,12 +3312,16 @@ paths:
         name: connector
         type: array
       - collectionFormat: csv
-        description: Connection IDs to filter by
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
         in: query
         items:
           type: string
         name: connectionId
         type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
+        type: string
       - collectionFormat: csv
         description: Metric IDs
         in: query
@@ -3360,12 +3388,16 @@ paths:
         name: connector
         type: array
       - collectionFormat: csv
-        description: Connection IDs to filter by
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
         in: query
         items:
           type: string
         name: connectionId
         type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
+        type: string
       - description: start time in unix seconds - default is now
         in: query
         name: startTime
@@ -3422,12 +3454,16 @@ paths:
         name: connector
         type: array
       - collectionFormat: csv
-        description: Connection IDs to filter by
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
         in: query
         items:
           type: string
         name: connectionId
         type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
+        type: string
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -3480,12 +3516,16 @@ paths:
         name: connector
         type: array
       - collectionFormat: csv
-        description: Connection IDs to filter by
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
         in: query
         items:
           type: string
         name: connectionId
         type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
+        type: string
       - description: Minimum number of resources with this tag value, default 1
         in: query
         name: minCount
@@ -3557,12 +3597,16 @@ paths:
         name: connector
         type: array
       - collectionFormat: csv
-        description: Connection IDs to filter by
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
         in: query
         items:
           type: string
         name: connectionId
         type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
+        type: string
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -3609,12 +3653,16 @@ paths:
         name: connector
         type: array
       - collectionFormat: csv
-        description: Connection IDs to filter by
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
         in: query
         items:
           type: string
         name: connectionId
         type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
+        type: string
       - description: How many top values to return default is 5
         in: query
         name: top
@@ -3659,12 +3707,16 @@ paths:
         name: connector
         type: array
       - collectionFormat: csv
-        description: Connection IDs to filter by
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
         in: query
         items:
           type: string
         name: connectionId
         type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
+        type: string
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -3722,12 +3774,16 @@ paths:
         name: connector
         type: array
       - collectionFormat: csv
-        description: Connection IDs to filter by
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
         in: query
         items:
           type: string
         name: connectionId
         type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
+        type: string
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -3762,12 +3818,16 @@ paths:
         type.
       parameters:
       - collectionFormat: csv
-        description: Connection IDs to filter by
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
         in: query
         items:
           type: string
         name: connectionId
         type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
+        type: string
       - description: timestamp for resource count in epoch seconds
         in: query
         name: endTime
@@ -3808,12 +3868,16 @@ paths:
         name: connector
         type: array
       - collectionFormat: csv
-        description: Connection IDs to filter by
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
         in: query
         items:
           type: string
         name: connectionId
         type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
+        type: string
       - description: Minimum number of resources with this tag value, default 1
         in: query
         name: minCount
@@ -3865,12 +3929,16 @@ paths:
         name: connector
         type: array
       - collectionFormat: csv
-        description: Connection IDs to filter by
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
         in: query
         items:
           type: string
         name: connectionId
         type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
+        type: string
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -3953,6 +4021,59 @@ paths:
       summary: Get catalog metrics
       tags:
       - onboard
+  /onboard/api/v1/connection-groups:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of connection groups
+      parameters:
+      - default: false
+        description: Populate connections
+        in: query
+        name: populateConnections
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionGroup'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List connection groups
+      tags:
+      - connection-groups
+  /onboard/api/v1/connection-groups/{connectionGroupName}:
+    get:
+      consumes:
+      - application/json
+      description: Returns a connection group
+      parameters:
+      - default: false
+        description: Populate connections
+        in: query
+        name: populateConnections
+        type: boolean
+      - description: ConnectionGroupName
+        in: path
+        name: connectionGroupName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.ConnectionGroup'
+      security:
+      - BearerToken: []
+      summary: Get connection group
+      tags:
+      - connection-groups
   /onboard/api/v1/connections/summary:
     get:
       consumes:

@@ -4,17 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
-	es3 "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"math"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
+	es3 "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
@@ -35,15 +36,23 @@ import (
 	"gorm.io/gorm"
 )
 
-const EsFetchPageSize = 10000
+const (
+	EsFetchPageSize = 10000
+	MaxConns        = 100
+)
+
+const (
+	ConnectionIdParam    = "connectionId"
+	ConnectionGroupParam = "connectionGroup"
+)
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
 	queryV1 := v1.Group("/query")
 	queryV1.GET("", httpserver.AuthorizeHandler(h.ListQueries, authApi.ViewerRole))
-	queryV1.POST("/run", httpserver.AuthorizeHandler(h.RunQuery, authApi.EditorRole))
-	queryV1.GET("/run/history", httpserver.AuthorizeHandler(h.GetRecentRanQueries, authApi.EditorRole))
+	queryV1.POST("/run", httpserver.AuthorizeHandler(h.RunQuery, authApi.ViewerRole))
+	queryV1.GET("/run/history", httpserver.AuthorizeHandler(h.GetRecentRanQueries, authApi.ViewerRole))
 
 	v2 := e.Group("/api/v2")
 
@@ -86,6 +95,33 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, authApi.ViewerRole))
 
 	v1.GET("/migrate-analytics", httpserver.AuthorizeHandler(h.MigrateAnalytics, authApi.AdminRole))
+}
+
+func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
+	connectionIds := ctx.QueryParams()[ConnectionIdParam]
+	connectionGroup := ctx.QueryParam(ConnectionGroupParam)
+	if len(connectionIds) == 0 && connectionGroup == "" {
+		return nil, nil
+	}
+
+	if len(connectionIds) > 0 && connectionGroup != "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
+	}
+
+	if len(connectionIds) > 0 {
+		return connectionIds, nil
+	}
+
+	connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KeibiAdminRole}, connectionGroup)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(connectionGroupObj.ConnectionIds) == 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionGroup has no connections")
+	}
+
+	return connectionGroupObj.ConnectionIds, nil
 }
 
 func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
@@ -253,18 +289,22 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]string	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			minCount		query		int			false	"Minimum number of resources with this tag value, default 1"
 //	@Param			endTime			query		int			false	"End time in unix timestamp format, default now"
 //	@Success		200				{object}	map[string][]string
 //	@Router			/inventory/api/v2/resources/tag [get]
 func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
-	if len(connectionIDs) > 20 {
-		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
 	}
-	connectorTypes, err := h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
+	if len(connectionIDs) > MaxConns {
+		return ctx.JSON(http.StatusBadRequest, "too many connections")
+	}
+	connectorTypes, err = h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
@@ -370,7 +410,8 @@ func (h *HttpHandler) ListAnalyticsMetrics(metricIDs []string, tagMap map[string
 //	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			metricType		query		string			false	"Metric type, default: assets"	Enums(assets, spend)
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			metricIDs		query		[]string		false	"Metric IDs"
 //	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
@@ -389,9 +430,12 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	}
 	tagMap[analyticsDB.MetricTypeKey] = []string{metricType}
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
-	if len(connectionIDs) > 20 {
-		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
+	if len(connectionIDs) > MaxConns {
+		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
 	metricIDs := httpserver.QueryArrayParam(ctx, "metricIDs")
 
@@ -549,7 +593,8 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]string	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			minCount		query		int			false	"Minimum number of resources with this tag value, default 1"
 //	@Param			endTime			query		int			false	"End time in unix timestamp format, default now"
 //	@Param			metricType		query		string		false	"Metric type, default: assets"	Enums(assets, spend)
@@ -557,11 +602,11 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 //	@Router			/inventory/api/v2/analytics/tag [get]
 func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
-	if len(connectionIDs) > 20 {
-		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if len(connectionIDs) > MaxConns {
+		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
-	connectorTypes, err := h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
+	connectorTypes, err = h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
@@ -647,7 +692,8 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 //	@Param			metricType		query		string			false	"Metric type, default: assets"	Enums(assets, spend)
 //	@Param			ids				query		[]string		false	"Metric IDs to filter by"
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
 //	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
@@ -664,9 +710,12 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	tagMap[analyticsDB.MetricTypeKey] = []string{metricType}
 	ids := httpserver.QueryArrayParam(ctx, "ids")
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
-	if len(connectionIDs) > 20 {
-		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
+	if len(connectionIDs) > MaxConns {
+		return echo.NewHTTPError(http.StatusBadRequest, "too many connections")
 	}
 
 	endTimeStr := ctx.QueryParam("endTime")
@@ -758,7 +807,8 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 //	@Param			metricType		query		string			false	"Metric type, default: assets"	Enums(assets, spend)
 //	@Param			top				query		int				true	"How many top values to return default is 5"
 //	@Param			connector		query		[]source.Type	false	"Connector types to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
 //	@Success		200				{object}	inventoryApi.ListResourceTypeCompositionResponse
@@ -790,9 +840,12 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 
 	}
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
-	if len(connectionIDs) > 20 {
-		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
+	if len(connectionIDs) > MaxConns {
+		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
 
 	endTime := time.Now()
@@ -926,7 +979,8 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		int				false	"start time in unix seconds - default is now"
 //	@Param			endTime			query		int				false	"end time in unix seconds - default is one week ago"
 //	@Param			sortBy			query		string			false	"column to sort by - default is resource_count"	Enums(resource_count, growth, growth_rate)
@@ -954,9 +1008,9 @@ func (h *HttpHandler) ListAnalyticsRegionsSummary(ctx echo.Context) error {
 		}
 		startTime = time.Unix(startTimeUnix, 0)
 	}
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
-	if len(connectionIDs) == 0 {
-		connectionIDs = nil
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
 	}
 
 	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
@@ -1134,7 +1188,8 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
 //	@Param			sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost,growth,growth_rate)
@@ -1145,7 +1200,10 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 	var err error
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
@@ -1379,7 +1437,8 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 //	@Tags			inventory
 //	@Accept			json
 //	@Produce		json
-//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			endTime			query		string		false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		string		false	"timestamp for resource count change comparison in epoch seconds"
 //	@Param			resourceType	path		string		true	"ResourceType"
@@ -1388,9 +1447,12 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 	var err error
 	resourceType := ctx.Param("resourceType")
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
-	if len(connectionIDs) > 20 {
-		return ctx.JSON(http.StatusBadRequest, "too many connection IDs")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+	if len(connectionIDs) > MaxConns {
+		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
@@ -1459,7 +1521,8 @@ func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionID
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
 //	@Param			sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost,growth,growth_rate)
@@ -1470,7 +1533,10 @@ func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionID
 func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 	var err error
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
@@ -1637,7 +1703,8 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			top				query		int				false	"How many top values to return default is 5"
 //	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
@@ -1646,7 +1713,10 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 	var err error
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
@@ -1746,7 +1816,8 @@ func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
 //	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
@@ -1755,7 +1826,10 @@ func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
 	var err error
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
 
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
@@ -2036,7 +2110,8 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			services		query		[]string		false	"Services to filter by"
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
 //	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
@@ -2045,7 +2120,10 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 func (h *HttpHandler) GetServiceCostTrend(ctx echo.Context) error {
 	var err error
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
 	services := httpserver.QueryArrayParam(ctx, "services")
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
@@ -2243,7 +2321,7 @@ func (h *HttpHandler) RunSmartQuery(ctx context.Context, title, query string, re
 	h.logger.Info("executing smart query", zap.String("query", query))
 	res, err := h.steampipeConn.Query(ctx, query, &lastIdx, &req.Page.Size, orderBy, steampipe.DirectionType(direction))
 	if err != nil {
-		return nil, err
+		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	err = h.db.UpdateQueryHistory(query)

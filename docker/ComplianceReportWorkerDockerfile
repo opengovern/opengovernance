@@ -3,7 +3,7 @@ FROM ${PLUGIN_REGISTRY}/steampipe-plugin-aws:0.0.1 as aws
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-azure:0.0.1 as azure
 FROM ${PLUGIN_REGISTRY}/steampipe-plugin-azuread:0.0.1 as azuread
 
-FROM docker.io/turbot/steampipe:latest
+FROM docker.io/turbot/steampipe:0.20.9
 
 COPY --from=aws /steampipe-plugin-aws.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-aws.plugin
 COPY --from=azure /steampipe-plugin-azure.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azure@latest/steampipe-plugin-azure.plugin
