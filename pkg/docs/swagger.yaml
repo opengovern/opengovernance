@@ -3581,6 +3581,13 @@ paths:
           type: string
         name: connectionId
         type: array
+      - collectionFormat: csv
+        description: Metrics IDs
+        in: query
+        items:
+          type: string
+        name: metricIds
+        type: array
       - description: Connection group to filter by - mutually exclusive with connectionId
         in: query
         name: connectionGroup

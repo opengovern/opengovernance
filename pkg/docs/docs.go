@@ -1961,6 +1961,16 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Metrics IDs",
+                        "name": "metricIds",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",

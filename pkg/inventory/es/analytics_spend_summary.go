@@ -336,13 +336,18 @@ type ConnectionSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionSpendTrend(client keibi.Client, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time, datapointCount int) (map[string]float64, error) {
+func FetchConnectionSpendTrend(client keibi.Client, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time, datapointCount int) (map[string]float64, error) {
 	query := make(map[string]any)
 	var filters []any
 
 	if len(connectionIDs) > 0 {
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"connection_id": connectionIDs},
+		})
+	}
+	if len(metricIds) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"metric_id": metricIds},
 		})
 	}
 	if len(connectors) > 0 {
@@ -420,13 +425,18 @@ type ConnectorSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorSpendTrend(client keibi.Client, connectors []source.Type, startTime, endTime time.Time, datapointCount int) (map[string]float64, error) {
+func FetchConnectorSpendTrend(client keibi.Client, metricIds []string, connectors []source.Type, startTime, endTime time.Time, datapointCount int) (map[string]float64, error) {
 	query := make(map[string]any)
 	var filters []any
 
 	if len(connectors) > 0 {
 		filters = append(filters, map[string]any{
 			"terms": map[string][]source.Type{"connector": connectors},
+		})
+	}
+	if len(metricIds) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"metric_id": metricIds},
 		})
 	}
 	filters = append(filters, map[string]any{

@@ -1240,8 +1240,9 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 			return err
 		}
 		for _, hit := range hits {
-			connector, _ := source.ParseType(hit.Connector)
-			if v, ok := costMetricMap[hit.MetricID]; ok {
+			localHit := hit
+			connector, _ := source.ParseType(localHit.Connector)
+			if v, ok := costMetricMap[localHit.MetricID]; ok {
 				exists := false
 				for _, cnt := range v.Connector {
 					if cnt.String() == connector.String() {
@@ -1252,17 +1253,17 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 				if !exists {
 					v.Connector = append(v.Connector, connector)
 				}
-				v.TotalCost = utils.PAdd(v.TotalCost, &hit.TotalCost)
-				v.DailyCostAtStartTime = utils.PAdd(v.DailyCostAtStartTime, &hit.StartDateCost)
-				v.DailyCostAtEndTime = utils.PAdd(v.DailyCostAtEndTime, &hit.EndDateCost)
-				costMetricMap[hit.MetricID] = v
+				v.TotalCost = utils.PAdd(v.TotalCost, &localHit.TotalCost)
+				v.DailyCostAtStartTime = utils.PAdd(v.DailyCostAtStartTime, &localHit.StartDateCost)
+				v.DailyCostAtEndTime = utils.PAdd(v.DailyCostAtEndTime, &localHit.EndDateCost)
+				costMetricMap[localHit.MetricID] = v
 			} else {
-				costMetricMap[hit.MetricID] = inventoryApi.CostMetric{
+				costMetricMap[localHit.MetricID] = inventoryApi.CostMetric{
 					Connector:            []source.Type{connector},
-					CostDimensionName:    hit.MetricID,
-					TotalCost:            &hit.TotalCost,
-					DailyCostAtStartTime: &hit.StartDateCost,
-					DailyCostAtEndTime:   &hit.EndDateCost,
+					CostDimensionName:    localHit.MetricID,
+					TotalCost:            &localHit.TotalCost,
+					DailyCostAtStartTime: &localHit.StartDateCost,
+					DailyCostAtEndTime:   &localHit.EndDateCost,
 				}
 			}
 		}
@@ -1272,8 +1273,9 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 			return err
 		}
 		for _, hit := range hits {
-			connector, _ := source.ParseType(hit.Connector)
-			if v, ok := costMetricMap[hit.MetricID]; ok {
+			localHit := hit
+			connector, _ := source.ParseType(localHit.Connector)
+			if v, ok := costMetricMap[localHit.MetricID]; ok {
 				exists := false
 				for _, cnt := range v.Connector {
 					if cnt.String() == connector.String() {
@@ -1284,17 +1286,17 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 				if !exists {
 					v.Connector = append(v.Connector, connector)
 				}
-				v.TotalCost = utils.PAdd(v.TotalCost, &hit.TotalCost)
-				v.DailyCostAtStartTime = utils.PAdd(v.DailyCostAtStartTime, &hit.StartDateCost)
-				v.DailyCostAtEndTime = utils.PAdd(v.DailyCostAtEndTime, &hit.EndDateCost)
-				costMetricMap[hit.MetricID] = v
+				v.TotalCost = utils.PAdd(v.TotalCost, &localHit.TotalCost)
+				v.DailyCostAtStartTime = utils.PAdd(v.DailyCostAtStartTime, &localHit.StartDateCost)
+				v.DailyCostAtEndTime = utils.PAdd(v.DailyCostAtEndTime, &localHit.EndDateCost)
+				costMetricMap[localHit.MetricID] = v
 			} else {
-				costMetricMap[hit.MetricID] = inventoryApi.CostMetric{
+				costMetricMap[localHit.MetricID] = inventoryApi.CostMetric{
 					Connector:            []source.Type{connector},
-					CostDimensionName:    hit.MetricID,
-					TotalCost:            &hit.TotalCost,
-					DailyCostAtStartTime: &hit.StartDateCost,
-					DailyCostAtEndTime:   &hit.EndDateCost,
+					CostDimensionName:    localHit.MetricID,
+					TotalCost:            &localHit.TotalCost,
+					DailyCostAtStartTime: &localHit.StartDateCost,
+					DailyCostAtEndTime:   &localHit.EndDateCost,
 				}
 			}
 		}
@@ -1550,6 +1552,7 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			metricIds		query		[]string		false	"Metrics IDs"
 //	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
@@ -1558,6 +1561,7 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 //	@Router			/inventory/api/v2/analytics/spend/trend [get]
 func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 	var err error
+	metricIds := httpserver.QueryArrayParam(ctx, "metricIds")
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
@@ -1599,9 +1603,9 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 
 	timepointToCost := map[string]float64{}
 	if len(connectionIDs) > 0 {
-		timepointToCost, err = es.FetchConnectionSpendTrend(h.client, connectionIDs, connectorTypes, startTime, endTime, esDataPointCount)
+		timepointToCost, err = es.FetchConnectionSpendTrend(h.client, metricIds, connectionIDs, connectorTypes, startTime, endTime, esDataPointCount)
 	} else {
-		timepointToCost, err = es.FetchConnectorSpendTrend(h.client, connectorTypes, startTime, endTime, esDataPointCount)
+		timepointToCost, err = es.FetchConnectorSpendTrend(h.client, metricIds, connectorTypes, startTime, endTime, esDataPointCount)
 	}
 	if err != nil {
 		return err
