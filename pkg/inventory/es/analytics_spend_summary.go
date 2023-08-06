@@ -322,3 +322,166 @@ func FetchConnectorDailySpendHistoryByMetric(client keibi.Client, connectors []s
 
 	return hits, nil
 }
+
+type ConnectionSpendTrendQueryResponse struct {
+	Aggregations struct {
+		DateGroup struct {
+			Buckets []struct {
+				Key          string `json:"key"`
+				CostSumGroup struct {
+					Value float64 `json:"value"`
+				} `json:"cost_sum_group"`
+			} `json:"buckets"`
+		} `json:"date_group"`
+	} `json:"aggregations"`
+}
+
+func FetchConnectionSpendTrend(client keibi.Client, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time, datapointCount int) (map[string]float64, error) {
+	query := make(map[string]any)
+	var filters []any
+
+	if len(connectionIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"connection_id": connectionIDs},
+		})
+	}
+	if len(connectors) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]source.Type{"connector": connectors},
+		})
+	}
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_end": map[string]string{
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
+			},
+		},
+	})
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_start": map[string]string{
+				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+			},
+		},
+	})
+
+	query["size"] = 0
+	query["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	query["aggs"] = map[string]any{
+		"date_group": map[string]any{
+			"terms": map[string]any{
+				"field": "date",
+				"size":  datapointCount,
+			},
+			"aggs": map[string]any{
+				"cost_sum_group": map[string]any{
+					"sum": map[string]string{
+						"field": "cost_value",
+					},
+				},
+			},
+		},
+	}
+
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("FetchConnectionSpendTrend = %s\n", queryJson)
+
+	var response ConnectionSpendTrendQueryResponse
+	err = client.Search(context.Background(), spend.AnalyticsSpendConnectionSummaryIndex, string(queryJson), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]float64)
+	for _, bucket := range response.Aggregations.DateGroup.Buckets {
+		result[bucket.Key] = bucket.CostSumGroup.Value
+	}
+
+	return result, nil
+}
+
+type ConnectorSpendTrendQueryResponse struct {
+	Aggregations struct {
+		DateGroup struct {
+			Buckets []struct {
+				Key          string `json:"key"`
+				CostSumGroup struct {
+					Value float64 `json:"value"`
+				} `json:"cost_sum_group"`
+			} `json:"buckets"`
+		} `json:"date_group"`
+	} `json:"aggregations"`
+}
+
+func FetchConnectorSpendTrend(client keibi.Client, connectors []source.Type, startTime, endTime time.Time, datapointCount int) (map[string]float64, error) {
+	query := make(map[string]any)
+	var filters []any
+
+	if len(connectors) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]source.Type{"connector": connectors},
+		})
+	}
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_end": map[string]string{
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
+			},
+		},
+	})
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_start": map[string]string{
+				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+			},
+		},
+	})
+
+	query["size"] = 0
+	query["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	query["aggs"] = map[string]any{
+		"date_group": map[string]any{
+			"terms": map[string]any{
+				"field": "date",
+				"size":  datapointCount,
+			},
+			"aggs": map[string]any{
+				"cost_sum_group": map[string]any{
+					"sum": map[string]string{
+						"field": "cost_value",
+					},
+				},
+			},
+		},
+	}
+
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("FetchConnectorSpendTrend = %s\n", queryJson)
+
+	var response ConnectorSpendTrendQueryResponse
+	err = client.Search(context.Background(), spend.AnalyticsSpendConnectorSummaryIndex, string(queryJson), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]float64)
+	for _, bucket := range response.Aggregations.DateGroup.Buckets {
+		result[bucket.Key] = bucket.CostSumGroup.Value
+	}
+
+	return result, nil
+}
