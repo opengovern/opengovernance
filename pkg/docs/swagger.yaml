@@ -4578,12 +4578,16 @@ paths:
         name: connector
         type: array
       - collectionFormat: csv
-        description: Connection IDs to filter by
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
         in: query
         items:
           type: string
         name: connectionId
         type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
+        type: string
       - description: timestamp for resource count in epoch seconds
         in: query
         name: endTime

@@ -105,7 +105,7 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 	}
 
 	if len(connectionIds) > 0 && connectionGroup != "" {
-		return nil, errors.New("cannot specify both connectionId and connectionGroup")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
 	}
 
 	if len(connectionIds) > 0 {
@@ -115,6 +115,10 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 	connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KeibiAdminRole}, connectionGroup)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(connectionGroupObj.ConnectionIds) == 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionGroup has no connections")
 	}
 
 	return connectionGroupObj.ConnectionIds, nil
@@ -803,7 +807,8 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 //	@Param			metricType		query		string			false	"Metric type, default: assets"	Enums(assets, spend)
 //	@Param			top				query		int				true	"How many top values to return default is 5"
 //	@Param			connector		query		[]source.Type	false	"Connector types to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
 //	@Success		200				{object}	inventoryApi.ListResourceTypeCompositionResponse

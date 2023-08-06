@@ -2277,8 +2277,14 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by",
+                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
