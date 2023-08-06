@@ -49,9 +49,6 @@ type FetchConnectionDailySpendHistoryByMetricQueryResponse struct {
 }
 
 func FetchConnectionDailySpendHistoryByMetric(client keibi.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistoryByMetric, error) {
-	endTime = endTime.Truncate(24 * time.Hour)
-	startTime = startTime.Truncate(24 * time.Hour)
-
 	res := make(map[string]any)
 	var filters []any
 
@@ -73,14 +70,14 @@ func FetchConnectionDailySpendHistoryByMetric(client keibi.Client, connectionIDs
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
 			"period_end": map[string]string{
-				"lte": strconv.FormatInt(endTime.Unix(), 10),
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
 			},
 		},
 	})
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
 			"period_start": map[string]string{
-				"gte": strconv.FormatInt(startTime.Unix(), 10),
+				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
 			},
 		},
 	})
@@ -207,9 +204,6 @@ type FetchConnectorDailySpendHistoryByMetricQueryResponse struct {
 }
 
 func FetchConnectorDailySpendHistoryByMetric(client keibi.Client, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectorDailySpendHistoryByMetric, error) {
-	endTime = endTime.Truncate(24 * time.Hour)
-	startTime = startTime.Truncate(24 * time.Hour)
-
 	res := make(map[string]any)
 	var filters []any
 
@@ -226,14 +220,14 @@ func FetchConnectorDailySpendHistoryByMetric(client keibi.Client, connectors []s
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
 			"period_end": map[string]string{
-				"lte": strconv.FormatInt(endTime.Unix(), 10),
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
 			},
 		},
 	})
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
 			"period_start": map[string]string{
-				"gte": strconv.FormatInt(startTime.Unix(), 10),
+				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
 			},
 		},
 	})
