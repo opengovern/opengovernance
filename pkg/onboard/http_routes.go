@@ -46,37 +46,26 @@ func (h HttpHandler) Register(r *echo.Echo) {
 
 	connector := v1.Group("/connector")
 	connector.GET("", httpserver.AuthorizeHandler(h.ListConnectors, api3.ViewerRole))
-	connector.GET("/:connectorId", httpserver.AuthorizeHandler(h.GetConnector, api3.ViewerRole))
 
 	sourceApiGroup := v1.Group("/source")
 	sourceApiGroup.POST("/aws", httpserver.AuthorizeHandler(h.PostSourceAws, api3.EditorRole))
 	sourceApiGroup.POST("/azure", httpserver.AuthorizeHandler(h.PostSourceAzure, api3.EditorRole))
 	sourceApiGroup.GET("/:sourceId", httpserver.AuthorizeHandler(h.GetSource, api3.KeibiAdminRole))
 	sourceApiGroup.GET("/:sourceId/healthcheck", httpserver.AuthorizeHandler(h.GetSourceHealth, api3.EditorRole))
-	sourceApiGroup.GET("/:sourceId/credentials", httpserver.AuthorizeHandler(h.GetSourceCred, api3.ViewerRole))
 	sourceApiGroup.GET("/:sourceId/credentials/full", httpserver.AuthorizeHandler(h.GetSourceFullCred, api3.KeibiAdminRole))
-	sourceApiGroup.PUT("/:sourceId/credentials", httpserver.AuthorizeHandler(h.PutSourceCred, api3.EditorRole))
 	sourceApiGroup.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, api3.EditorRole))
-	sourceApiGroup.GET("/account/:accountId", httpserver.AuthorizeHandler(h.GetSourcesByAccount, api3.ViewerRole))
 
 	credential := v1.Group("/credential")
 	credential.POST("", httpserver.AuthorizeHandler(h.PostCredentials, api3.EditorRole))
 	credential.PUT("/:credentialId", httpserver.AuthorizeHandler(h.PutCredentials, api3.EditorRole))
 	credential.GET("", httpserver.AuthorizeHandler(h.ListCredentials, api3.ViewerRole))
-	credential.GET("/sources/list", httpserver.AuthorizeHandler(h.ListSourcesByCredentials, api3.ViewerRole))
 	credential.DELETE("/:credentialId", httpserver.AuthorizeHandler(h.DeleteCredential, api3.EditorRole))
-	credential.POST("/:credentialId/disable", httpserver.AuthorizeHandler(h.DisableCredential, api3.EditorRole))
-	credential.POST("/:credentialId/enable", httpserver.AuthorizeHandler(h.EnableCredential, api3.EditorRole))
 	credential.GET("/:credentialId", httpserver.AuthorizeHandler(h.GetCredential, api3.ViewerRole))
 	credential.POST("/:credentialId/autoonboard", httpserver.AuthorizeHandler(h.AutoOnboardCredential, api3.EditorRole))
-	credential.GET("/:credentialId/healthcheck", httpserver.AuthorizeHandler(h.GetCredentialHealth, api3.EditorRole))
 
 	connections := v1.Group("/connections")
-	connections.POST("/count", httpserver.AuthorizeHandler(h.CountConnections, api3.ViewerRole))
 	connections.GET("/summary", httpserver.AuthorizeHandler(h.ListConnectionsSummaries, api3.ViewerRole))
-	connections.GET("/summary/:connectionId", httpserver.AuthorizeHandler(h.GetConnectionSummary, api3.ViewerRole))
 	connections.POST("/:connectionId/state", httpserver.AuthorizeHandler(h.ChangeConnectionLifecycleState, api3.EditorRole))
-	connections.PUT("/:connectionId", httpserver.AuthorizeHandler(h.UpdateConnection, api3.EditorRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -89,91 +78,6 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	}
 
 	return nil
-}
-
-func (h HttpHandler) GetProviders(ctx echo.Context) error {
-	return ctx.JSON(http.StatusOK, api.ProvidersResponse{
-		{Name: "Sumo Logic", ID: "sumologic", Type: "IT Operations", State: api.ProviderStateDisabled},
-		{Name: "Akamai", ID: "akamai", Type: "Content Delivery (CDN)", State: api.ProviderStateDisabled},
-		{Name: "Box", ID: "boxnet", Type: "Cloud Storage", State: api.ProviderStateDisabled},
-		{Name: "DropBox", ID: "dropbox", Type: "Cloud Storage", State: api.ProviderStateDisabled},
-		{Name: "Microsoft OneDrive", ID: "onedrive", Type: "Cloud Storage", State: api.ProviderStateDisabled},
-		{Name: "Kubernetes", ID: "kubernetes", Type: "Cointainer Orchestrator", State: api.ProviderStateComingSoon},
-		{Name: "Box", ID: "boxnet", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
-		{Name: "DocuSign", ID: "docusign", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
-		{Name: "Google Workspace", ID: "googleworkspace", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
-		{Name: "Microsoft Office 365", ID: "o365", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
-		{Name: "Microsoft SharePoint", ID: "sharepoint", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
-		{Name: "Microsoft Teams", ID: "teams", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
-		{Name: "Slack", ID: "slack", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
-		{Name: "Trello", ID: "trello", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
-		{Name: "Zoom", ID: "zoom", Type: "Collaboration & Productivity", State: api.ProviderStateDisabled},
-		{Name: "Mailchimp", ID: "mailchimp", Type: "Communications", State: api.ProviderStateDisabled},
-		{Name: "PagerDuty", ID: "pagerduty", Type: "Communications", State: api.ProviderStateDisabled},
-		{Name: "RingCentral", ID: "ringcentral", Type: "Communications", State: api.ProviderStateDisabled},
-		{Name: "Twilio SendGrid", ID: "sendgrid", Type: "Communications", State: api.ProviderStateDisabled},
-		{Name: "Mailchimp", ID: "mailchimp", Type: "Communications", State: api.ProviderStateDisabled},
-		{Name: "Mailgun", ID: "mailgun", Type: "Communications", State: api.ProviderStateDisabled},
-		{Name: "Rubrik", ID: "rubrik", Type: "Data Management", State: api.ProviderStateDisabled},
-		{Name: "Snowflake", ID: "snowflake", Type: "Data Management", State: api.ProviderStateDisabled},
-		{Name: "talend.com", ID: "talend", Type: "Data Management", State: api.ProviderStateDisabled},
-		{Name: "MongoDB Atlas", ID: "mongodbatlast", Type: "Databases", State: api.ProviderStateDisabled},
-		{Name: "Elastic Cloud", ID: "elasticcloud", Type: "Databases", State: api.ProviderStateDisabled},
-		{Name: "Okta", ID: "okta", Type: "Identity", State: api.ProviderStateDisabled},
-		{Name: "JumpCloud", ID: "jumpcloud", Type: "Identity", State: api.ProviderStateDisabled},
-		{Name: "Ping Identity", ID: "pingidentity", Type: "Identity", State: api.ProviderStateDisabled},
-		{Name: "Auth0.com", ID: "auth0", Type: "Identity", State: api.ProviderStateDisabled},
-		{Name: "Microsoft Azure Active Directory", ID: "azuread", Type: "Identity", State: api.ProviderStateComingSoon},
-		{Name: "OneLogin", ID: "onelogin", Type: "Identity", State: api.ProviderStateDisabled},
-		{Name: "Expensify", ID: "expensify", Type: "Enterprise Applications", State: api.ProviderStateDisabled},
-		{Name: "Salesforce", ID: "salesforce", Type: "Enterprise Applications", State: api.ProviderStateDisabled},
-		{Name: "Xero", ID: "xero", Type: "Enterprise Applications", State: api.ProviderStateDisabled},
-		{Name: "AppViewX", ID: "appviewx", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "Rapid7", ID: "rapid7", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "Akamai", ID: "akamai", Type: "Edge Compute", State: api.ProviderStateDisabled},
-		{Name: "Akamai", ID: "akamai", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "Imperva", ID: "imperva", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "Cloudflare", ID: "cloudfare", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "CyberArk", ID: "cuberark", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "Blackberry CylanceProtect", ID: "cylance", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "Cisco Duo", ID: "duo", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "OneLogin", ID: "onelogin", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "OneTrust", ID: "onetrust", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "PaloAlto Networks Prisma", ID: "prismacloud", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "Ping Identity", ID: "pingidentity", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "SignalSciences", ID: "signalscience", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "StrongDM", ID: "strongdm", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "Sumo Logic", ID: "sumologic", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "Tenable", ID: "tenable", Type: "Enterprise Security", State: api.ProviderStateDisabled},
-		{Name: "Atlassian", ID: "atlassian", Type: "IT Operations", State: api.ProviderStateDisabled},
-		{Name: "DataDog", ID: "datadog", Type: "IT Operations", State: api.ProviderStateDisabled},
-		{Name: "PagerDuty", ID: "pagerduty", Type: "IT Operations", State: api.ProviderStateDisabled},
-		{Name: "RingCentral", ID: "ringcentral", Type: "IT Operations", State: api.ProviderStateDisabled},
-		{Name: "ServiceNow", ID: "servicenow", Type: "IT Operations", State: api.ProviderStateDisabled},
-		{Name: "Zendesk", ID: "zendesk", Type: "IT Operations", State: api.ProviderStateDisabled},
-		{Name: "Splunk", ID: "splunk", Type: "IT Operations", State: api.ProviderStateDisabled},
-		{Name: "Confluent", ID: "confluence", Type: "Messaging", State: api.ProviderStateDisabled},
-		{Name: "Splunk", ID: "splunk", Type: "Observability", State: api.ProviderStateDisabled},
-		{Name: "DataDog", ID: "datadog", Type: "Observability", State: api.ProviderStateDisabled},
-		{Name: "OpenStack", ID: "openstack", Type: "Private Cloud", State: api.ProviderStateDisabled},
-		{Name: "VMWare", ID: "vmware", Type: "Private Cloud", State: api.ProviderStateComingSoon},
-		{Name: "HPE Helion", ID: "hpehelion", Type: "Private Cloud", State: api.ProviderStateDisabled},
-		{Name: "Amazon Web Services", ID: "aws", Type: "Public Cloud", State: api.ProviderStateEnabled},
-		{Name: "Google Cloud Platform", ID: "gcp", Type: "Public Cloud", State: api.ProviderStateComingSoon},
-		{Name: "Oracle Cloud Infrastructure", ID: "oci", Type: "Public Cloud", State: api.ProviderStateDisabled},
-		{Name: "Alibaba Cloud", ID: "alibabacloud", Type: "Public Cloud", State: api.ProviderStateDisabled},
-		{Name: "Tencent Cloud", ID: "tencentcloud", Type: "Public Cloud", State: api.ProviderStateDisabled},
-		{Name: "IBM Cloud", ID: "ibmcloud", Type: "Public Cloud", State: api.ProviderStateDisabled},
-		{Name: "Microsoft Azure", ID: "azure", Type: "Public Cloud", State: api.ProviderStateEnabled},
-		{Name: "Salesforce Tableau", ID: "tableau", Type: "Reporting", State: api.ProviderStateDisabled},
-		{Name: "Google Looker", ID: "looker", Type: "Reporting", State: api.ProviderStateDisabled},
-		{Name: "Gitlab.com", ID: "gitlab", Type: "Source Code Management", State: api.ProviderStateComingSoon},
-		{Name: "GitHub", ID: "github", Type: "Source Code Management", State: api.ProviderStateComingSoon},
-		{Name: "Azure DevOps", ID: "azuredevops", Type: "Source Code Management", State: api.ProviderStateDisabled},
-		{Name: "Jfrog", ID: "jfrog", Type: "Source Code Management", State: api.ProviderStateDisabled},
-		{Name: "NewRelic", ID: "newrelic", Type: "Observability", State: api.ProviderStateDisabled},
-		{Name: "DynaTrace", ID: "dynatrace", Type: "Observability", State: api.ProviderStateDisabled},
-	})
 }
 
 // ListConnectors godoc
@@ -221,78 +125,6 @@ func (h HttpHandler) ListConnectors(ctx echo.Context) error {
 
 	}
 	return ctx.JSON(http.StatusOK, res)
-}
-
-// GetConnector godoc
-//
-//	@Summary		Get connector
-//	@Description	Returns connector details by name
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Param			connectorName	path		string	true	"Connector name"
-//	@Success		200				{object}	api.Connector
-//	@Router			/onboard/api/v1/connector/{connectorName} [get]
-func (h HttpHandler) GetConnector(ctx echo.Context) error {
-	connectorName, err := source.ParseType(ctx.Param("connectorName"))
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid connector name"))
-	}
-
-	c, err := h.db.GetConnector(connectorName)
-	if err != nil {
-		return err
-	}
-	count, err := h.db.CountSourcesOfType(c.Name)
-	if err != nil {
-		return err
-	}
-	tags := make(map[string]any)
-	err = json.Unmarshal(c.Tags, &tags)
-	if err != nil {
-		return err
-	}
-	res := api.ConnectorCount{
-		Connector: api.Connector{
-			Name:                c.Name,
-			Label:               c.Label,
-			ShortDescription:    c.ShortDescription,
-			Description:         c.Description,
-			Direction:           c.Direction,
-			Status:              c.Status,
-			Logo:                c.Logo,
-			AutoOnboardSupport:  c.AutoOnboardSupport,
-			AllowNewConnections: c.AllowNewConnections,
-			MaxConnectionLimit:  c.MaxConnectionLimit,
-			Tags:                tags,
-		},
-		ConnectionCount: count,
-	}
-
-	return ctx.JSON(http.StatusOK, res)
-}
-
-func (h HttpHandler) GetProviderTypes(ctx echo.Context) error {
-	return ctx.JSON(http.StatusOK, api.ProviderTypesResponse{
-		{ID: "1", TypeName: "Public Cloud", State: api.ProviderTypeStateEnabled},
-		{ID: "2", TypeName: "Cointainer Orchestrator", State: api.ProviderTypeStateComingSoon},
-		{ID: "3", TypeName: "Private Cloud", State: api.ProviderTypeStateComingSoon},
-		{ID: "4", TypeName: "Source Code Management", State: api.ProviderTypeStateComingSoon},
-		{ID: "5", TypeName: "Identity", State: api.ProviderTypeStateComingSoon},
-		{ID: "6", TypeName: "Enterprise Security", State: api.ProviderTypeStateDisabled},
-		{ID: "7", TypeName: "Observability", State: api.ProviderTypeStateDisabled},
-		{ID: "8", TypeName: "Messaging", State: api.ProviderTypeStateDisabled},
-		{ID: "9", TypeName: "Communications", State: api.ProviderTypeStateDisabled},
-		{ID: "10", TypeName: "IT Operations", State: api.ProviderTypeStateDisabled},
-		{ID: "11", TypeName: "Enterprise Applications", State: api.ProviderTypeStateDisabled},
-		{ID: "12", TypeName: "Databases", State: api.ProviderTypeStateDisabled},
-		{ID: "13", TypeName: "Data Management", State: api.ProviderTypeStateDisabled},
-		{ID: "14", TypeName: "Cloud Storage", State: api.ProviderTypeStateDisabled},
-		{ID: "15", TypeName: "Content Delivery (CDN)", State: api.ProviderTypeStateDisabled},
-		{ID: "16", TypeName: "Collaboration & Productivity", State: api.ProviderTypeStateDisabled},
-		{ID: "17", TypeName: "Edge Compute", State: api.ProviderTypeStateDisabled},
-		{ID: "18", TypeName: "Reporting", State: api.ProviderTypeStateDisabled},
-	})
 }
 
 // PostSourceAws godoc
@@ -1143,128 +975,6 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, onboardedSources)
 }
 
-// GetCredentialHealth godoc
-//
-//	@Summary	Get live credential health status
-//	@Tags		onboard
-//	@Security	BearerToken
-//	@Produce	json
-//	@Param		credentialId	path	string	true	"CredentialID"
-//	@Success	200
-//	@Router		/onboard/api/v1/credential/{credentialId}/healthcheck [get]
-func (h HttpHandler) GetCredentialHealth(ctx echo.Context) error {
-	credUUID, err := uuid.Parse(ctx.Param("credentialId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
-	}
-
-	credential, err := h.db.GetCredentialByID(credUUID)
-	if err != nil {
-		return err
-	}
-
-	isHealthy, err := h.checkCredentialHealth(*credential)
-	if err != nil {
-		return err
-	}
-	if !isHealthy {
-		return echo.NewHTTPError(http.StatusBadRequest, "credential is not healthy")
-	}
-	return ctx.JSON(http.StatusOK, struct{}{})
-}
-
-// ListSourcesByCredentials godoc
-//
-//	@Summary		Returns a list of sources
-//	@Description	Returning a list of sources including both AWS and Azure unless filtered by Type.
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Param			connector		query		source.Type				false	"filter by connector type"
-//	@Param			credentialType	query		[]api.CredentialType	false	"filter by credential type"
-//	@Param			pageSize		query		int						false	"page size"		default(50)
-//	@Param			pageNumber		query		int						false	"page number"	default(1)
-//	@Success		200				{object}	api.ListCredentialResponse
-//	@Router			/onboard/api/v1/credential/sources/list [get]
-func (h HttpHandler) ListSourcesByCredentials(ctx echo.Context) error {
-	sType, _ := source.ParseType(ctx.QueryParam("connector"))
-	pageSizeStr := ctx.QueryParam("pageSize")
-	pageNumberStr := ctx.QueryParam("pageNumber")
-	credentialTypes := ParseCredentialTypes(ctx.QueryParams()["credentialType"])
-	pageSize := int64(50)
-	pageNumber := int64(1)
-	if pageSizeStr != "" {
-		pageSize, _ = strconv.ParseInt(pageSizeStr, 10, 64)
-	}
-	if pageNumberStr != "" {
-		pageNumber, _ = strconv.ParseInt(pageNumberStr, 10, 64)
-	}
-	var sources []Source
-	var err error
-	if sType != "" {
-		sources, err = h.db.GetSourcesOfType(sType)
-		if err != nil {
-			return err
-		}
-	} else {
-		sources, err = h.db.ListSources()
-		if err != nil {
-			return err
-		}
-	}
-
-	credentials, err := h.db.GetCredentialsByFilters(sType, source.HealthStatusNil, credentialTypes)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	apiCredentials := make(map[string]api.Credential)
-	for _, cred := range credentials {
-		apiCredentials[cred.ID.String()] = cred.ToAPI()
-	}
-
-	for _, src := range sources {
-		if v, ok := apiCredentials[src.CredentialID.String()]; ok {
-			if v.Connections == nil {
-				v.Connections = make([]api.Connection, 0)
-			}
-			v.Connections = append(v.Connections, src.toAPI())
-			v.TotalConnections = utils.PAdd(v.TotalConnections, utils.GetPointer(1))
-			if src.LifecycleState.IsEnabled() {
-				v.EnabledConnections = utils.PAdd(v.EnabledConnections, utils.GetPointer(1))
-			}
-			switch src.LifecycleState {
-			case ConnectionLifecycleStateDiscovered:
-				v.DiscoveredConnections = utils.PAdd(v.DiscoveredConnections, utils.GetPointer(1))
-			}
-			if src.HealthState == source.HealthStatusUnhealthy {
-				v.UnhealthyConnections = utils.PAdd(v.UnhealthyConnections, utils.GetPointer(1))
-			}
-
-			apiCredentials[src.CredentialID.String()] = v
-		}
-	}
-
-	apiCredentialsList := make([]api.Credential, 0, len(apiCredentials))
-	for _, v := range apiCredentials {
-		if v.Connections == nil {
-			continue
-		}
-		apiCredentialsList = append(apiCredentialsList, v)
-	}
-
-	sort.Slice(apiCredentialsList, func(i, j int) bool {
-		return apiCredentialsList[i].OnboardDate.After(apiCredentialsList[j].OnboardDate)
-	})
-
-	result := api.ListCredentialResponse{
-		TotalCredentialCount: len(apiCredentialsList),
-		Credentials:          utils.Paginate(pageNumber, pageSize, apiCredentialsList),
-	}
-
-	return ctx.JSON(http.StatusOK, result)
-}
-
 func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredentialRequest) error {
 	id, err := uuid.Parse(ctx.Param("credentialId"))
 	if err != nil {
@@ -1533,147 +1243,6 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, struct{}{})
 }
 
-// DisableCredential godoc
-//
-//	@Summary		Disable credential
-//	@Description	Disable credential
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200
-//	@Param			credentialId	path	string	true	"CredentialID"
-//	@Router			/onboard/api/v1/credential/{credentialId}/disable [post]
-func (h HttpHandler) DisableCredential(ctx echo.Context) error {
-	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-
-	credential, err := h.db.GetCredentialByID(credId)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
-		}
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	if !credential.Enabled {
-		return echo.NewHTTPError(http.StatusBadRequest, "credential already disabled")
-	}
-
-	sources, err := h.db.GetSourcesByCredentialID(credential.ID.String())
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	credential.Enabled = false
-	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
-		if _, err := h.db.UpdateCredential(credential); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-
-		for _, src := range sources {
-			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateDisabled); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	return ctx.JSON(http.StatusOK, struct{}{})
-}
-
-// EnableCredential godoc
-//
-//	@Summary		Enable credential
-//	@Description	Enable credential
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200
-//	@Param			credentialId	path	string	true	"CredentialID"
-//	@Router			/onboard/api/v1/credential/{credentialId}/enable [post]
-func (h HttpHandler) EnableCredential(ctx echo.Context) error {
-	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-	}
-
-	credential, err := h.db.GetCredentialByID(credId)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
-		}
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	if credential.Enabled {
-		return echo.NewHTTPError(http.StatusBadRequest, "credential already enabled")
-	}
-
-	credential.Enabled = true
-	if _, err := h.db.UpdateCredential(credential); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	return ctx.JSON(http.StatusOK, struct{}{})
-}
-
-// GetSourceCred godoc
-//
-//	@Summary		Get source credential
-//	@Description	Returns credential for a source with given source ID.
-//	@Description	The responses are different for different source types.
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Param			sourceId	path		string	true	"Source ID"
-//	@Success		200			{object}	api.AWSCredential
-//	@Success		200			{object}	api.AzureCredential
-//	@Router			/onboard/api/v1/source/{sourceId}/credentials [get]
-func (h HttpHandler) GetSourceCred(ctx echo.Context) error {
-	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
-	}
-
-	src, err := h.db.GetSource(sourceUUID)
-	if err != nil {
-		return err
-	}
-
-	cnf, err := h.kms.Decrypt(src.Credential.Secret, h.keyARN)
-	if err != nil {
-		return err
-	}
-
-	switch src.Type {
-	case source.CloudAWS:
-		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
-		if err != nil {
-			return err
-		}
-		return ctx.JSON(http.StatusOK, api.AWSCredential{
-			AccessKey: awsCnf.AccessKey,
-		})
-	case source.CloudAzure:
-		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
-		if err != nil {
-			return err
-		}
-		return ctx.JSON(http.StatusOK, api.AzureCredential{
-			ClientID: azureCnf.ClientID,
-			TenantID: azureCnf.TenantID,
-		})
-	default:
-		return errors.New("invalid provider")
-	}
-}
-
 func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
@@ -1736,7 +1305,7 @@ func (h HttpHandler) updateConnectionHealth(connection Source, healthStatus sour
 //	@Produce		json
 //	@Param			sourceId	path		string	true	"Source ID"
 //	@Success		200			{object}	api.Connection
-//	@Router			/onboard/api/v1/source/{sourceId}/healthcheck [post]
+//	@Router			/onboard/api/v1/source/{sourceId}/healthcheck [get]
 func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
 	if err != nil {
@@ -1895,90 +1464,6 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, apiRes)
 }
 
-// PutSourceCred godoc
-//
-//	@Summary		Update source credential
-//	@Description	Update source credential
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Param			sourceId	path	string	true	"Source ID"
-//	@Success		200
-//	@Router			/onboard/api/v1/source/{sourceId}/credentials [put]
-func (h HttpHandler) PutSourceCred(ctx echo.Context) error {
-	sourceUUID, err := uuid.Parse(ctx.Param("sourceId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
-	}
-
-	src, err := h.db.GetSource(sourceUUID)
-	if err != nil {
-		return err
-	}
-
-	switch src.Type {
-	case source.CloudAWS:
-		var req api.AWSCredentialConfig
-		if err := bindValidate(ctx, &req); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-		}
-
-		req.AccountId = src.SourceId
-
-		sdkCnf, err := keibiaws.GetConfig(context.Background(), req.AccessKey, req.SecretKey, "", "", nil)
-		if err != nil {
-			return err
-		}
-		isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, "", "")
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-		}
-		if !isAttached {
-			return echo.NewHTTPError(http.StatusBadRequest, "Failed to find read permission")
-		}
-
-		secretBytes, err := h.kms.Encrypt(req.AsMap(), h.keyARN)
-		if err != nil {
-			return err
-		}
-		src.Credential.Secret = string(secretBytes)
-
-		if _, err := h.db.UpdateCredential(&src.Credential); err != nil {
-			return err
-		}
-		return ctx.NoContent(http.StatusOK)
-	case source.CloudAzure:
-		var req api.AzureCredentialConfig
-		if err := bindValidate(ctx, &req); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
-		}
-
-		req.SubscriptionId = src.SourceId
-		secretBytes, err := h.kms.Encrypt(req.AsMap(), h.keyARN)
-		if err != nil {
-			return err
-		}
-		src.Credential.Secret = string(secretBytes)
-		if _, err := h.db.UpdateCredential(&src.Credential); err != nil {
-			return err
-		}
-
-		return ctx.NoContent(http.StatusOK)
-	default:
-		return errors.New("invalid provider")
-	}
-}
-
-// GetSource godoc
-//
-//	@Summary		Get source
-//	@Description	Returning single source either AWS / Azure.
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200			{object}	api.Connection
-//	@Param			sourceId	path		integer	true	"Source ID"
-//	@Router			/onboard/api/v1/source/{sourceId} [get]
 func (h HttpHandler) GetSource(ctx echo.Context) error {
 	srcId, err := uuid.Parse(ctx.Param(paramSourceId))
 	if err != nil {
@@ -2064,17 +1549,6 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-// ChangeConnectionLifecycleState godoc
-//
-//	@Summary		Change connection lifecycle state
-//	@Description	Change connection lifecycle state with connection ID.
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200
-//	@Param			connectionId	path	string										true	"ConnectionID"
-//	@Param			request			body	api.ChangeConnectionLifecycleStateRequest	true	"Request"
-//	@Router			/onboard/api/v1/connections/{connectionId}/state [post]
 func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 	connectionId, err := uuid.Parse(ctx.Param("connectionId"))
 	if err != nil {
@@ -2115,66 +1589,6 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-// UpdateConnection godoc
-//
-//	@Summary		Update a connection
-//	@Description	Update a connection with connection ID.
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200
-//	@Param			connectionId	path		string						true	"ConnectionID"
-//	@Param			request			body		api.ChangeConnectionRequest	true	"Request"
-//	@Success		200				{object}	api.Connection
-//	@Router			/onboard/api/v1/connections/{connectionId} [put]
-func (h HttpHandler) UpdateConnection(ctx echo.Context) error {
-	connectionId, err := uuid.Parse(ctx.Param("connectionId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid connection id")
-	}
-
-	var req api.ChangeConnectionRequest
-	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	connection, err := h.db.GetSource(connectionId)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return echo.NewHTTPError(http.StatusBadRequest, "connection not found")
-		}
-		return err
-	}
-
-	if req.Name != "" {
-		connection.Name = req.Name
-	}
-	if req.Description != "" {
-		connection.Description = req.Description
-	}
-	if req.Email != "" {
-		connection.Email = req.Email
-	}
-
-	con, err := h.db.UpdateSource(&connection)
-	if err != nil {
-		h.logger.Error("failed to update connection", zap.Error(err))
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update connection")
-	}
-
-	return ctx.JSON(http.StatusOK, con.toAPI())
-}
-
-// ListSources godoc
-//
-//	@Summary		List all sources
-//	@Description	Returning a list of sources including both AWS and Azure unless filtered by Type.
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Param			connector	query		[]source.Type	false	"filter by source type"
-//	@Success		200			{object}	api.GetSourcesResponse
-//	@Router			/onboard/api/v1/sources [get]
 func (h HttpHandler) ListSources(ctx echo.Context) error {
 	var err error
 	sType := httpserver.QueryArrayParam(ctx, "connector")
@@ -2240,40 +1654,6 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
-// GetSourcesByAccount godoc
-//
-//	@Summary		List account sources
-//	@Description	Returning account source either AWS / Azure.
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Success		200			{object}	api.Connection
-//	@Param			account_id	path		integer	true	"Source ID"
-//	@Router			/onboard/api/v1/source/account/{account_id} [get]
-func (h HttpHandler) GetSourcesByAccount(ctx echo.Context) error {
-	accId := ctx.Param("accountId")
-
-	src, err := h.db.GetSourceBySourceID(accId)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
-		}
-		return err
-	}
-
-	return ctx.JSON(http.StatusOK, src.toAPI())
-}
-
-// CountSources godoc
-//
-//	@Summary		Count sources
-//	@Description	Returning number of sources including both AWS and Azure unless filtered by Type.
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Param			connector	query		source.Type	false	"filter by source type"
-//	@Success		200			{object}	int64
-//	@Router			/onboard/api/v1/sources/count [get]
 func (h HttpHandler) CountSources(ctx echo.Context) error {
 	sType := ctx.QueryParam("connector")
 	var count int64
@@ -2329,126 +1709,6 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, metrics)
-}
-
-//go:embed api/catalogs.json
-var catalogsJSON string
-
-func (h HttpHandler) CatalogConnectors(ctx echo.Context) error {
-	categoryFilter := ctx.QueryParam("category")
-	stateFilter := ctx.QueryParam("state")
-	minConnectionFilter := ctx.QueryParam("minConnection")
-	idFilter := ctx.QueryParam("id")
-
-	var connectors []api.CatalogConnector
-	if err := json.Unmarshal([]byte(catalogsJSON), &connectors); err != nil {
-		return err
-	}
-
-	for idx, connector := range connectors {
-		if !connector.SourceType.IsNull() {
-			c, err := h.db.CountSourcesOfType(connector.SourceType)
-			if err != nil {
-				return err
-			}
-
-			connectors[idx].ConnectionCount = c
-		}
-	}
-
-	var response []api.CatalogConnector
-	for _, connector := range connectors {
-		if len(categoryFilter) > 0 && connector.Category != categoryFilter {
-			continue
-		}
-		if len(stateFilter) > 0 && connector.State != stateFilter {
-			continue
-		}
-		if len(idFilter) > 0 {
-			id, err := strconv.Atoi(idFilter)
-			if err != nil {
-				return err
-			}
-
-			if connector.ID != id {
-				continue
-			}
-		}
-		if len(minConnectionFilter) > 0 {
-			minConnection, err := strconv.ParseInt(minConnectionFilter, 10, 64)
-			if err != nil {
-				return err
-			}
-
-			if connector.ConnectionCount < minConnection {
-				continue
-			}
-		}
-		response = append(response, connector)
-	}
-
-	return ctx.JSON(http.StatusOK, response)
-}
-
-// CountConnections godoc
-//
-//	@Summary		Connections count
-//	@Description	Returns a count of connections
-//	@Security		BearerToken
-//	@Tags			onboard
-//	@Produce		json
-//	@Param			type	body		api.ConnectionCountRequest	true	"Request"
-//	@Success		200		{object}	int64
-//	@Router			/onboard/api/v1/connections/count [get]
-func (h HttpHandler) CountConnections(ctx echo.Context) error {
-	var request api.ConnectionCountRequest
-	if err := ctx.Bind(&request); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("failed to parse request due to: %v", err))
-	}
-
-	var connectors []api.CatalogConnector
-	if err := json.Unmarshal([]byte(catalogsJSON), &connectors); err != nil {
-		return err
-	}
-
-	var condQuery []string
-	var params []interface{}
-	if request.ConnectorsNames != nil && len(request.ConnectorsNames) > 0 {
-		var q []string
-		for _, c := range request.ConnectorsNames {
-			if len(strings.TrimSpace(c)) == 0 {
-				continue
-			}
-
-			for _, connector := range connectors {
-				if connector.SourceType.IsNull() {
-					continue
-				}
-
-				if connector.Name == c {
-					q = append(q, "?")
-					params = append(params, connector.SourceType.String())
-				}
-			}
-		}
-
-		if len(q) > 0 {
-			condQuery = append(condQuery, fmt.Sprintf("_type IN (%s)", strings.Join(q, ",")))
-		}
-	}
-
-	if request.State != nil {
-		condQuery = append(condQuery, "lifecycle_state = ?")
-		params = append(params, string(*request.State))
-	}
-
-	query := strings.Join(condQuery, " AND ")
-	count, err := h.db.CountSourcesWithFilters(query, params...)
-	if err != nil {
-		return err
-	}
-
-	return ctx.JSON(http.StatusOK, count)
 }
 
 // ListConnectionsSummaries godoc
@@ -2698,61 +1958,5 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	})
 
 	result.Connections = utils.Paginate(pageNumber, pageSize, result.Connections)
-	return ctx.JSON(http.StatusOK, result)
-}
-
-// GetConnectionSummary godoc
-//
-//	@Summary		Get connection summary
-//	@Description	Returns a connections summaries
-//	@Security		BearerToken
-//	@Tags			connections
-//	@Accept			json
-//	@Produce		json
-//	@Param			startTime		query		int		false	"start time in unix seconds"
-//	@Param			endTime			query		int		false	"end time in unix seconds"
-//	@Param			connectionId	path		string	true	"ConnectionID"
-//	@Success		200				{object}	api.Connection
-//	@Router			/onboard/api/v1/connections/summary/{connectionId} [get]
-func (h HttpHandler) GetConnectionSummary(ctx echo.Context) error {
-	connectionId, err := uuid.Parse(ctx.Param("connectionId"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid connectionId uuid")
-	}
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now()
-	if endTimeStr != "" {
-		endTimeUnix, err := strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid integer")
-		}
-		endTime = time.Unix(endTimeUnix, 0)
-	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := endTime.AddDate(0, 0, -7)
-	if startTimeStr != "" {
-		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid integer")
-		}
-		startTime = time.Unix(startTimeUnix, 0)
-	}
-
-	connection, err := h.db.GetSource(connectionId)
-	if err != nil {
-		return err
-	}
-
-	connectionData, err := h.inventoryClient.GetConnectionData(httpclient.FromEchoContext(ctx), connectionId.String(), &startTime, &endTime)
-	if err != nil {
-		return err
-	}
-
-	result := connection.toAPI()
-	result.Cost = connectionData.TotalCost
-	result.ResourceCount = connectionData.Count
-	result.OldResourceCount = connectionData.OldCount
-	result.LastInventory = connectionData.LastInventory
-
 	return ctx.JSON(http.StatusOK, result)
 }

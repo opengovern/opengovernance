@@ -29,7 +29,6 @@ type OnboardServiceClient interface {
 	CountSources(ctx *httpclient.Context, provider source.Type) (int64, error)
 	GetSourceHealthcheck(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
 	SetConnectionLifecycleState(ctx *httpclient.Context, connectionId string, state api.ConnectionLifecycleState) (*api.Connection, error)
-	GetSourcesByAccount(ctx *httpclient.Context, accountID string) (api.Connection, error)
 	ListCredentials(ctx *httpclient.Context, connector []source.Type, credentialType *api.CredentialType, health *string, pageSize, pageNumber int) (api.ListCredentialResponse, error)
 	TriggerAutoOnboard(ctx *httpclient.Context, credentialId string) ([]api.Connection, error)
 }
@@ -263,19 +262,6 @@ func (s *onboardClient) SetConnectionLifecycleState(ctx *httpclient.Context, con
 		return nil, err
 	}
 	return &connection, nil
-}
-
-func (s *onboardClient) GetSourcesByAccount(ctx *httpclient.Context, connectionId string) (api.Connection, error) {
-	url := fmt.Sprintf("%s/api/v1/source/account/%s", s.baseURL, connectionId)
-
-	var source api.Connection
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
-		if 400 <= statusCode && statusCode < 500 {
-			return api.Connection{}, echo.NewHTTPError(statusCode, err.Error())
-		}
-		return api.Connection{}, err
-	}
-	return source, nil
 }
 
 // api/v1/credential [get]
