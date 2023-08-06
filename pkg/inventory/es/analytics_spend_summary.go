@@ -32,13 +32,17 @@ type FetchConnectionDailySpendHistoryByMetricQueryResponse struct {
 							Value float64 `json:"value"`
 						} `json:"cost_value_sum_group"`
 						StartCostGroup struct {
-							Hits []struct {
-								Source spend.ConnectionMetricTrendSummary `json:"_source"`
+							Hits struct {
+								Hits []struct {
+									Source spend.ConnectionMetricTrendSummary `json:"_source"`
+								} `json:"hits"`
 							} `json:"hits"`
 						} `json:"start_cost_group"`
 						EndCostGroup struct {
-							Hits []struct {
-								Source spend.ConnectionMetricTrendSummary `json:"_source"`
+							Hits struct {
+								Hits []struct {
+									Source spend.ConnectionMetricTrendSummary `json:"_source"`
+								} `json:"hits"`
 							} `json:"hits"`
 						} `json:"end_cost_group"`
 					} `json:"buckets"`
@@ -153,11 +157,11 @@ func FetchConnectionDailySpendHistoryByMetric(client keibi.Client, connectionIDs
 				EndDateCost:   0,
 			}
 
-			for _, v := range metricBucket.StartCostGroup.Hits {
+			for _, v := range metricBucket.StartCostGroup.Hits.Hits {
 				hit.StartDateCost = v.Source.CostValue
 				hit.Connector = v.Source.Connector.String()
 			}
-			for _, v := range metricBucket.EndCostGroup.Hits {
+			for _, v := range metricBucket.EndCostGroup.Hits.Hits {
 				hit.EndDateCost = v.Source.CostValue
 			}
 			hits = append(hits, hit)
@@ -187,13 +191,17 @@ type FetchConnectorDailySpendHistoryByMetricQueryResponse struct {
 							Value float64 `json:"value"`
 						} `json:"cost_value_sum_group"`
 						StartCostGroup struct {
-							Hits []struct {
-								Source spend.ConnectorMetricTrendSummary `json:"_source"`
+							Hits struct {
+								Hits []struct {
+									Source spend.ConnectorMetricTrendSummary `json:"_source"`
+								} `json:"hits"`
 							} `json:"hits"`
 						} `json:"start_cost_group"`
 						EndCostGroup struct {
-							Hits []struct {
-								Source spend.ConnectorMetricTrendSummary `json:"_source"`
+							Hits struct {
+								Hits []struct {
+									Source spend.ConnectorMetricTrendSummary `json:"_source"`
+								} `json:"hits"`
 							} `json:"hits"`
 						} `json:"end_cost_group"`
 					} `json:"buckets"`
@@ -302,10 +310,10 @@ func FetchConnectorDailySpendHistoryByMetric(client keibi.Client, connectors []s
 				EndDateCost:   0,
 			}
 
-			for _, v := range metricBucket.StartCostGroup.Hits {
+			for _, v := range metricBucket.StartCostGroup.Hits.Hits {
 				hit.StartDateCost = v.Source.CostValue
 			}
-			for _, v := range metricBucket.EndCostGroup.Hits {
+			for _, v := range metricBucket.EndCostGroup.Hits.Hits {
 				hit.EndDateCost = v.Source.CostValue
 			}
 			hits = append(hits, hit)
