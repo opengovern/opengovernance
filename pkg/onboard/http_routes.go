@@ -2782,21 +2782,24 @@ func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
 
 	result := make([]api.ConnectionGroup, 0, len(connectionGroups))
 	for _, connectionGroup := range connectionGroups {
-		if populateConnections {
-			apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), &h.db, h.steampipeConn)
-			if err != nil {
-				h.logger.Error("error populating connection group", zap.Error(err))
-				continue
-			}
-			result = append(result, *apiCg)
-		} else {
-			apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), nil, nil)
-			if err != nil {
-				h.logger.Error("error populating connection group", zap.Error(err))
-				continue
-			}
-			result = append(result, *apiCg)
+		apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), h.steampipeConn)
+		if err != nil {
+			h.logger.Error("error populating connection group", zap.Error(err))
+			continue
 		}
+		if populateConnections {
+			connections, err := h.db.GetSources(apiCg.ConnectionIds)
+			if err != nil {
+				h.logger.Error("error getting connections", zap.Error(err))
+				return err
+			}
+			apiCg.Connections = make([]api.Connection, 0, len(connections))
+			for _, connection := range connections {
+				apiCg.Connections = append(apiCg.Connections, connection.toAPI())
+			}
+		}
+
+		result = append(result, *apiCg)
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -2810,10 +2813,20 @@ func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
 //	@Tags			connection-groups
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	api.ConnectionGroup
+//	@Param			populateConnections	query		bool	false	"Populate connections"	default(false)
+//	@Param			connectionGroupName	path		string	true	"ConnectionGroupName"
+//	@Success		200					{object}	api.ConnectionGroup
 //	@Router			/onboard/api/v1/connection-groups/{connectionGroupName} [get]
 func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
 	connectionGroupName := ctx.Param("connectionGroupName")
+	var err error
+	populateConnections := false
+	if populateConnectionsStr := ctx.QueryParam("populateConnections"); populateConnectionsStr != "" {
+		populateConnections, err = strconv.ParseBool(populateConnectionsStr)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "populateConnections is not a valid boolean")
+		}
+	}
 
 	connectionGroup, err := h.db.GetConnectionGroupByName(connectionGroupName)
 	if err != nil {
@@ -2821,10 +2834,22 @@ func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
 		return err
 	}
 
-	apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), &h.db, h.steampipeConn)
+	apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), h.steampipeConn)
 	if err != nil {
 		h.logger.Error("error populating connection group", zap.Error(err))
 		return err
+	}
+
+	if populateConnections {
+		connections, err := h.db.GetSources(apiCg.ConnectionIds)
+		if err != nil {
+			h.logger.Error("error getting connections", zap.Error(err))
+			return err
+		}
+		apiCg.Connections = make([]api.Connection, 0, len(connections))
+		for _, connection := range connections {
+			apiCg.Connections = append(apiCg.Connections, connection.toAPI())
+		}
 	}
 
 	return ctx.JSON(http.StatusOK, apiCg)

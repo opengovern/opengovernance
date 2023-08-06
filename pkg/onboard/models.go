@@ -530,13 +530,13 @@ type ConnectionGroup struct {
 	Query string `json:"query"`
 }
 
-func (cg ConnectionGroup) ToAPI(ctx context.Context, database *Database, steampipe *steampipe.Database) (*api.ConnectionGroup, error) {
+func (cg ConnectionGroup) ToAPI(ctx context.Context, steampipe *steampipe.Database) (*api.ConnectionGroup, error) {
 	apiCg := api.ConnectionGroup{
 		Name:  cg.Name,
 		Query: cg.Query,
 	}
 
-	if steampipe == nil || database == nil || cg.Query == "" {
+	if steampipe == nil || cg.Query == "" {
 		return &apiCg, nil
 	}
 
@@ -560,14 +560,7 @@ func (cg ConnectionGroup) ToAPI(ctx context.Context, database *Database, steampi
 		}
 	}
 
-	connections, err := database.GetSources(connectionIds)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, connection := range connections {
-		apiCg.Connections = append(apiCg.Connections, connection.toAPI())
-	}
+	apiCg.ConnectionIds = connectionIds
 
 	return &apiCg, nil
 }
