@@ -3,74 +3,73 @@
 set -x
 set -e
 
-podman login -u "${DO_API_TOKEN}" -p "${DO_API_TOKEN}" "registry.digitalocean.com/keibi"
 SERVICES=$(cat ./services)
 if [[ $SERVICES == *"auth-service"* ]]; then
-    podman build -f  docker/AuthServiceDockerfile . -t registry.digitalocean.com/keibi/auth-service:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/auth-service:$SVER_VERSION
+    docker build -f  docker/AuthServiceDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/auth-service:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/auth-service:"$TAG"
 fi
 if [[ $SERVICES == *"checkup-worker"* ]]; then
-    podman build -f  docker/CheckupWorkerDockerfile . -t registry.digitalocean.com/keibi/checkup-worker:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/checkup-worker:$SVER_VERSION
+    docker build -f  docker/CheckupWorkerDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/checkup-worker:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/checkup-worker:"$TAG"
 fi
 if [[ $SERVICES == *"compliance-report-worker"* ]]; then
-    podman build --no-cache -f  docker/ComplianceReportWorkerDockerfile . -t registry.digitalocean.com/keibi/compliance-report-worker:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/compliance-report-worker:$SVER_VERSION
+    docker build --no-cache -f  docker/ComplianceReportWorkerDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/compliance-report-worker:"$TAG" --build-arg PLUGIN_REGISTRY="435670955331.dkr.ecr.us-east-2.amazonaws.com"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/compliance-report-worker:"$TAG"
 fi
 if [[ $SERVICES == *"compliance-service"* ]]; then
-    podman build -f  docker/ComplianceServiceDockerfile . -t registry.digitalocean.com/keibi/compliance-service:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/compliance-service:$SVER_VERSION
+    docker build -f  docker/ComplianceServiceDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/compliance-service:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/compliance-service:"$TAG"
 fi
 if [[ $SERVICES == *"describe-scheduler"* ]]; then
-    podman build -f  docker/DescribeSchedulerDockerfile . -t registry.digitalocean.com/keibi/describe-scheduler:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/describe-scheduler:$SVER_VERSION
+    docker build -f  docker/DescribeSchedulerDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/describe-scheduler:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/describe-scheduler:"$TAG"
 fi
 if [[ $SERVICES == *"hopper"* ]]; then
-    podman build -f  docker/HopperDockerfile . -t registry.digitalocean.com/keibi/hopper:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/hopper:$SVER_VERSION
+    docker build -f  docker/HopperDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/hopper:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/hopper:"$TAG"
 fi
 if [[ $SERVICES == *"reporter"* ]]; then
-    podman build -f  docker/ReporterDockerfile . -t registry.digitalocean.com/keibi/reporter:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/reporter:$SVER_VERSION
+    docker build -f  docker/ReporterDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/reporter:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/reporter:"$TAG"
 fi
 if [[ $SERVICES == *"insight-worker"* ]]; then
-    podman build -f  docker/InsightWorkerDockerfile . -t registry.digitalocean.com/keibi/insight-worker:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/insight-worker:$SVER_VERSION
+    docker build -f  docker/InsightWorkerDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/insight-worker:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/insight-worker:"$TAG"
 fi
 if [[ $SERVICES == *"inventory-service"* ]]; then
-    podman build -f  docker/InventoryServiceDockerfile . -t registry.digitalocean.com/keibi/inventory-service:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/inventory-service:$SVER_VERSION
+    docker build -f  docker/InventoryServiceDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/inventory-service:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/inventory-service:"$TAG"
 fi
 if [[ $SERVICES == *"metadata-service"* ]]; then
-    podman build -f  docker/MetadataServiceDockerfile . -t registry.digitalocean.com/keibi/metadata-service:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/metadata-service:$SVER_VERSION
+    docker build -f  docker/MetadataServiceDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/metadata-service:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/metadata-service:"$TAG"
 fi
 if [[ $SERVICES == *"migrator-worker"* ]]; then
-    podman build -f  docker/MigratorDockerfile . -t registry.digitalocean.com/keibi/migrator:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/migrator:$SVER_VERSION
+    docker build -f  docker/MigratorDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/migrator:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/migrator:"$TAG"
 fi
 if [[ $SERVICES == *"onboard-service"* ]]; then
-    podman build -f  docker/OnboardServiceDockerfile . -t registry.digitalocean.com/keibi/onboard-service:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/onboard-service:$SVER_VERSION
+    docker build -f  docker/OnboardServiceDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/onboard-service:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/onboard-service:"$TAG"
 fi
 if [[ $SERVICES == *"summarizer-worker"* ]]; then
-    podman build -f  docker/SummarizerWorkerDockerfile . -t registry.digitalocean.com/keibi/summarizer-worker:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/summarizer-worker:$SVER_VERSION
+    docker build -f  docker/SummarizerWorkerDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/summarizer-worker:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/summarizer-worker:"$TAG"
 fi
 if [[ $SERVICES == *"swagger-ui"* ]]; then
-    podman build -f  docker/SwaggerUIDockerfile . -t registry.digitalocean.com/keibi/swagger-ui:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/swagger-ui:$SVER_VERSION
+    docker build -f  docker/SwaggerUIDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/swagger-ui:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/swagger-ui:"$TAG"
 fi
 if [[ $SERVICES == *"workspace-service"* ]]; then
-    podman build -f  docker/WorkspaceServiceDockerfile . -t registry.digitalocean.com/keibi/workspace-service:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/workspace-service:$SVER_VERSION
+    docker build -f  docker/WorkspaceServiceDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/workspace-service:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/workspace-service:"$TAG"
 fi
 if [[ $SERVICES == *"steampipe"* ]]; then
-    podman build --no-cache -f  docker/SteampipeServiceDockerfile . -t registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
-    podman push registry.digitalocean.com/keibi/steampipe-service:$SVER_VERSION
+    docker build --no-cache -f  docker/SteampipeServiceDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/steampipe-service:"$TAG" --build-arg PLUGIN_REGISTRY="435670955331.dkr.ecr.us-east-2.amazonaws.com"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/steampipe-service:"$TAG"
 fi
 
 if [[ $SERVICES == *"redoc"* ]]; then
-  podman build -f  docker/RedocDockerfile . -t registry.digitalocean.com/keibi/redoc:$SVER_VERSION
-  podman push registry.digitalocean.com/keibi/redoc:$SVER_VERSION
+    docker build -f  docker/RedocDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/redoc:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/redoc:"$TAG"
 fi
