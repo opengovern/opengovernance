@@ -14,6 +14,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/lib/pq"
 	"github.com/sony/sonyflake"
+	"go.uber.org/zap"
 
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -57,6 +58,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerDescribeJobV1, apiAuth.AdminRole))
+	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
 
 	stacks := v1.Group("/stacks")
 	stacks.GET("", httpserver.AuthorizeHandler(h.ListStack, apiAuth.ViewerRole))
@@ -99,6 +101,37 @@ func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 		return err
 	}
 	return ctx.NoContent(http.StatusOK)
+}
+
+func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
+	resourceTypes := ctx.QueryParams()["resource_type"]
+
+	err := h.Scheduler.CheckWorkspaceResourceLimit()
+	if err != nil {
+		h.Scheduler.logger.Error("failed to get limits", zap.String("spot", "CheckWorkspaceResourceLimit"), zap.Error(err))
+		DescribeJobsCount.WithLabelValues("failure").Inc()
+		if err == ErrMaxResourceCountExceeded {
+			return ctx.JSON(http.StatusNotAcceptable, api.ErrorResponse{Message: err.Error()})
+		}
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+	}
+
+	connections, err := h.Scheduler.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.KeibiAdminRole}, nil)
+	if err != nil {
+		h.Scheduler.logger.Error("failed to get list of sources", zap.String("spot", "ListSources"), zap.Error(err))
+		DescribeJobsCount.WithLabelValues("failure").Inc()
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
+	}
+	for _, connection := range connections {
+		if !connection.IsEnabled() {
+			continue
+		}
+		err = h.Scheduler.describeConnection(connection, false, resourceTypes)
+		if err != nil {
+			h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+		}
+	}
+	return ctx.JSON(http.StatusOK, "")
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
