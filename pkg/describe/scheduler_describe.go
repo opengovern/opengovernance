@@ -248,7 +248,8 @@ func (s *Scheduler) describeConnection(connection apiOnboard.Connection, schedul
 	}
 
 	if connection.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard &&
-		connection.LifecycleState != apiOnboard.ConnectionLifecycleStateInProgress {
+		connection.LifecycleState != apiOnboard.ConnectionLifecycleStateInProgress &&
+		connection.HealthState != source.HealthStatusHealthy {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		return errors.New("connection is not healthy or disabled")
 	}
@@ -260,17 +261,19 @@ func (s *Scheduler) describeConnection(connection apiOnboard.Connection, schedul
 	}
 	s.logger.Debug("Source is due for a describe. Creating a job now", zap.String("sourceId", connection.ID.String()))
 
-	fullDiscoveryJob, err := s.db.GetLastFullDiscoveryDescribeSourceJob(connection.ID.String())
-	if err != nil {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		return err
-	}
-
 	isFullDiscovery := false
-	if job == nil ||
-		fullDiscoveryJob == nil ||
-		fullDiscoveryJob.UpdatedAt.Add(time.Duration(s.fullDiscoveryIntervalHours)*time.Hour).Before(time.Now()) {
-		isFullDiscovery = true
+	if scheduled {
+		fullDiscoveryJob, err := s.db.GetLastFullDiscoveryDescribeSourceJob(connection.ID.String())
+		if err != nil {
+			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+			return err
+		}
+
+		if job == nil ||
+			fullDiscoveryJob == nil ||
+			fullDiscoveryJob.UpdatedAt.Add(time.Duration(s.fullDiscoveryIntervalHours)*time.Hour).Before(time.Now()) {
+			isFullDiscovery = true
+		}
 	}
 	daj := newDescribeSourceJob(connection, describedAt, triggerType, isFullDiscovery, resourceTypeList)
 	if len(daj.DescribeResourceJobs) == 0 {
