@@ -1173,6 +1173,16 @@ definitions:
         minimum: 0
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServicesCostTrendDatapoint:
+    properties:
+      costTrend:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostTrendDatapoint'
+        type: array
+      serviceName:
+        example: EC2-Service-Example
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse:
     properties:
       location:
@@ -3553,6 +3563,69 @@ paths:
       security:
       - BearerToken: []
       summary: List spend metrics
+      tags:
+      - inventory
+  /inventory/api/v2/analytics/spend/metrics/trend:
+    get:
+      consumes:
+      - application/json
+      description: This API allows users to retrieve a list of costs over the course
+        of the specified time frame based on the given input filters. If startTime
+        and endTime are empty, the API returns the last month trend.
+      parameters:
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: Metrics IDs
+        in: query
+        items:
+          type: string
+        name: metricIds
+        type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
+        type: string
+      - description: timestamp for start in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      - description: timestamp for end in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: maximum number of datapoints to return, default is 30
+        in: query
+        name: datapointCount
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServicesCostTrendDatapoint'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get Cost Trend
       tags:
       - inventory
   /inventory/api/v2/analytics/spend/trend:

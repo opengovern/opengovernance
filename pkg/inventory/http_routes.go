@@ -73,6 +73,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	analyticsSpend.GET("/metric", httpserver.AuthorizeHandler(h.ListAnalyticsSpendMetricsHandler, authApi.ViewerRole))
 	analyticsSpend.GET("/composition", httpserver.AuthorizeHandler(h.ListAnalyticsSpendComposition, authApi.ViewerRole))
 	analyticsSpend.GET("/trend", httpserver.AuthorizeHandler(h.GetAnalyticsSpendTrend, authApi.ViewerRole))
+	analyticsSpend.GET("/metrics/trend", httpserver.AuthorizeHandler(h.GetAnalyticsSpendMetricsTrend, authApi.ViewerRole))
 
 	servicesV2 := v2.Group("/services")
 	servicesV2.GET("/cost/trend", httpserver.AuthorizeHandler(h.GetServiceCostTrend, authApi.ViewerRole))
@@ -1558,6 +1559,81 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 	apiDatapoints = internal.DownSampleCostTrendDatapoints(apiDatapoints, int(datapointCount))
 
 	return ctx.JSON(http.StatusOK, apiDatapoints)
+}
+
+// GetAnalyticsSpendMetricsTrend godoc
+//
+//	@Summary		Get Cost Trend
+//	@Description	This API allows users to retrieve a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			metricIds		query		[]string		false	"Metrics IDs"
+//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
+//	@Success		200				{object}	[]inventoryApi.ListServicesCostTrendDatapoint
+//	@Router			/inventory/api/v2/analytics/spend/metrics/trend [get]
+func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
+	var err error
+	metricIds := httpserver.QueryArrayParam(ctx, "metricIds")
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
+
+	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	startTime, err := utils.TimeFromQueryParam(ctx, "startTime", endTime.AddDate(0, -1, 0))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	datapointCountStr := ctx.QueryParam("datapointCount")
+	datapointCount := int64(30)
+	if datapointCountStr != "" {
+		datapointCount, err = strconv.ParseInt(datapointCountStr, 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
+		}
+	}
+
+	var mt []es.MetricTrend
+	if len(connectionIDs) > 0 {
+		mt, err = es.FetchConnectionSpendMetricTrend(h.client, metricIds, connectionIDs, connectorTypes, startTime, endTime)
+	} else {
+		mt, err = es.FetchConnectorSpendMetricTrend(h.client, metricIds, connectorTypes, startTime, endTime)
+	}
+	if err != nil {
+		return err
+	}
+
+	var response []inventoryApi.ListServicesCostTrendDatapoint
+	for _, m := range mt {
+		apiDatapoints := make([]inventoryApi.CostTrendDatapoint, 0, len(m.Trend))
+		for timeAt, costVal := range m.Trend {
+			dt, _ := time.Parse("2006-01-02", timeAt)
+			apiDatapoints = append(apiDatapoints, inventoryApi.CostTrendDatapoint{Cost: costVal, Date: dt})
+		}
+		sort.Slice(apiDatapoints, func(i, j int) bool {
+			return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
+		})
+		apiDatapoints = internal.DownSampleCostTrendDatapoints(apiDatapoints, int(datapointCount))
+
+		response = append(response, inventoryApi.ListServicesCostTrendDatapoint{
+			ServiceName: m.MetricID,
+			CostTrend:   apiDatapoints,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, response)
 }
 
 // GetResourceTypeMetricsHandler godoc
