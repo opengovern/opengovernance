@@ -59,7 +59,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerDescribeJobV1, apiAuth.AdminRole))
 	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
-	v1.GET("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, apiAuth.InternalRole))
+	v1.PUT("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, apiAuth.InternalRole))
 
 	stacks := v1.Group("/stacks")
 	stacks.GET("", httpserver.AuthorizeHandler(h.ListStack, apiAuth.ViewerRole))
