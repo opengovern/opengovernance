@@ -98,7 +98,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 }
 
 func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
-	connectionIds := ctx.QueryParams()[ConnectionIdParam]
+	connectionIds := httpserver.QueryArrayParam(ctx, ConnectionIdParam)
 	connectionGroup := ctx.QueryParam(ConnectionGroupParam)
 	if len(connectionIds) == 0 && connectionGroup == "" {
 		return nil, nil
