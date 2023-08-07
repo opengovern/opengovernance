@@ -2156,16 +2156,21 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 		return err
 	}
 	for _, hit := range hits {
-		if v, ok := res[hit.ConnectionID]; ok {
-			v.TotalCost = utils.PAdd(v.TotalCost, &hit.TotalCost)
-			v.DailyCostAtStartTime = utils.PAdd(v.DailyCostAtStartTime, &hit.StartDateCost)
-			v.DailyCostAtEndTime = utils.PAdd(v.DailyCostAtEndTime, &hit.EndDateCost)
-			res[hit.ConnectionID] = v
+		localHit := hit
+		if v, ok := res[localHit.ConnectionID]; ok {
+			v.TotalCost = utils.PAdd(v.TotalCost, &localHit.TotalCost)
+			v.DailyCostAtStartTime = utils.PAdd(v.DailyCostAtStartTime, &localHit.StartDateCost)
+			v.DailyCostAtEndTime = utils.PAdd(v.DailyCostAtEndTime, &localHit.EndDateCost)
+			res[localHit.ConnectionID] = v
 		} else {
-			res[hit.ConnectionID] = inventoryApi.ConnectionData{
-				TotalCost:            &hit.TotalCost,
-				DailyCostAtStartTime: &hit.StartDateCost,
-				DailyCostAtEndTime:   &hit.EndDateCost,
+			res[localHit.ConnectionID] = inventoryApi.ConnectionData{
+				ConnectionID:         localHit.ConnectionID,
+				Count:                nil,
+				OldCount:             nil,
+				LastInventory:        nil,
+				TotalCost:            &localHit.TotalCost,
+				DailyCostAtStartTime: &localHit.StartDateCost,
+				DailyCostAtEndTime:   &localHit.EndDateCost,
 			}
 		}
 	}
