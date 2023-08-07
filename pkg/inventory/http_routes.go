@@ -626,6 +626,10 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 		}
 		endTime = time.Unix(endTimeVal, 0)
 	}
+	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
+	if metricType == "" {
+		metricType = analyticsDB.MetricTypeAssets
+	}
 
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	fmt.Println("connectorTypes", connectorTypes)
@@ -636,23 +640,21 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	tags = model.TrimPrivateTags(tags)
 
 	var metricCount map[string]int
-	if len(connectionIDs) > 0 {
-		fmt.Println("FetchConnectionAnalyticMetricCountAtTime", connectorTypes, connectionIDs, endTime)
-		metricCount, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, endTime, nil, EsFetchPageSize)
+	if metricType == analyticsDB.MetricTypeAssets {
+		if len(connectionIDs) > 0 {
+			metricCount, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, endTime, nil, EsFetchPageSize)
+		} else {
+			metricCount, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, endTime, nil, EsFetchPageSize)
+		}
+		if err != nil {
+			return err
+		}
 	} else {
-		fmt.Println("FetchConnectorAnalyticMetricCountAtTime", connectorTypes, endTime)
-		metricCount, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, endTime, nil, EsFetchPageSize)
-	}
-	if err != nil {
-		return err
+		// spend
 	}
 
 	fmt.Println("metricCount", metricCount)
 	fmt.Println("tags", tags)
-	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
-	if metricType == "" {
-		metricType = analyticsDB.MetricTypeAssets
-	}
 
 	filteredTags := map[string][]string{}
 	for key, values := range tags {
@@ -665,7 +667,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 			}
 			fmt.Println("metrics", key, tagValue, metrics)
 			for _, metric := range metrics {
-				if metricCount[metric.ID] >= minCount {
+				if metricCount[metric.ID] >= minCount || metric.Type == analyticsDB.MetricTypeSpend {
 					filteredTags[key] = append(filteredTags[key], tagValue)
 					break
 				}
