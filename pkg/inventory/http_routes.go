@@ -361,10 +361,10 @@ func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, tags)
 }
 
-func (h *HttpHandler) ListAnalyticsMetrics(metricIDs []string, tagMap map[string][]string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []inventoryApi.Metric, error) {
+func (h *HttpHandler) ListAnalyticsMetrics(metricIDs []string, metricType analyticsDB.MetricType, tagMap map[string][]string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []inventoryApi.Metric, error) {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 
-	mts, err := aDB.ListFilteredMetrics(tagMap, metricIDs, connectorTypes)
+	mts, err := aDB.ListFilteredMetrics(tagMap, metricType, metricIDs, connectorTypes)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -424,11 +424,10 @@ func (h *HttpHandler) ListAnalyticsMetrics(metricIDs []string, tagMap map[string
 func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	var err error
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
-	metricType := ctx.QueryParam("metricType")
+	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
 	if metricType == "" {
 		metricType = analyticsDB.MetricTypeAssets
 	}
-	tagMap[analyticsDB.MetricTypeKey] = []string{metricType}
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
@@ -480,7 +479,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
 	}
 
-	totalCount, apiMetrics, err := h.ListAnalyticsMetrics(metricIDs, tagMap, connectorTypes, connectionIDs, minCount, endTime)
+	totalCount, apiMetrics, err := h.ListAnalyticsMetrics(metricIDs, metricType, tagMap, connectorTypes, connectionIDs, minCount, endTime)
 	if err != nil {
 		return err
 	}
@@ -489,7 +488,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 		apiMetricsMap[apiMetric.ID] = apiMetric
 	}
 
-	totalOldCount, oldApiMetrics, err := h.ListAnalyticsMetrics(metricIDs, tagMap, connectorTypes, connectionIDs, 0, startTime)
+	totalOldCount, oldApiMetrics, err := h.ListAnalyticsMetrics(metricIDs, metricType, tagMap, connectorTypes, connectionIDs, 0, startTime)
 	if err != nil {
 		return err
 	}
@@ -649,7 +648,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 
 	fmt.Println("metricCount", metricCount)
 	fmt.Println("tags", tags)
-	metricType := ctx.QueryParam("metricType")
+	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
 	if metricType == "" {
 		metricType = analyticsDB.MetricTypeAssets
 	}
@@ -658,9 +657,8 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	for key, values := range tags {
 		for _, tagValue := range values {
 			metrics, err := aDB.ListFilteredMetrics(map[string][]string{
-				key:                       {tagValue},
-				analyticsDB.MetricTypeKey: {metricType},
-			}, nil, connectorTypes)
+				key: {tagValue},
+			}, metricType, nil, connectorTypes)
 			if err != nil {
 				return err
 			}
@@ -703,11 +701,10 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	var err error
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
-	metricType := ctx.QueryParam("metricType")
+	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
 	if metricType == "" {
 		metricType = analyticsDB.MetricTypeAssets
 	}
-	tagMap[analyticsDB.MetricTypeKey] = []string{metricType}
 	ids := httpserver.QueryArrayParam(ctx, "ids")
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
@@ -746,7 +743,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		}
 	}
 
-	metrics, err := aDB.ListFilteredMetrics(tagMap, ids, connectorTypes)
+	metrics, err := aDB.ListFilteredMetrics(tagMap, metricType, ids, connectorTypes)
 	if err != nil {
 		return err
 	}
@@ -821,14 +818,10 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 	if tagKey == "" || strings.HasPrefix(tagKey, model.KaytuPrivateTagPrefix) {
 		return echo.NewHTTPError(http.StatusBadRequest, "tag key is invalid")
 	}
-	tagMap := map[string][]string{
-		tagKey: nil,
-	}
-	metricType := ctx.QueryParam("metricType")
+	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
 	if metricType == "" {
 		metricType = analyticsDB.MetricTypeAssets
 	}
-	tagMap[analyticsDB.MetricTypeKey] = []string{metricType}
 
 	topStr := ctx.QueryParam("top")
 	top := int64(5)
@@ -865,27 +858,12 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 		startTime = time.Unix(startTimeVal, 0)
 	}
 
-	filteredMetrics, err := aDB.ListFilteredMetrics(map[string][]string{tagKey: nil}, nil, connectorTypes)
+	filteredMetrics, err := aDB.ListFilteredMetrics(map[string][]string{tagKey: nil}, metricType, nil, connectorTypes)
 	if err != nil {
 		return err
 	}
 	var metrics []analyticsDB.AnalyticMetric
 	for _, metric := range filteredMetrics {
-		isValid := false
-		for _, tag := range metric.Tags {
-			if tag.GetKey() == analyticsDB.MetricTypeKey {
-				if len(tag.GetValue()) > 0 {
-					if tag.GetValue()[0] == metricType {
-						isValid = true
-					}
-				}
-			}
-		}
-
-		if !isValid {
-			continue
-		}
-
 		metrics = append(metrics, metric)
 	}
 	metricsIDs := make([]string, 0, len(metrics))
@@ -1135,7 +1113,7 @@ func (h *HttpHandler) ListAnalyticsRegionsSummary(ctx echo.Context) error {
 func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 
-	metricType := ctx.QueryParam("metricType")
+	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
 	if metricType == "" {
 		metricType = analyticsDB.MetricTypeAssets
 	}
@@ -1147,18 +1125,7 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 
 	categoryResourceTypeMap := map[string][]string{}
 	for _, metric := range metrics {
-		metricTypeValid := false
-		for _, tag := range metric.Tags {
-			if tag.GetKey() == analyticsDB.MetricTypeKey {
-				if len(tag.GetValue()) > 0 {
-					if tag.GetValue()[0] == metricType {
-						metricTypeValid = true
-					}
-				}
-			}
-		}
-
-		if !metricTypeValid {
+		if metric.Type != metricType {
 			continue
 		}
 
@@ -1204,21 +1171,13 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now().Unix()
-	if endTimeStr != "" {
-		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
+	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
-	if startTimeStr != "" {
-		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
+	startTime, err := utils.TimeFromQueryParam(ctx, "startTime", endTime.AddDate(0, -1, 0))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
 	if err != nil {
@@ -1235,7 +1194,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 
 	costMetricMap := make(map[string]inventoryApi.CostMetric)
 	if len(connectionIDs) > 0 {
-		hits, err := es.FetchConnectionDailySpendHistoryByMetric(h.client, connectionIDs, connectorTypes, nil, time.Unix(startTime, 0), time.Unix(endTime, 0), EsFetchPageSize)
+		hits, err := es.FetchConnectionDailySpendHistoryByMetric(h.client, connectionIDs, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1268,7 +1227,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 			}
 		}
 	} else {
-		hits, err := es.FetchConnectorDailySpendHistoryByMetric(h.client, connectorTypes, nil, time.Unix(startTime, 0), time.Unix(endTime, 0), EsFetchPageSize)
+		hits, err := es.FetchConnectorDailySpendHistoryByMetric(h.client, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1410,21 +1369,13 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now().Unix()
-	if endTimeStr != "" {
-		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
+	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
-	if startTimeStr != "" {
-		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
+	startTime, err := utils.TimeFromQueryParam(ctx, "startTime", endTime.AddDate(0, -1, 0))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	topStr := ctx.QueryParam("top")
 	top := int64(5)
@@ -1437,7 +1388,7 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 
 	costMetricMap := make(map[string]inventoryApi.CostMetric)
 	if len(connectionIDs) > 0 {
-		hits, err := es.FetchConnectionDailySpendHistoryByMetric(h.client, connectionIDs, connectorTypes, nil, time.Unix(startTime, 0), time.Unix(endTime, 0), EsFetchPageSize)
+		hits, err := es.FetchConnectionDailySpendHistoryByMetric(h.client, connectionIDs, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1465,7 +1416,7 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 			}
 		}
 	} else {
-		hits, err := es.FetchConnectorDailySpendHistoryByMetric(h.client, connectorTypes, nil, time.Unix(startTime, 0), time.Unix(endTime, 0), EsFetchPageSize)
+		hits, err := es.FetchConnectorDailySpendHistoryByMetric(h.client, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1568,23 +1519,13 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 		return err
 	}
 
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now()
-	if endTimeStr != "" {
-		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-		endTime = time.Unix(endTimeVal, 0)
+	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := endTime.AddDate(0, -1, 0)
-	if startTimeStr != "" {
-		startTimeVal, err := strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-		startTime = time.Unix(startTimeVal, 0)
+	startTime, err := utils.TimeFromQueryParam(ctx, "startTime", endTime.AddDate(0, -1, 0))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	datapointCountStr := ctx.QueryParam("datapointCount")
@@ -1596,16 +1537,11 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 		}
 	}
 
-	esDataPointCount := int(endTime.Sub(startTime).Hours() / 24)
-	if esDataPointCount == 0 {
-		esDataPointCount = 1
-	}
-
 	timepointToCost := map[string]float64{}
 	if len(connectionIDs) > 0 {
-		timepointToCost, err = es.FetchConnectionSpendTrend(h.client, metricIds, connectionIDs, connectorTypes, startTime, endTime, esDataPointCount)
+		timepointToCost, err = es.FetchConnectionSpendTrend(h.client, metricIds, connectionIDs, connectorTypes, startTime, endTime)
 	} else {
-		timepointToCost, err = es.FetchConnectorSpendTrend(h.client, metricIds, connectorTypes, startTime, endTime, esDataPointCount)
+		timepointToCost, err = es.FetchConnectorSpendTrend(h.client, metricIds, connectorTypes, startTime, endTime)
 	}
 	if err != nil {
 		return err
@@ -2174,60 +2110,6 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			}
 		}
 	}
-
-	//costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, connectors, connectionIDs, endTime, startTime, EsFetchPageSize)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//startTimeCosts, err := es.FetchDailyCostHistoryByAccountsAtTime(h.client, connectors, connectionIDs, startTime)
-	//if err != nil {
-	//	return err
-	//}
-	//endTimeCosts, err := es.FetchDailyCostHistoryByAccountsAtTime(h.client, connectors, connectionIDs, endTime)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//for connectionId, costValue := range costs {
-	//	localValue := costValue
-	//	if _, ok := res[connectionId]; !ok {
-	//		res[connectionId] = inventoryApi.ConnectionData{
-	//			ConnectionID:  connectionId,
-	//			LastInventory: nil,
-	//		}
-	//	}
-	//	if v, ok := res[connectionId]; ok {
-	//		v.TotalCost = utils.PAdd(v.TotalCost, &localValue)
-	//		res[connectionId] = v
-	//	}
-	//}
-	//for connectionId, costValue := range startTimeCosts {
-	//	localValue := costValue
-	//	if _, ok := res[connectionId]; !ok {
-	//		res[connectionId] = inventoryApi.ConnectionData{
-	//			ConnectionID:  connectionId,
-	//			LastInventory: nil,
-	//		}
-	//	}
-	//	if v, ok := res[connectionId]; ok {
-	//		v.DailyCostAtStartTime = utils.PAdd(v.DailyCostAtStartTime, &localValue)
-	//		res[connectionId] = v
-	//	}
-	//}
-	//for connectionId, costValue := range endTimeCosts {
-	//	if _, ok := res[connectionId]; !ok {
-	//		res[connectionId] = inventoryApi.ConnectionData{
-	//			ConnectionID:  connectionId,
-	//			LastInventory: nil,
-	//		}
-	//	}
-	//	localValue := costValue
-	//	if v, ok := res[connectionId]; ok {
-	//		v.DailyCostAtEndTime = utils.PAdd(v.DailyCostAtEndTime, &localValue)
-	//		res[connectionId] = v
-	//	}
-	//}
 
 	return ctx.JSON(http.StatusOK, res)
 }

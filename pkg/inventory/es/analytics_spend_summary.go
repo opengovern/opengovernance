@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strconv"
@@ -336,7 +337,7 @@ type ConnectionSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionSpendTrend(client keibi.Client, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time, datapointCount int) (map[string]float64, error) {
+func FetchConnectionSpendTrend(client keibi.Client, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]float64, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -380,7 +381,7 @@ func FetchConnectionSpendTrend(client keibi.Client, metricIds []string, connecti
 		"date_group": map[string]any{
 			"terms": map[string]any{
 				"field": "date",
-				"size":  datapointCount,
+				"size":  es.EsFetchPageSize,
 			},
 			"aggs": map[string]any{
 				"cost_sum_group": map[string]any{
@@ -425,7 +426,7 @@ type ConnectorSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorSpendTrend(client keibi.Client, metricIds []string, connectors []source.Type, startTime, endTime time.Time, datapointCount int) (map[string]float64, error) {
+func FetchConnectorSpendTrend(client keibi.Client, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]float64, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -464,7 +465,7 @@ func FetchConnectorSpendTrend(client keibi.Client, metricIds []string, connector
 		"date_group": map[string]any{
 			"terms": map[string]any{
 				"field": "date",
-				"size":  datapointCount,
+				"size":  es.EsFetchPageSize,
 			},
 			"aggs": map[string]any{
 				"cost_sum_group": map[string]any{

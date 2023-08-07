@@ -7,11 +7,11 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-const (
-	MetricTypeKey = "x-kaytu-metric-type"
+type MetricType string
 
-	MetricTypeAssets = "assets"
-	MetricTypeSpend  = "spend"
+const (
+	MetricTypeAssets MetricType = "assets"
+	MetricTypeSpend  MetricType = "spend"
 )
 
 type MetricTag struct {
@@ -22,6 +22,7 @@ type MetricTag struct {
 type AnalyticMetric struct {
 	ID          string         `gorm:"primaryKey"`
 	Connectors  pq.StringArray `gorm:"type:text[]"`
+	Type        MetricType
 	Name        string
 	Query       string
 	Tables      pq.StringArray `gorm:"type:text[]"`
@@ -64,7 +65,7 @@ func (db Database) GetMetric(resourceType string) (*AnalyticMetric, error) {
 	return s, nil
 }
 
-func (db Database) ListFilteredMetrics(tags map[string][]string, metricIDs []string, connectorTypes []source.Type) ([]AnalyticMetric, error) {
+func (db Database) ListFilteredMetrics(tags map[string][]string, metricType MetricType, metricIDs []string, connectorTypes []source.Type) ([]AnalyticMetric, error) {
 	var metrics []AnalyticMetric
 	query := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations)
 	if len(tags) != 0 {
@@ -85,6 +86,7 @@ func (db Database) ListFilteredMetrics(tags map[string][]string, metricIDs []str
 	if len(metricIDs) != 0 {
 		query = query.Where("analytic_metrics.id IN ?", metricIDs)
 	}
+	query.Where("metric_type = ?", metricType)
 	tx := query.Find(&metrics)
 	if tx.Error != nil {
 		return nil, tx.Error

@@ -73,13 +73,6 @@ func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 	if !isAsset {
 		metricType = analyticsDB.MetricTypeSpend
 	}
-	tags = append(tags, analyticsDB.MetricTag{
-		Tag: model.Tag{
-			Key:   analyticsDB.MetricTypeKey,
-			Value: []string{metricType},
-		},
-		ID: id,
-	})
 
 	awsR := regexp.MustCompile(`'(aws::[\w\d]+::[\w\d]+)'`)
 	azureR := regexp.MustCompile(`'(microsoft.[\w\d/]+)'`)
@@ -108,6 +101,7 @@ func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 	dbMetric := analyticsDB.AnalyticMetric{
 		ID:          id,
 		Connectors:  connectors,
+		Type:        metricType,
 		Name:        metric.Name,
 		Query:       metric.Query,
 		Tables:      metric.Tables,

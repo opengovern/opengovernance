@@ -76,16 +76,7 @@ func (j *Job) Run(
 	connectionCache := map[string]api.Connection{}
 
 	for _, metric := range metrics {
-		tagMap := metric.GetTagsMap()
-		tagValue := tagMap[db.MetricTypeKey]
-		isAsset := true
-		if tagValue != nil && len(tagValue) > 0 {
-			if tagValue[0] == db.MetricTypeSpend {
-				isAsset = false
-			}
-		}
-
-		if isAsset {
+		if metric.Type == db.MetricTypeAssets {
 			err = j.DoAssetMetric(
 				steampipeDB,
 				kfkProducer,
