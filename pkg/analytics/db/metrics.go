@@ -86,7 +86,7 @@ func (db Database) ListFilteredMetrics(tags map[string][]string, metricType Metr
 	if len(metricIDs) != 0 {
 		query = query.Where("analytic_metrics.id IN ?", metricIDs)
 	}
-	query.Where("metric_type = ?", metricType)
+	query.Where("type = ?", metricType)
 	tx := query.Find(&metrics)
 	if tx.Error != nil {
 		return nil, tx.Error
