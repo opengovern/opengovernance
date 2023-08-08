@@ -3012,9 +3012,26 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "DISABLED",
+                            "DISCOVERED",
+                            "IN_PROGRESS",
+                            "ONBOARD",
+                            "ARCHIVED"
+                        ],
                         "type": "string",
                         "description": "lifecycle state filter",
                         "name": "lifecycleState",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "healthy",
+                            "unhealthy"
+                        ],
+                        "type": "string",
+                        "description": "health state filter",
+                        "name": "healthState",
                         "in": "query"
                     },
                     {
@@ -7676,8 +7693,6 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {
