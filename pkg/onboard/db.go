@@ -69,7 +69,8 @@ func (db Database) ListSources() ([]Source, error) {
 func (db Database) ListSourcesWithFilters(
 	connectorTypes []source.Type,
 	connectionIDs []string,
-	lifecycleState []ConnectionLifecycleState) ([]Source, error) {
+	lifecycleState []ConnectionLifecycleState,
+	healthState []source.HealthStatus) ([]Source, error) {
 
 	var s []Source
 	tx := db.orm.Model(Source{}).Preload(clause.Associations)
@@ -81,6 +82,9 @@ func (db Database) ListSourcesWithFilters(
 	}
 	if len(lifecycleState) > 0 {
 		tx = tx.Where("lifecycle_state IN ?", lifecycleState)
+	}
+	if len(healthState) > 0 {
+		tx = tx.Where("health_state IN ?", healthState)
 	}
 	tx.Find(&s)
 
