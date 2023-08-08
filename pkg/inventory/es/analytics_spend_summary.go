@@ -159,11 +159,15 @@ func FetchConnectionDailySpendHistoryByMetric(client keibi.Client, connectionIDs
 			}
 
 			for _, v := range metricBucket.StartCostGroup.Hits.Hits {
-				hit.StartDateCost = v.Source.CostValue
+				if startTime.Format("2006-01-02") == v.Source.Date {
+					hit.StartDateCost = v.Source.CostValue
+				}
 				hit.Connector = v.Source.Connector.String()
 			}
 			for _, v := range metricBucket.EndCostGroup.Hits.Hits {
-				hit.EndDateCost = v.Source.CostValue
+				if endTime.Format("2006-01-02") == v.Source.Date {
+					hit.EndDateCost = v.Source.CostValue
+				}
 			}
 			hits = append(hits, hit)
 		}
