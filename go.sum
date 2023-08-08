@@ -2295,8 +2295,8 @@ github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/kaytu-io/kaytu-aws-describer v0.0.48 h1:DSyiClIW20yKNjK/URYhp0KKdseL4+sQepxY+JH82Bs=
 github.com/kaytu-io/kaytu-aws-describer v0.0.48/go.mod h1:H+PC3Rb1+KlSlDABIWMm2twvLFvRzaXPqF+nGOyqu6Y=
-github.com/kaytu-io/kaytu-azure-describer v0.0.62 h1:QJ9bAVOiBaz7vLNlnYB0QbFantczqlQcbxpBbgPSxSM=
-github.com/kaytu-io/kaytu-azure-describer v0.0.62/go.mod h1:wtz3x1mvt4XEuw8AuANfDkrvDHeerfnybWMRZa2WeTE=
+github.com/kaytu-io/kaytu-azure-describer v0.0.63 h1:WWCiM1Lno9RuWEcl/n9u9ikbSRlO7NXBXQ2POAvbTp0=
+github.com/kaytu-io/kaytu-azure-describer v0.0.63/go.mod h1:wtz3x1mvt4XEuw8AuANfDkrvDHeerfnybWMRZa2WeTE=
 github.com/kaytu-io/kaytu-util v0.0.0-20230804082552-3c07cccc35a8 h1:Ts7VH/IDYANBn0wI14e3V3Q5MGbFiD3bsGmF6DCaA24=
 github.com/kaytu-io/kaytu-util v0.0.0-20230804082552-3c07cccc35a8/go.mod h1:SSKFvtVP8dmpewK7X4oPXqaal92Npxkc/YlP/WuZdV4=
 github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230804102108-c310a0b81098 h1:MIsoiwEFC33csOfKU6sa59JltVxgu7h6HgCVVwwhAak=
