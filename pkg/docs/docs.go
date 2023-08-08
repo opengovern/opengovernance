@@ -335,7 +335,6 @@ const docTemplate = `{
                         "description": "Request Body",
                         "name": "request",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUsersRequest"
                         }
