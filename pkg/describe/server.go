@@ -75,8 +75,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 
 // TriggerDescribeJobV1 godoc
 //
-//	@Summary		Triggers a describe job to run immediately
-//	@Description	Triggers a describe job to run immediately
+//	@Summary		Triggers describer
+//	@Description	Triggers a describe job to run immediately for the given connection
 //	@Security		BearerToken
 //	@Tags			describe
 //	@Produce		json
@@ -288,8 +288,8 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 
 // GetStack godoc
 //
-//	@Summary		Get a Stack
-//	@Description	Get a stack details by ID
+//	@Summary		Get Stack
+//	@Description	Get stack details by ID
 //	@Security		BearerToken
 //	@Tags			stack
 //	@Accept			json
@@ -351,7 +351,7 @@ func (h HttpServer) ListStack(ctx echo.Context) error {
 
 // DeleteStack godoc
 //
-//	@Summary		Delete a Stack
+//	@Summary		Delete Stack
 //	@Description	Delete a stack by ID
 //	@Security		BearerToken
 //	@Tags			stack

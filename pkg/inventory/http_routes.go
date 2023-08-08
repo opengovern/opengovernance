@@ -284,9 +284,9 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 // ListResourceTypeTags godoc
 //
 //	@Summary		List resourcetype tags
-//	@Description	This API allows users to retrieve a list of tag keys with their possible values for all resource types.
+//	@Description	Retrieving a list of tag keys with their possible values for all resource types.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			resource
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]string	false	"Connector type to filter by"
@@ -403,7 +403,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(metricIDs []string, metricType analyt
 // ListAnalyticsMetricsHandler godoc
 //
 //	@Summary		List analytics metrics
-//	@Description	Get list of analytics with metrics of each type based on the given input filters.
+//	@Description	Retrieving list of analytics with metrics of each type based on the given input filters.
 //	@Security		BearerToken
 //	@Tags			analytics
 //	@Accept			json
@@ -587,7 +587,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 // ListAnalyticsTags godoc
 //
 //	@Summary		List analytics tags
-//	@Description	This API allows users to retrieve a list of tag keys with their possible values for all analytic metrics.
+//	@Description	Retrieving a list of tag keys with their possible values for all analytic metrics.
 //	@Security		BearerToken
 //	@Tags			analytics
 //	@Accept			json
@@ -695,7 +695,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 //
 //	@Summary		Get metric trend
 //
-//	@Description	This API allows users to retrieve a list of resource counts over the course of the specified time frame based on the given input filters
+//	@Description	Retrieving a list of resource counts over the course of the specified time frame based on the given input filters
 //	@Security		BearerToken
 //	@Tags			analytics
 //	@Accept			json
@@ -809,7 +809,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 // ListAnalyticsComposition godoc
 //
 //	@Summary		List analytics composition
-//	@Description	This API allows users to retrieve tag values with the most resources for the given key.
+//	@Description	Retrieving tag values with the most resources for the given key.
 //	@Security		BearerToken
 //	@Tags			analytics
 //	@Accept			json
@@ -965,7 +965,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 // ListAnalyticsRegionsSummary godoc
 //
 //	@Summary		List Regions Summary
-//	@Description	Returns list of regions analytics summary
+//	@Description	Retrieving list of regions analytics summary
 //	@Security		BearerToken
 //	@Tags			analytics
 //	@Accept			json
@@ -1116,7 +1116,7 @@ func (h *HttpHandler) ListAnalyticsRegionsSummary(ctx echo.Context) error {
 // ListAnalyticsCategories godoc
 //
 //	@Summary		List Analytics categories
-//	@Description	Returns list of categories for analytics summary
+//	@Description	Retrieving list of categories for analytics
 //	@Security		BearerToken
 //	@Tags			analytics
 //	@Accept			json
@@ -1163,9 +1163,9 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 // ListAnalyticsSpendMetricsHandler godoc
 //
 //	@Summary		List spend metrics
-//	@Description	This API allows users to retrieve cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.
+//	@Description	Retrieving cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
@@ -1363,9 +1363,9 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 // ListAnalyticsSpendComposition godoc
 //
 //	@Summary		List cost composition
-//	@Description	This API allows users to retrieve the cost composition with respect to specified filters. The API returns information such as the total cost for the given time range, and the top services by cost.
+//	@Description	Retrieving the cost composition with respect to specified filters. Retrieving information such as the total cost for the given time range, and the top services by cost.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
@@ -1464,9 +1464,9 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 // GetAnalyticsSpendTrend godoc
 //
 //	@Summary		Get Cost Trend
-//	@Description	This API allows users to retrieve a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.
+//	@Description	Retrieving a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
@@ -1531,9 +1531,9 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 // GetAnalyticsSpendMetricsTrend godoc
 //
 //	@Summary		Get Cost Trend
-//	@Description	This API allows users to retrieve a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.
+//	@Description	Retrieving a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
@@ -1605,10 +1605,10 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 
 // GetResourceTypeMetricsHandler godoc
 //
-//	@Summary		Get resource metrics
-//	@Description	This API allows users to retrieve metrics for a specific resource type.
+//	@Summary		List resource-type metrics
+//	@Description	Retrieving metrics for a specific resource type.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			resource
 //	@Accept			json
 //	@Produce		json
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
@@ -1689,9 +1689,9 @@ func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionID
 // ListCostMetricsHandler godoc
 //
 //	@Summary		List cost metrics
-//	@Description	This API allows users to retrieve cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.
+//	@Description	Retrieving cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			cost
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
@@ -1871,9 +1871,9 @@ func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
 // ListCostComposition godoc
 //
 //	@Summary		List cost composition
-//	@Description	This API allows users to retrieve the cost composition with respect to specified filters. The API returns information such as the total cost for the given time range, and the top services by cost.
+//	@Description	Retrieving the cost composition with respect to specified filters. Retrieving information such as the total cost for the given time range, and the top services by cost.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			cost
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
@@ -1984,9 +1984,9 @@ func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
 // GetCostTrend godoc
 //
 //	@Summary		Get Cost Trend
-//	@Description	This API allows users to retrieve a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.
+//	@Description	Retrieving a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			cost
 //	@Accept			json
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
@@ -2247,9 +2247,9 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 // GetServiceCostTrend godoc
 //
 //	@Summary		Get Services Cost Trend
-//	@Description	This API allows users to retrieve a list of costs over the course of the specified time frame for the given services. If startTime and endTime are empty, the API returns the last month trend.
+//	@Description	Retrieving a list of costs over the course of the specified time frame for the given services. If startTime and endTime are empty, the API returns the last month trend.
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			cost
 //	@Accept			json
 //	@Produce		json
 //	@Param			services		query		[]string		false	"Services to filter by"
@@ -2334,7 +2334,7 @@ func (h *HttpHandler) GetServiceCostTrend(ctx echo.Context) error {
 // ListQueries godoc
 //
 //	@Summary		List smart queries
-//	@Description	Listing smart queries by specified filters
+//	@Description	Retrieving list of smart queries by specified filters
 //	@Security		BearerToken
 //	@Tags			smart_query
 //	@Produce		json
@@ -2376,7 +2376,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 
 // RunQuery godoc
 //
-//	@Summary		Run provided smart query and returns the result
+//	@Summary		Run query
 //	@Description	Run provided smart query and returns the result.
 //	@Security		BearerToken
 //	@Tags			smart_query
@@ -2403,8 +2403,8 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 
 // GetRecentRanQueries godoc
 //
-//	@Summary		Get recently ran queries
-//	@Description	Get recently ran queries.
+//	@Summary		List recently ran queries
+//	@Description	List queries which have been run recently
 //	@Security		BearerToken
 //	@Tags			smart_query
 //	@Accepts		json
