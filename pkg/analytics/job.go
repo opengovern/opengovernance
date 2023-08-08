@@ -91,44 +91,26 @@ func (j *Job) Run(
 				return err
 			}
 		} else {
-			yesterday := time.Now().UTC().AddDate(0, 0, -1)
-			year, month, day := yesterday.Date()
-			yesterdayStart := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
-			yesterdayEnd := time.Date(year, month, day, 23, 59, 59, 0, time.UTC)
+			for i := 2; i > 0; i-- {
+				theDate := time.Now().UTC().AddDate(0, 0, -1*i)
+				year, month, day := theDate.Date()
+				start := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+				end := time.Date(year, month, day, 23, 59, 59, 0, time.UTC)
 
-			err = j.DoSpendMetric(
-				steampipeDB,
-				kfkProducer,
-				kfkTopic,
-				onboardClient,
-				logger,
-				metric,
-				connectionCache,
-				yesterdayStart,
-				yesterdayEnd,
-			)
-			if err != nil {
-				return err
-			}
-
-			today := time.Now().UTC()
-			year, month, day = today.Date()
-			todayStart := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
-			todayEnd := time.Date(year, month, day, 23, 59, 59, 0, time.UTC)
-
-			err = j.DoSpendMetric(
-				steampipeDB,
-				kfkProducer,
-				kfkTopic,
-				onboardClient,
-				logger,
-				metric,
-				connectionCache,
-				todayStart,
-				todayEnd,
-			)
-			if err != nil {
-				return err
+				err = j.DoSpendMetric(
+					steampipeDB,
+					kfkProducer,
+					kfkTopic,
+					onboardClient,
+					logger,
+					metric,
+					connectionCache,
+					start,
+					end,
+				)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -149,6 +131,7 @@ func (j *Job) DoAssetMetric(
 	providerResultMap := map[string]resource.ConnectorMetricTrendSummary{}
 	regionResultMap := map[string]resource.RegionMetricTrendSummary{}
 
+	fmt.Println("assets ==== " + metric.Query)
 	res, err := steampipeDB.QueryAll(context.TODO(), metric.Query)
 	if err != nil {
 		return err
@@ -270,6 +253,7 @@ func (j *Job) DoSpendMetric(
 	query = strings.ReplaceAll(query, "$startTime", fmt.Sprintf("%d", startTime.Unix()))
 	query = strings.ReplaceAll(query, "$endTime", fmt.Sprintf("%d", endTime.Unix()))
 
+	fmt.Println("spend ==== " + query)
 	res, err := steampipeDB.QueryAll(context.TODO(), query)
 	if err != nil {
 		return err
