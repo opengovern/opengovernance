@@ -388,7 +388,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Returns all benchmark assigned sources with benchmark id",
+                "description": "Retrieving all benchmark assigned sources with benchmark id",
                 "consumes": [
                     "application/json"
                 ],
@@ -398,7 +398,7 @@ const docTemplate = `{
                 "tags": [
                     "benchmarks_assignment"
                 ],
-                "summary": "Get all benchmark assigned sources with benchmark id",
+                "summary": "Get benchmark assigned sources",
                 "parameters": [
                     {
                         "type": "string",
@@ -428,7 +428,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Returns benchmark assignment which insert",
+                "description": "Creating a benchmark assignment for a connection.",
                 "consumes": [
                     "application/json"
                 ],
@@ -438,7 +438,7 @@ const docTemplate = `{
                 "tags": [
                     "benchmarks_assignment"
                 ],
-                "summary": "Create benchmark assignment for inventory service",
+                "summary": "Create benchmark assignment",
                 "parameters": [
                     {
                         "type": "string",
@@ -483,7 +483,7 @@ const docTemplate = `{
                 "tags": [
                     "benchmarks_assignment"
                 ],
-                "summary": "Delete benchmark assignment for inventory service",
+                "summary": "Delete benchmark assignment",
                 "parameters": [
                     {
                         "type": "string",
@@ -514,7 +514,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API enables users to retrieve a summary of all benchmarks and their associated checks and results within a specified time interval. Users can use this API to obtain an overview of all benchmarks, including their names, descriptions, and other relevant information, as well as the checks and their corresponding results within the specified time period.",
+                "description": "Retrieving a summary of all benchmarks and their associated checks and results within a specified time interval.",
                 "consumes": [
                     "application/json"
                 ],
@@ -575,7 +575,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API enables users to retrieve a summary of a benchmark and its associated checks and results. Users can use this API to obtain an overview of the benchmark, including its name, description, and other relevant information, as well as the checks and their corresponding results.",
+                "description": "Retrieving a summary of a benchmark and its associated checks and results.",
                 "consumes": [
                     "application/json"
                 ],
@@ -643,7 +643,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API retrieves the benchmark tree, including all of its child benchmarks. Users can use this API to obtain a comprehensive overview of the benchmarks within a particular category or hierarchy.",
+                "description": "Retrieving the benchmark tree, including all of its child benchmarks.",
                 "consumes": [
                     "application/json"
                 ],
@@ -680,7 +680,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API enables users to retrieve a trend of a benchmark result and checks",
+                "description": "Retrieving a trend of a benchmark result and checks.",
                 "consumes": [
                     "application/json"
                 ],
@@ -757,7 +757,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API enables users to retrieve all compliance run findings with respect to filters. Users can use this API to obtain a list of all compliance run findings that match specific filters, such as compliance run ID, resource ID, results, and other relevant parameters.",
+                "description": "Retrieving all compliance run findings with respect to filters.",
                 "consumes": [
                     "application/json"
                 ],
@@ -796,7 +796,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API enables users to retrieve the top field by finding count.",
+                "description": "Retrieving the top field by finding count.",
                 "consumes": [
                     "application/json"
                 ],
@@ -895,7 +895,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API returns a list of insights based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.\nReturns \"all:provider\" job results if connectionId is not defined.",
+                "description": "Retrieving list of insights based on specified filters. Provides details of insights, including results during the specified time period for the specified connection.\nReturns \"all:provider\" job results if connectionId is not defined.",
                 "produces": [
                     "application/json"
                 ],
@@ -972,7 +972,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API returns a list of insight groups based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.\nReturns \"all:provider\" job results if connectionId is not defined.",
+                "description": "Retrieving list of insight groups based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.\nReturns \"all:provider\" job results if connectionId is not defined.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1052,7 +1052,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API returns the specified insight with ID. The API provides details of the insight, including results during the specified time period for the specified connection.\nReturns \"all:provider\" job results if connectionId is not defined.",
+                "description": "Retrieving the specified insight with ID. Provides details of the insight, including results during the specified time period for the specified connection.\nReturns \"all:provider\" job results if connectionId is not defined.",
                 "produces": [
                     "application/json"
                 ],
@@ -1108,7 +1108,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve insight results datapoints for a specified connection during a specified time period.\nReturns \"all:provider\" job results if connectionId is not defined.",
+                "description": "Retrieving insight results datapoints for a specified connection during a specified time period.\nReturns \"all:provider\" job results if connectionId is not defined.",
                 "produces": [
                     "application/json"
                 ],
@@ -1173,7 +1173,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Get insight metadata by id",
+                "description": "Retrieving insight metadata by id",
                 "produces": [
                     "application/json"
                 ],
@@ -1207,7 +1207,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve a list of insights tag keys with their possible values.",
+                "description": "Retrieving a list of insights tag keys with their possible values.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1241,7 +1241,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API syncs queries with the git backend.",
+                "description": "Syncs queries with the git backend.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1266,7 +1266,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Listing smart queries by specified filters",
+                "description": "Retrieving list of smart queries by specified filters",
                 "produces": [
                     "application/json"
                 ],
@@ -1312,7 +1312,7 @@ const docTemplate = `{
                 "tags": [
                     "smart_query"
                 ],
-                "summary": "Run provided smart query and returns the result",
+                "summary": "Run query",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -1352,14 +1352,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Get recently ran queries.",
+                "description": "List queries which have been run recently",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "smart_query"
                 ],
-                "summary": "Get recently ran queries",
+                "summary": "List recently ran queries",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1380,7 +1380,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Returns list of categories for analytics summary",
+                "description": "Retrieving list of categories for analytics",
                 "consumes": [
                     "application/json"
                 ],
@@ -1420,7 +1420,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve tag values with the most resources for the given key.",
+                "description": "Retrieving tag values with the most resources for the given key.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1517,7 +1517,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Get list of analytics with metrics of each type based on the given input filters.",
+                "description": "Retrieving list of analytics with metrics of each type based on the given input filters.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1650,7 +1650,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Returns list of regions analytics summary",
+                "description": "Retrieving list of regions analytics summary",
                 "consumes": [
                     "application/json"
                 ],
@@ -1746,7 +1746,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve the cost composition with respect to specified filters. The API returns information such as the total cost for the given time range, and the top services by cost.",
+                "description": "Retrieving the cost composition with respect to specified filters. Retrieving information such as the total cost for the given time range, and the top services by cost.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1754,7 +1754,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "analytics"
                 ],
                 "summary": "List cost composition",
                 "parameters": [
@@ -1825,7 +1825,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.",
+                "description": "Retrieving cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1833,7 +1833,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "analytics"
                 ],
                 "summary": "List spend metrics",
                 "parameters": [
@@ -1922,7 +1922,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.",
+                "description": "Retrieving a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1930,7 +1930,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "analytics"
                 ],
                 "summary": "Get Cost Trend",
                 "parameters": [
@@ -2014,7 +2014,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.",
+                "description": "Retrieving a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2022,7 +2022,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "analytics"
                 ],
                 "summary": "Get Cost Trend",
                 "parameters": [
@@ -2106,7 +2106,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve a list of tag keys with their possible values for all analytic metrics.",
+                "description": "Retrieving a list of tag keys with their possible values for all analytic metrics.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2196,7 +2196,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve a list of resource counts over the course of the specified time frame based on the given input filters",
+                "description": "Retrieving a list of resource counts over the course of the specified time frame based on the given input filters",
                 "consumes": [
                     "application/json"
                 ],
@@ -2308,7 +2308,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve the cost composition with respect to specified filters. The API returns information such as the total cost for the given time range, and the top services by cost.",
+                "description": "Retrieving the cost composition with respect to specified filters. Retrieving information such as the total cost for the given time range, and the top services by cost.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2316,7 +2316,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "cost"
                 ],
                 "summary": "List cost composition",
                 "parameters": [
@@ -2387,7 +2387,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.",
+                "description": "Retrieving cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2395,7 +2395,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "cost"
                 ],
                 "summary": "List cost metrics",
                 "parameters": [
@@ -2484,7 +2484,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.",
+                "description": "Retrieving a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2492,7 +2492,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "cost"
                 ],
                 "summary": "Get Cost Trend",
                 "parameters": [
@@ -2566,7 +2566,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve metrics for a specific resource type.",
+                "description": "Retrieving metrics for a specific resource type.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2574,9 +2574,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "resource"
                 ],
-                "summary": "Get resource metrics",
+                "summary": "List resource-type metrics",
                 "parameters": [
                     {
                         "type": "array",
@@ -2631,7 +2631,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve a list of tag keys with their possible values for all resource types.",
+                "description": "Retrieving a list of tag keys with their possible values for all resource types.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2639,7 +2639,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "resource"
                 ],
                 "summary": "List resourcetype tags",
                 "parameters": [
@@ -2705,7 +2705,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "This API allows users to retrieve a list of costs over the course of the specified time frame for the given services. If startTime and endTime are empty, the API returns the last month trend.",
+                "description": "Retrieving a list of costs over the course of the specified time frame for the given services. If startTime and endTime are empty, the API returns the last month trend.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2713,7 +2713,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "cost"
                 ],
                 "summary": "Get Services Cost Trend",
                 "parameters": [
@@ -2804,7 +2804,7 @@ const docTemplate = `{
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Sets the config metadata for the given key",
+                "summary": "Set key metadata",
                 "parameters": [
                     {
                         "description": "Request Body",
@@ -2837,7 +2837,7 @@ const docTemplate = `{
                 "tags": [
                     "metadata"
                 ],
-                "summary": "Returns the config metadata for the given key",
+                "summary": "Get key metadata",
                 "parameters": [
                     {
                         "type": "string",
@@ -2864,14 +2864,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Returns the list of metrics for catalog page.",
+                "description": "Retrieving the list of metrics for catalog page.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Get catalog metrics",
+                "summary": "List catalog metrics",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2889,7 +2889,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Returns a list of connection groups",
+                "description": "Retrieving a list of connection groups",
                 "consumes": [
                     "application/json"
                 ],
@@ -2929,7 +2929,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Returns a connection group",
+                "description": "Retrieving a connection group",
                 "consumes": [
                     "application/json"
                 ],
@@ -2973,7 +2973,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Returns a list of connections summaries",
+                "description": "Retrieving a list of connections summaries",
                 "consumes": [
                     "application/json"
                 ],
@@ -3262,7 +3262,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Edit a credential by Id",
+                "description": "Edit a credential by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -3300,7 +3300,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Remove a credential by Id",
+                "description": "Remove a credential by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -3338,7 +3338,7 @@ const docTemplate = `{
                 "tags": [
                     "onboard"
                 ],
-                "summary": "Onboard all available connections for a credential",
+                "summary": "Onboard credential connections",
                 "parameters": [
                     {
                         "type": "string",
@@ -3505,14 +3505,14 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Triggers a describe job to run immediately",
+                "description": "Triggers a describe job to run immediately for the given connection",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "describe"
                 ],
-                "summary": "Triggers a describe job to run immediately",
+                "summary": "Triggers describer",
                 "parameters": [
                     {
                         "type": "string",
@@ -3690,7 +3690,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Get a stack details by ID",
+                "description": "Get stack details by ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -3700,7 +3700,7 @@ const docTemplate = `{
                 "tags": [
                     "stack"
                 ],
-                "summary": "Get a Stack",
+                "summary": "Get Stack",
                 "parameters": [
                     {
                         "type": "string",
@@ -3735,7 +3735,7 @@ const docTemplate = `{
                 "tags": [
                     "stack"
                 ],
-                "summary": "Delete a Stack",
+                "summary": "Delete Stack",
                 "parameters": [
                     {
                         "type": "string",
