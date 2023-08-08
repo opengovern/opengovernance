@@ -496,3 +496,92 @@ func FetchConnectorSpendTrend(client keibi.Client, metricIds []string, connector
 
 	return result, nil
 }
+
+type FetchSpendByMetricQueryResponse struct {
+	Aggregations struct {
+		MetricIDGroup struct {
+			Buckets []struct {
+				Key               string `json:"key"`
+				CostValueSumGroup struct {
+					Value float64 `json:"value"`
+				} `json:"cost_value_sum_group"`
+			} `json:"buckets"`
+		} `json:"metric_id_group"`
+	} `json:"aggregations"`
+}
+
+func FetchSpendByMetric(client keibi.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]float64, error) {
+	res := make(map[string]any)
+	var filters []any
+
+	if len(metricIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"metric_id": metricIDs},
+		})
+	}
+	if len(connectionIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"connection_id": connectionIDs},
+		})
+	}
+	if len(connectors) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]source.Type{"connector": connectors},
+		})
+	}
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_end": map[string]string{
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
+			},
+		},
+	})
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_start": map[string]string{
+				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+			},
+		},
+	})
+
+	res["size"] = 0
+	res["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	res["aggs"] = map[string]any{
+		"metric_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "metric_id",
+				"size":  size,
+			},
+			"aggs": map[string]any{
+				"cost_value_sum_group": map[string]any{
+					"sum": map[string]any{
+						"field": "cost_value",
+					},
+				},
+			},
+		},
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+	fmt.Println("FetchSpendByMetric =", query)
+	var response FetchSpendByMetricQueryResponse
+	err = client.Search(context.Background(), spend.AnalyticsSpendConnectionSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := map[string]float64{}
+	for _, metricBucket := range response.Aggregations.MetricIDGroup.Buckets {
+		resp[metricBucket.Key] = metricBucket.CostValueSumGroup.Value
+	}
+	return resp, nil
+}

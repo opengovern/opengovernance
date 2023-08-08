@@ -595,7 +595,8 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 //	@Param			connector		query		[]string	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			connectionGroup	query		string		false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			minCount		query		int			false	"Minimum number of resources with this tag value, default 1"
+//	@Param			minCount		query		int			false	"Minimum number of resources/spend with this tag value, default 1"
+//	@Param			startTime		query		int			false	"Start time in unix timestamp format, default now - 1 month"
 //	@Param			endTime			query		int			false	"End time in unix timestamp format, default now"
 //	@Param			metricType		query		string		false	"Metric type, default: assets"	Enums(assets, spend)
 //	@Success		200				{object}	map[string][]string
@@ -618,14 +619,16 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 		}
 		minCount = int(minCountVal)
 	}
-	endTime := time.Now()
-	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
-		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "endTime must be a number")
-		}
-		endTime = time.Unix(endTimeVal, 0)
+	minAmount := float64(minCount)
+	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "endTime must be a number")
 	}
+	startTime, err := utils.TimeFromQueryParam(ctx, "startTime", endTime.AddDate(0, -1, 0))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "startTime must be a number")
+	}
+
 	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
 	if metricType == "" {
 		metricType = analyticsDB.MetricTypeAssets
@@ -640,6 +643,8 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	tags = model.TrimPrivateTags(tags)
 
 	var metricCount map[string]int
+	var spend map[string]float64
+
 	if metricType == analyticsDB.MetricTypeAssets {
 		if len(connectionIDs) > 0 {
 			metricCount, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, endTime, nil, EsFetchPageSize)
@@ -650,10 +655,14 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		// spend
+		spend, err = es.FetchSpendByMetric(h.client, connectionIDs, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
+		if err != nil {
+			return err
+		}
 	}
 
 	fmt.Println("metricCount", metricCount)
+	fmt.Println("spend", spend)
 	fmt.Println("tags", tags)
 
 	filteredTags := map[string][]string{}
@@ -665,9 +674,11 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 			if err != nil {
 				return err
 			}
+
 			fmt.Println("metrics", key, tagValue, metrics)
 			for _, metric := range metrics {
-				if metricCount[metric.ID] >= minCount || metric.Type == analyticsDB.MetricTypeSpend {
+				if (metric.Type == analyticsDB.MetricTypeAssets && metricCount[metric.ID] >= minCount) ||
+					(metric.Type == analyticsDB.MetricTypeSpend && spend[metric.ID] >= minAmount) {
 					filteredTags[key] = append(filteredTags[key], tagValue)
 					break
 				}
@@ -1390,61 +1401,15 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 	}
 
 	costMetricMap := make(map[string]inventoryApi.CostMetric)
-	if len(connectionIDs) > 0 {
-		hits, err := es.FetchConnectionDailySpendHistoryByMetric(h.client, connectionIDs, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
-		if err != nil {
-			return err
-		}
-		for _, hit := range hits {
-			connectorTyped, _ := source.ParseType(hit.Connector)
-			localCostVal := hit.TotalCost
-			if v, ok := costMetricMap[hit.MetricID]; ok {
-				exists := false
-				for _, cnt := range v.Connector {
-					if cnt == connectorTyped {
-						exists = true
-					}
-				}
-				if !exists {
-					v.Connector = append(v.Connector, connectorTyped)
-				}
-				v.TotalCost = utils.PAdd(v.TotalCost, &localCostVal)
-				costMetricMap[hit.MetricID] = v
-			} else {
-				costMetricMap[hit.MetricID] = inventoryApi.CostMetric{
-					Connector:         []source.Type{connectorTyped},
-					CostDimensionName: hit.MetricID,
-					TotalCost:         &localCostVal,
-				}
-			}
-		}
-	} else {
-		hits, err := es.FetchConnectorDailySpendHistoryByMetric(h.client, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
-		if err != nil {
-			return err
-		}
-		for _, hit := range hits {
-			connectorTyped, _ := source.ParseType(hit.Connector)
-			localCostVal := hit.TotalCost
-			if v, ok := costMetricMap[hit.MetricID]; ok {
-				exists := false
-				for _, cnt := range v.Connector {
-					if cnt == connectorTyped {
-						exists = true
-					}
-				}
-				if !exists {
-					v.Connector = append(v.Connector, connectorTyped)
-				}
-				v.TotalCost = utils.PAdd(v.TotalCost, &localCostVal)
-				costMetricMap[hit.MetricID] = v
-			} else {
-				costMetricMap[hit.MetricID] = inventoryApi.CostMetric{
-					Connector:         []source.Type{connectorTyped},
-					CostDimensionName: hit.MetricID,
-					TotalCost:         &localCostVal,
-				}
-			}
+	spends, err := es.FetchSpendByMetric(h.client, connectionIDs, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
+	if err != nil {
+		return err
+	}
+	for metricID, spend := range spends {
+		localSpend := spend
+		costMetricMap[metricID] = inventoryApi.CostMetric{
+			CostDimensionName: metricID,
+			TotalCost:         &localSpend,
 		}
 	}
 

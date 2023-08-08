@@ -2147,8 +2147,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "Minimum number of resources with this tag value, default 1",
+                        "description": "Minimum number of resources/spend with this tag value, default 1",
                         "name": "minCount",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Start time in unix timestamp format, default now - 1 month",
+                        "name": "startTime",
                         "in": "query"
                     },
                     {

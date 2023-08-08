@@ -3716,9 +3716,14 @@ paths:
         in: query
         name: connectionGroup
         type: string
-      - description: Minimum number of resources with this tag value, default 1
+      - description: Minimum number of resources/spend with this tag value, default
+          1
         in: query
         name: minCount
+        type: integer
+      - description: Start time in unix timestamp format, default now - 1 month
+        in: query
+        name: startTime
         type: integer
       - description: End time in unix timestamp format, default now
         in: query

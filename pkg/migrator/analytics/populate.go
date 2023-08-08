@@ -41,6 +41,9 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 
 func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInfo, isAsset bool) error {
 	id := strings.TrimSuffix(info.Name(), ".json")
+	if !isAsset {
+		id = "spend_" + id
+	}
 
 	content, err := os.ReadFile(path)
 	if err != nil {
