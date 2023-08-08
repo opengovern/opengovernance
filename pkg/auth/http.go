@@ -241,7 +241,7 @@ func (r *httpRoutes) GetWorkspaceRoleBindings(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			users
 //	@Produce		json
-//	@Param			request	body	api.GetUsersRequest	true	"Request Body"
+//	@Param			request	body	api.GetUsersRequest	false	"Request Body"
 //	@Success		200		{array}	api.GetUsersResponse
 //	@Router			/auth/api/v1/users [get]
 func (r *httpRoutes) GetUsers(ctx echo.Context) error {
