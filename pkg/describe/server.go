@@ -82,7 +82,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 //	@Produce		json
 //	@Success		200
 //	@Param			connection_id	path	string		true	"Connection ID"
-//	@Param			resource_type	query	[]string	true	"Resource Type"
+//	@Param			resource_type	query	[]string	false	"Resource Type"
 //	@Router			/schedule/api/v1/describe/trigger/{connection_id} [put]
 func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 	connectionID := ctx.Param("connection_id")

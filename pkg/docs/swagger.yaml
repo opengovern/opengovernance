@@ -4612,7 +4612,6 @@ paths:
         items:
           type: string
         name: resource_type
-        required: true
         type: array
       produces:
       - application/json
