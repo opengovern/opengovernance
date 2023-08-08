@@ -56,7 +56,7 @@ type DescribeSourceJob struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	DescribedAt          time.Time
-	SourceID             string `gorm:"index:idx_source_id_full_discovery"`
+	SourceID             string `gorm:"index:idx_source_id_full_discovery;index"`
 	SourceType           source.Type
 	AccountID            string
 	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
@@ -78,7 +78,7 @@ type CloudNativeDescribeSourceJob struct {
 
 type DescribeResourceJob struct {
 	gorm.Model
-	ParentJobID            uint
+	ParentJobID            uint `gorm:"index"`
 	ResourceType           string
 	Status                 api.DescribeResourceJobStatus
 	RetryCount             int
