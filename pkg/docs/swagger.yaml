@@ -2498,7 +2498,6 @@ paths:
       - description: Request Body
         in: body
         name: request
-        required: true
         schema:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_auth_api.GetUsersRequest'
       produces:
