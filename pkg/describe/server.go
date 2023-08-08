@@ -59,6 +59,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerDescribeJobV1, apiAuth.AdminRole))
 	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
+	v1.PUT("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, apiAuth.InternalRole))
 
 	stacks := v1.Group("/stacks")
 	stacks.GET("", httpserver.AuthorizeHandler(h.ListStack, apiAuth.ViewerRole))
@@ -130,6 +131,15 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		if err != nil {
 			h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 		}
+	}
+	return ctx.JSON(http.StatusOK, "")
+}
+
+func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
+	err := h.Scheduler.scheduleMustSummarizerJob()
+	if err != nil {
+		errMsg := fmt.Sprintf("error scheduling summarize job: %v", err)
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
 	}
 	return ctx.JSON(http.StatusOK, "")
 }

@@ -50,14 +50,18 @@ type ComplianceReportJob struct {
 }
 
 type DescribeSourceJob struct {
-	gorm.Model
+	ID        uint `gorm:"primarykey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time      `gorm:"index:,sort:desc"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+
 	DescribedAt          time.Time
-	SourceID             string // Not the primary key but should be a unique identifier
+	SourceID             string `gorm:"index:idx_source_id_full_discovery"`
 	SourceType           source.Type
 	AccountID            string
 	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
 	Status               api.DescribeSourceJobStatus
-	FullDiscovery        bool
+	FullDiscovery        bool `gorm:"index:idx_source_id_full_discovery"`
 	TriggerType          enums.DescribeTriggerType
 }
 
