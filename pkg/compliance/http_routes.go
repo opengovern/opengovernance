@@ -88,7 +88,7 @@ func bindValidate(ctx echo.Context, i any) error {
 // GetFindings godoc
 //
 //	@Summary		Get findings
-//	@Description	This API enables users to retrieve all compliance run findings with respect to filters. Users can use this API to obtain a list of all compliance run findings that match specific filters, such as compliance run ID, resource ID, results, and other relevant parameters.
+//	@Description	Retrieving all compliance run findings with respect to filters.
 //	@Tags			compliance
 //	@Security		BearerToken
 //	@Accept			json
@@ -139,7 +139,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 // GetTopFieldByFindingCount godoc
 //
 //	@Summary		Get top field by finding count
-//	@Description	This API enables users to retrieve the top field by finding count.
+//	@Description	Retrieving the top field by finding count.
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Accept			json
@@ -235,7 +235,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 // ListBenchmarksSummary godoc
 //
 //	@Summary		List benchmarks summaries
-//	@Description	This API enables users to retrieve a summary of all benchmarks and their associated checks and results within a specified time interval. Users can use this API to obtain an overview of all benchmarks, including their names, descriptions, and other relevant information, as well as the checks and their corresponding results within the specified time period.
+//	@Description	Retrieving a summary of all benchmarks and their associated checks and results within a specified time interval.
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Accept			json
@@ -310,7 +310,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 // GetBenchmarkSummary godoc
 //
 //	@Summary		Get benchmark summary
-//	@Description	This API enables users to retrieve a summary of a benchmark and its associated checks and results. Users can use this API to obtain an overview of the benchmark, including its name, description, and other relevant information, as well as the checks and their corresponding results.
+//	@Description	Retrieving a summary of a benchmark and its associated checks and results.
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Accept			json
@@ -378,7 +378,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 // GetBenchmarkTree godoc
 //
 //	@Summary		Get benchmark tree
-//	@Description	This API retrieves the benchmark tree, including all of its child benchmarks. Users can use this API to obtain a comprehensive overview of the benchmarks within a particular category or hierarchy.
+//	@Description	Retrieving the benchmark tree, including all of its child benchmarks.
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Accept			json
@@ -483,7 +483,7 @@ func GetBenchmarkTree(db db.Database, client keibi.Client, b db.Benchmark, statu
 // GetBenchmarkTrend godoc
 //
 //	@Summary		Get benchmark trend
-//	@Description	This API enables users to retrieve a trend of a benchmark result and checks
+//	@Description	Retrieving a trend of a benchmark result and checks.
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Accept			json
@@ -568,8 +568,8 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 
 // CreateBenchmarkAssignment godoc
 //
-//	@Summary		Create benchmark assignment for inventory service
-//	@Description	Returns benchmark assignment which insert
+//	@Summary		Create benchmark assignment
+//	@Description	Creating a benchmark assignment for a connection.
 //	@Security		BearerToken
 //	@Tags			benchmarks_assignment
 //	@Accept			json
@@ -689,8 +689,8 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 
 // ListAssignmentsByBenchmark godoc
 //
-//	@Summary		Get all benchmark assigned sources with benchmark id
-//	@Description	Returns all benchmark assigned sources with benchmark id
+//	@Summary		Get benchmark assigned sources
+//	@Description	Retrieving all benchmark assigned sources with benchmark id
 //	@Security		BearerToken
 //	@Tags			benchmarks_assignment
 //	@Accept			json
@@ -755,7 +755,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 
 // DeleteBenchmarkAssignment godoc
 //
-//	@Summary		Delete benchmark assignment for inventory service
+//	@Summary		Delete benchmark assignment
 //	@Description	Delete benchmark assignment with source id and benchmark id
 //	@Security		BearerToken
 //	@Tags			benchmarks_assignment
@@ -905,7 +905,7 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 //
 //	@Summary		Sync queries
 //
-//	@Description	This API syncs queries with the git backend.
+//	@Description	Syncs queries with the git backend.
 //
 //	@Security		BearerToken
 //	@Tags			compliance
@@ -924,7 +924,7 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 // ListInsightTags godoc
 //
 //	@Summary		List insights tag keys
-//	@Description	This API allows users to retrieve a list of insights tag keys with their possible values.
+//	@Description	Retrieving a list of insights tag keys with their possible values.
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Accept			json
@@ -958,7 +958,7 @@ func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
 // GetInsightMetadata godoc
 //
 //	@Summary		Get insight metadata
-//	@Description	Get insight metadata by id
+//	@Description	Retrieving insight metadata by id
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
@@ -986,7 +986,7 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 // ListInsights godoc
 //
 //	@Summary		List insights
-//	@Description	This API returns a list of insights based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
+//	@Description	Retrieving list of insights based on specified filters. Provides details of insights, including results during the specified time period for the specified connection.
 //	@Description	Returns "all:provider" job results if connectionId is not defined.
 //	@Security		BearerToken
 //	@Tags			insights
@@ -1077,7 +1077,7 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 // GetInsight godoc
 //
 //	@Summary		Get insight
-//	@Description	This API returns the specified insight with ID. The API provides details of the insight, including results during the specified time period for the specified connection.
+//	@Description	Retrieving the specified insight with ID. Provides details of the insight, including results during the specified time period for the specified connection.
 //	@Description	Returns "all:provider" job results if connectionId is not defined.
 //	@Security		BearerToken
 //	@Tags			insights
@@ -1188,7 +1188,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 // GetInsightTrend godoc
 //
 //	@Summary		Get insight trend
-//	@Description	This API allows users to retrieve insight results datapoints for a specified connection during a specified time period.
+//	@Description	Retrieving insight results datapoints for a specified connection during a specified time period.
 //	@Description	Returns "all:provider" job results if connectionId is not defined.
 //	@Security		BearerToken
 //	@Tags			insights
@@ -1271,7 +1271,7 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 // ListInsightGroups godoc
 //
 //	@Summary		List insight groups
-//	@Description	This API returns a list of insight groups based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
+//	@Description	Retrieving list of insight groups based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
 //	@Description	Returns "all:provider" job results if connectionId is not defined.
 //	@Security		BearerToken
 //	@Tags			insights

@@ -936,7 +936,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 
 // AutoOnboardCredential godoc
 //
-//	@Summary		Onboard all available connections for a credential
+//	@Summary		Onboard credential connections
 //	@Description	Onboard all available connections for a credential
 //	@Security		BearerToken
 //	@Tags			onboard
@@ -1175,7 +1175,7 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 // PutCredentials godoc
 //
 //	@Summary		Edit credential
-//	@Description	Edit a credential by Id
+//	@Description	Edit a credential by ID
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
@@ -1202,7 +1202,7 @@ func (h HttpHandler) PutCredentials(ctx echo.Context) error {
 // DeleteCredential godoc
 //
 //	@Summary		Delete credential
-//	@Description	Remove a credential by Id
+//	@Description	Remove a credential by ID
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
@@ -1676,8 +1676,8 @@ func (h HttpHandler) CountSources(ctx echo.Context) error {
 
 // CatalogMetrics godoc
 //
-//	@Summary		Get catalog metrics
-//	@Description	Returns the list of metrics for catalog page.
+//	@Summary		List catalog metrics
+//	@Description	Retrieving the list of metrics for catalog page.
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
@@ -1710,7 +1710,7 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 // ListConnectionsSummaries godoc
 //
 //	@Summary		List connections summaries
-//	@Description	Returns a list of connections summaries
+//	@Description	Retrieving a list of connections summaries
 //	@Security		BearerToken
 //	@Tags			connections
 //	@Accept			json
@@ -1967,7 +1967,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 // ListConnectionGroups godoc
 //
 //	@Summary		List connection groups
-//	@Description	Returns a list of connection groups
+//	@Description	Retrieving a list of connection groups
 //	@Security		BearerToken
 //	@Tags			connection-groups
 //	@Accept			json
@@ -2019,7 +2019,7 @@ func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
 // GetConnectionGroup godoc
 //
 //	@Summary		Get connection group
-//	@Description	Returns a connection group
+//	@Description	Retrieving a connection group
 //	@Security		BearerToken
 //	@Tags			connection-groups
 //	@Accept			json

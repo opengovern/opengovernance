@@ -2556,13 +2556,13 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Delete benchmark assignment for inventory service
+      summary: Delete benchmark assignment
       tags:
       - benchmarks_assignment
     post:
       consumes:
       - application/json
-      description: Returns benchmark assignment which insert
+      description: Creating a benchmark assignment for a connection.
       parameters:
       - description: Benchmark ID
         in: path
@@ -2585,14 +2585,14 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Create benchmark assignment for inventory service
+      summary: Create benchmark assignment
       tags:
       - benchmarks_assignment
   /compliance/api/v1/assignments/benchmark/{benchmark_id}:
     get:
       consumes:
       - application/json
-      description: Returns all benchmark assigned sources with benchmark id
+      description: Retrieving all benchmark assigned sources with benchmark id
       parameters:
       - description: Benchmark ID
         in: path
@@ -2610,17 +2610,15 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Get all benchmark assigned sources with benchmark id
+      summary: Get benchmark assigned sources
       tags:
       - benchmarks_assignment
   /compliance/api/v1/benchmarks/{benchmark_id}/summary:
     get:
       consumes:
       - application/json
-      description: This API enables users to retrieve a summary of a benchmark and
-        its associated checks and results. Users can use this API to obtain an overview
-        of the benchmark, including its name, description, and other relevant information,
-        as well as the checks and their corresponding results.
+      description: Retrieving a summary of a benchmark and its associated checks and
+        results.
       parameters:
       - description: Benchmark ID
         in: path
@@ -2665,9 +2663,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: This API retrieves the benchmark tree, including all of its child
-        benchmarks. Users can use this API to obtain a comprehensive overview of the
-        benchmarks within a particular category or hierarchy.
+      description: Retrieving the benchmark tree, including all of its child benchmarks.
       parameters:
       - description: Benchmark ID
         in: path
@@ -2690,8 +2686,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: This API enables users to retrieve a trend of a benchmark result
-        and checks
+      description: Retrieving a trend of a benchmark result and checks.
       parameters:
       - description: Benchmark ID
         in: path
@@ -2742,11 +2737,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: This API enables users to retrieve a summary of all benchmarks
-        and their associated checks and results within a specified time interval.
-        Users can use this API to obtain an overview of all benchmarks, including
-        their names, descriptions, and other relevant information, as well as the
-        checks and their corresponding results within the specified time period.
+      description: Retrieving a summary of all benchmarks and their associated checks
+        and results within a specified time interval.
       parameters:
       - collectionFormat: csv
         description: Connection IDs to filter by
@@ -2786,10 +2778,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: This API enables users to retrieve all compliance run findings
-        with respect to filters. Users can use this API to obtain a list of all compliance
-        run findings that match specific filters, such as compliance run ID, resource
-        ID, results, and other relevant parameters.
+      description: Retrieving all compliance run findings with respect to filters.
       parameters:
       - description: Request Body
         in: body
@@ -2813,7 +2802,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: This API enables users to retrieve the top field by finding count.
+      description: Retrieving the top field by finding count.
       parameters:
       - description: BenchmarkID
         in: path
@@ -2881,7 +2870,7 @@ paths:
   /compliance/api/v1/insight:
     get:
       description: |-
-        This API returns a list of insights based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
+        Retrieving list of insights based on specified filters. Provides details of insights, including results during the specified time period for the specified connection.
         Returns "all:provider" job results if connectionId is not defined.
       parameters:
       - collectionFormat: csv
@@ -2934,7 +2923,7 @@ paths:
   /compliance/api/v1/insight/{insightId}:
     get:
       description: |-
-        This API returns the specified insight with ID. The API provides details of the insight, including results during the specified time period for the specified connection.
+        Retrieving the specified insight with ID. Provides details of the insight, including results during the specified time period for the specified connection.
         Returns "all:provider" job results if connectionId is not defined.
       parameters:
       - description: Insight ID
@@ -2972,7 +2961,7 @@ paths:
   /compliance/api/v1/insight/{insightId}/trend:
     get:
       description: |-
-        This API allows users to retrieve insight results datapoints for a specified connection during a specified time period.
+        Retrieving insight results datapoints for a specified connection during a specified time period.
         Returns "all:provider" job results if connectionId is not defined.
       parameters:
       - description: Insight ID
@@ -3018,7 +3007,7 @@ paths:
       consumes:
       - application/json
       description: |-
-        This API returns a list of insight groups based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
+        Retrieving list of insight groups based on specified filters. The API provides details of insights, including results during the specified time period for the specified connection.
         Returns "all:provider" job results if connectionId is not defined.
       parameters:
       - collectionFormat: csv
@@ -3070,7 +3059,7 @@ paths:
       - insights
   /compliance/api/v1/metadata/insight/{insightId}:
     get:
-      description: Get insight metadata by id
+      description: Retrieving insight metadata by id
       parameters:
       - description: Insight ID
         in: path
@@ -3093,8 +3082,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: This API allows users to retrieve a list of insights tag keys with
-        their possible values.
+      description: Retrieving a list of insights tag keys with their possible values.
       produces:
       - application/json
       responses:
@@ -3115,7 +3103,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: This API syncs queries with the git backend.
+      description: Syncs queries with the git backend.
       produces:
       - application/json
       responses:
@@ -3128,7 +3116,7 @@ paths:
       - compliance
   /inventory/api/v1/query:
     get:
-      description: Listing smart queries by specified filters
+      description: Retrieving list of smart queries by specified filters
       parameters:
       - description: Request Body
         in: body
@@ -3177,12 +3165,12 @@ paths:
             $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryResponse'
       security:
       - BearerToken: []
-      summary: Run provided smart query and returns the result
+      summary: Run query
       tags:
       - smart_query
   /inventory/api/v1/query/run/history:
     get:
-      description: Get recently ran queries.
+      description: List queries which have been run recently
       produces:
       - application/json
       responses:
@@ -3194,14 +3182,14 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Get recently ran queries
+      summary: List recently ran queries
       tags:
       - smart_query
   /inventory/api/v2/analytics/categories:
     get:
       consumes:
       - application/json
-      description: Returns list of categories for analytics summary
+      description: Retrieving list of categories for analytics
       parameters:
       - description: 'Metric type, default: assets'
         enum:
@@ -3226,8 +3214,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: This API allows users to retrieve tag values with the most resources
-        for the given key.
+      description: Retrieving tag values with the most resources for the given key.
       parameters:
       - description: Tag key
         in: path
@@ -3292,8 +3279,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get list of analytics with metrics of each type based on the given
-        input filters.
+      description: Retrieving list of analytics with metrics of each type based on
+        the given input filters.
       parameters:
       - collectionFormat: csv
         description: Key-Value tags in key=value format to filter by
@@ -3383,7 +3370,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns list of regions analytics summary
+      description: Retrieving list of regions analytics summary
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -3447,9 +3434,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: This API allows users to retrieve the cost composition with respect
-        to specified filters. The API returns information such as the total cost for
-        the given time range, and the top services by cost.
+      description: Retrieving the cost composition with respect to specified filters.
+        Retrieving information such as the total cost for the given time range, and
+        the top services by cost.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -3496,14 +3483,14 @@ paths:
       - BearerToken: []
       summary: List cost composition
       tags:
-      - inventory
+      - analytics
   /inventory/api/v2/analytics/spend/metric:
     get:
       consumes:
       - application/json
-      description: This API allows users to retrieve cost metrics with respect to
-        specified filters. The API returns information such as the total cost and
-        costs per each service based on the specified filters.
+      description: Retrieving cost metrics with respect to specified filters. The
+        API returns information such as the total cost and costs per each service
+        based on the specified filters.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -3563,14 +3550,14 @@ paths:
       - BearerToken: []
       summary: List spend metrics
       tags:
-      - inventory
+      - analytics
   /inventory/api/v2/analytics/spend/metrics/trend:
     get:
       consumes:
       - application/json
-      description: This API allows users to retrieve a list of costs over the course
-        of the specified time frame based on the given input filters. If startTime
-        and endTime are empty, the API returns the last month trend.
+      description: Retrieving a list of costs over the course of the specified time
+        frame based on the given input filters. If startTime and endTime are empty,
+        the API returns the last month trend.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -3626,14 +3613,14 @@ paths:
       - BearerToken: []
       summary: Get Cost Trend
       tags:
-      - inventory
+      - analytics
   /inventory/api/v2/analytics/spend/trend:
     get:
       consumes:
       - application/json
-      description: This API allows users to retrieve a list of costs over the course
-        of the specified time frame based on the given input filters. If startTime
-        and endTime are empty, the API returns the last month trend.
+      description: Retrieving a list of costs over the course of the specified time
+        frame based on the given input filters. If startTime and endTime are empty,
+        the API returns the last month trend.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -3689,13 +3676,13 @@ paths:
       - BearerToken: []
       summary: Get Cost Trend
       tags:
-      - inventory
+      - analytics
   /inventory/api/v2/analytics/tag:
     get:
       consumes:
       - application/json
-      description: This API allows users to retrieve a list of tag keys with their
-        possible values for all analytic metrics.
+      description: Retrieving a list of tag keys with their possible values for all
+        analytic metrics.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -3755,8 +3742,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: This API allows users to retrieve a list of resource counts over
-        the course of the specified time frame based on the given input filters
+      description: Retrieving a list of resource counts over the course of the specified
+        time frame based on the given input filters
       parameters:
       - collectionFormat: csv
         description: Key-Value tags in key=value format to filter by
@@ -3831,9 +3818,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: This API allows users to retrieve the cost composition with respect
-        to specified filters. The API returns information such as the total cost for
-        the given time range, and the top services by cost.
+      description: Retrieving the cost composition with respect to specified filters.
+        Retrieving information such as the total cost for the given time range, and
+        the top services by cost.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -3880,14 +3867,14 @@ paths:
       - BearerToken: []
       summary: List cost composition
       tags:
-      - inventory
+      - cost
   /inventory/api/v2/cost/metric:
     get:
       consumes:
       - application/json
-      description: This API allows users to retrieve cost metrics with respect to
-        specified filters. The API returns information such as the total cost and
-        costs per each service based on the specified filters.
+      description: Retrieving cost metrics with respect to specified filters. The
+        API returns information such as the total cost and costs per each service
+        based on the specified filters.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -3947,14 +3934,14 @@ paths:
       - BearerToken: []
       summary: List cost metrics
       tags:
-      - inventory
+      - cost
   /inventory/api/v2/cost/trend:
     get:
       consumes:
       - application/json
-      description: This API allows users to retrieve a list of costs over the course
-        of the specified time frame based on the given input filters. If startTime
-        and endTime are empty, the API returns the last month trend.
+      description: Retrieving a list of costs over the course of the specified time
+        frame based on the given input filters. If startTime and endTime are empty,
+        the API returns the last month trend.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -4003,13 +3990,12 @@ paths:
       - BearerToken: []
       summary: Get Cost Trend
       tags:
-      - inventory
+      - cost
   /inventory/api/v2/resources/metric/{resourceType}:
     get:
       consumes:
       - application/json
-      description: This API allows users to retrieve metrics for a specific resource
-        type.
+      description: Retrieving metrics for a specific resource type.
       parameters:
       - collectionFormat: csv
         description: Connection IDs to filter by - mutually exclusive with connectionGroup
@@ -4044,15 +4030,15 @@ paths:
             $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType'
       security:
       - BearerToken: []
-      summary: Get resource metrics
+      summary: List resource-type metrics
       tags:
-      - inventory
+      - resource
   /inventory/api/v2/resources/tag:
     get:
       consumes:
       - application/json
-      description: This API allows users to retrieve a list of tag keys with their
-        possible values for all resource types.
+      description: Retrieving a list of tag keys with their possible values for all
+        resource types.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -4095,14 +4081,14 @@ paths:
       - BearerToken: []
       summary: List resourcetype tags
       tags:
-      - inventory
+      - resource
   /inventory/api/v2/services/cost/trend:
     get:
       consumes:
       - application/json
-      description: This API allows users to retrieve a list of costs over the course
-        of the specified time frame for the given services. If startTime and endTime
-        are empty, the API returns the last month trend.
+      description: Retrieving a list of costs over the course of the specified time
+        frame for the given services. If startTime and endTime are empty, the API
+        returns the last month trend.
       parameters:
       - collectionFormat: csv
         description: Services to filter by
@@ -4158,7 +4144,7 @@ paths:
       - BearerToken: []
       summary: Get Services Cost Trend
       tags:
-      - inventory
+      - cost
   /metadata/api/v1/metadata:
     post:
       description: Sets the config metadata for the given key
@@ -4176,7 +4162,7 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Sets the config metadata for the given key
+      summary: Set key metadata
       tags:
       - metadata
   /metadata/api/v1/metadata/{key}:
@@ -4197,12 +4183,12 @@ paths:
             $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_models.ConfigMetadata'
       security:
       - BearerToken: []
-      summary: Returns the config metadata for the given key
+      summary: Get key metadata
       tags:
       - metadata
   /onboard/api/v1/catalog/metrics:
     get:
-      description: Returns the list of metrics for catalog page.
+      description: Retrieving the list of metrics for catalog page.
       produces:
       - application/json
       responses:
@@ -4212,14 +4198,14 @@ paths:
             $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CatalogMetrics'
       security:
       - BearerToken: []
-      summary: Get catalog metrics
+      summary: List catalog metrics
       tags:
       - onboard
   /onboard/api/v1/connection-groups:
     get:
       consumes:
       - application/json
-      description: Returns a list of connection groups
+      description: Retrieving a list of connection groups
       parameters:
       - default: false
         description: Populate connections
@@ -4244,7 +4230,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns a connection group
+      description: Retrieving a connection group
       parameters:
       - default: false
         description: Populate connections
@@ -4272,7 +4258,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns a list of connections summaries
+      description: Retrieving a list of connections summaries
       parameters:
       - collectionFormat: csv
         description: Connector
@@ -4442,7 +4428,7 @@ paths:
       - onboard
   /onboard/api/v1/credential/{credentialId}:
     delete:
-      description: Remove a credential by Id
+      description: Remove a credential by ID
       parameters:
       - description: CredentialID
         in: path
@@ -4480,7 +4466,7 @@ paths:
       tags:
       - onboard
     put:
-      description: Edit a credential by Id
+      description: Edit a credential by ID
       parameters:
       - description: Credential ID
         in: path
@@ -4523,7 +4509,7 @@ paths:
             type: array
       security:
       - BearerToken: []
-      summary: Onboard all available connections for a credential
+      summary: Onboard credential connections
       tags:
       - onboard
   /onboard/api/v1/source/{sourceId}:
@@ -4613,7 +4599,7 @@ paths:
       - onboard
   /schedule/api/v1/describe/trigger/{connection_id}:
     put:
-      description: Triggers a describe job to run immediately
+      description: Triggers a describe job to run immediately for the given connection
       parameters:
       - description: Connection ID
         in: path
@@ -4635,7 +4621,7 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Triggers a describe job to run immediately
+      summary: Triggers describer
       tags:
       - describe
   /schedule/api/v1/stacks:
@@ -4690,13 +4676,13 @@ paths:
           description: OK
       security:
       - BearerToken: []
-      summary: Delete a Stack
+      summary: Delete Stack
       tags:
       - stack
     get:
       consumes:
       - application/json
-      description: Get a stack details by ID
+      description: Get stack details by ID
       parameters:
       - description: StackID
         in: path
@@ -4712,7 +4698,7 @@ paths:
             $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack'
       security:
       - BearerToken: []
-      summary: Get a Stack
+      summary: Get Stack
       tags:
       - stack
   /schedule/api/v1/stacks/{stackId}/findings:

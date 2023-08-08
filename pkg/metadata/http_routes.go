@@ -33,7 +33,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 // GetConfigMetadata godoc
 //
-//	@Summary		Returns the config metadata for the given key
+//	@Summary		Get key metadata
 //	@Description	Returns the config metadata for the given key
 //	@Security		BearerToken
 //	@Tags			metadata
@@ -53,7 +53,7 @@ func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 
 // SetConfigMetadata godoc
 //
-//	@Summary		Sets the config metadata for the given key
+//	@Summary		Set key metadata
 //	@Description	Sets the config metadata for the given key
 //	@Security		BearerToken
 //	@Tags			metadata
