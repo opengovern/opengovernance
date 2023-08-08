@@ -4294,8 +4294,21 @@ paths:
         name: connectionId
         type: array
       - description: lifecycle state filter
+        enum:
+        - DISABLED
+        - DISCOVERED
+        - IN_PROGRESS
+        - ONBOARD
+        - ARCHIVED
         in: query
         name: lifecycleState
+        type: string
+      - description: health state filter
+        enum:
+        - healthy
+        - unhealthy
+        in: query
+        name: healthState
         type: string
       - description: page size - default is 20
         in: query

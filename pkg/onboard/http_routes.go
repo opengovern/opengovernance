@@ -1717,7 +1717,8 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector"
 //	@Param			connectionId	query		[]string		false	"Connection IDs"
-//	@Param			lifecycleState	query		string			false	"lifecycle state filter"
+//	@Param			lifecycleState	query		string			false	"lifecycle state filter"	Enums(DISABLED, DISCOVERED, IN_PROGRESS, ONBOARD, ARCHIVED)
+//	@Param			healthState		query		string			false	"health state filter"		Enums(healthy,unhealthy)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
 //	@Param			startTime		query		int				false	"start time in unix seconds"
@@ -1767,7 +1768,13 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		lifecycleStateSlice = append(lifecycleStateSlice, ConnectionLifecycleState(lifecycleState))
 	}
 
-	connections, err := h.db.ListSourcesWithFilters(connectors, connectionIDs, lifecycleStateSlice)
+	var healthStateSlice []source.HealthStatus
+	healthState := ctx.QueryParam("healthState")
+	if healthState != "" {
+		healthStateSlice = append(healthStateSlice, source.HealthStatus(healthState))
+	}
+
+	connections, err := h.db.ListSourcesWithFilters(connectors, connectionIDs, lifecycleStateSlice, healthStateSlice)
 	if err != nil {
 		return err
 	}
