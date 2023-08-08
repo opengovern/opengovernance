@@ -30,7 +30,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/kaytu-io/kaytu-aws-describer v0.0.48
-	github.com/kaytu-io/kaytu-azure-describer v0.0.61
+	github.com/kaytu-io/kaytu-azure-describer v0.0.62
 	github.com/kaytu-io/kaytu-util v0.0.0-20230804082552-3c07cccc35a8
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/labstack/echo/v4 v4.10.2
