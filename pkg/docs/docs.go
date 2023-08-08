@@ -3529,8 +3529,7 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Resource Type",
                         "name": "resource_type",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
