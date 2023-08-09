@@ -30,7 +30,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
 	github.com/kaytu-io/kaytu-aws-describer v0.0.48
-	github.com/kaytu-io/kaytu-azure-describer v0.0.64
+	github.com/kaytu-io/kaytu-azure-describer v0.0.65
 	github.com/kaytu-io/kaytu-util v0.0.0-20230804082552-3c07cccc35a8
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/labstack/echo/v4 v4.10.2
@@ -178,7 +178,6 @@ require (
 	github.com/apparentlymart/go-cidr v1.1.0 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
-	github.com/aws/aws-lambda-go v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.9 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.25 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.3 // indirect
@@ -368,7 +367,6 @@ require (
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
-	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang/glog v1.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -413,7 +411,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230804102108-c310a0b81098 // indirect
-	github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230804083622-692d6774f6b9 // indirect
+	github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230809090119-afc072159107 // indirect
 	github.com/kaytu-io/steampipe-plugin-azuread v0.0.0-20230804083738-130ea99018da // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
