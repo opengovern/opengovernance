@@ -155,7 +155,7 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 	}, nil
 }
 
-func (s Server) GetWorkspaceLimits(rb api.RoleBinding, workspaceName string) (api2.WorkspaceLimitsUsage, error) {
+func (s Server) GetWorkspaceLimits(rb api.RoleBinding, workspaceName string, ignoreUsage bool) (api2.WorkspaceLimitsUsage, error) {
 	key := "cache-limits-" + workspaceName
 
 	var res api2.WorkspaceLimitsUsage
@@ -166,7 +166,7 @@ func (s Server) GetWorkspaceLimits(rb api.RoleBinding, workspaceName string) (ap
 	}
 
 	limits, err := s.workspaceClient.GetLimits(&httpclient.Context{UserRole: rb.RoleName, UserID: rb.UserID,
-		WorkspaceName: workspaceName}, workspaceName)
+		WorkspaceName: workspaceName}, workspaceName, ignoreUsage)
 	if err != nil {
 		return api2.WorkspaceLimitsUsage{}, err
 	}
@@ -246,7 +246,7 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.R
 	}
 
 	if workspaceName != "keibi" {
-		limits, err = s.GetWorkspaceLimits(rb, workspaceName)
+		limits, err = s.GetWorkspaceLimits(rb, workspaceName, true)
 		if err != nil {
 			return rb, limits, err
 		}

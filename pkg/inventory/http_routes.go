@@ -74,6 +74,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	analyticsSpend.GET("/composition", httpserver.AuthorizeHandler(h.ListAnalyticsSpendComposition, authApi.ViewerRole))
 	analyticsSpend.GET("/trend", httpserver.AuthorizeHandler(h.GetAnalyticsSpendTrend, authApi.ViewerRole))
 	analyticsSpend.GET("/metrics/trend", httpserver.AuthorizeHandler(h.GetAnalyticsSpendMetricsTrend, authApi.ViewerRole))
+	analyticsSpend.GET("/table", httpserver.AuthorizeHandler(h.GetSpendTable, authApi.ViewerRole))
 
 	servicesV2 := v2.Group("/services")
 	servicesV2.GET("/cost/trend", httpserver.AuthorizeHandler(h.GetServiceCostTrend, authApi.ViewerRole))
@@ -1601,6 +1602,65 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetSpendTable godoc
+//
+//	@Summary		Get Spend Trend
+//	@Description	Returns spend table with respect to the dimension and granularity
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			startTime	query		string	false	"timestamp for start in epoch seconds"
+//	@Param			endTime		query		string	false	"timestamp for end in epoch seconds"
+//	@Param			granularity	query		string	false	"Granularity of the table, default is daily"	Enums(monthly, daily)
+//	@Param			dimension	query		string	false	"Dimension of the table, default is metric"		Enums(connection, metric)
+//
+//	@Success		200			{object}	[]inventoryApi.SpendTableRow
+//	@Router			/inventory/api/v2/analytics/spend/table [get]
+func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
+	var err error
+	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	startTime, err := utils.TimeFromQueryParam(ctx, "startTime", endTime.AddDate(0, -1, 0))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	granularity := ctx.QueryParam("granularity")
+	if granularity != "daily" && granularity != "monthly" {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
+	}
+
+	mt, err := es.FetchSpendTableByDimension(h.client, granularity, startTime, endTime)
+	if err != nil {
+		return err
+	}
+
+	var table []inventoryApi.SpendTableRow
+	for _, m := range mt {
+		costValue := map[string]float64{}
+		for dateKey, costItem := range m.Trend {
+			dt, _ := time.Parse("2006-01-02", dateKey)
+			monthKey := dt.Format("2006-01")
+			if granularity == "daily" {
+				costValue[dateKey] = costItem
+			} else if granularity == "monthly" {
+				if v, ok := costValue[monthKey]; ok {
+					costValue[monthKey] = v + costItem
+				} else {
+					costValue[monthKey] = costItem
+				}
+			}
+		}
+		table = append(table, inventoryApi.SpendTableRow{
+			Dimension: m.MetricID,
+			CostValue: costValue,
+		})
+	}
+	return ctx.JSON(http.StatusOK, table)
 }
 
 // GetResourceTypeMetricsHandler godoc

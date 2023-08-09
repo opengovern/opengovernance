@@ -3,6 +3,7 @@ package es
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
@@ -217,6 +218,112 @@ func FetchConnectorSpendMetricTrend(client keibi.Client, metricIds []string, con
 
 	var result []MetricTrend
 	for _, bucket := range response.Aggregations.MetricIDGroup.Buckets {
+		mt := MetricTrend{
+			MetricID: bucket.Key,
+			Trend:    make(map[string]float64),
+		}
+		for _, dateBucket := range bucket.DateGroup.Buckets {
+			mt.Trend[dateBucket.Key] = dateBucket.CostSumGroup.Value
+		}
+		result = append(result, mt)
+	}
+
+	return result, nil
+}
+
+type SpendTableByDimensionQueryResponse struct {
+	Aggregations struct {
+		DimensionGroup struct {
+			Buckets []struct {
+				Key       string `json:"key"`
+				DateGroup struct {
+					Buckets []struct {
+						Key          string `json:"key"`
+						CostSumGroup struct {
+							Value float64 `json:"value"`
+						} `json:"cost_sum_group"`
+					} `json:"buckets"`
+				} `json:"date_group"`
+			} `json:"buckets"`
+		} `json:"dimension_group"`
+	} `json:"aggregations"`
+}
+
+func FetchSpendTableByDimension(client keibi.Client, dimension string, startTime, endTime time.Time) ([]MetricTrend, error) {
+	query := make(map[string]any)
+	var filters []any
+
+	dimensionField := ""
+	index := ""
+	switch dimension {
+	case "connection":
+		dimensionField = "connection_id"
+		index = spend.AnalyticsSpendConnectionSummaryIndex
+	case "metric":
+		dimensionField = "metric_id"
+		index = spend.AnalyticsSpendConnectorSummaryIndex
+	default:
+		return nil, errors.New("dimension is not supported")
+	}
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_end": map[string]string{
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
+			},
+		},
+	})
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_start": map[string]string{
+				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+			},
+		},
+	})
+
+	query["size"] = 0
+	query["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	query["aggs"] = map[string]any{
+		"dimension_group": map[string]any{
+			"terms": map[string]any{
+				"field": dimensionField,
+				"size":  es.EsFetchPageSize,
+			},
+			"aggs": map[string]any{
+				"date_group": map[string]any{
+					"terms": map[string]any{
+						"field": "date",
+						"size":  es.EsFetchPageSize,
+					},
+					"aggs": map[string]any{
+						"cost_sum_group": map[string]any{
+							"sum": map[string]string{
+								"field": "cost_value",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("FetchSpendTableByDimension = %s\n", queryJson)
+
+	var response SpendTableByDimensionQueryResponse
+	err = client.Search(context.Background(), index, string(queryJson), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []MetricTrend
+	for _, bucket := range response.Aggregations.DimensionGroup.Buckets {
 		mt := MetricTrend{
 			MetricID: bucket.Key,
 			Trend:    make(map[string]float64),

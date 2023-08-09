@@ -36,3 +36,8 @@ type ListCostCompositionResponse struct {
 	TopValues      map[string]float64 `json:"top_values"`
 	Others         float64            `json:"others" example:"100" minimum:"0"`
 }
+
+type SpendTableRow struct {
+	Dimension string             `json:"dimension" example:"Compute"`
+	CostValue map[string]float64 `json:"costValue"`
+}

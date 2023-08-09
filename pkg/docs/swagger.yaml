@@ -1411,6 +1411,16 @@ definitions:
         description: fill this with column name
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SpendTableRow:
+    properties:
+      costValue:
+        additionalProperties:
+          type: number
+        type: object
+      dimension:
+        example: Compute
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetConfigMetadataRequest:
     properties:
       key:
@@ -3614,6 +3624,48 @@ paths:
       summary: Get Cost Trend
       tags:
       - analytics
+  /inventory/api/v2/analytics/spend/table:
+    get:
+      consumes:
+      - application/json
+      description: Returns spend table with respect to the dimension and granularity
+      parameters:
+      - description: timestamp for start in epoch seconds
+        in: query
+        name: startTime
+        type: string
+      - description: timestamp for end in epoch seconds
+        in: query
+        name: endTime
+        type: string
+      - description: Granularity of the table, default is daily
+        enum:
+        - monthly
+        - daily
+        in: query
+        name: granularity
+        type: string
+      - description: Dimension of the table, default is metric
+        enum:
+        - connection
+        - metric
+        in: query
+        name: dimension
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SpendTableRow'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get Spend Trend
+      tags:
+      - inventory
   /inventory/api/v2/analytics/spend/trend:
     get:
       consumes:

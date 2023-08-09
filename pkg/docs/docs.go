@@ -2007,6 +2007,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/analytics/spend/table": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns spend table with respect to the dimension and granularity",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Get Spend Trend",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "timestamp for start in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "timestamp for end in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "monthly",
+                            "daily"
+                        ],
+                        "type": "string",
+                        "description": "Granularity of the table, default is daily",
+                        "name": "granularity",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "connection",
+                            "metric"
+                        ],
+                        "type": "string",
+                        "description": "Dimension of the table, default is metric",
+                        "name": "dimension",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SpendTableRow"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/analytics/spend/trend": {
             "get": {
                 "security": [
@@ -6438,6 +6503,21 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SpendTableRow": {
+            "type": "object",
+            "properties": {
+                "costValue": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
+                },
+                "dimension": {
+                    "type": "string",
+                    "example": "Compute"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_metadata_api.SetConfigMetadataRequest": {
             "type": "object",
             "properties": {
@@ -7691,6 +7771,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {
