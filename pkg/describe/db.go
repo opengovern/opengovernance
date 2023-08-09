@@ -86,6 +86,14 @@ func (db Database) ListPendingDescribeSourceJobs() ([]DescribeSourceJob, error) 
 	return jobs, nil
 }
 
+func (db Database) CleanupDescribeSourceJobsOlderThan(t time.Time) error {
+	tx := db.orm.Where("created_at < ?", t).Unscoped().Delete(&DescribeSourceJob{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
 func (db Database) ListPendingDescribeResourceJobs() ([]DescribeResourceJob, error) {
 	var jobs []DescribeResourceJob
 	tx := db.orm.Where("status in (?, ?)", api.DescribeResourceJobQueued, api.DescribeResourceJobCreated).Find(&jobs)
@@ -184,6 +192,14 @@ func (db Database) CountQueuedInProgressDescribeResourceJobsByParentID(id uint) 
 	return count, nil
 }
 
+func (db Database) CleanupDescribeResourceJobsOlderThan(t time.Time) error {
+	tx := db.orm.Where("created_at < ?", t).Unscoped().Delete(&DescribeResourceJob{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
 func (db Database) ListCreatedDescribeSourceJobs() ([]DescribeSourceJob, error) {
 	var jobs []DescribeSourceJob
 	tx := db.orm.Where("status in (?)", api.DescribeSourceJobCreated).Find(&jobs)
@@ -212,6 +228,14 @@ func (db Database) ListPendingInsightJobs() ([]InsightJob, error) {
 	}
 
 	return jobs, nil
+}
+
+func (db Database) CleanupInsightJobsOlderThan(t time.Time) error {
+	tx := db.orm.Where("created_at < ?", t).Unscoped().Delete(&InsightJob{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
 }
 
 // ListDescribeSourceJobs lists the DescribeSourceJobs for the given sourcel.
@@ -403,6 +427,15 @@ func (db Database) GetCloudNativeDescribeSourceJobBySourceJobID(jobID uint) (*Cl
 	}
 
 	return &job, nil
+}
+
+func (db Database) CleanupCloudNativeDescribeSourceJobsOlderThan(t time.Time) error {
+	tx := db.orm.Where("created_at < ?", t).Unscoped().Delete(&CloudNativeDescribeSourceJob{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
 }
 
 // =============================== DescribeResourceJob ===============================
@@ -612,6 +645,15 @@ func (db Database) ListComplianceReportsWithFilter(timeAfter, timeBefore *time.T
 		return nil, tx.Error
 	}
 	return jobs, nil
+}
+
+func (db Database) CleanupComplianceReportJobsOlderThan(t time.Time) error {
+	tx := db.orm.Where("updated_at < ?", t).Unscoped().Delete(&ComplianceReportJob{})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
 }
 
 func (db Database) DeleteComplianceReportJob(id uint) error {

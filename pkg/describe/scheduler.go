@@ -581,6 +581,9 @@ func (s *Scheduler) Run() error {
 		EnsureRunGoroutin(func() {
 			s.logger.Fatal("InsightJobResult consumer exited", zap.Error(s.RunCheckupJobResultsConsumer()))
 		})
+		EnsureRunGoroutin(func() {
+			s.RunScheduledJobCleanup()
+		})
 	case OperationModeReceiver:
 		s.logger.Info("starting receiver")
 		lis, err := net.Listen("tcp", GRPCServerAddress)
@@ -806,6 +809,34 @@ func (s *Scheduler) RunDeletedSourceCleanup() {
 		s.cleanupDescribeJobForDeletedSource(id)
 		// cleanup compliance report job for deleted source
 		s.cleanupComplianceReportJobForDeletedSource(id)
+	}
+}
+
+func (s *Scheduler) RunScheduledJobCleanup() {
+	ticker := time.NewTicker(time.Hour)
+	defer ticker.Stop()
+	for range ticker.C {
+		tOlder := time.Now().AddDate(0, 0, -15)
+		err := s.db.CleanupCloudNativeDescribeSourceJobsOlderThan(tOlder)
+		if err != nil {
+			s.logger.Error("Failed to cleanup cloud native describe source jobs", zap.Error(err))
+		}
+		err = s.db.CleanupDescribeSourceJobsOlderThan(tOlder)
+		if err != nil {
+			s.logger.Error("Failed to cleanup describe source jobs", zap.Error(err))
+		}
+		err = s.db.CleanupDescribeResourceJobsOlderThan(tOlder)
+		if err != nil {
+			s.logger.Error("Failed to cleanup describe resource jobs", zap.Error(err))
+		}
+		err = s.db.CleanupInsightJobsOlderThan(tOlder)
+		if err != nil {
+			s.logger.Error("Failed to cleanup insight jobs", zap.Error(err))
+		}
+		err = s.db.CleanupComplianceReportJobsOlderThan(tOlder)
+		if err != nil {
+			s.logger.Error("Failed to cleanup compliance report jobs", zap.Error(err))
+		}
 	}
 }
 
