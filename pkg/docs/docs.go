@@ -6512,7 +6512,11 @@ const docTemplate = `{
                         "type": "number"
                     }
                 },
-                "dimension": {
+                "dimensionId": {
+                    "type": "string",
+                    "example": "compute"
+                },
+                "dimensionName": {
                     "type": "string",
                     "example": "Compute"
                 }

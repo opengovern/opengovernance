@@ -10,13 +10,15 @@ const (
 )
 
 type ConnectionMetricTrendSummary struct {
-	ConnectionID uuid.UUID   `json:"connection_id"`
-	Connector    source.Type `json:"connector"`
-	Date         string      `json:"date"`
-	MetricID     string      `json:"metric_id"`
-	CostValue    float64     `json:"cost_value"`
-	PeriodStart  int64       `json:"period_start"`
-	PeriodEnd    int64       `json:"period_end"`
+	ConnectionID   uuid.UUID   `json:"connection_id"`
+	ConnectionName string      `json:"connection_name"`
+	Connector      source.Type `json:"connector"`
+	Date           string      `json:"date"`
+	MetricID       string      `json:"metric_id"`
+	MetricName     string      `json:"metric_name"`
+	CostValue      float64     `json:"cost_value"`
+	PeriodStart    int64       `json:"period_start"`
+	PeriodEnd      int64       `json:"period_end"`
 }
 
 func (r ConnectionMetricTrendSummary) KeysAndIndex() ([]string, string) {

@@ -12,6 +12,7 @@ type ConnectorMetricTrendSummary struct {
 	Connector   source.Type `json:"connector"`
 	Date        string      `json:"date"`
 	MetricID    string      `json:"metric_id"`
+	MetricName  string      `json:"metric_name"`
 	CostValue   float64     `json:"cost_value"`
 	PeriodStart int64       `json:"period_start"`
 	PeriodEnd   int64       `json:"period_end"`

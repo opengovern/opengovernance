@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
+	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -231,6 +232,12 @@ func FetchConnectorSpendMetricTrend(client keibi.Client, metricIds []string, con
 	return result, nil
 }
 
+type DimensionTrend struct {
+	DimensionID   string
+	DimensionName string
+	Trend         map[string]float64
+}
+
 type SpendTableByDimensionQueryResponse struct {
 	Aggregations struct {
 		DimensionGroup struct {
@@ -242,6 +249,13 @@ type SpendTableByDimensionQueryResponse struct {
 						CostSumGroup struct {
 							Value float64 `json:"value"`
 						} `json:"cost_sum_group"`
+						Latest struct {
+							Hits struct {
+								Hits []struct {
+									Source spend.ConnectionMetricTrendSummary `json:"_source"`
+								} `json:"hits"`
+							} `json:"hits"`
+						} `json:"latest"`
 					} `json:"buckets"`
 				} `json:"date_group"`
 			} `json:"buckets"`
@@ -249,17 +263,17 @@ type SpendTableByDimensionQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchSpendTableByDimension(client keibi.Client, dimension string, startTime, endTime time.Time) ([]MetricTrend, error) {
+func FetchSpendTableByDimension(client keibi.Client, dimension inventoryApi.SpendDimension, startTime, endTime time.Time) ([]DimensionTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 
 	dimensionField := ""
 	index := ""
 	switch dimension {
-	case "connection":
+	case inventoryApi.SpendDimensionConnection:
 		dimensionField = "connection_id"
 		index = spend.AnalyticsSpendConnectionSummaryIndex
-	case "metric":
+	case inventoryApi.SpendDimensionMetric:
 		dimensionField = "metric_id"
 		index = spend.AnalyticsSpendConnectorSummaryIndex
 	default:
@@ -304,6 +318,14 @@ func FetchSpendTableByDimension(client keibi.Client, dimension string, startTime
 								"field": "cost_value",
 							},
 						},
+						"latest": map[string]any{
+							"top_hits": map[string]any{
+								"size": 1,
+								"sort": map[string]string{
+									"_id": "asc",
+								},
+							},
+						},
 					},
 				},
 			},
@@ -322,14 +344,24 @@ func FetchSpendTableByDimension(client keibi.Client, dimension string, startTime
 		return nil, err
 	}
 
-	var result []MetricTrend
+	var result []DimensionTrend
 	for _, bucket := range response.Aggregations.DimensionGroup.Buckets {
-		mt := MetricTrend{
-			MetricID: bucket.Key,
-			Trend:    make(map[string]float64),
+		mt := DimensionTrend{
+			DimensionID: bucket.Key,
+			Trend:       make(map[string]float64),
 		}
 		for _, dateBucket := range bucket.DateGroup.Buckets {
 			mt.Trend[dateBucket.Key] = dateBucket.CostSumGroup.Value
+			for _, hit := range dateBucket.Latest.Hits.Hits {
+				switch dimension {
+				case inventoryApi.SpendDimensionConnection:
+					mt.DimensionName = hit.Source.ConnectionName
+				case inventoryApi.SpendDimensionMetric:
+					mt.DimensionName = hit.Source.MetricName
+				default:
+					return nil, errors.New("dimension is not supported")
+				}
+			}
 		}
 		result = append(result, mt)
 	}

@@ -1417,7 +1417,10 @@ definitions:
         additionalProperties:
           type: number
         type: object
-      dimension:
+      dimensionId:
+        example: compute
+        type: string
+      dimensionName:
         example: Compute
         type: string
     type: object

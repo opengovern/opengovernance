@@ -1629,12 +1629,18 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	granularity := ctx.QueryParam("granularity")
-	if granularity != "daily" && granularity != "monthly" {
+	granularity := inventoryApi.SpendTableGranularity(ctx.QueryParam("granularity"))
+	if granularity != inventoryApi.SpendTableGranularityDaily &&
+		granularity != inventoryApi.SpendTableGranularityMonthly {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
 	}
+	dimension := inventoryApi.SpendDimension(ctx.QueryParam("dimension"))
+	if dimension != inventoryApi.SpendDimensionMetric &&
+		dimension != inventoryApi.SpendDimensionConnection {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid dimension")
+	}
 
-	mt, err := es.FetchSpendTableByDimension(h.client, granularity, startTime, endTime)
+	mt, err := es.FetchSpendTableByDimension(h.client, dimension, startTime, endTime)
 	if err != nil {
 		return err
 	}
@@ -1656,8 +1662,9 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 			}
 		}
 		table = append(table, inventoryApi.SpendTableRow{
-			Dimension: m.MetricID,
-			CostValue: costValue,
+			DimensionID:   m.DimensionID,
+			DimensionName: m.DimensionName,
+			CostValue:     costValue,
 		})
 	}
 	return ctx.JSON(http.StatusOK, table)
