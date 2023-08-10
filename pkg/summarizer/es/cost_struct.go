@@ -219,9 +219,13 @@ func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResou
 		if err != nil {
 			return nil, "", err
 		}
-		key := fmt.Sprintf("%s|%s|%s|%d", resource.SourceID, *desc.CostManagementCostByResourceType.ServiceName, desc.CostManagementCostByResourceType.Currency, desc.CostManagementCostByResourceType.UsageDate)
+		serviceName := ""
+		if desc.CostManagementCostByResourceType.ServiceName != nil {
+			serviceName = *desc.CostManagementCostByResourceType.ServiceName
+		}
+		key := fmt.Sprintf("%s|%s|%s|%d", resource.SourceID, serviceName, desc.CostManagementCostByResourceType.Currency, desc.CostManagementCostByResourceType.UsageDate)
 		serviceCostSummary := &ServiceCostSummary{
-			ServiceName: *desc.CostManagementCostByResourceType.ServiceName,
+			ServiceName: serviceName,
 			Cost:        desc.CostManagementCostByResourceType,
 			PeriodStart: getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Truncate(24 * time.Hour).Unix(),
 			PeriodEnd:   getTimeFromTimeInt(desc.CostManagementCostByResourceType.UsageDate).Truncate(24 * time.Hour).Unix(),
