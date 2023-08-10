@@ -141,7 +141,7 @@ FROM (
       WHERE 
         status = ? AND 
         (select count(*) from describe_resource_jobs where parent_job_id = dr.parent_job_id AND status IN ?) <= 10 AND
-        (select count(*) from describe_resource_jobs where resource_type = dr.resource_type AND status IN ?) <= 10
+        (select count(*) from describe_resource_jobs where resource_type = dr.resource_type AND status IN ?) <= 5
   ) AS t) AS rowed
 WHERE
   rowed.r <= 5
