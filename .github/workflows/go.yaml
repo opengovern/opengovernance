@@ -105,10 +105,6 @@ jobs:
           chmod +x ./build/*
         fi
         for f in $(cat ./services); do echo "$f=true" >> "$GITHUB_OUTPUT"; done
-    - name: Force update cache
-      run: |
-        STATE_CACHE_KEY="${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}"
-        echo "STATE_CACHE_KEY=${STATE_CACHE_KEY}" >> $GITHUB_ENV
     - name: Pack build
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
       run: |

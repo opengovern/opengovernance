@@ -21,7 +21,7 @@ import (
 
 type JobType string
 
-const MaxKafkaSendBatchSize = 10000
+const MaxKafkaSendBatchSize = 5000
 
 const (
 	JobType_ResourceMustSummarizer JobType = "resourceMustSummarizer"

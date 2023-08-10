@@ -816,7 +816,7 @@ func (s *Scheduler) RunScheduledJobCleanup() {
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
 	for range ticker.C {
-		tOlder := time.Now().AddDate(0, 0, -15)
+		tOlder := time.Now().AddDate(0, 0, -7)
 		err := s.db.CleanupCloudNativeDescribeSourceJobsOlderThan(tOlder)
 		if err != nil {
 			s.logger.Error("Failed to cleanup cloud native describe source jobs", zap.Error(err))
