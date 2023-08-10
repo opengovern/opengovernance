@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"net/http"
 	"sort"
 	"strconv"
@@ -1715,16 +1716,18 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 //	@Tags			connections
 //	@Accept			json
 //	@Produce		json
-//	@Param			connector		query		[]source.Type	false	"Connector"
-//	@Param			connectionId	query		[]string		false	"Connection IDs"
-//	@Param			lifecycleState	query		string			false	"lifecycle state filter"	Enums(DISABLED, DISCOVERED, IN_PROGRESS, ONBOARD, ARCHIVED)
-//	@Param			healthState		query		string			false	"health state filter"		Enums(healthy,unhealthy)
-//	@Param			pageSize		query		int				false	"page size - default is 20"
-//	@Param			pageNumber		query		int				false	"page number - default is 1"
-//	@Param			startTime		query		int				false	"start time in unix seconds"
-//	@Param			endTime			query		int				false	"end time in unix seconds"
-//	@Param			sortBy			query		string			false	"column to sort by - default is cost"	Enums(onboard_date,resource_count,cost,growth,growth_rate,cost_growth,cost_growth_rate)
-//	@Success		200				{object}	api.ListConnectionSummaryResponse
+//	@Param			connector			query		[]source.Type	false	"Connector"
+//	@Param			connectionId		query		[]string		false	"Connection IDs"
+//	@Param			lifecycleState		query		string			false	"lifecycle state filter"	Enums(DISABLED, DISCOVERED, IN_PROGRESS, ONBOARD, ARCHIVED)
+//	@Param			healthState			query		string			false	"health state filter"		Enums(healthy,unhealthy)
+//	@Param			pageSize			query		int				false	"page size - default is 20"
+//	@Param			pageNumber			query		int				false	"page number - default is 1"
+//	@Param			startTime			query		int				false	"start time in unix seconds"
+//	@Param			endTime				query		int				false	"end time in unix seconds"
+//	@Param			needCost			query		boolean			false	"for quicker inquiry send this parameter as false, default: true"
+//	@Param			needResourceCount	query		boolean			false	"for quicker inquiry send this parameter as false, default: true"
+//	@Param			sortBy				query		string			false	"column to sort by - default is cost"	Enums(onboard_date,resource_count,cost,growth,growth_rate,cost_growth,cost_growth_rate)
+//	@Success		200					{object}	api.ListConnectionSummaryResponse
 //	@Router			/onboard/api/v1/connections/summary [get]
 func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
@@ -1779,9 +1782,23 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		return err
 	}
 
-	connectionData, err := h.inventoryClient.ListConnectionsData(httpclient.FromEchoContext(ctx), nil, &startTime, &endTime)
-	if err != nil {
-		return err
+	needCostStr := ctx.QueryParam("needCost")
+	needCost := true
+	if needCostStr == "false" {
+		needCost = false
+	}
+	needResourceCountStr := ctx.QueryParam("needResourceCount")
+	needResourceCount := true
+	if needResourceCountStr == "false" {
+		needResourceCount = false
+	}
+
+	connectionData := map[string]api2.ConnectionData{}
+	if needResourceCount || needCost {
+		connectionData, err = h.inventoryClient.ListConnectionsData(httpclient.FromEchoContext(ctx), nil, &startTime, &endTime)
+		if err != nil {
+			return err
+		}
 	}
 
 	result := api.ListConnectionSummaryResponse{

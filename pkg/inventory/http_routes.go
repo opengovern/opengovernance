@@ -57,7 +57,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v2 := e.Group("/api/v2")
 
 	resourcesV2 := v2.Group("/resources")
-	resourcesV2.GET("/tag", httpserver.AuthorizeHandler(h.ListResourceTypeTags, authApi.ViewerRole))
 	resourcesV2.GET("/count", httpserver.AuthorizeHandler(h.CountResources, authApi.ViewerRole))
 	resourcesV2.GET("/metric/:resourceType", httpserver.AuthorizeHandler(h.GetResourceTypeMetricsHandler, authApi.ViewerRole))
 
@@ -76,14 +75,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	analyticsSpend.GET("/metrics/trend", httpserver.AuthorizeHandler(h.GetAnalyticsSpendMetricsTrend, authApi.ViewerRole))
 	analyticsSpend.GET("/table", httpserver.AuthorizeHandler(h.GetSpendTable, authApi.ViewerRole))
 
-	servicesV2 := v2.Group("/services")
-	servicesV2.GET("/cost/trend", httpserver.AuthorizeHandler(h.GetServiceCostTrend, authApi.ViewerRole))
-
-	costV2 := v2.Group("/cost")
-	costV2.GET("/metric", httpserver.AuthorizeHandler(h.ListCostMetricsHandler, authApi.ViewerRole))
-	costV2.GET("/composition", httpserver.AuthorizeHandler(h.ListCostComposition, authApi.ViewerRole))
-	costV2.GET("/trend", httpserver.AuthorizeHandler(h.GetCostTrend, authApi.ViewerRole))
-
 	connectionsV2 := v2.Group("/connections")
 	connectionsV2.GET("/data", httpserver.AuthorizeHandler(h.ListConnectionsData, authApi.ViewerRole))
 	connectionsV2.GET("/data/:connectionId", httpserver.AuthorizeHandler(h.GetConnectionData, authApi.ViewerRole))
@@ -97,6 +88,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, authApi.ViewerRole))
 
 	v1.GET("/migrate-analytics", httpserver.AuthorizeHandler(h.MigrateAnalytics, authApi.AdminRole))
+	v1.GET("/migrate-spend", httpserver.AuthorizeHandler(h.MigrateSpend, authApi.AdminRole))
 }
 
 func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
@@ -246,6 +238,126 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 	return nil
 }
 
+func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
+	for i := 0; i < 1000; i++ {
+		err := h.MigrateAnalyticsPart(i)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+
+	connectionMap := map[string]resource.ConnectionMetricTrendSummary{}
+	connectorMap := map[string]resource.ConnectorMetricTrendSummary{}
+
+	resourceTypeMetricIDCache := map[string]string{}
+
+	cctx := context.Background()
+
+	pagination, err := es.NewConnectionResourceTypePaginator(
+		h.client,
+		[]keibi.BoolFilter{
+			keibi.NewTermFilter("report_type", string(es3.ResourceTypeTrendConnectionSummary)),
+			keibi.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
+		},
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	var docs []kafka.Doc
+	for {
+		if !pagination.HasNext() {
+			fmt.Println("MigrateAnalytics = page done", summarizerJobID)
+			break
+		}
+
+		fmt.Println("MigrateAnalytics = ask page", summarizerJobID)
+		page, err := pagination.NextPage(cctx)
+		if err != nil {
+			return err
+		}
+		fmt.Println("MigrateAnalytics = next page", summarizerJobID)
+
+		for _, hit := range page {
+			connectionID, err := uuid.Parse(hit.SourceID)
+			if err != nil {
+				return err
+			}
+
+			var metricID string
+
+			if v, ok := resourceTypeMetricIDCache[hit.ResourceType]; ok {
+				metricID = v
+			} else {
+				metric, err := aDB.GetMetric(hit.ResourceType)
+				if err != nil {
+					return err
+				}
+
+				if metric == nil {
+					return fmt.Errorf("resource type %s not found", hit.ResourceType)
+				}
+
+				resourceTypeMetricIDCache[hit.ResourceType] = metric.ID
+				metricID = metric.ID
+			}
+
+			if metricID == "" {
+				continue
+			}
+
+			connection := resource.ConnectionMetricTrendSummary{
+				ConnectionID:  connectionID,
+				Connector:     hit.SourceType,
+				EvaluatedAt:   hit.DescribedAt,
+				MetricID:      metricID,
+				ResourceCount: hit.ResourceCount,
+			}
+			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metricID, hit.SummarizeJobID)
+			if v, ok := connectionMap[key]; ok {
+				v.ResourceCount += connection.ResourceCount
+				connectionMap[key] = v
+			} else {
+				connectionMap[key] = connection
+			}
+
+			connector := resource.ConnectorMetricTrendSummary{
+				Connector:     hit.SourceType,
+				EvaluatedAt:   hit.DescribedAt,
+				MetricID:      metricID,
+				ResourceCount: hit.ResourceCount,
+			}
+			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metricID, hit.SummarizeJobID)
+			if v, ok := connectorMap[key]; ok {
+				v.ResourceCount += connector.ResourceCount
+				connectorMap[key] = v
+			} else {
+				connectorMap[key] = connector
+			}
+		}
+	}
+
+	for _, c := range connectionMap {
+		docs = append(docs, c)
+	}
+
+	for _, c := range connectorMap {
+		docs = append(docs, c)
+	}
+
+	err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docs, h.logger)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func bindValidate(ctx echo.Context, i interface{}) error {
 	if err := ctx.Bind(i); err != nil {
 		return err
@@ -280,87 +392,6 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 	}
 
 	return connectorTypes, nil
-}
-
-// ListResourceTypeTags godoc
-//
-//	@Summary		List resourcetype tags
-//	@Description	Retrieving a list of tag keys with their possible values for all resource types.
-//	@Security		BearerToken
-//	@Tags			resource
-//	@Accept			json
-//	@Produce		json
-//	@Param			connector		query		[]string	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string		false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			minCount		query		int			false	"Minimum number of resources with this tag value, default 1"
-//	@Param			endTime			query		int			false	"End time in unix timestamp format, default now"
-//	@Success		200				{object}	map[string][]string
-//	@Router			/inventory/api/v2/resources/tag [get]
-func (h *HttpHandler) ListResourceTypeTags(ctx echo.Context) error {
-	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
-	if err != nil {
-		return err
-	}
-	if len(connectionIDs) > MaxConns {
-		return ctx.JSON(http.StatusBadRequest, "too many connections")
-	}
-	connectorTypes, err = h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
-	}
-	minCount := 1
-	if minCountStr := ctx.QueryParam("minCount"); minCountStr != "" {
-		minCountVal, err := strconv.ParseInt(minCountStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "minCount must be a number")
-		}
-		minCount = int(minCountVal)
-	}
-	endTime := time.Now()
-	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
-		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "endTime must be a number")
-		}
-		endTime = time.Unix(endTimeVal, 0)
-	}
-
-	tags, err := h.db.ListResourceTypeTagsKeysWithPossibleValues(connectorTypes, utils.GetPointer(true))
-	if err != nil {
-		return err
-	}
-	tags = model.TrimPrivateTags(tags)
-
-	var resourceTypeCount map[string]int
-	if len(connectionIDs) > 0 {
-		resourceTypeCount, err = es.FetchConnectionResourceTypeCountAtTime(h.client, connectorTypes, connectionIDs, endTime, nil, EsFetchPageSize)
-	} else {
-		resourceTypeCount, err = es.FetchConnectorResourceTypeCountAtTime(h.client, connectorTypes, endTime, nil, EsFetchPageSize)
-	}
-	if err != nil {
-		return err
-	}
-
-	filteredTags := map[string][]string{}
-	for key, values := range tags {
-		for _, tagValue := range values {
-			resourceTypes, err := h.db.ListFilteredResourceTypes(map[string][]string{key: {tagValue}}, nil, nil, connectorTypes, true)
-			if err != nil {
-				return err
-			}
-			for _, resourceType := range resourceTypes {
-				if resourceTypeCount[strings.ToLower(resourceType.ResourceType)] >= minCount {
-					filteredTags[key] = append(filteredTags[key], tagValue)
-					break
-				}
-			}
-		}
-	}
-	tags = filteredTags
-
-	return ctx.JSON(http.StatusOK, tags)
 }
 
 func (h *HttpHandler) ListAnalyticsMetrics(metricIDs []string, metricType analyticsDB.MetricType, tagMap map[string][]string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []inventoryApi.Metric, error) {
@@ -1753,385 +1784,6 @@ func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionID
 	return &apiResourceType, nil
 }
 
-// ListCostMetricsHandler godoc
-//
-//	@Summary		List cost metrics
-//	@Description	Retrieving cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.
-//	@Security		BearerToken
-//	@Tags			cost
-//	@Accept			json
-//	@Produce		json
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
-//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
-//	@Param			sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost,growth,growth_rate)
-//	@Param			pageSize		query		int				false	"page size - default is 20"
-//	@Param			pageNumber		query		int				false	"page number - default is 1"
-//	@Success		200				{object}	inventoryApi.ListCostMetricsResponse
-//	@Router			/inventory/api/v2/cost/metric [get]
-func (h *HttpHandler) ListCostMetricsHandler(ctx echo.Context) error {
-	var err error
-	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
-	}
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now().Unix()
-	if endTimeStr != "" {
-		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
-	if startTimeStr != "" {
-		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-	}
-	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
-	}
-	sortBy := strings.ToLower(ctx.QueryParam("sortBy"))
-	if sortBy == "" {
-		sortBy = "cost"
-	}
-	if sortBy != "dimension" && sortBy != "cost" &&
-		sortBy != "growth" && sortBy != "growth_rate" {
-		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
-	}
-
-	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, connectionIDs, connectorTypes, nil, time.Unix(startTime, 0), time.Unix(endTime, 0), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	costMetricMap := make(map[string]inventoryApi.CostMetric)
-	for connector, serviceToCostMap := range costHits {
-		for dimension, costVal := range serviceToCostMap {
-			connectorTyped, _ := source.ParseType(connector)
-			localCostVal := costVal
-			costMetricMap[dimension] = inventoryApi.CostMetric{
-				Connector:         []source.Type{connectorTyped},
-				CostDimensionName: dimension,
-				TotalCost:         &localCostVal,
-			}
-		}
-	}
-
-	endTimeCostHits, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, connectorTypes, nil, time.Unix(endTime, 0), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	aggregatedEndTimeCostHits := internal.AggregateServiceCosts(endTimeCostHits)
-	for dimension, costVal := range aggregatedEndTimeCostHits {
-		if costMetric, ok := costMetricMap[dimension]; ok {
-			localCostVal := costVal
-			costMetric.DailyCostAtEndTime = utils.PAdd(costMetric.DailyCostAtEndTime, &localCostVal)
-			costMetricMap[dimension] = costMetric
-		}
-	}
-
-	startTimeCostHits, err := es.FetchDailyCostHistoryByServicesAtTime(h.client, connectionIDs, connectorTypes, nil, time.Unix(startTime, 0), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	aggregatedStartTimeCostHits := internal.AggregateServiceCosts(startTimeCostHits)
-	for dimension, costVal := range aggregatedStartTimeCostHits {
-		if costMetric, ok := costMetricMap[dimension]; ok {
-			localCostVal := costVal
-			costMetric.DailyCostAtStartTime = utils.PAdd(costMetric.DailyCostAtStartTime, &localCostVal)
-			costMetricMap[dimension] = costMetric
-		}
-	}
-
-	var costMetrics []inventoryApi.CostMetric
-	totalCost := float64(0)
-	for _, costMetric := range costMetricMap {
-		costMetrics = append(costMetrics, costMetric)
-		if costMetric.TotalCost != nil {
-			totalCost += *costMetric.TotalCost
-		}
-	}
-
-	sort.Slice(costMetrics, func(i, j int) bool {
-		switch sortBy {
-		case "dimension":
-			return costMetrics[i].CostDimensionName < costMetrics[j].CostDimensionName
-		case "cost":
-			if costMetrics[i].TotalCost == nil && costMetrics[j].TotalCost == nil {
-				break
-			}
-			if costMetrics[i].TotalCost == nil {
-				return false
-			}
-			if costMetrics[j].TotalCost == nil {
-				return true
-			}
-			if *costMetrics[i].TotalCost != *costMetrics[j].TotalCost {
-				return *costMetrics[i].TotalCost > *costMetrics[j].TotalCost
-			}
-		case "growth":
-			diffi := utils.PSub(costMetrics[i].DailyCostAtEndTime, costMetrics[i].DailyCostAtStartTime)
-			diffj := utils.PSub(costMetrics[j].DailyCostAtEndTime, costMetrics[j].DailyCostAtStartTime)
-			if diffi == nil && diffj == nil {
-				break
-			}
-			if diffi == nil {
-				return false
-			}
-			if diffj == nil {
-				return true
-			}
-			if *diffi != *diffj {
-				return *diffi > *diffj
-			}
-		case "growth_rate":
-			diffi := utils.PSub(costMetrics[i].DailyCostAtEndTime, costMetrics[i].DailyCostAtStartTime)
-			diffj := utils.PSub(costMetrics[j].DailyCostAtEndTime, costMetrics[j].DailyCostAtStartTime)
-			if diffi == nil && diffj == nil {
-				break
-			}
-			if diffi == nil {
-				return false
-			}
-			if diffj == nil {
-				return true
-			}
-			if costMetrics[i].DailyCostAtStartTime == nil && costMetrics[j].DailyCostAtStartTime == nil {
-				break
-			}
-			if costMetrics[i].DailyCostAtStartTime == nil {
-				return true
-			}
-			if costMetrics[j].DailyCostAtStartTime == nil {
-				return false
-			}
-			if *costMetrics[i].DailyCostAtStartTime == 0 && *costMetrics[j].DailyCostAtStartTime == 0 {
-				break
-			}
-			if *costMetrics[i].DailyCostAtStartTime == 0 {
-				return false
-			}
-			if *costMetrics[j].DailyCostAtStartTime == 0 {
-				return true
-			}
-			if *diffi/(*costMetrics[i].DailyCostAtStartTime) != *diffj/(*costMetrics[j].DailyCostAtStartTime) {
-				return *diffi/(*costMetrics[i].DailyCostAtStartTime) > *diffj/(*costMetrics[j].DailyCostAtStartTime)
-			}
-		}
-		return costMetrics[i].CostDimensionName < costMetrics[j].CostDimensionName
-	})
-
-	return ctx.JSON(http.StatusOK, inventoryApi.ListCostMetricsResponse{
-		TotalCount: len(costMetrics),
-		TotalCost:  totalCost,
-		Metrics:    utils.Paginate(pageNumber, pageSize, costMetrics),
-	})
-}
-
-// ListCostComposition godoc
-//
-//	@Summary		List cost composition
-//	@Description	Retrieving the cost composition with respect to specified filters. Retrieving information such as the total cost for the given time range, and the top services by cost.
-//	@Security		BearerToken
-//	@Tags			cost
-//	@Accept			json
-//	@Produce		json
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			top				query		int				false	"How many top values to return default is 5"
-//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
-//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
-//	@Success		200				{object}	inventoryApi.ListCostCompositionResponse
-//	@Router			/inventory/api/v2/cost/composition [get]
-func (h *HttpHandler) ListCostComposition(ctx echo.Context) error {
-	var err error
-	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
-	if err != nil {
-		return err
-	}
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now().Unix()
-	if endTimeStr != "" {
-		endTime, err = strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := time.Unix(endTime, 0).AddDate(0, 0, -7).Unix()
-	if startTimeStr != "" {
-		startTime, err = strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-	}
-	topStr := ctx.QueryParam("top")
-	top := int64(5)
-	if topStr != "" {
-		top, err = strconv.ParseInt(topStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid top value")
-		}
-	}
-
-	costHits, err := es.FetchDailyCostHistoryByServicesBetween(h.client, connectionIDs, connectorTypes, nil, time.Unix(startTime, 0), time.Unix(endTime, 0), EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	costMetricMap := make(map[string]inventoryApi.CostMetric)
-	for connector, serviceToCostMap := range costHits {
-		for dimension, costVal := range serviceToCostMap {
-			connectorTyped, _ := source.ParseType(connector)
-			localCostVal := costVal
-			costMetricMap[dimension] = inventoryApi.CostMetric{
-				Connector:         []source.Type{connectorTyped},
-				CostDimensionName: dimension,
-				TotalCost:         &localCostVal,
-			}
-		}
-	}
-
-	var costMetrics []inventoryApi.CostMetric
-	totalCost := float64(0)
-	for _, costMetric := range costMetricMap {
-		costMetrics = append(costMetrics, costMetric)
-		if costMetric.TotalCost != nil {
-			totalCost += *costMetric.TotalCost
-		}
-	}
-
-	sort.Slice(costMetrics, func(i, j int) bool {
-		if costMetrics[i].TotalCost == nil {
-			return false
-		}
-		if costMetrics[j].TotalCost == nil {
-			return true
-		}
-		if *costMetrics[i].TotalCost != *costMetrics[j].TotalCost {
-			return *costMetrics[i].TotalCost > *costMetrics[j].TotalCost
-		}
-		return costMetrics[i].CostDimensionName < costMetrics[j].CostDimensionName
-	})
-
-	topCostMap := make(map[string]float64)
-	othersCost := float64(0)
-	if top > int64(len(costMetrics)) {
-		top = int64(len(costMetrics))
-	}
-	for _, costMetric := range costMetrics[:int(top)] {
-		if costMetric.TotalCost != nil {
-			topCostMap[costMetric.CostDimensionName] = *costMetric.TotalCost
-		}
-	}
-	if len(costMetrics) > int(top) {
-		for _, costMetric := range costMetrics[int(top):] {
-			if costMetric.TotalCost != nil {
-				othersCost += *costMetric.TotalCost
-			}
-		}
-	}
-
-	return ctx.JSON(http.StatusOK, inventoryApi.ListCostCompositionResponse{
-		TotalCount:     len(costMetrics),
-		TotalCostValue: totalCost,
-		TopValues:      topCostMap,
-		Others:         othersCost,
-	})
-}
-
-// GetCostTrend godoc
-//
-//	@Summary		Get Cost Trend
-//	@Description	Retrieving a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.
-//	@Security		BearerToken
-//	@Tags			cost
-//	@Accept			json
-//	@Produce		json
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
-//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
-//	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
-//	@Success		200				{object}	[]inventoryApi.CostTrendDatapoint
-//	@Router			/inventory/api/v2/cost/trend [get]
-func (h *HttpHandler) GetCostTrend(ctx echo.Context) error {
-	var err error
-	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
-	if err != nil {
-		return err
-	}
-
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now()
-	if endTimeStr != "" {
-		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-		endTime = time.Unix(endTimeVal, 0)
-	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := endTime.AddDate(0, -1, 0)
-	if startTimeStr != "" {
-		startTimeVal, err := strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-		startTime = time.Unix(startTimeVal, 0)
-	}
-
-	datapointCountStr := ctx.QueryParam("datapointCount")
-	datapointCount := int64(30)
-	if datapointCountStr != "" {
-		datapointCount, err = strconv.ParseInt(datapointCountStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
-		}
-	}
-
-	if endTime.Round(24 * time.Hour).Before(endTime) {
-		endTime = endTime.Round(24 * time.Hour).Add(24 * time.Hour)
-	} else {
-		endTime = endTime.Round(24 * time.Hour)
-	}
-	if startTime.Round(24 * time.Hour).After(startTime) {
-		startTime = startTime.Round(24 * time.Hour).Add(-24 * time.Hour)
-	} else {
-		startTime = startTime.Round(24 * time.Hour)
-	}
-
-	esDataPointCount := int(endTime.Sub(startTime).Hours() / 24)
-	if esDataPointCount == 0 {
-		esDataPointCount = 1
-	}
-	timepointToCost, err := es.FetchDailyCostTrendBetween(h.client, connectionIDs, connectorTypes, startTime, endTime, esDataPointCount)
-	if err != nil {
-		return err
-	}
-
-	apiDatapoints := make([]inventoryApi.CostTrendDatapoint, 0, len(timepointToCost))
-	for timeAt, costVal := range timepointToCost {
-		apiDatapoints = append(apiDatapoints, inventoryApi.CostTrendDatapoint{Cost: costVal, Date: time.Unix(int64(timeAt), 0)})
-	}
-	sort.Slice(apiDatapoints, func(i, j int) bool {
-		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
-	})
-	apiDatapoints = internal.DownSampleCostTrendDatapoints(apiDatapoints, int(datapointCount))
-
-	return ctx.JSON(http.StatusOK, apiDatapoints)
-}
-
 func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	var err error
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
@@ -2309,93 +1961,6 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, res)
-}
-
-// GetServiceCostTrend godoc
-//
-//	@Summary		Get Services Cost Trend
-//	@Description	Retrieving a list of costs over the course of the specified time frame for the given services. If startTime and endTime are empty, the API returns the last month trend.
-//	@Security		BearerToken
-//	@Tags			cost
-//	@Accept			json
-//	@Produce		json
-//	@Param			services		query		[]string		false	"Services to filter by"
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
-//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
-//	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
-//	@Success		200				{object}	[]inventoryApi.CostTrendDatapoint
-//	@Router			/inventory/api/v2/services/cost/trend [get]
-func (h *HttpHandler) GetServiceCostTrend(ctx echo.Context) error {
-	var err error
-	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
-	if err != nil {
-		return err
-	}
-	services := httpserver.QueryArrayParam(ctx, "services")
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now()
-	if endTimeStr != "" {
-		endTimeVal, err := strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-		endTime = time.Unix(endTimeVal, 0)
-	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := endTime.AddDate(0, -1, 0)
-	if startTimeStr != "" {
-		startTimeVal, err := strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
-		}
-		startTime = time.Unix(startTimeVal, 0)
-	}
-
-	datapointCountStr := ctx.QueryParam("datapointCount")
-	datapointCount := int64(30)
-	if datapointCountStr != "" {
-		datapointCount, err = strconv.ParseInt(datapointCountStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
-		}
-	}
-
-	if endTime.Round(24 * time.Hour).Before(endTime) {
-		endTime = endTime.Round(24 * time.Hour).Add(24 * time.Hour)
-	} else {
-		endTime = endTime.Round(24 * time.Hour)
-	}
-	if startTime.Round(24 * time.Hour).After(startTime) {
-		startTime = startTime.Round(24 * time.Hour).Add(-24 * time.Hour)
-	} else {
-		startTime = startTime.Round(24 * time.Hour)
-	}
-
-	esDataPointCount := int(endTime.Sub(startTime).Hours() / 24)
-	if esDataPointCount == 0 {
-		esDataPointCount = 1
-	}
-	servicesTimepointToCost, err := es.FetchDailyCostTrendByServicesBetween(h.client, connectionIDs, connectorTypes, services, startTime, endTime, esDataPointCount)
-	if err != nil {
-		return err
-	}
-	var response []inventoryApi.ListServicesCostTrendDatapoint
-	for service, timepointToCost := range servicesTimepointToCost {
-		apiDatapoints := make([]inventoryApi.CostTrendDatapoint, 0, len(timepointToCost))
-		for timeAt, costVal := range timepointToCost {
-			apiDatapoints = append(apiDatapoints, inventoryApi.CostTrendDatapoint{Cost: costVal, Date: time.Unix(int64(timeAt), 0)})
-		}
-		sort.Slice(apiDatapoints, func(i, j int) bool {
-			return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
-		})
-		apiDatapoints = internal.DownSampleCostTrendDatapoints(apiDatapoints, int(datapointCount))
-		response = append(response, inventoryApi.ListServicesCostTrendDatapoint{ServiceName: service, CostTrend: apiDatapoints})
-	}
-	return ctx.JSON(http.StatusOK, response)
 }
 
 // ListQueries godoc
