@@ -694,3 +694,106 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client keibi.Client, connector
 	}
 	return hits, nil
 }
+
+type FetchConnectorAnalyticsResourcesCountAtResponse struct {
+	Aggregations struct {
+		ConnectorGroup struct {
+			Key     string `json:"key"`
+			Buckets []struct {
+				Key         string `json:"key"`
+				MetricGroup struct {
+					Key     string `json:"key"`
+					Buckets []struct {
+						Latest struct {
+							Hits struct {
+								Hits []struct {
+									Source resource.ConnectorMetricTrendSummary `json:"_source"`
+								} `json:"hits"`
+							} `json:"hits"`
+						} `json:"latest"`
+					} `json:"buckets"`
+				} `json:"metric_group"`
+			} `json:"buckets"`
+		} `json:"connector_group"`
+	} `json:"aggregations"`
+}
+
+func FetchConnectorAnalyticsResourcesCountAtTime(client keibi.Client, connectors []source.Type, t time.Time, size int) ([]resource.ConnectorMetricTrendSummary, error) {
+	var hits []resource.ConnectorMetricTrendSummary
+	res := make(map[string]any)
+	var filters []any
+
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"evaluated_at": map[string]any{
+				"lte": t.UnixMilli(),
+			},
+		},
+	})
+
+	if len(connectors) > 0 {
+		connectorsStr := make([]string, 0, len(connectors))
+		for _, c := range connectors {
+			connectorsStr = append(connectorsStr, c.String())
+		}
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"connector": connectorsStr},
+		})
+	}
+
+	res["size"] = 0
+	res["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+
+	res["aggs"] = map[string]any{
+		"connector_group": map[string]any{
+			"terms": map[string]any{
+				"field": "connector",
+				"size":  size,
+			},
+			"aggs": map[string]any{
+				"metric_group": map[string]any{
+					"terms": map[string]any{
+						"field": "metric_id",
+						"size":  size,
+					},
+					"aggs": map[string]any{
+						"latest": map[string]any{
+							"top_hits": map[string]any{
+								"size": 1,
+								"sort": map[string]string{
+									"evaluated_at": "desc",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+	fmt.Println("FetchConnectorAnalyticsResourcesCountAtResponse query =", query)
+	var response FetchConnectorAnalyticsResourcesCountAtResponse
+	err = client.Search(context.Background(), resource.AnalyticsConnectorSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, connectorBucket := range response.Aggregations.ConnectorGroup.Buckets {
+		for _, metricBucket := range connectorBucket.MetricGroup.Buckets {
+			for _, hit := range metricBucket.Latest.Hits.Hits {
+				hits = append(hits, hit.Source)
+			}
+		}
+	}
+	return hits, nil
+}

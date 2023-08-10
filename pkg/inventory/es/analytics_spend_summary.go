@@ -16,6 +16,7 @@ type ConnectionDailySpendHistoryByMetric struct {
 	ConnectionID  string
 	Connector     string
 	MetricID      string
+	MetricName    string
 	TotalCost     float64
 	StartDateCost float64
 	EndDateCost   float64
@@ -163,11 +164,13 @@ func FetchConnectionDailySpendHistoryByMetric(client keibi.Client, connectionIDs
 					hit.StartDateCost = v.Source.CostValue
 				}
 				hit.Connector = v.Source.Connector.String()
+				hit.MetricName = v.Source.MetricName
 			}
 			for _, v := range metricBucket.EndCostGroup.Hits.Hits {
 				if endTime.Format("2006-01-02") == v.Source.Date {
 					hit.EndDateCost = v.Source.CostValue
 				}
+				hit.MetricName = v.Source.MetricName
 			}
 			hits = append(hits, hit)
 		}
@@ -179,6 +182,7 @@ func FetchConnectionDailySpendHistoryByMetric(client keibi.Client, connectionIDs
 type ConnectorDailySpendHistoryByMetric struct {
 	Connector     string
 	MetricID      string
+	MetricName    string
 	TotalCost     float64
 	StartDateCost float64
 	EndDateCost   float64
@@ -317,9 +321,11 @@ func FetchConnectorDailySpendHistoryByMetric(client keibi.Client, connectors []s
 
 			for _, v := range metricBucket.StartCostGroup.Hits.Hits {
 				hit.StartDateCost = v.Source.CostValue
+				hit.MetricName = v.Source.MetricName
 			}
 			for _, v := range metricBucket.EndCostGroup.Hits.Hits {
 				hit.EndDateCost = v.Source.CostValue
+				hit.MetricName = v.Source.MetricName
 			}
 			hits = append(hits, hit)
 		}

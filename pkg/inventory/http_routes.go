@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
 	"math"
 	"net/http"
 	"sort"
@@ -240,7 +241,7 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 
 func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
 	for i := 0; i < 1000; i++ {
-		err := h.MigrateAnalyticsPart(i)
+		err := h.MigrateSpendPart(i)
 		if err != nil {
 			return err
 		}
@@ -249,19 +250,15 @@ func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
-	aDB := analyticsDB.NewDatabase(h.db.orm)
-
-	connectionMap := map[string]resource.ConnectionMetricTrendSummary{}
-	connectorMap := map[string]resource.ConnectorMetricTrendSummary{}
-
-	resourceTypeMetricIDCache := map[string]string{}
+	connectionMap := map[string]spend.ConnectionMetricTrendSummary{}
+	connectorMap := map[string]spend.ConnectorMetricTrendSummary{}
 
 	cctx := context.Background()
 
-	pagination, err := es.NewConnectionResourceTypePaginator(
+	pagination, err := es.NewConnectionCostPaginator(
 		h.client,
 		[]keibi.BoolFilter{
-			keibi.NewTermFilter("report_type", string(es3.ResourceTypeTrendConnectionSummary)),
+			keibi.NewTermFilter("report_type", string(es3.CostConnectionSummaryDaily)),
 			keibi.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
 		},
 		nil,
@@ -290,52 +287,60 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
 				return err
 			}
 
-			var metricID string
-
-			if v, ok := resourceTypeMetricIDCache[hit.ResourceType]; ok {
-				metricID = v
-			} else {
-				metric, err := aDB.GetMetric(hit.ResourceType)
-				if err != nil {
-					return err
-				}
-
-				if metric == nil {
-					return fmt.Errorf("resource type %s not found", hit.ResourceType)
-				}
-
-				resourceTypeMetricIDCache[hit.ResourceType] = metric.ID
-				metricID = metric.ID
-			}
+			var metricID string // cost mapping
+			//
+			//if v, ok := resourceTypeMetricIDCache[hit.ResourceType]; ok {
+			//	metricID = v
+			//} else {
+			//	metric, err := aDB.GetMetric(hit.ResourceType)
+			//	if err != nil {
+			//		return err
+			//	}
+			//
+			//	if metric == nil {
+			//		return fmt.Errorf("resource type %s not found", hit.ResourceType)
+			//	}
+			//
+			//	resourceTypeMetricIDCache[hit.ResourceType] = metric.ID
+			//	metricID = metric.ID
+			//}
 
 			if metricID == "" {
 				continue
 			}
-
-			connection := resource.ConnectionMetricTrendSummary{
-				ConnectionID:  connectionID,
-				Connector:     hit.SourceType,
-				EvaluatedAt:   hit.DescribedAt,
-				MetricID:      metricID,
-				ResourceCount: hit.ResourceCount,
+			dateTimestamp := (hit.PeriodStart + hit.PeriodEnd) / 2
+			dateStr := time.Unix(dateTimestamp, 0).Format("2006-01-02")
+			connection := spend.ConnectionMetricTrendSummary{
+				ConnectionID:   connectionID,
+				ConnectionName: "",
+				Connector:      hit.SourceType,
+				Date:           dateStr,
+				MetricID:       metricID,
+				MetricName:     "",
+				CostValue:      hit.CostValue,
+				PeriodStart:    hit.PeriodStart,
+				PeriodEnd:      hit.PeriodEnd,
 			}
 			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metricID, hit.SummarizeJobID)
 			if v, ok := connectionMap[key]; ok {
-				v.ResourceCount += connection.ResourceCount
+				v.CostValue += connection.CostValue
 				connectionMap[key] = v
 			} else {
 				connectionMap[key] = connection
 			}
 
-			connector := resource.ConnectorMetricTrendSummary{
-				Connector:     hit.SourceType,
-				EvaluatedAt:   hit.DescribedAt,
-				MetricID:      metricID,
-				ResourceCount: hit.ResourceCount,
+			connector := spend.ConnectorMetricTrendSummary{
+				Connector:   hit.SourceType,
+				Date:        dateStr,
+				MetricID:    metricID,
+				MetricName:  "",
+				CostValue:   hit.CostValue,
+				PeriodStart: hit.PeriodStart,
+				PeriodEnd:   hit.PeriodEnd,
 			}
 			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metricID, hit.SummarizeJobID)
 			if v, ok := connectorMap[key]; ok {
-				v.ResourceCount += connector.ResourceCount
+				v.CostValue += connector.CostValue
 				connectorMap[key] = v
 			} else {
 				connectorMap[key] = connector
@@ -1265,7 +1270,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 			} else {
 				costMetricMap[localHit.MetricID] = inventoryApi.CostMetric{
 					Connector:            []source.Type{connector},
-					CostDimensionName:    localHit.MetricID,
+					CostDimensionName:    localHit.MetricName,
 					TotalCost:            &localHit.TotalCost,
 					DailyCostAtStartTime: &localHit.StartDateCost,
 					DailyCostAtEndTime:   &localHit.EndDateCost,
@@ -1298,7 +1303,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 			} else {
 				costMetricMap[localHit.MetricID] = inventoryApi.CostMetric{
 					Connector:            []source.Type{connector},
-					CostDimensionName:    localHit.MetricID,
+					CostDimensionName:    localHit.MetricName,
 					TotalCost:            &localHit.TotalCost,
 					DailyCostAtStartTime: &localHit.StartDateCost,
 					DailyCostAtEndTime:   &localHit.EndDateCost,
