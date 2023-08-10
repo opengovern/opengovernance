@@ -135,7 +135,7 @@ FROM (
    t.*
   FROM (
       SELECT 
-       *                                                                               
+       *
       FROM 
         describe_resource_jobs dr 
       WHERE 
@@ -144,7 +144,7 @@ FROM (
         (select count(*) from describe_resource_jobs where resource_type = dr.resource_type AND status IN ?) <= 10
   ) AS t) AS rowed
 WHERE
-  rowed.r <= 10
+  rowed.r <= 5
 LIMIT ?
 `, api.DescribeResourceJobCreated, runningJobs, runningJobs, limit).Find(&job)
 	if tx.Error != nil {
