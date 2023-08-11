@@ -78,7 +78,7 @@ func (s *Server) createInsightBucket(ctx context.Context, workspace *Workspace) 
 	return err
 }
 
-func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace, dockerRegistryConfig string) error {
+func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) error {
 	id := workspace.ID
 
 	if err := s.createInsightBucket(ctx, workspace); err != nil {
@@ -94,9 +94,6 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace, do
 			Domain: workspace.URI,
 		},
 		Kaytu: KaytuConfig{
-			Docker: DockerConfig{
-				Config: dockerRegistryConfig,
-			},
 			Insights: InsightsConfig{
 				S3: S3Config{
 					AccessKey: s.cfg.S3AccessKey,

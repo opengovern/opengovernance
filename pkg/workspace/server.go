@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -59,16 +58,15 @@ var (
 )
 
 type Server struct {
-	logger               *zap.Logger
-	e                    *echo.Echo
-	cfg                  *Config
-	db                   *Database
-	authClient           authclient.AuthServiceClient
-	kubeClient           k8sclient.Client // the kubernetes client
-	rdb                  *redis.Client
-	cache                *cache.Cache
-	dockerRegistryConfig string
-	awsConfig            aws.Config
+	logger     *zap.Logger
+	e          *echo.Echo
+	cfg        *Config
+	db         *Database
+	authClient authclient.AuthServiceClient
+	kubeClient k8sclient.Client // the kubernetes client
+	rdb        *redis.Client
+	cache      *cache.Cache
+	awsConfig  aws.Config
 }
 
 func NewServer(cfg *Config) (*Server, error) {
@@ -116,17 +114,6 @@ func NewServer(cfg *Config) (*Server, error) {
 		Redis:      s.rdb,
 		LocalCache: cache.NewTinyLFU(2000, 1*time.Minute),
 	})
-
-	secretKey := types.NamespacedName{
-		Name:      "registry",
-		Namespace: s.cfg.KaytuOctopusNamespace,
-	}
-	var registrySecret corev1.Secret
-	err = s.kubeClient.Get(context.Background(), secretKey, &registrySecret)
-	if err != nil {
-		return nil, err
-	}
-	s.dockerRegistryConfig = base64.StdEncoding.EncodeToString(registrySecret.Data[".dockerconfigjson"])
 
 	s.awsConfig, err = aws2.GetConfig(context.Background(), cfg.S3AccessKey, cfg.S3SecretKey, "", "", nil)
 	if err != nil {
@@ -384,7 +371,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		}
 		if helmRelease == nil {
 			s.e.Logger.Infof("create helm release %s with status %s", workspace.ID, workspace.Status)
-			if err := s.createHelmRelease(ctx, workspace, s.dockerRegistryConfig); err != nil {
+			if err := s.createHelmRelease(ctx, workspace); err != nil {
 				return fmt.Errorf("create helm release: %w", err)
 			}
 			// update the workspace status next loop
