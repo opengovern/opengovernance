@@ -55,7 +55,7 @@ type Job struct {
 }
 
 var ReporterJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "keibi",
+	Namespace: "kaytu",
 	Subsystem: "reporter",
 	Name:      "job_total",
 	Help:      "Count of reporter jobs",
