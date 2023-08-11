@@ -98,7 +98,11 @@ func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 		for _, t := range metric.Tables {
 			tarr = append(tarr, fmt.Sprintf("'%s'", t))
 		}
-		metric.FinderQuery = fmt.Sprintf(`select * from kaytu_lookup where resource_type in (%s)`, strings.Join(tarr, ","))
+		if metricType == analyticsDB.MetricTypeSpend {
+			metric.FinderQuery = fmt.Sprintf(`select * from kaytu_cost where service_name in (%s)`, strings.Join(tarr, ","))
+		} else {
+			metric.FinderQuery = fmt.Sprintf(`select * from kaytu_lookup where service_name in (%s)`, strings.Join(tarr, ","))
+		}
 	}
 
 	dbMetric := analyticsDB.AnalyticMetric{

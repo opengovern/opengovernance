@@ -250,6 +250,8 @@ func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+
 	connectionMap := map[string]spend.ConnectionMetricTrendSummary{}
 	connectorMap := map[string]spend.ConnectorMetricTrendSummary{}
 
@@ -266,6 +268,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
 	if err != nil {
 		return err
 	}
+	resourceTypeMetricCache := map[string]analyticsDB.AnalyticMetric{}
 
 	var docs []kafka.Doc
 	for {
@@ -287,36 +290,45 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
 				return err
 			}
 
-			var metricID string // cost mapping
-			//
-			//if v, ok := resourceTypeMetricIDCache[hit.ResourceType]; ok {
-			//	metricID = v
-			//} else {
-			//	metric, err := aDB.GetMetric(hit.ResourceType)
-			//	if err != nil {
-			//		return err
-			//	}
-			//
-			//	if metric == nil {
-			//		return fmt.Errorf("resource type %s not found", hit.ResourceType)
-			//	}
-			//
-			//	resourceTypeMetricIDCache[hit.ResourceType] = metric.ID
-			//	metricID = metric.ID
-			//}
+			var metricID, metricName string
+			// cost mapping
+
+			if v, ok := resourceTypeMetricCache[hit.ResourceType]; ok {
+				metricID = v.ID
+				metricName = v.Name
+			} else {
+				metric, err := aDB.GetMetric(hit.ResourceType)
+				if err != nil {
+					return err
+				}
+
+				if metric == nil {
+					return fmt.Errorf("resource type %s not found", hit.ResourceType)
+				}
+
+				resourceTypeMetricCache[hit.ResourceType] = *metric
+				metricID = metric.ID
+				metricName = metric.Name
+			}
 
 			if metricID == "" {
 				continue
 			}
+
+			conn, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, hit.SourceID)
+			if err != nil {
+				return err
+			}
+
 			dateTimestamp := (hit.PeriodStart + hit.PeriodEnd) / 2
 			dateStr := time.Unix(dateTimestamp, 0).Format("2006-01-02")
 			connection := spend.ConnectionMetricTrendSummary{
 				ConnectionID:   connectionID,
-				ConnectionName: "",
+				ConnectionName: conn.ConnectionName,
 				Connector:      hit.SourceType,
 				Date:           dateStr,
 				MetricID:       metricID,
-				MetricName:     "",
+				MetricName:     metricName,
 				CostValue:      hit.CostValue,
 				PeriodStart:    hit.PeriodStart,
 				PeriodEnd:      hit.PeriodEnd,
@@ -333,7 +345,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
 				Connector:   hit.SourceType,
 				Date:        dateStr,
 				MetricID:    metricID,
-				MetricName:  "",
+				MetricName:  metricName,
 				CostValue:   hit.CostValue,
 				PeriodStart: hit.PeriodStart,
 				PeriodEnd:   hit.PeriodEnd,
