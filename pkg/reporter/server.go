@@ -36,9 +36,7 @@ func NewHTTPServer(
 }
 
 func (h HttpServer) Register(e *echo.Echo) {
-	v1 := e.Group("/api/v1")
-
-	v1.GET("/query/trigger", httpserver.AuthorizeHandler(h.TriggerQuery, apiAuth.AdminRole))
+	e.GET("/query/trigger", httpserver.AuthorizeHandler(h.TriggerQuery, apiAuth.AdminRole))
 }
 
 func (h HttpServer) TriggerQuery(ctx echo.Context) error {
