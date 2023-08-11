@@ -290,8 +290,8 @@ func (j *Job) RunJob() error {
 						ReporterJobsCount.WithLabelValues(query.TableName, "Succeeded").Inc()
 						continue
 					}
+					ReporterJobsCount.WithLabelValues(query.TableName, "Failed").Inc()
 					if k != "etag" && k != "tags" {
-						ReporterJobsCount.WithLabelValues(query.TableName, "Failed").Inc()
 						j.logger.Warn("inconsistency in data",
 							zap.String("get-query", query.GetQuery),
 							zap.String("accountID", account.ConnectionID),
