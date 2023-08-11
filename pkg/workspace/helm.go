@@ -25,17 +25,13 @@ import (
 )
 
 type KaytuWorkspaceSettings struct {
-	Keibi KeibiConfig `json:"keibi"`
 	Kaytu KaytuConfig `json:"kaytu"`
 }
-type KeibiConfig struct {
+type KaytuConfig struct {
 	ReplicaCount int             `json:"replicaCount"`
 	Workspace    WorkspaceConfig `json:"workspace"`
-	Domain       string          `json:"domain"`
-}
-type KaytuConfig struct {
-	Docker   DockerConfig   `json:"docker"`
-	Insights InsightsConfig `json:"insights"`
+	Docker       DockerConfig    `json:"docker"`
+	Insights     InsightsConfig  `json:"insights"`
 }
 type InsightsConfig struct {
 	S3 S3Config `json:"s3"`
@@ -86,14 +82,11 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) er
 	}
 
 	settings := KaytuWorkspaceSettings{
-		Keibi: KeibiConfig{
+		Kaytu: KaytuConfig{
 			ReplicaCount: 1,
 			Workspace: WorkspaceConfig{
 				Name: workspace.Name,
 			},
-			Domain: workspace.URI,
-		},
-		Kaytu: KaytuConfig{
 			Insights: InsightsConfig{
 				S3: S3Config{
 					AccessKey: s.cfg.S3AccessKey,
@@ -151,7 +144,7 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) er
 }
 
 func getReplicaCount(values map[string]interface{}) (int, error) {
-	if v, ok := values["keibi"]; ok {
+	if v, ok := values["kaytu"]; ok {
 		if vm, ok := v.(map[string]interface{}); ok {
 			if v, ok := vm["replicaCount"]; ok {
 				if c, ok := v.(float64); ok {
@@ -171,10 +164,10 @@ func getReplicaCount(values map[string]interface{}) (int, error) {
 }
 
 func updateValuesSetReplicaCount(values map[string]interface{}, replicaCount int) (map[string]interface{}, error) {
-	if v, ok := values["keibi"]; ok {
+	if v, ok := values["kaytu"]; ok {
 		if vm, ok := v.(map[string]interface{}); ok {
 			vm["replicaCount"] = replicaCount
-			values["keibi"] = vm
+			values["kaytu"] = vm
 			return values, nil
 		} else {
 			return nil, fmt.Errorf("invalid kaytu type: %v", reflect.TypeOf(v))
