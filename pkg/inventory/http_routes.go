@@ -177,7 +177,7 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 			if v, ok := resourceTypeMetricIDCache[hit.ResourceType]; ok {
 				metricID = v
 			} else {
-				metric, err := aDB.GetMetric(hit.ResourceType)
+				metric, err := aDB.GetMetric(analyticsDB.MetricTypeAssets, hit.ResourceType)
 				if err != nil {
 					return err
 				}
@@ -331,12 +331,12 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 				metricID = v.ID
 				metricName = v.Name
 			} else {
-				metric, err := aDB.GetMetric(hit.ServiceName)
+				metric, err := aDB.GetMetric(analyticsDB.MetricTypeSpend, hit.ServiceName)
 				if err != nil {
 					return err
 				}
 				if metric == nil {
-					return fmt.Errorf("resource type %s not found", hit.ServiceName)
+					return fmt.Errorf("GetMetric, table %s not found", hit.ServiceName)
 				}
 				serviceNameMetricCache[hit.ServiceName] = *metric
 				metricID = metric.ID
@@ -368,7 +368,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 				PeriodStart:    hit.PeriodStart * 1000,
 				PeriodEnd:      hit.PeriodEnd * 1000,
 			}
-			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metricID, hit.SummarizeJobID)
+			key := fmt.Sprintf("%s-%s-%s", connectionID.String(), metricID, dateStr)
 			if v, ok := connectionMap[key]; ok {
 				v.CostValue += connection.CostValue
 				connectionMap[key] = v
@@ -385,7 +385,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 				PeriodStart: hit.PeriodStart * 1000,
 				PeriodEnd:   hit.PeriodEnd * 1000,
 			}
-			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metricID, hit.SummarizeJobID)
+			key = fmt.Sprintf("%s-%s-%s", connector.Connector, metricID, dateStr)
 			if v, ok := connectorMap[key]; ok {
 				v.CostValue += connector.CostValue
 				connectorMap[key] = v
@@ -1837,6 +1837,7 @@ func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionID
 }
 
 func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
+	performanceStartTime := time.Now()
 	var err error
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	connectors, err := h.getConnectorTypesFromConnectionIDs(ctx, nil, connectionIDs)
@@ -1872,6 +1873,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 		needResourceCount = false
 	}
 
+	fmt.Println("ListConnectionsData part1 ", time.Now().Sub(performanceStartTime).Milliseconds())
 	res := map[string]inventoryApi.ConnectionData{}
 	if needResourceCount {
 		resourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, endTime, EsFetchPageSize)
@@ -1892,6 +1894,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			}
 			res[localHit.ConnectionID.String()] = v
 		}
+		fmt.Println("ListConnectionsData part2 ", time.Now().Sub(performanceStartTime).Milliseconds())
 		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, startTime, EsFetchPageSize)
 		if err != nil {
 			return err
@@ -1911,6 +1914,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			}
 			res[localHit.ConnectionID.String()] = v
 		}
+		fmt.Println("ListConnectionsData part3 ", time.Now().Sub(performanceStartTime).Milliseconds())
 	}
 
 	if needCost {
@@ -1937,6 +1941,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 				}
 			}
 		}
+		fmt.Println("ListConnectionsData part4 ", time.Now().Sub(performanceStartTime).Milliseconds())
 	}
 
 	return ctx.JSON(http.StatusOK, res)
