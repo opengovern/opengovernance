@@ -31,13 +31,13 @@ type Context struct {
 
 func (ctx *Context) ToHeaders() map[string]string {
 	return map[string]string{
-		httpserver.XKeibiUserIDHeader:         ctx.UserID,
-		httpserver.XKeibiUserRoleHeader:       string(ctx.UserRole),
-		httpserver.XKeibiWorkspaceIDHeader:    ctx.WorkspaceID,
-		httpserver.XKeibiWorkspaceNameHeader:  ctx.WorkspaceName,
-		httpserver.XKeibiMaxUsersHeader:       fmt.Sprintf("%d", ctx.MaxUsers),
-		httpserver.XKeibiMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),
-		httpserver.XKeibiMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
+		httpserver.XKaytuUserIDHeader:         ctx.UserID,
+		httpserver.XKaytuUserRoleHeader:       string(ctx.UserRole),
+		httpserver.XKaytuWorkspaceIDHeader:    ctx.WorkspaceID,
+		httpserver.XKaytuWorkspaceNameHeader:  ctx.WorkspaceName,
+		httpserver.XKaytuMaxUsersHeader:       fmt.Sprintf("%d", ctx.MaxUsers),
+		httpserver.XKaytuMaxConnectionsHeader: fmt.Sprintf("%d", ctx.MaxConnections),
+		httpserver.XKaytuMaxResourcesHeader:   fmt.Sprintf("%d", ctx.MaxResources),
 	}
 }
 
@@ -50,13 +50,13 @@ func (ctx *Context) GetWorkspaceID() string {
 }
 
 func FromEchoContext(c echo.Context) *Context {
-	wsID := c.Request().Header.Get(httpserver.XKeibiWorkspaceIDHeader)
-	name := c.Request().Header.Get(httpserver.XKeibiWorkspaceNameHeader)
-	role := c.Request().Header.Get(httpserver.XKeibiUserRoleHeader)
-	id := c.Request().Header.Get(httpserver.XKeibiUserIDHeader)
-	maxUsers, _ := strconv.ParseInt(c.Request().Header.Get(httpserver.XKeibiMaxUsersHeader), 10, 64)
-	maxConnections, _ := strconv.ParseInt(c.Request().Header.Get(httpserver.XKeibiMaxConnectionsHeader), 10, 64)
-	maxResources, _ := strconv.ParseInt(c.Request().Header.Get(httpserver.XKeibiMaxResourcesHeader), 10, 64)
+	wsID := c.Request().Header.Get(httpserver.XKaytuWorkspaceIDHeader)
+	name := c.Request().Header.Get(httpserver.XKaytuWorkspaceNameHeader)
+	role := c.Request().Header.Get(httpserver.XKaytuUserRoleHeader)
+	id := c.Request().Header.Get(httpserver.XKaytuUserIDHeader)
+	maxUsers, _ := strconv.ParseInt(c.Request().Header.Get(httpserver.XKaytuMaxUsersHeader), 10, 64)
+	maxConnections, _ := strconv.ParseInt(c.Request().Header.Get(httpserver.XKaytuMaxConnectionsHeader), 10, 64)
+	maxResources, _ := strconv.ParseInt(c.Request().Header.Get(httpserver.XKaytuMaxResourcesHeader), 10, 64)
 	return &Context{
 		WorkspaceName:  name,
 		WorkspaceID:    wsID,

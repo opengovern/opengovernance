@@ -11,11 +11,11 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/helpers"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/query"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 )
 
 type costSummaryBuilder struct {
-	client                     keibi.Client
+	client                     kaytu.Client
 	summarizerJobID            uint
 	costsByService             map[string]es.ServiceCostSummary
 	costsByServicePerConnector map[source.Type]map[int64]map[string]es.ServiceCostSummary
@@ -28,7 +28,7 @@ type EBSCostDoc struct {
 	Desc helpers.EBSCostDescription
 }
 
-func NewCostSummaryBuilder(client keibi.Client, summarizerJobID uint) *costSummaryBuilder {
+func NewCostSummaryBuilder(client kaytu.Client, summarizerJobID uint) *costSummaryBuilder {
 	return &costSummaryBuilder{
 		client:                     client,
 		summarizerJobID:            summarizerJobID,

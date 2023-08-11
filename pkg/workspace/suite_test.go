@@ -1,9 +1,10 @@
 package workspace
 
 import (
-	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
 	"testing"
 	"time"
+
+	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
 	"github.com/google/uuid"
@@ -35,7 +36,7 @@ func (s *testSuite) SetupSuite() {
 	pool, err := dockertest.NewPool("")
 	s.NoError(err, "connect to docker")
 
-	net, err := pool.CreateNetwork("keibi")
+	net, err := pool.CreateNetwork("kaytu")
 	s.NoError(err, "create network")
 	t.Cleanup(func() {
 		s.NoError(pool.RemoveNetwork(net), "remove network")
@@ -43,7 +44,7 @@ func (s *testSuite) SetupSuite() {
 
 	user, pass, name, port := "postgres", "123456", "workspace", "5432"
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Name:         "keibi_workspace",
+		Name:         "kaytu_workspace",
 		Repository:   "postgres",
 		Tag:          "12.2-alpine",
 		ExposedPorts: []string{port},
@@ -68,7 +69,7 @@ func (s *testSuite) SetupSuite() {
 		User:         user,
 		Password:     pass,
 		DBName:       name,
-		DomainSuffix: ".app.keibi.io",
+		DomainSuffix: ".app.kaytu.io",
 	}
 	db, err := NewDatabase(cfg, logger)
 	s.NoError(err, "new database")

@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
-	keibiaws "github.com/kaytu-io/kaytu-aws-describer/aws"
+	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-aws-describer/aws/describer"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
@@ -61,7 +61,7 @@ func currentAwsAccount(ctx context.Context, logger *zap.Logger, cfg aws.Config) 
 }
 
 func getAWSCredentialsMetadata(ctx context.Context, logger *zap.Logger, config describe.AWSAccountConfig) (*AWSCredentialMetadata, error) {
-	creds, err := keibiaws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "", nil)
+	creds, err := kaytuAws.GetConfig(ctx, config.AccessKey, config.SecretKey, "", "", nil)
 	if err != nil {
 		return nil, err
 	}

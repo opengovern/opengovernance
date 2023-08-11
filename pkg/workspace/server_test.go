@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
+	"github.com/labstack/echo/v4"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
@@ -22,7 +23,7 @@ func (ts *testSuite) initWorkspace() (*Workspace, error) {
 		Name:        ts.name,
 		OwnerId:     ts.owner.String(),
 		URI:         ts.name + ts.domainSuffix,
-		Status:      StatusProvisioning.String(),
+		Status:      api.StatusProvisioning,
 		Description: "workspace",
 	}
 	if err := ts.server.db.CreateWorkspace(workspace); err != nil {
@@ -72,7 +73,7 @@ func (ts *testSuite) TestCreateWorkspace() {
 
 			r := httptest.NewRequest(http.MethodPost, "/api/v1/workspace", bytes.NewBuffer(data))
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiUserIDHeader, tc.Owner.String())
+			r.Header.Set(httpserver.XKaytuUserIDHeader, tc.Owner.String())
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -133,7 +134,7 @@ func (ts *testSuite) TestDeleteWorkspace() {
 		ts.T().Run(fmt.Sprintf("DeleteWorkspaceTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodDelete, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiUserIDHeader, tc.Owner.String())
+			r.Header.Set(httpserver.XKaytuUserIDHeader, tc.Owner.String())
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -152,7 +153,7 @@ func (ts *testSuite) TestDeleteWorkspace() {
 
 			workspace, err := ts.server.db.GetWorkspace(tc.ID)
 			ts.NoError(err)
-			ts.Equal(StatusDeleting.String(), workspace.Status)
+			ts.Equal(api.StatusDeleting, workspace.Status)
 		})
 	}
 }
@@ -184,7 +185,7 @@ func (ts *testSuite) TestListWorkspaces() {
 		ts.T().Run(fmt.Sprintf("ListWorkspacesTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, "/api/v1/workspaces", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiUserIDHeader, tc.Owner.String())
+			r.Header.Set(httpserver.XKaytuUserIDHeader, tc.Owner.String())
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -216,7 +217,7 @@ func (ts *testSuite) TestIsDomainName() {
 		"contribute.geeksforgeeks.org": true,
 		"-geeksforgeeks.org":           false,
 		".org":                         false,
-		"geeksforgeeks.app.keibi.io":   true,
+		"geeksforgeeks.app.kaytu.io":   true,
 	}
 	for name, valid := range names {
 		ts.Equal(valid, len(validation.IsQualifiedName(name)) == 0, name)

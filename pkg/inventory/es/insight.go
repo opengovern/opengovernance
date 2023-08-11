@@ -13,7 +13,7 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 )
 
 var MAX_INSIGHTS = 10000
@@ -37,7 +37,7 @@ type InsightResultQueryResponse struct {
 	} `json:"aggregations,omitempty"`
 }
 type InsightResultQueryHits struct {
-	Total keibi.SearchTotal `json:"total"`
+	Total kaytu.SearchTotal `json:"total"`
 	Hits  []struct {
 		ID      string             `json:"_id"`
 		Score   float64            `json:"_score"`
@@ -131,7 +131,7 @@ func BuildFindInsightResultsQuery(
 	return res
 }
 
-func FetchInsightValueAtTime(client keibi.Client, t time.Time, connectors []source.Type, connectionIDs []string, insightIds []uint, useHistoricalData bool) (map[uint][]es.InsightResource, error) {
+func FetchInsightValueAtTime(client kaytu.Client, t time.Time, connectors []source.Type, connectionIDs []string, insightIds []uint, useHistoricalData bool) (map[uint][]es.InsightResource, error) {
 	var query map[string]any
 	if len(connectionIDs) == 0 {
 		query = BuildFindInsightResultsQuery(connectors, nil, nil, &t, insightIds, useHistoricalData, true)
@@ -212,7 +212,7 @@ func FetchInsightValueAtTime(client keibi.Client, t time.Time, connectors []sour
 	return result, nil
 }
 
-func FetchInsightValueAfter(client keibi.Client, t time.Time, connectors []source.Type, connectionIDs []string, insightIds []uint) (map[uint][]es.InsightResource, error) {
+func FetchInsightValueAfter(client kaytu.Client, t time.Time, connectors []source.Type, connectionIDs []string, insightIds []uint) (map[uint][]es.InsightResource, error) {
 	var query map[string]any
 	if len(connectionIDs) == 0 {
 		query = BuildFindInsightResultsQuery(connectors, nil, &t, nil, insightIds, true, true)
@@ -322,7 +322,7 @@ type InsightHistoryResultQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchInsightAggregatedPerQueryValuesBetweenTimes(client keibi.Client, startTime time.Time, endTime time.Time, datapointCount int, connectors []source.Type, connectionIDs []string, insightIds []uint) (map[uint]map[int][]es.InsightResource, error) {
+func FetchInsightAggregatedPerQueryValuesBetweenTimes(client kaytu.Client, startTime time.Time, endTime time.Time, datapointCount int, connectors []source.Type, connectionIDs []string, insightIds []uint) (map[uint]map[int][]es.InsightResource, error) {
 	var query map[string]any
 	if len(connectionIDs) == 0 {
 		query = BuildFindInsightResultsQuery(connectors, nil, &startTime, &endTime, insightIds, true, true)

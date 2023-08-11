@@ -35,7 +35,7 @@ import (
 type Server struct {
 	host string
 
-	keibiPublicKey  *rsa.PublicKey
+	kaytuPublicKey  *rsa.PublicKey
 	verifier        *oidc.IDTokenVerifier
 	verifierNative  *oidc.IDTokenVerifier
 	logger          *zap.Logger
@@ -109,43 +109,43 @@ func (s Server) Check(ctx context.Context, req *envoyauth.CheckRequest) (*envoya
 				Headers: []*envoycore.HeaderValueOption{
 					{
 						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKeibiWorkspaceIDHeader,
+							Key:   httpserver.XKaytuWorkspaceIDHeader,
 							Value: rb.WorkspaceID,
 						},
 					},
 					{
 						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKeibiWorkspaceNameHeader,
+							Key:   httpserver.XKaytuWorkspaceNameHeader,
 							Value: rb.WorkspaceName,
 						},
 					},
 					{
 						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKeibiUserIDHeader,
+							Key:   httpserver.XKaytuUserIDHeader,
 							Value: rb.UserID,
 						},
 					},
 					{
 						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKeibiUserRoleHeader,
+							Key:   httpserver.XKaytuUserRoleHeader,
 							Value: string(rb.RoleName),
 						},
 					},
 					{
 						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKeibiMaxUsersHeader,
+							Key:   httpserver.XKaytuMaxUsersHeader,
 							Value: fmt.Sprintf("%d", limits.MaxUsers),
 						},
 					},
 					{
 						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKeibiMaxConnectionsHeader,
+							Key:   httpserver.XKaytuMaxConnectionsHeader,
 							Value: fmt.Sprintf("%d", limits.MaxConnections),
 						},
 					},
 					{
 						Header: &envoycore.HeaderValue{
-							Key:   httpserver.XKeibiMaxResourcesHeader,
+							Key:   httpserver.XKaytuMaxResourcesHeader,
 							Value: fmt.Sprintf("%d", limits.MaxResources),
 						},
 					},
@@ -223,12 +223,12 @@ func (s Server) Verify(ctx context.Context, authToken string) (*userClaim, error
 	}
 
 	_, errk := jwt.ParseWithClaims(token, &u, func(token *jwt.Token) (interface{}, error) {
-		return s.keibiPublicKey, nil
+		return s.kaytuPublicKey, nil
 	})
 	if errk == nil {
 		return &u, nil
 	} else {
-		fmt.Println("failed to auth with keibi cred due to", errk)
+		fmt.Println("failed to auth with kaytu cred due to", errk)
 	}
 	return nil, err
 }
@@ -245,7 +245,7 @@ func (s Server) GetWorkspaceByName(workspaceName string, user *userClaim) (api.R
 		RoleName:      api.EditorRole,
 	}
 
-	if workspaceName != "keibi" {
+	if workspaceName != "kaytu" {
 		limits, err = s.GetWorkspaceLimits(rb, workspaceName, true)
 		if err != nil {
 			return rb, limits, err

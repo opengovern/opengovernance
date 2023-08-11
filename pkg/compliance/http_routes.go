@@ -25,7 +25,7 @@ import (
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	kaytuTypes "github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -414,7 +414,7 @@ func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-func GetBenchmarkTree(db db.Database, client keibi.Client, b db.Benchmark, status []kaytuTypes.PolicyStatus) (api.BenchmarkTree, error) {
+func GetBenchmarkTree(db db.Database, client kaytu.Client, b db.Benchmark, status []kaytuTypes.PolicyStatus) (api.BenchmarkTree, error) {
 	tree := api.BenchmarkTree{
 		ID:       b.ID,
 		Title:    b.Title,

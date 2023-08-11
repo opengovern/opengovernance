@@ -66,7 +66,7 @@ type WorkspaceLimits struct {
 
 type WorkspaceLimitsUsage struct {
 	ID   string `json:"id" example:"ws-698542025141040315"`
-	Name string `json:"name" example:"keibi"`
+	Name string `json:"name" example:"kaytu"`
 
 	CurrentUsers       int64 `json:"currentUsers" example:"10"`
 	CurrentConnections int64 `json:"currentConnections" example:"100"`

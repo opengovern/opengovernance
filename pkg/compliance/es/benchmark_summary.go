@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 )
@@ -42,7 +42,7 @@ type FetchBenchmarkSummariesByConnectionIDAtTimeResponse struct {
 }
 
 func FetchBenchmarkSummariesByConnectionIDAtTime(
-	logger *zap.Logger, client keibi.Client,
+	logger *zap.Logger, client kaytu.Client,
 	benchmarkIDs []string, connectors []source.Type, connectionIDs []string, timeAt time.Time) (map[string]ComplianceEvaluationResult, error) {
 	request := make(map[string]any)
 	filters := make([]any, 0)
@@ -180,7 +180,7 @@ type FetchBenchmarkSummariesByConnectorAtTimeResponse struct {
 }
 
 func FetchBenchmarkSummariesByConnectorAtTime(
-	logger *zap.Logger, client keibi.Client,
+	logger *zap.Logger, client kaytu.Client,
 	benchmarkIDs []string, connectors []source.Type, timeAt time.Time) (map[string]ComplianceEvaluationResult, error) {
 	request := make(map[string]any)
 	filters := make([]any, 0)
@@ -289,7 +289,7 @@ func FetchBenchmarkSummariesByConnectorAtTime(
 }
 
 func FetchBenchmarkSummariesAtTime(
-	logger *zap.Logger, client keibi.Client,
+	logger *zap.Logger, client kaytu.Client,
 	benchmarkIDs []string, connectors []source.Type, connectionIDs []string, timeAt time.Time) (map[string]ComplianceEvaluationResult, error) {
 	if len(connectionIDs) > 0 {
 		return FetchBenchmarkSummariesByConnectionIDAtTime(logger, client, benchmarkIDs, connectors, connectionIDs, timeAt)
@@ -326,7 +326,7 @@ type FetchBenchmarkSummaryTrendByConnectionIDResponse struct {
 }
 
 func FetchBenchmarkSummaryTrendByConnectionID(
-	logger *zap.Logger, client keibi.Client,
+	logger *zap.Logger, client kaytu.Client,
 	benchmarkID []string, connectors []source.Type, connectionID []string, from, to time.Time, datapointCount int) (map[string]map[int]ComplianceEvaluationResult, error) {
 	request := make(map[string]any)
 	filters := make([]any, 0)
@@ -495,7 +495,7 @@ type FetchBenchmarkSummaryTrendByConnectorResponse struct {
 }
 
 func FetchBenchmarkSummaryTrendByConnector(
-	logger *zap.Logger, client keibi.Client,
+	logger *zap.Logger, client kaytu.Client,
 	benchmarkID []string, connectors []source.Type, from, to time.Time, datapointCount int) (map[string]map[int]ComplianceEvaluationResult, error) {
 	request := make(map[string]any)
 	filters := make([]any, 0)
@@ -629,7 +629,7 @@ func FetchBenchmarkSummaryTrendByConnector(
 }
 
 func FetchBenchmarkSummaryTrend(
-	logger *zap.Logger, client keibi.Client,
+	logger *zap.Logger, client kaytu.Client,
 	benchmarkID []string, connectors []source.Type, connectionID []string, from, to time.Time, datapointCount int) (map[string]map[int]ComplianceEvaluationResult, error) {
 	if len(connectionID) > 0 {
 		return FetchBenchmarkSummaryTrendByConnectionID(logger, client, benchmarkID, connectors, connectionID, from, to, datapointCount)
@@ -641,7 +641,7 @@ type BenchmarkSummaryQueryResponse struct {
 	Hits BenchmarkSummaryQueryHits `json:"hits"`
 }
 type BenchmarkSummaryQueryHits struct {
-	Total keibi.SearchTotal          `json:"total"`
+	Total kaytu.SearchTotal          `json:"total"`
 	Hits  []BenchmarkSummaryQueryHit `json:"hits"`
 }
 type BenchmarkSummaryQueryHit struct {
@@ -654,7 +654,7 @@ type BenchmarkSummaryQueryHit struct {
 	Sort    []any                  `json:"sort"`
 }
 
-func ListBenchmarkSummaries(client keibi.Client, benchmarkID *string) ([]types.BenchmarkSummary, error) {
+func ListBenchmarkSummaries(client kaytu.Client, benchmarkID *string) ([]types.BenchmarkSummary, error) {
 	var hits []types.BenchmarkSummary
 	res := make(map[string]any)
 	var filters []any

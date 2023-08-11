@@ -25,7 +25,7 @@ import (
 	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 
@@ -82,7 +82,7 @@ func (j *Job) Do(
 	return result
 }
 
-func (j *Job) RunBenchmark(logger *zap.Logger, esk keibi.Client, benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]types.Finding, error) {
+func (j *Job) RunBenchmark(logger *zap.Logger, esk kaytu.Client, benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]types.Finding, error) {
 	ctx := &httpclient.Context{
 		UserRole: api2.AdminRole,
 	}
@@ -163,7 +163,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	}
 	var accountId string
 	var connector source.Type
-	var esk keibi.Client
+	var esk kaytu.Client
 	if j.IsStack == true {
 		stack, err := schedulerClient.GetStack(ctx, j.ConnectionID)
 		if err != nil {
@@ -173,7 +173,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		connector = stack.SourceType
 
 		eskConfig, err := getStackElasticConfig(currentWorkspaceId, stack.StackID)
-		esk, err = keibi.NewClient(keibi.ClientConfig{
+		esk, err = kaytu.NewClient(kaytu.ClientConfig{
 			Addresses: []string{eskConfig.Address},
 			Username:  &eskConfig.Username,
 			Password:  &eskConfig.Password,
@@ -193,7 +193,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 			return errors.New("connection not healthy")
 		}
 
-		esk, err = keibi.NewClient(keibi.ClientConfig{
+		esk, err = kaytu.NewClient(kaytu.ClientConfig{
 			Addresses: []string{elasticSearchConfig.Address},
 			Username:  &elasticSearchConfig.Username,
 			Password:  &elasticSearchConfig.Password,
@@ -270,7 +270,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger)
 }
 
-func (j *Job) FilterFindings(esClient keibi.Client, policyID string, findings []types.Finding) ([]types.Finding, error) {
+func (j *Job) FilterFindings(esClient kaytu.Client, policyID string, findings []types.Finding) ([]types.Finding, error) {
 	// get all active findings from ES page by page
 	// go through the ones extracted and remove duplicates
 	// if a finding fetched from es is not duplicated disable it
@@ -311,7 +311,7 @@ func (j *Job) FilterFindings(esClient keibi.Client, policyID string, findings []
 	return findings, nil
 }
 
-func (j *Job) ExtractFindings(client keibi.Client, benchmark *api.Benchmark, policy *api.Policy, query *api.Query, res *steampipe.Result) ([]types.Finding, error) {
+func (j *Job) ExtractFindings(client kaytu.Client, benchmark *api.Benchmark, policy *api.Policy, query *api.Query, res *steampipe.Result) ([]types.Finding, error) {
 	var findings []types.Finding
 	resourceType := ""
 	for _, record := range res.Data {

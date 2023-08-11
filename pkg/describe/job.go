@@ -15,14 +15,14 @@ import (
 const MAX_INT64 = 9223372036854775807
 
 var DoDescribeJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "keibi",
+	Namespace: "kaytu",
 	Subsystem: "describe_worker",
 	Name:      "do_describe_jobs_total",
 	Help:      "Count of done describe jobs in describe-worker service",
 }, []string{"provider", "resource_type", "status"})
 
 var DoDescribeJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-	Namespace: "keibi",
+	Namespace: "kaytu",
 	Subsystem: "describe_worker",
 	Name:      "do_describe_jobs_duration_seconds",
 	Help:      "Duration of done describe jobs in describe-worker service",

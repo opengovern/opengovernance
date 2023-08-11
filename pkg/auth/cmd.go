@@ -8,15 +8,15 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
-	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
-	"github.com/kaytu-io/kaytu-util/pkg/email"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/email"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
@@ -52,9 +52,9 @@ var (
 
 	httpServerAddress = os.Getenv("HTTP_ADDRESS")
 
-	keibiHost       = os.Getenv("KEIBI_HOST")
-	keibiPublicKey  = os.Getenv("KEIBI_PUBLIC_KEY")
-	keibiPrivateKey = os.Getenv("KEIBI_PRIVATE_KEY")
+	kaytuHost       = os.Getenv("KAYTU_HOST")
+	kaytuPublicKey  = os.Getenv("KAYTU_PUBLIC_KEY")
+	kaytuPrivateKey = os.Getenv("KAYTU_PRIVATE_KEY")
 
 	workspaceBaseUrl = os.Getenv("WORKSPACE_BASE_URL")
 	metadataBaseUrl  = os.Getenv("METADATA_BASE_URL")
@@ -123,7 +123,7 @@ func start(ctx context.Context) error {
 		DB:       0,  // use default DB
 	})
 
-	b, err := base64.StdEncoding.DecodeString(keibiPublicKey)
+	b, err := base64.StdEncoding.DecodeString(kaytuPublicKey)
 	if err != nil {
 		return fmt.Errorf("public key decode: %w", err)
 	}
@@ -136,7 +136,7 @@ func start(ctx context.Context) error {
 		return err
 	}
 
-	b, err = base64.StdEncoding.DecodeString(keibiPrivateKey)
+	b, err = base64.StdEncoding.DecodeString(kaytuPrivateKey)
 	if err != nil {
 		return fmt.Errorf("public key decode: %w", err)
 	}
@@ -150,8 +150,8 @@ func start(ctx context.Context) error {
 	}
 
 	authServer := Server{
-		host:            keibiHost,
-		keibiPublicKey:  pub.(*rsa.PublicKey),
+		host:            kaytuHost,
+		kaytuPublicKey:  pub.(*rsa.PublicKey),
 		verifier:        verifier,
 		verifierNative:  verifierNative,
 		logger:          logger,
@@ -212,7 +212,7 @@ func start(ctx context.Context) error {
 			workspaceClient: workspaceClient,
 			metadataBaseUrl: metadataBaseUrl,
 			auth0Service:    auth0Service,
-			keibiPrivateKey: pri.(*rsa.PrivateKey),
+			kaytuPrivateKey: pri.(*rsa.PrivateKey),
 			db:              adb,
 		}
 		errors <- fmt.Errorf("http server: %w", httpserver.RegisterAndStart(logger, httpServerAddress, &routes))
@@ -231,7 +231,7 @@ func newServerCredentials(certPath string, keyPath string, caPath string) (crede
 	p := x509.NewCertPool()
 
 	if caPath != "" {
-		ca, err := ioutil.ReadFile(caPath) //nolint(gosec)
+		ca, err := os.ReadFile(caPath)
 		if err != nil {
 			return nil, err
 		}
