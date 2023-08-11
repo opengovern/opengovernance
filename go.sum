@@ -2299,6 +2299,8 @@ github.com/kaytu-io/kaytu-azure-describer v0.0.67 h1:YcbQ5+auJrqK4C7wFHkJX0+6ElS
 github.com/kaytu-io/kaytu-azure-describer v0.0.67/go.mod h1:cmN9FkwhFEQrJ+gmxBqB+lqfUKKobG8zS86KJGR8ZRI=
 github.com/kaytu-io/kaytu-util v0.0.0-20230811114529-c7f9a0e48f03 h1:m+vhg3W+qEwSA8GHl9qkGH4aZrTkCT2EofT8rGqcE+A=
 github.com/kaytu-io/kaytu-util v0.0.0-20230811114529-c7f9a0e48f03/go.mod h1:xH71DAijOx1msH3mfQpfHqvP1wosta49J8QJL6gqMMw=
+github.com/kaytu-io/kaytu-util v0.0.0-20230811162120-adaa4b56b3da h1:Z99Qivbn5qWbs0HKWmT+TbQnBagU4SyTHz8cD1nzJ9c=
+github.com/kaytu-io/kaytu-util v0.0.0-20230811162120-adaa4b56b3da/go.mod h1:xH71DAijOx1msH3mfQpfHqvP1wosta49J8QJL6gqMMw=
 github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230811120426-73f90dd681ed h1:FZ6k+7EormNWW9Npx1YFS5RsiuAzHDvAMhYwRkf1Imk=
 github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230811120426-73f90dd681ed/go.mod h1:tW2PAa8576B5ahOvu2vFTuB1gUAa7kj2VLhOrHMvfHQ=
 github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230811120400-81b9fefee739 h1:cT9hkKixNmOEVkEUlQbti2X7iq9yvjiuzBn8nrvCy60=
@@ -2962,8 +2964,10 @@ github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f/go.mod h1:DD4vA1
 github.com/vmihailenco/go-tinylfu v0.2.2 h1:H1eiG6HM36iniK6+21n9LLpzx1G9R3DJa2UjUjbynsI=
 github.com/vmihailenco/go-tinylfu v0.2.2/go.mod h1:CutYi2Q9puTxfcolkliPq4npPuofg9N9t8JVrjzwa3Q=
 github.com/vmihailenco/msgpack v3.3.3+incompatible/go.mod h1:fy3FlTQTDXWkZ7Bh6AcGMlsjHatGryHQYUTf1ShIgkk=
+github.com/vmihailenco/msgpack/v4 v4.3.12/go.mod h1:gborTTJjAo/GWTqqRjrLCn9pgNN+NXzzngzBKDPIqw4=
 github.com/vmihailenco/msgpack/v5 v5.3.4 h1:qMKAwOV+meBw2Y8k9cVwAy7qErtYCwBzZ2ellBfvnqc=
 github.com/vmihailenco/msgpack/v5 v5.3.4/go.mod h1:7xyJ9e+0+9SaZT0Wt1RGleJXzli6Q/V5KbhBonMG9jc=
+github.com/vmihailenco/tagparser v0.1.1/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgqMEUPoW2WPyhdI=
 github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAhO7/IwNM9g=
 github.com/vmihailenco/tagparser/v2 v2.0.0/go.mod h1:Wri+At7QHww0WTrCBeu4J6bNtoV6mEfg5OIWRZA9qds=
 github.com/willf/bitset v1.1.11-0.20200630133818-d5bec3311243/go.mod h1:RjeCKbqT1RxIR/KWY6phxZiaY1IyutSBfGjNPySAYV4=
