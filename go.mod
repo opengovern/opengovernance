@@ -29,9 +29,9 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
-	github.com/kaytu-io/kaytu-aws-describer v0.0.48
-	github.com/kaytu-io/kaytu-azure-describer v0.0.65
-	github.com/kaytu-io/kaytu-util v0.0.0-20230804082552-3c07cccc35a8
+	github.com/kaytu-io/kaytu-aws-describer v0.0.51
+	github.com/kaytu-io/kaytu-azure-describer v0.0.67
+	github.com/kaytu-io/kaytu-util v0.0.0-20230811114529-c7f9a0e48f03
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/labstack/gommon v0.4.0
@@ -436,8 +436,6 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/moby/patternmatcher v0.5.0 // indirect
-	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/moby/term v0.0.0-20221205130635-1aeaba878587 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect

@@ -15,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"
 )
@@ -29,7 +29,7 @@ type Worker struct {
 	s3Bucket        string
 	logger          *zap.Logger
 	steampipeOption *steampipe.Option
-	es              keibi.Client
+	es              kaytu.Client
 	pusher          *push.Pusher
 	onboardClient   client.OnboardServiceClient
 	uploader        *s3manager.Uploader
@@ -114,7 +114,7 @@ func InitializeWorker(
 		Collector(DoInsightJobsDuration)
 
 	defaultAccountID := "default"
-	w.es, err = keibi.NewClient(keibi.ClientConfig{
+	w.es, err = kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{elasticSearchAddress},
 		Username:  &elasticSearchUsername,
 		Password:  &elasticSearchPassword,

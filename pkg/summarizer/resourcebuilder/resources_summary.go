@@ -9,16 +9,16 @@ import (
 
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 )
 
 type resourceSummaryBuilder struct {
-	client            keibi.Client
+	client            kaytu.Client
 	summarizerJobID   uint
 	connectionSummary map[string]es.ConnectionResourcesSummary
 }
 
-func NewResourceSummaryBuilder(client keibi.Client, summarizerJobID uint) *resourceSummaryBuilder {
+func NewResourceSummaryBuilder(client kaytu.Client, summarizerJobID uint) *resourceSummaryBuilder {
 	return &resourceSummaryBuilder{
 		client:            client,
 		summarizerJobID:   summarizerJobID,
@@ -83,7 +83,7 @@ func (b *resourceSummaryBuilder) Cleanup(summarizeJobID uint) error {
 	}
 
 	esClient := b.client.ES()
-	resp, err := keibi.DeleteByQuery(context.Background(), esClient, []string{es.ProviderSummaryIndex, es.ConnectionSummaryIndex}, query,
+	resp, err := kaytu.DeleteByQuery(context.Background(), esClient, []string{es.ProviderSummaryIndex, es.ConnectionSummaryIndex}, query,
 		esClient.DeleteByQuery.WithRefresh(true),
 		esClient.DeleteByQuery.WithConflicts("proceed"),
 	)

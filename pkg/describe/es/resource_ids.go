@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 )
 
 type ResourceIdentifierFetchResponse struct {
 	Hits ResourceIdentifierFetchHits `json:"hits"`
 }
 type ResourceIdentifierFetchHits struct {
-	Total keibi.SearchTotal            `json:"total"`
+	Total kaytu.SearchTotal            `json:"total"`
 	Hits  []ResourceIdentifierFetchHit `json:"hits"`
 }
 type ResourceIdentifierFetchHit struct {
@@ -26,7 +26,7 @@ type ResourceIdentifierFetchHit struct {
 	Sort    []any          `json:"sort"`
 }
 
-func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, resourceType string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
+func GetResourceIDsForAccountResourceTypeFromES(client kaytu.Client, sourceID, resourceType string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
 	terms := map[string][]string{
 		"source_id":     {sourceID},
 		"resource_type": {strings.ToLower(resourceType)},
@@ -74,7 +74,7 @@ func GetResourceIDsForAccountResourceTypeFromES(client keibi.Client, sourceID, r
 	return &response, nil
 }
 
-func GetResourceIDsForAccountFromES(client keibi.Client, sourceID string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
+func GetResourceIDsForAccountFromES(client kaytu.Client, sourceID string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
 	terms := map[string][]string{
 		"source_id": {sourceID},
 	}
@@ -121,7 +121,7 @@ func GetResourceIDsForAccountFromES(client keibi.Client, sourceID string, search
 	return &response, nil
 }
 
-func DeleteByIds(client keibi.Client, index string, ids []string) (*keibi.DeleteByQueryResponse, error) {
+func DeleteByIds(client kaytu.Client, index string, ids []string) (*kaytu.DeleteByQueryResponse, error) {
 	if len(ids) == 0 {
 		return nil, fmt.Errorf("no ids to delete")
 	}
@@ -134,7 +134,7 @@ func DeleteByIds(client keibi.Client, index string, ids []string) (*keibi.Delete
 		},
 	}
 
-	res, err := keibi.DeleteByQuery(context.TODO(), client.ES(), []string{index}, query,
+	res, err := kaytu.DeleteByQuery(context.TODO(), client.ES(), []string{index}, query,
 		client.ES().DeleteByQuery.WithRefresh(true),
 		client.ES().DeleteByQuery.WithConflicts("proceed"),
 	)

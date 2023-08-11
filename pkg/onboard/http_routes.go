@@ -6,12 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -23,8 +24,8 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
 
-	keibiaws "github.com/kaytu-io/kaytu-aws-describer/aws"
-	keibiazure "github.com/kaytu-io/kaytu-azure-describer/azure"
+	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
+	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/azure"
 
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
@@ -41,7 +42,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v1 := r.Group("/api/v1")
 
 	v1.GET("/sources", httpserver.AuthorizeHandler(h.ListSources, api3.ViewerRole))
-	v1.POST("/sources", httpserver.AuthorizeHandler(h.GetSources, api3.KeibiAdminRole))
+	v1.POST("/sources", httpserver.AuthorizeHandler(h.GetSources, api3.KaytuAdminRole))
 	v1.GET("/sources/count", httpserver.AuthorizeHandler(h.CountSources, api3.ViewerRole))
 	v1.GET("/catalog/metrics", httpserver.AuthorizeHandler(h.CatalogMetrics, api3.ViewerRole))
 
@@ -51,9 +52,9 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	sourceApiGroup := v1.Group("/source")
 	sourceApiGroup.POST("/aws", httpserver.AuthorizeHandler(h.PostSourceAws, api3.EditorRole))
 	sourceApiGroup.POST("/azure", httpserver.AuthorizeHandler(h.PostSourceAzure, api3.EditorRole))
-	sourceApiGroup.GET("/:sourceId", httpserver.AuthorizeHandler(h.GetSource, api3.KeibiAdminRole))
+	sourceApiGroup.GET("/:sourceId", httpserver.AuthorizeHandler(h.GetSource, api3.KaytuAdminRole))
 	sourceApiGroup.GET("/:sourceId/healthcheck", httpserver.AuthorizeHandler(h.GetSourceHealth, api3.EditorRole))
-	sourceApiGroup.GET("/:sourceId/credentials/full", httpserver.AuthorizeHandler(h.GetSourceFullCred, api3.KeibiAdminRole))
+	sourceApiGroup.GET("/:sourceId/credentials/full", httpserver.AuthorizeHandler(h.GetSourceFullCred, api3.KaytuAdminRole))
 	sourceApiGroup.DELETE("/:sourceId", httpserver.AuthorizeHandler(h.DeleteSource, api3.EditorRole))
 
 	credential := v1.Group("/credential")
@@ -148,11 +149,11 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
-	sdkCnf, err := keibiaws.GetConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
+	sdkCnf, err := kaytuAws.GetConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
 	if err != nil {
 		return err
 	}
-	isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, "", "")
+	isAttached, err := kaytuAws.CheckAttachedPolicy(h.logger, sdkCnf, "", "")
 	if err != nil {
 		fmt.Printf("error in checking security audit permission: %v", err)
 		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
@@ -162,7 +163,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	}
 
 	// Create source section
-	cfg, err := keibiaws.GetConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
+	cfg, err := kaytuAws.GetConfig(context.Background(), req.Config.AccessKey, req.Config.SecretKey, "", "", nil)
 	if err != nil {
 		return err
 	}
@@ -227,13 +228,13 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
 	}
 
-	isAttached, err := keibiazure.CheckRole(keibiazure.AuthConfig{
+	isAttached, err := kaytuAzure.CheckRole(kaytuAzure.AuthConfig{
 		TenantID:     req.Config.TenantId,
 		ObjectID:     req.Config.ObjectId,
 		SecretID:     req.Config.SecretId,
 		ClientID:     req.Config.ClientId,
 		ClientSecret: req.Config.ClientSecret,
-	}, req.Config.SubscriptionId, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
+	}, req.Config.SubscriptionId, kaytuAzure.DefaultReaderRoleDefinitionIDTemplate)
 	if err != nil {
 		fmt.Printf("error in checking reader role roleAssignment: %v", err)
 		return echo.NewHTTPError(http.StatusUnauthorized, PermissionError.Error())
@@ -252,7 +253,7 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return err
 	}
 
-	azSub, err := currentAzureSubscription(ctx.Request().Context(), h.logger, req.Config.SubscriptionId, keibiazure.AuthConfig{
+	azSub, err := currentAzureSubscription(ctx.Request().Context(), h.logger, req.Config.SubscriptionId, kaytuAzure.AuthConfig{
 		TenantID:     req.Config.TenantId,
 		ObjectID:     req.Config.ObjectId,
 		SecretID:     req.Config.SecretId,
@@ -291,11 +292,11 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 		var sdkCnf aws.Config
-		sdkCnf, err = keibiaws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
+		sdkCnf, err = kaytuAws.GetConfig(context.Background(), awsConfig.AccessKey, awsConfig.SecretKey, "", "", nil)
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		err = keibiaws.CheckGetUserPermission(h.logger, sdkCnf)
+		err = kaytuAws.CheckGetUserPermission(h.logger, sdkCnf)
 		if err == nil {
 			metadata, err := getAWSCredentialsMetadata(context.Background(), h.logger, awsConfig)
 			if err != nil {
@@ -313,7 +314,7 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 		if err != nil {
 			return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		err = keibiazure.CheckSPNAccessPermission(keibiazure.AuthConfig{
+		err = kaytuAzure.CheckSPNAccessPermission(kaytuAzure.AuthConfig{
 			TenantID:            azureConfig.TenantID,
 			ObjectID:            azureConfig.ObjectID,
 			SecretID:            azureConfig.SecretID,
@@ -679,7 +680,7 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 		return nil, err
 	}
 	h.logger.Info("discovering subscriptions", zap.String("credentialId", credential.ID.String()))
-	subs, err := discoverAzureSubscriptions(ctx, h.logger, keibiazure.AuthConfig{
+	subs, err := discoverAzureSubscriptions(ctx, h.logger, kaytuAzure.AuthConfig{
 		TenantID:     azureCnf.TenantID,
 		ObjectID:     azureCnf.ObjectID,
 		SecretID:     azureCnf.SecretID,
@@ -738,13 +739,13 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
 		}
 
-		isAttached, err := keibiazure.CheckRole(keibiazure.AuthConfig{
+		isAttached, err := kaytuAzure.CheckRole(kaytuAzure.AuthConfig{
 			TenantID:     azureCnf.TenantID,
 			ObjectID:     azureCnf.ObjectID,
 			SecretID:     azureCnf.SecretID,
 			ClientID:     azureCnf.ClientID,
 			ClientSecret: azureCnf.ClientSecret,
-		}, sub.SubscriptionID, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
+		}, sub.SubscriptionID, kaytuAzure.DefaultReaderRoleDefinitionIDTemplate)
 		if err != nil {
 			h.logger.Warn("failed to check role", zap.Error(err))
 			continue
@@ -805,7 +806,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := keibiaws.GetConfig(
+	cfg, err := kaytuAws.GetConfig(
 		ctx,
 		awsCnf.AccessKey,
 		awsCnf.SecretKey,
@@ -859,13 +860,13 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 
 	h.logger.Info("onboarding accounts", zap.Int("count", len(accountsToOnboard)))
 	for _, account := range accountsToOnboard {
-		//assumeRoleArn := keibiaws.GetRoleArnFromName(account.AccountID, awsCnf.AssumeRoleName)
-		//sdkCnf, err := keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, assumeRoleArn, assumeRoleArn, awsCnf.ExternalID)
+		//assumeRoleArn := kaytuAws.GetRoleArnFromName(account.AccountID, awsCnf.AssumeRoleName)
+		//sdkCnf, err := kaytuAws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, assumeRoleArn, assumeRoleArn, awsCnf.ExternalID)
 		//if err != nil {
 		//	h.logger.Warn("failed to get config", zap.Error(err))
 		//	return err
 		//}
-		//isAttached, err := keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, keibiaws.SecurityAuditPolicyARN)
+		//isAttached, err := kaytuAws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, kaytuAws.SecurityAuditPolicyARN)
 		//if err != nil {
 		//	h.logger.Warn("failed to check get user permission", zap.Error(err))
 		//	continue
@@ -1365,14 +1366,14 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 					h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", src.SourceId))
 					return err
 				}
-				assumeRoleArn := keibiaws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
+				assumeRoleArn := kaytuAws.GetRoleArnFromName(src.SourceId, awsCnf.AssumeRoleName)
 				var sdkCnf aws.Config
-				sdkCnf, err = keibiaws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
+				sdkCnf, err = kaytuAws.GetConfig(ctx.Request().Context(), awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
 				if err != nil {
 					h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", src.SourceId))
 					return err
 				}
-				isAttached, err = keibiaws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, keibiaws.GetPolicyArnFromName(src.SourceId, awsCnf.AssumeRolePolicyName))
+				isAttached, err = kaytuAws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, kaytuAws.GetPolicyArnFromName(src.SourceId, awsCnf.AssumeRolePolicyName))
 				if err == nil && isAttached {
 					if sdkCnf.Region == "" {
 						sdkCnf.Region = "us-east-1"
@@ -1400,7 +1401,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 					h.logger.Error("failed to get azure config", zap.Error(err), zap.String("sourceId", src.SourceId))
 					return err
 				}
-				authCnf := keibiazure.AuthConfig{
+				authCnf := kaytuAzure.AuthConfig{
 					TenantID:            azureCnf.TenantID,
 					ClientID:            azureCnf.ClientID,
 					ObjectID:            azureCnf.ObjectID,
@@ -1411,7 +1412,7 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 					Username:            azureCnf.Username,
 					Password:            azureCnf.Password,
 				}
-				isAttached, err = keibiazure.CheckRole(authCnf, src.SourceId, keibiazure.DefaultReaderRoleDefinitionIDTemplate)
+				isAttached, err = kaytuAzure.CheckRole(authCnf, src.SourceId, kaytuAzure.DefaultReaderRoleDefinitionIDTemplate)
 
 				if err == nil && isAttached {
 					var azSub *azureSubscription
@@ -1492,7 +1493,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 	}
 
 	apiRes := src.toAPI()
-	if httpserver.GetUserRole(ctx) == api3.KeibiAdminRole {
+	if httpserver.GetUserRole(ctx) == api3.KaytuAdminRole {
 		apiRes.Credential = src.Credential.ToAPI()
 		apiRes.Credential.Config = src.Credential.Secret
 	}
@@ -1614,7 +1615,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 	resp := api.GetSourcesResponse{}
 	for _, s := range sources {
 		apiRes := s.toAPI()
-		if httpserver.GetUserRole(ctx) == api3.KeibiAdminRole {
+		if httpserver.GetUserRole(ctx) == api3.KaytuAdminRole {
 			apiRes.Credential = s.Credential.ToAPI()
 			apiRes.Credential.Config = s.Credential.Secret
 		}
@@ -1641,7 +1642,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	var res []api.Connection
 	for _, src := range srcs {
 		apiRes := src.toAPI()
-		if httpserver.GetUserRole(ctx) == api3.KeibiAdminRole {
+		if httpserver.GetUserRole(ctx) == api3.KaytuAdminRole {
 			apiRes.Credential = src.Credential.ToAPI()
 			apiRes.Credential.Config = src.Credential.Secret
 		}

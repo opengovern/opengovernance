@@ -9,7 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	client3 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
@@ -32,7 +32,7 @@ type Worker struct {
 	onboardClient    client.OnboardServiceClient
 	complianceClient client2.ComplianceServiceClient
 	scheduleClient   client3.SchedulerServiceClient
-	es               keibi.Client
+	es               kaytu.Client
 }
 
 func InitializeWorker(
@@ -104,7 +104,7 @@ func InitializeWorker(
 	w.pusher = push.New(prometheusPushAddress, "compliance-report")
 
 	defaultAccountID := "default"
-	w.es, err = keibi.NewClient(keibi.ClientConfig{
+	w.es, err = kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{config.ElasticSearch.Address},
 		Username:  &config.ElasticSearch.Username,
 		Password:  &config.ElasticSearch.Password,

@@ -360,7 +360,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Get all the RoleBindings of the workspace. RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.keibi.io)",
+                "description": "Get all the RoleBindings of the workspace. RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.kaytu.io)",
                 "produces": [
                     "application/json"
                 ],
@@ -4457,14 +4457,14 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "internal",
-                "keibi-admin",
+                "kaytu-admin",
                 "admin",
                 "editor",
                 "viewer"
             ],
             "x-enum-varnames": [
                 "InternalRole",
-                "KeibiAdminRole",
+                "KaytuAdminRole",
                 "AdminRole",
                 "EditorRole",
                 "ViewerRole"
@@ -6996,7 +6996,7 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string",
-                    "example": "keibi"
+                    "example": "kaytu"
                 }
             }
         },
@@ -7356,10 +7356,10 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "dev-cluster.keibi.io",
+	Host:             "dev-cluster.kaytu.io",
 	BasePath:         "",
 	Schemes:          []string{"https"},
-	Title:            "Keibi Service API",
+	Title:            "Kaytu Service API",
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

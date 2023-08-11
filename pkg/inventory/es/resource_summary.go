@@ -9,7 +9,7 @@ import (
 
 	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
@@ -30,7 +30,7 @@ type FetchConnectionResourceTypeCountAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionResourceTypeCountAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, t time.Time, resourceTypes []string, size int) (map[string]int, error) {
+func FetchConnectionResourceTypeCountAtTime(client kaytu.Client, connectors []source.Type, connectionIDs []string, t time.Time, resourceTypes []string, size int) (map[string]int, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -133,7 +133,7 @@ type FetchConnectorResourceTypeCountAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorResourceTypeCountAtTime(client keibi.Client, connectors []source.Type, t time.Time, resourceTypes []string, size int) (map[string]int, error) {
+func FetchConnectorResourceTypeCountAtTime(client kaytu.Client, connectors []source.Type, t time.Time, resourceTypes []string, size int) (map[string]int, error) {
 	res := make(map[string]any)
 	var filters []any
 

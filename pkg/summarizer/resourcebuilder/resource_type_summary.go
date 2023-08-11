@@ -10,12 +10,12 @@ import (
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.uber.org/zap"
 )
 
 type resourceTypeSummaryBuilder struct {
-	client            keibi.Client
+	client            kaytu.Client
 	logger            *zap.Logger
 	db                inventory.Database
 	summarizerJobID   uint
@@ -23,7 +23,7 @@ type resourceTypeSummaryBuilder struct {
 	providerSummary   map[string]es.ProviderResourceTypeSummary
 }
 
-func NewResourceTypeSummaryBuilder(client keibi.Client, logger *zap.Logger, db inventory.Database, summarizerJobID uint) *resourceTypeSummaryBuilder {
+func NewResourceTypeSummaryBuilder(client kaytu.Client, logger *zap.Logger, db inventory.Database, summarizerJobID uint) *resourceTypeSummaryBuilder {
 	return &resourceTypeSummaryBuilder{
 		client:            client,
 		db:                db,
@@ -119,7 +119,7 @@ func (b *resourceTypeSummaryBuilder) Cleanup(summarizeJobID uint) error {
 	}
 
 	esClient := b.client.ES()
-	resp, err := keibi.DeleteByQuery(context.Background(), esClient, []string{es.ProviderSummaryIndex, es.ConnectionSummaryIndex}, query,
+	resp, err := kaytu.DeleteByQuery(context.Background(), esClient, []string{es.ProviderSummaryIndex, es.ConnectionSummaryIndex}, query,
 		esClient.DeleteByQuery.WithRefresh(true),
 		esClient.DeleteByQuery.WithConflicts("proceed"),
 	)
