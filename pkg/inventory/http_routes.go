@@ -282,7 +282,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println("MigrateAnalytics = next page", summarizerJobID)
+		fmt.Println("MigrateAnalytics = next page", summarizerJobID, len(page))
 
 		for _, hit := range page {
 			connectionID, err := uuid.Parse(hit.SourceID)
@@ -312,6 +312,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
 			}
 
 			if metricID == "" {
+				fmt.Println(hit.ResourceType, "doesnt have metricID")
 				continue
 			}
 
