@@ -3,7 +3,6 @@ package reporter
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
-	internal "github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -38,10 +37,10 @@ func startHttpServer(ctx context.Context) error {
 		return fmt.Errorf("new logger: %w", err)
 	}
 
-	var handler internal.Routes
+	httpServer := NewHTTPServer(HttpAddress, logger)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)
 	}
 
-	return httpserver.RegisterAndStart(logger, HttpAddress, handler)
+	return httpserver.RegisterAndStart(logger, HttpAddress, httpServer)
 }
