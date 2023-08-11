@@ -684,13 +684,13 @@ type ConnectionCostSummaryQueryHits struct {
 	Hits  []ConnectionCostSummaryQueryHit `json:"hits"`
 }
 type ConnectionCostSummaryQueryHit struct {
-	ID      string                           `json:"_id"`
-	Score   float64                          `json:"_score"`
-	Index   string                           `json:"_index"`
-	Type    string                           `json:"_type"`
-	Version int64                            `json:"_version,omitempty"`
-	Source  summarizer.ConnectionCostSummary `json:"_source"`
-	Sort    []any                            `json:"sort"`
+	ID      string                        `json:"_id"`
+	Score   float64                       `json:"_score"`
+	Index   string                        `json:"_index"`
+	Type    string                        `json:"_type"`
+	Version int64                         `json:"_version,omitempty"`
+	Source  summarizer.ServiceCostSummary `json:"_source"`
+	Sort    []any                         `json:"sort"`
 }
 
 type ConnectionCostPaginator struct {
@@ -714,14 +714,14 @@ func (p ConnectionCostPaginator) HasNext() bool {
 	return !p.paginator.Done()
 }
 
-func (p ConnectionCostPaginator) NextPage(ctx context.Context) ([]summarizer.ConnectionCostSummary, error) {
+func (p ConnectionCostPaginator) NextPage(ctx context.Context) ([]summarizer.ServiceCostSummary, error) {
 	var response ConnectionCostSummaryQueryResponse
 	err := p.paginator.Search(ctx, &response)
 	if err != nil {
 		return nil, err
 	}
 
-	var values []summarizer.ConnectionCostSummary
+	var values []summarizer.ServiceCostSummary
 	for _, hit := range response.Hits.Hits {
 		values = append(values, hit.Source)
 	}

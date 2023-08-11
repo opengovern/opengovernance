@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
@@ -241,7 +242,12 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 
 func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
 	for i := 0; i < 1000; i++ {
-		err := h.MigrateSpendPart(i)
+		err := h.MigrateSpendPart(i, true)
+		if err != nil {
+			return err
+		}
+
+		err = h.MigrateSpendPart(i, false)
 		if err != nil {
 			return err
 		}
@@ -249,26 +255,56 @@ func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
 	return nil
 }
 
-func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
-	aDB := analyticsDB.NewDatabase(h.db.orm)
+type ExistFilter struct {
+	field string
+}
 
+func NewExistFilter(field string) keibi.BoolFilter {
+	return ExistFilter{
+		field: field,
+	}
+}
+func (t ExistFilter) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"exists": map[string]string{
+			"field": t.field,
+		},
+	})
+}
+func (t ExistFilter) IsBoolFilter() {}
+
+func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
 	connectionMap := map[string]spend.ConnectionMetricTrendSummary{}
 	connectorMap := map[string]spend.ConnectorMetricTrendSummary{}
 
 	cctx := context.Background()
+	var boolFilters []keibi.BoolFilter
+	if isAWS {
+		boolFilters = []keibi.BoolFilter{
+			keibi.NewTermFilter("report_type", string(es3.CostServiceSummaryDaily)),
+			keibi.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
+			keibi.NewTermFilter("source_type", "AWS"),
+			NewExistFilter("cost.Dimension1"),
+		}
+	} else {
+		boolFilters = []keibi.BoolFilter{
+			keibi.NewTermFilter("report_type", string(es3.CostServiceSummaryDaily)),
+			keibi.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
+			keibi.NewTermFilter("source_type", "Azure"),
+			NewExistFilter("cost.ServiceName"),
+		}
+	}
 
 	pagination, err := es.NewConnectionCostPaginator(
 		h.client,
-		[]keibi.BoolFilter{
-			keibi.NewTermFilter("report_type", string(es3.CostConnectionSummaryDaily)),
-			keibi.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
-		},
+		boolFilters,
 		nil,
 	)
 	if err != nil {
 		return err
 	}
-	resourceTypeMetricCache := map[string]analyticsDB.AnalyticMetric{}
+	serviceNameMetricCache := map[string]analyticsDB.AnalyticMetric{}
 
 	var docs []kafka.Doc
 	for {
@@ -291,28 +327,24 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
 			}
 
 			var metricID, metricName string
-			// cost mapping
-
-			if v, ok := resourceTypeMetricCache[hit.ResourceType]; ok {
+			if v, ok := serviceNameMetricCache[hit.ServiceName]; ok {
 				metricID = v.ID
 				metricName = v.Name
 			} else {
-				metric, err := aDB.GetMetric(hit.ResourceType)
+				metric, err := aDB.GetMetric(hit.ServiceName)
 				if err != nil {
 					return err
 				}
-
 				if metric == nil {
-					return fmt.Errorf("resource type %s not found", hit.ResourceType)
+					return fmt.Errorf("resource type %s not found", hit.ServiceName)
 				}
-
-				resourceTypeMetricCache[hit.ResourceType] = *metric
+				serviceNameMetricCache[hit.ServiceName] = *metric
 				metricID = metric.ID
 				metricName = metric.Name
 			}
 
 			if metricID == "" {
-				fmt.Println(hit.ResourceType, "doesnt have metricID")
+				fmt.Println(hit.ServiceName, "doesnt have metricID")
 				continue
 			}
 
@@ -326,7 +358,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
 			connection := spend.ConnectionMetricTrendSummary{
 				ConnectionID:   connectionID,
 				ConnectionName: conn.ConnectionName,
-				Connector:      hit.SourceType,
+				Connector:      hit.Connector,
 				Date:           dateStr,
 				MetricID:       metricID,
 				MetricName:     metricName,
@@ -343,7 +375,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
 			}
 
 			connector := spend.ConnectorMetricTrendSummary{
-				Connector:   hit.SourceType,
+				Connector:   hit.Connector,
 				Date:        dateStr,
 				MetricID:    metricID,
 				MetricName:  metricName,
