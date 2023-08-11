@@ -382,8 +382,8 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 				MetricID:    metricID,
 				MetricName:  metricName,
 				CostValue:   hit.CostValue,
-				PeriodStart: hit.PeriodStart,
-				PeriodEnd:   hit.PeriodEnd,
+				PeriodStart: hit.PeriodStart * 1000,
+				PeriodEnd:   hit.PeriodEnd * 1000,
 			}
 			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metricID, hit.SummarizeJobID)
 			if v, ok := connectorMap[key]; ok {
