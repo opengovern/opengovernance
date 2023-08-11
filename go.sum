@@ -2301,8 +2301,8 @@ github.com/kaytu-io/kaytu-util v0.0.0-20230804082552-3c07cccc35a8 h1:Ts7VH/IDYAN
 github.com/kaytu-io/kaytu-util v0.0.0-20230804082552-3c07cccc35a8/go.mod h1:SSKFvtVP8dmpewK7X4oPXqaal92Npxkc/YlP/WuZdV4=
 github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230804102108-c310a0b81098 h1:MIsoiwEFC33csOfKU6sa59JltVxgu7h6HgCVVwwhAak=
 github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230804102108-c310a0b81098/go.mod h1:W5IKZbEpMon8vts18zTHAVhn5tNqv5X6EZjZGdbk5Mc=
-github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230809090119-afc072159107 h1:RGZAaum0gy2R6SrNanohCsgxhSN+qeT93M0mxhfg8v0=
-github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230809090119-afc072159107/go.mod h1:gfuCOw6zc8oMsv5218QDnYjLhHBS/2eepZEdKKYAUoE=
+github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230810175354-20b05b31a360 h1:+91dTk2oVZwOSYL29RvZ6ZggH56XM0tPO8KAOnDc/WQ=
+github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230810175354-20b05b31a360/go.mod h1:gfuCOw6zc8oMsv5218QDnYjLhHBS/2eepZEdKKYAUoE=
 github.com/kaytu-io/steampipe-plugin-azuread v0.0.0-20230804083738-130ea99018da h1:yz8s3QISunwEFoKC8jhGiGn4SO78uHqsCPpcgbRcuKE=
 github.com/kaytu-io/steampipe-plugin-azuread v0.0.0-20230804083738-130ea99018da/go.mod h1:/hJVBh1hcoP3cr/pcI5DNlsMamuzKXFfBaQ0IA6Tg/g=
 github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1 h1:tKxk2n0ZuXgt1QBZe8tb+ztYQitO1Z8glexWz08e2ow=
