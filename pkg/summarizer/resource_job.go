@@ -19,7 +19,7 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
 
@@ -28,21 +28,21 @@ import (
 )
 
 var DoResourceSummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "keibi",
+	Namespace: "kaytu",
 	Subsystem: "summarizer_worker",
 	Name:      "do_resource_summarizer_jobs_total",
 	Help:      "Count of done summarizer jobs in summarizer-worker service",
 }, []string{"queryid", "status"})
 
 var DoResourceSummarizerJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-	Namespace: "keibi",
+	Namespace: "kaytu",
 	Subsystem: "summarizer_worker",
 	Name:      "do_resource_summarizer_jobs_duration_seconds",
 	Help:      "Duration of done summarizer jobs in summarizer-worker service",
 	Buckets:   []float64{5, 60, 300, 600, 1800, 3600, 7200, 36000},
 }, []string{"queryid", "status"})
 
-func (j SummarizeJob) DoMustSummarizer(client keibi.Client, db inventory.Database, producer *confluent_kafka.Producer, topic string, logger *zap.Logger) (r SummarizeJobResult) {
+func (j SummarizeJob) DoMustSummarizer(client kaytu.Client, db inventory.Database, producer *confluent_kafka.Producer, topic string, logger *zap.Logger) (r SummarizeJobResult) {
 	logger.Info("Starting must summarizing", zap.Int("jobID", int(j.JobID)))
 	startTime := time.Now().Unix()
 	defer func() {

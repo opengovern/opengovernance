@@ -2,7 +2,7 @@ package describe
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"time"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -19,13 +19,13 @@ type esResource struct {
 type KafkaEsSink struct {
 	logger        *zap.Logger
 	kafkaConsumer *confluent_kafka.Consumer
-	esClient      keibi.Client
+	esClient      kaytu.Client
 	commitChan    chan *confluent_kafka.Message
 	esSinkChan    chan *confluent_kafka.Message
 	esSinkBuffer  []*confluent_kafka.Message
 }
 
-func NewKafkaEsSink(logger *zap.Logger, kafkaConsumer *confluent_kafka.Consumer, esClient keibi.Client) *KafkaEsSink {
+func NewKafkaEsSink(logger *zap.Logger, kafkaConsumer *confluent_kafka.Consumer, esClient kaytu.Client) *KafkaEsSink {
 	return &KafkaEsSink{
 		logger:        logger,
 		kafkaConsumer: kafkaConsumer,

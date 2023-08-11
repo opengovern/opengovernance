@@ -13,7 +13,7 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
 
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 
 	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"
@@ -35,7 +35,7 @@ type Worker struct {
 	kfkProducer      *confluent_kafka.Producer
 	kfkTopic         string
 	logger           *zap.Logger
-	es               keibi.Client
+	es               kaytu.Client
 	db               inventory.Database
 	complianceClient client.ComplianceServiceClient
 	pusher           *push.Pusher
@@ -126,7 +126,7 @@ func InitializeWorker(
 		Collector(DoComplianceSummarizerJobsDuration)
 
 	defaultAccountID := "default"
-	w.es, err = keibi.NewClient(keibi.ClientConfig{
+	w.es, err = kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{elasticSearchAddress},
 		Username:  &elasticSearchUsername,
 		Password:  &elasticSearchPassword,

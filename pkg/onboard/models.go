@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/organizations"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/google/uuid"
-	keibiaws "github.com/kaytu-io/kaytu-aws-describer/aws"
+	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -149,7 +149,7 @@ func NewAWSConnectionMetadata(logger *zap.Logger, cfg describe.AWSAccountConfig,
 		metadata.AccountType = AWSAccountTypeOrganizationManager
 	}
 	if account.Organization != nil {
-		sdkCnf, err := keibiaws.GetConfig(context.TODO(), cfg.AccessKey, cfg.SecretKey, "", "", nil)
+		sdkCnf, err := kaytuAws.GetConfig(context.TODO(), cfg.AccessKey, cfg.SecretKey, "", "", nil)
 		if err != nil {
 			logger.Error("failed to get aws config", zap.Error(err), zap.String("account_id", metadata.AccountID))
 			return metadata, err

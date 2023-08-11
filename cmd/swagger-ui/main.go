@@ -18,9 +18,9 @@ var (
 
 //go:generate ../../scripts/generate_doc.sh
 
-//	@title						Keibi Service API
+//	@title						Kaytu Service API
 //	@version					1.0
-//	@host						dev-cluster.keibi.io
+//	@host						dev-cluster.kaytu.io
 //	@schemes					https
 //	@securityDefinitions.apikey	BearerToken
 //	@tokenUrl					https://example.com/oauth/token

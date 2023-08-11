@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 )
 
 const (
@@ -18,7 +18,7 @@ type LookupQueryResponse struct {
 	Hits LookupQueryHits `json:"hits"`
 }
 type LookupQueryHits struct {
-	Total keibi.SearchTotal `json:"total"`
+	Total kaytu.SearchTotal `json:"total"`
 	Hits  []LookupQueryHit  `json:"hits"`
 }
 type LookupQueryHit struct {
@@ -31,7 +31,7 @@ type LookupQueryHit struct {
 	Sort    []any             `json:"sort"`
 }
 
-func FetchLookupsByResourceIDWildcard(client keibi.Client, resourceID string) (LookupQueryResponse, error) {
+func FetchLookupsByResourceIDWildcard(client kaytu.Client, resourceID string) (LookupQueryResponse, error) {
 	request := make(map[string]any)
 	request["size"] = 1
 	request["sort"] = []map[string]any{

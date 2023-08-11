@@ -9,7 +9,7 @@ import (
 	"time"
 
 	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
@@ -31,7 +31,7 @@ type FetchCostHistoryByServicesQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchDailyCostHistoryByServicesBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, startTime time.Time, endTime time.Time, size int) (map[string]map[string]float64, error) {
+func FetchDailyCostHistoryByServicesBetween(client kaytu.Client, connectionIDs []string, connectors []source.Type, services []string, startTime time.Time, endTime time.Time, size int) (map[string]map[string]float64, error) {
 	endTime = endTime.Truncate(24 * time.Hour)
 	startTime = startTime.Truncate(24 * time.Hour)
 
@@ -154,7 +154,7 @@ type FetchDailyCostHistoryByServicesAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchDailyCostHistoryByServicesAtTime(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, at time.Time, size int) (map[string][]summarizer.ServiceCostSummary, error) {
+func FetchDailyCostHistoryByServicesAtTime(client kaytu.Client, connectionIDs []string, connectors []source.Type, services []string, at time.Time, size int) (map[string][]summarizer.ServiceCostSummary, error) {
 	var filters []any
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"report_type": {string(summarizer.CostServiceSummaryDaily)}},
@@ -263,7 +263,7 @@ type FetchDailyCostTrendByServicesBetweenResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchDailyCostTrendByServicesBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, services []string, startTime, endTime time.Time, datapointCount int) (map[string]map[int]float64, error) {
+func FetchDailyCostTrendByServicesBetween(client kaytu.Client, connectionIDs []string, connectors []source.Type, services []string, startTime, endTime time.Time, datapointCount int) (map[string]map[int]float64, error) {
 
 	query := make(map[string]any)
 	var filters []any
@@ -385,7 +385,7 @@ type FetchDailyCostTrendBetweenResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchDailyCostTrendBetween(client keibi.Client, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time, datapointCount int) (map[int]float64, error) {
+func FetchDailyCostTrendBetween(client kaytu.Client, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time, datapointCount int) (map[int]float64, error) {
 	query := make(map[string]any)
 	var filters []any
 	filters = append(filters, map[string]any{
@@ -487,7 +487,7 @@ type FetchCostHistoryByAccountsQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchDailyCostHistoryByAccountsBetween(client keibi.Client, connectors []source.Type, connectionIDs []string, before time.Time, after time.Time, size int) (map[string]float64, error) {
+func FetchDailyCostHistoryByAccountsBetween(client kaytu.Client, connectors []source.Type, connectionIDs []string, before time.Time, after time.Time, size int) (map[string]float64, error) {
 	before = before.Truncate(24 * time.Hour)
 	after = after.Truncate(24 * time.Hour)
 
@@ -587,7 +587,7 @@ type FetchDailyCostHistoryByAccountsAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchDailyCostHistoryByAccountsAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, at time.Time) (map[string]float64, error) {
+func FetchDailyCostHistoryByAccountsAtTime(client kaytu.Client, connectors []source.Type, connectionIDs []string, at time.Time) (map[string]float64, error) {
 	at = at.Truncate(24 * time.Hour)
 
 	res := make(map[string]any)
@@ -680,7 +680,7 @@ type ConnectionCostSummaryQueryResponse struct {
 	PitID string                         `json:"pit_id"`
 }
 type ConnectionCostSummaryQueryHits struct {
-	Total keibi.SearchTotal               `json:"total"`
+	Total kaytu.SearchTotal               `json:"total"`
 	Hits  []ConnectionCostSummaryQueryHit `json:"hits"`
 }
 type ConnectionCostSummaryQueryHit struct {
@@ -694,11 +694,11 @@ type ConnectionCostSummaryQueryHit struct {
 }
 
 type ConnectionCostPaginator struct {
-	paginator *keibi.BaseESPaginator
+	paginator *kaytu.BaseESPaginator
 }
 
-func NewConnectionCostPaginator(client keibi.Client, filters []keibi.BoolFilter, limit *int64) (ConnectionCostPaginator, error) {
-	paginator, err := keibi.NewPaginator(client.ES(), summarizer.CostSummeryIndex, filters, limit)
+func NewConnectionCostPaginator(client kaytu.Client, filters []kaytu.BoolFilter, limit *int64) (ConnectionCostPaginator, error) {
+	paginator, err := kaytu.NewPaginator(client.ES(), summarizer.CostSummeryIndex, filters, limit)
 	if err != nil {
 		return ConnectionCostPaginator{}, err
 	}

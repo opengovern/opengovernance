@@ -127,7 +127,7 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace, do
 			ReleaseName:     id,
 			Chart: helmv2.HelmChartTemplate{
 				Spec: helmv2.HelmChartTemplateSpec{
-					Chart: s.cfg.KeibiHelmChartLocation,
+					Chart: s.cfg.KaytuHelmChartLocation,
 					SourceRef: helmv2.CrossNamespaceObjectReference{
 						Kind:      "GitRepository",
 						Name:      "flux-system",
@@ -166,10 +166,10 @@ func getReplicaCount(values map[string]interface{}) (int, error) {
 				return 1, nil // default
 			}
 		} else {
-			return 0, fmt.Errorf("invalid keibi type: %v", reflect.TypeOf(v))
+			return 0, fmt.Errorf("invalid kaytu type: %v", reflect.TypeOf(v))
 		}
 	} else {
-		return 0, fmt.Errorf("keibi not found")
+		return 0, fmt.Errorf("kaytu not found")
 	}
 }
 
@@ -180,10 +180,10 @@ func updateValuesSetReplicaCount(values map[string]interface{}, replicaCount int
 			values["keibi"] = vm
 			return values, nil
 		} else {
-			return nil, fmt.Errorf("invalid keibi type: %v", reflect.TypeOf(v))
+			return nil, fmt.Errorf("invalid kaytu type: %v", reflect.TypeOf(v))
 		}
 	} else {
-		return nil, fmt.Errorf("keibi not found")
+		return nil, fmt.Errorf("kaytu not found")
 	}
 }
 

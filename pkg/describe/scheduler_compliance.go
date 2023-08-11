@@ -33,7 +33,7 @@ func (s *Scheduler) RunComplianceJobScheduler() {
 func (s *Scheduler) scheduleComplianceJob() error {
 	s.logger.Info("scheduleComplianceJob")
 
-	sources, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.KeibiAdminRole}, nil)
+	sources, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.KaytuAdminRole}, nil)
 	if err != nil {
 		ComplianceJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("error while listing sources", zap.Error(err))

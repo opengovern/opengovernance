@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strconv"
 	"time"
@@ -54,7 +54,7 @@ type FetchConnectionDailySpendHistoryByMetricQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionDailySpendHistoryByMetric(client keibi.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistoryByMetric, error) {
+func FetchConnectionDailySpendHistoryByMetric(client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistoryByMetric, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -220,7 +220,7 @@ type FetchConnectorDailySpendHistoryByMetricQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorDailySpendHistoryByMetric(client keibi.Client, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectorDailySpendHistoryByMetric, error) {
+func FetchConnectorDailySpendHistoryByMetric(client kaytu.Client, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectorDailySpendHistoryByMetric, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -347,7 +347,7 @@ type ConnectionSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionSpendTrend(client keibi.Client, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]float64, error) {
+func FetchConnectionSpendTrend(client kaytu.Client, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]float64, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -436,7 +436,7 @@ type ConnectorSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorSpendTrend(client keibi.Client, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]float64, error) {
+func FetchConnectorSpendTrend(client kaytu.Client, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]float64, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -520,7 +520,7 @@ type FetchSpendByMetricQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchSpendByMetric(client keibi.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]float64, error) {
+func FetchSpendByMetric(client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]float64, error) {
 	res := make(map[string]any)
 	var filters []any
 

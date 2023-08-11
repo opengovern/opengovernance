@@ -175,8 +175,8 @@ func (ts *testSuite) TestDeleteInvitation() {
 		ts.T().Run(fmt.Sprintf("deleteInvitationTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiUserIDHeader, tc.UserId)
-			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, "ws1")
+			r.Header.Set(httpserver.XKaytuUserIDHeader, tc.UserId)
+			r.Header.Set(httpserver.XKaytuWorkspaceIDHeader, "ws1")
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -252,7 +252,7 @@ func (ts *testSuite) TestGetUsers() {
 		ts.T().Run(fmt.Sprintf("getUserTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, "/", bytes.NewBuffer(tc.Request))
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiUserIDHeader, tc.UserId)
+			r.Header.Set(httpserver.XKaytuUserIDHeader, tc.UserId)
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -337,7 +337,7 @@ func (ts *testSuite) TestGetRoleUsers() {
 			Response: "user1@test.com",
 		},
 		{
-			Role:     api.KeibiAdminRole,
+			Role:     api.KaytuAdminRole,
 			Response: "",
 		},
 	}
@@ -345,7 +345,7 @@ func (ts *testSuite) TestGetRoleUsers() {
 		ts.T().Run(fmt.Sprintf("getRoleUsersTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, "ws1")
+			r.Header.Set(httpserver.XKaytuWorkspaceIDHeader, "ws1")
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -364,7 +364,7 @@ func (ts *testSuite) TestGetRoleUsers() {
 			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
 				ts.T().Fatalf("json decode: %v", err)
 			}
-			if tc.Role == api.KeibiAdminRole {
+			if tc.Role == api.KaytuAdminRole {
 				ts.Equal(len(response), 0)
 			} else {
 				ts.Equal(tc.Role, response[0].RoleName)
@@ -413,13 +413,13 @@ func (ts *testSuite) TestCreateAPIKey() { // not finished yet. has problem with 
 		ts.T().Run(fmt.Sprintf("getRoleUsersTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiUserIDHeader, tc.UserID)
-			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
-			r.Header.Set(httpserver.XKeibiWorkspaceNameHeader, tc.WorkspaceID)
-			r.Header.Set(httpserver.XKeibiUserRoleHeader, tc.Role)
-			r.Header.Set(httpserver.XKeibiMaxUsersHeader, "10")
-			r.Header.Set(httpserver.XKeibiMaxConnectionsHeader, "10")
-			r.Header.Set(httpserver.XKeibiMaxResourcesHeader, "10")
+			r.Header.Set(httpserver.XKaytuUserIDHeader, tc.UserID)
+			r.Header.Set(httpserver.XKaytuWorkspaceIDHeader, tc.WorkspaceID)
+			r.Header.Set(httpserver.XKaytuWorkspaceNameHeader, tc.WorkspaceID)
+			r.Header.Set(httpserver.XKaytuUserRoleHeader, tc.Role)
+			r.Header.Set(httpserver.XKaytuMaxUsersHeader, "10")
+			r.Header.Set(httpserver.XKaytuMaxConnectionsHeader, "10")
+			r.Header.Set(httpserver.XKaytuMaxResourcesHeader, "10")
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -466,7 +466,7 @@ func (ts *testSuite) TestListAPIKeys() {
 		ts.T().Run(fmt.Sprintf("listAPIKeysTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			r.Header.Set(httpserver.XKaytuWorkspaceIDHeader, tc.WorkspaceID)
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -509,7 +509,7 @@ func (ts *testSuite) TestSuspendAPIKey() {
 		ts.T().Run(fmt.Sprintf("suspendAPIKeyTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			r.Header.Set(httpserver.XKaytuWorkspaceIDHeader, tc.WorkspaceID)
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -555,7 +555,7 @@ func (ts *testSuite) TestActiveAPIKey() {
 		ts.T().Run(fmt.Sprintf("activeAPIKeyTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			r.Header.Set(httpserver.XKaytuWorkspaceIDHeader, tc.WorkspaceID)
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -605,7 +605,7 @@ func (ts *testSuite) TestDeleteAPIKey() {
 		ts.T().Run(fmt.Sprintf("deleteAPIKeyTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodDelete, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			r.Header.Set(httpserver.XKaytuWorkspaceIDHeader, tc.WorkspaceID)
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -656,7 +656,7 @@ func (ts *testSuite) TestGetAPIKey() {
 		ts.T().Run(fmt.Sprintf("getAPIKeyTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			r.Header.Set(httpserver.XKaytuWorkspaceIDHeader, tc.WorkspaceID)
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -710,7 +710,7 @@ func (ts *testSuite) TestGetRoleKeys() {
 		ts.T().Run(fmt.Sprintf("getRoleKeysTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			r.Header.Set(httpserver.XKaytuWorkspaceIDHeader, tc.WorkspaceID)
 			w := httptest.NewRecorder()
 
 			c := echo.New().NewContext(r, w)
@@ -764,7 +764,7 @@ func (ts *testSuite) TestUpdateKeyRole() {
 			ts.NoError(err)
 			r := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(body))
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			r.Header.Set(httpserver.XKaytuWorkspaceIDHeader, tc.WorkspaceID)
 
 			w := httptest.NewRecorder()
 
@@ -794,7 +794,7 @@ func (ts *testSuite) TestGetRoles() {
 		ts.T().Run(fmt.Sprintf("GetRolesTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			r.Header.Set(httpserver.XKaytuWorkspaceIDHeader, tc.WorkspaceID)
 
 			w := httptest.NewRecorder()
 
@@ -826,7 +826,7 @@ func (ts *testSuite) TestGetRoleDetails() {
 		ts.T().Run(fmt.Sprintf("GetRoleDetailsTestCases-%d", i), func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, "/", nil)
 			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			r.Header.Set(httpserver.XKeibiWorkspaceIDHeader, tc.WorkspaceID)
+			r.Header.Set(httpserver.XKaytuWorkspaceIDHeader, tc.WorkspaceID)
 
 			w := httptest.NewRecorder()
 

@@ -1,4 +1,4 @@
-# Keibi Engine
+# Kaytu Engine
 =======
 
 Introduction
@@ -42,12 +42,12 @@ If you try to build or download the dependencies, you will need permissions to i
 
 
 ```
-[url "ssh://git@gitlab.com/keibiengine/"]
-	insteadOf = https://gitlab.com/keibiengine/
+[url "ssh://git@github.com/kaytu-io/"]
+	insteadOf = https://github.com/kaytu-io/
 ```
 
 Or run the following command
 
 ```
-git config --global url."ssh://git@gitlab.com/keibiengine/".insteadOf https://gitlab.com/keibiengine/
+git config --global url."ssh://git@github.com/kaytu-io/".insteadOf https://github.com/kaytu-io/
 ```

@@ -6,12 +6,12 @@ import (
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 type trendSummaryBuilder struct {
-	client                        keibi.Client
+	client                        kaytu.Client
 	summarizerJobID               uint
 	connectionSummary             map[string]es.ConnectionTrendSummary
 	providerSummary               map[source.Type]es.ProviderTrendSummary
@@ -19,7 +19,7 @@ type trendSummaryBuilder struct {
 	providerResourceTypeSummary   map[string]es.ProviderResourceTypeTrendSummary
 }
 
-func NewTrendSummaryBuilder(client keibi.Client, summarizerJobID uint) *trendSummaryBuilder {
+func NewTrendSummaryBuilder(client kaytu.Client, summarizerJobID uint) *trendSummaryBuilder {
 	return &trendSummaryBuilder{
 		client:                        client,
 		summarizerJobID:               summarizerJobID,

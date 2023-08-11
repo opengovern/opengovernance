@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
-	"github.com/kaytu-io/kaytu-util/pkg/postgres"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 
 	"github.com/go-redis/redis/v8"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -143,7 +144,7 @@ func doSimpleJSONRequest(router *echo.Echo, method string, path string, request,
 
 	req := httptest.NewRequest(method, path, r)
 	req.Header.Add("content-type", "application/json")
-	req.Header.Add("X-Keibi-UserRole", string(api2.AdminRole))
+	req.Header.Add(httpserver.XKaytuUserRoleHeader, string(api2.AdminRole))
 
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)

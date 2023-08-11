@@ -12,7 +12,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 )
@@ -20,7 +20,7 @@ import (
 type BenchmarkSummaryBuilder struct {
 	jobID  uint
 	logger *zap.Logger
-	client keibi.Client
+	client kaytu.Client
 
 	policyMap map[string]complianceApi.Policy
 
@@ -29,7 +29,7 @@ type BenchmarkSummaryBuilder struct {
 	complianceClient   complianceClient.ComplianceServiceClient
 }
 
-func NewBenchmarkSummaryBuilder(logger *zap.Logger, jobId uint, client keibi.Client, complianceClient complianceClient.ComplianceServiceClient) *BenchmarkSummaryBuilder {
+func NewBenchmarkSummaryBuilder(logger *zap.Logger, jobId uint, client kaytu.Client, complianceClient complianceClient.ComplianceServiceClient) *BenchmarkSummaryBuilder {
 	return &BenchmarkSummaryBuilder{
 		jobID:              jobId,
 		logger:             logger,
@@ -46,7 +46,7 @@ func (b *BenchmarkSummaryBuilder) Process(resource types.Finding) {
 		b.policySummaries[resource.PolicyID] = make(map[string]types.PolicySummary)
 	}
 	if _, ok := b.policyMap[resource.PolicyID]; !ok {
-		policy, err := b.complianceClient.GetPolicy(&httpclient.Context{UserRole: authApi.KeibiAdminRole}, resource.PolicyID)
+		policy, err := b.complianceClient.GetPolicy(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, resource.PolicyID)
 		if err != nil {
 			b.logger.Error("failed to get policy", zap.Error(err))
 			return
@@ -85,7 +85,7 @@ func (b *BenchmarkSummaryBuilder) Process(resource types.Finding) {
 }
 
 func (b *BenchmarkSummaryBuilder) extractBenchmarkSummary(benchmarkId string) {
-	benchmark, err := b.complianceClient.GetBenchmark(&httpclient.Context{UserRole: authApi.KeibiAdminRole}, benchmarkId)
+	benchmark, err := b.complianceClient.GetBenchmark(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, benchmarkId)
 	if err != nil {
 		b.logger.Error("failed to get benchmark", zap.Error(err))
 		return
@@ -186,7 +186,7 @@ func (b *BenchmarkSummaryBuilder) Build() []kafka.Doc {
 	timeAt := time.Now().Unix()
 	var docs []kafka.Doc
 	benchmarks, err := b.complianceClient.ListBenchmarks(&httpclient.Context{
-		UserRole: authApi.KeibiAdminRole,
+		UserRole: authApi.KaytuAdminRole,
 	})
 	if err != nil {
 		b.logger.Error("failed to list benchmarks", zap.Error(err))
@@ -274,7 +274,7 @@ func (b *BenchmarkSummaryBuilder) Cleanup(summarizeJobID uint) error {
 		},
 	}
 	esClient := b.client.ES()
-	resp, err := keibi.DeleteByQuery(context.Background(), esClient, []string{types.BenchmarkSummaryIndex}, query,
+	resp, err := kaytu.DeleteByQuery(context.Background(), esClient, []string{types.BenchmarkSummaryIndex}, query,
 		esClient.DeleteByQuery.WithRefresh(true),
 		esClient.DeleteByQuery.WithConflicts("proceed"),
 	)

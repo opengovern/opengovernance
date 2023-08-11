@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
 	"math"
 	"net/http"
 	"sort"
@@ -13,11 +12,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
+
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
 	es3 "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
@@ -108,7 +109,7 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 		return connectionIds, nil
 	}
 
-	connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KeibiAdminRole}, connectionGroup)
+	connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -142,9 +143,9 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 
 	pagination, err := es.NewConnectionResourceTypePaginator(
 		h.client,
-		[]keibi.BoolFilter{
-			keibi.NewTermFilter("report_type", string(es3.ResourceTypeTrendConnectionSummary)),
-			keibi.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
+		[]kaytu.BoolFilter{
+			kaytu.NewTermFilter("report_type", string(es3.ResourceTypeTrendConnectionSummary)),
+			kaytu.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
 		},
 		nil,
 	)
@@ -259,7 +260,7 @@ type ExistFilter struct {
 	field string
 }
 
-func NewExistFilter(field string) keibi.BoolFilter {
+func NewExistFilter(field string) kaytu.BoolFilter {
 	return ExistFilter{
 		field: field,
 	}
@@ -279,19 +280,19 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 	connectorMap := map[string]spend.ConnectorMetricTrendSummary{}
 
 	cctx := context.Background()
-	var boolFilters []keibi.BoolFilter
+	var boolFilters []kaytu.BoolFilter
 	if isAWS {
-		boolFilters = []keibi.BoolFilter{
-			keibi.NewTermFilter("report_type", string(es3.CostServiceSummaryDaily)),
-			keibi.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
-			keibi.NewTermFilter("source_type", "AWS"),
+		boolFilters = []kaytu.BoolFilter{
+			kaytu.NewTermFilter("report_type", string(es3.CostServiceSummaryDaily)),
+			kaytu.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
+			kaytu.NewTermFilter("source_type", "AWS"),
 			NewExistFilter("cost.Dimension1"),
 		}
 	} else {
-		boolFilters = []keibi.BoolFilter{
-			keibi.NewTermFilter("report_type", string(es3.CostServiceSummaryDaily)),
-			keibi.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
-			keibi.NewTermFilter("source_type", "Azure"),
+		boolFilters = []kaytu.BoolFilter{
+			kaytu.NewTermFilter("report_type", string(es3.CostServiceSummaryDaily)),
+			kaytu.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
+			kaytu.NewTermFilter("source_type", "Azure"),
 			NewExistFilter("cost.ServiceName"),
 		}
 	}

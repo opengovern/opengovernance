@@ -3,7 +3,7 @@ package es
 import (
 	"context"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 )
 
 type ConnectionResourceTypeQueryResponse struct {
@@ -11,7 +11,7 @@ type ConnectionResourceTypeQueryResponse struct {
 	PitID string                          `json:"pit_id"`
 }
 type ConnectionResourceTypeQueryHits struct {
-	Total keibi.SearchTotal                `json:"total"`
+	Total kaytu.SearchTotal                `json:"total"`
 	Hits  []ConnectionResourceTypeQueryHit `json:"hits"`
 }
 type ConnectionResourceTypeQueryHit struct {
@@ -25,11 +25,11 @@ type ConnectionResourceTypeQueryHit struct {
 }
 
 type ConnectionResourceTypePaginator struct {
-	paginator *keibi.BaseESPaginator
+	paginator *kaytu.BaseESPaginator
 }
 
-func NewConnectionResourceTypePaginator(client keibi.Client, filters []keibi.BoolFilter, limit *int64) (ConnectionResourceTypePaginator, error) {
-	paginator, err := keibi.NewPaginator(client.ES(), es.ConnectionSummaryIndex, filters, limit)
+func NewConnectionResourceTypePaginator(client kaytu.Client, filters []kaytu.BoolFilter, limit *int64) (ConnectionResourceTypePaginator, error) {
+	paginator, err := kaytu.NewPaginator(client.ES(), es.ConnectionSummaryIndex, filters, limit)
 	if err != nil {
 		return ConnectionResourceTypePaginator{}, err
 	}

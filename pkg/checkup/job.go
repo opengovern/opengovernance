@@ -20,14 +20,14 @@ import (
 )
 
 var DoCheckupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "keibi",
+	Namespace: "kaytu",
 	Subsystem: "checkup_worker",
 	Name:      "do_checkup_jobs_total",
 	Help:      "Count of done checkup jobs in checkup-worker service",
 }, []string{"queryid", "status"})
 
 var DoCheckupJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-	Namespace: "keibi",
+	Namespace: "kaytu",
 	Subsystem: "checkup_worker",
 	Name:      "do_checkup_jobs_duration_seconds",
 	Help:      "Duration of done checkup jobs in checkup-worker service",

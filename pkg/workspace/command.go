@@ -23,8 +23,8 @@ var (
 	OnboardTemplate           = os.Getenv("ONBOARD_BASE_URL")
 	InventoryTemplate         = os.Getenv("INVENTORY_BASE_URL")
 	AutoSuspendDurationString = os.Getenv("AUTO_SUSPEND_DURATION_MINUTES")
-	KeibiHelmChartLocation    = os.Getenv("KEIBI_HELM_CHART_LOCATION")
-	KeibiOctopusNamespace     = os.Getenv("KEIBI_OCTOPUS_NAMESPACE")
+	KaytuHelmChartLocation    = os.Getenv("KAYTU_HELM_CHART_LOCATION")
+	KaytuOctopusNamespace     = os.Getenv("KAYTU_OCTOPUS_NAMESPACE")
 	FluxSystemNamespace       = os.Getenv("FLUX_SYSTEM_NAMESPACE")
 	S3AccessKey               = os.Getenv("S3_ACCESS_KEY")
 	S3SecretKey               = os.Getenv("S3_SECRET_KEY")
@@ -41,8 +41,8 @@ type Config struct {
 	DomainSuffix           string
 	AuthBaseUrl            string
 	RedisAddress           string
-	KeibiHelmChartLocation string
-	KeibiOctopusNamespace  string
+	KaytuHelmChartLocation string
+	KaytuOctopusNamespace  string
 	FluxSystemNamespace    string
 	AutoSuspendDuration    time.Duration
 	S3AccessKey            string
@@ -62,8 +62,8 @@ func NewConfig() *Config {
 		DomainSuffix:           DomainSuffix,
 		RedisAddress:           RedisAddress,
 		AuthBaseUrl:            AuthBaseURL,
-		KeibiHelmChartLocation: KeibiHelmChartLocation,
-		KeibiOctopusNamespace:  KeibiOctopusNamespace,
+		KaytuHelmChartLocation: KaytuHelmChartLocation,
+		KaytuOctopusNamespace:  KaytuOctopusNamespace,
 		FluxSystemNamespace:    FluxSystemNamespace,
 		AutoSuspendDuration:    time.Duration(d) * time.Minute,
 		S3AccessKey:            S3AccessKey,

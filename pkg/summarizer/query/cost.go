@@ -9,14 +9,14 @@ import (
 
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 )
 
 type ResourceQueryResponse struct {
 	Hits ResourceQueryHits `json:"hits"`
 }
 type ResourceQueryHits struct {
-	Total keibi.SearchTotal  `json:"total"`
+	Total kaytu.SearchTotal  `json:"total"`
 	Hits  []ResourceQueryHit `json:"hits"`
 }
 type ResourceQueryHit struct {
@@ -29,7 +29,7 @@ type ResourceQueryHit struct {
 	Sort    []interface{}     `json:"sort"`
 }
 
-func GetResourceFromResourceLookup(client keibi.Client, resource describe.LookupResource) (*describe.Resource, error) {
+func GetResourceFromResourceLookup(client kaytu.Client, resource describe.LookupResource) (*describe.Resource, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 

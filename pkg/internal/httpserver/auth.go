@@ -2,22 +2,23 @@ package httpserver
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/labstack/echo/v4"
 )
 
 const (
-	XKeibiWorkspaceIDHeader   = "X-Keibi-WorkspaceID"
-	XKeibiWorkspaceNameHeader = "X-Keibi-WorkspaceName"
-	XKeibiUserIDHeader        = "X-Keibi-UserId"
-	XKeibiUserRoleHeader      = "X-Keibi-UserRole"
+	XKaytuWorkspaceIDHeader   = "X-Kaytu-WorkspaceID"
+	XKaytuWorkspaceNameHeader = "X-Kaytu-WorkspaceName"
+	XKaytuUserIDHeader        = "X-Kaytu-UserId"
+	XKaytuUserRoleHeader      = "X-Kaytu-UserRole"
 
-	XKeibiMaxUsersHeader       = "X-Keibi-MaxUsers"
-	XKeibiMaxConnectionsHeader = "X-Keibi-MaxConnections"
-	XKeibiMaxResourcesHeader   = "X-Keibi-MaxResources"
+	XKaytuMaxUsersHeader       = "X-Kaytu-MaxUsers"
+	XKaytuMaxConnectionsHeader = "X-Kaytu-MaxConnections"
+	XKaytuMaxResourcesHeader   = "X-Kaytu-MaxResources"
 )
 
 func AuthorizeHandler(h echo.HandlerFunc, minRole api.Role) echo.HandlerFunc {
@@ -39,45 +40,45 @@ func RequireMinRole(ctx echo.Context, minRole api.Role) error {
 }
 
 func GetWorkspaceName(ctx echo.Context) string {
-	name := ctx.Request().Header.Get(XKeibiWorkspaceNameHeader)
+	name := ctx.Request().Header.Get(XKaytuWorkspaceNameHeader)
 	if strings.TrimSpace(name) == "" {
-		panic(fmt.Errorf("header %s is missing", XKeibiWorkspaceNameHeader))
+		panic(fmt.Errorf("header %s is missing", XKaytuWorkspaceNameHeader))
 	}
 
 	return name
 }
 
 func GetWorkspaceID(ctx echo.Context) string {
-	id := ctx.Request().Header.Get(XKeibiWorkspaceIDHeader)
+	id := ctx.Request().Header.Get(XKaytuWorkspaceIDHeader)
 	if strings.TrimSpace(id) == "" {
-		panic(fmt.Errorf("header %s is missing", XKeibiWorkspaceIDHeader))
+		panic(fmt.Errorf("header %s is missing", XKaytuWorkspaceIDHeader))
 	}
 
 	return id
 }
 
 func GetUserRole(ctx echo.Context) api.Role {
-	role := ctx.Request().Header.Get(XKeibiUserRoleHeader)
+	role := ctx.Request().Header.Get(XKaytuUserRoleHeader)
 	if strings.TrimSpace(role) == "" {
-		panic(fmt.Errorf("header %s is missing", XKeibiUserRoleHeader))
+		panic(fmt.Errorf("header %s is missing", XKaytuUserRoleHeader))
 	}
 
 	return api.GetRole(role)
 }
 
 func GetUserID(ctx echo.Context) string {
-	id := ctx.Request().Header.Get(XKeibiUserIDHeader)
+	id := ctx.Request().Header.Get(XKaytuUserIDHeader)
 	if strings.TrimSpace(id) == "" {
-		panic(fmt.Errorf("header %s is missing", XKeibiUserIDHeader))
+		panic(fmt.Errorf("header %s is missing", XKaytuUserIDHeader))
 	}
 
 	return id
 }
 
 func GetMaxUsers(ctx echo.Context) int64 {
-	max := ctx.Request().Header.Get(XKeibiMaxUsersHeader)
+	max := ctx.Request().Header.Get(XKaytuMaxUsersHeader)
 	if strings.TrimSpace(max) == "" {
-		panic(fmt.Errorf("header %s is missing", XKeibiMaxUsersHeader))
+		panic(fmt.Errorf("header %s is missing", XKaytuMaxUsersHeader))
 	}
 
 	c, err := strconv.ParseInt(max, 10, 64)
@@ -88,9 +89,9 @@ func GetMaxUsers(ctx echo.Context) int64 {
 }
 
 func GetMaxConnections(ctx echo.Context) int64 {
-	max := ctx.Request().Header.Get(XKeibiMaxConnectionsHeader)
+	max := ctx.Request().Header.Get(XKaytuMaxConnectionsHeader)
 	if strings.TrimSpace(max) == "" {
-		panic(fmt.Errorf("header %s is missing", XKeibiMaxConnectionsHeader))
+		panic(fmt.Errorf("header %s is missing", XKaytuMaxConnectionsHeader))
 	}
 
 	c, err := strconv.ParseInt(max, 10, 64)
@@ -101,9 +102,9 @@ func GetMaxConnections(ctx echo.Context) int64 {
 }
 
 func GetMaxResources(ctx echo.Context) int64 {
-	max := ctx.Request().Header.Get(XKeibiMaxResourcesHeader)
+	max := ctx.Request().Header.Get(XKaytuMaxResourcesHeader)
 	if strings.TrimSpace(max) == "" {
-		panic(fmt.Errorf("header %s is missing", XKeibiMaxResourcesHeader))
+		panic(fmt.Errorf("header %s is missing", XKaytuMaxResourcesHeader))
 	}
 
 	c, err := strconv.ParseInt(max, 10, 64)
@@ -121,7 +122,7 @@ func roleToPriority(role api.Role) int {
 		return 1
 	case api.AdminRole:
 		return 2
-	case api.KeibiAdminRole:
+	case api.KaytuAdminRole:
 		return 98
 	case api.InternalRole:
 		return 99

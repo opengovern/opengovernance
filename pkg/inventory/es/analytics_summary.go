@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
@@ -30,7 +30,7 @@ type FetchConnectionAnalyticMetricCountAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionAnalyticMetricCountAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, t time.Time, metricIDs []string, size int) (map[string]int, error) {
+func FetchConnectionAnalyticMetricCountAtTime(client kaytu.Client, connectors []source.Type, connectionIDs []string, t time.Time, metricIDs []string, size int) (map[string]int, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -135,7 +135,7 @@ type FetchConnectorAnalyticMetricCountAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorAnalyticMetricCountAtTime(client keibi.Client, connectors []source.Type, t time.Time, metricIDs []string, size int) (map[string]int, error) {
+func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client, connectors []source.Type, t time.Time, metricIDs []string, size int) (map[string]int, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -240,7 +240,7 @@ type ConnectionMetricTrendSummaryQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionMetricTrendSummaryPage(client keibi.Client, connectionIDs, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
+func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -357,7 +357,7 @@ type ConnectorMetricTrendSummaryQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorMetricTrendSummaryPage(client keibi.Client, connectors []source.Type, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
+func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []source.Type, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -490,7 +490,7 @@ type RegionSummaryQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchRegionSummaryPage(client keibi.Client, connectors []source.Type, connectionIDs []string, sort []map[string]any, timeAt time.Time, size int) (map[string]int, error) {
+func FetchRegionSummaryPage(client kaytu.Client, connectors []source.Type, connectionIDs []string, sort []map[string]any, timeAt time.Time, size int) (map[string]int, error) {
 	res := make(map[string]any)
 
 	var filters []any
@@ -609,7 +609,7 @@ type FetchConnectionAnalyticsResourcesCountAtResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionAnalyticsResourcesCountAtTime(client keibi.Client, connectors []source.Type, connectionIDs []string, t time.Time, size int) ([]resource.ConnectionMetricTrendSummary, error) {
+func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connectors []source.Type, connectionIDs []string, t time.Time, size int) ([]resource.ConnectionMetricTrendSummary, error) {
 	var hits []resource.ConnectionMetricTrendSummary
 	res := make(map[string]any)
 	var filters []any
@@ -718,7 +718,7 @@ type FetchConnectorAnalyticsResourcesCountAtResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorAnalyticsResourcesCountAtTime(client keibi.Client, connectors []source.Type, t time.Time, size int) ([]resource.ConnectorMetricTrendSummary, error) {
+func FetchConnectorAnalyticsResourcesCountAtTime(client kaytu.Client, connectors []source.Type, t time.Time, size int) ([]resource.ConnectorMetricTrendSummary, error) {
 	var hits []resource.ConnectorMetricTrendSummary
 	res := make(map[string]any)
 	var filters []any
