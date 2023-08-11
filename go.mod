@@ -411,9 +411,9 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230804102108-c310a0b81098 // indirect
-	github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230810175354-20b05b31a360 // indirect
-	github.com/kaytu-io/steampipe-plugin-azuread v0.0.0-20230804083738-130ea99018da // indirect
+	github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230811120426-73f90dd681ed // indirect
+	github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230811120400-81b9fefee739 // indirect
+	github.com/kaytu-io/steampipe-plugin-azuread v0.0.0-20230811120442-8d8b60f7749e // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
