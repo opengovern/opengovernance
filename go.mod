@@ -50,6 +50,7 @@ require (
 	github.com/swaggo/swag v1.16.1
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.5.1
 	go.uber.org/zap v1.24.0
+	golang.org/x/net v0.11.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230629202037-9506855d4529
 	google.golang.org/grpc v1.56.1
 	gopkg.in/go-playground/validator.v9 v9.31.0
@@ -411,7 +412,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230804102108-c310a0b81098 // indirect
-	github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230809090119-afc072159107 // indirect
+	github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230810175354-20b05b31a360 // indirect
 	github.com/kaytu-io/steampipe-plugin-azuread v0.0.0-20230804083738-130ea99018da // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
@@ -501,7 +502,6 @@ require (
 	golang.org/x/crypto v0.10.0 // indirect
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
 	golang.org/x/mod v0.11.0 // indirect
-	golang.org/x/net v0.11.0 // indirect
 	golang.org/x/oauth2 v0.7.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.9.0 // indirect
