@@ -350,7 +350,9 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 
 			conn, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, hit.SourceID)
 			if err != nil {
-				return err
+				fmt.Println(err)
+				continue
+				//return err
 			}
 
 			dateTimestamp := (hit.PeriodStart + hit.PeriodEnd) / 2
