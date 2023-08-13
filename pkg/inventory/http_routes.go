@@ -1919,7 +1919,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	}
 
 	if needCost {
-		hits, err := es.FetchConnectionDailySpendHistoryByMetric(h.client, connectionIDs, connectors, nil, startTime, endTime, EsFetchPageSize)
+		hits, err := es.FetchConnectionDailySpendHistory(h.client, connectionIDs, connectors, nil, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}

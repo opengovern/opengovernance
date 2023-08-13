@@ -179,6 +179,153 @@ func FetchConnectionDailySpendHistoryByMetric(client kaytu.Client, connectionIDs
 	return hits, nil
 }
 
+type ConnectionDailySpendHistory struct {
+	ConnectionID  string
+	Connector     string
+	TotalCost     float64
+	StartDateCost float64
+	EndDateCost   float64
+}
+
+type FetchConnectionDailySpendHistoryQueryResponse struct {
+	Aggregations struct {
+		ConnectionIDGroup struct {
+			Buckets []struct {
+				Key               string `json:"key"`
+				CostValueSumGroup struct {
+					Value float64 `json:"value"`
+				} `json:"cost_value_sum_group"`
+				StartCostGroup struct {
+					Hits struct {
+						Hits []struct {
+							Source spend.ConnectionMetricTrendSummary `json:"_source"`
+						} `json:"hits"`
+					} `json:"hits"`
+				} `json:"start_cost_group"`
+				EndCostGroup struct {
+					Hits struct {
+						Hits []struct {
+							Source spend.ConnectionMetricTrendSummary `json:"_source"`
+						} `json:"hits"`
+					} `json:"hits"`
+				} `json:"end_cost_group"`
+			} `json:"buckets"`
+		} `json:"connection_id_group"`
+	} `json:"aggregations"`
+}
+
+func FetchConnectionDailySpendHistory(client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) ([]ConnectionDailySpendHistory, error) {
+	res := make(map[string]any)
+	var filters []any
+
+	if len(metricIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"metric_id": metricIDs},
+		})
+	}
+	if len(connectionIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"connection_id": connectionIDs},
+		})
+	}
+	if len(connectors) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]source.Type{"connector": connectors},
+		})
+	}
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_end": map[string]string{
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
+			},
+		},
+	})
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"period_start": map[string]string{
+				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+			},
+		},
+	})
+
+	res["size"] = 0
+	res["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	res["aggs"] = map[string]any{
+		"connection_id_group": map[string]any{
+			"terms": map[string]any{
+				"field": "connection_id",
+				"size":  size,
+			},
+			"aggs": map[string]any{
+				"cost_value_sum_group": map[string]any{
+					"sum": map[string]any{
+						"field": "cost_value",
+					},
+				},
+				"start_cost_group": map[string]any{
+					"top_hits": map[string]any{
+						"size": size,
+						"sort": map[string]any{
+							"period_start": "asc",
+						},
+					},
+				},
+				"end_cost_group": map[string]any{
+					"top_hits": map[string]any{
+						"size": size,
+						"sort": map[string]any{
+							"period_end": "desc",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+	fmt.Println("FetchConnectionDailySpendHistory =", query)
+	var response FetchConnectionDailySpendHistoryQueryResponse
+	err = client.Search(context.Background(), spend.AnalyticsSpendConnectionSummaryIndex, query, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var hits []ConnectionDailySpendHistory
+	for _, connectionBucket := range response.Aggregations.ConnectionIDGroup.Buckets {
+		hit := ConnectionDailySpendHistory{
+			ConnectionID:  connectionBucket.Key,
+			Connector:     "",
+			TotalCost:     connectionBucket.CostValueSumGroup.Value,
+			StartDateCost: 0,
+			EndDateCost:   0,
+		}
+
+		for _, v := range connectionBucket.StartCostGroup.Hits.Hits {
+			if startTime.Format("2006-01-02") == v.Source.Date {
+				hit.StartDateCost = v.Source.CostValue
+			}
+			hit.Connector = v.Source.Connector.String()
+		}
+		for _, v := range connectionBucket.EndCostGroup.Hits.Hits {
+			if endTime.Format("2006-01-02") == v.Source.Date {
+				hit.EndDateCost = v.Source.CostValue
+			}
+		}
+		hits = append(hits, hit)
+	}
+
+	return hits, nil
+}
+
 type ConnectorDailySpendHistoryByMetric struct {
 	Connector     string
 	MetricID      string
@@ -570,6 +717,14 @@ func FetchSpendByMetric(client kaytu.Client, connectionIDs []string, connectors 
 				"cost_value_sum_group": map[string]any{
 					"sum": map[string]any{
 						"field": "cost_value",
+					},
+				},
+				"top_doc": map[string]any{
+					"top_hits": map[string]any{
+						"size": size,
+						"sort": map[string]any{
+							"period_start": "asc",
+						},
 					},
 				},
 			},
