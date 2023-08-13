@@ -6,7 +6,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 )
 
 type DirectionType string
@@ -116,7 +116,7 @@ type SummaryQueryResponse struct {
 	Hits SummaryQueryHits `json:"hits"`
 }
 type SummaryQueryHits struct {
-	Total keibi.SearchTotal `json:"total"`
+	Total kaytu.SearchTotal `json:"total"`
 	Hits  []SummaryQueryHit `json:"hits"`
 }
 type SummaryQueryHit struct {

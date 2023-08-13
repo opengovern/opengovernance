@@ -25,17 +25,13 @@ import (
 )
 
 type KaytuWorkspaceSettings struct {
-	Keibi KeibiConfig `json:"keibi"`
 	Kaytu KaytuConfig `json:"kaytu"`
 }
-type KeibiConfig struct {
+type KaytuConfig struct {
 	ReplicaCount int             `json:"replicaCount"`
 	Workspace    WorkspaceConfig `json:"workspace"`
-	Domain       string          `json:"domain"`
-}
-type KaytuConfig struct {
-	Docker   DockerConfig   `json:"docker"`
-	Insights InsightsConfig `json:"insights"`
+	Docker       DockerConfig    `json:"docker"`
+	Insights     InsightsConfig  `json:"insights"`
 }
 type InsightsConfig struct {
 	S3 S3Config `json:"s3"`
@@ -78,7 +74,7 @@ func (s *Server) createInsightBucket(ctx context.Context, workspace *Workspace) 
 	return err
 }
 
-func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace, dockerRegistryConfig string) error {
+func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) error {
 	id := workspace.ID
 
 	if err := s.createInsightBucket(ctx, workspace); err != nil {
@@ -86,16 +82,10 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace, do
 	}
 
 	settings := KaytuWorkspaceSettings{
-		Keibi: KeibiConfig{
+		Kaytu: KaytuConfig{
 			ReplicaCount: 1,
 			Workspace: WorkspaceConfig{
 				Name: workspace.Name,
-			},
-			Domain: workspace.URI,
-		},
-		Kaytu: KaytuConfig{
-			Docker: DockerConfig{
-				Config: dockerRegistryConfig,
 			},
 			Insights: InsightsConfig{
 				S3: S3Config{
@@ -127,7 +117,7 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace, do
 			ReleaseName:     id,
 			Chart: helmv2.HelmChartTemplate{
 				Spec: helmv2.HelmChartTemplateSpec{
-					Chart: s.cfg.KeibiHelmChartLocation,
+					Chart: s.cfg.KaytuHelmChartLocation,
 					SourceRef: helmv2.CrossNamespaceObjectReference{
 						Kind:      "GitRepository",
 						Name:      "flux-system",
@@ -154,7 +144,7 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace, do
 }
 
 func getReplicaCount(values map[string]interface{}) (int, error) {
-	if v, ok := values["keibi"]; ok {
+	if v, ok := values["kaytu"]; ok {
 		if vm, ok := v.(map[string]interface{}); ok {
 			if v, ok := vm["replicaCount"]; ok {
 				if c, ok := v.(float64); ok {
@@ -166,24 +156,24 @@ func getReplicaCount(values map[string]interface{}) (int, error) {
 				return 1, nil // default
 			}
 		} else {
-			return 0, fmt.Errorf("invalid keibi type: %v", reflect.TypeOf(v))
+			return 0, fmt.Errorf("invalid kaytu type: %v", reflect.TypeOf(v))
 		}
 	} else {
-		return 0, fmt.Errorf("keibi not found")
+		return 0, fmt.Errorf("kaytu not found")
 	}
 }
 
 func updateValuesSetReplicaCount(values map[string]interface{}, replicaCount int) (map[string]interface{}, error) {
-	if v, ok := values["keibi"]; ok {
+	if v, ok := values["kaytu"]; ok {
 		if vm, ok := v.(map[string]interface{}); ok {
 			vm["replicaCount"] = replicaCount
-			values["keibi"] = vm
+			values["kaytu"] = vm
 			return values, nil
 		} else {
-			return nil, fmt.Errorf("invalid keibi type: %v", reflect.TypeOf(v))
+			return nil, fmt.Errorf("invalid kaytu type: %v", reflect.TypeOf(v))
 		}
 	} else {
-		return nil, fmt.Errorf("keibi not found")
+		return nil, fmt.Errorf("kaytu not found")
 	}
 }
 

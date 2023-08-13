@@ -27,7 +27,7 @@ type KafkaTopics struct {
 }
 
 type HelmConfig struct {
-	KeibiHelmChartLocation string
+	KaytuHelmChartLocation string
 	FluxSystemNamespace    string
 }
 
@@ -74,7 +74,7 @@ func (h HttpServer) createStackHelmRelease(ctx context.Context, workspaceId stri
 			ReleaseName:     stack.StackID,
 			Chart: helmv2.HelmChartTemplate{
 				Spec: helmv2.HelmChartTemplateSpec{
-					Chart: h.helmConfig.KeibiHelmChartLocation,
+					Chart: h.helmConfig.KaytuHelmChartLocation,
 					SourceRef: helmv2.CrossNamespaceObjectReference{
 						Kind:      "GitRepository",
 						Name:      "flux-system",

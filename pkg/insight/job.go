@@ -24,7 +24,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 
@@ -32,14 +32,14 @@ import (
 )
 
 var DoInsightJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "keibi",
+	Namespace: "kaytu",
 	Subsystem: "insight_worker",
 	Name:      "do_insight_jobs_total",
 	Help:      "Count of done insight jobs in insight-worker service",
 }, []string{"queryid", "status"})
 
 var DoInsightJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
-	Namespace: "keibi",
+	Namespace: "kaytu",
 	Subsystem: "insight_worker",
 	Name:      "do_insight_jobs_duration_seconds",
 	Help:      "Duration of done insight jobs in insight-worker service",
@@ -66,7 +66,7 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(client keibi.Client, steampipeOption *steampipe.Option, onboardClient client.OnboardServiceClient, producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket, topic string, logger *zap.Logger) (r JobResult) {
+func (j Job) Do(client kaytu.Client, steampipeOption *steampipe.Option, onboardClient client.OnboardServiceClient, producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket, topic string, logger *zap.Logger) (r JobResult) {
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
@@ -140,7 +140,7 @@ func (j Job) Do(client keibi.Client, steampipeOption *steampipe.Option, onboardC
 		if res != nil {
 			count = int64(len(res.Data))
 			for colNo, col := range res.Headers {
-				if strings.ToLower(col) != "keibi_metadata" {
+				if strings.ToLower(col) != "kaytu_metadata" {
 					continue
 				}
 				for _, row := range res.Data {

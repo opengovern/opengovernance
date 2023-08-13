@@ -14,13 +14,13 @@ import (
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 
 	"go.uber.org/zap"
 )
 
 type HttpHandler struct {
-	client keibi.Client
+	client kaytu.Client
 	db     db.Database
 	logger *zap.Logger
 
@@ -67,7 +67,7 @@ func InitializeHttpHandler(
 	fmt.Println("Initialized postgres database: ", conf.PostgreSQL.DB)
 
 	defaultAccountID := "default"
-	h.client, err = keibi.NewClient(keibi.ClientConfig{
+	h.client, err = kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{conf.ES.Address},
 		Username:  &conf.ES.Username,
 		Password:  &conf.ES.Password,

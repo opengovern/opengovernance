@@ -8,15 +8,16 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
-	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
-	"github.com/kaytu-io/kaytu-util/pkg/email"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
+	"github.com/kaytu-io/kaytu-util/pkg/email"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 
@@ -43,7 +44,7 @@ type httpRoutes struct {
 	workspaceClient client.WorkspaceServiceClient
 	auth0Service    *auth0.Service
 	metadataBaseUrl string
-	keibiPrivateKey *rsa.PrivateKey
+	kaytuPrivateKey *rsa.PrivateKey
 	db              db.Database
 }
 
@@ -201,7 +202,7 @@ func (r *httpRoutes) GetRoleBindings(ctx echo.Context) error {
 // GetWorkspaceRoleBindings godoc
 //
 //	@Summary		Workspace user roleBindings.
-//	@Description	Get all the RoleBindings of the workspace. RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
+//	@Description	Get all the RoleBindings of the workspace. RoleBinding defines the roles and actions a user can perform. There are currently three roles (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.kaytu.io)
 //	@Security		BearerToken
 //	@Tags			users
 //	@Produce		json
@@ -480,7 +481,7 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		ExternalUserID: usr.UserId,
 	}
 
-	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, &u).SignedString(r.keibiPrivateKey)
+	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, &u).SignedString(r.kaytuPrivateKey)
 	if err != nil {
 		return err
 	}

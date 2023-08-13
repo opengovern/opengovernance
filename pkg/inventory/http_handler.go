@@ -2,9 +2,10 @@ package inventory
 
 import (
 	"fmt"
-	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"strings"
 	"time"
+
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
@@ -21,16 +22,16 @@ import (
 	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 
-	keibiaws "github.com/kaytu-io/kaytu-aws-describer/pkg/keibi-es-sdk"
-	keibiazure "github.com/kaytu-io/kaytu-azure-describer/pkg/keibi-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/pkg/kaytu-es-sdk"
+	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.uber.org/zap"
 )
 
 type HttpHandler struct {
-	client           keibi.Client
-	awsClient        keibiaws.Client
-	azureClient      keibiazure.Client
+	client           kaytu.Client
+	awsClient        kaytuAws.Client
+	azureClient      kaytuAzure.Client
 	db               Database
 	steampipeConn    *steampipe.Database
 	schedulerClient  describeClient.SchedulerServiceClient
@@ -97,7 +98,7 @@ func InitializeHttpHandler(
 	fmt.Println("Initialized steampipe database: ", steampipeConn)
 
 	defaultAccountID := "default"
-	h.client, err = keibi.NewClient(keibi.ClientConfig{
+	h.client, err = kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{elasticSearchAddress},
 		Username:  &elasticSearchUsername,
 		Password:  &elasticSearchPassword,
@@ -106,10 +107,10 @@ func InitializeHttpHandler(
 	if err != nil {
 		return nil, err
 	}
-	h.awsClient = keibiaws.Client{
+	h.awsClient = kaytuAws.Client{
 		Client: h.client,
 	}
-	h.azureClient = keibiazure.Client{
+	h.azureClient = kaytuAzure.Client{
 		Client: h.client,
 	}
 	h.schedulerClient = describeClient.NewSchedulerServiceClient(schedulerBaseUrl)

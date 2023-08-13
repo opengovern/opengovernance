@@ -10,18 +10,18 @@ import (
 
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
 type locationSummaryBuilder struct {
-	client            keibi.Client
+	client            kaytu.Client
 	summarizerJobID   uint
 	connectionSummary map[string]es.ConnectionLocationSummary
 	providerSummary   map[source.Type]es.ProviderLocationSummary
 }
 
-func NewLocationSummaryBuilder(client keibi.Client, summarizerJobID uint) *locationSummaryBuilder {
+func NewLocationSummaryBuilder(client kaytu.Client, summarizerJobID uint) *locationSummaryBuilder {
 	return &locationSummaryBuilder{
 		client:            client,
 		summarizerJobID:   summarizerJobID,
@@ -105,7 +105,7 @@ func (b *locationSummaryBuilder) Cleanup(summarizeJobID uint) error {
 	}
 
 	esClient := b.client.ES()
-	resp, err := keibi.DeleteByQuery(context.Background(), esClient, []string{es.ProviderSummaryIndex, es.ConnectionSummaryIndex}, query,
+	resp, err := kaytu.DeleteByQuery(context.Background(), esClient, []string{es.ProviderSummaryIndex, es.ConnectionSummaryIndex}, query,
 		esClient.DeleteByQuery.WithRefresh(true),
 		esClient.DeleteByQuery.WithConflicts("proceed"),
 	)

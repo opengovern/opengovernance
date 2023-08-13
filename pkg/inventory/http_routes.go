@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -11,11 +12,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
+
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
 	es3 "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
@@ -106,7 +109,7 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 		return connectionIds, nil
 	}
 
-	connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KeibiAdminRole}, connectionGroup)
+	connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -140,9 +143,9 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 
 	pagination, err := es.NewConnectionResourceTypePaginator(
 		h.client,
-		[]keibi.BoolFilter{
-			keibi.NewTermFilter("report_type", string(es3.ResourceTypeTrendConnectionSummary)),
-			keibi.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
+		[]kaytu.BoolFilter{
+			kaytu.NewTermFilter("report_type", string(es3.ResourceTypeTrendConnectionSummary)),
+			kaytu.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
 		},
 		nil,
 	)
@@ -175,7 +178,7 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 			if v, ok := resourceTypeMetricIDCache[hit.ResourceType]; ok {
 				metricID = v
 			} else {
-				metric, err := aDB.GetMetric(hit.ResourceType)
+				metric, err := aDB.GetMetric(analyticsDB.MetricTypeAssets, hit.ResourceType)
 				if err != nil {
 					return err
 				}
@@ -240,7 +243,12 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 
 func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
 	for i := 0; i < 1000; i++ {
-		err := h.MigrateAnalyticsPart(i)
+		err := h.MigrateSpendPart(i, true)
+		if err != nil {
+			return err
+		}
+
+		err = h.MigrateSpendPart(i, false)
 		if err != nil {
 			return err
 		}
@@ -248,27 +256,56 @@ func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
 	return nil
 }
 
-func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
+type ExistFilter struct {
+	field string
+}
+
+func NewExistFilter(field string) kaytu.BoolFilter {
+	return ExistFilter{
+		field: field,
+	}
+}
+func (t ExistFilter) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"exists": map[string]string{
+			"field": t.field,
+		},
+	})
+}
+func (t ExistFilter) IsBoolFilter() {}
+
+func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
-
-	connectionMap := map[string]resource.ConnectionMetricTrendSummary{}
-	connectorMap := map[string]resource.ConnectorMetricTrendSummary{}
-
-	resourceTypeMetricIDCache := map[string]string{}
+	connectionMap := map[string]spend.ConnectionMetricTrendSummary{}
+	connectorMap := map[string]spend.ConnectorMetricTrendSummary{}
 
 	cctx := context.Background()
+	var boolFilters []kaytu.BoolFilter
+	if isAWS {
+		boolFilters = []kaytu.BoolFilter{
+			kaytu.NewTermFilter("report_type", string(es3.CostServiceSummaryDaily)),
+			kaytu.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
+			kaytu.NewTermFilter("source_type", "AWS"),
+			NewExistFilter("cost.Dimension1"),
+		}
+	} else {
+		boolFilters = []kaytu.BoolFilter{
+			kaytu.NewTermFilter("report_type", string(es3.CostServiceSummaryDaily)),
+			kaytu.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
+			kaytu.NewTermFilter("source_type", "Azure"),
+			NewExistFilter("cost.ServiceName"),
+		}
+	}
 
-	pagination, err := es.NewConnectionResourceTypePaginator(
+	pagination, err := es.NewConnectionCostPaginator(
 		h.client,
-		[]keibi.BoolFilter{
-			keibi.NewTermFilter("report_type", string(es3.ResourceTypeTrendConnectionSummary)),
-			keibi.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
-		},
+		boolFilters,
 		nil,
 	)
 	if err != nil {
 		return err
 	}
+	serviceNameMetricCache := map[string]analyticsDB.AnalyticMetric{}
 
 	var docs []kafka.Doc
 	for {
@@ -282,7 +319,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println("MigrateAnalytics = next page", summarizerJobID)
+		fmt.Println("MigrateAnalytics = next page", summarizerJobID, len(page))
 
 		for _, hit := range page {
 			connectionID, err := uuid.Parse(hit.SourceID)
@@ -290,52 +327,68 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int) error {
 				return err
 			}
 
-			var metricID string
-
-			if v, ok := resourceTypeMetricIDCache[hit.ResourceType]; ok {
-				metricID = v
+			var metricID, metricName string
+			if v, ok := serviceNameMetricCache[hit.ServiceName]; ok {
+				metricID = v.ID
+				metricName = v.Name
 			} else {
-				metric, err := aDB.GetMetric(hit.ResourceType)
+				metric, err := aDB.GetMetric(analyticsDB.MetricTypeSpend, hit.ServiceName)
 				if err != nil {
 					return err
 				}
-
 				if metric == nil {
-					return fmt.Errorf("resource type %s not found", hit.ResourceType)
+					return fmt.Errorf("GetMetric, table %s not found", hit.ServiceName)
 				}
-
-				resourceTypeMetricIDCache[hit.ResourceType] = metric.ID
+				serviceNameMetricCache[hit.ServiceName] = *metric
 				metricID = metric.ID
+				metricName = metric.Name
 			}
 
 			if metricID == "" {
+				fmt.Println(hit.ServiceName, "doesnt have metricID")
 				continue
 			}
 
-			connection := resource.ConnectionMetricTrendSummary{
-				ConnectionID:  connectionID,
-				Connector:     hit.SourceType,
-				EvaluatedAt:   hit.DescribedAt,
-				MetricID:      metricID,
-				ResourceCount: hit.ResourceCount,
+			conn, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, hit.SourceID)
+			if err != nil {
+				fmt.Println(err)
+				continue
+				//return err
 			}
-			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metricID, hit.SummarizeJobID)
+
+			dateTimestamp := (hit.PeriodStart + hit.PeriodEnd) / 2
+			dateStr := time.Unix(dateTimestamp, 0).Format("2006-01-02")
+			connection := spend.ConnectionMetricTrendSummary{
+				ConnectionID:   connectionID,
+				ConnectionName: conn.ConnectionName,
+				Connector:      hit.Connector,
+				Date:           dateStr,
+				MetricID:       metricID,
+				MetricName:     metricName,
+				CostValue:      hit.CostValue,
+				PeriodStart:    hit.PeriodStart * 1000,
+				PeriodEnd:      hit.PeriodEnd * 1000,
+			}
+			key := fmt.Sprintf("%s-%s-%s", connectionID.String(), metricID, dateStr)
 			if v, ok := connectionMap[key]; ok {
-				v.ResourceCount += connection.ResourceCount
+				v.CostValue += connection.CostValue
 				connectionMap[key] = v
 			} else {
 				connectionMap[key] = connection
 			}
 
-			connector := resource.ConnectorMetricTrendSummary{
-				Connector:     hit.SourceType,
-				EvaluatedAt:   hit.DescribedAt,
-				MetricID:      metricID,
-				ResourceCount: hit.ResourceCount,
+			connector := spend.ConnectorMetricTrendSummary{
+				Connector:   hit.Connector,
+				Date:        dateStr,
+				MetricID:    metricID,
+				MetricName:  metricName,
+				CostValue:   hit.CostValue,
+				PeriodStart: hit.PeriodStart * 1000,
+				PeriodEnd:   hit.PeriodEnd * 1000,
 			}
-			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metricID, hit.SummarizeJobID)
+			key = fmt.Sprintf("%s-%s-%s", connector.Connector, metricID, dateStr)
 			if v, ok := connectorMap[key]; ok {
-				v.ResourceCount += connector.ResourceCount
+				v.CostValue += connector.CostValue
 				connectorMap[key] = v
 			} else {
 				connectorMap[key] = connector
@@ -1265,7 +1318,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 			} else {
 				costMetricMap[localHit.MetricID] = inventoryApi.CostMetric{
 					Connector:            []source.Type{connector},
-					CostDimensionName:    localHit.MetricID,
+					CostDimensionName:    localHit.MetricName,
 					TotalCost:            &localHit.TotalCost,
 					DailyCostAtStartTime: &localHit.StartDateCost,
 					DailyCostAtEndTime:   &localHit.EndDateCost,
@@ -1298,7 +1351,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 			} else {
 				costMetricMap[localHit.MetricID] = inventoryApi.CostMetric{
 					Connector:            []source.Type{connector},
-					CostDimensionName:    localHit.MetricID,
+					CostDimensionName:    localHit.MetricName,
 					TotalCost:            &localHit.TotalCost,
 					DailyCostAtStartTime: &localHit.StartDateCost,
 					DailyCostAtEndTime:   &localHit.EndDateCost,
@@ -1785,6 +1838,7 @@ func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionID
 }
 
 func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
+	performanceStartTime := time.Now()
 	var err error
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	connectors, err := h.getConnectorTypesFromConnectionIDs(ctx, nil, connectionIDs)
@@ -1820,6 +1874,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 		needResourceCount = false
 	}
 
+	fmt.Println("ListConnectionsData part1 ", time.Now().Sub(performanceStartTime).Milliseconds())
 	res := map[string]inventoryApi.ConnectionData{}
 	if needResourceCount {
 		resourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, endTime, EsFetchPageSize)
@@ -1840,6 +1895,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			}
 			res[localHit.ConnectionID.String()] = v
 		}
+		fmt.Println("ListConnectionsData part2 ", time.Now().Sub(performanceStartTime).Milliseconds())
 		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, startTime, EsFetchPageSize)
 		if err != nil {
 			return err
@@ -1859,6 +1915,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			}
 			res[localHit.ConnectionID.String()] = v
 		}
+		fmt.Println("ListConnectionsData part3 ", time.Now().Sub(performanceStartTime).Milliseconds())
 	}
 
 	if needCost {
@@ -1885,6 +1942,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 				}
 			}
 		}
+		fmt.Println("ListConnectionsData part4 ", time.Now().Sub(performanceStartTime).Milliseconds())
 	}
 
 	return ctx.JSON(http.StatusOK, res)

@@ -30,7 +30,7 @@ func (s *Scheduler) RunInsightJobScheduler() {
 }
 
 func (s *Scheduler) scheduleInsightJob(forceCreate bool) {
-	srcs, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.KeibiAdminRole}, nil)
+	srcs, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.KaytuAdminRole}, nil)
 	if err != nil {
 		s.logger.Error("Failed to fetch list of sources", zap.Error(err))
 		InsightJobsCount.WithLabelValues("failure").Inc()

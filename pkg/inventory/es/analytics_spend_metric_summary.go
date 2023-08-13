@@ -8,7 +8,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strconv"
 	"time"
@@ -37,7 +37,7 @@ type ConnectionSpendMetricTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionSpendMetricTrend(client keibi.Client, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) ([]MetricTrend, error) {
+func FetchConnectionSpendMetricTrend(client kaytu.Client, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) ([]MetricTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -146,7 +146,7 @@ type ConnectorSpendMetricTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorSpendMetricTrend(client keibi.Client, metricIds []string, connectors []source.Type, startTime, endTime time.Time) ([]MetricTrend, error) {
+func FetchConnectorSpendMetricTrend(client kaytu.Client, metricIds []string, connectors []source.Type, startTime, endTime time.Time) ([]MetricTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -263,7 +263,7 @@ type SpendTableByDimensionQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchSpendTableByDimension(client keibi.Client, dimension inventoryApi.SpendDimension, startTime, endTime time.Time) ([]DimensionTrend, error) {
+func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.SpendDimension, startTime, endTime time.Time) ([]DimensionTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 

@@ -2056,7 +2056,7 @@ definitions:
         example: 100
         type: integer
       name:
-        example: keibi
+        example: kaytu
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceResponse:
@@ -2312,10 +2312,10 @@ definitions:
         example: 1
         type: integer
     type: object
-host: dev-cluster.keibi.io
+host: dev-cluster.kaytu.io
 info:
   contact: {}
-  title: Keibi Service API
+  title: Kaytu Service API
   version: "1.0"
 paths:
   /ai/api/v1/gpt/run:
@@ -2531,7 +2531,7 @@ paths:
     get:
       description: Get all the RoleBindings of the workspace. RoleBinding defines
         the roles and actions a user can perform. There are currently three roles
-        (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.keibi.io)
+        (admin, editor, viewer). The workspace path is based on the DNS such as (workspace1.app.kaytu.io)
       produces:
       - application/json
       responses:

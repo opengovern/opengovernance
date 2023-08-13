@@ -146,7 +146,7 @@ func (a *Service) SearchByEmail(email string) ([]User, error) {
 }
 
 func (a *Service) CreateUser(email, wsName string, role api.Role) (*User, error) {
-	var defaultPass = "keibi23@"
+	var defaultPass = "kaytu23@"
 	var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	randPass := make([]rune, 10)
 	for i := 0; i < 10; i++ {

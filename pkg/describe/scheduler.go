@@ -32,7 +32,7 @@ import (
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	workspaceClient "github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
@@ -56,47 +56,47 @@ const (
 )
 
 var DescribePublishingBlocked = promauto.NewGaugeVec(prometheus.GaugeOpts{
-	Namespace: "keibi",
+	Namespace: "kaytu",
 	Subsystem: "scheduler",
 	Name:      "queue_job_publishing_blocked",
 	Help:      "The gauge whether publishing tasks to a queue is blocked: 0 for resumed and 1 for blocked",
 }, []string{"queue_name"})
 
 var InsightJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "keibi",
+	Namespace: "kaytu",
 	Subsystem: "scheduler",
 	Name:      "schedule_insight_jobs_total",
 	Help:      "Count of insight jobs in scheduler service",
 }, []string{"status"})
 
 var CheckupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "keibi",
+	Namespace: "kaytu",
 	Subsystem: "scheduler",
 	Name:      "schedule_checkup_jobs_total",
 	Help:      "Count of checkup jobs in scheduler service",
 }, []string{"status"})
 
 var SummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "keibi",
+	Namespace: "kaytu",
 	Subsystem: "scheduler",
 	Name:      "schedule_summarizer_jobs_total",
 	Help:      "Count of summarizer jobs in scheduler service",
 }, []string{"status"})
 
 var AnalyticsJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "keibi",
+	Namespace: "kaytu",
 	Subsystem: "scheduler",
 	Name:      "schedule_analytics_jobs_total",
 	Help:      "Count of analytics jobs in scheduler service",
 }, []string{"status"})
 
 var ComplianceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "keibi_scheduler_schedule_compliance_job_total",
+	Name: "kaytu_scheduler_schedule_compliance_job_total",
 	Help: "Count of describe jobs in scheduler service",
 }, []string{"status"})
 
 var ComplianceSourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "keibi_scheduler_schedule_compliance_source_job_total",
+	Name: "kaytu_scheduler_schedule_compliance_source_job_total",
 	Help: "Count of describe source jobs in scheduler service",
 }, []string{"status"})
 
@@ -164,7 +164,7 @@ type Scheduler struct {
 	complianceClient    client.ComplianceServiceClient
 	onboardClient       onboardClient.OnboardServiceClient
 	authGrpcClient      envoyauth.AuthorizationClient
-	es                  keibi.Client
+	es                  kaytu.Client
 	rdb                 *redis.Client
 	kafkaProducer       *confluent_kafka.Producer
 	kafkaESSink         *KafkaEsSink
@@ -234,7 +234,7 @@ func InitializeScheduler(
 	checkupIntervalHours string,
 	mustSummarizeIntervalHours string,
 	analyticsIntervalHours string,
-	keibiHelmChartLocation string,
+	kaytuHelmChartLocation string,
 	fluxSystemNamespace string,
 ) (s *Scheduler, err error) {
 	if id == "" {
@@ -346,7 +346,7 @@ func InitializeScheduler(
 	s.db = Database{orm: orm}
 
 	defaultAccountID := "default"
-	s.es, err = keibi.NewClient(keibi.ClientConfig{
+	s.es, err = kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{ElasticSearchAddress},
 		Username:  &ElasticSearchUsername,
 		Password:  &ElasticSearchPassword,
@@ -370,7 +370,7 @@ func InitializeScheduler(
 	s.kafkaESSink = NewKafkaEsSink(s.logger, kafkaResourceSinkConsumer, s.es)
 
 	helmConfig := HelmConfig{
-		KeibiHelmChartLocation: keibiHelmChartLocation,
+		KaytuHelmChartLocation: kaytuHelmChartLocation,
 		FluxSystemNamespace:    fluxSystemNamespace,
 	}
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s, helmConfig)
@@ -816,7 +816,7 @@ func (s *Scheduler) RunScheduledJobCleanup() {
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
 	for range ticker.C {
-		tOlder := time.Now().AddDate(0, 0, -15)
+		tOlder := time.Now().AddDate(0, 0, -7)
 		err := s.db.CleanupCloudNativeDescribeSourceJobsOlderThan(tOlder)
 		if err != nil {
 			s.logger.Error("Failed to cleanup cloud native describe source jobs", zap.Error(err))
@@ -979,7 +979,7 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 func (s *Scheduler) RunComplianceReport() (int, error) {
 	createdJobCount := 0
 
-	sources, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.KeibiAdminRole}, nil)
+	sources, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.KaytuAdminRole}, nil)
 	if err != nil {
 		ComplianceJobsCount.WithLabelValues("failure").Inc()
 		return createdJobCount, fmt.Errorf("error while listing sources: %v", err)

@@ -5,6 +5,8 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -34,6 +36,7 @@ type Query struct {
 	ListQuery string   `json:"list"`
 	GetQuery  string   `json:"get"`
 	KeyFields []string `json:"keyFields"`
+	TableName string   `json:"tableName"`
 }
 
 type JobConfig struct {
@@ -50,6 +53,13 @@ type Job struct {
 	logger          *zap.Logger
 	ScheduleMinutes int
 }
+
+var ReporterJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Namespace: "kaytu",
+	Subsystem: "reporter",
+	Name:      "job_total",
+	Help:      "Count of reporter jobs",
+}, []string{"table_name", "status"})
 
 func New(config JobConfig) (*Job, error) {
 	if content, err := os.ReadFile("/queries-aws.json"); err == nil {
@@ -135,8 +145,10 @@ func (j *Job) Run() {
 		//fmt.Println("starting job")
 		if err := j.RunJob(); err != nil {
 			j.logger.Error("failed to run job", zap.Error(err))
+			time.Sleep(time.Minute)
+		} else {
+			time.Sleep(time.Duration(j.ScheduleMinutes) * time.Minute)
 		}
-		time.Sleep(time.Duration(j.ScheduleMinutes) * time.Minute)
 	}
 }
 
@@ -153,7 +165,7 @@ func (j *Job) RunJob() error {
 	}
 
 	awsCred, azureCred, err := j.onboardClient.GetSourceFullCred(&httpclient.Context{
-		UserRole: api.KeibiAdminRole,
+		UserRole: api.KaytuAdminRole,
 	}, account.ID.String())
 	if err != nil {
 		return err
@@ -204,7 +216,7 @@ func (j *Job) RunJob() error {
 
 	j.logger.Info("running query", zap.String("account", account.ConnectionID), zap.String("query", query.ListQuery))
 	listQuery := strings.ReplaceAll(query.ListQuery, "%ACCOUNT_ID%", account.ConnectionID)
-	listQuery = strings.ReplaceAll(listQuery, "%KEIBI_ACCOUNT_ID%", account.ID.String())
+	listQuery = strings.ReplaceAll(listQuery, "%KAYTU_ACCOUNT_ID%", account.ID.String())
 	steampipeRows, err := j.steampipe.Conn().Query(context.Background(), listQuery)
 	if err != nil {
 		return err
@@ -225,7 +237,7 @@ func (j *Job) RunJob() error {
 		}
 
 		getQuery := strings.ReplaceAll(query.GetQuery, "%ACCOUNT_ID%", account.ConnectionID)
-		getQuery = strings.ReplaceAll(getQuery, "%KEIBI_ACCOUNT_ID%", account.ID.String())
+		getQuery = strings.ReplaceAll(getQuery, "%KAYTU_ACCOUNT_ID%", account.ID.String())
 
 		var keyValues []interface{}
 		for _, f := range query.KeyFields {
@@ -276,6 +288,11 @@ func (j *Job) RunJob() error {
 				}
 
 				if sj1 != sj2 {
+					if compareJsons(j2, j1) {
+						ReporterJobsCount.WithLabelValues(query.TableName, "Succeeded").Inc()
+						continue
+					}
+					ReporterJobsCount.WithLabelValues(query.TableName, "Failed").Inc()
 					if k != "etag" && k != "tags" {
 						j.logger.Warn("inconsistency in data",
 							zap.String("get-query", query.GetQuery),
@@ -286,11 +303,14 @@ func (j *Job) RunJob() error {
 							zap.String("keyColumns", fmt.Sprintf("%v", keyValues)),
 						)
 					}
+				} else {
+					ReporterJobsCount.WithLabelValues(query.TableName, "Succeeded").Inc()
 				}
 			}
 		}
 
 		if !found {
+			ReporterJobsCount.WithLabelValues(query.TableName, "Failed").Inc()
 			j.logger.Warn("record not found",
 				zap.String("get-query", query.GetQuery),
 				zap.String("accountID", account.ConnectionID),
@@ -394,4 +414,30 @@ connection "azuread" {
 	}
 
 	return nil
+}
+
+// json2 should be es and json1 should be steampipe
+func compareJsons(j1, j2 []byte) bool {
+	var o1 map[string]interface{}
+	err := json.Unmarshal(j1, &o1)
+	if err != nil {
+		return false
+	}
+
+	var o2 map[string]interface{}
+	err = json.Unmarshal(j2, &o2)
+	if err != nil {
+		return false
+	}
+
+	for k, v := range o1 {
+		if v2, ok := o2[k]; ok {
+			if v2 != v {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+	return true
 }

@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -59,16 +58,15 @@ var (
 )
 
 type Server struct {
-	logger               *zap.Logger
-	e                    *echo.Echo
-	cfg                  *Config
-	db                   *Database
-	authClient           authclient.AuthServiceClient
-	kubeClient           k8sclient.Client // the kubernetes client
-	rdb                  *redis.Client
-	cache                *cache.Cache
-	dockerRegistryConfig string
-	awsConfig            aws.Config
+	logger     *zap.Logger
+	e          *echo.Echo
+	cfg        *Config
+	db         *Database
+	authClient authclient.AuthServiceClient
+	kubeClient k8sclient.Client // the kubernetes client
+	rdb        *redis.Client
+	cache      *cache.Cache
+	awsConfig  aws.Config
 }
 
 func NewServer(cfg *Config) (*Server, error) {
@@ -117,17 +115,6 @@ func NewServer(cfg *Config) (*Server, error) {
 		LocalCache: cache.NewTinyLFU(2000, 1*time.Minute),
 	})
 
-	secretKey := types.NamespacedName{
-		Name:      "registry",
-		Namespace: s.cfg.KeibiOctopusNamespace,
-	}
-	var registrySecret corev1.Secret
-	err = s.kubeClient.Get(context.Background(), secretKey, &registrySecret)
-	if err != nil {
-		return nil, err
-	}
-	s.dockerRegistryConfig = base64.StdEncoding.EncodeToString(registrySecret.Data[".dockerconfigjson"])
-
 	s.awsConfig, err = aws2.GetConfig(context.Background(), cfg.S3AccessKey, cfg.S3SecretKey, "", "", nil)
 	if err != nil {
 		return nil, err
@@ -148,9 +135,9 @@ func (s *Server) Register(e *echo.Echo) {
 	workspaceGroup.POST("/:workspace_id/resume", httpserver2.AuthorizeHandler(s.ResumeWorkspace, authapi.EditorRole))
 	workspaceGroup.GET("/current", httpserver2.AuthorizeHandler(s.GetCurrentWorkspace, authapi.ViewerRole))
 	workspaceGroup.POST("/:workspace_id/owner", httpserver2.AuthorizeHandler(s.ChangeOwnership, authapi.EditorRole))
-	workspaceGroup.POST("/:workspace_id/name", httpserver2.AuthorizeHandler(s.ChangeName, authapi.KeibiAdminRole))
-	workspaceGroup.POST("/:workspace_id/tier", httpserver2.AuthorizeHandler(s.ChangeTier, authapi.KeibiAdminRole))
-	workspaceGroup.POST("/:workspace_id/organization", httpserver2.AuthorizeHandler(s.ChangeOrganization, authapi.KeibiAdminRole))
+	workspaceGroup.POST("/:workspace_id/name", httpserver2.AuthorizeHandler(s.ChangeName, authapi.KaytuAdminRole))
+	workspaceGroup.POST("/:workspace_id/tier", httpserver2.AuthorizeHandler(s.ChangeTier, authapi.KaytuAdminRole))
+	workspaceGroup.POST("/:workspace_id/organization", httpserver2.AuthorizeHandler(s.ChangeOrganization, authapi.KaytuAdminRole))
 
 	workspacesGroup := v1Group.Group("/workspaces")
 	workspacesGroup.GET("/limits/:workspace_name", httpserver2.AuthorizeHandler(s.GetWorkspaceLimits, authapi.ViewerRole))
@@ -283,13 +270,13 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 
 	httpKey := types.NamespacedName{
 		Name:      "http-proxy-route",
-		Namespace: s.cfg.KeibiOctopusNamespace,
+		Namespace: s.cfg.KaytuOctopusNamespace,
 	}
 	var httpProxy contourv1.HTTPProxy
 
 	grpcKey := types.NamespacedName{
 		Name:      "grpc-proxy-route",
-		Namespace: s.cfg.KeibiOctopusNamespace,
+		Namespace: s.cfg.KaytuOctopusNamespace,
 	}
 	var grpcProxy contourv1.HTTPProxy
 
@@ -319,7 +306,7 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "http-proxy-route",
-			Namespace: s.cfg.KeibiOctopusNamespace,
+			Namespace: s.cfg.KaytuOctopusNamespace,
 		},
 		Spec: contourv1.HTTPProxySpec{
 			Includes: httpIncludes,
@@ -335,7 +322,7 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "grpc-proxy-route",
-			Namespace: s.cfg.KeibiOctopusNamespace,
+			Namespace: s.cfg.KaytuOctopusNamespace,
 		},
 		Spec: contourv1.HTTPProxySpec{
 			Includes: grpcIncludes,
@@ -384,7 +371,7 @@ func (s *Server) handleWorkspace(workspace *Workspace) error {
 		}
 		if helmRelease == nil {
 			s.e.Logger.Infof("create helm release %s with status %s", workspace.ID, workspace.Status)
-			if err := s.createHelmRelease(ctx, workspace, s.dockerRegistryConfig); err != nil {
+			if err := s.createHelmRelease(ctx, workspace); err != nil {
 				return fmt.Errorf("create helm release: %w", err)
 			}
 			// update the workspace status next loop
@@ -602,8 +589,8 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	if request.Name == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "name is empty")
 	}
-	if request.Name == "keibi" || request.Name == "workspaces" {
-		return echo.NewHTTPError(http.StatusBadRequest, "name cannot be keibi or workspaces")
+	if request.Name == "kaytu" || request.Name == "workspaces" {
+		return echo.NewHTTPError(http.StatusBadRequest, "name cannot be kaytu or workspaces")
 	}
 	if !regexp.MustCompile(`^[a-zA-Z0-9\-]*$`).MatchString(request.Name) {
 		return echo.NewHTTPError(http.StatusBadRequest, "name is invalid")
@@ -730,13 +717,13 @@ func (s *Server) GetWorkspace(c echo.Context) error {
 	}
 
 	version := "unspecified"
-	var keibiVersionConfig corev1.ConfigMap
+	var kaytuVersionConfig corev1.ConfigMap
 	err = s.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
 		Namespace: workspace.ID,
-		Name:      "keibi-version",
-	}, &keibiVersionConfig)
+		Name:      "kaytu-version",
+	}, &kaytuVersionConfig)
 	if err == nil {
-		version = keibiVersionConfig.Data["version"]
+		version = kaytuVersionConfig.Data["version"]
 	} else {
 		fmt.Printf("failed to load version due to %v\n", err)
 	}
@@ -872,13 +859,13 @@ func (s *Server) ListWorkspaces(c echo.Context) error {
 		}
 
 		version := "unspecified"
-		var keibiVersionConfig corev1.ConfigMap
+		var kaytuVersionConfig corev1.ConfigMap
 		err = s.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
 			Namespace: workspace.ID,
-			Name:      "keibi-version",
-		}, &keibiVersionConfig)
+			Name:      "kaytu-version",
+		}, &kaytuVersionConfig)
 		if err == nil {
-			version = keibiVersionConfig.Data["version"]
+			version = kaytuVersionConfig.Data["version"]
 		} else {
 			fmt.Printf("failed to load version due to %v\n", err)
 		}
@@ -910,13 +897,13 @@ func (s *Server) GetCurrentWorkspace(c echo.Context) error {
 	}
 
 	version := "unspecified"
-	var keibiVersionConfig corev1.ConfigMap
+	var kaytuVersionConfig corev1.ConfigMap
 	err = s.kubeClient.Get(context.Background(), k8sclient.ObjectKey{
 		Namespace: workspace.ID,
-		Name:      "keibi-version",
-	}, &keibiVersionConfig)
+		Name:      "kaytu-version",
+	}, &kaytuVersionConfig)
 	if err == nil {
-		version = keibiVersionConfig.Data["version"]
+		version = kaytuVersionConfig.Data["version"]
 	} else {
 		fmt.Printf("failed to load version due to %v\n", err)
 	}

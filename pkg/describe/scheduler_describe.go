@@ -118,7 +118,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle() error {
 			switch ds.TriggerType {
 			case enums.DescribeTriggerTypeStack:
 			default:
-				src, err = s.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.KeibiAdminRole}, ds.SourceID)
+				src, err = s.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.KaytuAdminRole}, ds.SourceID)
 				if !src.IsEnabled() {
 					continue
 				}
@@ -197,7 +197,7 @@ func (s *Scheduler) scheduleDescribeJob() {
 		return
 	}
 
-	connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.KeibiAdminRole}, nil)
+	connections, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.KaytuAdminRole}, nil)
 	if err != nil {
 		s.logger.Error("failed to get list of sources", zap.String("spot", "ListSources"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()

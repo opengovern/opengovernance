@@ -11,14 +11,14 @@ import (
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 )
 
 type FindingsQueryResponse struct {
 	Hits FindingsQueryHits `json:"hits"`
 }
 type FindingsQueryHits struct {
-	Total keibi.SearchTotal  `json:"total"`
+	Total kaytu.SearchTotal  `json:"total"`
 	Hits  []FindingsQueryHit `json:"hits"`
 }
 type FindingsQueryHit struct {
@@ -31,7 +31,7 @@ type FindingsQueryHit struct {
 	Sort    []any         `json:"sort"`
 }
 
-func GetActiveFindings(client keibi.Client, policyID string, from, size int) (*FindingsQueryResponse, error) {
+func GetActiveFindings(client kaytu.Client, policyID string, from, size int) (*FindingsQueryResponse, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -63,7 +63,7 @@ func GetActiveFindings(client keibi.Client, policyID string, from, size int) (*F
 	return &resp, err
 }
 
-func FindingsQuery(client keibi.Client,
+func FindingsQuery(client kaytu.Client,
 	resourceIDs []string,
 	provider []source.Type,
 	connectionID []string,
@@ -179,7 +179,7 @@ type FindingsTopFieldResponse struct {
 	} `json:"aggregations"`
 }
 
-func FindingsTopFieldQuery(logger *zap.Logger, client keibi.Client,
+func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string,
 	benchmarkID []string, policyID []string, severity []types.FindingSeverity, size int) (*FindingsTopFieldResponse, error) {
 	terms := make(map[string]any)
@@ -273,7 +273,7 @@ type LiveBenchmarkAggregatedFindingsQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchLiveBenchmarkAggregatedFindings(client keibi.Client, benchmarkID *string, connectionIds []string) (map[string]map[types.ComplianceResult]int, error) {
+func FetchLiveBenchmarkAggregatedFindings(client kaytu.Client, benchmarkID *string, connectionIds []string) (map[string]map[types.ComplianceResult]int, error) {
 	var filters []any
 
 	filters = append(filters, map[string]any{

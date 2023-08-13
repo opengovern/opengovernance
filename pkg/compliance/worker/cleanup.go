@@ -27,7 +27,7 @@ func (j ComplianceReportCleanupJob) Do(esClient *elasticsearch.Client) error {
 	//	es.ComplianceReportIndex,
 	//}
 	//
-	//resp, err := keibi.DeleteByQuery(ctx, esClient, indices, query,
+	//resp, err := kaytu.DeleteByQuery(ctx, esClient, indices, query,
 	//	esClient.DeleteByQuery.WithRefresh(true),
 	//	esClient.DeleteByQuery.WithConflicts("proceed"),
 	//)

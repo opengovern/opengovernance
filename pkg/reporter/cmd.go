@@ -1,9 +1,16 @@
 package reporter
 
 import (
+	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+	"golang.org/x/net/context"
+	"os"
 )
+
+var HttpAddress = os.Getenv("HTTP_ADDRESS")
 
 func ReporterCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -15,10 +22,27 @@ func ReporterCommand() *cobra.Command {
 				panic(err)
 			}
 
-			j.Run()
-			return nil
+			EnsureRunGoroutin(func() {
+				j.Run()
+			})
+			return startHttpServer(cmd.Context())
 		},
 	}
 
 	return cmd
+}
+
+func startHttpServer(ctx context.Context) error {
+
+	logger, err := zap.NewProduction()
+	if err != nil {
+		return fmt.Errorf("new logger: %w", err)
+	}
+
+	httpServer := NewHTTPServer(HttpAddress, logger)
+	if err != nil {
+		return fmt.Errorf("init http handler: %w", err)
+	}
+
+	return httpserver.RegisterAndStart(logger, HttpAddress, httpServer)
 }

@@ -29,9 +29,9 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
-	github.com/kaytu-io/kaytu-aws-describer v0.0.50
-	github.com/kaytu-io/kaytu-azure-describer v0.0.65
-	github.com/kaytu-io/kaytu-util v0.0.0-20230811114529-c7f9a0e48f03
+	github.com/kaytu-io/kaytu-aws-describer v0.0.52
+	github.com/kaytu-io/kaytu-azure-describer v0.0.67
+	github.com/kaytu-io/kaytu-util v0.0.0-20230811162120-adaa4b56b3da
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/labstack/gommon v0.4.0
@@ -50,6 +50,7 @@ require (
 	github.com/swaggo/swag v1.16.1
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.5.1
 	go.uber.org/zap v1.24.0
+	golang.org/x/net v0.11.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230629202037-9506855d4529
 	google.golang.org/grpc v1.56.1
 	gopkg.in/go-playground/validator.v9 v9.31.0
@@ -411,8 +412,8 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230813103449-a8422201a762 // indirect
-	github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230809090119-afc072159107 // indirect
-	github.com/kaytu-io/steampipe-plugin-azuread v0.0.0-20230804083738-130ea99018da // indirect
+	github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230811120400-81b9fefee739 // indirect
+	github.com/kaytu-io/steampipe-plugin-azuread v0.0.0-20230811120442-8d8b60f7749e // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
@@ -435,8 +436,6 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/moby/patternmatcher v0.5.0 // indirect
-	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/moby/term v0.0.0-20221205130635-1aeaba878587 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -501,7 +500,6 @@ require (
 	golang.org/x/crypto v0.10.0 // indirect
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
 	golang.org/x/mod v0.11.0 // indirect
-	golang.org/x/net v0.11.0 // indirect
 	golang.org/x/oauth2 v0.7.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.9.0 // indirect

@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
-	"github.com/kaytu-io/kaytu-util/pkg/keibi-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 )
 
 type FetchActiveFindingsResponse struct {
 	Hits struct {
-		Total keibi.SearchTotal `json:"total"`
+		Total kaytu.SearchTotal `json:"total"`
 		Hits  []struct {
 			ID      string        `json:"_id"`
 			Score   float64       `json:"_score"`
@@ -23,7 +23,7 @@ type FetchActiveFindingsResponse struct {
 	} `json:"hits"`
 }
 
-func FetchActiveFindings(client keibi.Client, searchAfter []any, size int) (FetchActiveFindingsResponse, error) {
+func FetchActiveFindings(client kaytu.Client, searchAfter []any, size int) (FetchActiveFindingsResponse, error) {
 	res := make(map[string]any)
 	res["query"] = map[string]any{
 		"bool": map[string]any{
