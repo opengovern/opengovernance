@@ -2301,6 +2301,8 @@ github.com/kaytu-io/kaytu-util v0.0.0-20230813113158-e07559fa61c9 h1:wRpFuo20LRe
 github.com/kaytu-io/kaytu-util v0.0.0-20230813113158-e07559fa61c9/go.mod h1:xH71DAijOx1msH3mfQpfHqvP1wosta49J8QJL6gqMMw=
 github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230813103449-a8422201a762 h1:QHZ0/XkijOkGW+FkIF7ep/juCifcHWeeSwEmAWA+D2o=
 github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230813103449-a8422201a762/go.mod h1:tW2PAa8576B5ahOvu2vFTuB1gUAa7kj2VLhOrHMvfHQ=
+github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230813122148-8f0e3fd85341 h1:RnTCTw/cu1KcVo8bx2vC7HDAKTQAiQ8J8FyP8xzgPZ8=
+github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230813122148-8f0e3fd85341/go.mod h1:d1tVlBwbnl3WhZwm5sSAbRLg7Z1DDBHKl/1Zt5I5Nuk=
 github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230811120400-81b9fefee739 h1:cT9hkKixNmOEVkEUlQbti2X7iq9yvjiuzBn8nrvCy60=
 github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230811120400-81b9fefee739/go.mod h1:QdPrX2GJGj9iEwLROdfL4ycfcc1YmTEGpt7OxZc/jKM=
 github.com/kaytu-io/steampipe-plugin-azuread v0.0.0-20230811120442-8d8b60f7749e h1:826Y/AxGj3E7t66wmTk7yguoK+B8rVTxQXzwbNwtbsA=
