@@ -2293,6 +2293,10 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
+github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230804102108-c310a0b81098 h1:MIsoiwEFC33csOfKU6sa59JltVxgu7h6HgCVVwwhAak=
+github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230804102108-c310a0b81098/go.mod h1:W5IKZbEpMon8vts18zTHAVhn5tNqv5X6EZjZGdbk5Mc=
+github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230813103449-a8422201a762 h1:QHZ0/XkijOkGW+FkIF7ep/juCifcHWeeSwEmAWA+D2o=
+github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230813103449-a8422201a762/go.mod h1:tW2PAa8576B5ahOvu2vFTuB1gUAa7kj2VLhOrHMvfHQ=
 github.com/kaytu-io/kaytu-aws-describer v0.0.52 h1:W+WSZl3DgXuNCsTvDnGmtKIALvOevZLHG0OIfNQ5/kE=
 github.com/kaytu-io/kaytu-aws-describer v0.0.52/go.mod h1:OtenQQz8sRDXdyFvc+xkTUlyHbvfRdjFHqtOsqaW+Jw=
 github.com/kaytu-io/kaytu-azure-describer v0.0.67 h1:YcbQ5+auJrqK4C7wFHkJX0+6ElS0Qndc+5472iDhXt4=
