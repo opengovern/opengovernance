@@ -637,7 +637,7 @@ func (s *Scheduler) storeStackCredentials(stack apiDescribe.Stack, configStr str
 		}
 	}
 	var secretBytes []byte
-	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), KMSAccessKey, KMSSecretKey, KeyRegion)
+	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), "", "", KeyRegion)
 	if err != nil {
 		return err
 	}

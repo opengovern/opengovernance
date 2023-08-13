@@ -82,7 +82,7 @@ func InitializeHttpHandler(
 	}
 	logger.Info("Connected to the steampipe database", zap.String("database", steampipeDb))
 
-	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), KMSAccessKey, KMSSecretKey, KMSAccountRegion)
+	kms, err := vault.NewKMSVaultSourceConfig(context.Background(), "", "", KMSAccountRegion)
 	if err != nil {
 		return nil, err
 	}
