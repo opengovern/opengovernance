@@ -29,9 +29,9 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
-	github.com/kaytu-io/kaytu-aws-describer v0.0.48
+	github.com/kaytu-io/kaytu-aws-describer v0.0.50
 	github.com/kaytu-io/kaytu-azure-describer v0.0.65
-	github.com/kaytu-io/kaytu-util v0.0.0-20230804082552-3c07cccc35a8
+	github.com/kaytu-io/kaytu-util v0.0.0-20230811114529-c7f9a0e48f03
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/labstack/gommon v0.4.0
@@ -410,7 +410,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230804102108-c310a0b81098 // indirect
+	github.com/kaytu-io/steampipe-plugin-aws v0.0.0-20230813103449-a8422201a762 // indirect
 	github.com/kaytu-io/steampipe-plugin-azure v0.0.0-20230809090119-afc072159107 // indirect
 	github.com/kaytu-io/steampipe-plugin-azuread v0.0.0-20230804083738-130ea99018da // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
