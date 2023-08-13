@@ -145,8 +145,10 @@ func (j *Job) Run() {
 		//fmt.Println("starting job")
 		if err := j.RunJob(); err != nil {
 			j.logger.Error("failed to run job", zap.Error(err))
+			time.Sleep(time.Minute)
+		} else {
+			time.Sleep(time.Duration(j.ScheduleMinutes) * time.Minute)
 		}
-		time.Sleep(time.Duration(j.ScheduleMinutes) * time.Minute)
 	}
 }
 
