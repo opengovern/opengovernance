@@ -22,7 +22,9 @@ func ReporterCommand() *cobra.Command {
 				panic(err)
 			}
 
-			go j.Run()
+			EnsureRunGoroutin(func() {
+				j.Run()
+			})
 			return startHttpServer(cmd.Context())
 		},
 	}
