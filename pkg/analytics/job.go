@@ -178,11 +178,16 @@ func (j *Job) DoAssetMetric(
 			connectionResultMap[conn.ID.String()] = v
 		} else {
 			vn := resource.ConnectionMetricTrendSummary{
-				ConnectionID:  conn.ID,
-				Connector:     conn.Connector,
-				MetricID:      metric.ID,
-				ResourceCount: int(count),
-				EvaluatedAt:   startTime.UnixMilli(),
+				ConnectionID:   conn.ID,
+				ConnectionName: conn.ConnectionName,
+				Connector:      conn.Connector,
+				MetricID:       metric.ID,
+				MetricName:     metric.Name,
+				ResourceCount:  int(count),
+				EvaluatedAt:    startTime.UnixMilli(),
+				Date:           startTime.Format("2006-01-02"),
+				Month:          startTime.Format("2006-01"),
+				Year:           startTime.Format("2006"),
 			}
 			connectionResultMap[conn.ID.String()] = vn
 		}
@@ -194,7 +199,11 @@ func (j *Job) DoAssetMetric(
 			vn := resource.ConnectorMetricTrendSummary{
 				Connector:     conn.Connector,
 				EvaluatedAt:   startTime.UnixMilli(),
+				Date:          startTime.Format("2006-01-02"),
+				Month:         startTime.Format("2006-01"),
+				Year:          startTime.Format("2006"),
 				MetricID:      metric.ID,
+				MetricName:    metric.Name,
 				ResourceCount: int(count),
 			}
 			providerResultMap[conn.Connector.String()] = vn
@@ -206,12 +215,17 @@ func (j *Job) DoAssetMetric(
 			regionResultMap[regionKey] = v
 		} else {
 			vn := resource.RegionMetricTrendSummary{
-				Region:        region,
-				ConnectionID:  conn.ID,
-				Connector:     conn.Connector,
-				EvaluatedAt:   startTime.UnixMilli(),
-				MetricID:      metric.ID,
-				ResourceCount: int(count),
+				Region:         region,
+				ConnectionID:   conn.ID,
+				ConnectionName: conn.ConnectionName,
+				Connector:      conn.Connector,
+				EvaluatedAt:    startTime.UnixMilli(),
+				Date:           startTime.Format("2006-01-02"),
+				Month:          startTime.Format("2006-01"),
+				Year:           startTime.Format("2006"),
+				MetricID:       metric.ID,
+				MetricName:     metric.Name,
+				ResourceCount:  int(count),
 			}
 			regionResultMap[regionKey] = vn
 		}

@@ -2175,6 +2175,72 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/analytics/table": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns asset table with respect to the dimension and granularity",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inventory"
+                ],
+                "summary": "Get Assets Table",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "timestamp for start in epoch seconds",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "timestamp for end in epoch seconds",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "monthly",
+                            "daily",
+                            "yearly"
+                        ],
+                        "type": "string",
+                        "description": "Granularity of the table, default is daily",
+                        "name": "granularity",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "connection",
+                            "metric"
+                        ],
+                        "type": "string",
+                        "description": "Dimension of the table, default is metric",
+                        "name": "dimension",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AssetTableRow"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/analytics/tag": {
             "get": {
                 "security": [
@@ -5593,6 +5659,25 @@ const docTemplate = `{
                         "items": {
                             "type": "string"
                         }
+                    }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AssetTableRow": {
+            "type": "object",
+            "properties": {
+                "dimensionId": {
+                    "type": "string",
+                    "example": "compute"
+                },
+                "dimensionName": {
+                    "type": "string",
+                    "example": "Compute"
+                },
+                "resourceCount": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number"
                     }
                 }
             }

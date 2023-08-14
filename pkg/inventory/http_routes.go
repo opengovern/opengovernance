@@ -69,6 +69,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	analyticsV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListAnalyticsComposition, authApi.ViewerRole))
 	analyticsV2.GET("/regions/summary", httpserver.AuthorizeHandler(h.ListAnalyticsRegionsSummary, authApi.ViewerRole))
 	analyticsV2.GET("/categories", httpserver.AuthorizeHandler(h.ListAnalyticsCategories, authApi.ViewerRole))
+	analyticsV2.GET("/table", httpserver.AuthorizeHandler(h.GetAssetsTable, authApi.ViewerRole))
 
 	analyticsSpend := analyticsV2.Group("/spend")
 	analyticsSpend.GET("/metric", httpserver.AuthorizeHandler(h.ListAnalyticsSpendMetricsHandler, authApi.ViewerRole))
@@ -136,7 +137,7 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 	connectionMap := map[string]resource.ConnectionMetricTrendSummary{}
 	connectorMap := map[string]resource.ConnectorMetricTrendSummary{}
 
-	resourceTypeMetricIDCache := map[string]string{}
+	resourceTypeMetricIDCache := map[string]analyticsDB.AnalyticMetric{}
 
 	cctx := context.Background()
 
@@ -172,10 +173,20 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 				return err
 			}
 
-			var metricID string
+			conn, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, connectionID.String())
+			if err != nil {
+				return err
+			}
+
+			if conn == nil {
+				fmt.Println("failed to find source", connectionID)
+				continue
+			}
+
+			var metricItem analyticsDB.AnalyticMetric
 
 			if v, ok := resourceTypeMetricIDCache[hit.ResourceType]; ok {
-				metricID = v
+				metricItem = v
 			} else {
 				metric, err := aDB.GetMetric(analyticsDB.MetricTypeAssets, hit.ResourceType)
 				if err != nil {
@@ -186,22 +197,27 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 					return fmt.Errorf("resource type %s not found", hit.ResourceType)
 				}
 
-				resourceTypeMetricIDCache[hit.ResourceType] = metric.ID
-				metricID = metric.ID
+				resourceTypeMetricIDCache[hit.ResourceType] = *metric
+				metricItem = *metric
 			}
 
-			if metricID == "" {
+			if metricItem.ID == "" {
 				continue
 			}
 
 			connection := resource.ConnectionMetricTrendSummary{
-				ConnectionID:  connectionID,
-				Connector:     hit.SourceType,
-				EvaluatedAt:   hit.DescribedAt,
-				MetricID:      metricID,
-				ResourceCount: hit.ResourceCount,
+				ConnectionID:   connectionID,
+				ConnectionName: conn.ConnectionName,
+				Connector:      hit.SourceType,
+				EvaluatedAt:    hit.DescribedAt,
+				Date:           time.UnixMilli(hit.DescribedAt).Format("2006-01-02"),
+				Month:          time.UnixMilli(hit.DescribedAt).Format("2006-01"),
+				Year:           time.UnixMilli(hit.DescribedAt).Format("2006"),
+				MetricID:       metricItem.ID,
+				MetricName:     metricItem.Name,
+				ResourceCount:  hit.ResourceCount,
 			}
-			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metricID, hit.SummarizeJobID)
+			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metricItem.ID, hit.SummarizeJobID)
 			if v, ok := connectionMap[key]; ok {
 				v.ResourceCount += connection.ResourceCount
 				connectionMap[key] = v
@@ -212,10 +228,14 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 			connector := resource.ConnectorMetricTrendSummary{
 				Connector:     hit.SourceType,
 				EvaluatedAt:   hit.DescribedAt,
-				MetricID:      metricID,
+				Date:          time.UnixMilli(hit.DescribedAt).Format("2006-01-02"),
+				Month:         time.UnixMilli(hit.DescribedAt).Format("2006-01"),
+				Year:          time.UnixMilli(hit.DescribedAt).Format("2006"),
+				MetricID:      metricItem.ID,
+				MetricName:    metricItem.Name,
 				ResourceCount: hit.ResourceCount,
 			}
-			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metricID, hit.SummarizeJobID)
+			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metricItem.ID, hit.SummarizeJobID)
 			if v, ok := connectorMap[key]; ok {
 				v.ResourceCount += connector.ResourceCount
 				connectorMap[key] = v
@@ -1297,6 +1317,63 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, inventoryApi.AnalyticsCategoriesResponse{
 		CategoryResourceType: categoryResourceTypeMap,
 	})
+}
+
+// GetAssetsTable godoc
+//
+//	@Summary		Get Assets Table
+//	@Description	Returns asset table with respect to the dimension and granularity
+//	@Security		BearerToken
+//	@Tags			inventory
+//	@Accept			json
+//	@Produce		json
+//	@Param			startTime	query		int64	false	"timestamp for start in epoch seconds"
+//	@Param			endTime		query		int64	false	"timestamp for end in epoch seconds"
+//	@Param			granularity	query		string	false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
+//	@Param			dimension	query		string	false	"Dimension of the table, default is metric"		Enums(connection, metric)
+//
+//	@Success		200			{object}	[]inventoryApi.AssetTableRow
+//	@Router			/inventory/api/v2/analytics/table [get]
+func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
+	var err error
+	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	startTime, err := utils.TimeFromQueryParam(ctx, "startTime", endTime.AddDate(0, -1, 0))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	granularity := inventoryApi.SpendTableGranularity(ctx.QueryParam("granularity"))
+	if granularity != inventoryApi.SpendTableGranularityDaily &&
+		granularity != inventoryApi.SpendTableGranularityMonthly &&
+		granularity != inventoryApi.SpendTableGranularityYearly {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
+	}
+	dimension := inventoryApi.SpendDimension(ctx.QueryParam("dimension"))
+	if dimension != inventoryApi.SpendDimensionMetric &&
+		dimension != inventoryApi.SpendDimensionConnection {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid dimension")
+	}
+
+	mt, err := es.FetchAssetTableByDimension(h.client, granularity, dimension, startTime, endTime)
+	if err != nil {
+		return err
+	}
+
+	var table []inventoryApi.AssetTableRow
+	for _, m := range mt {
+		resourceCount := map[string]float64{}
+		for dateKey, costItem := range m.Trend {
+			resourceCount[dateKey] = costItem
+		}
+		table = append(table, inventoryApi.AssetTableRow{
+			DimensionID:   m.DimensionID,
+			DimensionName: m.DimensionName,
+			ResourceCount: resourceCount,
+		})
+	}
+	return ctx.JSON(http.StatusOK, table)
 }
 
 // ListAnalyticsSpendMetricsHandler godoc

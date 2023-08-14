@@ -3,8 +3,12 @@ package es
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
+	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"math"
 	"strconv"
 	"time"
@@ -796,4 +800,136 @@ func FetchConnectorAnalyticsResourcesCountAtTime(client kaytu.Client, connectors
 		}
 	}
 	return hits, nil
+}
+
+type AssetTableByDimensionQueryResponse struct {
+	Aggregations struct {
+		DimensionGroup struct {
+			Buckets []struct {
+				Key       string `json:"key"`
+				DateGroup struct {
+					Buckets []struct {
+						Key      string `json:"key"`
+						SumGroup struct {
+							Value float64 `json:"value"`
+						} `json:"sum_group"`
+						Latest struct {
+							Hits struct {
+								Hits []struct {
+									Source spend.ConnectionMetricTrendSummary `json:"_source"`
+								} `json:"hits"`
+							} `json:"hits"`
+						} `json:"latest"`
+					} `json:"buckets"`
+				} `json:"date_group"`
+			} `json:"buckets"`
+		} `json:"dimension_group"`
+	} `json:"aggregations"`
+}
+
+func FetchAssetTableByDimension(client kaytu.Client, granularity inventoryApi.SpendTableGranularity, dimension inventoryApi.SpendDimension, startTime, endTime time.Time) ([]DimensionTrend, error) {
+	query := make(map[string]any)
+	var filters []any
+
+	dimensionField := ""
+	index := ""
+	switch dimension {
+	case inventoryApi.SpendDimensionConnection:
+		dimensionField = "connection_id"
+		index = spend.AnalyticsSpendConnectionSummaryIndex
+	case inventoryApi.SpendDimensionMetric:
+		dimensionField = "metric_id"
+		index = spend.AnalyticsSpendConnectorSummaryIndex
+	default:
+		return nil, errors.New("dimension is not supported")
+	}
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"evaluated_at": map[string]string{
+				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
+			},
+		},
+	})
+
+	dateGroupField := "date"
+	if granularity == inventoryApi.SpendTableGranularityMonthly {
+		dateGroupField = "month"
+	} else if granularity == inventoryApi.SpendTableGranularityYearly {
+		dateGroupField = "year"
+	}
+
+	query["size"] = 0
+	query["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	query["aggs"] = map[string]any{
+		"dimension_group": map[string]any{
+			"terms": map[string]any{
+				"field": dimensionField,
+				"size":  es.EsFetchPageSize,
+			},
+			"aggs": map[string]any{
+				"date_group": map[string]any{
+					"terms": map[string]any{
+						"field": dateGroupField,
+						"size":  es.EsFetchPageSize,
+					},
+					"aggs": map[string]any{
+						"sum_group": map[string]any{
+							"sum": map[string]string{
+								"field": "resource_count",
+							},
+						},
+						"latest": map[string]any{
+							"top_hits": map[string]any{
+								"size": 1,
+								"sort": map[string]string{
+									"_id": "asc",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("FetchAssetTableByDimension = %s\n", queryJson)
+
+	var response AssetTableByDimensionQueryResponse
+	err = client.Search(context.Background(), index, string(queryJson), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []DimensionTrend
+	for _, bucket := range response.Aggregations.DimensionGroup.Buckets {
+		mt := DimensionTrend{
+			DimensionID: bucket.Key,
+			Trend:       make(map[string]float64),
+		}
+		for _, dateBucket := range bucket.DateGroup.Buckets {
+			mt.Trend[dateBucket.Key] = dateBucket.SumGroup.Value
+			for _, hit := range dateBucket.Latest.Hits.Hits {
+				switch dimension {
+				case inventoryApi.SpendDimensionConnection:
+					mt.DimensionName = hit.Source.ConnectionName
+				case inventoryApi.SpendDimensionMetric:
+					mt.DimensionName = hit.Source.MetricName
+				default:
+					return nil, errors.New("dimension is not supported")
+				}
+			}
+		}
+		result = append(result, mt)
+	}
+
+	return result, nil
 }

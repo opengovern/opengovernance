@@ -57,3 +57,9 @@ type SpendTableRow struct {
 	DimensionName string             `json:"dimensionName" example:"Compute"`
 	CostValue     map[string]float64 `json:"costValue"`
 }
+
+type AssetTableRow struct {
+	DimensionID   string             `json:"dimensionId" example:"compute"`
+	DimensionName string             `json:"dimensionName" example:"Compute"`
+	ResourceCount map[string]float64 `json:"resourceCount"`
+}
