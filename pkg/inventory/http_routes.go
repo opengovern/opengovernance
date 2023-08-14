@@ -782,7 +782,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	tags = model.TrimPrivateTags(tags)
 
 	var metricCount map[string]int
-	var spend map[string]float64
+	var spend map[string]es.SpendMetricResp
 
 	if metricType == analyticsDB.MetricTypeAssets {
 		if len(connectionIDs) > 0 {
@@ -817,7 +817,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 			fmt.Println("metrics", key, tagValue, metrics)
 			for _, metric := range metrics {
 				if (metric.Type == analyticsDB.MetricTypeAssets && metricCount[metric.ID] >= minCount) ||
-					(metric.Type == analyticsDB.MetricTypeSpend && spend[metric.ID] >= minAmount) {
+					(metric.Type == analyticsDB.MetricTypeSpend && spend[metric.ID].CostValue >= minAmount) {
 					filteredTags[key] = append(filteredTags[key], tagValue)
 					break
 				}
@@ -1547,8 +1547,8 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 	for metricID, spend := range spends {
 		localSpend := spend
 		costMetricMap[metricID] = inventoryApi.CostMetric{
-			CostDimensionName: metricID,
-			TotalCost:         &localSpend,
+			CostDimensionName: localSpend.MetricName,
+			TotalCost:         &localSpend.CostValue,
 		}
 	}
 

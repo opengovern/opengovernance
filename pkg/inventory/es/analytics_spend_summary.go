@@ -662,12 +662,25 @@ type FetchSpendByMetricQueryResponse struct {
 				CostValueSumGroup struct {
 					Value float64 `json:"value"`
 				} `json:"cost_value_sum_group"`
+				TopDoc struct {
+					Top []struct {
+						Sort    []int64 `json:"sort"`
+						Metrics struct {
+							MetricName string `json:"metric_name"`
+						} `json:"metrics"`
+					} `json:"top"`
+				} `json:"top_doc"`
 			} `json:"buckets"`
 		} `json:"metric_id_group"`
 	} `json:"aggregations"`
 }
 
-func FetchSpendByMetric(client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]float64, error) {
+type SpendMetricResp struct {
+	MetricName string
+	CostValue  float64
+}
+
+func FetchSpendByMetric(client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs []string, startTime time.Time, endTime time.Time, size int) (map[string]SpendMetricResp, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -720,8 +733,11 @@ func FetchSpendByMetric(client kaytu.Client, connectionIDs []string, connectors 
 					},
 				},
 				"top_doc": map[string]any{
-					"top_hits": map[string]any{
-						"size": size,
+					"top_metrics": map[string]any{
+						"size": 1,
+						"metrics": []map[string]any{
+							{"field": "metric_name"},
+						},
 						"sort": map[string]any{
 							"period_start": "asc",
 						},
@@ -744,9 +760,16 @@ func FetchSpendByMetric(client kaytu.Client, connectionIDs []string, connectors 
 		return nil, err
 	}
 
-	resp := map[string]float64{}
+	resp := map[string]SpendMetricResp{}
 	for _, metricBucket := range response.Aggregations.MetricIDGroup.Buckets {
-		resp[metricBucket.Key] = metricBucket.CostValueSumGroup.Value
+		metricName := metricBucket.Key
+		for _, item := range metricBucket.TopDoc.Top {
+			metricName = item.Metrics.MetricName
+		}
+		resp[metricBucket.Key] = SpendMetricResp{
+			MetricName: metricName,
+			CostValue:  metricBucket.CostValueSumGroup.Value,
+		}
 	}
 	return resp, nil
 }
