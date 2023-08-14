@@ -442,9 +442,19 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 		docs = append(docs, c)
 	}
 
-	err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docs, h.logger)
-	if err != nil {
-		return err
+	retry := 0
+	for {
+		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docs, h.logger)
+		if err != nil {
+			fmt.Println("failed to send to kafka due to", err, "len is", h.kafkaProducer.Len())
+			retry++
+			if retry > 10 {
+				return err
+			}
+			time.Sleep(10 * time.Second)
+			continue
+		}
+		break
 	}
 	return nil
 }
