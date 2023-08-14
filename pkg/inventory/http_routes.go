@@ -396,11 +396,15 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 
 			dateTimestamp := (hit.PeriodStart + hit.PeriodEnd) / 2
 			dateStr := time.Unix(dateTimestamp, 0).Format("2006-01-02")
+			monthStr := time.Unix(dateTimestamp, 0).Format("2006-01")
+			yearStr := time.Unix(dateTimestamp, 0).Format("2006")
 			connection := spend.ConnectionMetricTrendSummary{
 				ConnectionID:   connectionID,
 				ConnectionName: conn.ConnectionName,
 				Connector:      hit.Connector,
 				Date:           dateStr,
+				Month:          monthStr,
+				Year:           yearStr,
 				MetricID:       metricID,
 				MetricName:     metricName,
 				CostValue:      hit.CostValue,
@@ -418,6 +422,8 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 			connector := spend.ConnectorMetricTrendSummary{
 				Connector:   hit.Connector,
 				Date:        dateStr,
+				Month:       monthStr,
+				Year:        yearStr,
 				MetricID:    metricID,
 				MetricName:  metricName,
 				CostValue:   hit.CostValue,

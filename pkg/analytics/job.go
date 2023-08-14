@@ -291,6 +291,7 @@ func (j *Job) DoSpendMetric(
 			connectionCache[connectionID] = *conn
 		}
 
+		dateTimestamp := startTime.Add(endTime.Sub(startTime) / 2)
 		if v, ok := connectionResultMap[conn.ID.String()]; ok {
 			v.CostValue += sum
 			connectionResultMap[conn.ID.String()] = v
@@ -299,7 +300,9 @@ func (j *Job) DoSpendMetric(
 				ConnectionID:   conn.ID,
 				ConnectionName: conn.ConnectionName,
 				Connector:      conn.Connector,
-				Date:           startTime.Format("2006-01-02"),
+				Date:           dateTimestamp.Format("2006-01-02"),
+				Month:          dateTimestamp.Format("2006-01"),
+				Year:           dateTimestamp.Format("2006"),
 				MetricID:       metric.ID,
 				MetricName:     metric.Name,
 				CostValue:      sum,
@@ -315,7 +318,9 @@ func (j *Job) DoSpendMetric(
 		} else {
 			vn := spend.ConnectorMetricTrendSummary{
 				Connector:   conn.Connector,
-				Date:        startTime.Format("2006-01-02"),
+				Date:        dateTimestamp.Format("2006-01-02"),
+				Month:       dateTimestamp.Format("2006-01"),
+				Year:        dateTimestamp.Format("2006"),
 				MetricID:    metric.ID,
 				MetricName:  metric.Name,
 				CostValue:   sum,
