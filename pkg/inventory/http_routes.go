@@ -553,8 +553,8 @@ func (h *HttpHandler) ListAnalyticsMetrics(metricIDs []string, metricType analyt
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			metricIDs		query		[]string		false	"Metric IDs"
-//	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
-//	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
+//	@Param			endTime			query		int64			false	"timestamp for resource count in epoch seconds"
+//	@Param			startTime		query		int64			false	"timestamp for resource count change comparison in epoch seconds"
 //	@Param			minCount		query		int				false	"Minimum number of resources with this tag value, default 1"
 //	@Param			sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count,growth,growth_rate)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
@@ -735,8 +735,8 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			connectionGroup	query		string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			minCount		query		int			false	"Minimum number of resources/spend with this tag value, default 1"
-//	@Param			startTime		query		int			false	"Start time in unix timestamp format, default now - 1 month"
-//	@Param			endTime			query		int			false	"End time in unix timestamp format, default now"
+//	@Param			startTime		query		int64		false	"Start time in unix timestamp format, default now - 1 month"
+//	@Param			endTime			query		int64		false	"End time in unix timestamp format, default now"
 //	@Param			metricType		query		string		false	"Metric type, default: assets"	Enums(assets, spend)
 //	@Success		200				{object}	map[string][]string
 //	@Router			/inventory/api/v2/analytics/tag [get]
@@ -845,8 +845,8 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
-//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
 //	@Success		200				{object}	[]inventoryApi.ResourceTypeTrendDatapoint
 //	@Router			/inventory/api/v2/analytics/trend [get]
@@ -959,8 +959,8 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 //	@Param			connector		query		[]source.Type	false	"Connector types to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			endTime			query		string			false	"timestamp for resource count in epoch seconds"
-//	@Param			startTime		query		string			false	"timestamp for resource count change comparison in epoch seconds"
+//	@Param			endTime			query		int64			false	"timestamp for resource count in epoch seconds"
+//	@Param			startTime		query		int64			false	"timestamp for resource count change comparison in epoch seconds"
 //	@Success		200				{object}	inventoryApi.ListResourceTypeCompositionResponse
 //	@Router			/inventory/api/v2/analytics/composition/{key} [get]
 func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
@@ -1112,8 +1112,8 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			startTime		query		int				false	"start time in unix seconds - default is now"
-//	@Param			endTime			query		int				false	"end time in unix seconds - default is one week ago"
+//	@Param			startTime		query		int64			false	"start time in unix seconds - default is now"
+//	@Param			endTime			query		int64			false	"end time in unix seconds - default is one week ago"
 //	@Param			sortBy			query		string			false	"column to sort by - default is resource_count"	Enums(resource_count, growth, growth_rate)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
@@ -1310,8 +1310,8 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
-//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost,growth,growth_rate)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
@@ -1511,8 +1511,8 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			top				query		int				false	"How many top values to return default is 5"
-//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
-//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Success		200				{object}	inventoryApi.ListCostCompositionResponse
 //	@Router			/inventory/api/v2/analytics/spend/composition [get]
 func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
@@ -1612,8 +1612,8 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			metricIds		query		[]string		false	"Metrics IDs"
 //	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
-//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
 //	@Success		200				{object}	[]inventoryApi.CostTrendDatapoint
 //	@Router			/inventory/api/v2/analytics/spend/trend [get]
@@ -1679,8 +1679,8 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			metricIds		query		[]string		false	"Metrics IDs"
 //	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
-//	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
+//	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			granularity		query		string			false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
 //	@Success		200				{object}	[]inventoryApi.ListServicesCostTrendDatapoint
 //	@Router			/inventory/api/v2/analytics/spend/metrics/trend [get]
@@ -1756,8 +1756,8 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 //	@Tags			inventory
 //	@Accept			json
 //	@Produce		json
-//	@Param			startTime	query		string	false	"timestamp for start in epoch seconds"
-//	@Param			endTime		query		string	false	"timestamp for end in epoch seconds"
+//	@Param			startTime	query		int64	false	"timestamp for start in epoch seconds"
+//	@Param			endTime		query		int64	false	"timestamp for end in epoch seconds"
 //	@Param			granularity	query		string	false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
 //	@Param			dimension	query		string	false	"Dimension of the table, default is metric"		Enums(connection, metric)
 //
@@ -1832,8 +1832,8 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			connectionGroup	query		string		false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			endTime			query		string		false	"timestamp for resource count in epoch seconds"
-//	@Param			startTime		query		string		false	"timestamp for resource count change comparison in epoch seconds"
+//	@Param			endTime			query		int64		false	"timestamp for resource count in epoch seconds"
+//	@Param			startTime		query		int64		false	"timestamp for resource count change comparison in epoch seconds"
 //	@Param			resourceType	path		string		true	"ResourceType"
 //	@Success		200				{object}	inventoryApi.ResourceType
 //	@Router			/inventory/api/v2/resources/metric/{resourceType} [get]

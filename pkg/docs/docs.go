@@ -1488,13 +1488,13 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for resource count in epoch seconds",
                         "name": "endTime",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for resource count change comparison in epoch seconds",
                         "name": "startTime",
                         "in": "query"
@@ -1591,13 +1591,13 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for resource count in epoch seconds",
                         "name": "endTime",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for resource count change comparison in epoch seconds",
                         "name": "startTime",
                         "in": "query"
@@ -1796,13 +1796,13 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for start in epoch seconds",
                         "name": "startTime",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for end in epoch seconds",
                         "name": "endTime",
                         "in": "query"
@@ -1869,13 +1869,13 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for start in epoch seconds",
                         "name": "startTime",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for end in epoch seconds",
                         "name": "endTime",
                         "in": "query"
@@ -1976,13 +1976,13 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for start in epoch seconds",
                         "name": "startTime",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for end in epoch seconds",
                         "name": "endTime",
                         "in": "query"
@@ -2032,13 +2032,13 @@ const docTemplate = `{
                 "summary": "Get Spend Trend",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for start in epoch seconds",
                         "name": "startTime",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for end in epoch seconds",
                         "name": "endTime",
                         "in": "query"
@@ -2139,13 +2139,13 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for start in epoch seconds",
                         "name": "startTime",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for end in epoch seconds",
                         "name": "endTime",
                         "in": "query"
@@ -2341,13 +2341,13 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for start in epoch seconds",
                         "name": "startTime",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for end in epoch seconds",
                         "name": "endTime",
                         "in": "query"
@@ -2408,13 +2408,13 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for resource count in epoch seconds",
                         "name": "endTime",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "timestamp for resource count change comparison in epoch seconds",
                         "name": "startTime",
                         "in": "query"

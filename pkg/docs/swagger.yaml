@@ -3271,11 +3271,11 @@ paths:
       - description: timestamp for resource count in epoch seconds
         in: query
         name: endTime
-        type: string
+        type: integer
       - description: timestamp for resource count change comparison in epoch seconds
         in: query
         name: startTime
-        type: string
+        type: integer
       produces:
       - application/json
       responses:
@@ -3341,11 +3341,11 @@ paths:
       - description: timestamp for resource count in epoch seconds
         in: query
         name: endTime
-        type: string
+        type: integer
       - description: timestamp for resource count change comparison in epoch seconds
         in: query
         name: startTime
-        type: string
+        type: integer
       - description: Minimum number of resources with this tag value, default 1
         in: query
         name: minCount
@@ -3480,11 +3480,11 @@ paths:
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
-        type: string
+        type: integer
       - description: timestamp for end in epoch seconds
         in: query
         name: endTime
-        type: string
+        type: integer
       produces:
       - application/json
       responses:
@@ -3530,11 +3530,11 @@ paths:
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
-        type: string
+        type: integer
       - description: timestamp for end in epoch seconds
         in: query
         name: endTime
-        type: string
+        type: integer
       - description: Sort by field - default is cost
         enum:
         - dimension
@@ -3604,11 +3604,11 @@ paths:
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
-        type: string
+        type: integer
       - description: timestamp for end in epoch seconds
         in: query
         name: endTime
-        type: string
+        type: integer
       - description: Granularity of the table, default is daily
         enum:
         - monthly
@@ -3640,11 +3640,11 @@ paths:
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
-        type: string
+        type: integer
       - description: timestamp for end in epoch seconds
         in: query
         name: endTime
-        type: string
+        type: integer
       - description: Granularity of the table, default is daily
         enum:
         - monthly
@@ -3714,11 +3714,11 @@ paths:
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
-        type: string
+        type: integer
       - description: timestamp for end in epoch seconds
         in: query
         name: endTime
-        type: string
+        type: integer
       - description: maximum number of datapoints to return, default is 30
         in: query
         name: datapointCount
@@ -3851,11 +3851,11 @@ paths:
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
-        type: string
+        type: integer
       - description: timestamp for end in epoch seconds
         in: query
         name: endTime
-        type: string
+        type: integer
       - description: maximum number of datapoints to return, default is 30
         in: query
         name: datapointCount
@@ -3894,11 +3894,11 @@ paths:
       - description: timestamp for resource count in epoch seconds
         in: query
         name: endTime
-        type: string
+        type: integer
       - description: timestamp for resource count change comparison in epoch seconds
         in: query
         name: startTime
-        type: string
+        type: integer
       - description: ResourceType
         in: path
         name: resourceType
