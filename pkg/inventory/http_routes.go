@@ -1681,7 +1681,7 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 //	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		string			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		string			false	"timestamp for end in epoch seconds"
-//	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
+//	@Param			granularity		query		string			false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
 //	@Success		200				{object}	[]inventoryApi.ListServicesCostTrendDatapoint
 //	@Router			/inventory/api/v2/analytics/spend/metrics/trend [get]
 func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
@@ -1702,20 +1702,21 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	datapointCountStr := ctx.QueryParam("datapointCount")
-	datapointCount := int64(30)
-	if datapointCountStr != "" {
-		datapointCount, err = strconv.ParseInt(datapointCountStr, 10, 64)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
-		}
+	granularity := inventoryApi.SpendTableGranularity(ctx.QueryParam("granularity"))
+	if granularity == "" {
+		granularity = inventoryApi.SpendTableGranularityDaily
+	}
+	if granularity != inventoryApi.SpendTableGranularityDaily &&
+		granularity != inventoryApi.SpendTableGranularityMonthly &&
+		granularity != inventoryApi.SpendTableGranularityYearly {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
 	}
 
 	var mt []es.MetricTrend
 	if len(connectionIDs) > 0 {
-		mt, err = es.FetchConnectionSpendMetricTrend(h.client, metricIds, connectionIDs, connectorTypes, startTime, endTime)
+		mt, err = es.FetchConnectionSpendMetricTrend(h.client, granularity, metricIds, connectionIDs, connectorTypes, startTime, endTime)
 	} else {
-		mt, err = es.FetchConnectorSpendMetricTrend(h.client, metricIds, connectorTypes, startTime, endTime)
+		mt, err = es.FetchConnectorSpendMetricTrend(h.client, granularity, metricIds, connectorTypes, startTime, endTime)
 	}
 	if err != nil {
 		return err
@@ -1725,13 +1726,18 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 	for _, m := range mt {
 		apiDatapoints := make([]inventoryApi.CostTrendDatapoint, 0, len(m.Trend))
 		for timeAt, costVal := range m.Trend {
-			dt, _ := time.Parse("2006-01-02", timeAt)
+			format := "2006-01-02"
+			if granularity == inventoryApi.SpendTableGranularityMonthly {
+				format = "2006-01"
+			} else if granularity == inventoryApi.SpendTableGranularityYearly {
+				format = "2006"
+			}
+			dt, _ := time.Parse(format, timeAt)
 			apiDatapoints = append(apiDatapoints, inventoryApi.CostTrendDatapoint{Cost: costVal, Date: dt})
 		}
 		sort.Slice(apiDatapoints, func(i, j int) bool {
 			return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
 		})
-		apiDatapoints = internal.DownSampleCostTrendDatapoints(apiDatapoints, int(datapointCount))
 
 		response = append(response, inventoryApi.ListServicesCostTrendDatapoint{
 			ServiceName: m.MetricID,
@@ -1752,7 +1758,7 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			startTime	query		string	false	"timestamp for start in epoch seconds"
 //	@Param			endTime		query		string	false	"timestamp for end in epoch seconds"
-//	@Param			granularity	query		string	false	"Granularity of the table, default is daily"	Enums(monthly, daily)
+//	@Param			granularity	query		string	false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
 //	@Param			dimension	query		string	false	"Dimension of the table, default is metric"		Enums(connection, metric)
 //
 //	@Success		200			{object}	[]inventoryApi.SpendTableRow
@@ -1769,7 +1775,8 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 	}
 	granularity := inventoryApi.SpendTableGranularity(ctx.QueryParam("granularity"))
 	if granularity != inventoryApi.SpendTableGranularityDaily &&
-		granularity != inventoryApi.SpendTableGranularityMonthly {
+		granularity != inventoryApi.SpendTableGranularityMonthly &&
+		granularity != inventoryApi.SpendTableGranularityYearly {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
 	}
 	dimension := inventoryApi.SpendDimension(ctx.QueryParam("dimension"))
@@ -1789,6 +1796,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		for dateKey, costItem := range m.Trend {
 			dt, _ := time.Parse("2006-01-02", dateKey)
 			monthKey := dt.Format("2006-01")
+			yearKey := dt.Format("2006")
 			if granularity == "daily" {
 				costValue[dateKey] = costItem
 			} else if granularity == "monthly" {
@@ -1796,6 +1804,12 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 					costValue[monthKey] = v + costItem
 				} else {
 					costValue[monthKey] = costItem
+				}
+			} else if granularity == "yearly" {
+				if v, ok := costValue[yearKey]; ok {
+					costValue[yearKey] = v + costItem
+				} else {
+					costValue[yearKey] = costItem
 				}
 			}
 		}

@@ -1988,9 +1988,14 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "monthly",
+                            "daily",
+                            "yearly"
+                        ],
                         "type": "string",
-                        "description": "maximum number of datapoints to return, default is 30",
-                        "name": "datapointCount",
+                        "description": "Granularity of the table, default is daily",
+                        "name": "granularity",
                         "in": "query"
                     }
                 ],
@@ -2041,7 +2046,8 @@ const docTemplate = `{
                     {
                         "enum": [
                             "monthly",
-                            "daily"
+                            "daily",
+                            "yearly"
                         ],
                         "type": "string",
                         "description": "Granularity of the table, default is daily",

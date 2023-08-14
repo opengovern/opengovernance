@@ -42,6 +42,7 @@ type SpendTableGranularity string
 const (
 	SpendTableGranularityDaily   SpendTableGranularity = "daily"
 	SpendTableGranularityMonthly SpendTableGranularity = "monthly"
+	SpendTableGranularityYearly  SpendTableGranularity = "yearly"
 )
 
 type SpendDimension string
