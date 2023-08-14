@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"math"
 	"net/http"
 	"sort"
