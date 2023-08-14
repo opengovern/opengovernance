@@ -15,14 +15,10 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
 
 	"github.com/google/uuid"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
-	es3 "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -30,7 +26,9 @@ import (
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/internal"
+	es3 "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -332,16 +330,55 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 				metricID = v.ID
 				metricName = v.Name
 			} else {
-				metric, err := aDB.GetMetric(analyticsDB.MetricTypeSpend, hit.ServiceName)
-				if err != nil {
-					return err
+				isMarketplace := false
+
+				costDescriptionJson, _ := json.Marshal(hit.Cost)
+				var costDescription map[string]any
+				_ = json.Unmarshal(costDescriptionJson, &costDescription)
+				if costDescription["Dimension2"] != nil {
+					switch costDescription["Dimension2"].(type) {
+					case string:
+						if costDescription["Dimension2"].(string) == "AWS Marketplace" {
+							isMarketplace = true
+						}
+					}
 				}
-				if metric == nil {
-					return fmt.Errorf("GetMetric, table %s not found", hit.ServiceName)
+				if costDescription["PublisherType"] != nil {
+					switch costDescription["PublisherType"].(type) {
+					case string:
+						if costDescription["PublisherType"].(string) == "Marketplace" {
+							isMarketplace = true
+						}
+					}
 				}
-				serviceNameMetricCache[hit.ServiceName] = *metric
-				metricID = metric.ID
-				metricName = metric.Name
+
+				if isMarketplace {
+					table := "AWS Marketplace"
+					if !isAWS {
+						table = "Azure Marketplace"
+					}
+
+					metric, err := aDB.GetMetric(analyticsDB.MetricTypeSpend, table)
+					if err != nil {
+						return err
+					}
+					if metric != nil {
+						serviceNameMetricCache[hit.ServiceName] = *metric
+						metricID = metric.ID
+						metricName = metric.Name
+					}
+				} else {
+					metric, err := aDB.GetMetric(analyticsDB.MetricTypeSpend, hit.ServiceName)
+					if err != nil {
+						return err
+					}
+					if metric == nil {
+						return fmt.Errorf("GetMetric, table %s not found", hit.ServiceName)
+					}
+					serviceNameMetricCache[hit.ServiceName] = *metric
+					metricID = metric.ID
+					metricName = metric.Name
+				}
 			}
 
 			if metricID == "" {
