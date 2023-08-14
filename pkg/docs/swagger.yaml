@@ -3719,9 +3719,13 @@ paths:
         in: query
         name: endTime
         type: integer
-      - description: maximum number of datapoints to return, default is 30
+      - description: Granularity of the table, default is daily
+        enum:
+        - monthly
+        - daily
+        - yearly
         in: query
-        name: datapointCount
+        name: granularity
         type: string
       produces:
       - application/json

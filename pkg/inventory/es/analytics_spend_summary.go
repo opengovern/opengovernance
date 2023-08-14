@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
+	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -494,7 +495,7 @@ type ConnectionSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionSpendTrend(client kaytu.Client, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]float64, error) {
+func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.SpendTableGranularity, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]float64, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -528,6 +529,13 @@ func FetchConnectionSpendTrend(client kaytu.Client, metricIds []string, connecti
 		},
 	})
 
+	granularityField := "date"
+	if granularity == inventoryApi.SpendTableGranularityMonthly {
+		granularityField = "month"
+	} else if granularity == inventoryApi.SpendTableGranularityYearly {
+		granularityField = "year"
+	}
+
 	query["size"] = 0
 	query["query"] = map[string]any{
 		"bool": map[string]any{
@@ -537,7 +545,7 @@ func FetchConnectionSpendTrend(client kaytu.Client, metricIds []string, connecti
 	query["aggs"] = map[string]any{
 		"date_group": map[string]any{
 			"terms": map[string]any{
-				"field": "date",
+				"field": granularityField,
 				"size":  es.EsFetchPageSize,
 			},
 			"aggs": map[string]any{
@@ -583,7 +591,7 @@ type ConnectorSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorSpendTrend(client kaytu.Client, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]float64, error) {
+func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.SpendTableGranularity, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]float64, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -612,6 +620,13 @@ func FetchConnectorSpendTrend(client kaytu.Client, metricIds []string, connector
 		},
 	})
 
+	granularityField := "date"
+	if granularity == inventoryApi.SpendTableGranularityMonthly {
+		granularityField = "month"
+	} else if granularity == inventoryApi.SpendTableGranularityYearly {
+		granularityField = "year"
+	}
+
 	query["size"] = 0
 	query["query"] = map[string]any{
 		"bool": map[string]any{
@@ -621,7 +636,7 @@ func FetchConnectorSpendTrend(client kaytu.Client, metricIds []string, connector
 	query["aggs"] = map[string]any{
 		"date_group": map[string]any{
 			"terms": map[string]any{
-				"field": "date",
+				"field": granularityField,
 				"size":  es.EsFetchPageSize,
 			},
 			"aggs": map[string]any{
