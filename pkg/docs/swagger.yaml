@@ -3402,6 +3402,42 @@ paths:
       summary: List analytics metrics
       tags:
       - analytics
+  /inventory/api/v2/analytics/metrics/list:
+    get:
+      consumes:
+      - application/json
+      description: Returns list of metrics
+      parameters:
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - description: 'Metric type, default: assets'
+        enum:
+        - assets
+        - spend
+        in: query
+        name: metricType
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostMetricsResponse'
+      security:
+      - BearerToken: []
+      summary: List metrics
+      tags:
+      - analytics
   /inventory/api/v2/analytics/regions/summary:
     get:
       consumes:
@@ -3524,7 +3560,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns list of metrics
+      description: Retrieving cost metrics with respect to specified filters. The
+        API returns information such as the total cost and costs per each service
+        based on the specified filters.
       parameters:
       - collectionFormat: csv
         description: Connector type to filter by
@@ -3537,13 +3575,42 @@ paths:
           type: string
         name: connector
         type: array
-      - description: 'Metric type, default: assets'
-        enum:
-        - assets
-        - spend
+      - collectionFormat: csv
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
         in: query
-        name: metricType
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        name: connectionGroup
         type: string
+      - description: timestamp for start in epoch seconds
+        in: query
+        name: startTime
+        type: integer
+      - description: timestamp for end in epoch seconds
+        in: query
+        name: endTime
+        type: integer
+      - description: Sort by field - default is cost
+        enum:
+        - dimension
+        - cost
+        - growth
+        - growth_rate
+        in: query
+        name: sortBy
+        type: string
+      - description: page size - default is 20
+        in: query
+        name: pageSize
+        type: integer
+      - description: page number - default is 1
+        in: query
+        name: pageNumber
+        type: integer
       produces:
       - application/json
       responses:
@@ -3553,7 +3620,7 @@ paths:
             $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostMetricsResponse'
       security:
       - BearerToken: []
-      summary: List metrics
+      summary: List spend metrics
       tags:
       - analytics
   /inventory/api/v2/analytics/spend/metrics/trend:
