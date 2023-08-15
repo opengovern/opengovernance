@@ -59,7 +59,7 @@ func GetActiveFindings(client kaytu.Client, policyID string, from, size int) (*F
 	}
 
 	var resp FindingsQueryResponse
-	err = client.SearchWithTrackTotalHits(context.Background(), types.FindingsIndex, string(b), &resp, false)
+	err = client.SearchWithTrackTotalHits(context.Background(), types.FindingsIndex, string(b), nil, &resp, false)
 	return &resp, err
 }
 
@@ -137,9 +137,9 @@ func FindingsQuery(client kaytu.Client,
 
 	var resp FindingsQueryResponse
 	if isStack {
-		err = client.SearchWithTrackTotalHits(context.Background(), types.StackFindingsIndex, string(b), &resp, true)
+		err = client.SearchWithTrackTotalHits(context.Background(), types.StackFindingsIndex, string(b), nil, &resp, true)
 	} else {
-		err = client.SearchWithTrackTotalHits(context.Background(), types.FindingsIndex, string(b), &resp, true)
+		err = client.SearchWithTrackTotalHits(context.Background(), types.FindingsIndex, string(b), nil, &resp, true)
 	}
 	return &resp, err
 }
