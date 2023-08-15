@@ -1432,17 +1432,16 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 		}
 		for _, hit := range hits {
 			localHit := hit
-			connector, _ := source.ParseType(localHit.Connector)
 			if v, ok := costMetricMap[localHit.MetricID]; ok {
 				exists := false
 				for _, cnt := range v.Connector {
-					if cnt.String() == connector.String() {
+					if cnt.String() == localHit.Connector.String() {
 						exists = true
 						break
 					}
 				}
 				if !exists {
-					v.Connector = append(v.Connector, connector)
+					v.Connector = append(v.Connector, localHit.Connector)
 				}
 				v.TotalCost = utils.PAdd(v.TotalCost, &localHit.TotalCost)
 				v.DailyCostAtStartTime = utils.PAdd(v.DailyCostAtStartTime, &localHit.StartDateCost)
@@ -1450,7 +1449,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 				costMetricMap[localHit.MetricID] = v
 			} else {
 				costMetricMap[localHit.MetricID] = inventoryApi.CostMetric{
-					Connector:            []source.Type{connector},
+					Connector:            []source.Type{localHit.Connector},
 					CostDimensionName:    localHit.MetricName,
 					TotalCost:            &localHit.TotalCost,
 					DailyCostAtStartTime: &localHit.StartDateCost,
