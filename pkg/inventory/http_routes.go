@@ -2157,43 +2157,43 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	fmt.Println("ListConnectionsData part1 ", time.Now().Sub(performanceStartTime).Milliseconds())
 	res := map[string]inventoryApi.ConnectionData{}
 	if needResourceCount {
-		resourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, endTime, EsFetchPageSize)
+		resourceCountsMap, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
-		for _, hit := range resourceCounts {
-			localHit := hit
-			if _, ok := res[localHit.ConnectionID.String()]; !ok {
-				res[localHit.ConnectionID.String()] = inventoryApi.ConnectionData{
-					ConnectionID: localHit.ConnectionID.String(),
+		for connectionId, resourceCountAndEvaluated := range resourceCountsMap {
+			if _, ok := res[connectionId]; !ok {
+				res[connectionId] = inventoryApi.ConnectionData{
+					ConnectionID: connectionId,
 				}
 			}
-			v := res[localHit.ConnectionID.String()]
-			v.Count = utils.PAdd(v.Count, &localHit.ResourceCount)
-			if v.LastInventory == nil || v.LastInventory.IsZero() || v.LastInventory.Before(time.UnixMilli(localHit.EvaluatedAt)) {
-				v.LastInventory = utils.GetPointer(time.UnixMilli(localHit.EvaluatedAt))
+			v := res[connectionId]
+			localCount := resourceCountAndEvaluated
+			v.Count = utils.PAdd(v.Count, &localCount.ResourceCountsSum)
+			if v.LastInventory == nil || v.LastInventory.IsZero() || v.LastInventory.Before(time.UnixMilli(localCount.LatestEvaluatedAt)) {
+				v.LastInventory = utils.GetPointer(time.UnixMilli(localCount.LatestEvaluatedAt))
 			}
-			res[localHit.ConnectionID.String()] = v
+			res[connectionId] = v
 		}
 		fmt.Println("ListConnectionsData part2 ", time.Now().Sub(performanceStartTime).Milliseconds())
 		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, startTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
-		for _, hit := range oldResourceCount {
-			localHit := hit
-			if _, ok := res[localHit.ConnectionID.String()]; !ok {
-				res[localHit.ConnectionID.String()] = inventoryApi.ConnectionData{
-					ConnectionID:  localHit.ConnectionID.String(),
+		for connectionId, resourceCountAndEvaluated := range oldResourceCount {
+			if _, ok := res[connectionId]; !ok {
+				res[connectionId] = inventoryApi.ConnectionData{
+					ConnectionID:  connectionId,
 					LastInventory: nil,
 				}
 			}
-			v := res[localHit.ConnectionID.String()]
-			v.OldCount = utils.PAdd(v.OldCount, &localHit.ResourceCount)
-			if v.LastInventory == nil || v.LastInventory.IsZero() || v.LastInventory.Before(time.UnixMilli(localHit.EvaluatedAt)) {
-				v.LastInventory = utils.GetPointer(time.UnixMilli(localHit.EvaluatedAt))
+			v := res[connectionId]
+			localCount := resourceCountAndEvaluated
+			v.OldCount = utils.PAdd(v.OldCount, &localCount.ResourceCountsSum)
+			if v.LastInventory == nil || v.LastInventory.IsZero() || v.LastInventory.Before(time.UnixMilli(localCount.LatestEvaluatedAt)) {
+				v.LastInventory = utils.GetPointer(time.UnixMilli(localCount.LatestEvaluatedAt))
 			}
-			res[localHit.ConnectionID.String()] = v
+			res[connectionId] = v
 		}
 		fmt.Println("ListConnectionsData part3 ", time.Now().Sub(performanceStartTime).Milliseconds())
 	}
@@ -2254,26 +2254,26 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 	}
 
 	resourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, []string{connectionId}, endTime, EsFetchPageSize)
-	for _, hit := range resourceCounts {
-		if hit.ConnectionID.String() != connectionId {
+	for esConnectionId, resourceCountAndEvaluated := range resourceCounts {
+		if esConnectionId != connectionId {
 			continue
 		}
-		localHit := hit
-		res.Count = utils.PAdd(res.Count, &localHit.ResourceCount)
-		if res.LastInventory == nil || res.LastInventory.IsZero() || res.LastInventory.Before(time.UnixMilli(localHit.EvaluatedAt)) {
-			res.LastInventory = utils.GetPointer(time.UnixMilli(localHit.EvaluatedAt))
+		localCount := resourceCountAndEvaluated
+		res.Count = utils.PAdd(res.Count, &localCount.ResourceCountsSum)
+		if res.LastInventory == nil || res.LastInventory.IsZero() || res.LastInventory.Before(time.UnixMilli(localCount.LatestEvaluatedAt)) {
+			res.LastInventory = utils.GetPointer(time.UnixMilli(localCount.LatestEvaluatedAt))
 		}
 	}
 
 	oldResourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, []string{connectionId}, startTime, EsFetchPageSize)
-	for _, hit := range oldResourceCounts {
-		if hit.ConnectionID.String() != connectionId {
+	for esConnectionId, resourceCountAndEvaluated := range oldResourceCounts {
+		if esConnectionId != connectionId {
 			continue
 		}
-		localHit := hit
-		res.OldCount = utils.PAdd(res.OldCount, &localHit.ResourceCount)
-		if res.LastInventory == nil || res.LastInventory.IsZero() || res.LastInventory.Before(time.UnixMilli(localHit.EvaluatedAt)) {
-			res.LastInventory = utils.GetPointer(time.UnixMilli(localHit.EvaluatedAt))
+		localCount := resourceCountAndEvaluated
+		res.OldCount = utils.PAdd(res.OldCount, &localCount.ResourceCountsSum)
+		if res.LastInventory == nil || res.LastInventory.IsZero() || res.LastInventory.Before(time.UnixMilli(localCount.LatestEvaluatedAt)) {
+			res.LastInventory = utils.GetPointer(time.UnixMilli(localCount.LatestEvaluatedAt))
 		}
 	}
 
