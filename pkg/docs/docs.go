@@ -2063,6 +2063,26 @@ const docTemplate = `{
                         "description": "Dimension of the table, default is metric",
                         "name": "dimension",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Metrics IDs",
+                        "name": "metricIds",
+                        "in": "query"
                     }
                 ],
                 "responses": {

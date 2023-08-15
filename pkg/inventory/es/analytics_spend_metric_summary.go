@@ -278,7 +278,7 @@ type SpendTableByDimensionQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.SpendDimension, startTime, endTime time.Time) ([]DimensionTrend, error) {
+func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.SpendDimension, connectionIds, metricIds []string, startTime, endTime time.Time) ([]DimensionTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -308,6 +308,18 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.Spen
 			},
 		},
 	})
+
+	if len(connectionIds) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"connection_id": connectionIds},
+		})
+	}
+
+	if len(metricIds) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"metric_id": metricIds},
+		})
+	}
 
 	query["size"] = 0
 	query["query"] = map[string]any{

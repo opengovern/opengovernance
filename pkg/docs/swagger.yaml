@@ -3683,6 +3683,20 @@ paths:
         in: query
         name: dimension
         type: string
+      - collectionFormat: csv
+        description: Connection IDs to filter by - mutually exclusive with connectionGroup
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: Metrics IDs
+        in: query
+        items:
+          type: string
+        name: metricIds
+        type: array
       produces:
       - application/json
       responses:

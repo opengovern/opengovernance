@@ -1872,16 +1872,23 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 //	@Tags			inventory
 //	@Accept			json
 //	@Produce		json
-//	@Param			startTime	query		int64	false	"timestamp for start in epoch seconds"
-//	@Param			endTime		query		int64	false	"timestamp for end in epoch seconds"
-//	@Param			granularity	query		string	false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
-//	@Param			dimension	query		string	false	"Dimension of the table, default is metric"		Enums(connection, metric)
+//	@Param			startTime		query		int64		false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		int64		false	"timestamp for end in epoch seconds"
+//	@Param			granularity		query		string		false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
+//	@Param			dimension		query		string		false	"Dimension of the table, default is metric"		Enums(connection, metric)
+//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			metricIds		query		[]string	false	"Metrics IDs"
 //
-//	@Success		200			{object}	[]inventoryApi.SpendTableRow
+//	@Success		200				{object}	[]inventoryApi.SpendTableRow
 //	@Router			/inventory/api/v2/analytics/spend/table [get]
 func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	var err error
+	metricIds := httpserver.QueryArrayParam(ctx, "metricIds")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -1906,13 +1913,13 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 	var metrics []analyticsDB.AnalyticMetric
 
 	if dimension == inventoryApi.SpendDimensionMetric {
-		metrics, err = aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, nil, nil)
+		metrics, err = aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, nil)
 		if err != nil {
 			return err
 		}
 	}
 
-	mt, err := es.FetchSpendTableByDimension(h.client, dimension, startTime, endTime)
+	mt, err := es.FetchSpendTableByDimension(h.client, dimension, connectionIDs, metricIds, startTime, endTime)
 	if err != nil {
 		return err
 	}
