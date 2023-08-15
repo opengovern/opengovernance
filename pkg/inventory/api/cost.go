@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"time"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -28,6 +29,17 @@ type ListCostMetricsResponse struct {
 	TotalCount int          `json:"total_count" example:"10" minimum:"0"`
 	TotalCost  float64      `json:"total_cost" example:"1000" minimum:"0"`
 	Metrics    []CostMetric `json:"metrics"`
+}
+
+type AnalyticsMetric struct {
+	ID          string              `json:"id"`
+	Connectors  []source.Type       `json:"connectors"`
+	Type        db.MetricType       `json:"type"`
+	Name        string              `json:"name"`
+	Query       string              `json:"query"`
+	Tables      []string            `json:"tables"`
+	FinderQuery string              `json:"finderQuery"`
+	Tags        map[string][]string `json:"tags"`
 }
 
 type ListCostCompositionResponse struct {

@@ -1825,7 +1825,7 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "Retrieving cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.",
+                "description": "Returns list of metrics",
                 "consumes": [
                     "application/json"
                 ],
@@ -1835,7 +1835,7 @@ const docTemplate = `{
                 "tags": [
                     "analytics"
                 ],
-                "summary": "List spend metrics",
+                "summary": "List metrics",
                 "parameters": [
                     {
                         "type": "array",
@@ -1853,55 +1853,13 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Connection group to filter by - mutually exclusive with connectionId",
-                        "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "timestamp for start in epoch seconds",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "timestamp for end in epoch seconds",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
                         "enum": [
-                            "dimension",
-                            "cost",
-                            "growth",
-                            "growth_rate"
+                            "assets",
+                            "spend"
                         ],
                         "type": "string",
-                        "description": "Sort by field - default is cost",
-                        "name": "sortBy",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page size - default is 20",
-                        "name": "pageSize",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page number - default is 1",
-                        "name": "pageNumber",
+                        "description": "Metric type, default: assets",
+                        "name": "metricType",
                         "in": "query"
                     }
                 ],

@@ -63,6 +63,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	resourcesV2.GET("/metric/:resourceType", httpserver.AuthorizeHandler(h.GetResourceTypeMetricsHandler, authApi.ViewerRole))
 
 	analyticsV2 := v2.Group("/analytics")
+	analyticsV2.GET("/metrics/list", httpserver.AuthorizeHandler(h.ListMetrics, authApi.ViewerRole))
+
 	analyticsV2.GET("/metric", httpserver.AuthorizeHandler(h.ListAnalyticsMetricsHandler, authApi.ViewerRole))
 	analyticsV2.GET("/tag", httpserver.AuthorizeHandler(h.ListAnalyticsTags, authApi.ViewerRole))
 	analyticsV2.GET("/trend", httpserver.AuthorizeHandler(h.ListAnalyticsMetricTrend, authApi.ViewerRole))
@@ -1574,6 +1576,48 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 		TotalCost:  totalCost,
 		Metrics:    utils.Paginate(pageNumber, pageSize, costMetrics),
 	})
+}
+
+// ListMetrics godoc
+//
+//	@Summary		List metrics
+//	@Description	Returns list of metrics
+//	@Security		BearerToken
+//	@Tags			analytics
+//	@Accept			json
+//	@Produce		json
+//	@Param			connector	query		[]source.Type	false	"Connector type to filter by"
+//	@Param			metricType	query		string			false	"Metric type, default: assets"	Enums(assets, spend)
+//
+//	@Success		200			{object}	inventoryApi.ListCostMetricsResponse
+//	@Router			/inventory/api/v2/analytics/spend/metric [get]
+func (h *HttpHandler) ListMetrics(ctx echo.Context) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	var err error
+	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
+
+	metrics, err := aDB.ListFilteredMetrics(nil, metricType, nil, connectorTypes)
+	if err != nil {
+		return err
+	}
+
+	var apiMetrics []inventoryApi.AnalyticsMetric
+	for _, metric := range metrics {
+		apiMetric := inventoryApi.AnalyticsMetric{
+			ID:          metric.ID,
+			Connectors:  source.ParseTypes(metric.Connectors),
+			Type:        metric.Type,
+			Name:        metric.Name,
+			Query:       metric.Query,
+			Tables:      metric.Tables,
+			FinderQuery: metric.FinderQuery,
+			Tags:        metric.GetTagsMap(),
+		}
+
+		apiMetrics = append(apiMetrics, apiMetric)
+	}
+	return ctx.JSON(http.StatusOK, apiMetrics)
 }
 
 // ListAnalyticsSpendComposition godoc
