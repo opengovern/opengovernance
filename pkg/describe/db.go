@@ -140,13 +140,12 @@ FROM (
         describe_resource_jobs dr 
       WHERE 
         status = ? AND 
-        (select count(*) from describe_resource_jobs where parent_job_id = dr.parent_job_id AND status IN ?) <= 10 AND
-        (select count(*) from describe_resource_jobs where resource_type = dr.resource_type AND status IN ?) <= 5
+        (select count(*) from describe_resource_jobs where parent_job_id = dr.parent_job_id AND status IN ?) <= 10
   ) AS t) AS rowed
 WHERE
   rowed.r <= 5
 LIMIT ?
-`, api.DescribeResourceJobCreated, runningJobs, runningJobs, limit).Find(&job)
+`, api.DescribeResourceJobCreated, runningJobs, limit).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
