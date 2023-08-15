@@ -69,10 +69,12 @@ func (s *Scheduler) RunDescribeResourceJobCycle() error {
 		return err
 	}
 
-	DescribePublishingBlocked.WithLabelValues().Set(float64(count))
 	if count > MaxQueued {
+		DescribePublishingBlocked.WithLabelValues("cloud queued").Set(1)
 		s.logger.Error("queue is full", zap.String("spot", "count > MaxQueued"), zap.Error(err))
 		return errors.New("queue is full")
+	} else {
+		DescribePublishingBlocked.WithLabelValues("cloud queued").Set(0)
 	}
 
 	drs, err := s.db.ListRandomCreatedDescribeResourceJobs(int(s.MaxConcurrentCall))
