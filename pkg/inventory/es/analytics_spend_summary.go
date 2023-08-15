@@ -182,7 +182,6 @@ func FetchConnectionDailySpendHistoryByMetric(client kaytu.Client, connectionIDs
 
 type ConnectionDailySpendHistory struct {
 	ConnectionID  string
-	Connector     string
 	TotalCost     float64
 	StartDateCost float64
 	EndDateCost   float64
@@ -197,18 +196,14 @@ type FetchConnectionDailySpendHistoryQueryResponse struct {
 					Value float64 `json:"value"`
 				} `json:"cost_value_sum_group"`
 				StartCostGroup struct {
-					Hits struct {
-						Hits []struct {
-							Source spend.ConnectionMetricTrendSummary `json:"_source"`
-						} `json:"hits"`
-					} `json:"hits"`
+					CostValueSumGroup struct {
+						Value float64 `json:"value"`
+					} `json:"cost_value_sum_group"`
 				} `json:"start_cost_group"`
 				EndCostGroup struct {
-					Hits struct {
-						Hits []struct {
-							Source spend.ConnectionMetricTrendSummary `json:"_source"`
-						} `json:"hits"`
-					} `json:"hits"`
+					CostValueSumGroup struct {
+						Value float64 `json:"value"`
+					} `json:"cost_value_sum_group"`
 				} `json:"end_cost_group"`
 			} `json:"buckets"`
 		} `json:"connection_id_group"`
@@ -268,18 +263,30 @@ func FetchConnectionDailySpendHistory(client kaytu.Client, connectionIDs []strin
 					},
 				},
 				"start_cost_group": map[string]any{
-					"top_hits": map[string]any{
-						"size": size,
-						"sort": map[string]any{
-							"period_start": "asc",
+					"filter": map[string]any{
+						"term": map[string]string{
+							"date": startTime.Format("2006-01-02"),
+						},
+					},
+					"aggs": map[string]any{
+						"date": map[string]any{
+							"sum": map[string]any{
+								"field": "cost_value",
+							},
 						},
 					},
 				},
 				"end_cost_group": map[string]any{
-					"top_hits": map[string]any{
-						"size": size,
-						"sort": map[string]any{
-							"period_end": "desc",
+					"filter": map[string]any{
+						"term": map[string]string{
+							"date": endTime.Format("2006-01-02"),
+						},
+					},
+					"aggs": map[string]any{
+						"cost_value_sum_group": map[string]any{
+							"sum": map[string]any{
+								"field": "cost_value",
+							},
 						},
 					},
 				},
@@ -304,23 +311,11 @@ func FetchConnectionDailySpendHistory(client kaytu.Client, connectionIDs []strin
 	for _, connectionBucket := range response.Aggregations.ConnectionIDGroup.Buckets {
 		hit := ConnectionDailySpendHistory{
 			ConnectionID:  connectionBucket.Key,
-			Connector:     "",
 			TotalCost:     connectionBucket.CostValueSumGroup.Value,
-			StartDateCost: 0,
-			EndDateCost:   0,
+			StartDateCost: connectionBucket.StartCostGroup.CostValueSumGroup.Value,
+			EndDateCost:   connectionBucket.EndCostGroup.CostValueSumGroup.Value,
 		}
 
-		for _, v := range connectionBucket.StartCostGroup.Hits.Hits {
-			if startTime.Format("2006-01-02") == v.Source.Date {
-				hit.StartDateCost = v.Source.CostValue
-			}
-			hit.Connector = v.Source.Connector.String()
-		}
-		for _, v := range connectionBucket.EndCostGroup.Hits.Hits {
-			if endTime.Format("2006-01-02") == v.Source.Date {
-				hit.EndDateCost = v.Source.CostValue
-			}
-		}
 		hits = append(hits, hit)
 	}
 
