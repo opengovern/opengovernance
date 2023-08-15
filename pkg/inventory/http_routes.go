@@ -2009,12 +2009,16 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 				}
 			}
 		} else if dimension == inventoryApi.SpendDimensionConnection {
-			src, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.InternalRole}, m.DimensionID)
-			if err != nil {
-				return err
+			if v, ok := connectionAccountIDMap[m.DimensionID]; ok {
+				accountID = v
+			} else {
+				src, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.InternalRole}, m.DimensionID)
+				if err != nil {
+					return err
+				}
+				accountID = src.ConnectionID
+				connectionAccountIDMap[m.DimensionID] = accountID
 			}
-			accountID = src.ConnectionID
-			connectionAccountIDMap[m.DimensionID] = accountID
 		}
 
 		table = append(table, inventoryApi.SpendTableRow{
