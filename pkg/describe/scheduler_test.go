@@ -59,7 +59,6 @@ func (s *SchedulerTestSuite) BeforeTest(suiteName, testName string) {
 		db: db,
 		//describeJobQueue:                &mocksqueue.Interface{},
 		//describeJobResultQueue:          &mocksqueue.Interface{},
-		describeCleanupJobQueue:         &mocks.Interface{},
 		complianceReportJobQueue:        &mocks.Interface{},
 		complianceReportJobResultQueue:  &mocks.Interface{},
 		complianceReportCleanupJobQueue: &mocks.Interface{},
