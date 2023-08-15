@@ -283,14 +283,11 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.Spen
 	var filters []any
 
 	dimensionField := ""
-	index := ""
 	switch dimension {
 	case inventoryApi.SpendDimensionConnection:
 		dimensionField = "connection_id"
-		index = spend.AnalyticsSpendConnectionSummaryIndex
 	case inventoryApi.SpendDimensionMetric:
 		dimensionField = "metric_id"
-		index = spend.AnalyticsSpendConnectorSummaryIndex
 	default:
 		return nil, errors.New("dimension is not supported")
 	}
@@ -366,7 +363,7 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.Spen
 	fmt.Printf("FetchSpendTableByDimension = %s\n", queryJson)
 
 	var response SpendTableByDimensionQueryResponse
-	err = client.Search(context.Background(), index, string(queryJson), &response)
+	err = client.Search(context.Background(), spend.AnalyticsSpendConnectionSummaryIndex, string(queryJson), &response)
 	if err != nil {
 		return nil, err
 	}
