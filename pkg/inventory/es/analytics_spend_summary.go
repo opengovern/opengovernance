@@ -269,7 +269,7 @@ func FetchConnectionDailySpendHistory(client kaytu.Client, connectionIDs []strin
 						},
 					},
 					"aggs": map[string]any{
-						"date": map[string]any{
+						"cost_value_sum_group": map[string]any{
 							"sum": map[string]any{
 								"field": "cost_value",
 							},
