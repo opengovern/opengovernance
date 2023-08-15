@@ -3,7 +3,6 @@ package reporter
 import (
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -41,7 +40,7 @@ func NewHTTPServer(
 }
 
 func (h HttpServer) Register(e *echo.Echo) {
-	e.POST("/query/trigger", httpserver.AuthorizeHandler(h.TriggerQuery, apiAuth.AdminRole))
+	e.POST("/query/trigger", h.TriggerQuery)
 }
 
 func (h HttpServer) TriggerQuery(ctx echo.Context) error {
