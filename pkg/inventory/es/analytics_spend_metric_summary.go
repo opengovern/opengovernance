@@ -248,6 +248,7 @@ func FetchConnectorSpendMetricTrend(client kaytu.Client, granularity inventoryAp
 
 type DimensionTrend struct {
 	DimensionID   string
+	Connector     source.Type
 	DimensionName string
 	Trend         map[string]float64
 }
@@ -367,6 +368,7 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.Spen
 		for _, dateBucket := range bucket.DateGroup.Buckets {
 			mt.Trend[dateBucket.Key] = dateBucket.CostSumGroup.Value
 			for _, hit := range dateBucket.Latest.Hits.Hits {
+				mt.Connector = hit.Source.Connector
 				switch dimension {
 				case inventoryApi.SpendDimensionConnection:
 					mt.DimensionName = hit.Source.ConnectionName

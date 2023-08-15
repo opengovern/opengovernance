@@ -1880,6 +1880,7 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 //	@Success		200			{object}	[]inventoryApi.SpendTableRow
 //	@Router			/inventory/api/v2/analytics/spend/table [get]
 func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
 	var err error
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
 	if err != nil {
@@ -1899,6 +1900,16 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 	if dimension != inventoryApi.SpendDimensionMetric &&
 		dimension != inventoryApi.SpendDimensionConnection {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid dimension")
+	}
+
+	connectionAccountIDMap := map[string]string{}
+	var metrics []analyticsDB.AnalyticMetric
+
+	if dimension == inventoryApi.SpendDimensionMetric {
+		metrics, err = aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, nil, nil)
+		if err != nil {
+			return err
+		}
 	}
 
 	mt, err := es.FetchSpendTableByDimension(h.client, dimension, startTime, endTime)
@@ -1929,8 +1940,37 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 				}
 			}
 		}
+
+		var category, accountID string
+		if dimension == inventoryApi.SpendDimensionMetric {
+			for _, metric := range metrics {
+				if m.DimensionID == metric.ID {
+					for _, tag := range metric.Tags {
+						if tag.GetKey() == "category" {
+							for _, v := range tag.GetValue() {
+								category = v
+								break
+							}
+							break
+						}
+					}
+					break
+				}
+			}
+		} else if dimension == inventoryApi.SpendDimensionConnection {
+			src, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.InternalRole}, m.DimensionID)
+			if err != nil {
+				return err
+			}
+			accountID = src.ConnectionID
+			connectionAccountIDMap[m.DimensionID] = accountID
+		}
+
 		table = append(table, inventoryApi.SpendTableRow{
 			DimensionID:   m.DimensionID,
+			AccountID:     accountID,
+			Connector:     m.Connector,
+			Category:      category,
 			DimensionName: m.DimensionName,
 			CostValue:     costValue,
 		})

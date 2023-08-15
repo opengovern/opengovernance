@@ -6190,6 +6190,22 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SpendTableRow": {
             "type": "object",
             "properties": {
+                "accountID": {
+                    "type": "string",
+                    "example": "1239042"
+                },
+                "category": {
+                    "type": "string",
+                    "example": "Compute"
+                },
+                "connector": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "AWS"
+                },
                 "costValue": {
                     "type": "object",
                     "additionalProperties": {

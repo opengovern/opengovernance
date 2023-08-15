@@ -1426,6 +1426,16 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.SpendTableRow:
     properties:
+      accountID:
+        example: "1239042"
+        type: string
+      category:
+        example: Compute
+        type: string
+      connector:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: AWS
       costValue:
         additionalProperties:
           type: number
