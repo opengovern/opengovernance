@@ -25,21 +25,21 @@ func ReporterCommand() *cobra.Command {
 			EnsureRunGoroutin(func() {
 				j.Run()
 			})
-			return startHttpServer(cmd.Context())
+			return startHttpServer(cmd.Context(), j)
 		},
 	}
 
 	return cmd
 }
 
-func startHttpServer(ctx context.Context) error {
+func startHttpServer(ctx context.Context, j *Job) error {
 
 	logger, err := zap.NewProduction()
 	if err != nil {
 		return fmt.Errorf("new logger: %w", err)
 	}
 
-	httpServer := NewHTTPServer(HttpAddress, logger)
+	httpServer := NewHTTPServer(HttpAddress, logger, j)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)
 	}

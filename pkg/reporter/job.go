@@ -39,6 +39,24 @@ type Query struct {
 	TableName string   `json:"tableName"`
 }
 
+type TriggerQueryRequest struct {
+	Query  Query  `json:"query"`
+	Source string `json:"sources"`
+}
+
+type QueryMismatch struct {
+	KeyColumn      string `json:"keyColumn"`
+	ConflictColumn string `json:"conflictColumn"`
+	Steampipe      string `json:"steampipe"`
+	Elasticsearch  string `json:"elasticsearch"`
+}
+
+type TriggerQueryResponse struct {
+	TotalRows          int             `json:"totalRows"`
+	NotMatchingColumns []string        `json:"notMatchingColumns"`
+	Mismatches         []QueryMismatch `json:"messages"`
+}
+
 type JobConfig struct {
 	Steampipe       config.Postgres
 	SteampipeES     config.Postgres
@@ -143,7 +161,7 @@ func (j *Job) Run() {
 
 	for {
 		//fmt.Println("starting job")
-		if err := j.RunJob(); err != nil {
+		if err := j.RunRandomJob(); err != nil {
 			j.logger.Error("failed to run job", zap.Error(err))
 			time.Sleep(time.Minute)
 		} else {
@@ -152,41 +170,47 @@ func (j *Job) Run() {
 	}
 }
 
-func (j *Job) RunJob() error {
+func (j *Job) RunRandomJob() error {
+	account, err := j.RandomAccount()
+	if err != nil {
+		return err
+	}
+
+	query := j.RandomQuery(account.Connector)
+	err, _ = j.RunJob(account, query)
+	return err
+}
+
+func (j *Job) RunJob(account *api2.Connection, query *Query) (error, *TriggerQueryResponse) {
 	defer func() {
 		if r := recover(); r != nil {
 			j.logger.Error("panic", zap.Error(fmt.Errorf("%v", r)))
 		}
 	}()
 
-	account, err := j.RandomAccount()
-	if err != nil {
-		return err
-	}
-
 	awsCred, azureCred, err := j.onboardClient.GetSourceFullCred(&httpclient.Context{
 		UserRole: api.KaytuAdminRole,
 	}, account.ID.String())
 	if err != nil {
-		return err
+		return err, nil
 	}
 
 	err = j.PopulateSteampipe(account, awsCred, azureCred)
 	if err != nil {
-		return err
+		return err, nil
 	}
 
 	cmd := exec.Command("steampipe", "service", "stop", "--force")
 	err = cmd.Start()
 	if err != nil {
-		return err
+		return err, nil
 	}
 	time.Sleep(5 * time.Second)
 	//NOTE: stop must be called twice. it's not a mistake
 	cmd = exec.Command("steampipe", "service", "stop", "--force")
 	err = cmd.Start()
 	if err != nil {
-		return err
+		return err, nil
 	}
 	time.Sleep(5 * time.Second)
 
@@ -194,7 +218,7 @@ func (j *Job) RunJob() error {
 		"9193", "--database-password", "abcd")
 	err = cmd.Run()
 	if err != nil {
-		return err
+		return err, nil
 	}
 	time.Sleep(5 * time.Second)
 
@@ -206,29 +230,29 @@ func (j *Job) RunJob() error {
 		Db:   "steampipe",
 	})
 	if err != nil {
-		return err
+		return err, nil
 	}
 	defer s1.Conn().Close()
 
 	j.steampipe = s1
-	//fmt.Println("+++++ Connected to steampipe")
-	query := j.RandomQuery(account.Connector)
 
 	j.logger.Info("running query", zap.String("account", account.ConnectionID), zap.String("query", query.ListQuery))
 	listQuery := strings.ReplaceAll(query.ListQuery, "%ACCOUNT_ID%", account.ConnectionID)
 	listQuery = strings.ReplaceAll(listQuery, "%KAYTU_ACCOUNT_ID%", account.ID.String())
 	steampipeRows, err := j.steampipe.Conn().Query(context.Background(), listQuery)
 	if err != nil {
-		return err
+		return err, nil
 	}
 	defer steampipeRows.Close()
 
+	var mismatches []QueryMismatch
+	var columns []string
 	rowCount := 0
 	for steampipeRows.Next() {
 		rowCount++
 		steampipeRow, err := steampipeRows.Values()
 		if err != nil {
-			return err
+			return err, nil
 		}
 
 		steampipeRecord := map[string]interface{}{}
@@ -246,7 +270,7 @@ func (j *Job) RunJob() error {
 
 		esRows, err := j.esSteampipe.Conn().Query(context.Background(), getQuery, keyValues...)
 		if err != nil {
-			return err
+			return err, nil
 		}
 
 		found := false
@@ -254,7 +278,7 @@ func (j *Job) RunJob() error {
 		for esRows.Next() {
 			esRow, err := esRows.Values()
 			if err != nil {
-				return err
+				return err, nil
 			}
 
 			found = true
@@ -269,12 +293,12 @@ func (j *Job) RunJob() error {
 
 				j1, err := json.Marshal(v)
 				if err != nil {
-					return err
+					return err, nil
 				}
 
 				j2, err := json.Marshal(v2)
 				if err != nil {
-					return err
+					return err, nil
 				}
 
 				sj1 := strings.ToLower(string(j1))
@@ -293,6 +317,22 @@ func (j *Job) RunJob() error {
 						continue
 					}
 					ReporterJobsCount.WithLabelValues(query.TableName, "Failed").Inc()
+					hasColumn := false
+					for _, c := range columns {
+						if c == k {
+							hasColumn = true
+							break
+						}
+					}
+					if !hasColumn {
+						columns = append(columns, k)
+					}
+					mismatches = append(mismatches, QueryMismatch{
+						KeyColumn:      fmt.Sprintf("%v", keyValues),
+						ConflictColumn: k,
+						Steampipe:      sj1,
+						Elasticsearch:  sj2,
+					})
 					if k != "etag" && k != "tags" {
 						j.logger.Warn("inconsistency in data",
 							zap.String("get-query", query.GetQuery),
@@ -310,6 +350,12 @@ func (j *Job) RunJob() error {
 		}
 
 		if !found {
+			mismatches = append(mismatches, QueryMismatch{
+				KeyColumn:      fmt.Sprintf("%v", keyValues),
+				ConflictColumn: "",
+				Steampipe:      "",
+				Elasticsearch:  "Record Not Found",
+			})
 			ReporterJobsCount.WithLabelValues(query.TableName, "Failed").Inc()
 			j.logger.Warn("record not found",
 				zap.String("get-query", query.GetQuery),
@@ -321,7 +367,11 @@ func (j *Job) RunJob() error {
 
 	j.logger.Info("Done", zap.Int("rowCount", rowCount))
 
-	return nil
+	return nil, &TriggerQueryResponse{
+		TotalRows:          rowCount,
+		NotMatchingColumns: columns,
+		Mismatches:         mismatches,
+	}
 }
 
 func (j *Job) RandomAccount() (*api2.Connection, error) {
