@@ -17,6 +17,8 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
+const timeAtMaxSearchFrame = 5 * 24 * time.Hour // 5 days
+
 type FetchConnectionAnalyticMetricCountAtTimeResponse struct {
 	Aggregations struct {
 		MetricGroup struct {
@@ -61,6 +63,7 @@ func FetchConnectionAnalyticMetricCountAtTime(client kaytu.Client, connectors []
 		"range": map[string]any{
 			"evaluated_at": map[string]string{
 				"lte": strconv.FormatInt(t.UnixMilli(), 10),
+				"gte": strconv.FormatInt(t.Add(-1*timeAtMaxSearchFrame).UnixMilli(), 10),
 			},
 		},
 	})
@@ -161,6 +164,7 @@ func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client, connectors []s
 		"range": map[string]any{
 			"evaluated_at": map[string]string{
 				"lte": strconv.FormatInt(t.UnixMilli(), 10),
+				"gte": strconv.FormatInt(t.Add(-1*timeAtMaxSearchFrame).UnixMilli(), 10),
 			},
 		},
 	})
@@ -517,6 +521,7 @@ func FetchRegionSummaryPage(client kaytu.Client, connectors []source.Type, conne
 		"range": map[string]any{
 			"evaluated_at": map[string]any{
 				"lte": strconv.FormatInt(timeAt.UnixMilli(), 10),
+				"gte": strconv.FormatInt(timeAt.Add(-1*timeAtMaxSearchFrame).UnixMilli(), 10),
 			},
 		},
 	})
@@ -622,6 +627,7 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 		"range": map[string]any{
 			"evaluated_at": map[string]any{
 				"lte": t.UnixMilli(),
+				"gte": t.Add(-1 * timeAtMaxSearchFrame).UnixMilli(),
 			},
 		},
 	})
@@ -731,6 +737,7 @@ func FetchConnectorAnalyticsResourcesCountAtTime(client kaytu.Client, connectors
 		"range": map[string]any{
 			"evaluated_at": map[string]any{
 				"lte": t.UnixMilli(),
+				"gte": t.Add(-1 * timeAtMaxSearchFrame).UnixMilli(),
 			},
 		},
 	})
