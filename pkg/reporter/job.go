@@ -41,7 +41,7 @@ type Query struct {
 
 type TriggerQueryRequest struct {
 	Query  Query  `json:"query"`
-	Source string `json:"sources"`
+	Source string `json:"source"`
 }
 
 type QueryMismatch struct {
