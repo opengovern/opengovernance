@@ -1593,6 +1593,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 //	@Success		200				{object}	inventoryApi.ListCostCompositionResponse
 //	@Router			/inventory/api/v2/analytics/spend/composition [get]
 func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
 	var err error
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
@@ -1616,6 +1617,11 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 		}
 	}
 
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, nil, nil)
+	if err != nil {
+		return err
+	}
+
 	costMetricMap := make(map[string]inventoryApi.CostMetric)
 	spends, err := es.FetchSpendByMetric(h.client, connectionIDs, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
 	if err != nil {
@@ -1623,9 +1629,37 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 	}
 	for metricID, spend := range spends {
 		localSpend := spend
-		costMetricMap[metricID] = inventoryApi.CostMetric{
-			CostDimensionName: localSpend.MetricName,
-			TotalCost:         &localSpend.CostValue,
+
+		var metric analyticsDB.AnalyticMetric
+		for _, m := range metrics {
+			if m.ID == metricID {
+				metric = m
+			}
+		}
+
+		categoryExists := false
+		for _, tag := range metric.Tags {
+			if tag.GetKey() == "category" {
+				for _, value := range tag.GetValue() {
+					categoryExists = true
+					if v, ok := costMetricMap[value]; ok {
+						v.TotalCost = utils.PAdd(v.TotalCost, &localSpend.CostValue)
+						costMetricMap[value] = v
+					} else {
+						costMetricMap[value] = inventoryApi.CostMetric{
+							CostDimensionName: value,
+							TotalCost:         &localSpend.CostValue,
+						}
+					}
+				}
+			}
+		}
+
+		if !categoryExists {
+			costMetricMap[metricID] = inventoryApi.CostMetric{
+				CostDimensionName: localSpend.MetricName,
+				TotalCost:         &localSpend.CostValue,
+			}
 		}
 	}
 
