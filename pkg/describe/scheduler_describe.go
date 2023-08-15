@@ -181,11 +181,14 @@ func (s *Scheduler) RunDescribeResourceJobCycle() error {
 }
 
 func (s *Scheduler) RunDescribeResourceJobs() {
-	for {
+	t := time.NewTicker(time.Second * 1)
+	defer t.Stop()
+	for ; ; <-t.C {
 		if err := s.RunDescribeResourceJobCycle(); err != nil {
-			time.Sleep(5 * time.Second)
+			t.Reset(time.Second * 5)
+		} else {
+			t.Reset(time.Second * 1)
 		}
-		time.Sleep(1 * time.Second)
 	}
 }
 
