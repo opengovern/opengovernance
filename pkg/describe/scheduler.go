@@ -100,6 +100,11 @@ var ComplianceSourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help: "Count of describe source jobs in scheduler service",
 }, []string{"status"})
 
+var QueuedDescribeResourceJobsCount = promauto.NewGauge(prometheus.GaugeOpts{
+	Name: "kaytu_scheduler_queued_describe_resource_jobs_total",
+	Help: "Count of queued describe resource jobs in scheduler service",
+})
+
 type OperationMode string
 
 const (
