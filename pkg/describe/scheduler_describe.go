@@ -69,6 +69,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle() error {
 		return err
 	}
 
+	DescribePublishingBlocked.WithLabelValues().Set(float64(count))
 	if count > MaxQueued {
 		s.logger.Error("queue is full", zap.String("spot", "count > MaxQueued"), zap.Error(err))
 		return errors.New("queue is full")
