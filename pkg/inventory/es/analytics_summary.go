@@ -595,34 +595,31 @@ func FetchRegionSummaryPage(client kaytu.Client, connectors []source.Type, conne
 	return hits, nil
 }
 
-type FetchConnectionAnalyticsResourcesCountAtResponse struct {
+type FetchConnectionAnalyticsResourcesCountAtTimeResponse struct {
+	Took         int `json:"took"`
 	Aggregations struct {
 		ConnectionIDGroup struct {
-			Key     string `json:"key"`
 			Buckets []struct {
-				Key         string `json:"key"`
-				MetricGroup struct {
-					Key     string `json:"key"`
-					Buckets []struct {
-						Latest struct {
-							Hits struct {
-								Hits []struct {
-									Source resource.ConnectionMetricTrendSummary `json:"_source"`
-								} `json:"hits"`
-							} `json:"hits"`
-						} `json:"latest"`
-					} `json:"buckets"`
-				} `json:"metric_group"`
+				Key             string `json:"key"`
+				SumMetricGroups struct {
+					Value float64 `json:"value"`
+				} `json:"sum_metric_groups"`
+				LatestAvailable struct {
+					Value float64 `json:"value"`
+				} `json:"latest_available"`
 			} `json:"buckets"`
 		} `json:"connection_id_group"`
 	} `json:"aggregations"`
 }
 
-func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connectors []source.Type, connectionIDs []string, t time.Time, size int) ([]resource.ConnectionMetricTrendSummary, error) {
-	var hits []resource.ConnectionMetricTrendSummary
+type FetchConnectionAnalyticsResourcesCountAtTimeReturnValue struct {
+	ResourceCountsSum int
+	LatestEvaluatedAt int64
+}
+
+func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connectors []source.Type, connectionIDs []string, t time.Time, size int) (map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue, error) {
 	res := make(map[string]any)
 	var filters []any
-
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
 			"evaluated_at": map[string]any{
@@ -668,14 +665,24 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 						"size":  size,
 					},
 					"aggs": map[string]any{
-						"latest": map[string]any{
-							"top_hits": map[string]any{
-								"size": 1,
-								"sort": map[string]string{
-									"evaluated_at": "desc",
-								},
+						"latest_quantity": map[string]any{
+							"scripted_metric": map[string]any{
+								"init_script":    "state.quantities = new TreeMap()",
+								"map_script":     "state.quantities.put(doc.evaluated_at.value, [doc.evaluated_at.value, doc.resource_count.value])",
+								"combine_script": "return state.quantities.lastEntry().getValue()",
+								"reduce_script":  "long maxkey = 0; long qty = 0; for (a in states) {def currentKey = a[0]; if (currentKey > maxkey) {maxkey = currentKey; qty = a[1]} } return qty;",
 							},
 						},
+					},
+				},
+				"sum_metric_groups": map[string]any{
+					"sum_bucket": map[string]any{
+						"buckets_path": "metric_group>latest_quantity.value",
+					},
+				},
+				"latest_available": map[string]any{
+					"max": map[string]any{
+						"field": "evaluated_at",
 					},
 				},
 			},
@@ -689,17 +696,27 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 
 	query := string(b)
 	fmt.Println("FetchConnectionAnalyticsResourcesCountAtTime query =", query)
-	var response FetchConnectionAnalyticsResourcesCountAtResponse
-	err = client.Search(context.Background(), resource.AnalyticsConnectionSummaryIndex, query, &response)
+	var response FetchConnectionAnalyticsResourcesCountAtTimeResponse
+	err = client.SearchWithFilterPath(
+		context.Background(),
+		resource.AnalyticsConnectionSummaryIndex,
+		query,
+		[]string{
+			"took",
+			"aggregations.connection_id_group.buckets.key",
+			"aggregations.connection_id_group.buckets.latest_available.value",
+			"aggregations.connection_id_group.buckets.sum_metric_groups.value",
+		},
+		&response)
 	if err != nil {
 		return nil, err
 	}
 
+	hits := make(map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue)
 	for _, connectionIdBucket := range response.Aggregations.ConnectionIDGroup.Buckets {
-		for _, metricBucket := range connectionIdBucket.MetricGroup.Buckets {
-			for _, hit := range metricBucket.Latest.Hits.Hits {
-				hits = append(hits, hit.Source)
-			}
+		hits[connectionIdBucket.Key] = FetchConnectionAnalyticsResourcesCountAtTimeReturnValue{
+			ResourceCountsSum: int(connectionIdBucket.SumMetricGroups.Value),
+			LatestEvaluatedAt: int64(connectionIdBucket.LatestAvailable.Value),
 		}
 	}
 	return hits, nil
