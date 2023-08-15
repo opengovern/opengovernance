@@ -1968,6 +1968,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		return err
 	}
 
+	fmt.Println("FetchSpendTableByDimension res = ", len(mt))
 	var table []inventoryApi.SpendTableRow
 	for _, m := range mt {
 		costValue := map[string]float64{}

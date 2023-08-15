@@ -372,6 +372,7 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.Spen
 	}
 
 	var result []DimensionTrend
+	fmt.Println(response)
 	for _, bucket := range response.Aggregations.DimensionGroup.Buckets {
 		mt := DimensionTrend{
 			DimensionID: bucket.Key,
