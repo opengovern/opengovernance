@@ -1589,7 +1589,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 //	@Param			connector	query		[]source.Type	false	"Connector type to filter by"
 //	@Param			metricType	query		string			false	"Metric type, default: assets"	Enums(assets, spend)
 //
-//	@Success		200			{object}	inventoryApi.ListCostMetricsResponse
+//	@Success		200			{object}	[]inventoryApi.AnalyticsMetric
 //	@Router			/inventory/api/v2/analytics/metrics/list [get]
 func (h *HttpHandler) ListMetrics(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)

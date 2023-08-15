@@ -1692,7 +1692,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostMetricsResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AnalyticsMetric"
+                            }
                         }
                     }
                 }
@@ -4313,6 +4316,17 @@ const docTemplate = `{
                 "message": {}
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_analytics_db.MetricType": {
+            "type": "string",
+            "enum": [
+                "assets",
+                "spend"
+            ],
+            "x-enum-varnames": [
+                "MetricTypeAssets",
+                "MetricTypeSpend"
+            ]
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyRequest": {
             "type": "object",
             "properties": {
@@ -5735,6 +5749,47 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AnalyticsMetric": {
+            "type": "object",
+            "properties": {
+                "connectors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    }
+                },
+                "finderQuery": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "tables": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "type": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_analytics_db.MetricType"
                 }
             }
         },

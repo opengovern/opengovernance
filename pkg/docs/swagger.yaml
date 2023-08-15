@@ -36,6 +36,14 @@ definitions:
     properties:
       message: {}
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_analytics_db.MetricType:
+    enum:
+    - assets
+    - spend
+    type: string
+    x-enum-varnames:
+    - MetricTypeAssets
+    - MetricTypeSpend
   github_com_kaytu-io_kaytu-engine_pkg_auth_api.CreateAPIKeyRequest:
     properties:
       name:
@@ -1049,6 +1057,33 @@ definitions:
             type: string
           type: array
         type: object
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AnalyticsMetric:
+    properties:
+      connectors:
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
+      finderQuery:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      query:
+        type: string
+      tables:
+        items:
+          type: string
+        type: array
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      type:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_analytics_db.MetricType'
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AssetTableRow:
     properties:
@@ -3432,7 +3467,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListCostMetricsResponse'
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AnalyticsMetric'
+            type: array
       security:
       - BearerToken: []
       summary: List metrics
