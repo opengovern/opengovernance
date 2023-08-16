@@ -78,6 +78,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			}
 		case <-t.C:
 			err := s.db.UpdateDescribeResourceJobsTimedOut(s.describeTimeoutHours)
+			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 			if err != nil {
 				s.logger.Error("failed to update timed out DescribeResourceJobs", zap.Error(err))
 			}
