@@ -86,10 +86,21 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 }
 
 func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
-	var searchAfter []interface{}
+	var searchAfter []any
 
+	deletedCount := 0
+	s.logger.Info("starting to delete old resources",
+		zap.Uint("jobId", res.JobID),
+		zap.String("connection_id", res.DescribeJob.SourceID),
+		zap.String("resource_type", res.DescribeJob.ResourceType),
+	)
 	for {
-		esResp, err := es.GetResourceIDsForAccountResourceTypeFromES(s.es, res.DescribeJob.SourceID, res.DescribeJob.ResourceType, searchAfter, 1000)
+		esResp, err := es.GetResourceIDsForAccountResourceTypeFromES(
+			s.es,
+			res.DescribeJob.SourceID,
+			res.DescribeJob.ResourceType,
+			searchAfter,
+			1000)
 		if err != nil {
 			return err
 		}
@@ -111,7 +122,6 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 			}
 
 			if !exists {
-				fmt.Println("deleting", res.DescribeJob.ResourceType, esResourceID, "does not exists in new described", len(res.DescribedResourceIDs))
 				OldResourcesDeletedCount.WithLabelValues(string(res.DescribeJob.SourceType)).Inc()
 				resource := es.Resource{
 					ID:           esResourceID,
@@ -125,7 +135,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 
 				lookupResource := es.LookupResource{
 					ResourceID:   esResourceID,
-					ResourceType: strings.ToLower(res.DescribeJob.ResourceType),
+					ResourceType: res.DescribeJob.ResourceType,
 					SourceType:   res.DescribeJob.SourceType,
 				}
 				keys, idx = lookupResource.KeysAndIndex()
@@ -139,10 +149,20 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 		}
 		err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs)
 		if err != nil {
-			s.logger.Error("failed to send delete message to kafka", zap.Error(err))
+			s.logger.Error("failed to send delete message to kafka",
+				zap.Uint("jobId", res.JobID),
+				zap.String("connection_id", res.DescribeJob.SourceID),
+				zap.String("resource_type", res.DescribeJob.ResourceType),
+				zap.Error(err))
 			return err
 		}
+		deletedCount += len(msgs)
 	}
+	s.logger.Info("deleted old resources",
+		zap.Uint("jobId", res.JobID),
+		zap.String("connection_id", res.DescribeJob.SourceID),
+		zap.String("resource_type", res.DescribeJob.ResourceType),
+		zap.Int("deleted_count", deletedCount))
 
 	return nil
 }

@@ -110,7 +110,6 @@ type OperationMode string
 const (
 	OperationModeScheduler OperationMode = "scheduler"
 	OperationModeReceiver  OperationMode = "receiver"
-	OperationModeKafkaSink OperationMode = "kafka-sink"
 )
 
 type Scheduler struct {
@@ -172,7 +171,6 @@ type Scheduler struct {
 	es                  kaytu.Client
 	rdb                 *redis.Client
 	kafkaProducer       *confluent_kafka.Producer
-	kafkaESSink         *KafkaEsSink
 	kafkaResourcesTopic string
 	kafkaDeletionTopic  string
 	kafkaConsumer       *confluent_kafka.Consumer
@@ -372,7 +370,6 @@ func InitializeScheduler(
 		return nil, err
 	}
 	s.kafkaConsumer = kafkaResourceSinkConsumer
-	s.kafkaESSink = NewKafkaEsSink(s.logger, kafkaResourceSinkConsumer, s.es)
 
 	helmConfig := HelmConfig{
 		KaytuHelmChartLocation: kaytuHelmChartLocation,
@@ -529,9 +526,6 @@ func (s *Scheduler) Run() error {
 		EnsureRunGoroutin(func() {
 			s.RunDescribeJobCompletionUpdater()
 		})
-		EnsureRunGoroutin(func() {
-			s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
-		})
 		// ---------
 
 		// --------- inventory summarizer
@@ -590,6 +584,9 @@ func (s *Scheduler) Run() error {
 			s.RunScheduledJobCleanup()
 		})
 	case OperationModeReceiver:
+		EnsureRunGoroutin(func() {
+			s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
+		})
 		s.logger.Info("starting receiver")
 		lis, err := net.Listen("tcp", GRPCServerAddress)
 		if err != nil {
@@ -601,9 +598,6 @@ func (s *Scheduler) Run() error {
 				s.logger.Fatal("failed to serve grpc server", zap.Error(err))
 			}
 		}()
-	case OperationModeKafkaSink:
-		s.logger.Info("starting kafka sink")
-		s.kafkaESSink.Run()
 	}
 
 	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
