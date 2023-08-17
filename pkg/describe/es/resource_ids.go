@@ -27,35 +27,22 @@ type ResourceIdentifierFetchHit struct {
 }
 
 func GetResourceIDsForAccountResourceTypeFromES(client kaytu.Client, sourceID, resourceType string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
-	terms := map[string][]string{
-		"source_id":     {sourceID},
-		"resource_type": {strings.ToLower(resourceType)},
-	}
-
 	root := map[string]any{}
+	root["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": []map[string]any{
+				{"term": map[string]string{"source_id": sourceID}},
+				{"term": map[string]string{"resource_type": strings.ToLower(resourceType)}},
+			},
+		},
+	}
 	if searchAfter != nil {
 		root["search_after"] = searchAfter
 	}
 	root["size"] = size
-
 	root["sort"] = []map[string]any{
-		{
-			"_id": "desc",
-		},
-	}
-
-	boolQuery := make(map[string]any)
-	var filters []map[string]any
-	for k, vs := range terms {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{
-				k: vs,
-			},
-		})
-	}
-	boolQuery["filter"] = filters
-	root["query"] = map[string]any{
-		"bool": boolQuery,
+		{"created_at": "asc"},
+		{"_id": "desc"},
 	}
 
 	queryBytes, err := json.Marshal(root)
@@ -75,34 +62,21 @@ func GetResourceIDsForAccountResourceTypeFromES(client kaytu.Client, sourceID, r
 }
 
 func GetResourceIDsForAccountFromES(client kaytu.Client, sourceID string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
-	terms := map[string][]string{
-		"source_id": {sourceID},
-	}
-
 	root := map[string]any{}
+	root["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": []map[string]any{
+				{"term": map[string]string{"source_id": sourceID}},
+			},
+		},
+	}
 	if searchAfter != nil {
 		root["search_after"] = searchAfter
 	}
 	root["size"] = size
-
 	root["sort"] = []map[string]any{
-		{
-			"_id": "desc",
-		},
-	}
-
-	boolQuery := make(map[string]any)
-	var filters []map[string]any
-	for k, vs := range terms {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{
-				k: vs,
-			},
-		})
-	}
-	boolQuery["filter"] = filters
-	root["query"] = map[string]any{
-		"bool": boolQuery,
+		{"created_at": "asc"},
+		{"_id": "desc"},
 	}
 
 	queryBytes, err := json.Marshal(root)
@@ -119,27 +93,4 @@ func GetResourceIDsForAccountFromES(client kaytu.Client, sourceID string, search
 	}
 
 	return &response, nil
-}
-
-func DeleteByIds(client kaytu.Client, index string, ids []string) (*kaytu.DeleteByQueryResponse, error) {
-	if len(ids) == 0 {
-		return nil, fmt.Errorf("no ids to delete")
-	}
-
-	query := map[string]interface{}{
-		"query": map[string]interface{}{
-			"terms": map[string][]string{
-				"_id": ids,
-			},
-		},
-	}
-
-	res, err := kaytu.DeleteByQuery(context.TODO(), client.ES(), []string{index}, query,
-		client.ES().DeleteByQuery.WithRefresh(true),
-		client.ES().DeleteByQuery.WithConflicts("proceed"),
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &res, nil
 }
