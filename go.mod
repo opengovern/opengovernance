@@ -1,6 +1,6 @@
 module github.com/kaytu-io/kaytu-engine
 
-go 1.19
+go 1.21
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.0
