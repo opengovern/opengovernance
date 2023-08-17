@@ -262,7 +262,7 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 		for {
 			err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
 			if err != nil {
-				fmt.Println("failed to send to kafka due to", err, "len is", h.kafkaProducer.Len())
+				h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()), zap.Int("retry", retry))
 				retry++
 				if retry > 10 {
 					return err
@@ -490,7 +490,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 		for {
 			err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
 			if err != nil {
-				fmt.Println("failed to send to kafka due to", err, "len is", h.kafkaProducer.Len())
+				h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()), zap.Int("retry", retry))
 				retry++
 				if retry > 10 {
 					return err
