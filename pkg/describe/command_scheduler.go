@@ -31,7 +31,6 @@ var (
 
 	KafkaService        = os.Getenv("KAFKA_SERVICE")
 	KafkaResourcesTopic = os.Getenv("KAFKA_RESOURCE_TOPIC")
-	KafkaDeletionTopic  = os.Getenv("KAFKA_DELETION_TOPIC")
 
 	PostgreSQLHost     = os.Getenv("POSTGRESQL_HOST")
 	PostgreSQLPort     = os.Getenv("POSTGRESQL_PORT")
