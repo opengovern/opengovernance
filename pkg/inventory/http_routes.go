@@ -41,6 +41,7 @@ import (
 const (
 	EsFetchPageSize = 10000
 	MaxConns        = 100
+	KafkaPageSize   = 5000
 )
 
 const (
@@ -255,9 +256,22 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 		docs = append(docs, c)
 	}
 
-	err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docs, h.logger)
-	if err != nil {
-		return err
+	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
+		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
+		retry := 0
+		for {
+			err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
+			if err != nil {
+				fmt.Println("failed to send to kafka due to", err, "len is", h.kafkaProducer.Len())
+				retry++
+				if retry > 10 {
+					return err
+				}
+				time.Sleep(10 * time.Second)
+				continue
+			}
+			break
+		}
 	}
 	return nil
 }
@@ -470,20 +484,24 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 		docs = append(docs, c)
 	}
 
-	retry := 0
-	for {
-		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docs, h.logger)
-		if err != nil {
-			fmt.Println("failed to send to kafka due to", err, "len is", h.kafkaProducer.Len())
-			retry++
-			if retry > 10 {
-				return err
+	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
+		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
+		retry := 0
+		for {
+			err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
+			if err != nil {
+				fmt.Println("failed to send to kafka due to", err, "len is", h.kafkaProducer.Len())
+				retry++
+				if retry > 10 {
+					return err
+				}
+				time.Sleep(10 * time.Second)
+				continue
 			}
-			time.Sleep(10 * time.Second)
-			continue
+			break
 		}
-		break
 	}
+
 	return nil
 }
 
