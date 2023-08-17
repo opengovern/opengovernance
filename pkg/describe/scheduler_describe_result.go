@@ -130,8 +130,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 					SourceType:   res.DescribeJob.SourceType,
 				}
 				keys, idx := resource.KeysAndIndex()
-				key := kafka.HashOf(keys...)
-				msg := kafka.Msg(key, nil, idx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
+				msg := kafka.Msg(kafka.HashOf(keys...), nil, idx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
 				msgs = append(msgs, msg)
 
 				lookupResource := es.LookupResource{
@@ -139,13 +138,24 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 					ResourceType: res.DescribeJob.ResourceType,
 					SourceType:   res.DescribeJob.SourceType,
 				}
-				keys, idx = lookupResource.KeysAndIndex()
-				key = kafka.HashOf(keys...)
-				msg = kafka.Msg(key, nil, idx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
+				lookUpKeys, lookUpIdx := lookupResource.KeysAndIndex()
+				msg = kafka.Msg(kafka.HashOf(lookUpKeys...), nil, lookUpIdx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
 				msgs = append(msgs, msg)
 				if err != nil {
 					return err
 				}
+
+				s.logger.Info("deleting old resource",
+					zap.Uint("jobId", res.JobID),
+					zap.String("connection_id", res.DescribeJob.SourceID),
+					zap.String("resource_type", res.DescribeJob.ResourceType),
+					zap.String("resource_id", esResourceID),
+					zap.String("hash_id", kafka.HashOf(keys...)),
+					zap.String("lookup_hash_id", kafka.HashOf(lookUpKeys...)),
+					zap.String("index", idx),
+					zap.String("lookup_index", lookUpIdx),
+				)
+
 			}
 		}
 		err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs)

@@ -172,7 +172,6 @@ type Scheduler struct {
 	rdb                 *redis.Client
 	kafkaProducer       *confluent_kafka.Producer
 	kafkaResourcesTopic string
-	kafkaDeletionTopic  string
 	kafkaConsumer       *confluent_kafka.Consumer
 
 	describeEndpoint string
@@ -252,7 +251,6 @@ func InitializeScheduler(
 		keyARN:              KeyARN,
 		keyRegion:           KeyRegion,
 		kafkaResourcesTopic: KafkaResourcesTopic,
-		kafkaDeletionTopic:  KafkaDeletionTopic,
 	}
 	defer func() {
 		if err != nil && s != nil {
