@@ -123,6 +123,11 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
 			return nil, err
 		}
+
+		if strings.ToLower(resource.Job.ResourceType) == "aws::costexplorer::byservicedaily" {
+			fmt.Println("===================================================== Cost", resource.UniqueId, "\n", resource.DescriptionJson)
+		}
+
 		kafkaResource := es.Resource{
 			ID:            resource.UniqueId,
 			ARN:           resource.Arn,
