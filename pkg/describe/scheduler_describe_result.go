@@ -144,18 +144,6 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				if err != nil {
 					return err
 				}
-
-				s.logger.Info("deleting old resource",
-					zap.Uint("jobId", res.JobID),
-					zap.String("connection_id", res.DescribeJob.SourceID),
-					zap.String("resource_type", res.DescribeJob.ResourceType),
-					zap.String("resource_id", esResourceID),
-					zap.String("hash_id", kafka.HashOf(keys...)),
-					zap.String("lookup_hash_id", kafka.HashOf(lookUpKeys...)),
-					zap.String("index", idx),
-					zap.String("lookup_index", lookUpIdx),
-				)
-
 			}
 		}
 		err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs)
