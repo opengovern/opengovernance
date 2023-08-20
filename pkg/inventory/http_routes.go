@@ -439,6 +439,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 				ConnectionName: conn.ConnectionName,
 				Connector:      hit.Connector,
 				Date:           dateStr,
+				DateEpoch:      dateTimestamp * 1000,
 				Month:          monthStr,
 				Year:           yearStr,
 				MetricID:       metricID,
@@ -458,6 +459,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 			connector := spend.ConnectorMetricTrendSummary{
 				Connector:   hit.Connector,
 				Date:        dateStr,
+				DateEpoch:   dateTimestamp * 1000,
 				Month:       monthStr,
 				Year:        yearStr,
 				MetricID:    metricID,

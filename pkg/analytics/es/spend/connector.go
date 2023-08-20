@@ -11,6 +11,7 @@ const (
 type ConnectorMetricTrendSummary struct {
 	Connector   source.Type `json:"connector"`
 	Date        string      `json:"date"`
+	DateEpoch   int64       `json:"date_epoch"`
 	Month       string      `json:"month"`
 	Year        string      `json:"year"`
 	MetricID    string      `json:"metric_id"`

@@ -315,6 +315,7 @@ func (j *Job) DoSpendMetric(
 				ConnectionName: conn.ConnectionName,
 				Connector:      conn.Connector,
 				Date:           dateTimestamp.Format("2006-01-02"),
+				DateEpoch:      dateTimestamp.Unix(),
 				Month:          dateTimestamp.Format("2006-01"),
 				Year:           dateTimestamp.Format("2006"),
 				MetricID:       metric.ID,
@@ -333,6 +334,7 @@ func (j *Job) DoSpendMetric(
 			vn := spend.ConnectorMetricTrendSummary{
 				Connector:   conn.Connector,
 				Date:        dateTimestamp.Format("2006-01-02"),
+				DateEpoch:   dateTimestamp.Unix(),
 				Month:       dateTimestamp.Format("2006-01"),
 				Year:        dateTimestamp.Format("2006"),
 				MetricID:    metric.ID,
