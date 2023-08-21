@@ -64,8 +64,8 @@ func (j SummarizeJob) DoMustSummarizer(client kaytu.Client, db inventory.Databas
 
 	// Assume it succeeded unless it fails somewhere
 	var (
-		status         = api.SummarizerJobSucceeded
-		firstErr error = nil
+		status            = api.SummarizerJobSucceeded
+		allErrors []error = nil
 	)
 
 	fail := func(err error) {
@@ -73,9 +73,7 @@ func (j SummarizeJob) DoMustSummarizer(client kaytu.Client, db inventory.Databas
 		DoResourceSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoResourceSummarizerJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Inc()
 		status = api.SummarizerJobFailed
-		if firstErr == nil {
-			firstErr = err
-		}
+		allErrors = append(allErrors, err)
 	}
 
 	resourceTypes := make([]string, 0)
@@ -159,13 +157,7 @@ func (j SummarizeJob) DoMustSummarizer(client kaytu.Client, db inventory.Databas
 			if end > len(msgs) {
 				end = len(msgs)
 			}
-			for retry := 0; retry < 10; retry++ {
-				err = kafka.DoSend(producer, topic, -1, msgs[i:end], logger)
-				if err == nil {
-					break
-				}
-				time.Sleep(10 * time.Second)
-			}
+			err = kafka.DoSend(producer, topic, -1, msgs[i:end], logger)
 			if err != nil {
 				fail(fmt.Errorf("Failed to send to kafka: %v ", err))
 			}
@@ -174,8 +166,10 @@ func (j SummarizeJob) DoMustSummarizer(client kaytu.Client, db inventory.Databas
 	}
 
 	errMsg := ""
-	if firstErr != nil {
-		errMsg = firstErr.Error()
+	if allErrors != nil {
+		for _, err := range allErrors {
+			errMsg = fmt.Sprintf("%s\n%s", errMsg, err.Error())
+		}
 	}
 	if status == api.SummarizerJobSucceeded {
 		DoResourceSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "successful").Observe(float64(time.Now().Unix() - startTime))
