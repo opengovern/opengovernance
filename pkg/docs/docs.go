@@ -3294,6 +3294,13 @@ const docTemplate = `{
                         "name": "sourceId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Whether to update metadata or not",
+                        "name": "updateMetadata",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -6811,6 +6818,12 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential": {
             "type": "object",
             "properties": {
+                "archived_connections": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 0
+                },
                 "autoOnboardEnabled": {
                     "type": "boolean",
                     "example": false
@@ -6838,6 +6851,12 @@ const docTemplate = `{
                     ],
                     "example": "manual-aws-org"
                 },
+                "disabled_connections": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 0
+                },
                 "discovered_connections": {
                     "type": "integer",
                     "maximum": 100,
@@ -6847,12 +6866,6 @@ const docTemplate = `{
                 "enabled": {
                     "type": "boolean",
                     "example": true
-                },
-                "enabled_connections": {
-                    "type": "integer",
-                    "maximum": 1000,
-                    "minimum": 0,
-                    "example": 250
                 },
                 "healthReason": {
                     "type": "string",
@@ -6887,6 +6900,12 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date-time",
                     "example": "2023-06-03T12:21:33.406928Z"
+                },
+                "onboard_connections": {
+                    "type": "integer",
+                    "maximum": 1000,
+                    "minimum": 0,
+                    "example": 250
                 },
                 "total_connections": {
                     "type": "integer",
@@ -6932,9 +6951,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection"
                     }
                 },
-                "oldConnectionCount": {
+                "totalArchivedCount": {
                     "type": "integer",
-                    "maximum": 1000,
+                    "maximum": 100,
                     "minimum": 0,
                     "example": 10
                 },
@@ -6961,6 +6980,13 @@ const docTemplate = `{
                     "maximum": 1000000,
                     "minimum": 0,
                     "example": 100
+                },
+                "totalOnboardedCount": {
+                    "description": "Also includes in-progress",
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "example": 10
                 },
                 "totalResourceCount": {
                     "type": "integer",

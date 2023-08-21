@@ -76,15 +76,17 @@ type ChangeConnectionLifecycleStateRequest struct {
 }
 
 type ListConnectionSummaryResponse struct {
-	ConnectionCount       int          `json:"connectionCount" example:"10" minimum:"0" maximum:"1000"`
-	OldConnectionCount    int          `json:"oldConnectionCount" example:"10" minimum:"0" maximum:"1000"`
-	TotalCost             float64      `json:"totalCost" example:"1000.00" minimum:"0" maximum:"10000000"`
-	TotalResourceCount    int          `json:"totalResourceCount" example:"100" minimum:"0" maximum:"1000000"`
-	TotalOldResourceCount int          `json:"totalOldResourceCount" example:"100" minimum:"0" maximum:"1000000"`
-	TotalUnhealthyCount   int          `json:"totalUnhealthyCount" example:"10" minimum:"0" maximum:"100"`
-	TotalDiscoveredCount  int          `json:"totalDiscoveredCount" example:"10" minimum:"0" maximum:"100"`
-	TotalDisabledCount    int          `json:"totalDisabledCount" example:"10" minimum:"0" maximum:"100"`
-	Connections           []Connection `json:"connections"`
+	ConnectionCount       int     `json:"connectionCount" example:"10" minimum:"0" maximum:"1000"`
+	TotalCost             float64 `json:"totalCost" example:"1000.00" minimum:"0" maximum:"10000000"`
+	TotalResourceCount    int     `json:"totalResourceCount" example:"100" minimum:"0" maximum:"1000000"`
+	TotalOldResourceCount int     `json:"totalOldResourceCount" example:"100" minimum:"0" maximum:"1000000"`
+	TotalUnhealthyCount   int     `json:"totalUnhealthyCount" example:"10" minimum:"0" maximum:"100"`
+
+	TotalDisabledCount   int          `json:"totalDisabledCount" example:"10" minimum:"0" maximum:"100"`
+	TotalDiscoveredCount int          `json:"totalDiscoveredCount" example:"10" minimum:"0" maximum:"100"`
+	TotalOnboardedCount  int          `json:"totalOnboardedCount" example:"10" minimum:"0" maximum:"100"` // Also includes in-progress
+	TotalArchivedCount   int          `json:"totalArchivedCount" example:"10" minimum:"0" maximum:"100"`
+	Connections          []Connection `json:"connections"`
 }
 
 type ChangeConnectionRequest struct {

@@ -79,25 +79,25 @@ func (j Job) Do(onboardClient client.OnboardServiceClient, logger *zap.Logger) (
 
 	// Healthcheck
 	logger.Info("starting healthcheck")
-	sources, err := onboardClient.ListSources(&httpclient.Context{
+	connections, err := onboardClient.ListSources(&httpclient.Context{
 		UserRole: api2.EditorRole,
 	}, nil)
 	if err != nil {
-		logger.Error("failed to get sources list from onboard service", zap.Error(err))
-		fail(fmt.Errorf("failed to get sources list from onboard service: %w", err))
+		logger.Error("failed to get connections list from onboard service", zap.Error(err))
+		fail(fmt.Errorf("failed to get connections list from onboard service: %w", err))
 	} else {
-		for _, sourceObj := range sources {
-			if sourceObj.LastHealthCheckTime.Add(8 * time.Hour).After(time.Now()) {
-				logger.Info("skipping source health check", zap.String("source_id", sourceObj.ID.String()))
+		for _, connectionObj := range connections {
+			if connectionObj.LastHealthCheckTime.Add(8 * time.Hour).After(time.Now()) {
+				logger.Info("skipping source health check", zap.String("source_id", connectionObj.ID.String()))
 				continue
 			}
-			logger.Info("checking source health", zap.String("source_id", sourceObj.ID.String()))
+			logger.Info("checking source health", zap.String("source_id", connectionObj.ID.String()))
 			_, err := onboardClient.GetSourceHealthcheck(&httpclient.Context{
 				UserRole: api2.EditorRole,
-			}, sourceObj.ID.String())
+			}, connectionObj.ID.String(), true)
 			if err != nil {
-				logger.Error("failed to check source health", zap.String("source_id", sourceObj.ID.String()), zap.Error(err))
-				fail(fmt.Errorf("failed to check source health %s: %w", sourceObj.ID.String(), err))
+				logger.Error("failed to check source health", zap.String("source_id", connectionObj.ID.String()), zap.Error(err))
+				fail(fmt.Errorf("failed to check source health %s: %w", connectionObj.ID.String(), err))
 			}
 		}
 	}

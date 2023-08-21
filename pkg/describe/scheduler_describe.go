@@ -240,7 +240,7 @@ func (s *Scheduler) describeConnection(connection apiOnboard.Connection, schedul
 	if connection.LastHealthCheckTime.Before(time.Now().Add(-1 * 24 * time.Hour)) {
 		healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
 			UserRole: apiAuth.EditorRole,
-		}, connection.ID.String())
+		}, connection.ID.String(), false)
 		if err != nil {
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			return err
