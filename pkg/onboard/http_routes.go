@@ -441,6 +441,7 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 	}
 
 	name := metadata.AccountID
+	config.AccountId = metadata.AccountID
 	if metadata.OrganizationID != nil {
 		name = *metadata.OrganizationID
 	}
@@ -1348,18 +1349,18 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection Sourc
 		}
 		assumeRoleArn := kaytuAws.GetRoleArnFromName(connection.SourceId, awsCnf.AssumeRoleName)
 		var sdkCnf aws.Config
-		sdkCnf, err = kaytuAws.GetConfig(ctx, awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
+		if awsCnf.AccountID != connection.SourceId {
+			sdkCnf, err = kaytuAws.GetConfig(ctx, awsCnf.AccessKey, awsCnf.SecretKey, "", assumeRoleArn, awsCnf.ExternalID)
+		} else {
+			sdkCnf, err = kaytuAws.GetConfig(ctx, awsCnf.AccessKey, awsCnf.SecretKey, "", "", nil)
+		}
 		if err != nil {
 			h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", connection.SourceId))
 			return connection, err
 		}
-		isAttached, err = kaytuAws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, kaytuAws.GetPolicyArnFromName(connection.SourceId, awsCnf.AssumeRolePolicyName))
-		if err != nil || !isAttached {
-			sdkCnf, err = kaytuAws.GetConfig(ctx, awsCnf.AccessKey, awsCnf.SecretKey, "", "", nil)
-			if err != nil {
-				h.logger.Error("failed to get aws config", zap.Error(err), zap.String("sourceId", connection.SourceId))
-				return connection, err
-			}
+		if awsCnf.AccountID != connection.SourceId {
+			isAttached, err = kaytuAws.CheckAttachedPolicy(h.logger, sdkCnf, awsCnf.AssumeRoleName, kaytuAws.GetPolicyArnFromName(connection.SourceId, awsCnf.AssumeRolePolicyName))
+		} else {
 			isAttached, err = kaytuAws.CheckAttachedPolicy(h.logger, sdkCnf, "", kaytuAws.GetPolicyArnFromName(connection.SourceId, awsCnf.AssumeRolePolicyName))
 		}
 		if err == nil && isAttached && updateMetadata {
