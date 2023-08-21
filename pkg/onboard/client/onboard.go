@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -27,7 +28,7 @@ type OnboardServiceClient interface {
 	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Connection, error)
 	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error)
 	CountSources(ctx *httpclient.Context, provider source.Type) (int64, error)
-	GetSourceHealthcheck(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
+	GetSourceHealthcheck(ctx *httpclient.Context, connection string, updateMetadata bool) (*api.Connection, error)
 	SetConnectionLifecycleState(ctx *httpclient.Context, connectionId string, state api.ConnectionLifecycleState) (*api.Connection, error)
 	ListCredentials(ctx *httpclient.Context, connector []source.Type, credentialType *api.CredentialType, health *string, pageSize, pageNumber int) (api.ListCredentialResponse, error)
 	TriggerAutoOnboard(ctx *httpclient.Context, credentialId string) ([]api.Connection, error)
@@ -220,16 +221,21 @@ func (s *onboardClient) CountSources(ctx *httpclient.Context, provider source.Ty
 	return count, nil
 }
 
-func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, sourceID string) (*api.Connection, error) {
-	url := fmt.Sprintf("%s/api/v1/source/%s/healthcheck", s.baseURL, sourceID)
+func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, connectionId string, updateMetadata bool) (*api.Connection, error) {
+	url := fmt.Sprintf("%s/api/v1/source/%s/healthcheck", s.baseURL, connectionId)
 
-	var source api.Connection
+	var connection api.Connection
 	if s.cache != nil {
-		if err := s.cache.Get(context.Background(), "get-source-healthcheck-"+sourceID, &source); err == nil {
-			return &source, nil
+		if err := s.cache.Get(context.Background(), "get-source-healthcheck-"+connectionId, &connection); err == nil {
+			return &connection, nil
 		}
 	}
-	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &source); err != nil {
+
+	url += "?"
+	//firstParamAttached = true
+	url += "updateMetadata=" + strconv.FormatBool(updateMetadata)
+
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &connection); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())
 		}
@@ -238,12 +244,12 @@ func (s *onboardClient) GetSourceHealthcheck(ctx *httpclient.Context, sourceID s
 	if s.cache != nil {
 		_ = s.cache.Set(&cache.Item{
 			Ctx:   context.Background(),
-			Key:   "get-source-healthcheck-" + sourceID,
-			Value: source,
+			Key:   "get-source-healthcheck-" + connectionId,
+			Value: connection,
 			TTL:   5 * time.Minute, // dont increase it! for enabled or disabled!
 		})
 	}
-	return &source, nil
+	return &connection, nil
 }
 
 func (s *onboardClient) SetConnectionLifecycleState(ctx *httpclient.Context, connectionId string, state api.ConnectionLifecycleState) (*api.Connection, error) {
