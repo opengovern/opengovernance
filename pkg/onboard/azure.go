@@ -44,7 +44,7 @@ func discoverAzureSubscriptions(ctx context.Context, logger *zap.Logger, authCon
 			return nil, err
 		}
 		for _, v := range page.Value {
-			if v == nil || v.State == nil || *v.State != armsubscription.SubscriptionStateEnabled {
+			if v == nil || v.State == nil {
 				continue
 			}
 			tagsClient, err := armresources.NewTagsClient(*v.SubscriptionID, identity, nil)

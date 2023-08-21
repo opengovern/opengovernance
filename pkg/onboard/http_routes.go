@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"net/http"
 	"sort"
 	"strconv"
@@ -726,7 +727,7 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 		existingConnectionSubIDs = append(existingConnectionSubIDs, conn.SourceId)
 	}
 	for _, sub := range subs {
-		if !utils.Includes(existingConnectionSubIDs, sub.SubscriptionID) {
+		if sub.SubModel.State != nil && *sub.SubModel.State == armsubscription.SubscriptionStateEnabled && !utils.Includes(existingConnectionSubIDs, sub.SubscriptionID) {
 			subsToOnboard = append(subsToOnboard, sub)
 		} else {
 			for _, conn := range existingConnections {
@@ -735,9 +736,14 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 					if sub.SubModel.DisplayName != nil {
 						name = *sub.SubModel.DisplayName
 					}
+					localConn := conn
 					if conn.Name != name {
-						localConn := conn
 						localConn.Name = name
+					}
+					if sub.SubModel.State != nil && *sub.SubModel.State != armsubscription.SubscriptionStateEnabled {
+						localConn.LifecycleState = ConnectionLifecycleStateDisabled
+					}
+					if conn.Name != name || localConn.LifecycleState != conn.LifecycleState {
 						_, err := h.db.UpdateSource(&localConn)
 						if err != nil {
 							h.logger.Error("failed to update source", zap.Error(err))
@@ -855,7 +861,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 	}
 	accountsToOnboard := make([]awsAccount, 0)
 	for _, account := range accounts {
-		if !utils.Includes(existingConnectionAccountIDs, account.AccountID) {
+		if account.Account.Status == awsOrgTypes.AccountStatusActive && !utils.Includes(existingConnectionAccountIDs, account.AccountID) {
 			accountsToOnboard = append(accountsToOnboard, account)
 		} else {
 			for _, conn := range existingConnections {
