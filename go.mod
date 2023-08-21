@@ -29,8 +29,8 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
-	github.com/kaytu-io/kaytu-aws-describer v0.0.52
-	github.com/kaytu-io/kaytu-azure-describer v0.0.67
+	github.com/kaytu-io/kaytu-aws-describer v0.0.55
+	github.com/kaytu-io/kaytu-azure-describer v0.0.68
 	github.com/kaytu-io/kaytu-util v0.0.0-20230821084735-65e9f8ae6ea1
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/labstack/echo/v4 v4.10.2
