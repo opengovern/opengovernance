@@ -3,8 +3,10 @@ package httpserver
 import (
 	"github.com/brpaz/echozap"
 	"github.com/kaytu-io/kaytu-util/pkg/metrics"
+	"github.com/labstack/echo-contrib/jaegertracing"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+
 	"go.uber.org/zap"
 	"gopkg.in/go-playground/validator.v9"
 )
@@ -19,6 +21,8 @@ func Register(logger *zap.Logger, routes Routes) *echo.Echo {
 
 	e.Use(middleware.Recover())
 	e.Use(echozap.ZapLogger(logger))
+	c := jaegertracing.New(e, nil)
+	defer c.Close()
 
 	metrics.AddEchoMiddleware(e)
 
