@@ -6,8 +6,6 @@ import (
 	"time"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
-	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
@@ -76,36 +74,36 @@ func (j SummarizeJob) DoMustSummarizer(client kaytu.Client, db inventory.Databas
 		allErrors = append(allErrors, err)
 	}
 
-	resourceTypes := make([]string, 0)
-	resourceTypes = append(resourceTypes, aws.ListSummarizeResourceTypes()...)
-	resourceTypes = append(resourceTypes, azure.ListSummarizeResourceTypes()...)
-
-	builders := []resourcebuilder.Builder{
-		resourcebuilder.NewResourceSummaryBuilder(client, j.JobID),
-		resourcebuilder.NewTrendSummaryBuilder(client, j.JobID),
-		resourcebuilder.NewLocationSummaryBuilder(client, j.JobID),
-		resourcebuilder.NewResourceTypeSummaryBuilder(client, logger, db, j.JobID),
-	}
-	var searchAfter []interface{}
-	for {
-		lookups, err := es.FetchLookupByResourceTypes(client, resourceTypes, searchAfter, es.EsFetchPageSize)
-		if err != nil {
-			fail(fmt.Errorf("Failed to fetch lookups: %v ", err))
-			break
-		}
-
-		if len(lookups.Hits.Hits) == 0 {
-			break
-		}
-
-		logger.Info("got a batch of lookup resources", zap.Int("count", len(lookups.Hits.Hits)))
-		for _, lookup := range lookups.Hits.Hits {
-			for _, b := range builders {
-				b.Process(lookup.Source)
-			}
-			searchAfter = lookup.Sort
-		}
-	}
+	var searchAfter []any
+	//resourceTypes := make([]string, 0)
+	//resourceTypes = append(resourceTypes, aws.ListSummarizeResourceTypes()...)
+	//resourceTypes = append(resourceTypes, azure.ListSummarizeResourceTypes()...)
+	//
+	//builders := []resourcebuilder.Builder{
+	//	resourcebuilder.NewResourceSummaryBuilder(client, j.JobID),
+	//	resourcebuilder.NewTrendSummaryBuilder(client, j.JobID),
+	//	resourcebuilder.NewLocationSummaryBuilder(client, j.JobID),
+	//	resourcebuilder.NewResourceTypeSummaryBuilder(client, logger, db, j.JobID),
+	//}
+	//for {
+	//	lookups, err := es.FetchLookupByResourceTypes(client, resourceTypes, searchAfter, es.EsFetchPageSize)
+	//	if err != nil {
+	//		fail(fmt.Errorf("Failed to fetch lookups: %v ", err))
+	//		break
+	//	}
+	//
+	//	if len(lookups.Hits.Hits) == 0 {
+	//		break
+	//	}
+	//
+	//	logger.Info("got a batch of lookup resources", zap.Int("count", len(lookups.Hits.Hits)))
+	//	for _, lookup := range lookups.Hits.Hits {
+	//		for _, b := range builders {
+	//			b.Process(lookup.Source)
+	//		}
+	//		searchAfter = lookup.Sort
+	//	}
+	//}
 
 	costBuilder := resourcebuilder.NewCostSummaryBuilder(client, j.JobID)
 	costResourceTypes := make([]string, 0)
@@ -136,21 +134,21 @@ func (j SummarizeJob) DoMustSummarizer(client kaytu.Client, db inventory.Databas
 
 	var msgs []kafka.Doc
 	msgs = append(msgs, costBuilder.Build()...)
-	for _, b := range builders {
-		msgs = append(msgs, b.Build()...)
-	}
+	//for _, b := range builders {
+	//	msgs = append(msgs, b.Build()...)
+	//}
 	logger.Info("built messages", zap.Int("count", len(msgs)))
 
 	err := costBuilder.Cleanup(j.JobID)
 	if err != nil {
 		fail(fmt.Errorf("Failed to cleanup: %v ", err))
 	}
-	for _, b := range builders {
-		err := b.Cleanup(j.JobID)
-		if err != nil {
-			fail(fmt.Errorf("Failed to cleanup: %v ", err))
-		}
-	}
+	//for _, b := range builders {
+	//	err := b.Cleanup(j.JobID)
+	//	if err != nil {
+	//		fail(fmt.Errorf("Failed to cleanup: %v ", err))
+	//	}
+	//}
 	logger.Info("cleanup done")
 
 	if len(msgs) > 0 {
