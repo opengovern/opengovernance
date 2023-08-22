@@ -112,25 +112,27 @@ func (j SummarizeJob) DoMustSummarizer(client kaytu.Client, db inventory.Databas
 	for _, t := range es.CostResourceTypeList {
 		costResourceTypes = append(costResourceTypes, t.String())
 	}
-	searchAfter = nil
-	for {
-		lookups, err := es.FetchLookupByResourceTypes(client, costResourceTypes, searchAfter, es.EsFetchPageSize)
-		if err != nil {
-			fail(fmt.Errorf("Failed to fetch cost lookups: %v ", err))
-			break
-		}
+	for _, costResourceType := range costResourceTypes {
+		searchAfter = nil
+		for {
+			costResources, err := es.FetchResourcesByResourceTypes(client, costResourceType, searchAfter, es.EsFetchPageSize)
+			if err != nil {
+				fail(fmt.Errorf("Failed to fetch cost lookups: %v ", err))
+				break
+			}
 
-		if len(lookups.Hits.Hits) == 0 {
-			break
-		}
+			if len(costResources.Hits.Hits) == 0 {
+				break
+			}
 
-		logger.Info("got a batch of cost lookup resources", zap.Int("count", len(lookups.Hits.Hits)))
-		for _, lookup := range lookups.Hits.Hits {
-			costBuilder.Process(lookup.Source)
-			searchAfter = lookup.Sort
+			logger.Info("got a batch of cost lookup resources", zap.Int("count", len(costResources.Hits.Hits)))
+			for _, lookup := range costResources.Hits.Hits {
+				costBuilder.Process(lookup.Source)
+				searchAfter = lookup.Sort
+			}
 		}
 	}
-	logger.Info("processed cost lookup resources")
+	logger.Info("processed cost resources")
 
 	var msgs []kafka.Doc
 	msgs = append(msgs, costBuilder.Build()...)

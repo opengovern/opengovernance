@@ -125,7 +125,7 @@ func (c CostResourceType) GetCostAndUnitFromResource(costDescriptionObj any) (fl
 	return 0, ""
 }
 
-func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource, lookupResource es.LookupResource) (CostSummary, string, error) {
+func (c CostResourceType) GetCostSummaryAndKey(resource es.Resource) (CostSummary, string, error) {
 	switch c {
 	case CostResourceTypeAWSCostExplorerServiceCostMonthly:
 		jsonDesc, err := json.Marshal(resource.Description)

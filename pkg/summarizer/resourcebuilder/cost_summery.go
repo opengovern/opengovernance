@@ -10,7 +10,6 @@ import (
 	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/helpers"
-	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/query"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 )
 
@@ -39,19 +38,13 @@ func NewCostSummaryBuilder(client kaytu.Client, summarizerJobID uint) *costSumma
 	}
 }
 
-func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
-	var fullResource *describe.Resource
+func (b *costSummaryBuilder) Process(fullResource describe.Resource) {
 	var err error
-	costResourceType := es.GetCostResourceTypeFromString(resource.ResourceType)
+	costResourceType := es.GetCostResourceTypeFromString(fullResource.ResourceType)
 	if costResourceType == es.CostResourceTypeNull {
 		return
 	}
-	fullResource, err = query.GetResourceFromResourceLookup(b.client, resource)
-	if err != nil {
-		fmt.Printf("(costSummaryBuilder) - Error getting resource from lookup: %v", err)
-		return
-	}
-	costSummary, key, err := costResourceType.GetCostSummaryAndKey(*fullResource, resource)
+	costSummary, key, err := costResourceType.GetCostSummaryAndKey(fullResource)
 	if err != nil {
 		fmt.Printf("(costSummaryBuilder) - Error getting service cost summary: %v", err)
 		return
@@ -61,33 +54,33 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		serviceCostSummary := costSummary.(*es.ServiceCostSummary)
 		serviceCostSummary.SummarizeJobID = b.summarizerJobID
 		serviceCostSummary.SummarizeJobTime = time.Now().Unix()
-		serviceCostSummary.Connector = resource.SourceType
-		serviceCostSummary.SourceID = resource.SourceID
-		serviceCostSummary.SourceJobID = resource.SourceJobID
-		serviceCostSummary.ResourceType = resource.ResourceType
+		serviceCostSummary.Connector = fullResource.SourceType
+		serviceCostSummary.SourceID = fullResource.SourceID
+		serviceCostSummary.SourceJobID = fullResource.SourceJobID
+		serviceCostSummary.ResourceType = fullResource.ResourceType
 		costVal, _ := costResourceType.GetCostAndUnitFromResource(serviceCostSummary.Cost)
 		serviceCostSummary.CostValue = costVal
 		if _, ok := b.costsByService[key]; !ok {
 			b.costsByService[key] = *serviceCostSummary
 		}
 		if serviceCostSummary.ReportType == es.CostServiceSummaryDaily {
-			if _, ok := b.costsByServicePerConnector[resource.SourceType]; !ok {
-				b.costsByServicePerConnector[resource.SourceType] = make(map[int64]map[string]es.ServiceCostSummary)
+			if _, ok := b.costsByServicePerConnector[fullResource.SourceType]; !ok {
+				b.costsByServicePerConnector[fullResource.SourceType] = make(map[int64]map[string]es.ServiceCostSummary)
 			}
 			timeKey := (serviceCostSummary.PeriodEnd + serviceCostSummary.PeriodStart) / 2
-			if _, ok := b.costsByServicePerConnector[resource.SourceType][timeKey]; !ok {
-				b.costsByServicePerConnector[resource.SourceType][timeKey] = make(map[string]es.ServiceCostSummary)
+			if _, ok := b.costsByServicePerConnector[fullResource.SourceType][timeKey]; !ok {
+				b.costsByServicePerConnector[fullResource.SourceType][timeKey] = make(map[string]es.ServiceCostSummary)
 			}
-			if v, ok := b.costsByServicePerConnector[resource.SourceType][timeKey][key]; !ok {
+			if v, ok := b.costsByServicePerConnector[fullResource.SourceType][timeKey][key]; !ok {
 				local := *serviceCostSummary
-				local.SourceID = resource.SourceType.String()
+				local.SourceID = fullResource.SourceType.String()
 				local.SourceJobID = 0
 				local.Cost = nil
 				local.ReportType = es.CostServiceConnectorSummaryDaily
-				b.costsByServicePerConnector[resource.SourceType][timeKey][key] = local
+				b.costsByServicePerConnector[fullResource.SourceType][timeKey][key] = local
 			} else {
 				v.CostValue += serviceCostSummary.CostValue
-				b.costsByServicePerConnector[resource.SourceType][timeKey][key] = v
+				b.costsByServicePerConnector[fullResource.SourceType][timeKey][key] = v
 			}
 		}
 
@@ -95,31 +88,31 @@ func (b *costSummaryBuilder) Process(resource describe.LookupResource) {
 		connectionCostSummary := costSummary.(*es.ConnectionCostSummary)
 		connectionCostSummary.SummarizeJobID = b.summarizerJobID
 		connectionCostSummary.SummarizeJobTime = time.Now().Unix()
-		connectionCostSummary.SourceType = resource.SourceType
-		connectionCostSummary.SourceID = resource.SourceID
-		connectionCostSummary.SourceJobID = resource.SourceJobID
-		connectionCostSummary.ResourceType = resource.ResourceType
+		connectionCostSummary.SourceType = fullResource.SourceType
+		connectionCostSummary.SourceID = fullResource.SourceID
+		connectionCostSummary.SourceJobID = fullResource.SourceJobID
+		connectionCostSummary.ResourceType = fullResource.ResourceType
 		costVal, _ := costResourceType.GetCostAndUnitFromResource(connectionCostSummary.Cost)
 		connectionCostSummary.CostValue = costVal
 		if connectionCostSummary.ReportType == es.CostConnectionSummaryDaily {
 			if _, ok := b.costsByAccount[key]; !ok {
 				b.costsByAccount[key] = *connectionCostSummary
 			}
-			if _, ok := b.costsPerConnector[resource.SourceType]; !ok {
-				b.costsPerConnector[resource.SourceType] = make(map[int64]es.ConnectionCostSummary)
+			if _, ok := b.costsPerConnector[fullResource.SourceType]; !ok {
+				b.costsPerConnector[fullResource.SourceType] = make(map[int64]es.ConnectionCostSummary)
 			}
 			timeKey := (connectionCostSummary.PeriodEnd + connectionCostSummary.PeriodStart) / 2
-			if v, ok := b.costsPerConnector[resource.SourceType][timeKey]; !ok {
+			if v, ok := b.costsPerConnector[fullResource.SourceType][timeKey]; !ok {
 				local := *connectionCostSummary
-				local.SourceID = resource.SourceType.String()
-				local.AccountID = resource.SourceType.String()
+				local.SourceID = fullResource.SourceType.String()
+				local.AccountID = fullResource.SourceType.String()
 				local.SourceJobID = 0
 				local.Cost = nil
 				local.ReportType = es.CostConnectorSummaryDaily
-				b.costsPerConnector[resource.SourceType][timeKey] = local
+				b.costsPerConnector[fullResource.SourceType][timeKey] = local
 			} else {
 				v.CostValue += connectionCostSummary.CostValue
-				b.costsPerConnector[resource.SourceType][timeKey] = v
+				b.costsPerConnector[fullResource.SourceType][timeKey] = v
 			}
 		}
 	default:
