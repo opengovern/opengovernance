@@ -4,6 +4,7 @@ import (
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	"github.com/labstack/echo-contrib/jaegertracing"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"net/http"
@@ -49,6 +50,12 @@ func (h HttpServer) TriggerQuery(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	sp := jaegertracing.CreateChildSpan(ctx, "Child span for additional processing")
+	defer sp.Finish()
+	sp.LogKV("Test log")
+	sp.SetBaggageItem("Test baggage", "baggage")
+	sp.SetTag("Test tag", "New Tag")
 
 	var source *api.Connection
 	if len(reqBody.Source) > 0 {
