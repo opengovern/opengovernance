@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/labstack/echo-contrib/jaegertracing"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -494,11 +495,15 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		return err
 	}
 	keyHash := hex.EncodeToString(hash.Sum(nil))
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "CountApiKeys")
+	span.SetBaggageItem("auth", "CreateAPIKey")
 
 	currentKeyCount, err := r.db.CountApiKeys(workspaceID)
 	if err != nil {
 		return err
 	}
+	span.Finish()
 
 	cnf, err = metadataService.GetConfigMetadata(hctx, models.MetadataKeyWorkspaceMaxKeys)
 	if err != nil {
@@ -519,14 +524,25 @@ func (r *httpRoutes) CreateAPIKey(ctx echo.Context) error {
 		MaskedKey:     masked,
 		KeyHash:       keyHash,
 	}
+	// trace :
+	spanAAK := jaegertracing.CreateChildSpan(ctx, "AddApiKey")
+	spanAAK.SetBaggageItem("auth", "CreateAPIKey")
 	err = r.db.AddApiKey(&apikey)
 	if err != nil {
 		return err
 	}
+	spanAAK.Finish()
+
+	// trace :
+	spanGAK := jaegertracing.CreateChildSpan(ctx, "GetApiKey")
+	spanGAK.SetBaggageItem("auth", "CreateAPIKey")
+
 	key, err := r.db.GetApiKey(workspaceID, uint(apikey.ID))
 	if err != nil {
 		return err
 	}
+	spanGAK.Finish()
+
 	return ctx.JSON(http.StatusOK, api.CreateAPIKeyResponse{
 		ID:        apikey.ID,
 		Name:      key.Name,
@@ -554,11 +570,15 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "RevokeAPIKey")
+	span.SetBaggageItem("auth", "DeleteAPIKey")
 
 	err = r.db.RevokeAPIKey(workspaceID, uint(id))
 	if err != nil {
 		return err
 	}
+	span.Finish()
 
 	return ctx.NoContent(http.StatusOK)
 }
@@ -574,10 +594,15 @@ func (r *httpRoutes) DeleteAPIKey(ctx echo.Context) error {
 //	@Router			/auth/api/v1/keys [get]
 func (r *httpRoutes) ListAPIKeys(ctx echo.Context) error {
 	workspaceID := httpserver.GetWorkspaceID(ctx)
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "ListApiKeys")
+	span.SetBaggageItem("auth", "ListAPIKeys")
+
 	keys, err := r.db.ListApiKeys(workspaceID)
 	if err != nil {
 		return err
 	}
+	span.Finish()
 
 	var resp []api.WorkspaceApiKey
 	for _, key := range keys {

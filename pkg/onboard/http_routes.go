@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/labstack/echo-contrib/jaegertracing"
 	"net/http"
 	"sort"
 	"strconv"
@@ -96,13 +97,22 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Success		200	{object}	[]api.ConnectorCount
 //	@Router			/onboard/api/v1/connector [get]
 func (h HttpHandler) ListConnectors(ctx echo.Context) error {
+	var res []api.ConnectorCount
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "ListConnectors")
+	span.SetBaggageItem("onboard", "ListConnectors")
+
 	connectors, err := h.db.ListConnectors()
 	if err != nil {
 		return err
 	}
+	span.Finish()
 
-	var res []api.ConnectorCount
+	// trace :
+	spanCS := jaegertracing.CreateChildSpan(ctx, "CountSourcesOfType")
+	spanCS.SetBaggageItem("onboard", "ListConnectors")
 	for _, c := range connectors {
+		jaegertracing.TraceFunction(ctx, h.db.CountSourcesOfType, "")
 		count, err := h.db.CountSourcesOfType(c.Name)
 		if err != nil {
 			return err
@@ -130,6 +140,7 @@ func (h HttpHandler) ListConnectors(ctx echo.Context) error {
 		})
 
 	}
+	spanCS.Finish()
 	return ctx.JSON(http.StatusOK, res)
 }
 
@@ -179,6 +190,9 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	if req.Name != "" {
 		acc.AccountName = &req.Name
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "CountSources")
+	span.SetBaggageItem("onboard", "PostSourceAws")
 
 	count, err := h.db.CountSources()
 	if err != nil {
@@ -187,6 +201,7 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	if count >= httpserver.GetMaxConnections(ctx) {
 		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
 	}
+	span.Finish()
 
 	src := NewAWSSource(h.logger, describe.AWSAccountConfig{AccessKey: req.Config.AccessKey, SecretKey: req.Config.SecretKey}, *acc, req.Description)
 	secretBytes, err := h.kms.Encrypt(req.Config.AsMap(), h.keyARN)
@@ -219,11 +234,15 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "CountSources")
+	span.SetBaggageItem("onboard", "PostSourceAzure")
 
 	count, err := h.db.CountSources()
 	if err != nil {
 		return err
 	}
+	span.Finish()
 	if count >= httpserver.GetMaxConnections(ctx) {
 		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
 	}
@@ -270,11 +289,15 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return err
 	}
 	src.Credential.Secret = string(secretBytes)
+	// trace :
+	spanCS := jaegertracing.CreateChildSpan(ctx, "CreateSource")
+	spanCS.SetBaggageItem("onboard", "PostSourceAzure")
 
 	err = h.db.CreateSource(&src)
 	if err != nil {
 		return err
 	}
+	spanCS.Finish()
 
 	return ctx.JSON(http.StatusOK, src.ToSourceResponse())
 }
@@ -400,6 +423,9 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 		return err
 	}
 	cred.Secret = string(secretBytes)
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "Transaction")
+	span.SetBaggageItem("onboard", "postAzureCredentials")
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		if err := h.db.CreateCredential(cred); err != nil {
@@ -410,6 +436,7 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 	if err != nil {
 		return err
 	}
+	span.Finish()
 
 	_, err = h.checkCredentialHealth(*cred)
 	if err != nil {
@@ -454,16 +481,25 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 		return err
 	}
 	cred.Secret = string(secretBytes)
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "Transaction")
+	span.SetBaggageItem("onboard", "postAWSCredentials")
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		// trace :
+		spanCC := jaegertracing.CreateChildSpan(ctx, "CreateCredential")
+		spanCC.SetBaggageItem("onboard", "postAWSCredentials")
+
 		if err := h.db.CreateCredential(cred); err != nil {
 			return err
 		}
+		span.Finish()
 		return nil
 	})
 	if err != nil {
 		return err
 	}
+	span.Finish()
 
 	_, err = h.checkCredentialHealth(*cred)
 	if err != nil {
@@ -532,13 +568,20 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 	if pageNumberStr != "" {
 		pageNumber, _ = strconv.ParseInt(pageNumberStr, 10, 64)
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "GetCredentialsByFilters")
+	span.SetBaggageItem("onboard", "ListCredentials")
 
 	credentials, err := h.db.GetCredentialsByFilters(connector, health, credentialTypes)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	span.Finish()
 
 	apiCredentials := make([]api.Credential, 0, len(credentials))
+	// trace :
+	spanCCBC := jaegertracing.CreateChildSpan(ctx, "CountConnectionsByCredential")
+	spanCCBC.SetBaggageItem("onboard", "ListCredentials")
 	for _, cred := range credentials {
 		totalConnectionCount, err := h.db.CountConnectionsByCredential(cred.ID.String(), nil, nil)
 		if err != nil {
@@ -563,6 +606,7 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 		apiCredential.DiscoveredConnections = &discoveredConnectionCount
 		apiCredentials = append(apiCredentials, apiCredential)
 	}
+	spanCCBC.Finish()
 
 	sort.Slice(apiCredentials, func(i, j int) bool {
 		return apiCredentials[i].OnboardDate.After(apiCredentials[j].OnboardDate)
@@ -591,6 +635,9 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "GetCredentialByID")
+	span.SetBaggageItem("onboard", "GetCredential")
 
 	credential, err := h.db.GetCredentialByID(credId)
 	if err != nil {
@@ -599,11 +646,16 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	span.Finish()
+	// trace :
+	spanGSBCI := jaegertracing.CreateChildSpan(ctx, "GetSourcesByCredentialID")
+	spanGSBCI.SetBaggageItem("onboard", "GetCredential")
 
 	connections, err := h.db.GetSourcesByCredentialID(credId.String())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	spanGSBCI.Finish()
 
 	metadata := make(map[string]any)
 	err = json.Unmarshal(credential.Metadata, &metadata)
@@ -951,6 +1003,9 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "GetCredentialByID")
+	span.SetBaggageItem("onboard", "AutoOnboardCredential")
 
 	credential, err := h.db.GetCredentialByID(credId)
 	if err != nil {
@@ -959,6 +1014,7 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	span.Finish()
 
 	maxConns := httpserver.GetMaxConnections(ctx)
 
@@ -986,6 +1042,9 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, "invalid id")
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "GetCredentialByID")
+	span.SetBaggageItem("onboard", "putAzureCredentials")
 
 	cred, err := h.db.GetCredentialByID(id)
 	if err != nil {
@@ -994,6 +1053,7 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 		}
 		return ctx.JSON(http.StatusNotFound, "credential not found")
 	}
+	span.Finish()
 
 	if req.Name != nil {
 		cred.Name = req.Name
@@ -1054,13 +1114,22 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 	if metadata.SpnName != "" {
 		cred.Name = &metadata.SpnName
 	}
-
+	// trace :
+	spanT := jaegertracing.CreateChildSpan(ctx, "Transaction")
+	spanT.SetBaggageItem("onboard", "putAzureCredentials")
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		// trace :
+		spanUC := jaegertracing.CreateChildSpan(ctx, "UpdateCredential")
+		spanUC.SetBaggageItem("onboard", "putAzureCredentials")
 		if _, err := h.db.UpdateCredential(cred); err != nil {
 			return err
 		}
+		span.Finish()
+
 		return nil
 	})
+	spanT.Finish()
+
 	if err != nil {
 		return err
 	}
@@ -1078,6 +1147,9 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, "invalid id")
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "GetCredentialByID")
+	span.SetBaggageItem("onboard", "putAWSCredentials")
 
 	cred, err := h.db.GetCredentialByID(id)
 	if err != nil {
@@ -1086,6 +1158,7 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		}
 		return ctx.JSON(http.StatusNotFound, "credential not found")
 	}
+	span.Finish()
 
 	if req.Name != nil {
 		cred.Name = req.Name
@@ -1154,17 +1227,25 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		cred.Name = metadata.OrganizationID
 		cred.CredentialType = CredentialTypeManualAwsOrganization
 	}
+	// trace :
+	spanT := jaegertracing.CreateChildSpan(ctx, "Transaction")
+	spanT.SetBaggageItem("onboard", "putAWSCredentials")
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		// trace :
+		spanUC := jaegertracing.CreateChildSpan(ctx, "UpdateCredential")
+		spanUC.SetBaggageItem("onboard", "putAWSCredentials")
+
 		if _, err := h.db.UpdateCredential(cred); err != nil {
 			return err
 		}
-
+		spanUC.Finish()
 		return nil
 	})
 	if err != nil {
 		return err
 	}
+	spanT.Finish()
 
 	_, err = h.checkCredentialHealth(*cred)
 	if err != nil {
@@ -1216,6 +1297,9 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
+	// trace:
+	span := jaegertracing.CreateChildSpan(ctx, "GetCredentialByID")
+	span.SetBaggageItem("onboard", "DeleteCredential")
 
 	credential, err := h.db.GetCredentialByID(credId)
 	if err != nil {
@@ -1224,22 +1308,38 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	span.Finish()
+
+	// trace :
+	spanGSBCI := jaegertracing.CreateChildSpan(ctx, "GetSourcesByCredentialID")
+	spanGSBCI.SetBaggageItem("onboard", "DeleteCredential")
 
 	sources, err := h.db.GetSourcesByCredentialID(credential.ID.String())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	spanGSBCI.Finish()
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		// trace :
+		spanDC := jaegertracing.CreateChildSpan(ctx, "DeleteCredential")
+		spanDC.SetBaggageItem("onboard", "DeleteCredential")
 		if err := h.db.DeleteCredential(credential.ID); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
+		spanDC.Finish()
+
+		// trace :
+		spanUSLS := jaegertracing.CreateChildSpan(ctx, "UpdateSourceLifecycleState")
+		spanUSLS.SetBaggageItem("onboard", "DeleteCredential")
 
 		for _, src := range sources {
 			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateDisabled); err != nil {
 				return err
 			}
 		}
+		spanUSLS.Finish()
+
 		return nil
 	})
 	if err != nil {
@@ -1254,11 +1354,15 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "GetSource")
+	span.SetBaggageItem("onboard", "GetSourceFullCred")
 
 	src, err := h.db.GetSource(sourceUUID)
 	if err != nil {
 		return err
 	}
+	span.Finish()
 
 	cnf, err := h.kms.Decrypt(src.Credential.Secret, h.keyARN)
 	if err != nil {
@@ -1317,12 +1421,15 @@ func (h HttpHandler) GetSourceHealth(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
 	}
-
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "GetSource")
+	span.SetBaggageItem("onboard", "GetSourceHealth")
 	src, err := h.db.GetSource(sourceUUID)
 	if err != nil {
 		h.logger.Error("failed to get source", zap.Error(err), zap.String("sourceId", sourceUUID.String()))
 		return err
 	}
+	span.Finish()
 
 	if !src.LifecycleState.IsEnabled() {
 		src, err = h.updateConnectionHealth(src, source.HealthStatusNil, utils.GetPointer("Connection is not enabled"))
@@ -1475,6 +1582,9 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "GetSource")
+	span.SetBaggageItem("onboard", "GetSource")
 
 	src, err := h.db.GetSource(srcId)
 	if err != nil {
@@ -1483,6 +1593,7 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		}
 		return err
 	}
+	span.Finish()
 
 	metadata := make(map[string]any)
 	if src.Metadata.String() != "" {
@@ -1516,6 +1627,9 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "GetSource")
+	span.SetBaggageItem("onboard", "DeleteSource")
 
 	src, err := h.db.GetSource(srcId)
 	if err != nil {
@@ -1524,17 +1638,32 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 		}
 		return err
 	}
+	span.Finish()
+
+	// trace :
+	spanT := jaegertracing.CreateChildSpan(ctx, "GetSource")
+	spanT.SetBaggageItem("onboard", "GetSourceHealth")
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+		// trace :
+		spanDS := jaegertracing.CreateChildSpan(ctx, "DeleteSource")
+		spanDS.SetBaggageItem("onboard", "GetSourceHealth")
+
 		if err := h.db.DeleteSource(srcId); err != nil {
 			return err
 		}
+		spanDS.Finish()
 
 		if src.Credential.CredentialType.IsManual() {
+			// trace :
+			spanDC := jaegertracing.CreateChildSpan(ctx, "DeleteCredential")
+			spanDC.SetBaggageItem("onboard", "GetSourceHealth")
+
 			err = h.db.DeleteCredential(src.Credential.ID)
 			if err != nil {
 				return err
 			}
+			spanDC.Finish()
 		}
 
 		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
@@ -1551,6 +1680,7 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	spanT.Finish()
 
 	return ctx.NoContent(http.StatusOK)
 }
@@ -1567,6 +1697,9 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 	} else if err = req.State.Validate(); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "GetSource")
+	span.SetBaggageItem("onboard", "ChangeConnectionLifecycleState")
 
 	connection, err := h.db.GetSource(connectionId)
 	if err != nil {
@@ -1575,6 +1708,7 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 		}
 		return err
 	}
+	span.Finish()
 
 	reqState := ConnectionLifecycleStateFromApi(req.State)
 	if reqState == connection.LifecycleState {
@@ -1582,11 +1716,20 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 	}
 
 	if reqState.IsEnabled() != connection.LifecycleState.IsEnabled() {
+		// trace :
+		spanU := jaegertracing.CreateChildSpan(ctx, "UpdateSourceLifecycleState")
+		spanU.SetBaggageItem("onboard", "ChangeConnectionLifecycleState")
 		if err := h.db.UpdateSourceLifecycleState(connectionId, reqState); err != nil {
 			return err
 		}
+		spanU.Finish()
+
 	} else {
+		// trace :
+		spanU := jaegertracing.CreateChildSpan(ctx, "UpdateSourceLifecycleState")
+		spanU.SetBaggageItem("onboard", "ChangeConnectionLifecycleState")
 		err = h.db.UpdateSourceLifecycleState(connectionId, reqState)
+		spanU.Finish()
 	}
 	if err != nil {
 		return err
@@ -1601,15 +1744,26 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 	var sources []Source
 	if len(sType) > 0 {
 		st := source.ParseTypes(sType)
+		// trace :
+		span := jaegertracing.CreateChildSpan(ctx, "GetSourcesOfTypes")
+		span.SetBaggageItem("onboard", "ListSources")
+
 		sources, err = h.db.GetSourcesOfTypes(st)
+		span.Finish()
+
 		if err != nil {
 			return err
 		}
 	} else {
+		// trace :
+		span := jaegertracing.CreateChildSpan(ctx, "ListSources")
+		span.SetBaggageItem("onboard", "ListSources")
+
 		sources, err = h.db.ListSources()
 		if err != nil {
 			return err
 		}
+		span.Finish()
 	}
 
 	resp := api.GetSourcesResponse{}
@@ -1630,6 +1784,9 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "GetSources")
+	span.SetBaggageItem("onboard", "GetSources")
 
 	srcs, err := h.db.GetSources(req.SourceIDs)
 	if err != nil {
@@ -1638,6 +1795,7 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 		}
 		return err
 	}
+	span.Finish()
 
 	var res []api.Connection
 	for _, src := range srcs {
@@ -1660,14 +1818,23 @@ func (h HttpHandler) CountSources(ctx echo.Context) error {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid source type: %s", sType))
 		}
+		// trace :
+		span := jaegertracing.CreateChildSpan(ctx, "CountSourcesOfType")
+		span.SetBaggageItem("onboard", "CountSources")
 
 		count, err = h.db.CountSourcesOfType(st)
 		if err != nil {
 			return err
 		}
+		span.Finish()
 	} else {
 		var err error
+		// trace :
+		span := jaegertracing.CreateChildSpan(ctx, "CountSources")
+		span.SetBaggageItem("onboard", "CountSources")
+
 		count, err = h.db.CountSources()
+		span.Finish()
 		if err != nil {
 			return err
 		}
@@ -1688,10 +1855,15 @@ func (h HttpHandler) CountSources(ctx echo.Context) error {
 func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 	var metrics api.CatalogMetrics
 
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "ListSources")
+	span.SetBaggageItem("onboard", "CatalogMetrics")
+
 	srcs, err := h.db.ListSources()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError)
 	}
+	span.Finish()
 
 	for _, src := range srcs {
 		metrics.TotalConnections++
@@ -1777,11 +1949,15 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	if healthState != "" {
 		healthStateSlice = append(healthStateSlice, source.HealthStatus(healthState))
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "ListSourcesWithFilters")
+	span.SetBaggageItem("onboard", "ListConnectionsSummaries")
 
 	connections, err := h.db.ListSourcesWithFilters(connectors, connectionIDs, lifecycleStateSlice, healthStateSlice)
 	if err != nil {
 		return err
 	}
+	span.Finish()
 
 	needCostStr := ctx.QueryParam("needCost")
 	needCost := true
@@ -2002,14 +2178,23 @@ func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
 			return ctx.JSON(http.StatusBadRequest, "populateConnections is not a valid boolean")
 		}
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "ListConnectionGroups")
+	span.SetBaggageItem("onboard", "ListConnectionGroups")
 
 	connectionGroups, err := h.db.ListConnectionGroups()
 	if err != nil {
 		h.logger.Error("error listing connection groups", zap.Error(err))
 		return err
 	}
+	span.Finish()
 
 	result := make([]api.ConnectionGroup, 0, len(connectionGroups))
+
+	// trace :
+	spanS := jaegertracing.CreateChildSpan(ctx, "GetSources")
+	spanS.SetBaggageItem("onboard", "ListConnectionGroups")
+
 	for _, connectionGroup := range connectionGroups {
 		apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), h.steampipeConn)
 		if err != nil {
@@ -2027,6 +2212,7 @@ func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
 				apiCg.Connections = append(apiCg.Connections, connection.toAPI())
 			}
 		}
+		spanS.Finish()
 
 		result = append(result, *apiCg)
 	}
@@ -2056,12 +2242,16 @@ func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
 			return ctx.JSON(http.StatusBadRequest, "populateConnections is not a valid boolean")
 		}
 	}
+	// trace :
+	span := jaegertracing.CreateChildSpan(ctx, "GetConnectionGroupByName")
+	span.SetBaggageItem("onboard", "GetConnectionGroup")
 
 	connectionGroup, err := h.db.GetConnectionGroupByName(connectionGroupName)
 	if err != nil {
 		h.logger.Error("error getting connection group", zap.Error(err))
 		return err
 	}
+	span.Finish()
 
 	apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), h.steampipeConn)
 	if err != nil {
@@ -2070,11 +2260,17 @@ func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
 	}
 
 	if populateConnections {
+		// trace :
+		spanGCG := jaegertracing.CreateChildSpan(ctx, "GetSources")
+		spanGCG.SetBaggageItem("onboard", "GetConnectionGroup")
+
 		connections, err := h.db.GetSources(apiCg.ConnectionIds)
 		if err != nil {
 			h.logger.Error("error getting connections", zap.Error(err))
 			return err
 		}
+		spanGCG.Finish()
+
 		apiCg.Connections = make([]api.Connection, 0, len(connections))
 		for _, connection := range connections {
 			apiCg.Connections = append(apiCg.Connections, connection.toAPI())
