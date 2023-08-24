@@ -162,14 +162,10 @@ func (w *Job) Run() error {
 		gitConfig.AnalyticsGitURL = value.GetValue().(string)
 	}
 
-	w.logger.Info("Starting compliance migration")
-	if err := compliance.Run(w.db, []string{gitConfig.AWSComplianceGitURL, gitConfig.AzureComplianceGitURL}, gitConfig.QueryGitURL, gitConfig.githubToken); err != nil {
-		w.logger.Error(fmt.Sprintf("Failure while running compliance migration: %v", err))
-	}
-
-	w.logger.Info("Starting insight migration")
-	if err := insight.Run(w.logger, w.db, gitConfig.InsightGitURL, gitConfig.githubToken); err != nil {
-		w.logger.Error(fmt.Sprintf("Failure while running insight migration: %v", err))
+	// run elasticsearch
+	w.logger.Info("Starting elasticsearch migration")
+	if err := elasticsearch.Run(w.elastic, w.logger, "/elasticsearch-index-config"); err != nil {
+		w.logger.Error("Failure while running elasticsearch migration", zap.Error(err))
 	}
 
 	cfg := postgres.Config{
@@ -185,15 +181,19 @@ func (w *Job) Run() error {
 		w.logger.Error("Failure while running analytics migration", zap.Error(err))
 	}
 
+	w.logger.Info("Starting compliance migration")
+	if err := compliance.Run(w.db, []string{gitConfig.AWSComplianceGitURL, gitConfig.AzureComplianceGitURL}, gitConfig.QueryGitURL, gitConfig.githubToken); err != nil {
+		w.logger.Error(fmt.Sprintf("Failure while running compliance migration: %v", err))
+	}
+
+	w.logger.Info("Starting insight migration")
+	if err := insight.Run(w.logger, w.db, gitConfig.InsightGitURL, gitConfig.githubToken); err != nil {
+		w.logger.Error(fmt.Sprintf("Failure while running insight migration: %v", err))
+	}
+
 	w.logger.Info("Starting onboard migration")
 	if err := onboard.Run(w.logger, cfg, path.Join(internal.AnalyticsGitPath, "connection_groups")); err != nil {
 		w.logger.Error("Failure while running onboard migration", zap.Error(err))
-	}
-
-	// run elasticsearch
-	w.logger.Info("Starting elasticsearch migration")
-	if err := elasticsearch.Run(w.elastic, w.logger, "/elasticsearch-index-config"); err != nil {
-		w.logger.Error("Failure while running elasticsearch migration", zap.Error(err))
 	}
 
 	w.logger.Info("Starting inventory migration")

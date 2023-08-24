@@ -260,19 +260,10 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 
 	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
 		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
-		retry := 0
-		for {
-			err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
-			if err != nil {
-				h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()), zap.Int("retry", retry))
-				retry++
-				if retry > 10 {
-					return err
-				}
-				time.Sleep(10 * time.Second)
-				continue
-			}
-			break
+		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
+		if err != nil {
+			h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()))
+			continue
 		}
 	}
 	return nil
@@ -441,6 +432,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 				ConnectionName: conn.ConnectionName,
 				Connector:      hit.Connector,
 				Date:           dateStr,
+				DateEpoch:      dateTimestamp * 1000,
 				Month:          monthStr,
 				Year:           yearStr,
 				MetricID:       metricID,
@@ -460,6 +452,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 			connector := spend.ConnectorMetricTrendSummary{
 				Connector:   hit.Connector,
 				Date:        dateStr,
+				DateEpoch:   dateTimestamp * 1000,
 				Month:       monthStr,
 				Year:        yearStr,
 				MetricID:    metricID,
@@ -488,19 +481,10 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 
 	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
 		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
-		retry := 0
-		for {
-			err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
-			if err != nil {
-				h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()), zap.Int("retry", retry))
-				retry++
-				if retry > 10 {
-					return err
-				}
-				time.Sleep(10 * time.Second)
-				continue
-			}
-			break
+		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
+		if err != nil {
+			h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()))
+			continue
 		}
 	}
 

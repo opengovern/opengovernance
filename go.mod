@@ -1,6 +1,6 @@
 module github.com/kaytu-io/kaytu-engine
 
-go 1.20
+go 1.21
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.0
@@ -29,9 +29,9 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
-	github.com/kaytu-io/kaytu-aws-describer v0.0.52
-	github.com/kaytu-io/kaytu-azure-describer v0.0.67
-	github.com/kaytu-io/kaytu-util v0.0.0-20230816163651-5b67b2813b2a
+	github.com/kaytu-io/kaytu-aws-describer v0.0.56
+	github.com/kaytu-io/kaytu-azure-describer v0.0.68
+	github.com/kaytu-io/kaytu-util v0.0.0-20230822101604-7d81664d74f9
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo/v4 v4.11.1

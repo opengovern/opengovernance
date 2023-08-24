@@ -6,8 +6,6 @@ import (
 	"time"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/kaytu-io/kaytu-aws-describer/aws"
-	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
@@ -64,8 +62,8 @@ func (j SummarizeJob) DoMustSummarizer(client kaytu.Client, db inventory.Databas
 
 	// Assume it succeeded unless it fails somewhere
 	var (
-		status         = api.SummarizerJobSucceeded
-		firstErr error = nil
+		status            = api.SummarizerJobSucceeded
+		allErrors []error = nil
 	)
 
 	fail := func(err error) {
@@ -73,84 +71,84 @@ func (j SummarizeJob) DoMustSummarizer(client kaytu.Client, db inventory.Databas
 		DoResourceSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Observe(float64(time.Now().Unix() - startTime))
 		DoResourceSummarizerJobsCount.WithLabelValues(strconv.Itoa(int(j.JobID)), "failure").Inc()
 		status = api.SummarizerJobFailed
-		if firstErr == nil {
-			firstErr = err
-		}
+		allErrors = append(allErrors, err)
 	}
 
-	resourceTypes := make([]string, 0)
-	resourceTypes = append(resourceTypes, aws.ListSummarizeResourceTypes()...)
-	resourceTypes = append(resourceTypes, azure.ListSummarizeResourceTypes()...)
-
-	builders := []resourcebuilder.Builder{
-		resourcebuilder.NewResourceSummaryBuilder(client, j.JobID),
-		resourcebuilder.NewTrendSummaryBuilder(client, j.JobID),
-		resourcebuilder.NewLocationSummaryBuilder(client, j.JobID),
-		resourcebuilder.NewResourceTypeSummaryBuilder(client, logger, db, j.JobID),
-	}
-	var searchAfter []interface{}
-	for {
-		lookups, err := es.FetchLookupByResourceTypes(client, resourceTypes, searchAfter, es.EsFetchPageSize)
-		if err != nil {
-			fail(fmt.Errorf("Failed to fetch lookups: %v ", err))
-			break
-		}
-
-		if len(lookups.Hits.Hits) == 0 {
-			break
-		}
-
-		logger.Info("got a batch of lookup resources", zap.Int("count", len(lookups.Hits.Hits)))
-		for _, lookup := range lookups.Hits.Hits {
-			for _, b := range builders {
-				b.Process(lookup.Source)
-			}
-			searchAfter = lookup.Sort
-		}
-	}
+	var searchAfter []any
+	//resourceTypes := make([]string, 0)
+	//resourceTypes = append(resourceTypes, aws.ListSummarizeResourceTypes()...)
+	//resourceTypes = append(resourceTypes, azure.ListSummarizeResourceTypes()...)
+	//
+	//builders := []resourcebuilder.Builder{
+	//	resourcebuilder.NewResourceSummaryBuilder(client, j.JobID),
+	//	resourcebuilder.NewTrendSummaryBuilder(client, j.JobID),
+	//	resourcebuilder.NewLocationSummaryBuilder(client, j.JobID),
+	//	resourcebuilder.NewResourceTypeSummaryBuilder(client, logger, db, j.JobID),
+	//}
+	//for {
+	//	lookups, err := es.FetchLookupByResourceTypes(client, resourceTypes, searchAfter, es.EsFetchPageSize)
+	//	if err != nil {
+	//		fail(fmt.Errorf("Failed to fetch lookups: %v ", err))
+	//		break
+	//	}
+	//
+	//	if len(lookups.Hits.Hits) == 0 {
+	//		break
+	//	}
+	//
+	//	logger.Info("got a batch of lookup resources", zap.Int("count", len(lookups.Hits.Hits)))
+	//	for _, lookup := range lookups.Hits.Hits {
+	//		for _, b := range builders {
+	//			b.Process(lookup.Source)
+	//		}
+	//		searchAfter = lookup.Sort
+	//	}
+	//}
 
 	costBuilder := resourcebuilder.NewCostSummaryBuilder(client, j.JobID)
 	costResourceTypes := make([]string, 0)
 	for _, t := range es.CostResourceTypeList {
 		costResourceTypes = append(costResourceTypes, t.String())
 	}
-	searchAfter = nil
-	for {
-		lookups, err := es.FetchLookupByResourceTypes(client, costResourceTypes, searchAfter, es.EsFetchPageSize)
-		if err != nil {
-			fail(fmt.Errorf("Failed to fetch cost lookups: %v ", err))
-			break
-		}
+	for _, costResourceType := range costResourceTypes {
+		searchAfter = nil
+		for {
+			costResources, err := es.FetchResourcesByResourceTypes(client, costResourceType, searchAfter, es.EsFetchPageSize)
+			if err != nil {
+				fail(fmt.Errorf("Failed to fetch cost lookups: %v ", err))
+				break
+			}
 
-		if len(lookups.Hits.Hits) == 0 {
-			break
-		}
+			if len(costResources.Hits.Hits) == 0 {
+				break
+			}
 
-		logger.Info("got a batch of cost lookup resources", zap.Int("count", len(lookups.Hits.Hits)))
-		for _, lookup := range lookups.Hits.Hits {
-			costBuilder.Process(lookup.Source)
-			searchAfter = lookup.Sort
+			logger.Info("got a batch of cost lookup resources", zap.Int("count", len(costResources.Hits.Hits)))
+			for _, lookup := range costResources.Hits.Hits {
+				costBuilder.Process(lookup.Source)
+				searchAfter = lookup.Sort
+			}
 		}
 	}
-	logger.Info("processed cost lookup resources")
+	logger.Info("processed cost resources")
 
 	var msgs []kafka.Doc
 	msgs = append(msgs, costBuilder.Build()...)
-	for _, b := range builders {
-		msgs = append(msgs, b.Build()...)
-	}
+	//for _, b := range builders {
+	//	msgs = append(msgs, b.Build()...)
+	//}
 	logger.Info("built messages", zap.Int("count", len(msgs)))
 
 	err := costBuilder.Cleanup(j.JobID)
 	if err != nil {
 		fail(fmt.Errorf("Failed to cleanup: %v ", err))
 	}
-	for _, b := range builders {
-		err := b.Cleanup(j.JobID)
-		if err != nil {
-			fail(fmt.Errorf("Failed to cleanup: %v ", err))
-		}
-	}
+	//for _, b := range builders {
+	//	err := b.Cleanup(j.JobID)
+	//	if err != nil {
+	//		fail(fmt.Errorf("Failed to cleanup: %v ", err))
+	//	}
+	//}
 	logger.Info("cleanup done")
 
 	if len(msgs) > 0 {
@@ -159,7 +157,7 @@ func (j SummarizeJob) DoMustSummarizer(client kaytu.Client, db inventory.Databas
 			if end > len(msgs) {
 				end = len(msgs)
 			}
-			err := kafka.DoSend(producer, topic, -1, msgs[i:end], logger)
+			err = kafka.DoSend(producer, topic, -1, msgs[i:end], logger)
 			if err != nil {
 				fail(fmt.Errorf("Failed to send to kafka: %v ", err))
 			}
@@ -168,8 +166,10 @@ func (j SummarizeJob) DoMustSummarizer(client kaytu.Client, db inventory.Databas
 	}
 
 	errMsg := ""
-	if firstErr != nil {
-		errMsg = firstErr.Error()
+	if allErrors != nil {
+		for _, err := range allErrors {
+			errMsg = fmt.Sprintf("%s\n%s", errMsg, err.Error())
+		}
 	}
 	if status == api.SummarizerJobSucceeded {
 		DoResourceSummarizerJobsDuration.WithLabelValues(strconv.Itoa(int(j.JobID)), "successful").Observe(float64(time.Now().Unix() - startTime))

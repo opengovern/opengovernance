@@ -463,7 +463,7 @@ func (credential *Credential) ToAPI() api.Credential {
 
 		Connections:           nil,
 		TotalConnections:      nil,
-		EnabledConnections:    nil,
+		OnboardConnections:    nil,
 		UnhealthyConnections:  nil,
 		DiscoveredConnections: nil,
 	}

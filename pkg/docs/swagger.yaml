@@ -1818,6 +1818,11 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Credential:
     properties:
+      archived_connections:
+        example: 0
+        maximum: 1000
+        minimum: 0
+        type: integer
       autoOnboardEnabled:
         example: false
         type: boolean
@@ -1834,6 +1839,11 @@ definitions:
         allOf:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.CredentialType'
         example: manual-aws-org
+      disabled_connections:
+        example: 0
+        maximum: 1000
+        minimum: 0
+        type: integer
       discovered_connections:
         example: 50
         maximum: 100
@@ -1842,11 +1852,6 @@ definitions:
       enabled:
         example: true
         type: boolean
-      enabled_connections:
-        example: 250
-        maximum: 1000
-        minimum: 0
-        type: integer
       healthReason:
         example: ""
         type: string
@@ -1867,6 +1872,11 @@ definitions:
       name:
         example: a-1mahsl7lzk
         type: string
+      onboard_connections:
+        example: 250
+        maximum: 1000
+        minimum: 0
+        type: integer
       onboardDate:
         example: "2023-06-03T12:21:33.406928Z"
         format: date-time
@@ -1905,9 +1915,9 @@ definitions:
         items:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_onboard_api.Connection'
         type: array
-      oldConnectionCount:
+      totalArchivedCount:
         example: 10
-        maximum: 1000
+        maximum: 100
         minimum: 0
         type: integer
       totalCost:
@@ -1928,6 +1938,12 @@ definitions:
       totalOldResourceCount:
         example: 100
         maximum: 1000000
+        minimum: 0
+        type: integer
+      totalOnboardedCount:
+        description: Also includes in-progress
+        example: 10
+        maximum: 100
         minimum: 0
         type: integer
       totalResourceCount:
@@ -4477,6 +4493,11 @@ paths:
         name: sourceId
         required: true
         type: string
+      - default: true
+        description: Whether to update metadata or not
+        in: query
+        name: updateMetadata
+        type: boolean
       produces:
       - application/json
       responses:

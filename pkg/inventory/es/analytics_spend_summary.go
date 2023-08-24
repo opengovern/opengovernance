@@ -80,15 +80,9 @@ func FetchConnectionDailySpendHistoryByMetric(client kaytu.Client, connectionIDs
 	}
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
-			"period_end": map[string]string{
-				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
-			},
-		},
-	})
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"period_start": map[string]string{
+			"date_epoch": map[string]string{
 				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
 			},
 		},
 	})
@@ -248,15 +242,9 @@ func FetchConnectionDailySpendHistory(client kaytu.Client, connectionIDs []strin
 	}
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
-			"period_end": map[string]string{
-				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
-			},
-		},
-	})
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"period_start": map[string]string{
+			"date_epoch": map[string]string{
 				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
 			},
 		},
 	})
@@ -396,15 +384,9 @@ func FetchConnectorDailySpendHistoryByMetric(client kaytu.Client, connectors []s
 	}
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
-			"period_end": map[string]string{
-				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
-			},
-		},
-	})
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"period_start": map[string]string{
+			"date_epoch": map[string]string{
 				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
 			},
 		},
 	})
@@ -528,15 +510,9 @@ func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.Spe
 	}
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
-			"period_end": map[string]string{
-				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
-			},
-		},
-	})
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"period_start": map[string]string{
+			"date_epoch": map[string]string{
 				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
 			},
 		},
 	})
@@ -619,15 +595,9 @@ func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.Spen
 	}
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
-			"period_end": map[string]string{
-				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
-			},
-		},
-	})
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"period_start": map[string]string{
+			"date_epoch": map[string]string{
 				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
 			},
 		},
 	})
@@ -728,15 +698,9 @@ func FetchSpendByMetric(client kaytu.Client, connectionIDs []string, connectors 
 	}
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
-			"period_end": map[string]string{
-				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
-			},
-		},
-	})
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"period_start": map[string]string{
+			"date_epoch": map[string]string{
 				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
 			},
 		},
 	})

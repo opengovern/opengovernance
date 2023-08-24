@@ -58,15 +58,9 @@ func FetchConnectionSpendMetricTrend(client kaytu.Client, granularity inventoryA
 	}
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
-			"period_end": map[string]string{
-				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
-			},
-		},
-	})
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"period_start": map[string]string{
+			"date_epoch": map[string]string{
 				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
 			},
 		},
 	})
@@ -169,15 +163,9 @@ func FetchConnectorSpendMetricTrend(client kaytu.Client, granularity inventoryAp
 	}
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
-			"period_end": map[string]string{
-				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
-			},
-		},
-	})
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"period_start": map[string]string{
+			"date_epoch": map[string]string{
 				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
 			},
 		},
 	})
@@ -293,15 +281,9 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.Spen
 	}
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
-			"period_end": map[string]string{
-				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
-			},
-		},
-	})
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"period_start": map[string]string{
+			"date_epoch": map[string]string{
 				"gte": strconv.FormatInt(startTime.UnixMilli(), 10),
+				"lte": strconv.FormatInt(endTime.UnixMilli(), 10),
 			},
 		},
 	})
