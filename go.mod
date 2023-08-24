@@ -29,12 +29,12 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/haoel/downsampling v0.0.0-20221012062717-1132fe8afe24
-	github.com/kaytu-io/kaytu-aws-describer v0.0.55
+	github.com/kaytu-io/kaytu-aws-describer v0.0.56
 	github.com/kaytu-io/kaytu-azure-describer v0.0.68
 	github.com/kaytu-io/kaytu-util v0.0.0-20230822101604-7d81664d74f9
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/labstack/echo-contrib v0.15.0
-	github.com/labstack/echo/v4 v4.10.2
+	github.com/labstack/echo/v4 v4.11.1
 	github.com/labstack/gommon v0.4.0
 	github.com/lib/pq v1.10.3
 	github.com/microsoft/kiota-abstractions-go v0.9.1
@@ -51,7 +51,7 @@ require (
 	github.com/swaggo/swag v1.16.1
 	github.com/turbot/steampipe-plugin-sdk/v5 v5.5.1
 	go.uber.org/zap v1.24.0
-	golang.org/x/net v0.11.0
+	golang.org/x/net v0.12.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230629202037-9506855d4529
 	google.golang.org/grpc v1.56.1
 	gopkg.in/go-playground/validator.v9 v9.31.0
@@ -424,7 +424,7 @@ require (
 	github.com/manicminer/hamilton-autorest v0.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-ieproxy v0.0.1 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/microsoft/kiota-http-go v0.7.0 // indirect
@@ -501,14 +501,14 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
-	golang.org/x/crypto v0.10.0 // indirect
+	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
 	golang.org/x/mod v0.11.0 // indirect
 	golang.org/x/oauth2 v0.7.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.9.0 // indirect
-	golang.org/x/term v0.9.0 // indirect
-	golang.org/x/text v0.10.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
+	golang.org/x/term v0.10.0 // indirect
+	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.10.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
