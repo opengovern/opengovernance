@@ -20,14 +20,14 @@ func Register(logger *zap.Logger, routes Routes) (*echo.Echo, io.Closer) {
 	e := echo.New()
 	e.HideBanner = true
 
-	c := jaegertracing.New(e, nil)
-
 	e.Use(middleware.Recover())
 	e.Use(echozap.ZapLogger(logger))
 
 	metrics.AddEchoMiddleware(e)
 
 	e.Pre(middleware.RemoveTrailingSlash())
+
+	c := jaegertracing.New(e, nil)
 
 	e.Validator = customValidator{
 		validate: validator.New(),
