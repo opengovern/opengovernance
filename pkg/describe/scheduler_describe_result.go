@@ -103,6 +103,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 			searchAfter,
 			1000)
 		if err != nil {
+			CleanupJobCount.WithLabelValues("failure").Inc()
 			return err
 		}
 
@@ -142,18 +143,29 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				msg = kafka.Msg(kafka.HashOf(lookUpKeys...), nil, lookUpIdx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
 				msgs = append(msgs, msg)
 				if err != nil {
+					CleanupJobCount.WithLabelValues("failure").Inc()
 					return err
 				}
 			}
 		}
-		_, err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs)
-		if err != nil {
-			s.logger.Error("failed to send delete message to kafka",
-				zap.Uint("jobId", res.JobID),
-				zap.String("connection_id", res.DescribeJob.SourceID),
-				zap.String("resource_type", res.DescribeJob.ResourceType),
-				zap.Error(err))
-			return err
+
+		i := 0
+		for {
+			_, err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs)
+			if err != nil {
+				s.logger.Error("failed to send delete message to kafka",
+					zap.Uint("jobId", res.JobID),
+					zap.String("connection_id", res.DescribeJob.SourceID),
+					zap.String("resource_type", res.DescribeJob.ResourceType),
+					zap.Error(err))
+				if i > 10 {
+					CleanupJobCount.WithLabelValues("failure").Inc()
+					return err
+				}
+				i++
+				continue
+			}
+			break
 		}
 		deletedCount += len(msgs)
 	}
@@ -163,6 +175,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 		zap.String("resource_type", res.DescribeJob.ResourceType),
 		zap.Int("deleted_count", deletedCount))
 
+	CleanupJobCount.WithLabelValues("successful").Inc()
 	return nil
 }
 

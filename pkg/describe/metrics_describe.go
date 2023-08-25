@@ -26,6 +26,13 @@ var DescribeResourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help:      "Count of describe resource jobs",
 }, []string{"status"})
 
+var CleanupJobCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Namespace: "kaytu",
+	Subsystem: "scheduler",
+	Name:      "cleanup_jobs_total",
+	Help:      "Count of cleanup jobs",
+}, []string{"status"})
+
 var ResourcesDescribedCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "kaytu",
 	Subsystem: "scheduler",
