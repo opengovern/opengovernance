@@ -2,6 +2,7 @@ package reporter
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -43,5 +44,5 @@ func startHttpServer(ctx context.Context, j *Job) error {
 		return fmt.Errorf("init http handler: %w", err)
 	}
 
-	return httpServer.RegisterReporter()
+	return httpserver.RegisterAndStart(logger, HttpAddress, httpServer)
 }
