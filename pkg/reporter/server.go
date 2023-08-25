@@ -41,12 +41,17 @@ func NewHTTPServer(
 	}
 }
 
-func (h HttpServer) Register(e *echo.Echo) {
+func (h *HttpServer) RegisterReporter() error {
+	e := echo.New()
+	// Enable tracing middleware
+	c := jaegertracing.New(e, nil)
+	defer c.Close()
 	e.POST("/query/trigger", h.TriggerQuery)
 	e.GET("/jaeger/test", func(ctx echo.Context) error {
 		jaegertracing.TraceFunction(ctx, slowFunc, "Test String")
 		return ctx.String(http.StatusOK, "Hello, World!")
 	})
+	return e.Start(h.Address)
 }
 
 func slowFunc(s string) {
@@ -54,7 +59,7 @@ func slowFunc(s string) {
 	return
 }
 
-func (h HttpServer) TriggerQuery(ctx echo.Context) error {
+func (h *HttpServer) TriggerQuery(ctx echo.Context) error {
 
 	var reqBody TriggerQueryRequest
 	err := bindValidate(ctx, &reqBody)
