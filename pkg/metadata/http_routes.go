@@ -2,11 +2,11 @@ package metadata
 
 import (
 	"github.com/labstack/echo-contrib/jaegertracing"
+	_ "gorm.io/gorm"
 	"net/http"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
-
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/src"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
@@ -89,4 +89,47 @@ func (h HttpHandler) SetConfigMetadata(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, nil)
+}
+
+// SetListFilter godoc
+//
+//	@Summary		Set list filters
+//	@Description	Sets the filters name
+//	@Security		BearerToken
+//	@Tags			filter
+//	@Produce		json
+//	@Param			req	body	api.SetConfigFilter	true	"Request Body"
+//	@Success		200
+//	@Router			/metadata/api/v1/filter [post]
+func (h HttpHandlerFilter) SetListFilter(ctx echo.Context) error {
+	var req api.SetConfigFilter
+	if err := bindValidate(ctx, &req); err != nil {
+		return err
+	}
+
+	err := src.SetListFilter(h.db, req.Name, req.KeyValue)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, nil)
+}
+
+// GetListFilters godoc
+//
+//	@Summary		get list filters
+//	@Description	show the filter names that stored before
+//	@Security		BearerToken
+//	@Tags			filter
+//	@Produce		json
+//	@Param			name	path	string	true	"name"
+//	@Success		200	{object}	models.Filters
+//	@Router			/metadata/api/v1/filter/{name} [get]
+func (h HttpHandlerFilter) GetListFilters(ctx echo.Context) error {
+	name := ctx.Param("name")
+
+	listFilters, err := src.GetListFilters(h.db, name)
+	if err != nil {
+		return nil
+	}
+	return ctx.JSON(http.StatusOK, listFilters)
 }
