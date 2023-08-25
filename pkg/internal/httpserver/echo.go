@@ -3,7 +3,6 @@ package httpserver
 import (
 	"github.com/brpaz/echozap"
 	"github.com/kaytu-io/kaytu-util/pkg/metrics"
-	"github.com/labstack/echo-contrib/jaegertracing"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
@@ -38,8 +37,8 @@ func Register(logger *zap.Logger, routes Routes) *echo.Echo {
 func RegisterAndStart(logger *zap.Logger, address string, routes Routes) error {
 	e := Register(logger, routes)
 
-	c := jaegertracing.New(e, nil)
-	defer c.Close()
+	//c := jaegertracing.New(e, nil)
+	//defer c.Close()
 
 	return e.Start(address)
 }
