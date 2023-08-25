@@ -143,7 +143,7 @@ FROM (
         (select count(*) from describe_resource_jobs where parent_job_id = dr.parent_job_id AND status IN ?) <= 10
   ) AS t) AS rowed
 WHERE
-  rowed.r <= 5
+  rowed.r <= 10
 LIMIT ?
 `, api.DescribeResourceJobCreated, runningJobs, limit).Find(&job)
 	if tx.Error != nil {
