@@ -42,8 +42,6 @@ func NewHTTPServer(
 }
 
 func (h HttpServer) Register(e *echo.Echo) {
-	c := jaegertracing.New(e, nil)
-	defer c.Close()
 	e.POST("/query/trigger", h.TriggerQuery)
 	e.GET("/jaeger/test", func(ctx echo.Context) error {
 		jaegertracing.TraceFunction(ctx, slowFunc, "Test String")

@@ -3,8 +3,10 @@ package httpserver
 import (
 	"github.com/brpaz/echozap"
 	"github.com/kaytu-io/kaytu-util/pkg/metrics"
+	"github.com/labstack/echo-contrib/jaegertracing"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"io"
 
 	"go.uber.org/zap"
 	"gopkg.in/go-playground/validator.v9"
@@ -14,9 +16,11 @@ type Routes interface {
 	Register(router *echo.Echo)
 }
 
-func Register(logger *zap.Logger, routes Routes) *echo.Echo {
+func Register(logger *zap.Logger, routes Routes) (*echo.Echo, io.Closer) {
 	e := echo.New()
 	e.HideBanner = true
+
+	c := jaegertracing.New(e, nil)
 
 	e.Use(middleware.Recover())
 	e.Use(echozap.ZapLogger(logger))
@@ -31,14 +35,13 @@ func Register(logger *zap.Logger, routes Routes) *echo.Echo {
 
 	routes.Register(e)
 
-	return e
+	return e, c
 }
 
 func RegisterAndStart(logger *zap.Logger, address string, routes Routes) error {
-	e := Register(logger, routes)
+	e, c := Register(logger, routes)
 
-	//c := jaegertracing.New(e, nil)
-	//defer c.Close()
+	defer c.Close()
 
 	return e.Start(address)
 }
