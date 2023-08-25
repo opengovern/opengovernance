@@ -78,7 +78,7 @@ func NewServer(cfg *Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new zap logger: %s", err)
 	}
-	s.e = httpserver2.Register(logger, s)
+	s.e, _ = httpserver2.Register(logger, s)
 
 	db, err := NewDatabase(cfg, logger)
 	if err != nil {

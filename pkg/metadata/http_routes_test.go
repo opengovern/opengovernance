@@ -110,7 +110,7 @@ func (s *HttpHandlerSuite) SetupSuite() {
 	logger, err := zap.NewProduction()
 	require.NoError(err, "new logger")
 
-	s.router = httpserver.Register(logger, s.handler)
+	s.router, _ = httpserver.Register(logger, s.handler)
 }
 
 func (s *HttpHandlerSuite) BeforeTest(suiteName, testName string) {
