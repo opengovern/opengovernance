@@ -1,6 +1,7 @@
 package describe
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -454,7 +455,7 @@ func InitializeScheduler(
 	return s, nil
 }
 
-func (s *Scheduler) Run() error {
+func (s *Scheduler) Run(ctx context.Context) error {
 	err := s.db.Initialize()
 	if err != nil {
 		return err
@@ -519,7 +520,7 @@ func (s *Scheduler) Run() error {
 			s.RunDescribeJobScheduler()
 		})
 		EnsureRunGoroutin(func() {
-			s.RunDescribeResourceJobs()
+			s.RunDescribeResourceJobs(ctx)
 		})
 		EnsureRunGoroutin(func() {
 			s.RunDescribeJobCompletionUpdater()
