@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
+	"go.opentelemetry.io/otel"
 	"io"
 	"math/rand"
 	"net/http"
@@ -61,8 +63,11 @@ func (s *Scheduler) RunDescribeJobScheduler() {
 	}
 }
 
-func (s *Scheduler) RunDescribeResourceJobCycle() error {
-	count, err := s.db.CountQueuedDescribeResourceJobs()
+func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
+	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
+
+	count, err := s.db.CountQueuedDescribeResourceJobs(ctx)
 	if err != nil {
 		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeResourceJobs"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
@@ -77,7 +82,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle() error {
 		DescribePublishingBlocked.WithLabelValues("cloud queued").Set(0)
 	}
 
-	drs, err := s.db.ListRandomCreatedDescribeResourceJobs(int(s.MaxConcurrentCall))
+	drs, err := s.db.ListRandomCreatedDescribeResourceJobs(ctx, int(s.MaxConcurrentCall))
 	if err != nil {
 		s.logger.Error("failed to fetch describe resource jobs", zap.String("spot", "ListRandomCreatedDescribeResourceJobs"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
@@ -86,7 +91,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle() error {
 
 	if len(drs) == 0 {
 		if count == 0 {
-			drs, err = s.db.GetFailedDescribeResourceJobs()
+			drs, err = s.db.GetFailedDescribeResourceJobs(ctx)
 			if err != nil {
 				s.logger.Error("failed to fetch failed describe resource jobs", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
 				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
@@ -112,7 +117,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle() error {
 			ds = v
 			src = srcMap[dr.ParentJobID]
 		} else {
-			ds, err = s.db.GetDescribeSourceJob(dr.ParentJobID)
+			ds, err = s.db.GetDescribeSourceJob(ctx, dr.ParentJobID)
 			if err != nil {
 				s.logger.Error("failed to get describe source job", zap.String("spot", "GetDescribeSourceJob"), zap.Error(err), zap.Uint("jobID", dr.ID))
 				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
@@ -150,7 +155,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle() error {
 				ds: *ds,
 			}
 			wp.AddJob(func() (interface{}, error) {
-				err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, cred.Secret, s.WorkspaceName, ds.SourceID)
+				err := s.enqueueCloudNativeDescribeJob(ctx, c.dr, c.ds, cred.Secret, s.WorkspaceName, ds.SourceID)
 				if err != nil {
 					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dr.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
@@ -166,7 +171,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle() error {
 				src: src,
 			}
 			wp.AddJob(func() (interface{}, error) {
-				err := s.enqueueCloudNativeDescribeJob(c.dr, c.ds, c.src.Credential.Config.(string), s.WorkspaceName, s.kafkaResourcesTopic)
+				err := s.enqueueCloudNativeDescribeJob(ctx, c.dr, c.ds, c.src.Credential.Config.(string), s.WorkspaceName, s.kafkaResourcesTopic)
 				if err != nil {
 					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dr.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
@@ -183,11 +188,11 @@ func (s *Scheduler) RunDescribeResourceJobCycle() error {
 	return nil
 }
 
-func (s *Scheduler) RunDescribeResourceJobs() {
+func (s *Scheduler) RunDescribeResourceJobs(ctx context.Context) {
 	t := time.NewTicker(time.Second * 1)
 	defer t.Stop()
 	for ; ; <-t.C {
-		if err := s.RunDescribeResourceJobCycle(); err != nil {
+		if err := s.RunDescribeResourceJobCycle(ctx); err != nil {
 			t.Reset(time.Second * 5)
 		} else {
 			t.Reset(time.Second * 1)
@@ -363,7 +368,10 @@ func newDescribeSourceJob(a apiOnboard.Connection, describedAt time.Time,
 	return daj
 }
 
-func (s *Scheduler) enqueueCloudNativeDescribeJob(dr DescribeResourceJob, ds DescribeSourceJob, cipherText string, workspaceName string, kafkaTopic string) error {
+func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dr DescribeResourceJob, ds DescribeSourceJob, cipherText string, workspaceName string, kafkaTopic string) error {
+	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
+
 	s.logger.Debug("enqueueCloudNativeDescribeJob",
 		zap.Uint("sourceJobID", ds.ID),
 		zap.Uint("jobID", dr.ID),

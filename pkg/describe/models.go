@@ -78,9 +78,9 @@ type CloudNativeDescribeSourceJob struct {
 
 type DescribeResourceJob struct {
 	gorm.Model
-	ParentJobID            uint `gorm:"index"`
-	ResourceType           string
-	Status                 api.DescribeResourceJobStatus
+	ParentJobID            uint                          `gorm:"index;index:idx_parent_job_id_status"`
+	ResourceType           string                        `gorm:"index"`
+	Status                 api.DescribeResourceJobStatus `gorm:"index;index:idx_parent_job_id_status"`
 	RetryCount             int
 	FailureMessage         string // Should be NULLSTRING
 	ErrorCode              string // Should be NULLSTRING
