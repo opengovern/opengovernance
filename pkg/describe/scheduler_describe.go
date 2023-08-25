@@ -213,7 +213,7 @@ func (s *Scheduler) scheduleDescribeJob() {
 		if !connection.IsEnabled() {
 			continue
 		}
-		err = s.describeConnection(connection, true, nil)
+		err = s.describeConnection(connection, true, nil, false)
 		if err != nil {
 			s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 		}
@@ -222,7 +222,7 @@ func (s *Scheduler) scheduleDescribeJob() {
 	DescribeJobsCount.WithLabelValues("successful").Inc()
 }
 
-func (s *Scheduler) describeConnection(connection apiOnboard.Connection, scheduled bool, resourceTypeList []string) error {
+func (s *Scheduler) describeConnection(connection apiOnboard.Connection, scheduled bool, resourceTypeList []string, forceFull bool) error {
 	job, err := s.db.GetLastDescribeSourceJob(connection.ID.String())
 	if err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
@@ -267,8 +267,8 @@ func (s *Scheduler) describeConnection(connection apiOnboard.Connection, schedul
 	}
 	s.logger.Debug("Source is due for a describe. Creating a job now", zap.String("sourceId", connection.ID.String()))
 
-	isFullDiscovery := false
-	if scheduled {
+	isFullDiscovery := forceFull
+	if scheduled && !isFullDiscovery {
 		fullDiscoveryJob, err := s.db.GetLastFullDiscoveryDescribeSourceJob(connection.ID.String())
 		if err != nil {
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
