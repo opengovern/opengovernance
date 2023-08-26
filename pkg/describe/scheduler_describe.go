@@ -307,8 +307,8 @@ func newDescribeConnectionJob(a apiOnboard.Connection, resourceType string, trig
 }
 
 func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc DescribeConnectionJob, cipherText string, workspaceName string, kafkaTopic string) error {
-	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
-	defer span.End()
+	//ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	//defer span.End()
 
 	s.logger.Info("enqueueCloudNativeDescribeJob",
 		zap.Uint("jobID", dc.ID),
