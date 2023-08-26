@@ -196,7 +196,7 @@ func (s *Scheduler) scheduleDescribeJob() {
 		for _, resourceType := range resourceTypes {
 			err = s.describe(connection, resourceType, true)
 			if err != nil {
-				s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+				s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.String("resource_type", resourceType), zap.Error(err))
 			}
 		}
 	}
@@ -212,12 +212,6 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 	}
 
 	if job != nil {
-		if job.Status == api.DescribeResourceJobCreated ||
-			job.Status == api.DescribeResourceJobQueued ||
-			job.Status == api.DescribeResourceJobInProgress {
-			return ErrJobInProgress
-		}
-
 		if scheduled {
 			interval := s.fullDiscoveryIntervalHours
 			if connection.Connector == source.CloudAWS {
@@ -241,6 +235,12 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 			if job.UpdatedAt.After(time.Now().Add(time.Duration(-interval) * time.Hour)) {
 				return nil
 			}
+		}
+
+		if job.Status == api.DescribeResourceJobCreated ||
+			job.Status == api.DescribeResourceJobQueued ||
+			job.Status == api.DescribeResourceJobInProgress {
+			return ErrJobInProgress
 		}
 	}
 
