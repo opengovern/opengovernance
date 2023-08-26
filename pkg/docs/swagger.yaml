@@ -1509,6 +1509,15 @@ definitions:
     - ConfigMetadataTypeInt
     - ConfigMetadataTypeBool
     - ConfigMetadataTypeJSON
+  github_com_kaytu-io_kaytu-engine_pkg_metadata_models.Filter:
+    properties:
+      kayValue:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_metadata_models.MetadataKey:
     enum:
     - workspace_ownership
@@ -4089,6 +4098,40 @@ paths:
       summary: List resource-type metrics
       tags:
       - resource
+  /metadata/api/v1/filter:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_models.Filter'
+            type: array
+      security:
+      - BearerToken: []
+      summary: list filters
+      tags:
+      - metadata
+    post:
+      parameters:
+      - description: Request Body
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_models.Filter'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: add filter
+      tags:
+      - metadata
   /metadata/api/v1/metadata:
     post:
       description: Sets the config metadata for the given key

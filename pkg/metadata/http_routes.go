@@ -16,8 +16,8 @@ import (
 func (h HttpHandler) Register(r *echo.Echo) {
 	v1 := r.Group("/api/v1")
 
-	v1.POST("/filter", httpserver.AuthorizeHandler(h.SetListFilter, api3.ViewerRole))
-	v1.GET("/filter/:name", httpserver.AuthorizeHandler(h.GetListFilters, api3.ViewerRole))
+	v1.POST("/filter", httpserver.AuthorizeHandler(h.AddFilter, api3.ViewerRole))
+	v1.GET("/filter", httpserver.AuthorizeHandler(h.GetFilters, api3.ViewerRole))
 	v1.GET("/metadata/:key", httpserver.AuthorizeHandler(h.GetConfigMetadata, api3.ViewerRole))
 	v1.POST("/metadata", httpserver.AuthorizeHandler(h.SetConfigMetadata, api3.AdminRole))
 }
@@ -93,45 +93,41 @@ func (h HttpHandler) SetConfigMetadata(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, nil)
 }
 
-// SetListFilter godoc
+// AddFilter godoc
 //
-//	@Summary		Set list filters
-//	@Description	Sets the filters name
-//	@Security		BearerToken
-//	@Tags			filter
-//	@Produce		json
-//	@Param			req	body	api.SetConfigFilter	true	"Request Body"
-//	@Success		200
-//	@Router			/metadata/api/v1/filter [post]
-func (h HttpHandler) SetListFilter(ctx echo.Context) error {
-	var req api.SetConfigFilter
+//	@Summary	add filter
+//	@Security	BearerToken
+//	@Tags		metadata
+//	@Produce	json
+//	@Param		req	body	models.Filter	true	"Request Body"
+//	@Success	200
+//	@Router		/metadata/api/v1/filter [post]
+func (h HttpHandler) AddFilter(ctx echo.Context) error {
+	var req models.Filter
 	if err := bindValidate(ctx, &req); err != nil {
 		return err
 	}
 
-	err := src.SetListFilter(h.db, req.Name, req.KeyValue)
+	err := h.db.AddFilter(models.Filter{Name: req.Name, KeyValue: req.KeyValue})
 	if err != nil {
 		return err
 	}
+
 	return ctx.JSON(http.StatusOK, nil)
 }
 
-// GetListFilters godoc
+// GetFilters godoc
 //
-//	@Summary		get list filters
-//	@Description	show the filter names that stored before
-//	@Security		BearerToken
-//	@Tags			filter
-//	@Produce		json
-//	@Param			name	path	string	true	"name"
-//	@Success		200	{object}	models.Filters
-//	@Router			/metadata/api/v1/filter/{name} [get]
-func (h HttpHandler) GetListFilters(ctx echo.Context) error {
-	name := ctx.Param("name")
-
-	listFilters, err := src.GetListFilters(h.db, name)
+//	@Summary	list filters
+//	@Security	BearerToken
+//	@Tags		metadata
+//	@Produce	json
+//	@Success	200	{object}	[]models.Filter
+//	@Router		/metadata/api/v1/filter [get]
+func (h HttpHandler) GetFilters(ctx echo.Context) error {
+	filters, err := h.db.ListFilters()
 	if err != nil {
 		return nil
 	}
-	return ctx.JSON(http.StatusOK, listFilters)
+	return ctx.JSON(http.StatusOK, filters)
 }
