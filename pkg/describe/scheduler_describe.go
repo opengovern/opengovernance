@@ -307,7 +307,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc Descri
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
-	s.logger.Debug("enqueueCloudNativeDescribeJob",
+	s.logger.Info("enqueueCloudNativeDescribeJob",
 		zap.Uint("jobID", dc.ID),
 		zap.String("connectionID", dc.ConnectionID),
 		zap.String("resourceType", dc.ResourceType),
