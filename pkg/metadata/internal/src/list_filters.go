@@ -5,7 +5,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
 )
 
-func SetListFilter(db database.DatabaseFilter, name string, keyValue map[string]string) error {
+func SetListFilter(db database.Database, name string, keyValue map[string]string) error {
 	err := db.SetListFilters(models.Filters{Name: name, KeyValue: keyValue})
 	if err != nil {
 		return err
@@ -13,7 +13,7 @@ func SetListFilter(db database.DatabaseFilter, name string, keyValue map[string]
 	return nil
 }
 
-func GetListFilters(db database.DatabaseFilter, name string) (models.Filters, error) {
+func GetListFilters(db database.Database, name string) (models.Filters, error) {
 	keyValue, err := db.GetListFilters(name)
 	if err != nil {
 		return models.Filters{}, err

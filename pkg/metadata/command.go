@@ -29,16 +29,6 @@ var (
 
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
-var (
-	PostgreSQLHostFilter     = os.Getenv("POSTGRESQL_HOST")
-	PostgreSQLPortFilter     = os.Getenv("POSTGRESQL_PORT")
-	PostgreSQLDbFilter       = os.Getenv("POSTGRESQL_DB")
-	PostgreSQLUserFilter     = os.Getenv("POSTGRESQL_USERNAME")
-	PostgreSQLPasswordFilter = os.Getenv("POSTGRESQL_PASSWORD")
-	PostgreSQLSSLModeFilter  = os.Getenv("POSTGRESQL_SSLMODE")
-
-	HttpAddressFilter = os.Getenv("HTTP_ADDRESS")
-)
 
 func Command() *cobra.Command {
 	return &cobra.Command{

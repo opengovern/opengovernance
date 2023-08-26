@@ -16,6 +16,8 @@ import (
 func (h HttpHandler) Register(r *echo.Echo) {
 	v1 := r.Group("/api/v1")
 
+	v1.POST("/filter", httpserver.AuthorizeHandler(h.SetListFilter, api3.ViewerRole))
+	v1.GET("/filter/:name", httpserver.AuthorizeHandler(h.GetListFilters, api3.ViewerRole))
 	v1.GET("/metadata/:key", httpserver.AuthorizeHandler(h.GetConfigMetadata, api3.ViewerRole))
 	v1.POST("/metadata", httpserver.AuthorizeHandler(h.SetConfigMetadata, api3.AdminRole))
 }
@@ -101,7 +103,7 @@ func (h HttpHandler) SetConfigMetadata(ctx echo.Context) error {
 //	@Param			req	body	api.SetConfigFilter	true	"Request Body"
 //	@Success		200
 //	@Router			/metadata/api/v1/filter [post]
-func (h HttpHandlerFilter) SetListFilter(ctx echo.Context) error {
+func (h HttpHandler) SetListFilter(ctx echo.Context) error {
 	var req api.SetConfigFilter
 	if err := bindValidate(ctx, &req); err != nil {
 		return err
@@ -124,7 +126,7 @@ func (h HttpHandlerFilter) SetListFilter(ctx echo.Context) error {
 //	@Param			name	path	string	true	"name"
 //	@Success		200	{object}	models.Filters
 //	@Router			/metadata/api/v1/filter/{name} [get]
-func (h HttpHandlerFilter) GetListFilters(ctx echo.Context) error {
+func (h HttpHandler) GetListFilters(ctx echo.Context) error {
 	name := ctx.Param("name")
 
 	listFilters, err := src.GetListFilters(h.db, name)
