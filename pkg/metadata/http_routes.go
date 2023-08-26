@@ -2,11 +2,11 @@ package metadata
 
 import (
 	"github.com/labstack/echo-contrib/jaegertracing"
+	_ "gorm.io/gorm"
 	"net/http"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
-
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/internal/src"
 	"github.com/kaytu-io/kaytu-engine/pkg/metadata/models"
@@ -16,6 +16,8 @@ import (
 func (h HttpHandler) Register(r *echo.Echo) {
 	v1 := r.Group("/api/v1")
 
+	v1.POST("/filter", httpserver.AuthorizeHandler(h.AddFilter, api3.ViewerRole))
+	v1.GET("/filter", httpserver.AuthorizeHandler(h.GetFilters, api3.ViewerRole))
 	v1.GET("/metadata/:key", httpserver.AuthorizeHandler(h.GetConfigMetadata, api3.ViewerRole))
 	v1.POST("/metadata", httpserver.AuthorizeHandler(h.SetConfigMetadata, api3.AdminRole))
 }
@@ -89,4 +91,43 @@ func (h HttpHandler) SetConfigMetadata(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, nil)
+}
+
+// AddFilter godoc
+//
+//	@Summary	add filter
+//	@Security	BearerToken
+//	@Tags		metadata
+//	@Produce	json
+//	@Param		req	body	models.Filter	true	"Request Body"
+//	@Success	200
+//	@Router		/metadata/api/v1/filter [post]
+func (h HttpHandler) AddFilter(ctx echo.Context) error {
+	var req models.Filter
+	if err := bindValidate(ctx, &req); err != nil {
+		return err
+	}
+
+	err := h.db.AddFilter(models.Filter{Name: req.Name, KeyValue: req.KeyValue})
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, nil)
+}
+
+// GetFilters godoc
+//
+//	@Summary	list filters
+//	@Security	BearerToken
+//	@Tags		metadata
+//	@Produce	json
+//	@Success	200	{object}	[]models.Filter
+//	@Router		/metadata/api/v1/filter [get]
+func (h HttpHandler) GetFilters(ctx echo.Context) error {
+	filters, err := h.db.ListFilters()
+	if err != nil {
+		return nil
+	}
+	return ctx.JSON(http.StatusOK, filters)
 }

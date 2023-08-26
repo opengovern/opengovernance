@@ -2586,6 +2586,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/metadata/api/v1/filter": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "metadata"
+                ],
+                "summary": "list filters",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_models.Filter"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "metadata"
+                ],
+                "summary": "add filter",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_metadata_models.Filter"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/metadata/api/v1/metadata": {
             "post": {
                 "security": [
@@ -6396,6 +6453,20 @@ const docTemplate = `{
                 "ConfigMetadataTypeBool",
                 "ConfigMetadataTypeJSON"
             ]
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_metadata_models.Filter": {
+            "type": "object",
+            "properties": {
+                "kayValue": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
         },
         "github_com_kaytu-io_kaytu-engine_pkg_metadata_models.MetadataKey": {
             "type": "string",
