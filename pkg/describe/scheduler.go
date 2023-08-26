@@ -522,9 +522,6 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		EnsureRunGoroutin(func() {
 			s.RunDescribeResourceJobs(ctx)
 		})
-		EnsureRunGoroutin(func() {
-			s.RunDescribeJobCompletionUpdater()
-		})
 		// ---------
 
 		// --------- inventory summarizer
@@ -815,15 +812,7 @@ func (s *Scheduler) RunScheduledJobCleanup() {
 	defer ticker.Stop()
 	for range ticker.C {
 		tOlder := time.Now().AddDate(0, 0, -7)
-		err := s.db.CleanupCloudNativeDescribeSourceJobsOlderThan(tOlder)
-		if err != nil {
-			s.logger.Error("Failed to cleanup cloud native describe source jobs", zap.Error(err))
-		}
-		err = s.db.CleanupDescribeSourceJobsOlderThan(tOlder)
-		if err != nil {
-			s.logger.Error("Failed to cleanup describe source jobs", zap.Error(err))
-		}
-		err = s.db.CleanupDescribeResourceJobsOlderThan(tOlder)
+		err := s.db.CleanupDescribeConnectionJobsOlderThan(tOlder)
 		if err != nil {
 			s.logger.Error("Failed to cleanup describe resource jobs", zap.Error(err))
 		}

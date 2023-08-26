@@ -27,7 +27,6 @@ import (
 	apiInsight "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
@@ -36,9 +35,7 @@ import (
 )
 
 const (
-	MaxQueued                       = 5000
-	MaxAccountConcurrentQueued      = 10
-	MaxResourceTypeConcurrentQueued = 50
+	MaxQueued = 5000
 )
 
 var (
@@ -46,8 +43,7 @@ var (
 )
 
 type CloudNativeCall struct {
-	dr  DescribeResourceJob
-	ds  DescribeSourceJob
+	dc  DescribeConnectionJob
 	src *apiOnboard.Connection
 }
 
@@ -67,9 +63,9 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
-	count, err := s.db.CountQueuedDescribeResourceJobs(ctx)
+	count, err := s.db.CountQueuedDescribeConnectionJobs()
 	if err != nil {
-		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeResourceJobs"), zap.Error(err))
+		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeConnectionJobs"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 		return err
 	}
@@ -82,82 +78,52 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		DescribePublishingBlocked.WithLabelValues("cloud queued").Set(0)
 	}
 
-	drs, err := s.db.ListRandomCreatedDescribeResourceJobs(ctx, int(s.MaxConcurrentCall))
+	dcs, err := s.db.ListRandomCreatedDescribeConnectionJobs(ctx, int(s.MaxConcurrentCall))
 	if err != nil {
 		s.logger.Error("failed to fetch describe resource jobs", zap.String("spot", "ListRandomCreatedDescribeResourceJobs"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 		return err
 	}
 
-	if len(drs) == 0 {
+	if len(dcs) == 0 {
 		if count == 0 {
-			drs, err = s.db.GetFailedDescribeResourceJobs(ctx)
+			dcs, err = s.db.GetFailedDescribeConnectionJobs(ctx)
 			if err != nil {
 				s.logger.Error("failed to fetch failed describe resource jobs", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
 				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 				return err
 			}
-			if len(drs) == 0 {
+			if len(dcs) == 0 {
 				return errors.New("no job to run")
 			}
 		} else {
 			return errors.New("queue is not empty to look for retries")
 		}
 	}
-	s.logger.Info("preparing resource jobs to run", zap.Int("length", len(drs)))
+	s.logger.Info("preparing resource jobs to run", zap.Int("length", len(dcs)))
 
-	parentMap := map[uint]*DescribeSourceJob{}
-	srcMap := map[uint]*apiOnboard.Connection{}
-
-	wp := concurrency.NewWorkPool(len(drs))
-	for _, dr := range drs {
-		var ds *DescribeSourceJob
+	wp := concurrency.NewWorkPool(len(dcs))
+	for _, dc := range dcs {
 		var src *apiOnboard.Connection
-		if v, ok := parentMap[dr.ParentJobID]; ok {
-			ds = v
-			src = srcMap[dr.ParentJobID]
-		} else {
-			ds, err = s.db.GetDescribeSourceJob(ctx, dr.ParentJobID)
-			if err != nil {
-				s.logger.Error("failed to get describe source job", zap.String("spot", "GetDescribeSourceJob"), zap.Error(err), zap.Uint("jobID", dr.ID))
-				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-				return err
-			}
-			switch ds.TriggerType {
-			case enums.DescribeTriggerTypeStack:
-			default:
-				src, err = s.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.KaytuAdminRole}, ds.SourceID)
-				if !src.IsEnabled() {
-					continue
-				}
-				if err != nil {
-					s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dr.ID))
-					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-					return err
-				}
-				srcMap[dr.ParentJobID] = src
-			}
-			parentMap[dr.ParentJobID] = ds
-		}
-		switch ds.TriggerType {
+
+		switch dc.TriggerType {
 		case enums.DescribeTriggerTypeStack:
-			cred, err := s.db.GetStackCredential(ds.SourceID)
+			cred, err := s.db.GetStackCredential(dc.ConnectionID)
 			if err != nil {
-				s.logger.Error("failed to get stack credential", zap.String("spot", "GetStackCredential"), zap.Error(err), zap.Uint("jobID", dr.ID))
+				s.logger.Error("failed to get stack credential", zap.String("spot", "GetStackCredential"), zap.Error(err), zap.Uint("jobID", dc.ID))
 				return err
 			}
 			if cred.Secret == "" {
-				s.logger.Error("failed to get stack credential secret", zap.String("spot", "GetStackCredential"), zap.Error(err), zap.Uint("jobID", dr.ID))
-				return errors.New(fmt.Sprintf("No secret found for %s", ds.SourceID))
+				s.logger.Error("failed to get stack credential secret", zap.String("spot", "GetStackCredential"), zap.Error(err), zap.Uint("jobID", dc.ID))
+				return errors.New(fmt.Sprintf("No secret found for %s", dc.ConnectionID))
 			}
 			c := CloudNativeCall{
-				dr: dr,
-				ds: *ds,
+				dc: dc,
 			}
 			wp.AddJob(func() (interface{}, error) {
-				err := s.enqueueCloudNativeDescribeJob(ctx, c.dr, c.ds, cred.Secret, s.WorkspaceName, ds.SourceID)
+				err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, cred.Secret, s.WorkspaceName, dc.ConnectionID)
 				if err != nil {
-					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dr.ID))
+					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dc.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 					return nil, err
 				}
@@ -166,14 +132,13 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 			})
 		default:
 			c := CloudNativeCall{
-				dr:  dr,
-				ds:  *ds,
+				dc:  dc,
 				src: src,
 			}
 			wp.AddJob(func() (interface{}, error) {
-				err := s.enqueueCloudNativeDescribeJob(ctx, c.dr, c.ds, c.src.Credential.Config.(string), s.WorkspaceName, s.kafkaResourcesTopic)
+				err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.src.Credential.Config.(string), s.WorkspaceName, s.kafkaResourcesTopic)
 				if err != nil {
-					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dr.ID))
+					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dc.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 					return nil, err
 				}
@@ -214,32 +179,69 @@ func (s *Scheduler) scheduleDescribeJob() {
 		DescribeJobsCount.WithLabelValues("failure").Inc()
 		return
 	}
+
 	for _, connection := range connections {
 		if !connection.IsEnabled() {
 			continue
 		}
-		err = s.describeConnection(connection, true, nil, false)
-		if err != nil {
-			s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+
+		var resourceTypes []string
+		switch connection.Connector {
+		case source.CloudAWS:
+			resourceTypes = aws.ListResourceTypes()
+		case source.CloudAzure:
+			resourceTypes = azure.ListResourceTypes()
+		}
+
+		for _, resourceType := range resourceTypes {
+			err = s.describe(connection, resourceType, true)
+			if err != nil {
+				s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+			}
 		}
 	}
 
 	DescribeJobsCount.WithLabelValues("successful").Inc()
 }
 
-func (s *Scheduler) describeConnection(connection apiOnboard.Connection, scheduled bool, resourceTypeList []string, forceFull bool) error {
-	job, err := s.db.GetLastDescribeSourceJob(connection.ID.String())
+func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType string, scheduled bool) error {
+	job, err := s.db.GetLastDescribeConnectionJob(connection.ID.String(), resourceType)
 	if err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		return err
 	}
 
-	if !scheduled && job != nil && job.Status == api.DescribeSourceJobInProgress {
-		return ErrJobInProgress
-	}
+	if job != nil {
+		if job.Status == api.DescribeResourceJobCreated ||
+			job.Status == api.DescribeResourceJobQueued ||
+			job.Status == api.DescribeResourceJobInProgress {
+			return ErrJobInProgress
+		}
 
-	if scheduled && job != nil && job.UpdatedAt.After(time.Now().Add(time.Duration(-s.describeIntervalHours)*time.Hour)) {
-		return nil
+		if scheduled {
+			interval := s.fullDiscoveryIntervalHours
+			if connection.Connector == source.CloudAWS {
+				rt, _ := aws.GetResourceType(resourceType)
+				if rt != nil {
+					if rt.FastDiscovery {
+						interval = s.describeIntervalHours
+					} else if rt.CostDiscovery {
+						interval = 24
+					}
+				}
+			} else if connection.Connector == source.CloudAzure {
+				rt, _ := azure.GetResourceType(resourceType)
+				if rt != nil {
+					if rt.FastDiscovery {
+						interval = s.describeIntervalHours
+					}
+				}
+			}
+
+			if job.UpdatedAt.After(time.Now().Add(time.Duration(-interval) * time.Hour)) {
+				return nil
+			}
+		}
 	}
 
 	if connection.LastHealthCheckTime.Before(time.Now().Add(-1 * 24 * time.Hour)) {
@@ -265,33 +267,13 @@ func (s *Scheduler) describeConnection(connection apiOnboard.Connection, schedul
 		return errors.New("connection is not healthy or disabled")
 	}
 
-	describedAt := time.Now()
 	triggerType := enums.DescribeTriggerTypeScheduled
 	if connection.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
 		triggerType = enums.DescribeTriggerTypeInitialDiscovery
 	}
-	s.logger.Debug("Source is due for a describe. Creating a job now", zap.String("sourceId", connection.ID.String()))
-
-	isFullDiscovery := forceFull
-	if scheduled && !isFullDiscovery {
-		fullDiscoveryJob, err := s.db.GetLastFullDiscoveryDescribeSourceJob(connection.ID.String())
-		if err != nil {
-			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			return err
-		}
-
-		if job == nil ||
-			fullDiscoveryJob == nil ||
-			fullDiscoveryJob.UpdatedAt.Add(time.Duration(s.fullDiscoveryIntervalHours)*time.Hour).Before(time.Now()) {
-			isFullDiscovery = true
-		}
-	}
-	daj := newDescribeSourceJob(connection, describedAt, triggerType, isFullDiscovery, resourceTypeList)
-	if len(daj.DescribeResourceJobs) == 0 {
-		s.logger.Debug("No resources to describe", zap.String("sourceId", connection.ID.String()), zap.Any("resourceTypeList", resourceTypeList))
-		return nil
-	}
-	err = s.db.CreateDescribeSourceJob(&daj)
+	s.logger.Debug("Connection is due for a describe. Creating a job now", zap.String("connectionID", connection.ID.String()), zap.String("resourceType", resourceType))
+	daj := newDescribeConnectionJob(connection, resourceType, triggerType)
+	err = s.db.CreateDescribeConnectionJob(&daj)
 	if err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		return err
@@ -310,73 +292,25 @@ func (s *Scheduler) describeConnection(connection apiOnboard.Connection, schedul
 	return nil
 }
 
-func newDescribeSourceJob(a apiOnboard.Connection, describedAt time.Time,
-	triggerType enums.DescribeTriggerType, isFullDiscovery bool, resourceTypeList []string) DescribeSourceJob {
-	if len(resourceTypeList) > 0 {
-		isFullDiscovery = false
+func newDescribeConnectionJob(a apiOnboard.Connection, resourceType string, triggerType enums.DescribeTriggerType) DescribeConnectionJob {
+	return DescribeConnectionJob{
+		ConnectionID: a.ID.String(),
+		Connector:    a.Connector,
+		AccountID:    a.ConnectionID,
+		TriggerType:  triggerType,
+		ResourceType: resourceType,
+		Status:       apiDescribe.DescribeResourceJobCreated,
 	}
-	daj := DescribeSourceJob{
-		DescribedAt:          describedAt,
-		SourceID:             a.ID.String(),
-		SourceType:           a.Connector,
-		AccountID:            a.ConnectionID,
-		DescribeResourceJobs: []DescribeResourceJob{},
-		Status:               apiDescribe.DescribeSourceJobCreated,
-		TriggerType:          triggerType,
-		FullDiscovery:        isFullDiscovery,
-	}
-	var resourceTypes []string
-	resourceTypeList = utils.ToLowerStringSlice(resourceTypeList)
-	switch a.Connector {
-	case source.CloudAWS:
-		if len(resourceTypeList) > 0 {
-			all := aws.ListResourceTypes()
-			for _, rType := range all {
-				if utils.Includes(resourceTypeList, strings.ToLower(rType)) {
-					resourceTypes = append(resourceTypes, rType)
-				}
-			}
-		} else if isFullDiscovery {
-			resourceTypes = aws.ListResourceTypes()
-		} else {
-			resourceTypes = aws.ListFastDiscoveryResourceTypes()
-		}
-	case source.CloudAzure:
-		if len(resourceTypeList) > 0 {
-			all := azure.ListResourceTypes()
-			for _, rType := range all {
-				if utils.Includes(resourceTypeList, strings.ToLower(rType)) {
-					resourceTypes = append(resourceTypes, rType)
-				}
-			}
-		} else if isFullDiscovery {
-			resourceTypes = azure.ListResourceTypes()
-		} else {
-			resourceTypes = azure.ListFastDiscoveryResourceTypes()
-		}
-	default:
-		panic(fmt.Errorf("unsupported source type: %s", a.Connector))
-	}
-
-	rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
-	for _, rType := range resourceTypes {
-		daj.DescribeResourceJobs = append(daj.DescribeResourceJobs, DescribeResourceJob{
-			ResourceType: rType,
-			Status:       apiDescribe.DescribeResourceJobCreated,
-		})
-	}
-	return daj
 }
 
-func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dr DescribeResourceJob, ds DescribeSourceJob, cipherText string, workspaceName string, kafkaTopic string) error {
+func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc DescribeConnectionJob, cipherText string, workspaceName string, kafkaTopic string) error {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
 	s.logger.Debug("enqueueCloudNativeDescribeJob",
-		zap.Uint("sourceJobID", ds.ID),
-		zap.Uint("jobID", dr.ID),
-		zap.String("connectionID", ds.SourceID),
-		zap.String("resourceType", dr.ResourceType),
+		zap.Uint("jobID", dc.ID),
+		zap.String("connectionID", dc.ConnectionID),
+		zap.String("resourceType", dc.ResourceType),
 	)
 
 	input := LambdaDescribeWorkerInput{
@@ -387,15 +321,14 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dr Descri
 		KeyRegion:        s.keyRegion,
 		KafkaTopic:       kafkaTopic,
 		DescribeJob: DescribeJob{
-			JobID:        dr.ID,
-			ParentJobID:  ds.ID,
-			ResourceType: dr.ResourceType,
-			SourceID:     ds.SourceID,
-			AccountID:    ds.AccountID,
-			DescribedAt:  ds.DescribedAt.UnixMilli(),
-			SourceType:   ds.SourceType,
+			JobID:        dc.ID,
+			ResourceType: dc.ResourceType,
+			SourceID:     dc.ConnectionID,
+			AccountID:    dc.AccountID,
+			DescribedAt:  dc.CreatedAt.UnixMilli(),
+			SourceType:   dc.Connector,
 			CipherText:   cipherText,
-			TriggerType:  ds.TriggerType,
+			TriggerType:  dc.TriggerType,
 			RetryCounter: 0,
 		},
 	}
@@ -407,7 +340,7 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dr Descri
 	httpClient := &http.Client{
 		Timeout: 1 * time.Minute,
 	}
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/kaytu-%s-describer", LambdaFuncsBaseURL, strings.ToLower(ds.SourceType.String())), bytes.NewBuffer(lambdaRequest))
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/kaytu-%s-describer", LambdaFuncsBaseURL, strings.ToLower(dc.Connector.String())), bytes.NewBuffer(lambdaRequest))
 	if err != nil {
 		return fmt.Errorf("failed to create http request due to %v", err)
 	}
@@ -435,18 +368,16 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dr Descri
 	}
 
 	s.logger.Info("successful job trigger",
-		zap.Uint("sourceJobID", ds.ID),
-		zap.Uint("jobID", dr.ID),
-		zap.String("connectionID", ds.SourceID),
-		zap.String("resourceType", dr.ResourceType),
+		zap.Uint("jobID", dc.ID),
+		zap.String("connectionID", dc.ConnectionID),
+		zap.String("resourceType", dc.ResourceType),
 	)
 
-	if err := s.db.QueueDescribeResourceJob(dr.ID); err != nil {
+	if err := s.db.QueueDescribeConnectionJob(dc.ID); err != nil {
 		s.logger.Error("failed to QueueDescribeResourceJob",
-			zap.Uint("sourceJobID", ds.ID),
-			zap.Uint("jobID", dr.ID),
-			zap.String("connectionID", ds.SourceID),
-			zap.String("resourceType", dr.ResourceType),
+			zap.Uint("jobID", dc.ID),
+			zap.String("connectionID", dc.ConnectionID),
+			zap.String("resourceType", dc.ResourceType),
 			zap.Error(err),
 		)
 	}
@@ -529,14 +460,23 @@ func (s *Scheduler) scheduleStackJobs() error {
 		return err
 	}
 	for _, stack := range stacks {
-		jobs, err := s.db.QueryDescribeSourceJobs(stack.StackID)
+		jobs, err := s.db.GetDescribeConnectionJobByConnectionID(stack.StackID)
 		if err != nil {
 			return err
 		}
 		if len(jobs) == 0 {
 			continue
 		} else {
-			if jobs[0].Status == apiDescribe.DescribeSourceJobCompleted || jobs[0].Status == apiDescribe.DescribeSourceJobCompletedWithFailure {
+			finished := true
+			for _, job := range jobs {
+				if job.Status == apiDescribe.DescribeResourceJobCreated ||
+					job.Status == apiDescribe.DescribeResourceJobQueued ||
+					job.Status == apiDescribe.DescribeResourceJobInProgress {
+					finished = false
+				}
+			}
+
+			if finished {
 				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusDescribed) // don't need to check sink. it waits one minutes
 			}
 		}
@@ -612,31 +552,22 @@ func (s *Scheduler) triggerStackDescriberJob(stack apiDescribe.Stack) error {
 			provider = source.CloudAzure
 		}
 	}
-	describedAt := time.Now()
 	resourceTypes := stack.ResourceTypes
-	var describeResourceJobs []DescribeResourceJob
 	rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
 	for _, rType := range resourceTypes {
-		describeResourceJobs = append(describeResourceJobs, DescribeResourceJob{
+		describeResourceJob := DescribeConnectionJob{
+			ConnectionID: stack.StackID,
+			Connector:    source.Type(provider),
+			AccountID:    stack.AccountIDs[0], // assume we have one account
+			TriggerType:  enums.DescribeTriggerTypeStack,
 			ResourceType: rType,
 			Status:       apiDescribe.DescribeResourceJobCreated,
-		})
-	}
+		}
 
-	dsj := DescribeSourceJob{
-		DescribedAt:          describedAt,
-		SourceID:             stack.StackID,
-		SourceType:           source.Type(provider),
-		AccountID:            stack.AccountIDs[0], // assume we have one account
-		DescribeResourceJobs: describeResourceJobs,
-		Status:               apiDescribe.DescribeSourceJobCreated,
-		TriggerType:          enums.DescribeTriggerTypeStack,
-		FullDiscovery:        false,
-	}
-
-	err := s.db.CreateDescribeSourceJob(&dsj)
-	if err != nil {
-		return err
+		err := s.db.CreateDescribeConnectionJob(&describeResourceJob)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -9,7 +9,6 @@ import (
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"go.uber.org/zap"
 )
@@ -62,7 +61,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 
 			errStr := strings.ReplaceAll(result.Error, "\x00", "")
 			errCodeStr := strings.ReplaceAll(result.ErrorCode, "\x00", "")
-			if err := s.db.UpdateDescribeResourceJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs))); err != nil {
+			if err := s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs))); err != nil {
 				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 				s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
 				err = msg.Nack(false, true)
@@ -77,7 +76,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				s.logger.Error("failure while sending ack for message", zap.Error(err))
 			}
 		case <-t.C:
-			err := s.db.UpdateDescribeResourceJobsTimedOut(s.describeTimeoutHours)
+			err := s.db.UpdateDescribeConnectionJobsTimedOut(s.describeTimeoutHours)
 			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 			if err != nil {
 				s.logger.Error("failed to update timed out DescribeResourceJobs", zap.Error(err))
@@ -227,79 +226,4 @@ func (s *Scheduler) cleanupDeletedConnectionResources(connectionId string) error
 	}
 
 	return nil
-}
-
-func (s *Scheduler) RunDescribeJobCompletionUpdater() {
-	t := time.NewTicker(JobCompletionInterval)
-	defer t.Stop()
-
-	for ; ; <-t.C {
-		results, err := s.db.QueryInProgressDescribedSourceJobGroupByDescribeResourceJobStatus()
-		if err != nil {
-			s.logger.Error("Failed to find DescribeSourceJobs", zap.Error(err))
-			continue
-		}
-
-		jobIDToStatus := make(map[uint]map[api.DescribeResourceJobStatus]int)
-		jobStatus := make(map[uint]api.DescribeSourceJobStatus)
-		for _, v := range results {
-			if _, ok := jobIDToStatus[v.DescribeSourceJobID]; !ok {
-				jobIDToStatus[v.DescribeSourceJobID] = map[api.DescribeResourceJobStatus]int{
-					api.DescribeResourceJobCreated:   0,
-					api.DescribeResourceJobQueued:    0,
-					api.DescribeResourceJobTimeout:   0,
-					api.DescribeResourceJobFailed:    0,
-					api.DescribeResourceJobSucceeded: 0,
-				}
-			}
-
-			jobStatus[v.DescribeSourceJobID] = v.DescribeSourceStatus
-			jobIDToStatus[v.DescribeSourceJobID][v.DescribeResourceJobStatus] = v.DescribeResourceJobCount
-		}
-
-		for id, status := range jobIDToStatus {
-			// If any CREATED or QUEUED, job is still in progress
-			if status[api.DescribeResourceJobCreated] > 0 ||
-				status[api.DescribeResourceJobQueued] > 0 ||
-				status[api.DescribeResourceJobInProgress] > 0 {
-				if jobStatus[id] == api.DescribeSourceJobCreated {
-					err := s.db.UpdateDescribeSourceJob(id, api.DescribeSourceJobInProgress)
-					if err != nil {
-						s.logger.Error("Failed to update DescribeSourceJob status\n",
-							zap.Uint("jobId", id),
-							zap.String("status", string(api.DescribeSourceJobInProgress)),
-							zap.Error(err),
-						)
-					}
-				}
-				continue
-			}
-
-			// If any FAILURE, job is completed with failure
-			if status[api.DescribeResourceJobFailed] > 0 || status[api.DescribeResourceJobTimeout] > 0 {
-				err := s.db.UpdateDescribeSourceJob(id, api.DescribeSourceJobCompletedWithFailure)
-				if err != nil {
-					s.logger.Error("Failed to update DescribeSourceJob status\n",
-						zap.Uint("jobId", id),
-						zap.String("status", string(api.DescribeSourceJobCompletedWithFailure)),
-						zap.Error(err),
-					)
-				}
-				continue
-			}
-
-			// If the rest is SUCCEEDED, job has completed with no failure
-			if status[api.DescribeResourceJobSucceeded] > 0 {
-				err := s.db.UpdateDescribeSourceJob(id, api.DescribeSourceJobCompleted)
-				if err != nil {
-					s.logger.Error("Failed to update DescribeSourceJob status\n",
-						zap.Uint("jobId", id),
-						zap.String("status", string(api.DescribeSourceJobCompleted)),
-						zap.Error(err),
-					)
-				}
-				continue
-			}
-		}
-	}
 }

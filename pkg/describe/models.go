@@ -19,7 +19,6 @@ import (
 
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 
-	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"gorm.io/gorm"
 )
@@ -49,38 +48,19 @@ type ComplianceReportJob struct {
 	IsStack         bool                           `json:"IsStack" example:"false"`
 }
 
-type DescribeSourceJob struct {
+type DescribeConnectionJob struct {
 	ID        uint `gorm:"primarykey"`
 	CreatedAt time.Time
 	UpdatedAt time.Time      `gorm:"index:,sort:desc"`
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
-	DescribedAt          time.Time
-	SourceID             string `gorm:"index:idx_source_id_full_discovery;index"`
-	SourceType           source.Type
-	AccountID            string
-	DescribeResourceJobs []DescribeResourceJob `gorm:"foreignKey:ParentJobID;constraint:OnDelete:CASCADE;"`
-	Status               api.DescribeSourceJobStatus
-	FullDiscovery        bool `gorm:"index:idx_source_id_full_discovery"`
-	TriggerType          enums.DescribeTriggerType
-}
+	ConnectionID string `gorm:"index:idx_source_id_full_discovery;index"`
+	Connector    source.Type
+	AccountID    string
+	TriggerType  enums.DescribeTriggerType
 
-type CloudNativeDescribeSourceJob struct {
-	gorm.Model
-	JobID                          uuid.UUID         `gorm:"type:uuid;default:uuid_generate_v4();uniqueIndex"`
-	SourceJob                      DescribeSourceJob `gorm:"foreignKey:SourceJobID;references:ID;"`
-	SourceJobID                    uint
-	CredentialEncryptionPrivateKey string
-	CredentialEncryptionPublicKey  string
-	ResultEncryptionPrivateKey     string
-	ResultEncryptionPublicKey      string
-}
-
-type DescribeResourceJob struct {
-	gorm.Model
-	ParentJobID            uint                          `gorm:"index;index:idx_parent_job_id_status"`
-	ResourceType           string                        `gorm:"index"`
-	Status                 api.DescribeResourceJobStatus `gorm:"index;index:idx_parent_job_id_status"`
+	ResourceType           string
+	Status                 api.DescribeResourceJobStatus
 	RetryCount             int
 	FailureMessage         string // Should be NULLSTRING
 	ErrorCode              string // Should be NULLSTRING

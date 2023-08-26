@@ -31,11 +31,6 @@ type Source struct {
 	LastComplianceReportAt time.Time   `json:"lastComplianceReportAt" example:"2021-01-01T00:00:00Z"`
 }
 
-type DescribeSource struct {
-	DescribeResourceJobs []DescribeResource      `json:"describeResourceJobs"`
-	Status               DescribeSourceJobStatus `json:"status" example:"IN_PROGRESS"` // CREATED, QUEUED, IN_PROGRESS, TIMEOUT, FAILED, SUCCEEDED
-}
-
 type DescribeResource struct {
 	ResourceType   string                    `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`
 	Status         DescribeResourceJobStatus `json:"status" example:"IN_PROGRESS"` // CREATED, QUEUED, IN_PROGRESS, TIMEOUT, FAILED, SUCCEEDED
@@ -45,15 +40,6 @@ type DescribeResource struct {
 type ErrorResponse struct {
 	Message string
 }
-
-type DescribeSourceJobStatus string
-
-const (
-	DescribeSourceJobCreated              DescribeSourceJobStatus = "CREATED"
-	DescribeSourceJobInProgress           DescribeSourceJobStatus = "IN_PROGRESS"
-	DescribeSourceJobCompletedWithFailure DescribeSourceJobStatus = "COMPLETED_WITH_FAILURE"
-	DescribeSourceJobCompleted            DescribeSourceJobStatus = "COMPLETED"
-)
 
 type DescribeResourceJobStatus string
 

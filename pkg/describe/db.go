@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
+	"go.opentelemetry.io/otel"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
-	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
@@ -20,7 +21,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer"
 	summarizerapi "github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 )
 
 type Database struct {
@@ -28,19 +28,17 @@ type Database struct {
 }
 
 func (db Database) Initialize() error {
-	return db.orm.AutoMigrate(&DescribeSourceJob{}, &CloudNativeDescribeSourceJob{}, &DescribeResourceJob{},
-		&ComplianceReportJob{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{}, &AnalyticsJob{}, &Stack{}, &StackTag{}, &StackEvaluation{},
-		&StackCredential{},
+	return db.orm.AutoMigrate(&ComplianceReportJob{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{},
+		&AnalyticsJob{}, &Stack{}, &StackTag{}, &StackEvaluation{},
+		&StackCredential{}, &DescribeConnectionJob{},
 	)
 }
 
-// =============================== DescribeSourceJob ===============================
+// =============================== DescribeConnectionJob ===============================
 
-// CreateDescribeSourceJob creates a new DescribeSourceJob.
-// If there is no error, the job is updated with the assigned ID
-func (db Database) CreateDescribeSourceJob(job *DescribeSourceJob) error {
+func (db Database) CreateDescribeConnectionJob(job *DescribeConnectionJob) error {
 	tx := db.orm.
-		Model(&DescribeSourceJob{}).
+		Model(&DescribeConnectionJob{}).
 		Create(job)
 	if tx.Error != nil {
 		return tx.Error
@@ -49,101 +47,78 @@ func (db Database) CreateDescribeSourceJob(job *DescribeSourceJob) error {
 	return nil
 }
 
-// UpdateDescribeSourceJob updates the DescribeSourceJob status.
-func (db Database) UpdateDescribeSourceJob(id uint, status api.DescribeSourceJobStatus) error {
-	tx := db.orm.
-		Model(&DescribeSourceJob{}).
-		Where("id = ?", id).
-		Updates(DescribeSourceJob{Status: status})
+func (db Database) CountQueuedDescribeConnectionJobs() (int64, error) {
+	var count int64
+	tx := db.orm.Model(&DescribeConnectionJob{}).Where("status = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued).Count(&count)
 	if tx.Error != nil {
-		return tx.Error
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, tx.Error
 	}
-
-	return nil
+	return count, nil
 }
 
-// ListAllDescribeSourceJobs lists all DescribeSourceJob .
-func (db Database) ListAllDescribeSourceJobs() ([]DescribeSourceJob, error) {
-	var jobs []DescribeSourceJob
-	tx := db.orm.Find(&jobs)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return jobs, nil
-}
-
-func (db Database) ListPendingDescribeSourceJobs() ([]DescribeSourceJob, error) {
-	var jobs []DescribeSourceJob
-	tx := db.orm.Where("status in (?, ?)", api.DescribeSourceJobInProgress, api.DescribeSourceJobCreated).Find(&jobs)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return jobs, nil
-}
-
-func (db Database) CleanupDescribeSourceJobsOlderThan(t time.Time) error {
-	tx := db.orm.Where("created_at < ?", t).Unscoped().Delete(&DescribeSourceJob{})
-	if tx.Error != nil {
-		return tx.Error
-	}
-	return nil
-}
-
-func (db Database) ListPendingDescribeResourceJobs() ([]DescribeResourceJob, error) {
-	var jobs []DescribeResourceJob
-	tx := db.orm.Where("status in (?, ?)", api.DescribeResourceJobQueued, api.DescribeResourceJobCreated).Find(&jobs)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return jobs, nil
-}
-
-func (db Database) FetchRandomCreatedDescribeResourceJobs(parentIdExceptionList []uint) (*DescribeResourceJob, error) {
-	var job DescribeResourceJob
-	tx := db.orm.Where("status = ?", api.DescribeResourceJobCreated)
-
-	if len(parentIdExceptionList) > 0 {
-		tx = tx.Where("NOT(parent_job_id IN ?)", parentIdExceptionList)
-	}
-
-	tx = tx.Order("random()").First(&job)
+func (db Database) GetLastDescribeConnectionJob(connectionID, resourceType string) (*DescribeConnectionJob, error) {
+	var job DescribeConnectionJob
+	tx := db.orm.Preload(clause.Associations).Where("connection_id = ? AND resource_type = ?", connectionID, resourceType).Order("updated_at DESC").First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, tx.Error
 	}
+
 	return &job, nil
 }
 
-func (db Database) ListRandomCreatedDescribeResourceJobs(ctx context.Context, limit int) ([]DescribeResourceJob, error) {
+func (db Database) GetDescribeConnectionJobByConnectionID(connectionID string) ([]DescribeConnectionJob, error) {
+	var jobs []DescribeConnectionJob
+	tx := db.orm.Preload(clause.Associations).Where("connection_id = ?", connectionID).Find(&jobs)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}
+
+func (db Database) QueueDescribeConnectionJob(id uint) error {
+	tx := db.orm.Exec("update describe_connection_jobs set status = ?, retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) ListRandomCreatedDescribeConnectionJobs(ctx context.Context, limit int) ([]DescribeConnectionJob, error) {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
-	var job []DescribeResourceJob
+	var job []DescribeConnectionJob
 
 	runningJobs := []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress}
 	tx := db.orm.Raw(`
-SELECT 
- * 
+SELECT
+*
 FROM (
-  SELECT 
-   ROW_NUMBER() OVER (PARTITION BY resource_type) AS r,
-   t.*
-  FROM (
-      SELECT 
-       *
-      FROM 
-        describe_resource_jobs dr 
-      WHERE 
-        status = ? AND 
-        (select count(*) from describe_resource_jobs where parent_job_id = dr.parent_job_id AND status IN ?) <= 10
-  ) AS t) AS rowed
+ SELECT
+  ROW_NUMBER() OVER (PARTITION BY resource_type) AS r,
+  t.*
+ FROM (
+     SELECT
+      *
+     FROM
+       describe_connection_jobs dr
+     WHERE
+       status = ? AND
+       (select count(*) from describe_connection_jobs where connection_id = dr.connection_id AND status IN ?) <= 10
+ ) AS t) AS rowed
 WHERE
-  rowed.r <= 10
+ rowed.r <= 10
 LIMIT ?
 `, api.DescribeResourceJobCreated, runningJobs, limit).Find(&job)
 	if tx.Error != nil {
@@ -155,22 +130,22 @@ LIMIT ?
 	return job, nil
 }
 
-func (db Database) GetFailedDescribeResourceJobs(ctx context.Context) ([]DescribeResourceJob, error) {
+func (db Database) GetFailedDescribeConnectionJobs(ctx context.Context) ([]DescribeConnectionJob, error) {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
-	var job []DescribeResourceJob
+	var job []DescribeConnectionJob
 
 	tx := db.orm.Raw(`
-SELECT 
-	* 
-FROM 
-	describe_resource_jobs dr 
-WHERE 
-	status = ? AND 
-	NOT(error_code IN ('AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND 
+SELECT
+	*
+FROM
+	describe_connection_jobs dr
+WHERE
+	status = ? AND
+	NOT(error_code IN ('AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND
 	(retry_count < 3 OR retry_count IS NULL) AND
-	(select count(*) from describe_resource_jobs where parent_job_id = dr.parent_job_id AND status IN (?, ?)) = 0
+	(select count(*) from describe_connection_jobs where parent_job_id = dr.parent_job_id AND status IN (?, ?)) = 0
 	LIMIT 10
 `, api.DescribeResourceJobFailed, api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress).Find(&job)
 	if tx.Error != nil {
@@ -182,50 +157,295 @@ WHERE
 	return job, nil
 }
 
-func (db Database) CountQueuedDescribeResourceJobs(ctx context.Context) (int64, error) {
-	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
-	defer span.End()
-
-	var count int64
-	tx := db.orm.Model(&DescribeResourceJob{}).Where("status = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued).Count(&count)
-	if tx.Error != nil {
-		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return 0, nil
-		}
-		return 0, tx.Error
-	}
-	return count, nil
-}
-
-func (db Database) CountQueuedInProgressDescribeResourceJobsByParentID(id uint) (int64, error) {
-	var count int64
-	tx := db.orm.Model(&DescribeResourceJob{}).Where("status IN (?, ?) AND parent_job_id = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress, id).Count(&count)
-	if tx.Error != nil {
-		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return 0, nil
-		}
-		return 0, tx.Error
-	}
-	return count, nil
-}
-
-func (db Database) CleanupDescribeResourceJobsOlderThan(t time.Time) error {
-	tx := db.orm.Where("created_at < ?", t).Unscoped().Delete(&DescribeResourceJob{})
+func (db Database) CleanupDescribeConnectionJobsOlderThan(t time.Time) error {
+	tx := db.orm.Where("created_at < ?", t).Unscoped().Delete(&DescribeConnectionJob{})
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return nil
 }
 
-func (db Database) ListCreatedDescribeSourceJobs() ([]DescribeSourceJob, error) {
-	var jobs []DescribeSourceJob
-	tx := db.orm.Where("status in (?)", api.DescribeSourceJobCreated).Find(&jobs)
+// UpdateDescribeConnectionJobsTimedOut updates the status of DescribeResourceJobs
+// that have timed out while in the status of 'CREATED' or 'QUEUED' for longer
+// than 4 hours.
+func (db Database) UpdateDescribeConnectionJobsTimedOut(describeIntervalHours int64) error {
+	tx := db.orm.
+		Model(&DescribeConnectionJob{}).
+		Where("updated_at < NOW() - INTERVAL '20 minutes'").
+		Where("status IN ?", []string{string(api.DescribeResourceJobInProgress)}).
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out"})
 	if tx.Error != nil {
-		return nil, tx.Error
+		return tx.Error
 	}
 
-	return jobs, nil
+	tx = db.orm.
+		Model(&DescribeConnectionJob{}).
+		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
+		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	tx = db.orm.
+		Model(&DescribeConnectionJob{}).
+		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
+		Where("status IN ?", []string{string(api.DescribeResourceJobCreated)}).
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
 }
+
+// UpdateDescribeConnectionJobStatus updates the status of the DescribeResourceJob to the provided status.
+// If the status if 'FAILED', msg could be used to indicate the failure reason
+func (db Database) UpdateDescribeConnectionJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount int64) error {
+	tx := db.orm.
+		Model(&DescribeConnectionJob{}).
+		Where("id = ?", id).
+		Updates(DescribeConnectionJob{Status: status, FailureMessage: msg, ErrorCode: errCode, DescribedResourceCount: resourceCount})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) UpdateDescribeConnectionJobToInProgress(id uint) error {
+	tx := db.orm.
+		Model(&DescribeConnectionJob{}).
+		Where("id = ?", id).
+		Where("status IN ?", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobInProgress})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+//
+//func (db Database) ListPendingDescribeResourceJobs() ([]DescribeResourceJob, error) {
+//	var jobs []DescribeResourceJob
+//	tx := db.orm.Where("status in (?, ?)", api.DescribeResourceJobQueued, api.DescribeResourceJobCreated).Find(&jobs)
+//	if tx.Error != nil {
+//		return nil, tx.Error
+//	}
+//
+//	return jobs, nil
+//}
+//
+//func (db Database) FetchRandomCreatedDescribeResourceJobs(parentIdExceptionList []uint) (*DescribeResourceJob, error) {
+//	var job DescribeResourceJob
+//	tx := db.orm.Where("status = ?", api.DescribeResourceJobCreated)
+//
+//	if len(parentIdExceptionList) > 0 {
+//		tx = tx.Where("NOT(parent_job_id IN ?)", parentIdExceptionList)
+//	}
+//
+//	tx = tx.Order("random()").First(&job)
+//	if tx.Error != nil {
+//		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+//			return nil, nil
+//		}
+//		return nil, tx.Error
+//	}
+//	return &job, nil
+//}
+//
+//
+//
+//func (db Database) CountQueuedDescribeResourceJobs(ctx context.Context) (int64, error) {
+//	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+//	defer span.End()
+//
+//	var count int64
+//	tx := db.orm.Model(&DescribeConnectionJob{}).Where("status = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued).Count(&count)
+//	if tx.Error != nil {
+//		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+//			return 0, nil
+//		}
+//		return 0, tx.Error
+//	}
+//	return count, nil
+//}
+//
+//func (db Database) GetLastDescribeConnectionJob(connectionID, resourceType string) (*DescribeConnectionJob, error) {
+//	var job DescribeConnectionJob
+//	tx := db.orm.Preload(clause.Associations).Where("connection_id = ? AND resource_type = ?", connectionID, resourceType).Order("updated_at DESC").First(&job)
+//	if tx.Error != nil {
+//		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+//			return nil, nil
+//		}
+//		return nil, tx.Error
+//	}
+//
+//	return &job, nil
+//}
+
+//// UpdateDescribeSourceJob updates the DescribeSourceJob status.
+//func (db Database) UpdateDescribeSourceJob(id uint, status api.DescribeSourceJobStatus) error {
+//	tx := db.orm.
+//		Model(&DescribeSourceJob{}).
+//		Where("id = ?", id).
+//		Updates(DescribeSourceJob{Status: status})
+//	if tx.Error != nil {
+//		return tx.Error
+//	}
+//
+//	return nil
+//}
+//
+//// ListAllDescribeSourceJobs lists all DescribeSourceJob .
+//func (db Database) ListAllDescribeSourceJobs() ([]DescribeSourceJob, error) {
+//	var jobs []DescribeSourceJob
+//	tx := db.orm.Find(&jobs)
+//	if tx.Error != nil {
+//		return nil, tx.Error
+//	}
+//
+//	return jobs, nil
+//}
+//
+//func (db Database) ListPendingDescribeSourceJobs() ([]DescribeSourceJob, error) {
+//	var jobs []DescribeSourceJob
+//	tx := db.orm.Where("status in (?, ?)", api.DescribeSourceJobInProgress, api.DescribeSourceJobCreated).Find(&jobs)
+//	if tx.Error != nil {
+//		return nil, tx.Error
+//	}
+//
+//	return jobs, nil
+//}
+//
+//func (db Database) CleanupDescribeSourceJobsOlderThan(t time.Time) error {
+//	tx := db.orm.Where("created_at < ?", t).Unscoped().Delete(&DescribeSourceJob{})
+//	if tx.Error != nil {
+//		return tx.Error
+//	}
+//	return nil
+//}
+//
+//func (db Database) ListPendingDescribeResourceJobs() ([]DescribeResourceJob, error) {
+//	var jobs []DescribeResourceJob
+//	tx := db.orm.Where("status in (?, ?)", api.DescribeResourceJobQueued, api.DescribeResourceJobCreated).Find(&jobs)
+//	if tx.Error != nil {
+//		return nil, tx.Error
+//	}
+//
+//	return jobs, nil
+//}
+//
+//func (db Database) FetchRandomCreatedDescribeResourceJobs(parentIdExceptionList []uint) (*DescribeResourceJob, error) {
+//	var job DescribeResourceJob
+//	tx := db.orm.Where("status = ?", api.DescribeResourceJobCreated)
+//
+//	if len(parentIdExceptionList) > 0 {
+//		tx = tx.Where("NOT(parent_job_id IN ?)", parentIdExceptionList)
+//	}
+//
+//	tx = tx.Order("random()").First(&job)
+//	if tx.Error != nil {
+//		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+//			return nil, nil
+//		}
+//		return nil, tx.Error
+//	}
+//	return &job, nil
+//}
+//
+//func (db Database) ListRandomCreatedDescribeResourceJobs(limit int) ([]DescribeResourceJob, error) {
+//	var job []DescribeResourceJob
+//
+//	runningJobs := []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress}
+//	tx := db.orm.Raw(`
+//SELECT
+// *
+//FROM (
+//  SELECT
+//   ROW_NUMBER() OVER (PARTITION BY resource_type) AS r,
+//   t.*
+//  FROM (
+//      SELECT
+//       *
+//      FROM
+//        describe_resource_jobs dr
+//      WHERE
+//        status = ? AND
+//        (select count(*) from describe_resource_jobs where parent_job_id = dr.parent_job_id AND status IN ?) <= 10
+//  ) AS t) AS rowed
+//WHERE
+//  rowed.r <= 5
+//LIMIT ?
+//`, api.DescribeResourceJobCreated, runningJobs, limit).Find(&job)
+//	if tx.Error != nil {
+//		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+//			return nil, nil
+//		}
+//		return nil, tx.Error
+//	}
+//	return job, nil
+//}
+//
+//func (db Database) GetFailedDescribeResourceJobs() ([]DescribeResourceJob, error) {
+//	var job []DescribeResourceJob
+//
+//	tx := db.orm.Raw(`
+//SELECT
+//	*
+//FROM
+//	describe_resource_jobs dr
+//WHERE
+//	status = ? AND
+//	NOT(error_code IN ('AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND
+//	(retry_count < 3 OR retry_count IS NULL) AND
+//	(select count(*) from describe_resource_jobs where parent_job_id = dr.parent_job_id AND status IN (?, ?)) = 0
+//	LIMIT 10
+//`, api.DescribeResourceJobFailed, api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress).Find(&job)
+//	if tx.Error != nil {
+//		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+//			return nil, nil
+//		}
+//		return nil, tx.Error
+//	}
+//	return job, nil
+//}
+//
+//func (db Database) CountQueuedDescribeResourceJobs() (int64, error) {
+//	var count int64
+//	tx := db.orm.Model(&DescribeResourceJob{}).Where("status = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued).Count(&count)
+//	if tx.Error != nil {
+//		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+//			return 0, nil
+//		}
+//		return 0, tx.Error
+//	}
+//	return count, nil
+//}
+//
+//func (db Database) CountQueuedInProgressDescribeResourceJobsByParentID(id uint) (int64, error) {
+//	var count int64
+//	tx := db.orm.Model(&DescribeResourceJob{}).Where("status IN (?, ?) AND parent_job_id = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress, id).Count(&count)
+//	if tx.Error != nil {
+//		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+//			return 0, nil
+//		}
+//		return 0, tx.Error
+//	}
+//	return count, nil
+//}
+//
+//
+//func (db Database) ListCreatedDescribeSourceJobs() ([]DescribeSourceJob, error) {
+//	var jobs []DescribeSourceJob
+//	tx := db.orm.Where("status in (?)", api.DescribeSourceJobCreated).Find(&jobs)
+//	if tx.Error != nil {
+//		return nil, tx.Error
+//	}
+//
+//	return jobs, nil
+//}
 
 func (db Database) ListPendingSummarizeJobs() ([]SummarizerJob, error) {
 	var jobs []SummarizerJob
@@ -255,280 +475,236 @@ func (db Database) CleanupInsightJobsOlderThan(t time.Time) error {
 	return nil
 }
 
-// ListDescribeSourceJobs lists the DescribeSourceJobs for the given sourcel.
-func (db Database) ListDescribeSourceJobs(sourceID uuid.UUID) ([]DescribeSourceJob, error) {
-	var jobs []DescribeSourceJob
-	tx := db.orm.Preload(clause.Associations).Where("source_id = ?", sourceID).Find(&jobs)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
+//
+//// ListDescribeSourceJobs lists the DescribeSourceJobs for the given sourcel.
+//func (db Database) ListDescribeSourceJobs(sourceID uuid.UUID) ([]DescribeSourceJob, error) {
+//	var jobs []DescribeSourceJob
+//	tx := db.orm.Preload(clause.Associations).Where("source_id = ?", sourceID).Find(&jobs)
+//	if tx.Error != nil {
+//		return nil, tx.Error
+//	}
+//
+//	return jobs, nil
+//}
+//
+//// GetLastDescribeSourceJob returns the last DescribeSourceJobs for the given source.
+//func (db Database) GetLastDescribeSourceJob(sourceID string) (*DescribeSourceJob, error) {
+//	var job DescribeSourceJob
+//	tx := db.orm.Preload(clause.Associations).Where("source_id = ?", sourceID).Order("updated_at DESC").First(&job)
+//	if tx.Error != nil {
+//		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+//			return nil, nil
+//		}
+//		return nil, tx.Error
+//	}
+//
+//	return &job, nil
+//}
+//
+//func (db Database) GetLastFullDiscoveryDescribeSourceJob(sourceID string) (*DescribeSourceJob, error) {
+//	var job DescribeSourceJob
+//	tx := db.orm.Preload(clause.Associations).Where("source_id = ? AND full_discovery = true", sourceID).Order("updated_at DESC").First(&job)
+//	if tx.Error != nil {
+//		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+//			return nil, nil
+//		}
+//		return nil, tx.Error
+//	}
+//
+//	return &job, nil
+//}
+//
+//// GetDescribeSourceJob returns the DescribeSourceJobs for the given id.
+//func (db Database) GetDescribeSourceJob(ctx context.Context, jobID uint) (*DescribeSourceJob, error) {
+//	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+//	defer span.End()
+//
+//	var job DescribeSourceJob
+//	tx := db.orm.Preload(clause.Associations).Where("id = ?", jobID).First(&job)
+//	if tx.Error != nil {
+//		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+//			return nil, nil
+//		}
+//		return nil, tx.Error
+//	}
+//
+//	return &job, nil
+//}
+//
+//// GetOldCompletedSourceJob returns the last DescribeSourceJobs for the given source at nDaysBefore
+//func (db Database) GetOldCompletedSourceJob(sourceID uuid.UUID, nDaysBefore int) (*DescribeSourceJob, error) {
+//	var job *DescribeSourceJob
+//	tx := db.orm.Model(&DescribeSourceJob{}).
+//		Where("status in ?", []string{string(api.DescribeSourceJobCompleted), string(api.DescribeSourceJobCompletedWithFailure)}).
+//		Where("source_id = ?", sourceID.String()).
+//		Where(fmt.Sprintf("updated_at < now() - interval '%d days'", nDaysBefore-1)).
+//		Where(fmt.Sprintf("updated_at >= now() - interval '%d days'", nDaysBefore)).
+//		Order("updated_at DESC").
+//		First(&job)
+//	if tx.Error != nil {
+//		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+//			return nil, nil
+//		}
+//		return nil, tx.Error
+//	} else if tx.RowsAffected != 1 {
+//		return nil, nil
+//	}
+//	return job, nil
+//}
+//
+//type DescribedSourceJobDescribeResourceJobStatus struct {
+//	DescribeSourceJobID       uint                          `gorm:"column:id"`
+//	DescribeSourceStatus      api.DescribeSourceJobStatus   `gorm:"column:dsstatus"`
+//	DescribeResourceJobStatus api.DescribeResourceJobStatus `gorm:"column:status"`
+//	DescribeResourceJobCount  int                           `gorm:"column:count"`
+//}
 
-	return jobs, nil
-}
-
-// GetLastDescribeSourceJob returns the last DescribeSourceJobs for the given source.
-func (db Database) GetLastDescribeSourceJob(sourceID string) (*DescribeSourceJob, error) {
-	var job DescribeSourceJob
-	tx := db.orm.Preload(clause.Associations).Where("source_id = ?", sourceID).Order("updated_at DESC").First(&job)
-	if tx.Error != nil {
-		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, tx.Error
-	}
-
-	return &job, nil
-}
-
-func (db Database) GetLastFullDiscoveryDescribeSourceJob(sourceID string) (*DescribeSourceJob, error) {
-	var job DescribeSourceJob
-	tx := db.orm.Preload(clause.Associations).Where("source_id = ? AND full_discovery = true", sourceID).Order("updated_at DESC").First(&job)
-	if tx.Error != nil {
-		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, tx.Error
-	}
-
-	return &job, nil
-}
-
-// GetDescribeSourceJob returns the DescribeSourceJobs for the given id.
-func (db Database) GetDescribeSourceJob(ctx context.Context, jobID uint) (*DescribeSourceJob, error) {
-	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
-	defer span.End()
-
-	var job DescribeSourceJob
-	tx := db.orm.Preload(clause.Associations).Where("id = ?", jobID).First(&job)
-	if tx.Error != nil {
-		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, tx.Error
-	}
-
-	return &job, nil
-}
-
-// GetOldCompletedSourceJob returns the last DescribeSourceJobs for the given source at nDaysBefore
-func (db Database) GetOldCompletedSourceJob(sourceID uuid.UUID, nDaysBefore int) (*DescribeSourceJob, error) {
-	var job *DescribeSourceJob
-	tx := db.orm.Model(&DescribeSourceJob{}).
-		Where("status in ?", []string{string(api.DescribeSourceJobCompleted), string(api.DescribeSourceJobCompletedWithFailure)}).
-		Where("source_id = ?", sourceID.String()).
-		Where(fmt.Sprintf("updated_at < now() - interval '%d days'", nDaysBefore-1)).
-		Where(fmt.Sprintf("updated_at >= now() - interval '%d days'", nDaysBefore)).
-		Order("updated_at DESC").
-		First(&job)
-	if tx.Error != nil {
-		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, tx.Error
-	} else if tx.RowsAffected != 1 {
-		return nil, nil
-	}
-	return job, nil
-}
-
-type DescribedSourceJobDescribeResourceJobStatus struct {
-	DescribeSourceJobID       uint                          `gorm:"column:id"`
-	DescribeSourceStatus      api.DescribeSourceJobStatus   `gorm:"column:dsstatus"`
-	DescribeResourceJobStatus api.DescribeResourceJobStatus `gorm:"column:status"`
-	DescribeResourceJobCount  int                           `gorm:"column:count"`
-}
-
-// Finds the DescribeSourceJobs that are IN_PROGRESS and find the
-// status of the corresponding DescribeResourceJobs and their counts.
-func (db Database) QueryInProgressDescribedSourceJobGroupByDescribeResourceJobStatus() ([]DescribedSourceJobDescribeResourceJobStatus, error) {
-	var results []DescribedSourceJobDescribeResourceJobStatus
-
-	tx := db.orm.
-		Model(&DescribeSourceJob{}).
-		Select("describe_source_jobs.id, describe_source_jobs.status as dsstatus, describe_resource_jobs.status, COUNT(*)").
-		Joins("JOIN describe_resource_jobs ON describe_source_jobs.id = describe_resource_jobs.parent_job_id").
-		Where("describe_source_jobs.status IN ?", []string{string(api.DescribeSourceJobCreated), string(api.DescribeSourceJobInProgress)}).
-		Group("describe_source_jobs.id").
-		Group("describe_resource_jobs.status").
-		Order("describe_source_jobs.id ASC").
-		Find(&results)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return results, nil
-}
-
-func (db Database) QueryOlderThanNRecentCompletedDescribeSourceJobs(n int) ([]DescribeSourceJob, error) {
-	var results []DescribeSourceJob
-
-	tx := db.orm.Raw(
-		`
-SELECT jobs.id
-FROM (
-	SELECT *, rank() OVER ( 
-		PARTITION BY source_id 
-		ORDER BY updated_at DESC
-	)
-	FROM describe_source_jobs 
-	WHERE status IN ? AND deleted_at IS NULL) 
-jobs
-WHERE rank > ?
-`, []string{string(api.DescribeSourceJobCompleted), string(api.DescribeSourceJobCompletedWithFailure)}, n).Scan(&results)
-
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return results, nil
-}
-
-func (db Database) QueryDescribeSourceJobs(id string) ([]DescribeSourceJob, error) {
-	status := []string{string(api.DescribeSourceJobCompleted), string(api.DescribeSourceJobCompletedWithFailure)}
-
-	var jobs []DescribeSourceJob
-	tx := db.orm.Where("status IN ? AND deleted_at IS NULL AND source_id = ?", status, id).Find(&jobs)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-	return jobs, nil
-}
-
-func (db Database) DeleteDescribeSourceJob(id uint) error {
-	tx := db.orm.
-		Where("id = ?", id).
-		Unscoped().
-		Delete(&DescribeSourceJob{})
-	if tx.Error != nil {
-		return tx.Error
-	} else if tx.RowsAffected != 1 {
-		return fmt.Errorf("delete source: didn't find the describe source job to delete")
-	}
-
-	return nil
-}
-
-// =============================== CloudNativeDescribeSourceJob ===============================
-
-// CreateCloudNativeDescribeSourceJob creates a new CloudNativeDescribeSourceJob.
-// If there is no error, the job is updated with the assigned ID
-func (db Database) CreateCloudNativeDescribeSourceJob(job *CloudNativeDescribeSourceJob) error {
-	tx := db.orm.
-		Model(&CloudNativeDescribeSourceJob{}).
-		Create(job)
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	return nil
-}
-
-func (db Database) GetCloudNativeDescribeSourceJob(jobID string) (*CloudNativeDescribeSourceJob, error) {
-	var job CloudNativeDescribeSourceJob
-	tx := db.orm.Preload(clause.Associations).Where("job_id = ?", jobID).First(&job)
-	if tx.Error != nil {
-		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, tx.Error
-	}
-
-	return &job, nil
-}
-
-func (db Database) GetCloudNativeDescribeSourceJobBySourceJobID(jobID uint) (*CloudNativeDescribeSourceJob, error) {
-	var job CloudNativeDescribeSourceJob
-	tx := db.orm.Preload(clause.Associations).Where("source_job_id = ?", jobID).First(&job)
-	if tx.Error != nil {
-		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, tx.Error
-	}
-
-	return &job, nil
-}
-
-func (db Database) CleanupCloudNativeDescribeSourceJobsOlderThan(t time.Time) error {
-	tx := db.orm.Where("created_at < ?", t).Unscoped().Delete(&CloudNativeDescribeSourceJob{})
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	return nil
-}
-
-// =============================== DescribeResourceJob ===============================
-
-// UpdateDescribeResourceJobStatus updates the status of the DescribeResourceJob to the provided status.
-// If the status if 'FAILED', msg could be used to indicate the failure reason
-func (db Database) UpdateDescribeResourceJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount int64) error {
-	tx := db.orm.
-		Model(&DescribeResourceJob{}).
-		Where("id = ?", id).
-		Updates(DescribeResourceJob{Status: status, FailureMessage: msg, ErrorCode: errCode, DescribedResourceCount: resourceCount})
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	return nil
-}
-
-func (db Database) QueueDescribeResourceJob(id uint) error {
-	tx := db.orm.Exec("update describe_resource_jobs set status = ?, retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	return nil
-}
-
-func (db Database) UpdateDescribeResourceJobToInProgress(id uint) error {
-	tx := db.orm.
-		Model(&DescribeResourceJob{}).
-		Where("id = ?", id).
-		Where("status IN ?", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
-		Updates(DescribeResourceJob{Status: api.DescribeResourceJobInProgress})
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	return nil
-}
-
-// UpdateDescribeResourceJobsTimedOut updates the status of DescribeResourceJobs
-// that have timed out while in the status of 'CREATED' or 'QUEUED' for longer
-// than 4 hours.
-func (db Database) UpdateDescribeResourceJobsTimedOut(describeIntervalHours int64) error {
-	tx := db.orm.
-		Model(&DescribeResourceJob{}).
-		Where("updated_at < NOW() - INTERVAL '20 minutes'").
-		Where("status IN ?", []string{string(api.DescribeResourceJobInProgress)}).
-		Updates(DescribeResourceJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out"})
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	tx = db.orm.
-		Model(&DescribeResourceJob{}).
-		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
-		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
-		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run"})
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	tx = db.orm.
-		Model(&DescribeResourceJob{}).
-		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
-		Where("status IN ?", []string{string(api.DescribeResourceJobCreated)}).
-		Updates(DescribeResourceJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted"})
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	return nil
-}
+//
+//// Finds the DescribeSourceJobs that are IN_PROGRESS and find the
+//// status of the corresponding DescribeResourceJobs and their counts.
+//func (db Database) QueryInProgressDescribedSourceJobGroupByDescribeResourceJobStatus() ([]DescribedSourceJobDescribeResourceJobStatus, error) {
+//	var results []DescribedSourceJobDescribeResourceJobStatus
+//
+//	tx := db.orm.
+//		Model(&DescribeSourceJob{}).
+//		Select("describe_source_jobs.id, describe_source_jobs.status as dsstatus, describe_resource_jobs.status, COUNT(*)").
+//		Joins("JOIN describe_resource_jobs ON describe_source_jobs.id = describe_resource_jobs.parent_job_id").
+//		Where("describe_source_jobs.status IN ?", []string{string(api.DescribeSourceJobCreated), string(api.DescribeSourceJobInProgress)}).
+//		Group("describe_source_jobs.id").
+//		Group("describe_resource_jobs.status").
+//		Order("describe_source_jobs.id ASC").
+//		Find(&results)
+//	if tx.Error != nil {
+//		return nil, tx.Error
+//	}
+//
+//	return results, nil
+//}
+//
+//func (db Database) QueryOlderThanNRecentCompletedDescribeSourceJobs(n int) ([]DescribeSourceJob, error) {
+//	var results []DescribeSourceJob
+//
+//	tx := db.orm.Raw(
+//		`
+//SELECT jobs.id
+//FROM (
+//	SELECT *, rank() OVER (
+//		PARTITION BY source_id
+//		ORDER BY updated_at DESC
+//	)
+//	FROM describe_source_jobs
+//	WHERE status IN ? AND deleted_at IS NULL)
+//jobs
+//WHERE rank > ?
+//`, []string{string(api.DescribeSourceJobCompleted), string(api.DescribeSourceJobCompletedWithFailure)}, n).Scan(&results)
+//
+//	if tx.Error != nil {
+//		return nil, tx.Error
+//	}
+//
+//	return results, nil
+//}
+//
+//func (db Database) QueryDescribeSourceJobs(id string) ([]DescribeSourceJob, error) {
+//	status := []string{string(api.DescribeSourceJobCompleted), string(api.DescribeSourceJobCompletedWithFailure)}
+//
+//	var jobs []DescribeSourceJob
+//	tx := db.orm.Where("status IN ? AND deleted_at IS NULL AND source_id = ?", status, id).Find(&jobs)
+//	if tx.Error != nil {
+//		return nil, tx.Error
+//	}
+//	return jobs, nil
+//}
+//
+//func (db Database) DeleteDescribeSourceJob(id uint) error {
+//	tx := db.orm.
+//		Where("id = ?", id).
+//		Unscoped().
+//		Delete(&DescribeSourceJob{})
+//	if tx.Error != nil {
+//		return tx.Error
+//	} else if tx.RowsAffected != 1 {
+//		return fmt.Errorf("delete source: didn't find the describe source job to delete")
+//	}
+//
+//	return nil
+//}
+//
+//// =============================== CloudNativeDescribeSourceJob ===============================
+//
+//// CreateCloudNativeDescribeSourceJob creates a new CloudNativeDescribeSourceJob.
+//// If there is no error, the job is updated with the assigned ID
+//func (db Database) CreateCloudNativeDescribeSourceJob(job *CloudNativeDescribeSourceJob) error {
+//	tx := db.orm.
+//		Model(&CloudNativeDescribeSourceJob{}).
+//		Create(job)
+//	if tx.Error != nil {
+//		return tx.Error
+//	}
+//
+//	return nil
+//}
+//
+//func (db Database) GetCloudNativeDescribeSourceJob(jobID string) (*CloudNativeDescribeSourceJob, error) {
+//	var job CloudNativeDescribeSourceJob
+//	tx := db.orm.Preload(clause.Associations).Where("job_id = ?", jobID).First(&job)
+//	if tx.Error != nil {
+//		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+//			return nil, nil
+//		}
+//		return nil, tx.Error
+//	}
+//
+//	return &job, nil
+//}
+//
+//func (db Database) GetCloudNativeDescribeSourceJobBySourceJobID(jobID uint) (*CloudNativeDescribeSourceJob, error) {
+//	var job CloudNativeDescribeSourceJob
+//	tx := db.orm.Preload(clause.Associations).Where("source_job_id = ?", jobID).First(&job)
+//	if tx.Error != nil {
+//		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+//			return nil, nil
+//		}
+//		return nil, tx.Error
+//	}
+//
+//	return &job, nil
+//}
+//
+//func (db Database) CleanupCloudNativeDescribeSourceJobsOlderThan(t time.Time) error {
+//	tx := db.orm.Where("created_at < ?", t).Unscoped().Delete(&CloudNativeDescribeSourceJob{})
+//	if tx.Error != nil {
+//		return tx.Error
+//	}
+//
+//	return nil
+//}
+//
+//// =============================== DescribeResourceJob ===============================
+//
+//
+//func (db Database) QueueDescribeResourceJob(id uint) error {
+//	tx := db.orm.Exec("update describe_resource_jobs set status = ?, retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
+//	if tx.Error != nil {
+//		return tx.Error
+//	}
+//
+//	return nil
+//}
+//
+//func (db Database) UpdateDescribeResourceJobToInProgress(id uint) error {
+//	tx := db.orm.
+//		Model(&DescribeResourceJob{}).
+//		Where("id = ?", id).
+//		Where("status IN ?", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
+//		Updates(DescribeResourceJob{Status: api.DescribeResourceJobInProgress})
+//	if tx.Error != nil {
+//		return tx.Error
+//	}
+//
+//	return nil
+//}
+//
 
 // =============================== ComplianceReportJob ===============================
 

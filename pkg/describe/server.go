@@ -95,12 +95,31 @@ func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 
 	resourceTypes := ctx.QueryParams()["resource_type"]
 
-	err = h.Scheduler.describeConnection(*src, false, resourceTypes, forceFull)
-	if err == ErrJobInProgress {
-		return echo.NewHTTPError(http.StatusConflict, err.Error())
+	if resourceTypes == nil {
+		switch src.Connector {
+		case source.CloudAWS:
+			if forceFull {
+				resourceTypes = aws.ListResourceTypes()
+			} else {
+				resourceTypes = aws.ListFastDiscoveryResourceTypes()
+			}
+		case source.CloudAzure:
+			if forceFull {
+				resourceTypes = azure.ListResourceTypes()
+			} else {
+				resourceTypes = azure.ListFastDiscoveryResourceTypes()
+			}
+		}
 	}
-	if err != nil {
-		return err
+
+	for _, resourceType := range resourceTypes {
+		err = h.Scheduler.describe(*src, resourceType, false)
+		if err == ErrJobInProgress {
+			return echo.NewHTTPError(http.StatusConflict, err.Error())
+		}
+		if err != nil {
+			return err
+		}
 	}
 	return ctx.NoContent(http.StatusOK)
 }
@@ -130,9 +149,29 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		if !connection.IsEnabled() {
 			continue
 		}
-		err = h.Scheduler.describeConnection(connection, false, resourceTypes, forceFull)
-		if err != nil {
-			h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+
+		if resourceTypes == nil {
+			switch connection.Connector {
+			case source.CloudAWS:
+				if forceFull {
+					resourceTypes = aws.ListResourceTypes()
+				} else {
+					resourceTypes = aws.ListFastDiscoveryResourceTypes()
+				}
+			case source.CloudAzure:
+				if forceFull {
+					resourceTypes = azure.ListResourceTypes()
+				} else {
+					resourceTypes = azure.ListFastDiscoveryResourceTypes()
+				}
+			}
+		}
+
+		for _, resourceType := range resourceTypes {
+			err = h.Scheduler.describe(connection, resourceType, false)
+			if err != nil {
+				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
+			}
 		}
 	}
 	return ctx.JSON(http.StatusOK, "")

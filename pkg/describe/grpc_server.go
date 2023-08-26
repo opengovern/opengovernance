@@ -101,7 +101,7 @@ func (s *GRPCDescribeServer) grpcStreamAuthInterceptor(srv interface{}, ss grpc.
 }
 
 func (s *GRPCDescribeServer) SetInProgress(ctx context.Context, req *golang.SetInProgressRequest) (*golang.ResponseOK, error) {
-	err := s.db.UpdateDescribeResourceJobToInProgress(uint(req.JobId)) //TODO this is called too much
+	err := s.db.UpdateDescribeConnectionJobToInProgress(uint(req.JobId)) //TODO this is called too much
 	if err != nil {
 		return nil, err
 	}
