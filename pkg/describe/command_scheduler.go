@@ -1,6 +1,7 @@
 package describe
 
 import (
+	"context"
 	"errors"
 	"os"
 
@@ -83,6 +84,9 @@ func SchedulerCommand() *cobra.Command {
 	var (
 		id string
 	)
+
+	ctx := context.Background()
+
 	cmd := &cobra.Command{
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch {
@@ -133,7 +137,7 @@ func SchedulerCommand() *cobra.Command {
 
 			defer s.Stop()
 
-			return s.Run()
+			return s.Run(ctx)
 		},
 	}
 

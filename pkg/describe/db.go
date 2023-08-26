@@ -1,29 +1,26 @@
 package describe
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
-
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/lib/pq"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/summarizer"
-
-	summarizerapi "github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
-
-	checkupapi "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
-	insightapi "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
-
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
-
 	"github.com/google/uuid"
+	"github.com/lib/pq"
+	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
+	checkupapi "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	insightapi "github.com/kaytu-io/kaytu-engine/pkg/insight/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/summarizer"
+	summarizerapi "github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 )
 
 type Database struct {
@@ -122,7 +119,10 @@ func (db Database) FetchRandomCreatedDescribeResourceJobs(parentIdExceptionList 
 	return &job, nil
 }
 
-func (db Database) ListRandomCreatedDescribeResourceJobs(limit int) ([]DescribeResourceJob, error) {
+func (db Database) ListRandomCreatedDescribeResourceJobs(ctx context.Context, limit int) ([]DescribeResourceJob, error) {
+	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
+
 	var job []DescribeResourceJob
 
 	runningJobs := []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress}
@@ -143,7 +143,7 @@ FROM (
         (select count(*) from describe_resource_jobs where parent_job_id = dr.parent_job_id AND status IN ?) <= 10
   ) AS t) AS rowed
 WHERE
-  rowed.r <= 5
+  rowed.r <= 10
 LIMIT ?
 `, api.DescribeResourceJobCreated, runningJobs, limit).Find(&job)
 	if tx.Error != nil {
@@ -155,7 +155,10 @@ LIMIT ?
 	return job, nil
 }
 
-func (db Database) GetFailedDescribeResourceJobs() ([]DescribeResourceJob, error) {
+func (db Database) GetFailedDescribeResourceJobs(ctx context.Context) ([]DescribeResourceJob, error) {
+	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
+
 	var job []DescribeResourceJob
 
 	tx := db.orm.Raw(`
@@ -179,7 +182,10 @@ WHERE
 	return job, nil
 }
 
-func (db Database) CountQueuedDescribeResourceJobs() (int64, error) {
+func (db Database) CountQueuedDescribeResourceJobs(ctx context.Context) (int64, error) {
+	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
+
 	var count int64
 	tx := db.orm.Model(&DescribeResourceJob{}).Where("status = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued).Count(&count)
 	if tx.Error != nil {
@@ -288,7 +294,10 @@ func (db Database) GetLastFullDiscoveryDescribeSourceJob(sourceID string) (*Desc
 }
 
 // GetDescribeSourceJob returns the DescribeSourceJobs for the given id.
-func (db Database) GetDescribeSourceJob(jobID uint) (*DescribeSourceJob, error) {
+func (db Database) GetDescribeSourceJob(ctx context.Context, jobID uint) (*DescribeSourceJob, error) {
+	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
+
 	var job DescribeSourceJob
 	tx := db.orm.Preload(clause.Associations).Where("id = ?", jobID).First(&job)
 	if tx.Error != nil {

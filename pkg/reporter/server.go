@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 type HttpServer struct {
@@ -42,16 +43,26 @@ func NewHTTPServer(
 
 func (h HttpServer) Register(e *echo.Echo) {
 	e.POST("/query/trigger", h.TriggerQuery)
+	e.GET("/jaeger/test", func(ctx echo.Context) error {
+		jaegertracing.TraceFunction(ctx, slowFunc, "Test String")
+		return ctx.String(http.StatusOK, "Hello, World!")
+	})
+}
+
+func slowFunc(s string) {
+	time.Sleep(200 * time.Millisecond)
+	return
 }
 
 func (h HttpServer) TriggerQuery(ctx echo.Context) error {
+
 	var reqBody TriggerQueryRequest
 	err := bindValidate(ctx, &reqBody)
 	if err != nil {
 		return err
 	}
 
-	sp := jaegertracing.CreateChildSpan(ctx, "Child span for additional processing")
+	sp := jaegertracing.CreateChildSpan(ctx, "trigger query child span")
 	defer sp.Finish()
 	sp.LogKV("Test log")
 	sp.SetBaggageItem("Test baggage", "baggage")

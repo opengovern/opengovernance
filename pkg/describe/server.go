@@ -86,6 +86,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 //	@Router			/schedule/api/v1/describe/trigger/{connection_id} [put]
 func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 	connectionID := ctx.Param("connection_id")
+	forceFull := ctx.QueryParam("force_full") == "true"
 
 	src, err := h.Scheduler.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.KaytuAdminRole}, connectionID)
 	if err != nil || src == nil {
@@ -94,7 +95,7 @@ func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 
 	resourceTypes := ctx.QueryParams()["resource_type"]
 
-	err = h.Scheduler.describeConnection(*src, false, resourceTypes)
+	err = h.Scheduler.describeConnection(*src, false, resourceTypes, forceFull)
 	if err == ErrJobInProgress {
 		return echo.NewHTTPError(http.StatusConflict, err.Error())
 	}
@@ -105,7 +106,9 @@ func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 }
 
 func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
-	resourceTypes := ctx.QueryParams()["resource_type"]
+	resourceTypes := httpserver.QueryArrayParam(ctx, "resource_type")
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	forceFull := ctx.QueryParam("force_full") == "true"
 
 	err := h.Scheduler.CheckWorkspaceResourceLimit()
 	if err != nil {
@@ -117,7 +120,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: err.Error()})
 	}
 
-	connections, err := h.Scheduler.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.KaytuAdminRole}, nil)
+	connections, err := h.Scheduler.onboardClient.ListSources(&httpclient.Context{UserRole: apiAuth.KaytuAdminRole}, connectors)
 	if err != nil {
 		h.Scheduler.logger.Error("failed to get list of sources", zap.String("spot", "ListSources"), zap.Error(err))
 		DescribeJobsCount.WithLabelValues("failure").Inc()
@@ -127,7 +130,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		if !connection.IsEnabled() {
 			continue
 		}
-		err = h.Scheduler.describeConnection(connection, false, resourceTypes)
+		err = h.Scheduler.describeConnection(connection, false, resourceTypes, forceFull)
 		if err != nil {
 			h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 		}

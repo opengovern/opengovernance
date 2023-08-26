@@ -1,6 +1,7 @@
 package describe
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -100,7 +101,7 @@ var ComplianceSourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help: "Count of describe source jobs in scheduler service",
 }, []string{"status"})
 
-var LargeDescribeResourceMessage = promauto.NewGaugeVec(prometheus.GaugeOpts{
+var LargeDescribeResourceMessage = promauto.NewCounterVec(prometheus.CounterOpts{
 	Name: "kaytu_scheduler_large_describe_resource_message",
 	Help: "The gauge whether the describe resource message is too large: 0 for not large and 1 for large",
 }, []string{"resource_type"})
@@ -454,7 +455,7 @@ func InitializeScheduler(
 	return s, nil
 }
 
-func (s *Scheduler) Run() error {
+func (s *Scheduler) Run(ctx context.Context) error {
 	err := s.db.Initialize()
 	if err != nil {
 		return err
@@ -519,7 +520,7 @@ func (s *Scheduler) Run() error {
 			s.RunDescribeJobScheduler()
 		})
 		EnsureRunGoroutin(func() {
-			s.RunDescribeResourceJobs()
+			s.RunDescribeResourceJobs(ctx)
 		})
 		EnsureRunGoroutin(func() {
 			s.RunDescribeJobCompletionUpdater()

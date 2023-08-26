@@ -147,6 +147,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 		kmsg, _ := json.Marshal(kafkaResource)
 		if len(kmsg) >= 32766 {
 			// it's gonna hit error in kafka connect
+			LargeDescribeResourceMessage.WithLabelValues(resource.Job.ResourceType).Inc()
 			s.logger.Warn("too large message",
 				zap.String("resource_type", resource.Job.ResourceType),
 				zap.String("json", string(kmsg)),
@@ -181,13 +182,11 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 		kmsg, _ = json.Marshal(lookupResource)
 		if len(kmsg) >= 32766 {
 			// it's gonna hit error in kafka connect
-			LargeDescribeResourceMessage.WithLabelValues(resource.Job.ResourceType).Set(1)
+			LargeDescribeResourceMessage.WithLabelValues(resource.Job.ResourceType).Inc()
 			s.logger.Warn("too large message",
 				zap.String("resource_type", resource.Job.ResourceType),
 				zap.String("json", string(kmsg)),
 			)
-		} else {
-			LargeDescribeResourceMessage.WithLabelValues(resource.Job.ResourceType).Set(0)
 		}
 		//kmsg, _ = json.Marshal(lookupResource)
 		//keys, _ = lookupResource.KeysAndIndex()
@@ -202,9 +201,19 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 	if !s.DoProcessReceivedMessages {
 		return &golang.ResponseOK{}, nil
 	}
-	if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger); err != nil {
-		StreamFailureCount.WithLabelValues("aws").Inc()
-		return nil, fmt.Errorf("send to kafka: %w", err)
+
+	i := 0
+	for {
+		if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger); err != nil {
+			if i > 10 {
+				StreamFailureCount.WithLabelValues("aws").Inc()
+				return nil, fmt.Errorf("send to kafka: %w", err)
+			} else {
+				i++
+				continue
+			}
+		}
+		break
 	}
 	return &golang.ResponseOK{}, nil
 }
@@ -291,9 +300,18 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		ResourcesDescribedCount.WithLabelValues("azure", "successful").Inc()
 	}
 
-	if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger); err != nil {
-		StreamFailureCount.WithLabelValues("azure").Inc()
-		return nil, fmt.Errorf("send to kafka: %w", err)
+	i := 0
+	for {
+		if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger); err != nil {
+			if i > 10 {
+				StreamFailureCount.WithLabelValues("azure").Inc()
+				return nil, fmt.Errorf("send to kafka: %w", err)
+			} else {
+				i++
+				continue
+			}
+		}
+		break
 	}
 	return &golang.ResponseOK{}, nil
 }

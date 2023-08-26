@@ -2458,7 +2458,7 @@ func (h *HttpHandler) CountResources(ctx echo.Context) error {
 	span := jaegertracing.CreateChildSpan(ctx, "ListFilteredResourceTypes")
 	span.SetBaggageItem("inventory", "CountResources")
 
-	resourceTypes, err := h.db.ListFilteredResourceTypes(nil, nil, nil, nil, true
+	resourceTypes, err := h.db.ListFilteredResourceTypes(nil, nil, nil, nil, true)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}

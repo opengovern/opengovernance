@@ -12,14 +12,14 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/ory/dockertest/v3"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/suite"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"go.uber.org/zap"
 )
 
@@ -80,7 +80,7 @@ func (s *HttpServerSuite) SetupSuite() {
 
 	logger, err := zap.NewProduction()
 	require.NoError(err, "new logger")
-	s.router = httpserver.Register(logger, s.handler)
+	s.router, _ = httpserver.Register(logger, s.handler)
 
 }
 
