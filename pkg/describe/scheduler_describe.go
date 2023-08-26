@@ -84,6 +84,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 		return err
 	}
+	s.logger.Info("got the jobs", zap.Int("length", len(dcs)))
 
 	if len(dcs) == 0 {
 		if count == 0 {
@@ -135,7 +136,9 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 				dc:  dc,
 				src: src,
 			}
+			s.logger.Info("adding job to queue", zap.Uint("jobID", c.dc.ID))
 			wp.AddJob(func() (interface{}, error) {
+				s.logger.Info("calling cloud native", zap.Uint("jobID", c.dc.ID))
 				err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.src.Credential.Config.(string), s.WorkspaceName, s.kafkaResourcesTopic)
 				if err != nil {
 					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dc.ID))
