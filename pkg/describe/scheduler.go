@@ -259,7 +259,7 @@ func InitializeScheduler(
 		}
 	}()
 
-	s.logger, err = zap.NewDevelopment()
+	s.logger, err = zap.NewProduction()
 	if err != nil {
 		return nil, err
 	}

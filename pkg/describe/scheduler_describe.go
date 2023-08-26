@@ -104,8 +104,27 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 	s.logger.Info("preparing resource jobs to run", zap.Int("length", len(dcs)))
 
 	wp := concurrency.NewWorkPool(len(dcs))
+	srcMap := map[string]*apiOnboard.Connection{}
 	for _, dc := range dcs {
 		var src *apiOnboard.Connection
+		if v, ok := srcMap[dc.ConnectionID]; ok {
+			src = v
+		} else {
+			switch dc.TriggerType {
+			case enums.DescribeTriggerTypeStack:
+			default:
+				src, err = s.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.KaytuAdminRole}, dc.ConnectionID)
+				if !src.IsEnabled() {
+					continue
+				}
+				if err != nil {
+					s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dc.ID))
+					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+					return err
+				}
+				srcMap[dc.ConnectionID] = src
+			}
+		}
 
 		switch dc.TriggerType {
 		case enums.DescribeTriggerTypeStack:
@@ -138,10 +157,8 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 			}
 			s.logger.Info("adding job to queue", zap.Uint("jobID", c.dc.ID))
 			wp.AddJob(func() (interface{}, error) {
-				s.logger.Info("calling cloud native", zap.Uint("jobID", c.dc.ID))
 				err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.src.Credential.Config.(string), s.WorkspaceName, s.kafkaResourcesTopic)
 				if err != nil {
-					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", c.dc.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 					return nil, err
 				}
@@ -151,7 +168,12 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		}
 	}
 
-	wp.Run()
+	res := wp.Run()
+	for _, r := range res {
+		if r.Error != nil {
+			s.logger.Error("failure on calling cloudNative describer", zap.Error(err))
+		}
+	}
 
 	return nil
 }
@@ -307,10 +329,10 @@ func newDescribeConnectionJob(a apiOnboard.Connection, resourceType string, trig
 }
 
 func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc DescribeConnectionJob, cipherText string, workspaceName string, kafkaTopic string) error {
-	//ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
-	//defer span.End()
+	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
 
-	s.logger.Info("enqueueCloudNativeDescribeJob",
+	s.logger.Debug("enqueueCloudNativeDescribeJob",
 		zap.Uint("jobID", dc.ID),
 		zap.String("connectionID", dc.ConnectionID),
 		zap.String("resourceType", dc.ResourceType),
