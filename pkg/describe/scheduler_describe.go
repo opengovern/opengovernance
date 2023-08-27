@@ -206,10 +206,6 @@ func (s *Scheduler) scheduleDescribeJob() {
 	}
 
 	for _, connection := range connections {
-		if !connection.IsEnabled() {
-			continue
-		}
-
 		var resourceTypes []string
 		switch connection.Connector {
 		case source.CloudAWS:
@@ -230,6 +226,14 @@ func (s *Scheduler) scheduleDescribeJob() {
 }
 
 func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType string, scheduled bool) error {
+	if !connection.IsEnabled() {
+		if connection.IsDiscovered() && strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") {
+			// cost
+		} else {
+			return nil
+		}
+	}
+
 	job, err := s.db.GetLastDescribeConnectionJob(connection.ID.String(), resourceType)
 	if err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()

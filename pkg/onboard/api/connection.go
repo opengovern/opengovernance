@@ -71,6 +71,10 @@ func (c Connection) IsEnabled() bool {
 	return false
 }
 
+func (c Connection) IsDiscovered() bool {
+	return c.LifecycleState == ConnectionLifecycleStateDiscovered
+}
+
 type ChangeConnectionLifecycleStateRequest struct {
 	State ConnectionLifecycleState `json:"state"`
 }
