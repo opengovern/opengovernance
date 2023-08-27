@@ -393,6 +393,15 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 		w.logger.Error("failed to start steampipe", zap.Error(err))
 		return nil, err
 	}
+
+	cmd = exec.Command("steampipe", "plugin", "list")
+	stdOut, stdErr := cmd.CombinedOutput()
+	if stdErr != nil {
+		w.logger.Error("failed to list steampipe plugins", zap.Error(err))
+		return nil, err
+	}
+	w.logger.Info("steampipe plugins", zap.String("output", string(stdOut)))
+
 	w.logger.Info("steampipe started")
 	originalSteampipe, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: "localhost",
