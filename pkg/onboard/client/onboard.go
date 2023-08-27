@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -24,7 +23,7 @@ import (
 
 type OnboardServiceClient interface {
 	GetSource(ctx *httpclient.Context, sourceID string) (*api.Connection, error)
-	GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredential, *api.AzureCredential, error)
+	GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredentialConfig, *api.AzureCredentialConfig, error)
 	GetSources(ctx *httpclient.Context, sourceID []string) ([]api.Connection, error)
 	ListSources(ctx *httpclient.Context, t []source.Type) ([]api.Connection, error)
 	CountSources(ctx *httpclient.Context, provider source.Type) (int64, error)
@@ -75,11 +74,11 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 	return &source, nil
 }
 
-func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredential, *api.AzureCredential, error) {
+func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredentialConfig, *api.AzureCredentialConfig, error) {
 	url := fmt.Sprintf("%s/api/v1/source/%s/credentials/full", s.baseURL, sourceID)
 
-	var awsCred api.AWSCredential
-	var azureCred api.AzureCredential
+	var awsCred api.AWSCredentialConfig
+	var azureCred api.AzureCredentialConfig
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -104,7 +103,7 @@ func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID stri
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		d, err := ioutil.ReadAll(res.Body)
+		d, err := io.ReadAll(res.Body)
 		if err != nil {
 			return nil, nil, fmt.Errorf("read body: %w", err)
 		}
@@ -118,7 +117,7 @@ func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID stri
 	if err = json.Unmarshal(body, &awsCred); err == nil && awsCred.AccessKey != "" {
 		return &awsCred, nil, nil
 	}
-	if err = json.Unmarshal(body, &azureCred); err == nil && azureCred.ClientID != "" {
+	if err = json.Unmarshal(body, &azureCred); err == nil && azureCred.ClientId != "" {
 		return nil, &azureCred, nil
 	}
 	return nil, nil, err
