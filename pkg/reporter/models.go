@@ -27,5 +27,5 @@ type WorkerJobResult struct {
 	Query              pgtype.JSONB
 	TotalRows          int
 	NotMatchingColumns pq.StringArray `gorm:"type:text[];"`
-	Mismatches         pgtype.JSONBArray
+	Mismatches         pgtype.JSONB
 }
