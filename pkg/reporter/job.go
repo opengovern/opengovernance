@@ -403,7 +403,7 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 
 	stdOut, stdErr = exec.Command("steampipe", "plugin", "list").CombinedOutput()
 	if stdErr != nil {
-		w.logger.Error("failed to list steampipe plugins", zap.Error(err))
+		w.logger.Error("failed to list steampipe plugins", zap.Error(err), zap.String("output", string(stdOut)))
 		return nil, stdErr
 	}
 	w.logger.Info("steampipe plugins", zap.String("output", string(stdOut)))
