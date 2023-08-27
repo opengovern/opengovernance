@@ -385,27 +385,16 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 		w.logger.Error("failed to populate steampipe", zap.Error(err))
 		return nil, err
 	}
-
-	err = exec.Command("steampipe", "service", "stop", "--force").Run()
-	if err != nil {
-		w.logger.Error("failed to stop steampipe", zap.Error(err))
-	}
-	err = exec.Command("steampipe", "service", "stop", "--force").Run()
-	if err != nil {
-		w.logger.Error("failed to stop steampipe", zap.Error(err))
-	}
-	w.logger.Info("steampipe stopped")
-
+	time.Sleep(30 * time.Second)
 	stdOut, stdErr := exec.Command("steampipe", "plugin", "update", "--all").CombinedOutput()
 	if stdErr != nil {
 		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
 		return nil, stdErr
 	}
-	time.Sleep(10 * time.Second)
 	w.logger.Info("steampipe plugins updated")
 
 	stdOut, stdErr = exec.Command("steampipe", "service", "start",
-		"--database-listen", "local", "--database-port", "8000", "--database-password", "abcd").CombinedOutput()
+		"--database-listen", "local", "--database-password", "abcd").CombinedOutput()
 	if stdErr != nil {
 		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
 		return nil, stdErr
