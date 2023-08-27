@@ -393,7 +393,7 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 	w.logger.Info("steampipe plugins updated")
 
 	stdOut, stdErr = exec.Command("steampipe", "service", "start",
-		"--database-listen", "local", "--database-password", "abcd", "--dashboard-port", "9194").CombinedOutput()
+		"--database-listen", "network", "--database-password", "abcd", "--dashboard-port", "9194").CombinedOutput()
 
 	time.Sleep(60 * time.Second)
 	if stdErr != nil {
