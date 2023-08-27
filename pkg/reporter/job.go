@@ -396,15 +396,15 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 	}
 	w.logger.Info("steampipe stopped")
 
-	err = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-		"9193", "--database-password", "abcd").Run()
-	if err != nil {
-		w.logger.Error("failed to start steampipe", zap.Error(err))
+	stdOut, stdErr := exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
+		"9193", "--database-password", "abcd").CombinedOutput()
+	if stdErr != nil {
+		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
 		return nil, err
 	}
 	w.logger.Info("steampipe started")
 
-	stdOut, stdErr := exec.Command("steampipe", "plugin", "list").CombinedOutput()
+	stdOut, stdErr = exec.Command("steampipe", "plugin", "list").CombinedOutput()
 	if stdErr != nil {
 		w.logger.Error("failed to list steampipe plugins", zap.Error(err))
 		return nil, err
