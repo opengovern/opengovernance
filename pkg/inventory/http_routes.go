@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	_ "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"go.opentelemetry.io/otel"
 	"math"
 	"net/http"
 	"sort"
@@ -97,6 +98,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/migrate-analytics", httpserver.AuthorizeHandler(h.MigrateAnalytics, authApi.AdminRole))
 	v1.GET("/migrate-spend", httpserver.AuthorizeHandler(h.MigrateSpend, authApi.AdminRole))
 }
+
+var tracer = otel.Tracer("inventory")
 
 func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
 	connectionIds := httpserver.QueryArrayParam(ctx, ConnectionIdParam)
@@ -801,15 +804,14 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	fmt.Println("connectorTypes", connectorTypes)
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListMetricTagsKeysWithPossibleValues")
-	//span.SetBaggageItem("inventory", "ListAnalyticsTags")
+	_, span := tracer.Start(ctx.Request().Context(), "ListMetricTagsKeysWithPossibleValues")
 
 	tags, err := aDB.ListMetricTagsKeysWithPossibleValues(connectorTypes)
 	if err != nil {
 		return err
 	}
 	tags = model.TrimPrivateTags(tags)
-	//span.Finish()
+	span.End()
 
 	var metricCount map[string]int
 	var spend map[string]es.SpendMetricResp
@@ -925,14 +927,13 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		}
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListFilteredMetrics")
-	//span.SetBaggageItem("inventory", "ListAnalyticsMetricTrend")
+	_, span := tracer.Start(ctx.Request().Context(), "ListFilteredMetrics")
 
 	metrics, err := aDB.ListFilteredMetrics(tagMap, metricType, ids, connectorTypes)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	metricIDs := make([]string, 0, len(metrics))
 	for _, metric := range metrics {
@@ -1045,14 +1046,13 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 		startTime = time.Unix(startTimeVal, 0)
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListFilteredMetrics")
-	//span.SetBaggageItem("inventory", "ListAnalyticsComposition")
+	_, span := tracer.Start(ctx.Request().Context(), "ListFilteredMetrics")
 
 	filteredMetrics, err := aDB.ListFilteredMetrics(map[string][]string{tagKey: nil}, metricType, nil, connectorTypes)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	var metrics []analyticsDB.AnalyticMetric
 	for _, metric := range filteredMetrics {
@@ -1309,14 +1309,13 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 		metricType = analyticsDB.MetricTypeAssets
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListMetrics")
-	//span.SetBaggageItem("inventory", "ListAnalyticsCategories")
+	_, span := tracer.Start(ctx.Request().Context(), "ListMetrics")
 
 	metrics, err := aDB.ListMetrics()
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	categoryResourceTypeMap := map[string][]string{}
 	for _, metric := range metrics {
@@ -1616,14 +1615,13 @@ func (h *HttpHandler) ListMetrics(ctx echo.Context) error {
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListFilteredMetrics")
-	//span.SetBaggageItem("inventory", "ListMetrics")
+	_, span := tracer.Start(ctx.Request().Context(), "ListFilteredMetrics")
 
 	metrics, err := aDB.ListFilteredMetrics(nil, metricType, nil, connectorTypes)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	var apiMetrics []inventoryApi.AnalyticsMetric
 	for _, metric := range metrics {
@@ -1684,14 +1682,13 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 		}
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListFilteredMetrics")
-	//span.SetBaggageItem("inventory", "ListAnalyticsSpendComposition")
+	_, span := tracer.Start(ctx.Request().Context(), "ListFilteredMetrics")
 
 	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, nil, nil)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	costMetricMap := make(map[string]inventoryApi.CostMetric)
 	spends, err := es.FetchSpendByMetric(h.client, connectionIDs, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
@@ -1985,14 +1982,13 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 
 	if dimension == inventoryApi.SpendDimensionMetric {
 		// trace :
-		//span := jaegertracing.CreateChildSpan(ctx, "ListFilteredMetrics")
-		//span.SetBaggageItem("inventory", "GetSpendTable")
+		_, span := tracer.Start(ctx.Request().Context(), "ListFilteredMetrics")
 
 		metrics, err = aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, nil)
 		if err != nil {
 			return err
 		}
-		//span.Finish()
+		span.End()
 	}
 
 	mt, err := es.FetchSpendTableByDimension(h.client, dimension, connectionIDs, metricIds, startTime, endTime)
@@ -2368,14 +2364,13 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 		search = &req.TitleFilter
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "GetQueriesWithFilters")
-	//span.SetBaggageItem("inventory", "ListQueries")
+	_, span := tracer.Start(ctx.Request().Context(), "GetQueriesWithFilters")
 
 	queries, err := h.db.GetQueriesWithFilters(search, req.Connectors)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	var result []inventoryApi.SmartQueryItem
 	for _, item := range queries {
@@ -2433,15 +2428,14 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 //	@Router			/inventory/api/v1/query/run/history [get]
 func (h *HttpHandler) GetRecentRanQueries(ctx echo.Context) error {
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "GetQueryHistory")
-	//span.SetBaggageItem("inventory", "GetRecentRanQueries")
+	_, span := tracer.Start(ctx.Request().Context(), "GetQueryHistory")
 
 	smartQueryHistories, err := h.db.GetQueryHistory()
 	if err != nil {
 		h.logger.Error("Failed to get query history", zap.Error(err))
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	res := make([]inventoryApi.SmartQueryHistory, 0, len(smartQueryHistories))
 	for _, history := range smartQueryHistories {
@@ -2454,14 +2448,13 @@ func (h *HttpHandler) GetRecentRanQueries(ctx echo.Context) error {
 func (h *HttpHandler) CountResources(ctx echo.Context) error {
 	timeAt := time.Now()
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListFilteredResourceTypes")
-	//span.SetBaggageItem("inventory", "CountResources")
+	_, span := tracer.Start(ctx.Request().Context(), "ListFilteredResourceTypes")
 
 	resourceTypes, err := h.db.ListFilteredResourceTypes(nil, nil, nil, nil, true)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	//span.Finish()
+	span.End()
 
 	resourceTypeNames := make([]string, 0, len(resourceTypes))
 	for _, resourceType := range resourceTypes {
@@ -2661,14 +2654,13 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListFilteredResourceTypes")
-	//span.SetBaggageItem("inventory", "ListResourceTypeMetadata")
+	_, span := tracer.Start(ctx.Request().Context(), "ListFilteredResourceTypes")
 
 	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, resourceTypeNames, serviceNames, connectors, summarized)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	var resourceTypeMetadata []inventoryApi.ResourceType
 	tableCountMap := make(map[string]int)
