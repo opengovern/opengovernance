@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"github.com/labstack/echo-contrib/jaegertracing"
 	_ "gorm.io/gorm"
 	"net/http"
 
@@ -48,11 +47,11 @@ func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 	key := ctx.Param("key")
 
 	// trace :
-	span := jaegertracing.CreateChildSpan(ctx, "GetConfigMetadata")
-	span.SetBaggageItem("metadata", "GetConfigMetadata")
+	//span := jaegertracing.CreateChildSpan(ctx, "GetConfigMetadata")
+	//span.SetBaggageItem("metadata", "GetConfigMetadata")
 
 	metadata, err := src.GetConfigMetadata(h.db, h.redis, key)
-	span.Finish()
+	//span.Finish()
 	if err != nil {
 		return err
 	}

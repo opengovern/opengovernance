@@ -4,23 +4,27 @@ import (
 	"context"
 	"github.com/brpaz/echozap"
 	"github.com/kaytu-io/kaytu-util/pkg/metrics"
-	"github.com/labstack/echo-contrib/jaegertracing"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/sdk/trace"
-	"io"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"os"
 
 	"go.uber.org/zap"
 	"gopkg.in/go-playground/validator.v9"
 )
 
+var agentHost = os.Getenv("JAEGER_AGENT_HOST")
+var serviceName = os.Getenv("JAEGER_SERVICE_NAME")
+
 type Routes interface {
 	Register(router *echo.Echo)
 }
 
-func Register(logger *zap.Logger, routes Routes) (*echo.Echo, io.Closer) {
+func Register(logger *zap.Logger, routes Routes) (*echo.Echo, *sdktrace.TracerProvider) {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -31,7 +35,11 @@ func Register(logger *zap.Logger, routes Routes) (*echo.Echo, io.Closer) {
 
 	e.Pre(middleware.RemoveTrailingSlash())
 
-	c := jaegertracing.New(e, nil)
+	tp, err := initTracer()
+	if err != nil {
+		logger.Error(err.Error())
+		return nil, nil
+	}
 
 	e.Validator = customValidator{
 		validate: validator.New(),
@@ -39,21 +47,17 @@ func Register(logger *zap.Logger, routes Routes) (*echo.Echo, io.Closer) {
 
 	routes.Register(e)
 
-	return e, c
+	return e, tp
 }
 
 func RegisterAndStart(logger *zap.Logger, address string, routes Routes) error {
-	e, c := Register(logger, routes)
+	e, tp := Register(logger, routes)
 
-	defer c.Close()
-
-	tp := trace.NewTracerProvider()
 	defer func() {
 		if err := tp.Shutdown(context.Background()); err != nil {
 		}
 	}()
-	otel.SetTracerProvider(tp)
-	e.Use(otelecho.Middleware("kaytu-engine"))
+	e.Use(otelecho.Middleware(serviceName))
 
 	return e.Start(address)
 }
@@ -74,4 +78,18 @@ func QueryArrayParam(ctx echo.Context, paramName string) []string {
 		}
 	}
 	return values
+}
+
+func initTracer() (*sdktrace.TracerProvider, error) {
+	exporter, err := jaeger.New(jaeger.WithAgentEndpoint(jaeger.WithAgentHost(agentHost)))
+	if err != nil {
+		return nil, err
+	}
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithBatcher(exporter),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+	return tp, nil
 }
