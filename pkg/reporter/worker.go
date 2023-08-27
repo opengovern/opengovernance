@@ -133,7 +133,7 @@ func (w *Worker) Run() error {
 				TotalRows:          result.TotalRows,
 				NotMatchingColumns: result.NotMatchingColumns,
 				Query:              pgtype.JSONB{},
-				Mismatches:         pgtype.JSONBArray{},
+				Mismatches:         pgtype.JSONB{},
 			}
 			err = dbRows[i].Query.Set(result.Query)
 			if err != nil {
