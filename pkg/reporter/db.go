@@ -50,6 +50,6 @@ func (db Database) GetWorkerJob(jobID uint) (DatabaseWorkerJob, error) {
 	return job, err
 }
 
-func (db Database) UpdateWorkerJobStatus(jobID int, status JobStatus) error {
+func (db Database) UpdateWorkerJobStatus(jobID uint, status JobStatus) error {
 	return db.orm.Model(&DatabaseWorkerJob{}).Where("id = ?", jobID).Update("status", status).Error
 }
