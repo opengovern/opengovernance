@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"go.opentelemetry.io/otel"
 	_ "gorm.io/gorm"
 	"net/http"
 
@@ -20,6 +21,8 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	v1.GET("/metadata/:key", httpserver.AuthorizeHandler(h.GetConfigMetadata, api3.ViewerRole))
 	v1.POST("/metadata", httpserver.AuthorizeHandler(h.SetConfigMetadata, api3.AdminRole))
 }
+
+var tracer = otel.Tracer("metadata")
 
 func bindValidate(ctx echo.Context, i interface{}) error {
 	if err := ctx.Bind(i); err != nil {
@@ -46,12 +49,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 	key := ctx.Param("key")
 
-	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "GetConfigMetadata")
-	//span.SetBaggageItem("metadata", "GetConfigMetadata")
-
 	metadata, err := src.GetConfigMetadata(h.db, h.redis, key)
-	//span.Finish()
 	if err != nil {
 		return err
 	}
@@ -106,12 +104,14 @@ func (h HttpHandler) AddFilter(ctx echo.Context) error {
 	if err := bindValidate(ctx, &req); err != nil {
 		return err
 	}
+	// trace :
+	_, span := tracer.Start(ctx.Request().Context(), "AddFilter")
 
 	err := h.db.AddFilter(models.Filter{Name: req.Name, KeyValue: req.KeyValue})
 	if err != nil {
 		return err
 	}
-
+	span.End()
 	return ctx.JSON(http.StatusOK, nil)
 }
 
@@ -124,9 +124,13 @@ func (h HttpHandler) AddFilter(ctx echo.Context) error {
 //	@Success	200	{object}	[]models.Filter
 //	@Router		/metadata/api/v1/filter [get]
 func (h HttpHandler) GetFilters(ctx echo.Context) error {
+	// trace :
+	_, span := tracer.Start(ctx.Request().Context(), "ListFilters")
+
 	filters, err := h.db.ListFilters()
 	if err != nil {
 		return nil
 	}
+	span.End()
 	return ctx.JSON(http.StatusOK, filters)
 }

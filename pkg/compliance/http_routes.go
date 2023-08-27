@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel"
 	"io"
 	"net/http"
 	"sort"
@@ -72,6 +73,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
 }
+
+var tracer = otel.Tracer("compliance")
 
 func bindValidate(ctx echo.Context, i any) error {
 	if err := ctx.Bind(i); err != nil {
@@ -261,14 +264,13 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 	}
 	var response api.GetBenchmarksSummaryResponse
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListRootBenchmarks")
-	//span.SetBaggageItem("compliance", "ListBenchmarksSummary")
+	_, span := tracer.Start(ctx.Request().Context(), "ListRootBenchmarks")
 
 	benchmarks, err := h.db.ListRootBenchmarks()
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	benchmarkIDs := make([]string, 0, len(benchmarks))
 	for _, b := range benchmarks {
@@ -342,32 +344,30 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	}
 	benchmarkID := ctx.Param("benchmark_id")
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "benchmarkID")
-	//span.SetBaggageItem("compliance", "GetBenchmarkSummary")
+	_, span := tracer.Start(ctx.Request().Context(), "GetBenchmark")
 
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	if benchmark == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
 	}
-
 	// trace :
-	//spanPC := jaegertracing.CreateChildSpan(ctx, "PopulateConnectors")
-	//spanPC.SetBaggageItem("compliance", "GetBenchmarkSummary")
+	_, spanGB := tracer.Start(ctx.Request().Context(), "PopulateConnectors")
 
 	be := benchmark.ToApi()
 	err = benchmark.PopulateConnectors(h.db, &be)
 	if err != nil {
 		return err
 	}
+	spanGB.End()
+
 	if len(connectors) > 0 && !utils.IncludesAny(be.Connectors, connectors) {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
 	}
-	//spanPC.Finish()
 
 	summariesAtTime, err := es.FetchBenchmarkSummariesAtTime(h.logger, h.client, []string{benchmarkID}, connectors, connectionIDs, timeAt)
 	if err != nil {
@@ -411,14 +411,13 @@ func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
 		}
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "GetBenchmark")
-	//span.SetBaggageItem("compliance", "GetBenchmarkTree")
+	_, span := tracer.Start(ctx.Request().Context(), "GetBenchmark")
 
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	if benchmark == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
@@ -538,14 +537,13 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
 
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "GetBenchmark")
-	//span.SetBaggageItem("compliance", "GetBenchmarkTrend")
+	_, span := tracer.Start(ctx.Request().Context(), "GetBenchmark")
 
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	if benchmark == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
@@ -612,14 +610,13 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "GetBenchmark")
-	//span.SetBaggageItem("compliance", "CreateBenchmarkAssignment")
+	_, span := tracer.Start(ctx.Request().Context(), "GetBenchmark")
 
 	benchmark, err := h.db.GetBenchmark(benchmarkId)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	if benchmark == nil {
 		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark %s not found", benchmarkId))
@@ -627,8 +624,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 
 	connectorType := source.Nil
 	// trace :
-	//spanGQ := jaegertracing.CreateChildSpan(ctx, "GetQuery")
-	//spanGQ.SetBaggageItem("compliance", "CreateBenchmarkAssignment")
+	_, spanGQ := tracer.Start(ctx.Request().Context(), "GetQuery")
 	for _, policy := range benchmark.Policies {
 		if policy.QueryID == nil {
 			continue
@@ -648,7 +644,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 			break
 		}
 	}
-	//spanGQ.Finish()
+	spanGQ.End()
 
 	connections := make([]onboardApi.Connection, 0)
 	if strings.ToLower(connectionID) == "all" {
@@ -672,8 +668,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 
 	result := make([]api.BenchmarkAssignment, 0, len(connections))
 	// trace :
-	//spanABA := jaegertracing.CreateChildSpan(ctx, "AddBenchmarkAssignment")
-	//spanABA.SetBaggageItem("compliance", "CreateBenchmarkAssignment")
+	_, spanABA := tracer.Start(ctx.Request().Context(), "AddBenchmarkAssignment")
 
 	for _, src := range connections {
 		assignment := &db.BenchmarkAssignment{
@@ -691,7 +686,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 			AssignedAt:   assignment.AssignedAt,
 		})
 	}
-	//spanABA.Finish()
+	spanABA.End()
 
 	return ctx.JSON(http.StatusOK, result)
 }
@@ -702,8 +697,7 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "connection id is empty")
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "GetBenchmarkAssignmentsBySourceId")
-	//span.SetBaggageItem("compliance", "ListAssignmentsByConnection")
+	_, span := tracer.Start(ctx.Request().Context(), "GetBenchmarkAssignmentsBySourceId")
 
 	dbAssignments, err := h.db.GetBenchmarkAssignmentsBySourceId(connectionId)
 	if err != nil {
@@ -713,7 +707,7 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 		ctx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionId, err)
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	var assignments []api.BenchmarkAssignment
 	for _, assignment := range dbAssignments {
@@ -744,14 +738,13 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "GetBenchmark")
-	//span.SetBaggageItem("compliance", "ListAssignmentsByBenchmark")
+	_, span := tracer.Start(ctx.Request().Context(), "GetBenchmark")
 
 	benchmark, err := h.db.GetBenchmark(benchmarkId)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	var apiBenchmark api.Benchmark
 	err = benchmark.PopulateConnectors(h.db, &apiBenchmark)
@@ -780,14 +773,13 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 		}
 	}
 	// trace :
-	//spanGBA := jaegertracing.CreateChildSpan(ctx, "GetBenchmarkAssignmentsByBenchmarkId")
-	//spanGBA.SetBaggageItem("compliance", "ListAssignmentsByBenchmark")
+	_, spanGBA := tracer.Start(ctx.Request().Context(), "GetBenchmarkAssignmentsByBenchmarkId")
 
 	dbAssignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(benchmarkId)
 	if err != nil {
 		return err
 	}
-	//spanGBA.Finish()
+	spanGBA.End()
 
 	for _, assignment := range dbAssignments {
 		for idx, r := range resp {
@@ -824,19 +816,17 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 	}
 	if strings.ToLower(connectionId) == "all" {
 		// trace :
-		//span := jaegertracing.CreateChildSpan(ctx, "DeleteBenchmarkAssignmentByBenchmarkId")
-		//span.SetBaggageItem("compliance", "DeleteBenchmarkAssignment")
+		_, span := tracer.Start(ctx.Request().Context(), "DeleteBenchmarkAssignmentByBenchmarkId")
 
 		if err := h.db.DeleteBenchmarkAssignmentByBenchmarkId(benchmarkId); err != nil {
 			h.logger.Error("delete benchmark assignment by benchmark id", zap.Error(err))
 			return err
 		}
-		//span.Finish()
+		span.End()
 
 	} else {
 		// trace :
-		//span := jaegertracing.CreateChildSpan(ctx, "GetBenchmarkAssignmentByIds")
-		//span.SetBaggageItem("compliance", "DeleteBenchmarkAssignment")
+		_, span := tracer.Start(ctx.Request().Context(), "GetBenchmarkAssignmentByIds")
 
 		if _, err := h.db.GetBenchmarkAssignmentByIds(connectionId, benchmarkId); err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -845,16 +835,16 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 			ctx.Logger().Errorf("find benchmark assignment: %v", err)
 			return err
 		}
-		//span.Finish()
+		span.End()
 
 		// trace :
-		//spanDBAI := jaegertracing.CreateChildSpan(ctx, "DeleteBenchmarkAssignmentByIds")
-		//spanDBAI.SetBaggageItem("compliance", "DeleteBenchmarkAssignment")
+		_, spanDBA := tracer.Start(ctx.Request().Context(), "DeleteBenchmarkAssignmentByIds")
+
 		if err := h.db.DeleteBenchmarkAssignmentByIds(connectionId, benchmarkId); err != nil {
 			ctx.Logger().Errorf("delete benchmark assignment: %v", err)
 			return err
 		}
-		//spanDBAI.Finish()
+		spanDBA.End()
 	}
 
 	return ctx.NoContent(http.StatusOK)
@@ -863,14 +853,13 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 	var response []api.Benchmark
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListRootBenchmarks")
-	//span.SetBaggageItem("compliance", "ListBenchmarks")
+	_, span := tracer.Start(ctx.Request().Context(), "ListRootBenchmarks")
 
 	benchmarks, err := h.db.ListRootBenchmarks()
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	for _, b := range benchmarks {
 		be := b.ToApi()
@@ -887,14 +876,13 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 	benchmarkId := ctx.Param("benchmark_id")
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "GetBenchmark")
-	//span.SetBaggageItem("compliance", "GetBenchmark")
+	_, span := tracer.Start(ctx.Request().Context(), "GetBenchmark")
 
 	benchmark, err := h.db.GetBenchmark(benchmarkId)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	if benchmark == nil {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
@@ -942,14 +930,13 @@ func (h *HttpHandler) getBenchmarkPolicies(benchmarkID string) ([]db.Policy, err
 func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 	policyId := ctx.Param("policy_id")
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "GetPolicy")
-	//span.SetBaggageItem("compliance", "GetPolicy")
+	_, span := tracer.Start(ctx.Request().Context(), "GetPolicy")
 
 	policy, err := h.db.GetPolicy(policyId)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	if policy == nil {
 		return echo.NewHTTPError(http.StatusNotFound, "policy not found")
@@ -967,14 +954,13 @@ func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 	queryID := ctx.Param("query_id")
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "GetQuery")
-	//span.SetBaggageItem("compliance", "GetQuery")
+	_, span := tracer.Start(ctx.Request().Context(), "GetQuery")
 
 	q, err := h.db.GetQuery(queryID)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	if q == nil {
 		return echo.NewHTTPError(http.StatusNotFound, "query not found")
@@ -1015,14 +1001,13 @@ func (h *HttpHandler) SyncQueries(ctx echo.Context) error {
 //	@Router			/compliance/api/v1/metadata/tag/insight [get]
 func (h *HttpHandler) ListInsightTags(ctx echo.Context) error {
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListInsightTagKeysWithPossibleValues")
-	//span.SetBaggageItem("compliance", "ListInsightTags")
+	_, span := tracer.Start(ctx.Request().Context(), "ListInsightTagKeysWithPossibleValues")
 
 	tags, err := h.db.ListInsightTagKeysWithPossibleValues()
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	tags = model.TrimPrivateTags(tags)
 	return ctx.JSON(http.StatusOK, tags)
@@ -1032,14 +1017,13 @@ func (h *HttpHandler) ListInsightsMetadata(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	enabled := true
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListInsightsWithFilters")
-	//span.SetBaggageItem("compliance", "ListInsightsMetadata")
+	_, span := tracer.Start(ctx.Request().Context(), "ListInsightsWithFilters")
 
 	insightRows, err := h.db.ListInsightsWithFilters(nil, connectors, &enabled, nil)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	var result []api.Insight
 	for _, insightRow := range insightRows {
@@ -1064,8 +1048,7 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "GetInsight")
-	//span.SetBaggageItem("compliance", "GetInsightMetadata")
+	_, span := tracer.Start(ctx.Request().Context(), "GetInsight")
 
 	insight, err := h.db.GetInsight(uint(id))
 	if err != nil {
@@ -1074,7 +1057,7 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 		}
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	result := insight.ToApi()
 
@@ -1117,15 +1100,14 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		startTime = time.Unix(t, 0)
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListInsightsWithFilters")
-	//span.SetBaggageItem("compliance", "ListInsights")
+	_, span := tracer.Start(ctx.Request().Context(), "ListInsightsWithFilters")
 
 	enabled := true
 	insightRows, err := h.db.ListInsightsWithFilters(nil, connectors, &enabled, tagMap)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	insightIDsList := make([]uint, 0, len(insightRows))
 	for _, insightRow := range insightRows {
@@ -1214,14 +1196,13 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 		startTime = time.Unix(t, 0)
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "GetInsight")
-	//span.SetBaggageItem("compliance", "GetInsight")
+	_, span := tracer.Start(ctx.Request().Context(), "GetInsight")
 
 	insightRow, err := h.db.GetInsight(uint(insightId))
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	insightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, &endTime)
 	if err != nil {
@@ -1341,14 +1322,13 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 		datapointCount = &tt
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "GetInsight")
-	//span.SetBaggageItem("compliance", "GetInsightTrend")
+	_, span := tracer.Start(ctx.Request().Context(), "GetInsight")
 
 	insightRow, err := h.db.GetInsight(uint(insightId))
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	timeAtToInsightResults, err := h.inventoryClient.GetInsightTrendResults(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, startTime, endTime)
 	if err != nil {
@@ -1415,14 +1395,13 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 		startTime = time.Unix(t, 0)
 	}
 	// trace :
-	//span := jaegertracing.CreateChildSpan(ctx, "ListInsightGroups")
-	//span.SetBaggageItem("compliance", "ListInsightGroups")
+	_, span := tracer.Start(ctx.Request().Context(), "ListInsightGroups")
 
 	insightGroupRows, err := h.db.ListInsightGroups(connectors, tagMap)
 	if err != nil {
 		return err
 	}
-	//span.Finish()
+	span.End()
 
 	if len(insightGroupRows) == 0 {
 		return ctx.JSON(200, []api.InsightGroup{})
