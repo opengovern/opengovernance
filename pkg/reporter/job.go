@@ -386,23 +386,31 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-		"9193", "--database-password", "abcd")
-	err = cmd.Run()
+	err = exec.Command("steampipe", "service", "stop", "--force").Run()
+	if err != nil {
+		w.logger.Error("failed to stop steampipe", zap.Error(err))
+	}
+	err = exec.Command("steampipe", "service", "stop", "--force").Run()
+	if err != nil {
+		w.logger.Error("failed to stop steampipe", zap.Error(err))
+	}
+	w.logger.Info("steampipe stopped")
+
+	err = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
+		"9193", "--database-password", "abcd").Run()
 	if err != nil {
 		w.logger.Error("failed to start steampipe", zap.Error(err))
 		return nil, err
 	}
+	w.logger.Info("steampipe started")
 
-	cmd = exec.Command("steampipe", "plugin", "list")
-	stdOut, stdErr := cmd.CombinedOutput()
+	stdOut, stdErr := exec.Command("steampipe", "plugin", "list").CombinedOutput()
 	if stdErr != nil {
 		w.logger.Error("failed to list steampipe plugins", zap.Error(err))
 		return nil, err
 	}
 	w.logger.Info("steampipe plugins", zap.String("output", string(stdOut)))
 
-	w.logger.Info("steampipe started")
 	originalSteampipe, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: "localhost",
 		Port: "9193",
