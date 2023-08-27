@@ -196,7 +196,7 @@ func (j *Job) RunJob(account *api2.Connection, query *Query) (error, *TriggerQue
 		return err, nil
 	}
 
-	err = j.PopulateSteampipe(account, awsCred, azureCred)
+	err = j.PopulateSteampipe(j.logger, account, awsCred, azureCred)
 	if err != nil {
 		return err, nil
 	}
@@ -399,7 +399,7 @@ func (j *Job) RandomQuery(sourceType source.Type) *Query {
 	return nil
 }
 
-func (j *Job) PopulateSteampipe(account *api2.Connection, awsCred *api2.AWSCredentialConfig, azureCred *api2.AzureCredentialConfig) error {
+func (j *Job) PopulateSteampipe(logger *zap.Logger, account *api2.Connection, awsCred *api2.AWSCredentialConfig, azureCred *api2.AzureCredentialConfig) error {
 	dirname, err := os.UserHomeDir()
 	if err != nil {
 		return err
@@ -408,40 +408,32 @@ func (j *Job) PopulateSteampipe(account *api2.Connection, awsCred *api2.AWSCrede
 	os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
 
 	if awsCred != nil {
+		assumeRoleConfigs := ""
+		if awsCred.AssumeRoleName != "" && awsCred.AccountId != account.ConnectionID {
+			logger.Info("assuming role", zap.String("role", awsCred.AssumeRoleName), zap.String("accountID", awsCred.AccountId))
+			assumeRoleConfigs = fmt.Sprintf("role_arn = arn:aws:iam::%s:role/%s\n", awsCred.AccountId, awsCred.AssumeRoleName)
+			if awsCred.ExternalId != nil {
+				assumeRoleConfigs += fmt.Sprintf("external_id = %s\n", *awsCred.ExternalId)
+			}
+		}
+
 		credFilePath := path.Join(dirname, ".aws", "credentials")
 		os.MkdirAll(filepath.Dir(credFilePath), os.ModePerm)
 		content := fmt.Sprintf(`
 [default]
 aws_access_key_id = %s
 aws_secret_access_key = %s
-`,
-			awsCred.AccessKey, awsCred.SecretKey)
-		err = os.WriteFile(credFilePath, []byte(content), os.ModePerm)
-		if err != nil {
-			return err
-		}
 
-		configFilePath := path.Join(dirname, ".aws", "config")
-		os.MkdirAll(filepath.Dir(configFilePath), os.ModePerm)
-
-		assumeRoleConfigs := ""
-		if awsCred.AssumeRoleName != "" && awsCred.AccountId != account.ConnectionID {
-			assumeRoleConfigs = fmt.Sprintf("role_arn = arn:aws:iam::%s:role/%s\n", awsCred.AccountId, awsCred.AssumeRoleName)
-			if awsCred.ExternalId != nil {
-				assumeRoleConfigs += fmt.Sprintf("external_id = %s\n", *awsCred.ExternalId)
-			}
-		}
-		content = fmt.Sprintf(`
-[default]
-region = us-east-1
-
-[profile reporter]
+[reporter]
 region = us-east-1
 source_profile = default
 %s
 `,
-			assumeRoleConfigs)
-		err = os.WriteFile(configFilePath, []byte(content), os.ModePerm)
+			awsCred.AccessKey, awsCred.SecretKey, assumeRoleConfigs)
+		err = os.WriteFile(credFilePath, []byte(content), os.ModePerm)
+		if err != nil {
+			return err
+		}
 
 		//os.Setenv("AWS_ACCESS_KEY_ID", awsCred.AccessKey)
 		//os.Setenv("AWS_SECRET_ACCESS_KEY", awsCred.SecretKey)
