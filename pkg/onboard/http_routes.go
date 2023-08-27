@@ -1423,19 +1423,27 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
-		return ctx.JSON(http.StatusOK, api.AWSCredential{
-			AccessKey: awsCnf.AccessKey,
-			SecretKey: awsCnf.SecretKey,
+		return ctx.JSON(http.StatusOK, api.AWSCredentialConfig{
+			AccountId:            awsCnf.AccountID,
+			Regions:              awsCnf.Regions,
+			AccessKey:            awsCnf.AccessKey,
+			SecretKey:            awsCnf.SecretKey,
+			AssumeRoleName:       awsCnf.AssumeRoleName,
+			AssumeRolePolicyName: awsCnf.AssumeRolePolicyName,
+			ExternalId:           awsCnf.ExternalID,
 		})
 	case source.CloudAzure:
 		azureCnf, err := describe.AzureSubscriptionConfigFromMap(cnf)
 		if err != nil {
 			return err
 		}
-		return ctx.JSON(http.StatusOK, api.AzureCredential{
-			ClientID:     azureCnf.ClientID,
-			TenantID:     azureCnf.TenantID,
-			ClientSecret: azureCnf.ClientSecret,
+		return ctx.JSON(http.StatusOK, api.AzureCredentialConfig{
+			SubscriptionId: azureCnf.SubscriptionID,
+			TenantId:       azureCnf.TenantID,
+			ObjectId:       azureCnf.ObjectID,
+			SecretId:       azureCnf.SecretID,
+			ClientId:       azureCnf.ClientID,
+			ClientSecret:   azureCnf.ClientSecret,
 		})
 	default:
 		return errors.New("invalid provider")
