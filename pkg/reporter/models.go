@@ -23,7 +23,7 @@ type DatabaseWorkerJob struct {
 
 type WorkerJobResult struct {
 	gorm.Model
-	JobID              int
+	JobID              uint
 	Query              pgtype.JSONB
 	TotalRows          int
 	NotMatchingColumns pq.StringArray `gorm:"type:text[];"`
