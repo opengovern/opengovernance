@@ -293,8 +293,9 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 		(connection.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard &&
 			connection.LifecycleState != apiOnboard.ConnectionLifecycleStateInProgress) ||
 		connection.HealthState != source.HealthStatusHealthy {
-		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		return errors.New("connection is not healthy or disabled")
+		//DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+		//return errors.New("connection is not healthy or disabled")
+		return nil
 	}
 
 	triggerType := enums.DescribeTriggerTypeScheduled

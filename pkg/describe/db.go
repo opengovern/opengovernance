@@ -145,7 +145,7 @@ WHERE
 	status = ? AND
 	NOT(error_code IN ('AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND
 	(retry_count < 3 OR retry_count IS NULL) AND
-	(select count(*) from describe_connection_jobs where parent_job_id = dr.parent_job_id AND status IN (?, ?)) = 0
+	(select count(*) from describe_connection_jobs where connection_id = dr.connection_id AND status IN (?, ?)) = 0
 	LIMIT 10
 `, api.DescribeResourceJobFailed, api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress).Find(&job)
 	if tx.Error != nil {
@@ -1222,27 +1222,6 @@ func (db Database) UpdateAnalyticsJob(jobID uint, status analytics.JobStatus, fa
 type GetLatestSuccessfulDescribeJobIDsPerResourcePerAccountResult struct {
 	ResourceType  string `gorm:"column:resource_type"`
 	ResourceJobID uint   `gorm:"column:resource_job_id"`
-}
-
-func (db Database) GetLatestSuccessfulDescribeJobIDsPerResourcePerAccount() (map[string][]uint, error) {
-	var res []GetLatestSuccessfulDescribeJobIDsPerResourcePerAccountResult
-	tx := db.orm.Raw("SELECT drj.resource_type AS resource_type, MAX(drj.id) AS resource_job_id FROM describe_resource_jobs AS drj JOIN describe_source_jobs AS dsj ON drj.parent_job_id = dsj.id WHERE (drj.status = $1) GROUP BY drj.resource_type, dsj.source_id",
-		api.DescribeResourceJobSucceeded).Scan(&res)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	resMap := make(map[string][]uint)
-	for _, r := range res {
-		if _, ok := resMap[r.ResourceType]; !ok {
-			resMap[r.ResourceType] = []uint{}
-		}
-		v := resMap[r.ResourceType]
-		v = append(v, r.ResourceJobID)
-		resMap[r.ResourceType] = v
-	}
-
-	return resMap, nil
 }
 
 // ===========================================STACK===============================================
