@@ -18,7 +18,7 @@ type DatabaseWorkerJob struct {
 	gorm.Model
 	ConnectionID string `gorm:"index"`
 	Status       JobStatus
-	JobResults   []WorkerJobResult `gorm:"foreignKey:JobID,references:ID"`
+	JobResults   []WorkerJobResult `gorm:"foreignKey:JobID;references:ID"`
 }
 
 type WorkerJobResult struct {
