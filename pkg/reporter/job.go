@@ -5,6 +5,8 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"math/rand"
@@ -41,8 +43,8 @@ type Query struct {
 }
 
 type TriggerQueryRequest struct {
-	Query  Query  `json:"query"`
-	Source string `json:"source"`
+	Queries []Query `json:"queries"`
+	Source  string  `json:"source"`
 }
 
 type QueryMismatch struct {
@@ -54,23 +56,34 @@ type QueryMismatch struct {
 
 type TriggerQueryResponse struct {
 	TotalRows          int             `json:"totalRows"`
+	Query              Query           `json:"query"`
 	NotMatchingColumns []string        `json:"notMatchingColumns"`
 	Mismatches         []QueryMismatch `json:"messages"`
 }
 
-type JobConfig struct {
+type ServiceConfig struct {
+	Database        config.Postgres
+	RabbitMQ        config.RabbitMQ
 	Steampipe       config.Postgres
 	SteampipeES     config.Postgres
 	Onboard         config.KaytuService
 	ScheduleMinutes int
 }
 
-type Job struct {
+type Service struct {
 	steampipe       *steampipe.Database
 	esSteampipe     *steampipe.Database
+	db              *Database
+	jobsQueue       queue.Interface
 	onboardClient   onboardClient.OnboardServiceClient
 	logger          *zap.Logger
 	ScheduleMinutes int
+}
+
+type Job struct {
+	ID           uint    `json:"id"`
+	ConnectionId string  `json:"connectionId"`
+	Queries      []Query `json:"queries"`
 }
 
 var ReporterJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -80,7 +93,7 @@ var ReporterJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help:      "Count of reporter jobs",
 }, []string{"table_name", "status"})
 
-func New(config JobConfig) (*Job, error) {
+func New(config ServiceConfig, logger *zap.Logger) (*Service, error) {
 	if content, err := os.ReadFile("/queries-aws.json"); err == nil {
 		awsQueriesStr = string(content)
 	}
@@ -96,30 +109,6 @@ func New(config JobConfig) (*Job, error) {
 		return nil, err
 	}
 
-	installCmd := exec.Command("steampipe", "plugin", "install", "steampipe")
-	err := installCmd.Run()
-	if err != nil {
-		return nil, err
-	}
-
-	installCmd = exec.Command("steampipe", "plugin", "install", "aws")
-	err = installCmd.Run()
-	if err != nil {
-		return nil, err
-	}
-
-	installCmd = exec.Command("steampipe", "plugin", "install", "azure")
-	err = installCmd.Run()
-	if err != nil {
-		return nil, err
-	}
-
-	installCmd = exec.Command("steampipe", "plugin", "install", "azuread")
-	err = installCmd.Run()
-	if err != nil {
-		return nil, err
-	}
-
 	s2, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: config.SteampipeES.Host,
 		Port: config.SteampipeES.Port,
@@ -131,7 +120,32 @@ func New(config JobConfig) (*Job, error) {
 		return nil, err
 	}
 
-	logger, err := zap.NewProduction()
+	cfg := postgres.Config{
+		Host:    config.Database.Host,
+		Port:    config.Database.Port,
+		User:    config.Database.Username,
+		Passwd:  config.Database.Password,
+		DB:      config.Database.DB,
+		SSLMode: config.Database.SSLMode,
+	}
+	orm, err := postgres.NewClient(&cfg, logger)
+	if err != nil {
+		return nil, err
+	}
+	db, err := NewDatabase(orm)
+	if err != nil {
+		return nil, err
+	}
+
+	qCfg := queue.Config{}
+	qCfg.Server.Username = config.RabbitMQ.Username
+	qCfg.Server.Password = config.RabbitMQ.Password
+	qCfg.Server.Host = config.RabbitMQ.Service
+	qCfg.Server.Port = 5672
+	qCfg.Queue.Name = ReporterQueueName
+	qCfg.Queue.Durable = true
+	qCfg.Producer.ID = "reporter-service"
+	reporterQueue, err := queue.New(qCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -142,241 +156,83 @@ func New(config JobConfig) (*Job, error) {
 		config.ScheduleMinutes = 5
 	}
 
-	return &Job{
+	return &Service{
 		steampipe:       nil,
 		esSteampipe:     s2,
+		db:              db,
+		jobsQueue:       reporterQueue,
 		onboardClient:   onboard,
 		logger:          logger,
 		ScheduleMinutes: config.ScheduleMinutes,
 	}, nil
 }
 
-func (j *Job) Run() {
+func (s *Service) Run() {
 	fmt.Println("starting scheduling")
 	for _, q := range awsQueries {
-		j.logger.Info("loaded aws query ", zap.String("listQuery", q.ListQuery))
+		s.logger.Info("loaded aws query ", zap.String("listQuery", q.ListQuery))
 	}
 	for _, q := range azureQueries {
-		j.logger.Info("loaded azure query ", zap.String("listQuery", q.ListQuery))
+		s.logger.Info("loaded azure query ", zap.String("listQuery", q.ListQuery))
 	}
 
 	for {
 		//fmt.Println("starting job")
-		if err := j.RunRandomJob(); err != nil {
-			j.logger.Error("failed to run job", zap.Error(err))
+		if err := s.TriggerRandomJob(); err != nil {
+			s.logger.Error("failed to run job", zap.Error(err))
 			time.Sleep(time.Minute)
 		} else {
-			time.Sleep(time.Duration(j.ScheduleMinutes) * time.Minute)
+			time.Sleep(time.Duration(s.ScheduleMinutes) * time.Minute)
 		}
 	}
 }
 
-func (j *Job) RunRandomJob() error {
-	account, err := j.RandomAccount()
+func (s *Service) TriggerRandomJob() error {
+	account, err := s.RandomAccount()
 	if err != nil {
 		return err
 	}
 
-	query := j.RandomQuery(account.Connector)
-	err, _ = j.RunJob(account, query)
-	return err
+	query := s.RandomQuery(account.Connector)
+	if query != nil {
+		_, err = s.TriggerJob(account.ID.String(), []Query{*query})
+		return err
+	}
+	return fmt.Errorf("no query found")
 }
 
-func (j *Job) RunJob(account *api2.Connection, query *Query) (error, *TriggerQueryResponse) {
+func (s *Service) TriggerJob(connectionId string, queries []Query) (*DatabaseWorkerJob, error) {
 	defer func() {
 		if r := recover(); r != nil {
-			j.logger.Error("panic", zap.Error(fmt.Errorf("%v", r)))
+			s.logger.Error("panic", zap.Error(fmt.Errorf("%v", r)))
 		}
 	}()
 
-	awsCred, azureCred, err := j.onboardClient.GetSourceFullCred(&httpclient.Context{
-		UserRole: api.KaytuAdminRole,
-	}, account.ID.String())
+	dbJob := DatabaseWorkerJob{
+		ConnectionID: connectionId,
+		Status:       JobStatusPending,
+	}
+	err := s.db.InsertWorkerJob(&dbJob)
 	if err != nil {
-		return err, nil
+		s.logger.Error("failed to insert job", zap.Error(err))
+		return nil, err
 	}
 
-	err = j.PopulateSteampipe(j.logger, account, awsCred, azureCred)
-	if err != nil {
-		return err, nil
+	job := Job{
+		ID:           dbJob.ID,
+		ConnectionId: connectionId,
+		Queries:      queries,
+	}
+	if err := s.jobsQueue.Publish(job); err != nil {
+		s.logger.Error("failed to publish job", zap.Error(err))
+		return nil, err
 	}
 
-	cmd := exec.Command("steampipe", "service", "stop", "--force")
-	err = cmd.Start()
-	if err != nil {
-		return err, nil
-	}
-	time.Sleep(5 * time.Second)
-	//NOTE: stop must be called twice. it's not a mistake
-	cmd = exec.Command("steampipe", "service", "stop", "--force")
-	err = cmd.Start()
-	if err != nil {
-		return err, nil
-	}
-	time.Sleep(5 * time.Second)
-
-	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-		"9193", "--database-password", "abcd")
-	err = cmd.Run()
-	if err != nil {
-		return err, nil
-	}
-	time.Sleep(5 * time.Second)
-
-	s1, err := steampipe.NewSteampipeDatabase(steampipe.Option{
-		Host: "localhost",
-		Port: "9193",
-		User: "steampipe",
-		Pass: "abcd",
-		Db:   "steampipe",
-	})
-	if err != nil {
-		return err, nil
-	}
-	defer s1.Conn().Close()
-
-	j.steampipe = s1
-
-	j.logger.Info("running query", zap.String("account", account.ConnectionID), zap.String("query", query.ListQuery))
-	listQuery := strings.ReplaceAll(query.ListQuery, "%ACCOUNT_ID%", account.ConnectionID)
-	listQuery = strings.ReplaceAll(listQuery, "%KAYTU_ACCOUNT_ID%", account.ID.String())
-	steampipeRows, err := j.steampipe.Conn().Query(context.Background(), listQuery)
-	if err != nil {
-		return err, nil
-	}
-	defer steampipeRows.Close()
-
-	var mismatches []QueryMismatch
-	var columns []string
-	rowCount := 0
-	for steampipeRows.Next() {
-		rowCount++
-		steampipeRow, err := steampipeRows.Values()
-		if err != nil {
-			return err, nil
-		}
-
-		steampipeRecord := map[string]interface{}{}
-		for idx, field := range steampipeRows.FieldDescriptions() {
-			steampipeRecord[string(field.Name)] = steampipeRow[idx]
-		}
-
-		getQuery := strings.ReplaceAll(query.GetQuery, "%ACCOUNT_ID%", account.ConnectionID)
-		getQuery = strings.ReplaceAll(getQuery, "%KAYTU_ACCOUNT_ID%", account.ID.String())
-
-		var keyValues []interface{}
-		for _, f := range query.KeyFields {
-			keyValues = append(keyValues, steampipeRecord[f])
-		}
-
-		esRows, err := j.esSteampipe.Conn().Query(context.Background(), getQuery, keyValues...)
-		if err != nil {
-			return err, nil
-		}
-
-		found := false
-
-		for esRows.Next() {
-			esRow, err := esRows.Values()
-			if err != nil {
-				return err, nil
-			}
-
-			found = true
-
-			esRecord := map[string]interface{}{}
-			for idx, field := range esRows.FieldDescriptions() {
-				esRecord[string(field.Name)] = esRow[idx]
-			}
-
-			for k, v := range steampipeRecord {
-				v2 := esRecord[k]
-
-				j1, err := json.Marshal(v)
-				if err != nil {
-					return err, nil
-				}
-
-				j2, err := json.Marshal(v2)
-				if err != nil {
-					return err, nil
-				}
-
-				sj1 := strings.ToLower(string(j1))
-				sj2 := strings.ToLower(string(j2))
-
-				if sj1 == "null" {
-					sj1 = "{}"
-				}
-				if sj2 == "null" {
-					sj2 = "{}"
-				}
-
-				if sj1 != sj2 {
-					if compareJsons(j2, j1) {
-						ReporterJobsCount.WithLabelValues(query.TableName, "Succeeded").Inc()
-						continue
-					}
-					ReporterJobsCount.WithLabelValues(query.TableName, "Failed").Inc()
-					hasColumn := false
-					for _, c := range columns {
-						if c == k {
-							hasColumn = true
-							break
-						}
-					}
-					if !hasColumn {
-						columns = append(columns, k)
-					}
-					mismatches = append(mismatches, QueryMismatch{
-						KeyColumn:      fmt.Sprintf("%v", keyValues),
-						ConflictColumn: k,
-						Steampipe:      sj1,
-						Elasticsearch:  sj2,
-					})
-					if k != "etag" && k != "tags" {
-						j.logger.Warn("inconsistency in data",
-							zap.String("get-query", query.GetQuery),
-							zap.String("accountID", account.ConnectionID),
-							zap.String("steampipe", sj1),
-							zap.String("es", sj2),
-							zap.String("conflictColumn", k),
-							zap.String("keyColumns", fmt.Sprintf("%v", keyValues)),
-						)
-					}
-				} else {
-					ReporterJobsCount.WithLabelValues(query.TableName, "Succeeded").Inc()
-				}
-			}
-		}
-
-		if !found {
-			mismatches = append(mismatches, QueryMismatch{
-				KeyColumn:      fmt.Sprintf("%v", keyValues),
-				ConflictColumn: "",
-				Steampipe:      "",
-				Elasticsearch:  "Record Not Found",
-			})
-			ReporterJobsCount.WithLabelValues(query.TableName, "Failed").Inc()
-			j.logger.Warn("record not found",
-				zap.String("get-query", query.GetQuery),
-				zap.String("accountID", account.ConnectionID),
-				zap.String("keyColumns", fmt.Sprintf("%v", keyValues)),
-			)
-		}
-	}
-
-	j.logger.Info("Done", zap.Int("rowCount", rowCount))
-
-	return nil, &TriggerQueryResponse{
-		TotalRows:          rowCount,
-		NotMatchingColumns: columns,
-		Mismatches:         mismatches,
-	}
+	return &dbJob, nil
 }
 
-func (j *Job) RandomAccount() (*api2.Connection, error) {
-	srcs, err := j.onboardClient.ListSources(&httpclient.Context{
+func (s *Service) RandomAccount() (*api2.Connection, error) {
+	srcs, err := s.onboardClient.ListSources(&httpclient.Context{
 		UserRole: api.AdminRole,
 	}, nil)
 	if err != nil {
@@ -387,7 +243,7 @@ func (j *Job) RandomAccount() (*api2.Connection, error) {
 	return &srcs[idx], nil
 }
 
-func (j *Job) RandomQuery(sourceType source.Type) *Query {
+func (s *Service) RandomQuery(sourceType source.Type) *Query {
 	switch sourceType {
 	case source.CloudAWS:
 		idx := rand.Intn(len(awsQueries))
@@ -399,7 +255,7 @@ func (j *Job) RandomQuery(sourceType source.Type) *Query {
 	return nil
 }
 
-func (j *Job) PopulateSteampipe(logger *zap.Logger, account *api2.Connection, awsCred *api2.AWSCredentialConfig, azureCred *api2.AzureCredentialConfig) error {
+func PopulateSteampipe(logger *zap.Logger, account *api2.Connection, awsCred *api2.AWSCredentialConfig, azureCred *api2.AzureCredentialConfig) error {
 	dirname, err := os.UserHomeDir()
 	if err != nil {
 		return err
@@ -483,13 +339,13 @@ connection "azuread" {
 
 // json2 should be es and json1 should be steampipe
 func compareJsons(j1, j2 []byte) bool {
-	var o1 map[string]interface{}
+	var o1 map[string]any
 	err := json.Unmarshal(j1, &o1)
 	if err != nil {
 		return false
 	}
 
-	var o2 map[string]interface{}
+	var o2 map[string]any
 	err = json.Unmarshal(j2, &o2)
 	if err != nil {
 		return false
@@ -505,4 +361,202 @@ func compareJsons(j1, j2 []byte) bool {
 		}
 	}
 	return true
+}
+
+func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
+	connection, err := w.onboardClient.GetSource(&httpclient.Context{
+		UserRole: api.InternalRole,
+	}, j.ConnectionId)
+	if err != nil {
+		w.logger.Error("failed to get source", zap.Error(err))
+		return nil, err
+	}
+	w.logger.Info("got connection", zap.String("account", connection.ConnectionID))
+
+	awsCred, azureCred, err := w.onboardClient.GetSourceFullCred(&httpclient.Context{
+		UserRole: api.KaytuAdminRole,
+	}, connection.ID.String())
+	if err != nil {
+		w.logger.Error("failed to get source full cred", zap.Error(err))
+		return nil, err
+	}
+	err = PopulateSteampipe(w.logger, connection, awsCred, azureCred)
+	if err != nil {
+		w.logger.Error("failed to populate steampipe", zap.Error(err))
+		return nil, err
+	}
+
+	cmd := exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
+		"9193", "--database-password", "abcd")
+	err = cmd.Run()
+	if err != nil {
+		w.logger.Error("failed to start steampipe", zap.Error(err))
+		return nil, err
+	}
+	w.logger.Info("steampipe started")
+	originalSteampipe, err := steampipe.NewSteampipeDatabase(steampipe.Option{
+		Host: "localhost",
+		Port: "9193",
+		User: "steampipe",
+		Pass: "abcd",
+		Db:   "steampipe",
+	})
+	if err != nil {
+		w.logger.Error("failed to connect to steampipe", zap.Error(err))
+		return nil, err
+	}
+	defer originalSteampipe.Conn().Close()
+
+	var results []TriggerQueryResponse
+	for _, query := range j.Queries {
+		w.logger.Info("running query", zap.String("account", connection.ConnectionID), zap.String("query", query.ListQuery))
+		listQuery := strings.ReplaceAll(query.ListQuery, "%ACCOUNT_ID%", connection.ConnectionID)
+		listQuery = strings.ReplaceAll(listQuery, "%KAYTU_ACCOUNT_ID%", connection.ID.String())
+		steampipeRows, err := originalSteampipe.Conn().Query(context.Background(), listQuery)
+		if err != nil {
+			w.logger.Error("failed to run query", zap.Error(err), zap.String("query", query.ListQuery), zap.String("account", connection.ConnectionID))
+			return nil, err
+		}
+
+		var mismatches []QueryMismatch
+		var columns []string
+		rowCount := 0
+		for steampipeRows.Next() {
+			rowCount++
+			steampipeRow, err := steampipeRows.Values()
+			if err != nil {
+				w.logger.Error("failed to get steampipe row values",
+					zap.Error(err),
+					zap.String("query", query.ListQuery),
+					zap.String("account", connection.ConnectionID),
+					zap.Any("row", steampipeRow))
+				return nil, err
+			}
+
+			steampipeRecord := map[string]any{}
+			for idx, field := range steampipeRows.FieldDescriptions() {
+				steampipeRecord[string(field.Name)] = steampipeRow[idx]
+			}
+
+			getQuery := strings.ReplaceAll(query.GetQuery, "%ACCOUNT_ID%", connection.ConnectionID)
+			getQuery = strings.ReplaceAll(getQuery, "%KAYTU_ACCOUNT_ID%", connection.ID.String())
+
+			var keyValues []any
+			for _, f := range query.KeyFields {
+				keyValues = append(keyValues, steampipeRecord[f])
+			}
+
+			esRows, err := w.kaytuSteampipeDb.Conn().Query(context.Background(), getQuery, keyValues...)
+			if err != nil {
+				w.logger.Error("failed to run query", zap.Error(err), zap.String("query", query.GetQuery), zap.String("account", connection.ConnectionID))
+				return nil, err
+			}
+
+			found := false
+
+			for esRows.Next() {
+				esRow, err := esRows.Values()
+				if err != nil {
+					w.logger.Error("failed to get es row values",
+						zap.Error(err),
+						zap.String("query", query.GetQuery),
+						zap.String("account", connection.ConnectionID),
+						zap.Any("row", esRow))
+					return nil, err
+				}
+
+				found = true
+
+				esRecord := map[string]any{}
+				for idx, field := range esRows.FieldDescriptions() {
+					esRecord[string(field.Name)] = esRow[idx]
+				}
+
+				for k, v := range steampipeRecord {
+					v2 := esRecord[k]
+
+					j1, err := json.Marshal(v)
+					if err != nil {
+						return nil, err
+					}
+
+					j2, err := json.Marshal(v2)
+					if err != nil {
+						return nil, err
+					}
+
+					sj1 := strings.ToLower(string(j1))
+					sj2 := strings.ToLower(string(j2))
+
+					if sj1 == "null" {
+						sj1 = "{}"
+					}
+					if sj2 == "null" {
+						sj2 = "{}"
+					}
+
+					if sj1 != sj2 {
+						if compareJsons(j2, j1) {
+							ReporterJobsCount.WithLabelValues(query.TableName, "Succeeded").Inc()
+							continue
+						}
+						ReporterJobsCount.WithLabelValues(query.TableName, "Failed").Inc()
+						hasColumn := false
+						for _, c := range columns {
+							if c == k {
+								hasColumn = true
+								break
+							}
+						}
+						if !hasColumn {
+							columns = append(columns, k)
+						}
+						mismatches = append(mismatches, QueryMismatch{
+							KeyColumn:      fmt.Sprintf("%v", keyValues),
+							ConflictColumn: k,
+							Steampipe:      sj1,
+							Elasticsearch:  sj2,
+						})
+						if k != "etag" && k != "tags" {
+							w.logger.Warn("inconsistency in data",
+								zap.String("get-query", query.GetQuery),
+								zap.String("accountID", connection.ConnectionID),
+								zap.String("steampipe", sj1),
+								zap.String("es", sj2),
+								zap.String("conflictColumn", k),
+								zap.String("keyColumns", fmt.Sprintf("%v", keyValues)),
+							)
+						}
+					} else {
+						ReporterJobsCount.WithLabelValues(query.TableName, "Succeeded").Inc()
+					}
+				}
+			}
+			esRows.Close()
+
+			if !found {
+				mismatches = append(mismatches, QueryMismatch{
+					KeyColumn:      fmt.Sprintf("%v", keyValues),
+					ConflictColumn: "",
+					Steampipe:      "",
+					Elasticsearch:  "Record Not Found",
+				})
+				ReporterJobsCount.WithLabelValues(query.TableName, "Failed").Inc()
+				w.logger.Warn("record not found",
+					zap.String("get-query", query.GetQuery),
+					zap.String("accountID", connection.ConnectionID),
+					zap.String("keyColumns", fmt.Sprintf("%v", keyValues)),
+				)
+			}
+		}
+		steampipeRows.Close()
+		results = append(results, TriggerQueryResponse{
+			TotalRows:          rowCount,
+			Query:              query,
+			NotMatchingColumns: columns,
+			Mismatches:         mismatches,
+		})
+	}
+
+	return results, nil
 }

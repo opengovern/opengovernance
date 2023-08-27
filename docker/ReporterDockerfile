@@ -1,4 +1,8 @@
 FROM ghcr.io/turbot/steampipe:0.20.2
 USER steampipe
 COPY ./build/reporter /
+RUN steampipe plugin install steampipe
+RUN steampipe plugin install aws
+RUN steampipe plugin install azure
+RUN steampipe plugin install azuread
 CMD [ "/reporter" ]
