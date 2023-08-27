@@ -410,7 +410,7 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 
 	originalSteampipe, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: "localhost",
-		Port: "8000",
+		Port: "9194",
 		User: "steampipe",
 		Pass: "abcd",
 		Db:   "steampipe",
