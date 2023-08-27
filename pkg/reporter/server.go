@@ -4,12 +4,16 @@ import (
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-	"github.com/labstack/echo-contrib/jaegertracing"
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
 	"time"
 )
+
+var tracer = otel.Tracer("echo-server")
 
 type HttpServer struct {
 	Address string
@@ -44,7 +48,7 @@ func NewHTTPServer(
 func (h HttpServer) Register(e *echo.Echo) {
 	e.POST("/query/trigger", h.TriggerQuery)
 	e.GET("/jaeger/test", func(ctx echo.Context) error {
-		jaegertracing.TraceFunction(ctx, slowFunc, "Test String")
+		//jaegertracing.TraceFunction(ctx, slowFunc, "Test String")
 		return ctx.String(http.StatusOK, "Hello, World!")
 	})
 }
@@ -62,11 +66,14 @@ func (h HttpServer) TriggerQuery(ctx echo.Context) error {
 		return err
 	}
 
-	sp := jaegertracing.CreateChildSpan(ctx, "trigger query child span")
-	defer sp.Finish()
-	sp.LogKV("Test log")
-	sp.SetBaggageItem("Test baggage", "baggage")
-	sp.SetTag("Test tag", "New Tag")
+	//sp := jaegertracing.CreateChildSpan(ctx, "trigger query child span")
+	//defer sp.Finish()
+	//sp.LogKV("Test log")
+	//sp.SetBaggageItem("Test baggage", "baggage")
+	//sp.SetTag("Test tag", "New Tag")
+
+	_, span := tracer.Start(ctx.Request().Context(), "query", oteltrace.WithAttributes(attribute.String("table_name", reqBody.Query.TableName)))
+	defer span.End()
 
 	var source *api.Connection
 	if len(reqBody.Source) > 0 {
