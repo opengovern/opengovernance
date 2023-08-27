@@ -1,15 +1,11 @@
 package reporter
 
 import (
-	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -18,7 +14,7 @@ var tracer = otel.Tracer("echo-server")
 type HttpServer struct {
 	Address string
 	Logger  *zap.Logger
-	Job     *Job
+	Service *Service
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -36,17 +32,18 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 func NewHTTPServer(
 	address string,
 	logger *zap.Logger,
-	j *Job,
+	j *Service,
 ) *HttpServer {
 	return &HttpServer{
 		Address: address,
 		Logger:  logger,
-		Job:     j,
+		Service: j,
 	}
 }
 
 func (h HttpServer) Register(e *echo.Echo) {
-	e.POST("/query/trigger", h.TriggerQuery)
+	e.POST("/job/trigger", h.TriggerQuery)
+	e.GET("/job/:id", h.GetJob)
 	e.GET("/jaeger/test", func(ctx echo.Context) error {
 		//jaegertracing.TraceFunction(ctx, slowFunc, "Test String")
 		return ctx.String(http.StatusOK, "Hello, World!")
@@ -59,7 +56,6 @@ func slowFunc(s string) {
 }
 
 func (h HttpServer) TriggerQuery(ctx echo.Context) error {
-
 	var reqBody TriggerQueryRequest
 	err := bindValidate(ctx, &reqBody)
 	if err != nil {
@@ -72,27 +68,36 @@ func (h HttpServer) TriggerQuery(ctx echo.Context) error {
 	//sp.SetBaggageItem("Test baggage", "baggage")
 	//sp.SetTag("Test tag", "New Tag")
 
-	_, span := tracer.Start(ctx.Request().Context(), "query", oteltrace.WithAttributes(attribute.String("table_name", reqBody.Query.TableName)))
+	_, span := tracer.Start(ctx.Request().Context(), "job_trigger")
 	defer span.End()
 
-	var source *api.Connection
+	var connectionId string
 	if len(reqBody.Source) > 0 {
-		source, err = h.Job.onboardClient.GetSource(&httpclient.Context{
-			UserRole: apiAuth.AdminRole,
-		}, reqBody.Source)
-		if err != nil {
-			return err
-		}
+		connectionId = reqBody.Source
 	} else {
-		source, err = h.Job.RandomAccount()
+		connection, err := h.Service.RandomAccount()
 		if err != nil {
 			return err
 		}
+		connectionId = connection.ID.String()
 	}
 
-	err, response := h.Job.RunJob(source, &reqBody.Query)
+	dbJob, err := h.Service.TriggerJob(connectionId, reqBody.Queries)
 	if err != nil {
 		return err
 	}
-	return ctx.JSON(http.StatusOK, response)
+	return ctx.JSON(http.StatusOK, dbJob)
+}
+
+func (h HttpServer) GetJob(ctx echo.Context) error {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid job id")
+	}
+	dbJob, err := h.Service.db.GetWorkerJob(uint(id))
+	if err != nil {
+		h.Logger.Error("Error getting job", zap.Error(err))
+		return err
+	}
+	return ctx.JSON(http.StatusOK, dbJob)
 }
