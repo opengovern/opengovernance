@@ -114,13 +114,17 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 			case enums.DescribeTriggerTypeStack:
 			default:
 				src, err = s.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.KaytuAdminRole}, dc.ConnectionID)
-				if !src.IsEnabled() {
-					continue
-				}
 				if err != nil {
 					s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dc.ID))
 					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 					return err
+				}
+				if !src.IsEnabled() {
+					if src.IsDiscovered() && strings.HasPrefix(strings.ToLower(dc.ResourceType), "aws::costexplorer") {
+						// cost
+					} else {
+						continue
+					}
 				}
 				srcMap[dc.ConnectionID] = src
 			}
