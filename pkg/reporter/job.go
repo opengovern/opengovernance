@@ -300,7 +300,7 @@ connection "aws" {
   profile = "reporter"
 }
 `
-		filePath = dirname + "/.steampipe/config/aws.spc"
+		filePath = path.Join(dirname, ".steampipe", "config", "aws.spc")
 		return os.WriteFile(filePath, []byte(content), os.ModePerm)
 	}
 
@@ -396,24 +396,24 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 	}
 	w.logger.Info("steampipe stopped")
 
-	stdOut, stdErr := exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-		"9193", "--database-password", "abcd").CombinedOutput()
+	stdOut, stdErr := exec.Command("steampipe", "service", "start", "--database-listen", "local", "--database-port",
+		"8000", "--database-password", "abcd").CombinedOutput()
 	if stdErr != nil {
 		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
-		return nil, err
+		return nil, stdErr
 	}
 	w.logger.Info("steampipe started")
 
 	stdOut, stdErr = exec.Command("steampipe", "plugin", "list").CombinedOutput()
 	if stdErr != nil {
 		w.logger.Error("failed to list steampipe plugins", zap.Error(err))
-		return nil, err
+		return nil, stdErr
 	}
 	w.logger.Info("steampipe plugins", zap.String("output", string(stdOut)))
 
 	originalSteampipe, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: "localhost",
-		Port: "9193",
+		Port: "8000",
 		User: "steampipe",
 		Pass: "abcd",
 		Db:   "steampipe",

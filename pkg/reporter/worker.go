@@ -144,10 +144,11 @@ func (w *Worker) Run() error {
 				w.logger.Error("Failed to set mismatches", zap.Error(err))
 			}
 		}
-
-		err = w.db.BatchInsertWorkerJobResults(dbRows)
-		if err != nil {
-			w.logger.Error("Failed to insert worker job results", zap.Error(err))
+		if len(dbRows) > 0 {
+			err = w.db.BatchInsertWorkerJobResults(dbRows)
+			if err != nil {
+				w.logger.Error("Failed to insert worker job results", zap.Error(err))
+			}
 		}
 		err = w.db.UpdateWorkerJobStatus(job.ID, JobStatusSuccessful)
 		if err != nil {
