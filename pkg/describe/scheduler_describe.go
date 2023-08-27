@@ -289,8 +289,9 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 		return errors.New("asset discovery is not scheduled")
 	}
 
-	if connection.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard &&
-		connection.LifecycleState != apiOnboard.ConnectionLifecycleStateInProgress &&
+	if !strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") &&
+		(connection.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard &&
+			connection.LifecycleState != apiOnboard.ConnectionLifecycleStateInProgress) ||
 		connection.HealthState != source.HealthStatusHealthy {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		return errors.New("connection is not healthy or disabled")
