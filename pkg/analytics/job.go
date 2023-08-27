@@ -91,7 +91,7 @@ func (j *Job) Run(
 				return err
 			}
 		} else {
-			for i := 10; i >= 0; i-- {
+			for i := 6; i >= 0; i-- {
 				theDate := time.Now().UTC().AddDate(0, 0, -1*i)
 				year, month, day := theDate.Date()
 				start := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
