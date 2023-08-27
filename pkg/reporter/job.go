@@ -426,21 +426,15 @@ aws_secret_access_key = %s
 
 		assumeRoleConfigs := ""
 		if awsCred.AssumeRoleName != "" && awsCred.AccountId != account.ConnectionID {
-			assumeRoleConfigs = fmt.Sprintf(`
-role_arn = arn:aws:iam::%s:role/%s
-`,
-				awsCred.AccountId, awsCred.AssumeRoleName)
+			assumeRoleConfigs = fmt.Sprintf("role_arn = arn:aws:iam::%s:role/%s\n", awsCred.AccountId, awsCred.AssumeRoleName)
 			if awsCred.ExternalId != nil {
-				assumeRoleConfigs += fmt.Sprintf(`
-external_id = %s
-`,
-					*awsCred.ExternalId)
+				assumeRoleConfigs += fmt.Sprintf("external_id = %s\n", *awsCred.ExternalId)
 			}
 		}
-
 		content = fmt.Sprintf(`
 [default]
 region = us-east-1
+
 [profile reporter]
 region = us-east-1
 source_profile = default
