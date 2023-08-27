@@ -46,7 +46,7 @@ func InitializeWorker(
 		kaytuSteampipeDb: nil,
 	}
 	defer func() {
-		if w != nil {
+		if err != nil && w != nil {
 			w.Stop()
 		}
 	}()

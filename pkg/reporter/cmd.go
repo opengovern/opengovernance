@@ -61,6 +61,7 @@ func ReporterCommand() *cobra.Command {
 					logger.Error("initialize worker", zap.Error(err))
 					return err
 				}
+				defer worker.Stop()
 				return worker.Run()
 			default:
 				config := ServiceConfig{}
