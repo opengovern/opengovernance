@@ -264,6 +264,7 @@ func (j *Job) DoSpendMetric(
 	providerResultMap := map[string]spend.ConnectorMetricTrendSummary{}
 
 	query := metric.Query
+	query = strings.ReplaceAll(query, "$date", startTime.Format("2006-01-02"))
 	query = strings.ReplaceAll(query, "$startTime", fmt.Sprintf("%d", startTime.Unix()))
 	query = strings.ReplaceAll(query, "$endTime", fmt.Sprintf("%d", endTime.Unix()))
 
