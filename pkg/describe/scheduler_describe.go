@@ -155,7 +155,6 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 				dc:  dc,
 				src: src,
 			}
-			s.logger.Info("adding job to queue", zap.Uint("jobID", c.dc.ID))
 			wp.AddJob(func() (interface{}, error) {
 				err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.src.Credential.Config.(string), s.WorkspaceName, s.kafkaResourcesTopic)
 				if err != nil {
@@ -289,13 +288,16 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 		return errors.New("asset discovery is not scheduled")
 	}
 
-	if !strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") &&
-		(connection.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard &&
-			connection.LifecycleState != apiOnboard.ConnectionLifecycleStateInProgress) ||
+	if (connection.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard &&
+		connection.LifecycleState != apiOnboard.ConnectionLifecycleStateInProgress) ||
 		connection.HealthState != source.HealthStatusHealthy {
 		//DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 		//return errors.New("connection is not healthy or disabled")
-		return nil
+		if connection.IsDiscovered() && strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") {
+			// cost
+		} else {
+			return nil
+		}
 	}
 
 	triggerType := enums.DescribeTriggerTypeScheduled
