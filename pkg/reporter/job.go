@@ -411,7 +411,7 @@ func (j *Job) PopulateSteampipe(logger *zap.Logger, account *api2.Connection, aw
 		assumeRoleConfigs := ""
 		if awsCred.AssumeRoleName != "" && awsCred.AccountId != account.ConnectionID {
 			logger.Info("assuming role", zap.String("role", awsCred.AssumeRoleName), zap.String("accountID", awsCred.AccountId))
-			assumeRoleConfigs = fmt.Sprintf("role_arn = arn:aws:iam::%s:role/%s\n", awsCred.AccountId, awsCred.AssumeRoleName)
+			assumeRoleConfigs = fmt.Sprintf("role_arn = arn:aws:iam::%s:role/%s\n", account.ConnectionID, awsCred.AssumeRoleName)
 			if awsCred.ExternalId != nil {
 				assumeRoleConfigs += fmt.Sprintf("external_id = %s\n", *awsCred.ExternalId)
 			}
