@@ -124,7 +124,7 @@ func (w *Worker) Run() error {
 		return err
 	}
 	w.logger.Info("Processing job", zap.String("connection id", job.ConnectionId), zap.Int("query count", len(job.Queries)))
-	results, err := job.Do(w)
+	results, err := w.Do(job)
 	if err == nil {
 		dbRows := make([]WorkerJobResult, len(results))
 		for i, result := range results {

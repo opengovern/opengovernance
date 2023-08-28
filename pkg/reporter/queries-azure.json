@@ -1,7 +1,8 @@
 [
   {
     "keyFields": ["id"],
+    "tableName": "azure_network_interface",
     "list": "SELECT * FROM azure_network_interface",
-    "get": "SELECT * FROM azure_network_interface WHERE subscription_id = '%ACCOUNT_ID%' AND id = $1"
+    "get": "SELECT * FROM azure_network_interface WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
   }
 ]

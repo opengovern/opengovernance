@@ -1,7 +1,32 @@
 [
   {
     "keyFields": ["arn"],
+    "tableName": "aws_ec2_instance",
     "list": "SELECT * FROM aws_ec2_instance",
-    "get": "SELECT * FROM aws_ec2_instance WHERE account_id = '%ACCOUNT_ID%' AND arn = $1"
+    "get": "SELECT * FROM aws_ec2_instance WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
+  },
+  {
+    "keyFields": ["arn"],
+    "tableName": "aws_vpc",
+    "list": "SELECT * FROM aws_vpc;",
+    "get": "SELECT * FROM aws_vpc WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
+  },
+  {
+    "keyFields": ["route_table_id"],
+    "tableName": "aws_vpc_route_table",
+    "list": "SELECT * FROM aws_vpc_route_table",
+    "get": "SELECT * FROM aws_vpc_route_table WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND route_table_id = $1"
+  },
+  {
+    "keyFields": ["arn"],
+    "tableName": "aws_ebs_volume",
+    "list": "SELECT * FROM aws_ebs_volume",
+    "get": "SELECT * FROM aws_ebs_volume WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
+  },
+  {
+    "keyFields": ["name"],
+    "tableName": "aws_s3_bucket",
+    "list": "SELECT * FROM aws_s3_bucket",
+    "get": "SELECT * FROM aws_s3_bucket WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND name = $1"
   }
 ]

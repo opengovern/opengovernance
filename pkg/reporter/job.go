@@ -363,7 +363,7 @@ func compareJsons(j1, j2 []byte) bool {
 	return true
 }
 
-func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
+func (w *Worker) Do(j Job) ([]TriggerQueryResponse, error) {
 	connection, err := w.onboardClient.GetSource(&httpclient.Context{
 		UserRole: api.InternalRole,
 	}, j.ConnectionId)
@@ -475,7 +475,7 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 			}
 
 			found := false
-
+			w.logger.Info("comparing steampipe and es records", zap.Int("number", rowCount))
 			for esRows.Next() {
 				esRow, err := esRows.Values()
 				if err != nil {
