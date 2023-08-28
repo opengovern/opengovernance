@@ -650,7 +650,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
 	}
 
-	totalCount, apiMetrics, err := h.ListAnalyticsMetrics(metricIDs, metricType, tagMap, connectorTypes, connectionIDs, minCount, endTime)
+	totalCount, apiMetrics, err := h.ListAnalyticsMetrics(ctx.Request().Context(), metricIDs, metricType, tagMap, connectorTypes, connectionIDs, minCount, endTime)
 	if err != nil {
 		return err
 	}
@@ -660,7 +660,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 		apiMetricsMap[apiMetric.ID] = apiMetric
 	}
 
-	totalOldCount, oldApiMetrics, err := h.ListAnalyticsMetrics(metricIDs, metricType, tagMap, connectorTypes, connectionIDs, 0, startTime)
+	totalOldCount, oldApiMetrics, err := h.ListAnalyticsMetrics(ctx.Request().Context(), metricIDs, metricType, tagMap, connectorTypes, connectionIDs, 0, startTime)
 	if err != nil {
 		return err
 	}

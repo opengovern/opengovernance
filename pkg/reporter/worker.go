@@ -115,6 +115,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	w.logger.Info("Waiting for job")
 	msg := <-msgs
 	w.logger.Info("Received job")
+
 	var job Job
 	if err := json.Unmarshal(msg.Body, &job); err != nil {
 		w.logger.Error("Failed to unmarshal task", zap.Error(err))
