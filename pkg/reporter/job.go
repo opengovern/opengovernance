@@ -394,12 +394,19 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 
 	stdOut, stdErr = exec.Command("steampipe", "service", "start",
 		"--database-listen", "network", "--database-password", "abcd", "--dashboard-port", "9194").CombinedOutput()
-
-	time.Sleep(600 * time.Second)
 	if stdErr != nil {
 		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
 		return nil, stdErr
 	}
+
+	// Do not remove this, steampipe will not start without this
+	homeDir, _ := os.UserHomeDir()
+	stdOut, stdErr = exec.Command("rm", path.Join(homeDir, ".steampipe", "config", "default.spc")).CombinedOutput()
+	if stdErr != nil {
+		w.logger.Error("failed to remove default.spc", zap.Error(stdErr), zap.String("output", string(stdOut)))
+		return nil, stdErr
+	}
+
 	w.logger.Info("steampipe started")
 
 	stdOut, stdErr = exec.Command("steampipe", "plugin", "list").CombinedOutput()
