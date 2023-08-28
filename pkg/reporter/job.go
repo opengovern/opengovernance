@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"go.opentelemetry.io/otel"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -255,7 +257,10 @@ func (s *Service) RandomQuery(sourceType source.Type) *Query {
 	return nil
 }
 
-func PopulateSteampipe(logger *zap.Logger, account *api2.Connection, awsCred *api2.AWSCredentialConfig, azureCred *api2.AzureCredentialConfig) error {
+func PopulateSteampipe(ctx context.Context, logger *zap.Logger, account *api2.Connection, awsCred *api2.AWSCredentialConfig, azureCred *api2.AzureCredentialConfig) error {
+	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
+
 	dirname, err := os.UserHomeDir()
 	if err != nil {
 		return err
@@ -363,8 +368,12 @@ func compareJsons(j1, j2 []byte) bool {
 	return true
 }
 
-func (w *Worker) Do(j Job) ([]TriggerQueryResponse, error) {
+func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) {
+	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
+
 	connection, err := w.onboardClient.GetSource(&httpclient.Context{
+		Ctx:      ctx,
 		UserRole: api.InternalRole,
 	}, j.ConnectionId)
 	if err != nil {
@@ -374,13 +383,14 @@ func (w *Worker) Do(j Job) ([]TriggerQueryResponse, error) {
 	w.logger.Info("got connection", zap.String("account", connection.ConnectionID))
 
 	awsCred, azureCred, err := w.onboardClient.GetSourceFullCred(&httpclient.Context{
+		Ctx:      ctx,
 		UserRole: api.KaytuAdminRole,
 	}, connection.ID.String())
 	if err != nil {
 		w.logger.Error("failed to get source full cred", zap.Error(err))
 		return nil, err
 	}
-	err = PopulateSteampipe(w.logger, connection, awsCred, azureCred)
+	err = PopulateSteampipe(ctx, w.logger, connection, awsCred, azureCred)
 	if err != nil {
 		w.logger.Error("failed to populate steampipe", zap.Error(err))
 		return nil, err
@@ -431,14 +441,18 @@ func (w *Worker) Do(j Job) ([]TriggerQueryResponse, error) {
 
 	var results []TriggerQueryResponse
 	for _, query := range j.Queries {
+		ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("query-%s", query.TableName))
 		w.logger.Info("running query", zap.String("account", connection.ConnectionID), zap.String("query", query.ListQuery))
 		listQuery := strings.ReplaceAll(query.ListQuery, "%ACCOUNT_ID%", connection.ConnectionID)
 		listQuery = strings.ReplaceAll(listQuery, "%KAYTU_ACCOUNT_ID%", connection.ID.String())
-		steampipeRows, err := originalSteampipe.Conn().Query(context.Background(), listQuery)
+
+		_, span2 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("steampipe-query-%s", query.TableName))
+		steampipeRows, err := originalSteampipe.Conn().Query(ctx, listQuery)
 		if err != nil {
 			w.logger.Error("failed to run query", zap.Error(err), zap.String("query", query.ListQuery), zap.String("account", connection.ConnectionID))
 			return nil, err
 		}
+		span2.End()
 
 		var mismatches []QueryMismatch
 		var columns []string
@@ -468,14 +482,17 @@ func (w *Worker) Do(j Job) ([]TriggerQueryResponse, error) {
 				keyValues = append(keyValues, steampipeRecord[f])
 			}
 
+			_, span3 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("es-query-%s", query.TableName))
 			esRows, err := w.kaytuSteampipeDb.Conn().Query(context.Background(), getQuery, keyValues...)
 			if err != nil {
 				w.logger.Error("failed to run query", zap.Error(err), zap.String("query", query.GetQuery), zap.String("account", connection.ConnectionID))
 				return nil, err
 			}
+			span3.End()
 
 			found := false
 			w.logger.Info("comparing steampipe and es records", zap.Int("number", rowCount))
+			_, span4 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("compare-%s", query.TableName))
 			for esRows.Next() {
 				esRow, err := esRows.Values()
 				if err != nil {
@@ -554,6 +571,7 @@ func (w *Worker) Do(j Job) ([]TriggerQueryResponse, error) {
 					}
 				}
 			}
+			span4.End()
 			esRows.Close()
 
 			if !found {
@@ -578,6 +596,8 @@ func (w *Worker) Do(j Job) ([]TriggerQueryResponse, error) {
 			NotMatchingColumns: columns,
 			Mismatches:         mismatches,
 		})
+
+		span.End()
 	}
 
 	return results, nil

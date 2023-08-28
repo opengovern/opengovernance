@@ -1,6 +1,7 @@
 package reporter
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgtype"
@@ -105,7 +106,7 @@ func InitializeWorker(
 	return w, nil
 }
 
-func (w *Worker) Run() error {
+func (w *Worker) Run(ctx context.Context) error {
 	msgs, err := w.jobQueue.Consume()
 	if err != nil {
 		return err
@@ -124,7 +125,7 @@ func (w *Worker) Run() error {
 		return err
 	}
 	w.logger.Info("Processing job", zap.String("connection id", job.ConnectionId), zap.Int("query count", len(job.Queries)))
-	results, err := w.Do(job)
+	results, err := w.Do(ctx, job)
 	if err == nil {
 		dbRows := make([]WorkerJobResult, len(results))
 		for i, result := range results {

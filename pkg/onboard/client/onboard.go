@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
+	"go.opentelemetry.io/otel"
 	"io"
 	"net/http"
 	"strconv"
@@ -48,6 +50,13 @@ func NewOnboardServiceClient(baseURL string, cache *cache.Cache) OnboardServiceC
 }
 
 func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*api.Connection, error) {
+	if ctx.Ctx == nil {
+		ctx.Ctx = context.Background()
+	}
+	spanCtx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx.Ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
+	ctx.Ctx = spanCtx
+
 	ctx.UserRole = authApi.KaytuAdminRole
 	url := fmt.Sprintf("%s/api/v1/source/%s", s.baseURL, sourceID)
 
@@ -75,6 +84,12 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 }
 
 func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID string) (*api.AWSCredentialConfig, *api.AzureCredentialConfig, error) {
+	if ctx.Ctx == nil {
+		ctx.Ctx = context.Background()
+	}
+	spanCtx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx.Ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
+	ctx.Ctx = spanCtx
 	url := fmt.Sprintf("%s/api/v1/source/%s/credentials/full", s.baseURL, sourceID)
 
 	var awsCred api.AWSCredentialConfig

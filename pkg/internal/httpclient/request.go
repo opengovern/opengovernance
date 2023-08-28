@@ -2,6 +2,7 @@ package httpclient
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,6 +20,8 @@ type EchoError struct {
 	Message string `json:"message"`
 }
 type Context struct {
+	Ctx context.Context
+
 	UserRole      api.Role
 	UserID        string
 	WorkspaceName string

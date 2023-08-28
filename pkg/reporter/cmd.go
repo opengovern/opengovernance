@@ -5,6 +5,8 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"os"
@@ -46,7 +48,9 @@ func ReporterCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := context.Background()
 			logger, _ := zap.NewProduction()
+			otel.SetTracerProvider(trace.NewTracerProvider())
 			switch mode {
 			case "worker":
 				worker, err := InitializeWorker(id,
@@ -62,7 +66,7 @@ func ReporterCommand() *cobra.Command {
 					return err
 				}
 				defer worker.Stop()
-				return worker.Run()
+				return worker.Run(ctx)
 			default:
 				config := ServiceConfig{}
 				config2.ReadFromEnv(&config, nil)
