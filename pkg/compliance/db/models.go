@@ -1,7 +1,9 @@
 package db
 
 import (
+	"context"
 	"fmt"
+	"go.opentelemetry.io/otel"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
@@ -67,12 +69,18 @@ func (b Benchmark) ToApi() api.Benchmark {
 	return ba
 }
 
-func (b *Benchmark) PopulateConnectors(db Database, api *api.Benchmark) error {
+func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *api.Benchmark) error {
 	if len(api.Connectors) > 0 {
 		return nil
 	}
+	//tracer :
+	tracer := otel.Tracer("PopulateConnectors")
+	_, span := tracer.Start(ctx, "GetBenchmarks")
 
 	for _, childObj := range b.Children {
+		//tracer :
+		_, spanGQ := tracer.Start(ctx, "GetBenchmark")
+
 		child, err := db.GetBenchmark(childObj.ID)
 		if err != nil {
 			return err
@@ -80,9 +88,10 @@ func (b *Benchmark) PopulateConnectors(db Database, api *api.Benchmark) error {
 		if child == nil {
 			return fmt.Errorf("child %s not found", childObj.ID)
 		}
+		spanGQ.End()
 
 		ca := child.ToApi()
-		err = child.PopulateConnectors(db, &ca)
+		err = child.PopulateConnectors(ctx, db, &ca)
 		if err != nil {
 			return err
 		}
@@ -105,10 +114,15 @@ func (b *Benchmark) PopulateConnectors(db Database, api *api.Benchmark) error {
 		if policy.QueryID == nil {
 			continue
 		}
+		//tracer :
+		_, spanGQ := tracer.Start(ctx, "GetQuery")
+
 		query, err := db.GetQuery(*policy.QueryID)
 		if err != nil {
 			return err
 		}
+		spanGQ.End()
+
 		if query == nil {
 			return fmt.Errorf("query %s not found", *policy.QueryID)
 		}
@@ -128,6 +142,7 @@ func (b *Benchmark) PopulateConnectors(db Database, api *api.Benchmark) error {
 			api.Connectors = append(api.Connectors, ty)
 		}
 	}
+	span.End()
 
 	return nil
 }

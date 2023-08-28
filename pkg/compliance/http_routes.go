@@ -1,6 +1,7 @@
 package compliance
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -116,14 +117,20 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	}
 
 	var benchmarkIDs []string
+	_, spanF := tracer.Start(ctx.Request().Context(), "GetBenchmarkTreeIDs(loop)")
+
 	for _, b := range req.Filters.BenchmarkID {
-		bs, err := h.GetBenchmarkTreeIDs(b)
+		_, spanGQ := tracer.Start(ctx.Request().Context(), "GetBenchmarkTreeIDs")
+		bs, err := h.GetBenchmarkTreeIDs(ctx.Request().Context(), b)
 		if err != nil {
 			return err
 		}
+		spanGQ.End()
 
 		benchmarkIDs = append(benchmarkIDs, bs...)
 	}
+	spanF.End()
+
 	res, err := es.FindingsQuery(
 		h.client, req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
 		benchmarkIDs, req.Filters.PolicyID, req.Filters.Severity,
@@ -174,11 +181,13 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	connectionIDs := ctx.QueryParams()["connectionId"]
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 	severities := kaytuTypes.ParseFindingSeverities(ctx.QueryParams()["severities"])
+	_, spanGQ := tracer.Start(ctx.Request().Context(), "GetQuery")
 
-	benchmarkIDs, err := h.GetBenchmarkTreeIDs(benchmarkID)
+	benchmarkIDs, err := h.GetBenchmarkTreeIDs(ctx.Request().Context(), benchmarkID)
 	if err != nil {
 		return err
 	}
+	spanGQ.End()
 
 	var response api.GetTopFieldResponse
 	res, err := es.FindingsTopFieldQuery(
@@ -282,10 +291,11 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		h.logger.Error("failed to fetch benchmark summaries", zap.Error(err))
 		return err
 	}
+	_, spanGQ := tracer.Start(ctx.Request().Context(), "PopulateConnectors (loop)")
 
 	for _, b := range benchmarks {
 		be := b.ToApi()
-		err = b.PopulateConnectors(h.db, &be)
+		err = b.PopulateConnectors(ctx.Request().Context(), h.db, &be)
 		if err != nil {
 			return err
 		}
@@ -310,6 +320,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		response.TotalResult.AddComplianceResultSummary(summaryAtTime.ComplianceResultSummary)
 		response.TotalChecks.AddSeverityResult(summaryAtTime.SeverityResult)
 	}
+	spanGQ.End()
 
 	return ctx.JSON(http.StatusOK, response)
 }
@@ -359,7 +370,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	_, spanGB := tracer.Start(ctx.Request().Context(), "PopulateConnectors")
 
 	be := benchmark.ToApi()
-	err = benchmark.PopulateConnectors(h.db, &be)
+	err = benchmark.PopulateConnectors(ctx.Request().Context(), h.db, &be)
 	if err != nil {
 		return err
 	}
@@ -410,7 +421,6 @@ func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
 			}
 		}
 	}
-	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "GetBenchmark")
 
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
@@ -422,35 +432,42 @@ func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
 	if benchmark == nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
 	}
+	_, spanGBT := tracer.Start(ctx.Request().Context(), "GetBenchmarkTree")
 
-	response, err := GetBenchmarkTree(h.db, h.client, *benchmark, status)
+	response, err := GetBenchmarkTree(ctx.Request().Context(), h.db, h.client, *benchmark, status)
 	if err != nil {
 		return err
 	}
-
+	spanGBT.End()
 	return ctx.JSON(http.StatusOK, response)
 }
 
-func GetBenchmarkTree(db db.Database, client kaytu.Client, b db.Benchmark, status []kaytuTypes.PolicyStatus) (api.BenchmarkTree, error) {
+func GetBenchmarkTree(ctx context.Context, db db.Database, client kaytu.Client, b db.Benchmark, status []kaytuTypes.PolicyStatus) (api.BenchmarkTree, error) {
 	tree := api.BenchmarkTree{
 		ID:       b.ID,
 		Title:    b.Title,
 		Children: nil,
 		Policies: nil,
 	}
+	_, spanGB := tracer.Start(ctx, "GetBenchmark(loop)")
+
 	for _, child := range b.Children {
+		_, span := tracer.Start(ctx, "GetBenchmark")
+
 		childObj, err := db.GetBenchmark(child.ID)
 		if err != nil {
 			return tree, err
 		}
+		span.End()
 
-		childTree, err := GetBenchmarkTree(db, client, *childObj, status)
+		childTree, err := GetBenchmarkTree(ctx, db, client, *childObj, status)
 		if err != nil {
 			return tree, err
 		}
 
 		tree.Children = append(tree.Children, childTree)
 	}
+	spanGB.End()
 
 	res, err := es.ListBenchmarkSummaries(client, &b.ID)
 	if err != nil {
@@ -550,10 +567,14 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 	}
 
 	be := benchmark.ToApi()
-	err = benchmark.PopulateConnectors(h.db, &be)
+	_, spanPC := tracer.Start(ctx.Request().Context(), "PopulateConnectors")
+
+	err = benchmark.PopulateConnectors(ctx.Request().Context(), h.db, &be)
 	if err != nil {
 		return err
 	}
+	spanPC.End()
+
 	if len(connectors) > 0 && !utils.IncludesAny(be.Connectors, connectors) {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
 	}
@@ -624,16 +645,20 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 
 	connectorType := source.Nil
 	// trace :
-	_, spanGQ := tracer.Start(ctx.Request().Context(), "GetQuery")
+	_, spanF := tracer.Start(ctx.Request().Context(), "GetQuery(loop)")
+
 	for _, policy := range benchmark.Policies {
 		if policy.QueryID == nil {
 			continue
 		}
+		//trace :
+		_, spanGQ := tracer.Start(ctx.Request().Context(), "GetQuery")
 
 		q, err := h.db.GetQuery(*policy.QueryID)
 		if err != nil {
 			return err
 		}
+		spanGQ.End()
 
 		if q == nil {
 			return fmt.Errorf("query %s not found", *policy.QueryID)
@@ -644,7 +669,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 			break
 		}
 	}
-	spanGQ.End()
+	spanF.End()
 
 	connections := make([]onboardApi.Connection, 0)
 	if strings.ToLower(connectionID) == "all" {
@@ -668,7 +693,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 
 	result := make([]api.BenchmarkAssignment, 0, len(connections))
 	// trace :
-	_, spanABA := tracer.Start(ctx.Request().Context(), "AddBenchmarkAssignment")
+	_, spanFAB := tracer.Start(ctx.Request().Context(), "AddBenchmarkAssignment(loop)")
 
 	for _, src := range connections {
 		assignment := &db.BenchmarkAssignment{
@@ -676,17 +701,22 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 			ConnectionId: src.ConnectionID,
 			AssignedAt:   time.Now(),
 		}
+		//trace :
+		_, spanABA := tracer.Start(ctx.Request().Context(), "AddBenchmarkAssignment")
+
 		if err := h.db.AddBenchmarkAssignment(assignment); err != nil {
 			ctx.Logger().Errorf("add benchmark assignment: %v", err)
 			return err
 		}
+		spanABA.End()
+
 		result = append(result, api.BenchmarkAssignment{
 			BenchmarkId:  benchmarkId,
 			ConnectionId: connectionID,
 			AssignedAt:   assignment.AssignedAt,
 		})
 	}
-	spanABA.End()
+	spanFAB.End()
 
 	return ctx.JSON(http.StatusOK, result)
 }
@@ -747,10 +777,13 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	span.End()
 
 	var apiBenchmark api.Benchmark
-	err = benchmark.PopulateConnectors(h.db, &apiBenchmark)
+	_, spanGQ := tracer.Start(ctx.Request().Context(), "PopulateConnectors")
+
+	err = benchmark.PopulateConnectors(ctx.Request().Context(), h.db, &apiBenchmark)
 	if err != nil {
 		return err
 	}
+	spanGQ.End()
 
 	hctx := httpclient.FromEchoContext(ctx)
 
@@ -860,15 +893,21 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 		return err
 	}
 	span.End()
+	_, spanPCF := tracer.Start(ctx.Request().Context(), "PopulateConnectors(loop)")
 
 	for _, b := range benchmarks {
 		be := b.ToApi()
-		err = b.PopulateConnectors(h.db, &be)
+
+		_, spanPC := tracer.Start(ctx.Request().Context(), "PopulateConnectors")
+		err = b.PopulateConnectors(ctx.Request().Context(), h.db, &be)
 		if err != nil {
 			return err
 		}
+		spanPC.End()
+
 		response = append(response, be)
 	}
+	spanPCF.End()
 
 	return ctx.JSON(http.StatusOK, response)
 }
@@ -888,19 +927,27 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
 	resp := benchmark.ToApi()
-	err = benchmark.PopulateConnectors(h.db, &resp)
+
+	_, spanPC := tracer.Start(ctx.Request().Context(), "PopulateConnectors")
+
+	err = benchmark.PopulateConnectors(ctx.Request().Context(), h.db, &resp)
 	if err != nil {
 		return err
 	}
+	spanPC.End()
 
 	return ctx.JSON(http.StatusOK, resp)
 }
 
-func (h *HttpHandler) getBenchmarkPolicies(benchmarkID string) ([]db.Policy, error) {
+func (h *HttpHandler) getBenchmarkPolicies(ctx context.Context, benchmarkID string) ([]db.Policy, error) {
+	//trace :
+	_, spanGP := tracer.Start(ctx, "GetBenchmark")
+
 	b, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
 		return nil, err
 	}
+	spanGP.End()
 
 	if b == nil {
 		return nil, echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
@@ -910,19 +957,29 @@ func (h *HttpHandler) getBenchmarkPolicies(benchmarkID string) ([]db.Policy, err
 	for _, p := range b.Policies {
 		policyIDs = append(policyIDs, p.ID)
 	}
+	//trace :
+	_, span := tracer.Start(ctx, "GetPolicies")
 
 	policies, err := h.db.GetPolicies(policyIDs)
 	if err != nil {
 		return nil, err
 	}
+	span.End()
 
+	//tracer :
+	_, spanGQ := tracer.Start(ctx, "getBenchmarkPolicies(loop)")
 	for _, child := range b.Children {
-		childPolicies, err := h.getBenchmarkPolicies(child.ID)
+		_, spanGB := tracer.Start(ctx, "getBenchmarkPolicies")
+
+		childPolicies, err := h.getBenchmarkPolicies(ctx, child.ID)
 		if err != nil {
 			return nil, err
 		}
+		spanGB.End()
+
 		policies = append(policies, childPolicies...)
 	}
+	spanGQ.End()
 
 	return policies, nil
 }
@@ -1394,6 +1451,7 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 		}
 		startTime = time.Unix(t, 0)
 	}
+
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "ListInsightGroups")
 
