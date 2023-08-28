@@ -395,7 +395,7 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 	stdOut, stdErr = exec.Command("steampipe", "service", "start",
 		"--database-listen", "network", "--database-password", "abcd", "--dashboard-port", "9194").CombinedOutput()
 
-	time.Sleep(60 * time.Second)
+	time.Sleep(600 * time.Second)
 	if stdErr != nil {
 		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
 		return nil, stdErr
