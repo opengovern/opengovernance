@@ -124,7 +124,7 @@ func (w *Worker) Run() error {
 		return err
 	}
 	w.logger.Info("Processing job", zap.String("connection id", job.ConnectionId), zap.Int("query count", len(job.Queries)))
-	results, err := job.Do(w)
+	results, err := w.Do(job)
 	if err == nil {
 		dbRows := make([]WorkerJobResult, len(results))
 		for i, result := range results {
@@ -144,10 +144,11 @@ func (w *Worker) Run() error {
 				w.logger.Error("Failed to set mismatches", zap.Error(err))
 			}
 		}
-
-		err = w.db.BatchInsertWorkerJobResults(dbRows)
-		if err != nil {
-			w.logger.Error("Failed to insert worker job results", zap.Error(err))
+		if len(dbRows) > 0 {
+			err = w.db.BatchInsertWorkerJobResults(dbRows)
+			if err != nil {
+				w.logger.Error("Failed to insert worker job results", zap.Error(err))
+			}
 		}
 		err = w.db.UpdateWorkerJobStatus(job.ID, JobStatusSuccessful)
 		if err != nil {

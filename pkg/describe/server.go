@@ -87,6 +87,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 	connectionID := ctx.Param("connection_id")
 	forceFull := ctx.QueryParam("force_full") == "true"
+	costFullDiscovery := ctx.QueryParam("cost_full_discovery") == "true"
 
 	src, err := h.Scheduler.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.KaytuAdminRole}, connectionID)
 	if err != nil || src == nil {
@@ -113,7 +114,7 @@ func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 	}
 
 	for _, resourceType := range resourceTypes {
-		err = h.Scheduler.describe(*src, resourceType, false)
+		err = h.Scheduler.describe(*src, resourceType, false, costFullDiscovery)
 		if err == ErrJobInProgress {
 			return echo.NewHTTPError(http.StatusConflict, err.Error())
 		}
@@ -168,7 +169,7 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		}
 
 		for _, resourceType := range resourceTypes {
-			err = h.Scheduler.describe(connection, resourceType, false)
+			err = h.Scheduler.describe(connection, resourceType, false, false)
 			if err != nil {
 				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 			}

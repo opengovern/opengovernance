@@ -218,7 +218,7 @@ func (s *Scheduler) scheduleDescribeJob() {
 		}
 
 		for _, resourceType := range resourceTypes {
-			err = s.describe(connection, resourceType, true)
+			err = s.describe(connection, resourceType, true, false)
 			if err != nil {
 				s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.String("resource_type", resourceType), zap.Error(err))
 			}
@@ -228,7 +228,7 @@ func (s *Scheduler) scheduleDescribeJob() {
 	DescribeJobsCount.WithLabelValues("successful").Inc()
 }
 
-func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType string, scheduled bool) error {
+func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType string, scheduled, costFullDiscovery bool) error {
 	if !connection.IsEnabled() {
 		if connection.IsDiscovered() && strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") {
 			// cost
@@ -307,6 +307,9 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 	triggerType := enums.DescribeTriggerTypeScheduled
 	if connection.LifecycleState == apiOnboard.ConnectionLifecycleStateInProgress {
 		triggerType = enums.DescribeTriggerTypeInitialDiscovery
+	}
+	if costFullDiscovery {
+		triggerType = enums.DescribeTriggerTypeCostFullDiscovery
 	}
 	s.logger.Debug("Connection is due for a describe. Creating a job now", zap.String("connectionID", connection.ID.String()), zap.String("resourceType", resourceType))
 	daj := newDescribeConnectionJob(connection, resourceType, triggerType)

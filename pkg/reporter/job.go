@@ -300,7 +300,7 @@ connection "aws" {
   profile = "reporter"
 }
 `
-		filePath = dirname + "/.steampipe/config/aws.spc"
+		filePath = path.Join(dirname, ".steampipe", "config", "aws.spc")
 		return os.WriteFile(filePath, []byte(content), os.ModePerm)
 	}
 
@@ -363,7 +363,7 @@ func compareJsons(j1, j2 []byte) bool {
 	return true
 }
 
-func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
+func (w *Worker) Do(j Job) ([]TriggerQueryResponse, error) {
 	connection, err := w.onboardClient.GetSource(&httpclient.Context{
 		UserRole: api.InternalRole,
 	}, j.ConnectionId)
@@ -385,29 +385,34 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 		w.logger.Error("failed to populate steampipe", zap.Error(err))
 		return nil, err
 	}
-
-	err = exec.Command("steampipe", "service", "stop", "--force").Run()
-	if err != nil {
-		w.logger.Error("failed to stop steampipe", zap.Error(err))
+	stdOut, stdErr := exec.Command("steampipe", "plugin", "update", "--all").CombinedOutput()
+	if stdErr != nil {
+		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
+		return nil, stdErr
 	}
-	err = exec.Command("steampipe", "service", "stop", "--force").Run()
-	if err != nil {
-		w.logger.Error("failed to stop steampipe", zap.Error(err))
-	}
-	w.logger.Info("steampipe stopped")
+	w.logger.Info("steampipe plugins updated")
 
-	stdOut, stdErr := exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
+	stdOut, stdErr = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
 		"9193", "--database-password", "abcd").CombinedOutput()
 	if stdErr != nil {
 		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
-		return nil, err
+		return nil, stdErr
 	}
+
+	// Do not remove this, steampipe will not start without this
+	homeDir, _ := os.UserHomeDir()
+	stdOut, stdErr = exec.Command("rm", path.Join(homeDir, ".steampipe", "config", "default.spc")).CombinedOutput()
+	if stdErr != nil {
+		w.logger.Error("failed to remove default.spc", zap.Error(stdErr), zap.String("output", string(stdOut)))
+		return nil, stdErr
+	}
+
 	w.logger.Info("steampipe started")
 
 	stdOut, stdErr = exec.Command("steampipe", "plugin", "list").CombinedOutput()
 	if stdErr != nil {
-		w.logger.Error("failed to list steampipe plugins", zap.Error(err))
-		return nil, err
+		w.logger.Error("failed to list steampipe plugins", zap.Error(err), zap.String("output", string(stdOut)))
+		return nil, stdErr
 	}
 	w.logger.Info("steampipe plugins", zap.String("output", string(stdOut)))
 
@@ -470,7 +475,7 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 			}
 
 			found := false
-
+			w.logger.Info("comparing steampipe and es records", zap.Int("number", rowCount))
 			for esRows.Next() {
 				esRow, err := esRows.Values()
 				if err != nil {
