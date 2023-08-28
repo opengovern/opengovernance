@@ -416,8 +416,6 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 	}
 	w.logger.Info("steampipe plugins", zap.String("output", string(stdOut)))
 
-	time.Sleep(5 * time.Minute)
-
 	originalSteampipe, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: "localhost",
 		Port: "9193",
