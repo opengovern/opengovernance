@@ -5,4 +5,5 @@ RUN steampipe plugin install steampipe
 RUN steampipe plugin install aws
 RUN steampipe plugin install azure
 RUN steampipe plugin install azuread
+RUN rm /home/steampipe/.steampipe/config/steampipe.spc /home/steampipe/.steampipe/config/default.spc
 CMD [ "/reporter" ]
