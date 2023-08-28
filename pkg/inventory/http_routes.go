@@ -529,13 +529,16 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 	return connectorTypes, nil
 }
 
-func (h *HttpHandler) ListAnalyticsMetrics(metricIDs []string, metricType analyticsDB.MetricType, tagMap map[string][]string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []inventoryApi.Metric, error) {
+func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context, metricIDs []string, metricType analyticsDB.MetricType, tagMap map[string][]string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []inventoryApi.Metric, error) {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
+	_, span := tracer.Start(ctx, "ListFilteredMetrics")
 
 	mts, err := aDB.ListFilteredMetrics(tagMap, metricType, metricIDs, connectorTypes)
 	if err != nil {
 		return 0, nil, err
 	}
+	span.End()
+
 	filteredMetricIDs := make([]string, 0, len(mts))
 	for _, metric := range mts {
 		filteredMetricIDs = append(filteredMetricIDs, metric.ID)
@@ -651,6 +654,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
 	apiMetricsMap := make(map[string]inventoryApi.Metric, len(apiMetrics))
 	for _, apiMetric := range apiMetrics {
 		apiMetricsMap[apiMetric.ID] = apiMetric
