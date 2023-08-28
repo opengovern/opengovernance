@@ -75,8 +75,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
 }
 
-var tracer = otel.Tracer("compliance")
-
 func bindValidate(ctx echo.Context, i any) error {
 	if err := ctx.Bind(i); err != nil {
 		return err
@@ -88,6 +86,8 @@ func bindValidate(ctx echo.Context, i any) error {
 
 	return nil
 }
+
+var tracer = otel.Tracer("compliance")
 
 // GetFindings godoc
 //
