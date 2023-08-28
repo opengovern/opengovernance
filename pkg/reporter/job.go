@@ -392,8 +392,8 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 	}
 	w.logger.Info("steampipe plugins updated")
 
-	stdOut, stdErr = exec.Command("steampipe", "service", "start",
-		"--database-listen", "network", "--database-password", "abcd", "--dashboard-port", "9194").CombinedOutput()
+	stdOut, stdErr = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
+		"9193", "--database-password", "abcd").CombinedOutput()
 	if stdErr != nil {
 		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
 		return nil, stdErr
@@ -420,7 +420,7 @@ func (j *Job) Do(w *Worker) ([]TriggerQueryResponse, error) {
 
 	originalSteampipe, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: "localhost",
-		Port: "9194",
+		Port: "9193",
 		User: "steampipe",
 		Pass: "abcd",
 		Db:   "steampipe",
