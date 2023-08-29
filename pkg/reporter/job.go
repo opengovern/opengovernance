@@ -5,6 +5,8 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
@@ -445,10 +447,18 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 
 		_, span2 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("steampipe-query-%s", query.TableName))
 		w.logger.Info("running steampipe query", zap.String("account", connection.ConnectionID), zap.String("query", listQuery))
-		steampipeRows, err := originalSteampipe.Conn().Query(ctx, listQuery)
-		if err != nil {
-			w.logger.Error("failed to run query", zap.Error(err), zap.String("query", query.ListQuery), zap.String("account", connection.ConnectionID))
-			return nil, err
+		var steampipeRows pgx.Rows
+		for retry := 0; retry < 5; retry++ {
+			steampipeRows, err = originalSteampipe.Conn().Query(ctx, listQuery)
+			if err == nil {
+				break
+			}
+			if pgErr, ok := err.(*pgconn.PgError); ok {
+				if pgErr.SQLState() != "42P01" { // table not found (relation does not exist)
+					return nil, err
+				}
+			}
+			time.Sleep(3 * time.Second)
 		}
 		w.logger.Info("steampipe query done", zap.String("account", connection.ConnectionID), zap.String("query", listQuery))
 		span2.End()
