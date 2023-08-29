@@ -119,10 +119,12 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 					return err
 				}
-				if !src.IsEnabled() {
-					if src.IsDiscovered() && strings.HasPrefix(strings.ToLower(dc.ResourceType), "aws::costexplorer") {
-						// cost
-					} else {
+
+				if src.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
+					strings.HasPrefix(strings.ToLower(dc.ResourceType), "aws::costexplorer") {
+					// cost on org
+				} else {
+					if !src.IsEnabled() {
 						continue
 					}
 				}
