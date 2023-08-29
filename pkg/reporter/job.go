@@ -376,6 +376,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 		if r := recover(); r != nil {
 			w.logger.Error("panic in worker", zap.Any("panic", r))
 		}
+
 		stdOut, stdErr := exec.Command("pkill", "steampipe").CombinedOutput()
 		if stdErr != nil {
 			w.logger.Error("failed to kill steampipe sidecar", zap.Error(stdErr), zap.String("output", string(stdOut)))
