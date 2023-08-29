@@ -147,7 +147,9 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 		kmsg, _ := json.Marshal(kafkaResource)
 		if len(kmsg) >= 32766 {
 			// it's gonna hit error in kafka connect
-			LargeDescribeResourceMessage.WithLabelValues(resource.Job.ResourceType).Inc()
+			if !es.IsHandledAWSResourceType(resource.Job.ResourceType) {
+				LargeDescribeResourceMessage.WithLabelValues(resource.Job.ResourceType).Inc()
+			}
 			s.logger.Warn("too large message",
 				zap.String("resource_type", resource.Job.ResourceType),
 				zap.String("json", string(kmsg)),
@@ -182,7 +184,9 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 		kmsg, _ = json.Marshal(lookupResource)
 		if len(kmsg) >= 32766 {
 			// it's gonna hit error in kafka connect
-			LargeDescribeResourceMessage.WithLabelValues(resource.Job.ResourceType).Inc()
+			if !es.IsHandledAWSResourceType(resource.Job.ResourceType) {
+				LargeDescribeResourceMessage.WithLabelValues(resource.Job.ResourceType).Inc()
+			}
 			s.logger.Warn("too large message",
 				zap.String("resource_type", resource.Job.ResourceType),
 				zap.String("json", string(kmsg)),
@@ -253,6 +257,9 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		kmsg, _ := json.Marshal(kafkaResource)
 		if len(kmsg) >= 32766 {
 			// it's gonna hit error in kafka connect
+			if !es.IsHandledAzureResourceType(resource.Job.ResourceType) {
+				LargeDescribeResourceMessage.WithLabelValues(resource.Job.ResourceType).Inc()
+			}
 			s.logger.Warn("too large message",
 				zap.String("resource_type", resource.Job.ResourceType),
 				zap.String("json", string(kmsg)),
@@ -286,6 +293,9 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		kmsg, _ = json.Marshal(lookupResource)
 		if len(kmsg) >= 32766 {
 			// it's gonna hit error in kafka connect
+			if !es.IsHandledAzureResourceType(resource.Job.ResourceType) {
+				LargeDescribeResourceMessage.WithLabelValues(resource.Job.ResourceType).Inc()
+			}
 			s.logger.Warn("too large message",
 				zap.String("resource_type", resource.Job.ResourceType),
 				zap.String("json", string(kmsg)),
