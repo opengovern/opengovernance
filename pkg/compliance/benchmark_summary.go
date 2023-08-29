@@ -1,16 +1,20 @@
 package compliance
 
-import "context"
+import (
+	"context"
+	"go.opentelemetry.io/otel/trace"
+)
 
 func (h *HttpHandler) GetBenchmarkTreeIDs(ctx context.Context, rootID string) ([]string, error) {
 	ids := []string{rootID}
-	_, spanGB := tracer.Start(ctx, "GetBenchmark")
+	_, span2 := tracer.Start(ctx, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_GetBenchmark")
 
 	root, err := h.db.GetBenchmark(rootID)
 	if err != nil {
 		return nil, err
 	}
-	spanGB.End()
+	span2.End()
 
 	for _, child := range root.Children {
 		cids, err := h.GetBenchmarkTreeIDs(ctx, child.ID)
