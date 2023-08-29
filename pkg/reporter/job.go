@@ -400,19 +400,8 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 	defer func() {
 		if r := recover(); r != nil {
 			w.logger.Error("panic in worker", zap.Any("panic", r))
+			w.logger.Core().Sync()
 		}
-		w.logger.Info("worker done, killing steampipe sidecar")
-		stdOut, stdErr := exec.Command("pkill", "-e", "-9", "steampipe").CombinedOutput()
-		if stdErr != nil {
-			w.logger.Error("failed to kill steampipe sidecar", zap.Error(stdErr), zap.String("output", string(stdOut)))
-		}
-		w.logger.Info("steampipe sidecar killed", zap.String("output", string(stdOut)))
-		w.logger.Info("terminating steampipe sidecar")
-		stdOut, stdErr = exec.Command("pkill", "-e", "-15", "steampipe").CombinedOutput()
-		if stdErr != nil {
-			w.logger.Error("failed to kill steampipe sidecar", zap.Error(stdErr), zap.String("output", string(stdOut)))
-		}
-		w.logger.Info("steampipe sidecar terminated", zap.String("output", string(stdOut)))
 	}()
 
 	connection, err := w.onboardClient.GetSource(&httpclient.Context{
@@ -439,14 +428,35 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 		return nil, err
 	}
 
+	stdOut, stdErr := exec.Command("steampipe", "plugin", "update", "--all").CombinedOutput()
+	if stdErr != nil {
+		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
+		return nil, stdErr
+	}
+	w.logger.Info("steampipe plugins updated")
+
+	stdOut, stdErr = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
+		"9193", "--database-password", "abcd").CombinedOutput()
+	if stdErr != nil {
+		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
+		return nil, stdErr
+	}
+
 	// Do not remove this, steampipe will not start without this
 	homeDir, _ := os.UserHomeDir()
-	stdOut, stdErr := exec.Command("rm", path.Join(homeDir, ".steampipe", "config", "default.spc")).CombinedOutput()
+	stdOut, stdErr = exec.Command("rm", path.Join(homeDir, ".steampipe", "config", "default.spc")).CombinedOutput()
 	if stdErr != nil {
 		w.logger.Error("failed to remove default.spc", zap.Error(stdErr), zap.String("output", string(stdOut)))
 		return nil, stdErr
 	}
 	w.logger.Info("steampipe started")
+
+	stdOut, stdErr = exec.Command("steampipe", "plugin", "list").CombinedOutput()
+	if stdErr != nil {
+		w.logger.Error("failed to list steampipe plugins", zap.Error(err), zap.String("output", string(stdOut)))
+		return nil, stdErr
+	}
+	w.logger.Info("steampipe plugins", zap.String("output", string(stdOut)))
 
 	var originalSteampipe *steampipe.Database
 	for retry := 0; retry < 5; retry++ {
