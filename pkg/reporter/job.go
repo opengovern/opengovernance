@@ -18,6 +18,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 
@@ -344,6 +345,23 @@ connection "azuread" {
 	return nil
 }
 
+func trimEmptyObjectsFromMap(obj map[string]any) map[string]any {
+	for k, v := range obj {
+		if v == nil {
+			delete(obj, k)
+		}
+		if v2, ok := v.(map[string]any); ok {
+			obj[k] = trimEmptyObjectsFromMap(v2)
+		}
+		if v2, ok := v.([]any); ok {
+			if len(v2) == 0 {
+				delete(obj, k)
+			}
+		}
+	}
+	return obj
+}
+
 // json2 should be es and json1 should be steampipe
 func compareJsons(j1, j2 []byte) bool {
 	var o1 map[string]any
@@ -358,9 +376,14 @@ func compareJsons(j1, j2 []byte) bool {
 		return false
 	}
 
+	o1 = trimEmptyObjectsFromMap(o1)
+	o2 = trimEmptyObjectsFromMap(o2)
+
 	for k, v := range o1 {
 		if v2, ok := o2[k]; ok {
-			if v2 != v {
+			if reflect.DeepEqual(v, v2) {
+				return true
+			} else {
 				return false
 			}
 		} else {
