@@ -447,7 +447,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 		listQuery = strings.ReplaceAll(listQuery, "%KAYTU_ACCOUNT_ID%", connection.ID.String())
 
 		_, span2 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("steampipe-query-%s", query.TableName))
-		w.logger.Info("running steampipe query", zap.String("account", connection.ConnectionID), zap.String("query", listQuery)
+		w.logger.Info("running steampipe query", zap.String("account", connection.ConnectionID), zap.String("query", listQuery))
 		steampipeRows, err := originalSteampipe.Conn().Query(ctx, listQuery)
 		if err != nil {
 			w.logger.Error("failed to run query", zap.Error(err), zap.String("query", query.ListQuery), zap.String("account", connection.ConnectionID))
