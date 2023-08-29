@@ -472,6 +472,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 		var mismatches []QueryMismatch
 		var columns []string
 		rowCount := 0
+		var steampipeRecords []map[string]any
 		for steampipeRows.Next() {
 			rowCount++
 			steampipeRow, err := steampipeRows.Values()
@@ -488,7 +489,12 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 			for idx, field := range steampipeRows.FieldDescriptions() {
 				steampipeRecord[string(field.Name)] = steampipeRow[idx]
 			}
+			steampipeRecords = append(steampipeRecords, steampipeRecord)
+		}
+		steampipeRows.Close()
 
+		for i, steampipeRecord := range steampipeRecords {
+			w.logger.Core().Sync()
 			getQuery := strings.ReplaceAll(query.GetQuery, "%ACCOUNT_ID%", connection.ConnectionID)
 			getQuery = strings.ReplaceAll(getQuery, "%KAYTU_ACCOUNT_ID%", connection.ID.String())
 
@@ -506,13 +512,13 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 			w.logger.Info("es query done", zap.String("account", connection.ConnectionID), zap.String("query", getQuery))
 
 			found := false
-			w.logger.Info("comparing steampipe and es records", zap.Int("number", rowCount))
+			w.logger.Info("comparing steampipe and es records", zap.Int("number", i))
 			w.logger.Core().Sync()
 
 			_, span4 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("compare-%s", query.TableName))
 
 			for esRows.Next() {
-				w.logger.Info("comparing steampipe and es records", zap.Int("number", rowCount))
+				w.logger.Info("comparing steampipe and es records", zap.Int("number", i))
 				w.logger.Core().Sync()
 				esRow, err := esRows.Values()
 				if err != nil {
@@ -531,7 +537,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 					esRecord[string(field.Name)] = esRow[idx]
 				}
 				for k, v := range steampipeRecord {
-					w.logger.Info("comparing steampipe and es records", zap.Int("number", rowCount), zap.String("key", k))
+					w.logger.Info("comparing steampipe and es records", zap.Int("number", i), zap.String("key", k))
 					w.logger.Core().Sync()
 					v2 := esRecord[k]
 
@@ -555,7 +561,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 						sj2 = "{}"
 					}
 
-					w.logger.Info("comparing steampipe and es jsons", zap.Int("number", rowCount), zap.String("key", k), zap.String("steampipe", sj1), zap.String("es", sj2))
+					w.logger.Info("comparing steampipe and es jsons", zap.Int("number", i), zap.String("key", k), zap.String("steampipe", sj1), zap.String("es", sj2))
 					w.logger.Core().Sync()
 					if sj1 != sj2 {
 						if compareJsons(j2, j1) {
@@ -612,7 +618,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 				)
 			}
 		}
-		steampipeRows.Close()
+
 		results = append(results, TriggerQueryResponse{
 			TotalRows:          rowCount,
 			Query:              query,
