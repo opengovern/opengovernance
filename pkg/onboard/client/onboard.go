@@ -53,9 +53,8 @@ func (s *onboardClient) GetSource(ctx *httpclient.Context, sourceID string) (*ap
 	if ctx.Ctx == nil {
 		ctx.Ctx = context.Background()
 	}
-	spanCtx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx.Ctx, kaytuTrace.GetCurrentFuncName())
+	_, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx.Ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
-	ctx.Ctx = spanCtx
 
 	ctx.UserRole = authApi.KaytuAdminRole
 	url := fmt.Sprintf("%s/api/v1/source/%s", s.baseURL, sourceID)
@@ -87,9 +86,8 @@ func (s *onboardClient) GetSourceFullCred(ctx *httpclient.Context, sourceID stri
 	if ctx.Ctx == nil {
 		ctx.Ctx = context.Background()
 	}
-	spanCtx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx.Ctx, kaytuTrace.GetCurrentFuncName())
+	_, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx.Ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
-	ctx.Ctx = spanCtx
 	url := fmt.Sprintf("%s/api/v1/source/%s/credentials/full", s.baseURL, sourceID)
 
 	var awsCred api.AWSCredentialConfig
