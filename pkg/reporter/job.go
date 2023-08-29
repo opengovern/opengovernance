@@ -5,6 +5,8 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
@@ -372,6 +374,17 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
+	defer func() {
+		if r := recover(); r != nil {
+			w.logger.Error("panic in worker", zap.Any("panic", r))
+		}
+		w.logger.Info("worker done killing steampipe sidecar")
+		stdOut, stdErr := exec.Command("pkill", "steampipe").CombinedOutput()
+		if stdErr != nil {
+			w.logger.Error("failed to kill steampipe sidecar", zap.Error(stdErr), zap.String("output", string(stdOut)))
+		}
+	}()
+
 	connection, err := w.onboardClient.GetSource(&httpclient.Context{
 		Ctx:      ctx,
 		UserRole: api.InternalRole,
@@ -395,44 +408,31 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 		w.logger.Error("failed to populate steampipe", zap.Error(err))
 		return nil, err
 	}
-	stdOut, stdErr := exec.Command("steampipe", "plugin", "update", "--all").CombinedOutput()
-	if stdErr != nil {
-		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
-		return nil, stdErr
-	}
-	w.logger.Info("steampipe plugins updated")
-
-	stdOut, stdErr = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-		"9193", "--database-password", "abcd").CombinedOutput()
-	if stdErr != nil {
-		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
-		return nil, stdErr
-	}
 
 	// Do not remove this, steampipe will not start without this
 	homeDir, _ := os.UserHomeDir()
-	stdOut, stdErr = exec.Command("rm", path.Join(homeDir, ".steampipe", "config", "default.spc")).CombinedOutput()
+	stdOut, stdErr := exec.Command("rm", path.Join(homeDir, ".steampipe", "config", "default.spc")).CombinedOutput()
 	if stdErr != nil {
 		w.logger.Error("failed to remove default.spc", zap.Error(stdErr), zap.String("output", string(stdOut)))
 		return nil, stdErr
 	}
-
 	w.logger.Info("steampipe started")
 
-	stdOut, stdErr = exec.Command("steampipe", "plugin", "list").CombinedOutput()
-	if stdErr != nil {
-		w.logger.Error("failed to list steampipe plugins", zap.Error(err), zap.String("output", string(stdOut)))
-		return nil, stdErr
+	var originalSteampipe *steampipe.Database
+	for retry := 0; retry < 5; retry++ {
+		originalSteampipe, err = steampipe.NewSteampipeDatabase(steampipe.Option{
+			Host: "localhost",
+			Port: "9193",
+			User: "steampipe",
+			Pass: "abcd",
+			Db:   "steampipe",
+		})
+		if err == nil {
+			break
+		}
+		w.logger.Warn("failed to connect to steampipe", zap.Error(err), zap.Int("retry", retry))
+		time.Sleep(3 * time.Second)
 	}
-	w.logger.Info("steampipe plugins", zap.String("output", string(stdOut)))
-
-	originalSteampipe, err := steampipe.NewSteampipeDatabase(steampipe.Option{
-		Host: "localhost",
-		Port: "9193",
-		User: "steampipe",
-		Pass: "abcd",
-		Db:   "steampipe",
-	})
 	if err != nil {
 		w.logger.Error("failed to connect to steampipe", zap.Error(err))
 		return nil, err
@@ -447,11 +447,21 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 		listQuery = strings.ReplaceAll(listQuery, "%KAYTU_ACCOUNT_ID%", connection.ID.String())
 
 		_, span2 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("steampipe-query-%s", query.TableName))
-		steampipeRows, err := originalSteampipe.Conn().Query(ctx, listQuery)
-		if err != nil {
-			w.logger.Error("failed to run query", zap.Error(err), zap.String("query", query.ListQuery), zap.String("account", connection.ConnectionID))
-			return nil, err
+		w.logger.Info("running steampipe query", zap.String("account", connection.ConnectionID), zap.String("query", listQuery))
+		var steampipeRows pgx.Rows
+		for retry := 0; retry < 5; retry++ {
+			steampipeRows, err = originalSteampipe.Conn().Query(ctx, listQuery)
+			if err == nil {
+				break
+			}
+			if pgErr, ok := err.(*pgconn.PgError); ok {
+				if pgErr.SQLState() != "42P01" { // table not found (relation does not exist)
+					return nil, err
+				}
+			}
+			time.Sleep(3 * time.Second)
 		}
+		w.logger.Info("steampipe query done", zap.String("account", connection.ConnectionID), zap.String("query", listQuery))
 		span2.End()
 
 		var mismatches []QueryMismatch
@@ -482,18 +492,20 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 				keyValues = append(keyValues, steampipeRecord[f])
 			}
 
-			_, span3 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("es-query-%s", query.TableName))
+			w.logger.Info("running es query", zap.String("account", connection.ConnectionID), zap.String("query", getQuery))
 			esRows, err := w.kaytuSteampipeDb.Conn().Query(context.Background(), getQuery, keyValues...)
 			if err != nil {
 				w.logger.Error("failed to run query", zap.Error(err), zap.String("query", query.GetQuery), zap.String("account", connection.ConnectionID))
 				return nil, err
 			}
-			span3.End()
+			w.logger.Info("es query done", zap.String("account", connection.ConnectionID), zap.String("query", getQuery))
 
 			found := false
 			w.logger.Info("comparing steampipe and es records", zap.Int("number", rowCount))
 			_, span4 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("compare-%s", query.TableName))
+
 			for esRows.Next() {
+				w.logger.Info("comparing steampipe and es records", zap.Int("number", rowCount))
 				esRow, err := esRows.Values()
 				if err != nil {
 					w.logger.Error("failed to get es row values",
@@ -510,8 +522,8 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 				for idx, field := range esRows.FieldDescriptions() {
 					esRecord[string(field.Name)] = esRow[idx]
 				}
-
 				for k, v := range steampipeRecord {
+					w.logger.Info("comparing steampipe and es records", zap.Int("number", rowCount), zap.String("key", k))
 					v2 := esRecord[k]
 
 					j1, err := json.Marshal(v)

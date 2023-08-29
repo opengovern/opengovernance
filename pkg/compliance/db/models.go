@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
@@ -73,22 +74,24 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 	if len(api.Connectors) > 0 {
 		return nil
 	}
-	//tracer :
+	// tracer :
 	tracer := otel.Tracer("PopulateConnectors")
-	_, span := tracer.Start(ctx, "GetBenchmarks")
-
+	output2, span2 := tracer.Start(ctx, "new_GetBenchmark(loop)", trace.WithSpanKind(trace.SpanKindClient))
+	span2.SetName("new_GetBenchmark(loop)")
 	for _, childObj := range b.Children {
 		//tracer :
-		_, spanGQ := tracer.Start(ctx, "GetBenchmark")
+		_, span3 := tracer.Start(output2, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindClient))
+		span3.SetName("new_GetBenchmark")
 
 		child, err := db.GetBenchmark(childObj.ID)
 		if err != nil {
 			return err
 		}
+		span3.End()
+
 		if child == nil {
 			return fmt.Errorf("child %s not found", childObj.ID)
 		}
-		spanGQ.End()
 
 		ca := child.ToApi()
 		err = child.PopulateConnectors(ctx, db, &ca)
@@ -109,19 +112,24 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 			}
 		}
 	}
+	span2.End()
+	// tracer :
+	output4, span4 := tracer.Start(output2, "new_GetQuery(loop)", trace.WithSpanKind(trace.SpanKindClient))
+	span4.SetName("new_GetQuery(loop)")
 
 	for _, policy := range b.Policies {
 		if policy.QueryID == nil {
 			continue
 		}
 		//tracer :
-		_, spanGQ := tracer.Start(ctx, "GetQuery")
+		_, span5 := tracer.Start(output4, "new_GetQuery", trace.WithSpanKind(trace.SpanKindClient))
+		span5.SetName("new_GetQuery")
 
 		query, err := db.GetQuery(*policy.QueryID)
 		if err != nil {
 			return err
 		}
-		spanGQ.End()
+		span5.End()
 
 		if query == nil {
 			return fmt.Errorf("query %s not found", *policy.QueryID)
@@ -142,7 +150,7 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 			api.Connectors = append(api.Connectors, ty)
 		}
 	}
-	span.End()
+	span4.End()
 
 	return nil
 }
@@ -217,7 +225,8 @@ func (p Policy) GetTagsMap() map[string][]string {
 	return p.tagsMap
 }
 
-func (p *Policy) PopulateConnector(db Database, api *api.Policy) error {
+func (p *Policy) PopulateConnector(ctx context.Context, db Database, api *api.Policy) error {
+	tracer := otel.Tracer("PopulateConnector")
 	if !api.Connector.IsNull() {
 		return nil
 	}
@@ -225,10 +234,16 @@ func (p *Policy) PopulateConnector(db Database, api *api.Policy) error {
 	if p.QueryID == nil {
 		return nil
 	}
+	// tracer :
+	_, span1 := tracer.Start(ctx, "new_GetQuery", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetQuery")
+
 	query, err := db.GetQuery(*p.QueryID)
 	if err != nil {
 		return err
 	}
+	span1.End()
+
 	if query == nil {
 		return fmt.Errorf("query %s not found", *p.QueryID)
 	}
