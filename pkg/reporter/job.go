@@ -372,6 +372,16 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
+	defer func() {
+		if r := recover(); r != nil {
+			w.logger.Error("panic in worker", zap.Any("panic", r))
+		}
+		stdOut, stdErr := exec.Command("pkill", "steampipe").CombinedOutput()
+		if stdErr != nil {
+			w.logger.Error("failed to kill steampipe sidecar", zap.Error(stdErr), zap.String("output", string(stdOut)))
+		}
+	}()
+
 	connection, err := w.onboardClient.GetSource(&httpclient.Context{
 		Ctx:      ctx,
 		UserRole: api.InternalRole,
@@ -417,7 +427,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 		if err == nil {
 			break
 		}
-		w.logger.Error("failed to connect to steampipe", zap.Error(err), zap.Int("retry", retry))
+		w.logger.Warn("failed to connect to steampipe", zap.Error(err), zap.Int("retry", retry))
 		time.Sleep(3 * time.Second)
 	}
 	if err != nil {

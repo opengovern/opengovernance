@@ -6,4 +6,6 @@ RUN steampipe plugin install aws
 RUN steampipe plugin install azure
 RUN steampipe plugin install azuread
 RUN rm /home/steampipe/.steampipe/config/steampipe.spc /home/steampipe/.steampipe/config/default.spc
+RUN apt update
+RUN apt install -y procps
 CMD [ "/reporter" ]
