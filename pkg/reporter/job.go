@@ -405,13 +405,21 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 	}
 	w.logger.Info("steampipe started")
 
-	originalSteampipe, err := steampipe.NewSteampipeDatabase(steampipe.Option{
-		Host: "localhost",
-		Port: "9193",
-		User: "steampipe",
-		Pass: "abcd",
-		Db:   "steampipe",
-	})
+	var originalSteampipe *steampipe.Database
+	for retry := 0; retry < 5; retry++ {
+		originalSteampipe, err = steampipe.NewSteampipeDatabase(steampipe.Option{
+			Host: "localhost",
+			Port: "9193",
+			User: "steampipe",
+			Pass: "abcd",
+			Db:   "steampipe",
+		})
+		if err == nil {
+			break
+		}
+		w.logger.Error("failed to connect to steampipe", zap.Error(err), zap.Int("retry", retry))
+		time.Sleep(3 * time.Second)
+	}
 	if err != nil {
 		w.logger.Error("failed to connect to steampipe", zap.Error(err))
 		return nil, err
