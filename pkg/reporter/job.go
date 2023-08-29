@@ -351,7 +351,12 @@ func trimEmptyObjectsFromMap(obj map[string]any) map[string]any {
 			delete(obj, k)
 		}
 		if v2, ok := v.(map[string]any); ok {
-			obj[k] = trimEmptyObjectsFromMap(v2)
+			v2 = trimEmptyObjectsFromMap(v2)
+			if len(v2) == 0 {
+				delete(obj, k)
+			} else {
+				obj[k] = v2
+			}
 		}
 		if v2, ok := v.([]any); ok {
 			if len(v2) == 0 {
