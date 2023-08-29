@@ -1,10 +1,7 @@
-FROM ubuntu:20.04 AS dep
+FROM ghcr.io/turbot/steampipe:0.20.2
+USER root
 RUN apt update
 RUN apt install -y procps
-
-FROM ghcr.io/turbot/steampipe:0.20.11
-COPY --from=dep /usr/bin/ps /usr/bin/ps
-COPY --from=dep /usr/bin/pkill /usr/bin/pkill
 USER steampipe
 COPY ./build/reporter /
 RUN steampipe plugin install steampipe
