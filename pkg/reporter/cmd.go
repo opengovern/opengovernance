@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
+	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"github.com/spf13/cobra"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"os"
@@ -38,6 +37,8 @@ var (
 	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
 
 	OnboardBaseURL = os.Getenv("ONBOARD_BASEURL")
+
+	JaegerAgentHost = os.Getenv("JAEGER_AGENT_HOST")
 )
 
 func ReporterCommand() *cobra.Command {
@@ -50,9 +51,17 @@ func ReporterCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
 			logger, _ := zap.NewProduction()
-			otel.SetTracerProvider(trace.NewTracerProvider())
 			switch mode {
 			case "worker":
+				tp, err := kaytuTrace.InitTracer(JaegerAgentHost)
+				if err != nil {
+					return err
+				}
+				defer func() {
+					if err := tp.Shutdown(ctx); err != nil {
+						logger.Error(err.Error())
+					}
+				}()
 				worker, err := InitializeWorker(id,
 					RabbitMQUsername, RabbitMQPassword, RabbitMQService, RabbitMQPort,
 					ReporterQueueName,
