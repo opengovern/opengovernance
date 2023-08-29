@@ -1,4 +1,10 @@
-FROM ghcr.io/turbot/steampipe:0.20.2
+FROM ubuntu:20.04 AS dep
+RUN apt update
+RUN apt install -y procps
+
+FROM ghcr.io/turbot/steampipe:0.20.11
+COPY --from=dep /usr/bin/ps /usr/bin/ps
+COPY --from=dep /usr/bin/pkill /usr/bin/pkill
 USER steampipe
 COPY ./build/reporter /
 RUN steampipe plugin install steampipe
@@ -6,7 +12,4 @@ RUN steampipe plugin install aws
 RUN steampipe plugin install azure
 RUN steampipe plugin install azuread
 RUN rm /home/steampipe/.steampipe/config/steampipe.spc /home/steampipe/.steampipe/config/default.spc
-RUN apt-get install -y apt-transport-https
-RUN apt-get update
-RUN apt-get install -y procps
 CMD [ "/reporter" ]
