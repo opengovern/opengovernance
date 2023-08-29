@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"time"
@@ -75,12 +76,11 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 		return nil
 	}
 	// tracer :
-	tracer := otel.Tracer("PopulateConnectors")
-	output2, span2 := tracer.Start(ctx, "new_GetBenchmark(loop)", trace.WithSpanKind(trace.SpanKindClient))
+	output2, span2 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, "new_GetBenchmark(loop)", trace.WithSpanKind(trace.SpanKindClient))
 	span2.SetName("new_GetBenchmark(loop)")
 	for _, childObj := range b.Children {
 		//tracer :
-		_, span3 := tracer.Start(output2, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindClient))
+		_, span3 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(output2, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindClient))
 		span3.SetName("new_GetBenchmark")
 
 		child, err := db.GetBenchmark(childObj.ID)
@@ -114,7 +114,7 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 	}
 	span2.End()
 	// tracer :
-	output4, span4 := tracer.Start(output2, "new_GetQuery(loop)", trace.WithSpanKind(trace.SpanKindClient))
+	output4, span4 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(output2, "new_GetQuery(loop)", trace.WithSpanKind(trace.SpanKindClient))
 	span4.SetName("new_GetQuery(loop)")
 
 	for _, policy := range b.Policies {
@@ -122,7 +122,7 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 			continue
 		}
 		//tracer :
-		_, span5 := tracer.Start(output4, "new_GetQuery", trace.WithSpanKind(trace.SpanKindClient))
+		_, span5 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(output4, "new_GetQuery", trace.WithSpanKind(trace.SpanKindClient))
 		span5.SetName("new_GetQuery")
 
 		query, err := db.GetQuery(*policy.QueryID)
