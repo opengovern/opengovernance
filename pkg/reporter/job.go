@@ -484,7 +484,6 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 				keyValues = append(keyValues, steampipeRecord[f])
 			}
 
-			_, span3 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("es-query-%s", query.TableName))
 			w.logger.Info("running es query", zap.String("account", connection.ConnectionID), zap.String("query", getQuery))
 			esRows, err := w.kaytuSteampipeDb.Conn().Query(context.Background(), getQuery, keyValues...)
 			if err != nil {
@@ -492,7 +491,6 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 				return nil, err
 			}
 			w.logger.Info("es query done", zap.String("account", connection.ConnectionID), zap.String("query", getQuery))
-			span3.End()
 
 			found := false
 			w.logger.Info("comparing steampipe and es records", zap.Int("number", rowCount))
