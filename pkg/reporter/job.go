@@ -395,36 +395,15 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 		w.logger.Error("failed to populate steampipe", zap.Error(err))
 		return nil, err
 	}
-	stdOut, stdErr := exec.Command("steampipe", "plugin", "update", "--all").CombinedOutput()
-	if stdErr != nil {
-		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
-		return nil, stdErr
-	}
-	w.logger.Info("steampipe plugins updated")
-
-	stdOut, stdErr = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-		"9193", "--database-password", "abcd").CombinedOutput()
-	if stdErr != nil {
-		w.logger.Error("failed to start steampipe", zap.Error(stdErr), zap.String("output", string(stdOut)))
-		return nil, stdErr
-	}
 
 	// Do not remove this, steampipe will not start without this
 	homeDir, _ := os.UserHomeDir()
-	stdOut, stdErr = exec.Command("rm", path.Join(homeDir, ".steampipe", "config", "default.spc")).CombinedOutput()
+	stdOut, stdErr := exec.Command("rm", path.Join(homeDir, ".steampipe", "config", "default.spc")).CombinedOutput()
 	if stdErr != nil {
 		w.logger.Error("failed to remove default.spc", zap.Error(stdErr), zap.String("output", string(stdOut)))
 		return nil, stdErr
 	}
-
 	w.logger.Info("steampipe started")
-
-	stdOut, stdErr = exec.Command("steampipe", "plugin", "list").CombinedOutput()
-	if stdErr != nil {
-		w.logger.Error("failed to list steampipe plugins", zap.Error(err), zap.String("output", string(stdOut)))
-		return nil, stdErr
-	}
-	w.logger.Info("steampipe plugins", zap.String("output", string(stdOut)))
 
 	originalSteampipe, err := steampipe.NewSteampipeDatabase(steampipe.Option{
 		Host: "localhost",
