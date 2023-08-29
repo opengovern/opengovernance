@@ -76,11 +76,11 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 	}
 	// tracer :
 	tracer := otel.Tracer("PopulateConnectors")
-	_, span2 := tracer.Start(ctx, "new_GetBenchmark(loop)", trace.WithSpanKind(trace.SpanKindClient))
+	output2, span2 := tracer.Start(ctx, "new_GetBenchmark(loop)", trace.WithSpanKind(trace.SpanKindClient))
 	span2.SetName("new_GetBenchmark(loop)")
 	for _, childObj := range b.Children {
 		//tracer :
-		_, span3 := tracer.Start(ctx, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindClient))
+		_, span3 := tracer.Start(output2, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindClient))
 		span3.SetName("new_GetBenchmark")
 
 		child, err := db.GetBenchmark(childObj.ID)
@@ -114,7 +114,7 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 	}
 	span2.End()
 	// tracer :
-	_, span4 := tracer.Start(ctx, "new_GetQuery(loop)", trace.WithSpanKind(trace.SpanKindClient))
+	output4, span4 := tracer.Start(output2, "new_GetQuery(loop)", trace.WithSpanKind(trace.SpanKindClient))
 	span4.SetName("new_GetQuery(loop)")
 
 	for _, policy := range b.Policies {
@@ -122,7 +122,7 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 			continue
 		}
 		//tracer :
-		_, span5 := tracer.Start(ctx, "new_GetQuery", trace.WithSpanKind(trace.SpanKindClient))
+		_, span5 := tracer.Start(output4, "new_GetQuery", trace.WithSpanKind(trace.SpanKindClient))
 		span5.SetName("new_GetQuery")
 
 		query, err := db.GetQuery(*policy.QueryID)
