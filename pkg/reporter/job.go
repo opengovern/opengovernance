@@ -379,15 +379,17 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 			w.logger.Error("panic in worker", zap.Any("panic", r))
 		}
 		w.logger.Info("worker done, killing steampipe sidecar")
-		stdOut, stdErr := exec.Command("pkill", "-9", "steampipe").CombinedOutput()
+		stdOut, stdErr := exec.Command("pkill", "-e", "-9", "steampipe").CombinedOutput()
 		if stdErr != nil {
 			w.logger.Error("failed to kill steampipe sidecar", zap.Error(stdErr), zap.String("output", string(stdOut)))
 		}
+		w.logger.Info("steampipe sidecar killed", zap.String("output", string(stdOut)))
 		w.logger.Info("terminating steampipe sidecar")
-		stdOut, stdErr = exec.Command("pkill", "-15", "steampipe").CombinedOutput()
+		stdOut, stdErr = exec.Command("pkill", "-e", "-15", "steampipe").CombinedOutput()
 		if stdErr != nil {
 			w.logger.Error("failed to kill steampipe sidecar", zap.Error(stdErr), zap.String("output", string(stdOut)))
 		}
+		w.logger.Info("steampipe sidecar terminated", zap.String("output", string(stdOut)))
 	}()
 
 	connection, err := w.onboardClient.GetSource(&httpclient.Context{
