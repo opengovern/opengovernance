@@ -1,4 +1,7 @@
 FROM ghcr.io/turbot/steampipe:0.20.2
+USER root
+RUN apt update
+RUN apt install -y procps
 USER steampipe
 COPY ./build/reporter /
 RUN steampipe plugin install steampipe
