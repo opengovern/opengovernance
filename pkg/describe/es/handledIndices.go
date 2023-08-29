@@ -1,7 +1,7 @@
 package es
 
 var awsHandledResourceTypes = []string{"AWS::CertificateManager::Certificate", "AWS::Athena::QueryExecution",
-	"AWS::IAM::Policy", "AWS::ECR::Repository", "AWS::ECS::Service", "AWS::CloudFormation::Stack"}
+	"AWS::IAM::Policy", "AWS::ECR::Repository", "AWS::ECS::Service", "AWS::CloudFormation::Stack", "AWS::EC2::Instance"}
 
 var azureHandledResourceTypes = []string{"Microsoft.Network/networkSecurityGroups", "Microsoft.Web/sites",
 	"Microsoft.Network/virtualNetworks/subnets"}
