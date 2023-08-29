@@ -507,10 +507,13 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 
 			found := false
 			w.logger.Info("comparing steampipe and es records", zap.Int("number", rowCount))
+			w.logger.Core().Sync()
+
 			_, span4 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("compare-%s", query.TableName))
 
 			for esRows.Next() {
 				w.logger.Info("comparing steampipe and es records", zap.Int("number", rowCount))
+				w.logger.Core().Sync()
 				esRow, err := esRows.Values()
 				if err != nil {
 					w.logger.Error("failed to get es row values",
@@ -529,6 +532,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 				}
 				for k, v := range steampipeRecord {
 					w.logger.Info("comparing steampipe and es records", zap.Int("number", rowCount), zap.String("key", k))
+					w.logger.Core().Sync()
 					v2 := esRecord[k]
 
 					j1, err := json.Marshal(v)
@@ -551,6 +555,8 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 						sj2 = "{}"
 					}
 
+					w.logger.Info("comparing steampipe and es jsons", zap.Int("number", rowCount), zap.String("key", k), zap.String("steampipe", sj1), zap.String("es", sj2))
+					w.logger.Core().Sync()
 					if sj1 != sj2 {
 						if compareJsons(j2, j1) {
 							ReporterJobsCount.WithLabelValues(query.TableName, "Succeeded").Inc()
