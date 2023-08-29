@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"io"
 	"net/http"
@@ -124,10 +125,12 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 
 	for _, b := range req.Filters.BenchmarkID {
 		// tracer :
-		_, span2 := tracer.Start(output1, "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
+		output2, span2 := tracer.Start(output1, "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
 		span2.SetName("new_GetBenchmarkTreeIDs")
-		bs, err := h.GetBenchmarkTreeIDs(ctx.Request().Context(), b)
+		bs, err := h.GetBenchmarkTreeIDs(output2, b)
 		if err != nil {
+			span2.RecordError(err)
+			span2.SetStatus(codes.Error, err.Error())
 			return err
 		}
 		span2.End()
@@ -738,6 +741,8 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		span5.SetName("new_AddBenchmarkAssignment")
 
 		if err := h.db.AddBenchmarkAssignment(assignment); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			ctx.Logger().Errorf("add benchmark assignment: %v", err)
 			return err
 		}
@@ -765,6 +770,8 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 	span1.SetName("new_GetBenchmarkAssignmentsBySourceId")
 	dbAssignments, err := h.db.GetBenchmarkAssignmentsBySourceId(connectionId)
 	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", connectionId))
 		}
@@ -800,6 +807,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	// trace :
 	output, span := tracer.Start(ctx.Request().Context(), "new_ListAssignmentsByBenchmark", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListAssignmentsByBenchmark")
+	defer span.End()
 
 	benchmarkId := ctx.Param("benchmark_id")
 	if benchmarkId == "" {
@@ -810,6 +818,8 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	span1.SetName("new_GetBenchmark")
 	benchmark, err := h.db.GetBenchmark(benchmarkId)
 	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span1.End()
@@ -821,6 +831,8 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 
 	err = benchmark.PopulateConnectors(ctx.Request().Context(), h.db, &apiBenchmark)
 	if err != nil {
+		span2.RecordError(err)
+		span2.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span2.End()
@@ -851,6 +863,8 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 
 	dbAssignments, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(benchmarkId)
 	if err != nil {
+		span3.RecordError(err)
+		span3.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span3.End()
@@ -863,7 +877,6 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 			}
 		}
 	}
-	span.End()
 	return ctx.JSON(http.StatusOK, resp)
 }
 
@@ -898,6 +911,8 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 		span1.SetName("new_DeleteBenchmarkAssignmentByBenchmarkId")
 
 		if err := h.db.DeleteBenchmarkAssignmentByBenchmarkId(benchmarkId); err != nil {
+			span1.RecordError(err)
+			span1.SetStatus(codes.Error, err.Error())
 			h.logger.Error("delete benchmark assignment by benchmark id", zap.Error(err))
 			return err
 		}
@@ -908,6 +923,8 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 		span1.SetName("new_GetBenchmarkAssignmentByIds")
 
 		if _, err := h.db.GetBenchmarkAssignmentByIds(connectionId, benchmarkId); err != nil {
+			span1.RecordError(err)
+			span1.SetStatus(codes.Error, err.Error())
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return echo.NewHTTPError(http.StatusFound, "benchmark assignment not found")
 			}
@@ -921,6 +938,8 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 		span2.SetName("new_DeleteBenchmarkAssignmentByIds")
 
 		if err := h.db.DeleteBenchmarkAssignmentByIds(connectionId, benchmarkId); err != nil {
+			span2.RecordError(err)
+			span2.SetStatus(codes.Error, err.Error())
 			ctx.Logger().Errorf("delete benchmark assignment: %v", err)
 			return err
 		}
@@ -938,6 +957,8 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 
 	benchmarks, err := h.db.ListRootBenchmarks()
 	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span1.End()

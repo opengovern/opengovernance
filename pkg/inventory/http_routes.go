@@ -8,6 +8,8 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	_ "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"math"
 	"net/http"
 	"sort"
@@ -99,7 +101,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1.GET("/migrate-spend", httpserver.AuthorizeHandler(h.MigrateSpend, authApi.AdminRole))
 }
 
-var tracer = otel.Tracer("inventory")
+var tracer = otel.Tracer("new_inventory")
 
 func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
 	connectionIds := httpserver.QueryArrayParam(ctx, ConnectionIdParam)
@@ -195,11 +197,19 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 			if v, ok := resourceTypeMetricIDCache[hit.ResourceType]; ok {
 				metricItem = v
 			} else {
+				// tracer :
+				_, span1 := tracer.Start(cctx, "new_GetMetric", trace.WithSpanKind(trace.SpanKindServer))
+				span1.SetName("new_GetMetric")
+
 				metric, err := aDB.GetMetric(analyticsDB.MetricTypeAssets, hit.ResourceType)
 				if err != nil {
+					span1.RecordError(err)
+					span1.SetStatus(codes.Error, err.Error())
+
 					return err
 				}
 
+				span1.End()
 				if metric == nil {
 					return fmt.Errorf("resource type %s not found", hit.ResourceType)
 				}
@@ -389,19 +399,29 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 					if !isAWS {
 						table = "Azure Marketplace"
 					}
-
+					// tracer :
+					_, span1 := tracer.Start(cctx, "new_GetMetric", trace.WithSpanKind(trace.SpanKindServer))
+					span1.SetName("new_GetMetric")
 					metric, err := aDB.GetMetric(analyticsDB.MetricTypeSpend, table)
 					if err != nil {
+						span1.RecordError(err)
+						span1.SetStatus(codes.Error, err.Error())
 						return err
 					}
+
 					if metric != nil {
 						serviceNameMetricCache[hit.ServiceName] = *metric
 						metricID = metric.ID
 						metricName = metric.Name
 					}
 				} else {
+					// tracer :
+					_, span2 := tracer.Start(cctx, "new_GetMetric", trace.WithSpanKind(trace.SpanKindServer))
+					span2.SetName("new_GetMetric")
 					metric, err := aDB.GetMetric(analyticsDB.MetricTypeSpend, hit.ServiceName)
 					if err != nil {
+						span2.RecordError(err)
+						span2.SetStatus(codes.Error, err.Error())
 						return err
 					}
 					if metric == nil {
@@ -531,10 +551,14 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 
 func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context, metricIDs []string, metricType analyticsDB.MetricType, tagMap map[string][]string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []inventoryApi.Metric, error) {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
-	_, span := tracer.Start(ctx, "ListFilteredMetrics")
-
+	// tracer :
+	_, span := tracer.Start(ctx, "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListFilteredMetrics")
 	mts, err := aDB.ListFilteredMetrics(tagMap, metricType, metricIDs, connectorTypes)
+
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return 0, nil, err
 	}
 	span.End()
@@ -773,6 +797,10 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 //	@Success		200				{object}	map[string][]string
 //	@Router			/inventory/api/v2/analytics/tag [get]
 func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
+	// tracer :
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_ListAnalyticsTags", trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if len(connectionIDs) > MaxConns {
@@ -808,14 +836,17 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	fmt.Println("connectorTypes", connectorTypes)
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "ListMetricTagsKeysWithPossibleValues")
+	_, span1 := tracer.Start(outputS, "new_ListMetricTagsKeysWithPossibleValues", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_ListMetricTagsKeysWithPossibleValues")
 
 	tags, err := aDB.ListMetricTagsKeysWithPossibleValues(connectorTypes)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span1.End()
 	tags = model.TrimPrivateTags(tags)
-	span.End()
 
 	var metricCount map[string]int
 	var spend map[string]es.SpendMetricResp
@@ -841,14 +872,24 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	fmt.Println("tags", tags)
 
 	filteredTags := map[string][]string{}
+	// tracer:
+	outputS2, span2 := tracer.Start(outputS, "new_ListFilteredMetrics(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_ListFilteredMetrics(loop)")
+
 	for key, values := range tags {
 		for _, tagValue := range values {
+			_, span3 := tracer.Start(outputS2, "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
+			span3.SetName("new_ListFilteredMetrics")
+
 			metrics, err := aDB.ListFilteredMetrics(map[string][]string{
 				key: {tagValue},
 			}, metricType, nil, connectorTypes)
 			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
 				return err
 			}
+			span3.End()
 
 			fmt.Println("metrics", key, tagValue, metrics)
 			for _, metric := range metrics {
@@ -931,10 +972,13 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		}
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "ListFilteredMetrics")
+	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListFilteredMetrics")
 
 	metrics, err := aDB.ListFilteredMetrics(tagMap, metricType, ids, connectorTypes)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span.End()
@@ -1050,10 +1094,13 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 		startTime = time.Unix(startTimeVal, 0)
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "ListFilteredMetrics")
+	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListFilteredMetrics")
 
 	filteredMetrics, err := aDB.ListFilteredMetrics(map[string][]string{tagKey: nil}, metricType, nil, connectorTypes)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span.End()
@@ -1313,10 +1360,13 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 		metricType = analyticsDB.MetricTypeAssets
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "ListMetrics")
+	_, span := tracer.Start(ctx.Request().Context(), "new_ListMetrics", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListMetrics")
 
 	metrics, err := aDB.ListMetrics()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span.End()
@@ -1619,10 +1669,13 @@ func (h *HttpHandler) ListMetrics(ctx echo.Context) error {
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	metricType := analyticsDB.MetricType(ctx.QueryParam("metricType"))
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "ListFilteredMetrics")
+	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListFilteredMetrics")
 
 	metrics, err := aDB.ListFilteredMetrics(nil, metricType, nil, connectorTypes)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span.End()
@@ -1686,10 +1739,13 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 		}
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "ListFilteredMetrics")
+	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListFilteredMetrics")
 
 	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, nil, nil)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span.End()
@@ -1986,10 +2042,13 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 
 	if dimension == inventoryApi.SpendDimensionMetric {
 		// trace :
-		_, span := tracer.Start(ctx.Request().Context(), "ListFilteredMetrics")
+		_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
+		span.SetName("new_ListFilteredMetrics")
 
 		metrics, err = aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, nil)
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return err
 		}
 		span.End()
@@ -2107,29 +2166,43 @@ func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 			return ctx.JSON(http.StatusBadRequest, "invalid startTime value")
 		}
 	}
+	// tracer :
+	outputS1, span := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
 
-	apiResourceType, err := h.GetResourceTypeMetric(resourceType, connectionIDs, endTime)
+	apiResourceType, err := h.GetResourceTypeMetric(outputS1, resourceType, connectionIDs, endTime)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 
-	oldApiResourceType, err := h.GetResourceTypeMetric(resourceType, connectionIDs, startTime)
+	oldApiResourceType, err := h.GetResourceTypeMetric(outputS1, resourceType, connectionIDs, startTime)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
+
+	span.End()
 	apiResourceType.OldCount = oldApiResourceType.Count
 
 	return ctx.JSON(http.StatusOK, *apiResourceType)
 }
 
-func (h *HttpHandler) GetResourceTypeMetric(resourceTypeStr string, connectionIDs []string, timeAt int64) (*inventoryApi.ResourceType, error) {
+func (h *HttpHandler) GetResourceTypeMetric(ctx context.Context, resourceTypeStr string, connectionIDs []string, timeAt int64) (*inventoryApi.ResourceType, error) {
+	// tracer :
+	_, span := tracer.Start(ctx, "new_GetResourceType", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetResourceType")
 	resourceType, err := h.db.GetResourceType(resourceTypeStr)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		if err == gorm.ErrRecordNotFound {
 			return nil, echo.NewHTTPError(http.StatusNotFound, "resource type not found")
 		}
 		return nil, err
 	}
+	span.End()
 
 	var metricIndexed map[string]int
 	if len(connectionIDs) > 0 {
@@ -2368,10 +2441,13 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 		search = &req.TitleFilter
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetQueriesWithFilters")
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithFilters", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetQueriesWithFilters")
 
 	queries, err := h.db.GetQueriesWithFilters(search, req.Connectors)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span.End()
@@ -2413,10 +2489,16 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 	if req.Query == nil || *req.Query == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Query is required")
 	}
-	resp, err := h.RunSmartQuery(ctx.Request().Context(), *req.Query, *req.Query, &req)
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_RunSmartQuery", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_RunSmartQuery")
+
+	resp, err := h.RunSmartQuery(outputS, *req.Query, *req.Query, &req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span.End()
 	return ctx.JSON(200, resp)
 }
 
@@ -2432,10 +2514,13 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 //	@Router			/inventory/api/v1/query/run/history [get]
 func (h *HttpHandler) GetRecentRanQueries(ctx echo.Context) error {
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetQueryHistory")
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueryHistory", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetQueryHistory")
 
 	smartQueryHistories, err := h.db.GetQueryHistory()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		h.logger.Error("Failed to get query history", zap.Error(err))
 		return err
 	}
@@ -2452,10 +2537,13 @@ func (h *HttpHandler) GetRecentRanQueries(ctx echo.Context) error {
 func (h *HttpHandler) CountResources(ctx echo.Context) error {
 	timeAt := time.Now()
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "ListFilteredResourceTypes")
+	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredResourceTypes", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListFilteredResourceTypes")
 
 	resourceTypes, err := h.db.ListFilteredResourceTypes(nil, nil, nil, nil, true)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	span.End()
@@ -2495,12 +2583,18 @@ func (h *HttpHandler) RunSmartQuery(ctx context.Context, title, query string, re
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+	// tracer :
+	_, span := tracer.Start(ctx, "new_UpdateQueryHistory", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_UpdateQueryHistory")
 
 	err = h.db.UpdateQueryHistory(query)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		h.logger.Error("failed to update query history", zap.Error(err))
 		return nil, err
 	}
+	span.End()
 
 	resp := inventoryApi.RunQueryResponse{
 		Title:   title,
@@ -2658,7 +2752,8 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "ListFilteredResourceTypes")
+	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredResourceTypes", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListFilteredResourceTypes")
 
 	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, resourceTypeNames, serviceNames, connectors, summarized)
 	if err != nil {
