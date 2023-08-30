@@ -1059,6 +1059,12 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 						name = *account.AccountName
 					}
 
+					if conn.CreationMethod == source.SourceCreationMethodManual {
+						h.logger.Warn("organization account is onboarded as an standalone account",
+							zap.String("accountID", account.AccountID),
+							zap.String("connectionID", conn.ID.String()))
+					}
+
 					localConn := conn
 					if conn.Name != name {
 						localConn.Name = name
