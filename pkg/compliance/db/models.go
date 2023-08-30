@@ -91,8 +91,8 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 			span3.SetStatus(codes.Error, err.Error())
 			return err
 		}
-		span3.AddEvent("log", trace.WithAttributes(
-			attribute.String("ID", child.ID),
+		span3.AddEvent("information", trace.WithAttributes(
+			attribute.String("benchmark ID", child.ID),
 		))
 		span3.End()
 
@@ -138,8 +138,8 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 			span5.SetStatus(codes.Error, err.Error())
 			return err
 		}
-		span5.AddEvent("log", trace.WithAttributes(
-			attribute.String("policyID", policy.ID),
+		span5.AddEvent("information", trace.WithAttributes(
+			attribute.String("policy ID", policy.ID),
 		))
 		span5.End()
 
@@ -252,8 +252,13 @@ func (p *Policy) PopulateConnector(ctx context.Context, db Database, api *api.Po
 
 	query, err := db.GetQuery(*p.QueryID)
 	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("policy id", p.ID),
+	))
 	span1.End()
 
 	if query == nil {
