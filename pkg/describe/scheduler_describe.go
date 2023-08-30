@@ -119,10 +119,12 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 					return err
 				}
-				if !src.IsEnabled() {
-					if src.IsDiscovered() && strings.HasPrefix(strings.ToLower(dc.ResourceType), "aws::costexplorer") {
-						// cost
-					} else {
+
+				if src.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
+					strings.HasPrefix(strings.ToLower(dc.ResourceType), "aws::costexplorer") {
+					// cost on org
+				} else {
+					if !src.IsEnabled() {
 						continue
 					}
 				}
@@ -229,10 +231,11 @@ func (s *Scheduler) scheduleDescribeJob() {
 }
 
 func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType string, scheduled, costFullDiscovery bool) error {
-	if !connection.IsEnabled() {
-		if connection.IsDiscovered() && strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") {
-			// cost
-		} else {
+	if connection.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
+		strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") {
+		// cost on org
+	} else {
+		if !connection.IsEnabled() {
 			return nil
 		}
 	}
@@ -292,14 +295,15 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 		return errors.New("asset discovery is not scheduled")
 	}
 
-	if (connection.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard &&
-		connection.LifecycleState != apiOnboard.ConnectionLifecycleStateInProgress) ||
-		connection.HealthState != source.HealthStatusHealthy {
-		//DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		//return errors.New("connection is not healthy or disabled")
-		if connection.IsDiscovered() && strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") {
-			// cost
-		} else {
+	if connection.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
+		strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") {
+		// cost on org
+	} else {
+		if (connection.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard &&
+			connection.LifecycleState != apiOnboard.ConnectionLifecycleStateInProgress) ||
+			connection.HealthState != source.HealthStatusHealthy {
+			//DescribeSourceJobsCount.WithLabelValues("failure").Inc()
+			//return errors.New("connection is not healthy or disabled")
 			return nil
 		}
 	}
