@@ -494,9 +494,10 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 				PeriodEnd:   hit.PeriodEnd * 1000,
 			}
 			key = fmt.Sprintf("%s-%s-%s", connector.Connector, metricID, dateStr)
-			if dateStr == "2023-07-05" {
+			if dateStr == "2023-07-05" && metricID == "spend_amazon_elastic_compute_cloud___compute" {
 				fmt.Println(key, connector.CostValue)
 			}
+
 			if v, ok := connectorMap[key]; ok {
 				v.CostValue += connector.CostValue
 				connectorMap[key] = v
