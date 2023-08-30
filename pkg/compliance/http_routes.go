@@ -267,10 +267,6 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 //	@Success		200				{object}	api.GetBenchmarksSummaryResponse
 //	@Router			/compliance/api/v1/benchmarks/summary [get]
 func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
-	// tracer :
-	output1, span1 := tracer.Start(ctx.Request().Context(), "new_ListBenchmarksSummary", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_ListBenchmarksSummary")
-
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 	if len(connectionIDs) > 20 {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
@@ -285,12 +281,15 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		timeAt = time.Unix(timeAtInt, 0)
 	}
 	var response api.GetBenchmarksSummaryResponse
+
 	// tracer :
-	output2, span2 := tracer.Start(output1, "new_ListRootBenchmarks", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_ListRootBenchmarks")
+	outputS, span2 := tracer.Start(ctx.Request().Context(), "new_ListRootBenchmarks", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_ListRootBenchmarks")
 
 	benchmarks, err := h.db.ListRootBenchmarks()
 	if err != nil {
+		span2.RecordError(err)
+		span2.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span2.End()
@@ -306,7 +305,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		return err
 	}
 	// tracer :
-	output3, span3 := tracer.Start(output2, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	output3, span3 := tracer.Start(outputS, "new_PopulateConnectors(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span3.SetName("new_PopulateConnectors(loop)")
 
 	for _, b := range benchmarks {
@@ -317,6 +316,8 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 
 		err = b.PopulateConnectors(ctx.Request().Context(), h.db, &be)
 		if err != nil {
+			span4.RecordError(err)
+			span4.SetStatus(codes.Error, err.Error())
 			return err
 		}
 
@@ -342,8 +343,6 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		response.TotalChecks.AddSeverityResult(summaryAtTime.SeverityResult)
 	}
 	span3.End()
-
-	span1.End()
 	return ctx.JSON(http.StatusOK, response)
 }
 
@@ -395,6 +394,8 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	span2.SetName("new_PopulateConnectors")
 	err = benchmark.PopulateConnectors(ctx.Request().Context(), h.db, &be)
 	if err != nil {
+		span2.RecordError(err)
+		span2.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span2.End()
@@ -601,6 +602,8 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 
 	err = benchmark.PopulateConnectors(ctx.Request().Context(), h.db, &be)
 	if err != nil {
+		span2.RecordError(err)
+		span2.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span2.End()
@@ -972,8 +975,11 @@ func (h *HttpHandler) ListBenchmarks(ctx echo.Context) error {
 		// tracer :
 		_, span3 := tracer.Start(output2, "new_PopulateConnectors", trace.WithSpanKind(trace.SpanKindServer))
 		span3.SetName("new_PopulateConnectors")
+
 		err = b.PopulateConnectors(ctx.Request().Context(), h.db, &be)
 		if err != nil {
+			span3.RecordError(err)
+			span3.SetStatus(codes.Error, err.Error())
 			return err
 		}
 		span3.End()
@@ -1007,6 +1013,8 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 
 	err = benchmark.PopulateConnectors(ctx.Request().Context(), h.db, &resp)
 	if err != nil {
+		span2.RecordError(err)
+		span2.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span2.End()
@@ -1072,11 +1080,13 @@ func (h *HttpHandler) getBenchmarkPolicies(ctx context.Context, benchmarkID stri
 func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 	policyId := ctx.Param("policy_id")
 	// trace :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetPolicy", trace.WithSpanKind(trace.SpanKindServer))
+	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_GetPolicy", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetPolicy")
 
 	policy, err := h.db.GetPolicy(policyId)
 	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span1.End()
@@ -1086,11 +1096,17 @@ func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 	}
 
 	pa := policy.ToApi()
-	err = policy.PopulateConnector(ctx.Request().Context(), h.db, &pa)
+	// trace :
+	_, span2 := tracer.Start(ctx.Request().Context(), "new_PopulateConnector", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_PopulateConnector")
+
+	err = policy.PopulateConnector(outputS, h.db, &pa)
 	if err != nil {
+		span2.RecordError(err)
+		span2.SetStatus(codes.Error, err.Error())
 		return err
 	}
-
+	span2.End()
 	return ctx.JSON(http.StatusOK, pa)
 }
 
