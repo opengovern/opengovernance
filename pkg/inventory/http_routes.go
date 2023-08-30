@@ -494,6 +494,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 				PeriodEnd:   hit.PeriodEnd * 1000,
 			}
 			key = fmt.Sprintf("%s-%s-%s", connector.Connector, metricID, dateStr)
+			fmt.Println(key, connector.CostValue)
 			if v, ok := connectorMap[key]; ok {
 				v.CostValue += connector.CostValue
 				connectorMap[key] = v
