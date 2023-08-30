@@ -2175,7 +2175,7 @@ func (h HttpHandler) CountSources(ctx echo.Context) error {
 			return err
 		}
 		span.AddEvent("information", trace.WithAttributes(
-			attribute.String("source type", st),
+			attribute.String("source type", st.String()),
 		))
 		span.End()
 
