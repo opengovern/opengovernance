@@ -573,22 +573,39 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 				found = true
 
 				esRecord := map[string]any{}
+				esRecordType := map[string]uint32{}
 				for idx, field := range esRows.FieldDescriptions() {
 					esRecord[string(field.Name)] = esRow[idx]
+					esRecordType[string(field.Name)] = field.DataTypeOID
 				}
 				for k, v := range steampipeRecord {
 					w.logger.Info("comparing steampipe and es records", zap.Int("number", i), zap.String("key", k))
 					w.logger.Core().Sync()
 					v2 := esRecord[k]
+					// if its not json
+					var j1 []byte
+					var j2 []byte
+					// 3802 is jsonb and 114 is json
+					if esRecordType[k] != 3802 && esRecordType[k] != 114 {
+						j1, err = json.Marshal(v)
+						if err != nil {
+							return nil, err
+						}
 
-					j1, err := json.Marshal(v)
-					if err != nil {
-						return nil, err
-					}
-
-					j2, err := json.Marshal(v2)
-					if err != nil {
-						return nil, err
+						j2, err = json.Marshal(v2)
+						if err != nil {
+							return nil, err
+						}
+					} else {
+						var ok bool
+						j1, ok = v.([]byte)
+						if !ok {
+							j1 = []byte(fmt.Sprintf("%v", v))
+						}
+						j2, ok = v2.([]byte)
+						if !ok {
+							j2 = []byte(fmt.Sprintf("%v", v2))
+						}
 					}
 
 					sj1 := strings.ToLower(string(j1))

@@ -28,5 +28,23 @@
     "tableName": "aws_s3_bucket",
     "list": "SELECT * FROM aws_s3_bucket",
     "get": "SELECT * FROM aws_s3_bucket WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND name = $1"
+  },
+  {
+    "keyFields": ["arn"],
+    "tableName": "aws_backup_vault",
+    "list": "SELECT * FROM aws_backup_vault",
+    "get": "SELECT * FROM aws_backup_vault WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
+  },
+  {
+    "keyFields": ["name"],
+    "tableName": "aws_cloudformation_stack",
+    "list": "SELECT * FROM aws_cloudformation_stack",
+    "get": "SELECT * FROM aws_cloudformation_stack WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND name = $1"
+  },
+  {
+    "keyFields": ["arn"],
+    "tableName": "aws_ecr_repository",
+    "list": "SELECT * FROM aws_ecr_repository",
+    "get": "SELECT * FROM aws_ecr_repository WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
   }
 ]
