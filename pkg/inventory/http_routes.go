@@ -285,15 +285,46 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 }
 
 func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
+	connectorMap := map[string]spend.ConnectorMetricTrendSummary{}
 	for i := 0; i < 1000; i++ {
-		err := h.MigrateSpendPart(i, true)
+		cm, err := h.MigrateSpendPart(i, true)
 		if err != nil {
 			return err
 		}
+		for key, newValue := range cm {
+			if v, ok := connectorMap[key]; ok {
+				v.CostValue += newValue.CostValue
+				connectorMap[key] = v
+			} else {
+				connectorMap[key] = newValue
+			}
+		}
 
-		err = h.MigrateSpendPart(i, false)
+		cm, err = h.MigrateSpendPart(i, false)
 		if err != nil {
 			return err
+		}
+		for key, newValue := range cm {
+			if v, ok := connectorMap[key]; ok {
+				v.CostValue += newValue.CostValue
+				connectorMap[key] = v
+			} else {
+				connectorMap[key] = newValue
+			}
+		}
+	}
+
+	var docs []kafka.Doc
+	for _, c := range connectorMap {
+		docs = append(docs, c)
+	}
+
+	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
+		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
+		err := kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
+		if err != nil {
+			h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()))
+			continue
 		}
 	}
 	return nil
@@ -317,7 +348,7 @@ func (t ExistFilter) MarshalJSON() ([]byte, error) {
 }
 func (t ExistFilter) IsBoolFilter() {}
 
-func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
+func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) (map[string]spend.ConnectorMetricTrendSummary, error) {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	connectionMap := map[string]spend.ConnectionMetricTrendSummary{}
 	connectorMap := map[string]spend.ConnectorMetricTrendSummary{}
@@ -346,7 +377,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 		nil,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	serviceNameMetricCache := map[string]analyticsDB.AnalyticMetric{}
 
@@ -360,14 +391,14 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 		fmt.Println("MigrateAnalytics = ask page", summarizerJobID)
 		page, err := pagination.NextPage(cctx)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		fmt.Println("MigrateAnalytics = next page", summarizerJobID, len(page))
 
 		for _, hit := range page {
 			connectionID, err := uuid.Parse(hit.SourceID)
 			if err != nil {
-				return err
+				return nil, err
 			}
 
 			var metricID, metricName string
@@ -409,7 +440,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 					if err != nil {
 						span1.RecordError(err)
 						span1.SetStatus(codes.Error, err.Error())
-						return err
+						return nil, err
 					}
 					span1.AddEvent("information", trace.WithAttributes(
 						attribute.String("metricID", metric.ID),
@@ -428,14 +459,14 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 					if err != nil {
 						span2.RecordError(err)
 						span2.SetStatus(codes.Error, err.Error())
-						return err
+						return nil, err
 					}
 					span2.AddEvent("information", trace.WithAttributes(
 						attribute.String("metricID", metric.ID),
 					))
 					span2.End()
 					if metric == nil {
-						return fmt.Errorf("GetMetric, table %s not found", hit.ServiceName)
+						return nil, fmt.Errorf("GetMetric, table %s not found", hit.ServiceName)
 					}
 					serviceNameMetricCache[hit.ServiceName] = *metric
 					metricID = metric.ID
@@ -511,10 +542,6 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 		docs = append(docs, c)
 	}
 
-	for _, c := range connectorMap {
-		docs = append(docs, c)
-	}
-
 	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
 		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
 		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
@@ -524,7 +551,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 		}
 	}
 
-	return nil
+	return connectorMap, nil
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
