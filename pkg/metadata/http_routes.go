@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	_ "gorm.io/gorm"
@@ -59,6 +60,9 @@ func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("key", key),
+	))
 	span.End()
 	return ctx.JSON(http.StatusOK, metadata.GetCore())
 }
@@ -97,6 +101,9 @@ func (h HttpHandler) SetConfigMetadata(ctx echo.Context) error {
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("key", key.String()),
+	))
 	span.End()
 
 	return ctx.JSON(http.StatusOK, nil)
@@ -126,6 +133,9 @@ func (h HttpHandler) AddFilter(ctx echo.Context) error {
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("name", req.Name),
+	))
 	span.End()
 	return ctx.JSON(http.StatusOK, nil)
 }

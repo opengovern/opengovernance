@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"net/http"
@@ -130,6 +131,9 @@ func (h HttpHandler) ListConnectors(ctx echo.Context) error {
 			span3.SetStatus(codes.Error, err.Error())
 			return err
 		}
+		span3.AddEvent("information", trace.WithAttributes(
+			attribute.String("source name", string(c.Name)),
+		))
 		span3.End()
 
 		tags := make(map[string]any)
@@ -237,6 +241,9 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		span2.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span2.AddEvent("information", trace.WithAttributes(
+		attribute.String("source name", src.Name),
+	))
 	span2.End()
 
 	return ctx.JSON(http.StatusOK, src.ToSourceResponse())
@@ -326,6 +333,9 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		span2.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span2.AddEvent("information", trace.WithAttributes(
+		attribute.String("source name ", src.Name),
+	))
 	span2.End()
 
 	return ctx.JSON(http.StatusOK, src.ToSourceResponse())
@@ -402,12 +412,16 @@ func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred Credential)
 	// tracer :
 	_, span := tracer.Start(ctx, "new_UpdateCredential", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_UpdateCredential")
+
 	_, dbErr := h.db.UpdateCredential(&cred)
 	if dbErr != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		return false, echo.NewHTTPError(http.StatusInternalServerError, dbErr.Error())
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name ", *cred.Name),
+	))
 	span.End()
 
 	if err != nil {
@@ -472,6 +486,9 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 			span2.SetStatus(codes.Error, err.Error())
 			return err
 		}
+		span2.AddEvent("information", trace.WithAttributes(
+			attribute.String("Credential name ", *cred.Name),
+		))
 		span2.End()
 
 		return nil
@@ -541,6 +558,9 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 			span2.SetStatus(codes.Error, err.Error())
 			return err
 		}
+		span2.AddEvent("information", trace.WithAttributes(
+			attribute.String("credential name", *cred.Name),
+		))
 		span2.End()
 
 		return nil
@@ -713,6 +733,9 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *credential.Name),
+	))
 	span1.End()
 
 	// trace :
@@ -725,6 +748,9 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		span2.SetStatus(codes.Error, err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential id", credId.String()),
+	))
 	span2.End()
 
 	metadata := make(map[string]any)
@@ -830,6 +856,9 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("connector type", string(credential.ConnectorType)),
+	))
 	span.End()
 
 	existingConnectionSubIDs := make([]string, 0, len(existingConnections))
@@ -868,6 +897,9 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 							h.logger.Error("failed to update source", zap.Error(err))
 							return nil, err
 						}
+						span3.AddEvent("information", trace.WithAttributes(
+							attribute.String("source name ", localConn.Name),
+						))
 						span3.End()
 					}
 				}
@@ -877,16 +909,23 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 	span2.End()
 
 	h.logger.Info("onboarding subscriptions", zap.Int("count", len(subsToOnboard)))
-
+	// tracer :
 	outputS4, span4 := tracer.Start(outputS, "new_CreateSource(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span4.SetName("new_CreateSource(loop)")
 
 	for _, sub := range subsToOnboard {
 		h.logger.Info("onboarding subscription", zap.String("subscriptionId", sub.SubscriptionID))
+		// tracer :
+		_, span6 := tracer.Start(outputS4, "CountSources", trace.WithSpanKind(trace.SpanKindServer))
+		span6.SetName("CountSources")
+
 		count, err := h.db.CountSources()
 		if err != nil {
+			span6.RecordError(err)
+			span6.SetStatus(codes.Error, err.Error())
 			return nil, err
 		}
+		span6.End()
 		if count >= maxConnections {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
 		}
@@ -913,6 +952,7 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 			fmt.Sprintf("Auto onboarded subscription %s", sub.SubscriptionID),
 			credential,
 		)
+		//tracer :
 		_, span5 := tracer.Start(outputS4, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
 		span5.SetName("new_CreateSource")
 
@@ -922,6 +962,9 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 			span5.SetStatus(codes.Error, err.Error())
 			return nil, err
 		}
+		span5.AddEvent("information", trace.WithAttributes(
+			attribute.String("source name", src.Name),
+		))
 		span5.End()
 
 		metadata := make(map[string]any)
@@ -991,7 +1034,11 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential connector ", string(credential.ConnectorType)),
+	))
 	span.End()
+
 	existingConnectionAccountIDs := make([]string, 0, len(existingConnections))
 	for _, conn := range existingConnections {
 		existingConnectionAccountIDs = append(existingConnectionAccountIDs, conn.SourceId)
@@ -1020,6 +1067,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 						localConn.LifecycleState = ConnectionLifecycleStateArchived
 					}
 					if conn.Name != name || account.Account.Status != awsOrgTypes.AccountStatusActive {
+						// tracer :
 						_, span2 := tracer.Start(outputS1, "new_UpdateSource", trace.WithSpanKind(trace.SpanKindServer))
 						span2.SetName("new_UpdateSource")
 
@@ -1030,6 +1078,9 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 							h.logger.Error("failed to update source", zap.Error(err))
 							return nil, err
 						}
+						span1.AddEvent("information", trace.WithAttributes(
+							attribute.String("source name", localConn.Name),
+						))
 						span2.End()
 					}
 				}
@@ -1038,6 +1089,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 	}
 	span1.End()
 	// TODO add tag filter
+	// tracer :
 	outputS3, span3 := tracer.Start(outputS1, "new_CountSources(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span3.SetName("new_CountSources(loop)")
 
@@ -1082,6 +1134,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 			fmt.Sprintf("Auto onboarded account %s", account.AccountID),
 			credential,
 		)
+		// tracer :
 		outputS5, span5 := tracer.Start(outputS3, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
 		span5.SetName("new_Transaction")
 
@@ -1095,6 +1148,9 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 				span6.SetStatus(codes.Error, err.Error())
 				return err
 			}
+			span1.AddEvent("information", trace.WithAttributes(
+				attribute.String("source name", src.Name),
+			))
 			span6.End()
 
 			//TODO: add enable account
@@ -1166,6 +1222,9 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *credential.Name),
+	))
 	span.End()
 
 	maxConns := httpserver.GetMaxConnections(ctx)
@@ -1207,6 +1266,9 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 		}
 		return ctx.JSON(http.StatusNotFound, "credential not found")
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *cred.Name),
+	))
 	span.End()
 
 	if req.Name != nil {
@@ -1282,6 +1344,9 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 			span2.SetStatus(codes.Error, err.Error())
 			return err
 		}
+		span2.AddEvent("information", trace.WithAttributes(
+			attribute.String("credential name", *cred.Name),
+		))
 		span2.End()
 
 		return nil
@@ -1317,6 +1382,9 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		}
 		return ctx.JSON(http.StatusNotFound, "credential not found")
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *cred.Name),
+	))
 	span.End()
 
 	if req.Name != nil {
@@ -1396,8 +1464,13 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		span3.SetName("new_UpdateCredential")
 
 		if _, err := h.db.UpdateCredential(cred); err != nil {
+			span3.RecordError(err)
+			span3.SetStatus(codes.Error, err.Error())
 			return err
 		}
+		span3.AddEvent("information", trace.WithAttributes(
+			attribute.String("credential name", *cred.Name),
+		))
 		span3.End()
 
 		return nil
@@ -1441,6 +1514,9 @@ func (h HttpHandler) PutCredentials(ctx echo.Context) error {
 	case source.CloudAWS:
 		return h.putAWSCredentials(ctx, req)
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *req.Name),
+	))
 	span.End()
 	return ctx.JSON(http.StatusBadRequest, "invalid source type")
 }
@@ -1474,6 +1550,9 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *credential.Name),
+	))
 	span1.End()
 
 	// trace :
@@ -1502,6 +1581,9 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 			span4.SetStatus(codes.Error, err.Error())
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
+		span4.AddEvent("information", trace.WithAttributes(
+			attribute.String("credential name", *credential.Name),
+		))
 		span4.End()
 
 		// trace :
@@ -1516,6 +1598,9 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 				span6.SetStatus(codes.Error, err.Error())
 				return err
 			}
+			span6.AddEvent("information", trace.WithAttributes(
+				attribute.String("source name", src.Name),
+			))
 			span6.End()
 		}
 		span5.End()
@@ -1547,6 +1632,9 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("source name", src.Name),
+	))
 	span.End()
 
 	cnf, err := h.kms.Decrypt(src.Credential.Secret, h.keyARN)
@@ -1587,14 +1675,22 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 	}
 }
 
-func (h HttpHandler) updateConnectionHealth(connection Source, healthStatus source.HealthStatus, reason *string) (Source, error) {
+func (h HttpHandler) updateConnectionHealth(ctx context.Context, connection Source, healthStatus source.HealthStatus, reason *string) (Source, error) {
 	connection.HealthState = healthStatus
 	connection.HealthReason = reason
 	connection.LastHealthCheckTime = time.Now()
+	// tracer :
+	_, span := tracer.Start(ctx, "new_UpdateSource", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_UpdateSource")
+
 	_, err := h.db.UpdateSource(&connection)
 	if err != nil {
 		return Source{}, err
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("source name", connection.Name),
+	))
+	span.End()
 	//TODO Mahan: record state change in elastic search
 	return connection, nil
 }
@@ -1692,6 +1788,9 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection Sourc
 	if err != nil {
 		h.logger.Warn("failed to check read permission", zap.Error(err), zap.String("sourceId", connection.SourceId))
 	}
+	// tracer :
+	outputS, span := tracer.Start(ctx, "new_CreateSource(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_CreateSource(loop)")
 
 	if !isAttached {
 		var healthMessage string
@@ -1700,19 +1799,19 @@ func (h HttpHandler) checkConnectionHealth(ctx context.Context, connection Sourc
 		} else {
 			healthMessage = err.Error()
 		}
-		connection, err = h.updateConnectionHealth(connection, source.HealthStatusUnhealthy, &healthMessage)
+		connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusUnhealthy, &healthMessage)
 		if err != nil {
 			h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
 			return connection, err
 		}
 	} else {
-		connection, err = h.updateConnectionHealth(connection, source.HealthStatusHealthy, utils.GetPointer(""))
+		connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusHealthy, utils.GetPointer(""))
 		if err != nil {
 			h.logger.Warn("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
 			return connection, err
 		}
 	}
-
+	span.End()
 	return connection, nil
 }
 
@@ -1747,10 +1846,13 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 		h.logger.Error("failed to get source", zap.Error(err), zap.String("sourceId", sourceUUID.String()))
 		return err
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("source name", connection.Name),
+	))
 	span.End()
 
 	if !connection.LifecycleState.IsEnabled() {
-		connection, err = h.updateConnectionHealth(connection, source.HealthStatusNil, utils.GetPointer("Connection is not enabled"))
+		connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusNil, utils.GetPointer("Connection is not enabled"))
 		if err != nil {
 			h.logger.Error("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
 			return err
@@ -1769,7 +1871,7 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 			}
 		}
 		if !isHealthy {
-			connection, err = h.updateConnectionHealth(connection, source.HealthStatusUnhealthy, utils.GetPointer("Credential is not healthy"))
+			connection, err = h.updateConnectionHealth(outputS, connection, source.HealthStatusUnhealthy, utils.GetPointer("Credential is not healthy"))
 			if err != nil {
 				h.logger.Error("failed to update source health", zap.Error(err), zap.String("sourceId", connection.SourceId))
 				return err
@@ -1799,6 +1901,9 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		}
 		return err
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("source name", src.Name),
+	))
 	span.End()
 
 	metadata := make(map[string]any)
@@ -1846,10 +1951,14 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 		}
 		return err
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("source name", src.Name),
+	))
 	span.End()
 
 	// trace :
-	output1, span1 := tracer.Start(outputS, "new_Transaction")
+	output1, span1 := tracer.Start(outputS, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_Transaction")
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		// trace :
@@ -1860,6 +1969,9 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 			span2.SetStatus(codes.Error, err.Error())
 			return err
 		}
+		span1.AddEvent("information", trace.WithAttributes(
+			attribute.String("source name", src.Name),
+		))
 		span2.End()
 
 		if src.Credential.CredentialType.IsManual() {
@@ -1872,6 +1984,9 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 				span3.SetStatus(codes.Error, err.Error())
 				return err
 			}
+			span3.AddEvent("information", trace.WithAttributes(
+				attribute.String("credential name", *src.Credential.Name),
+			))
 			span3.End()
 		}
 
@@ -1896,7 +2011,6 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
-// ___________________________________________________________________
 func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 	connectionId, err := uuid.Parse(ctx.Param("connectionId"))
 	if err != nil {
@@ -1920,6 +2034,9 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 		}
 		return err
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("source name", connection.Name),
+	))
 	span.End()
 
 	reqState := ConnectionLifecycleStateFromApi(req.State)
@@ -1937,13 +2054,20 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 			span2.SetStatus(codes.Error, err.Error())
 			return err
 		}
+		span2.AddEvent("information", trace.WithAttributes(
+			attribute.String("source name", connection.Name),
+		))
 		span2.End()
 
 	} else {
 		// trace :
 		_, span3 := tracer.Start(outputS, "new_UpdateSourceLifecycleState", trace.WithSpanKind(trace.SpanKindServer))
 		span3.SetName("new_UpdateSourceLifecycleState")
+
 		err = h.db.UpdateSourceLifecycleState(connectionId, reqState)
+		span3.AddEvent("information", trace.WithAttributes(
+			attribute.String("source name", connection.Name),
+		))
 		span3.End()
 	}
 	if err != nil {
@@ -2050,6 +2174,9 @@ func (h HttpHandler) CountSources(ctx echo.Context) error {
 			span.SetStatus(codes.Error, err.Error())
 			return err
 		}
+		span.AddEvent("information", trace.WithAttributes(
+			attribute.String("source type", st),
+		))
 		span.End()
 
 	} else {
@@ -2496,6 +2623,9 @@ func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
 		h.logger.Error("error getting connection group", zap.Error(err))
 		return err
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("connectionGroup name", connectionGroup.Name),
+	))
 	span.End()
 
 	apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), h.steampipeConn)

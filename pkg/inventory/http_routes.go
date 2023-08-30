@@ -8,6 +8,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	_ "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"math"
@@ -208,7 +209,9 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 
 					return err
 				}
-
+				span1.AddEvent("information", trace.WithAttributes(
+					attribute.String("metricID", metric.ID),
+				))
 				span1.End()
 				if metric == nil {
 					return fmt.Errorf("resource type %s not found", hit.ResourceType)
@@ -408,7 +411,10 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 						span1.SetStatus(codes.Error, err.Error())
 						return err
 					}
-
+					span1.AddEvent("information", trace.WithAttributes(
+						attribute.String("metricID", metric.ID),
+					))
+					span1.End()
 					if metric != nil {
 						serviceNameMetricCache[hit.ServiceName] = *metric
 						metricID = metric.ID
@@ -424,6 +430,10 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) error {
 						span2.SetStatus(codes.Error, err.Error())
 						return err
 					}
+					span2.AddEvent("information", trace.WithAttributes(
+						attribute.String("metricID", metric.ID),
+					))
+					span2.End()
 					if metric == nil {
 						return fmt.Errorf("GetMetric, table %s not found", hit.ServiceName)
 					}
@@ -797,10 +807,6 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 //	@Success		200				{object}	map[string][]string
 //	@Router			/inventory/api/v2/analytics/tag [get]
 func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
-	// tracer :
-	outputS, span := tracer.Start(ctx.Request().Context(), "new_ListAnalyticsTags", trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if len(connectionIDs) > MaxConns {
@@ -836,13 +842,13 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	fmt.Println("connectorTypes", connectorTypes)
 	// trace :
-	_, span1 := tracer.Start(outputS, "new_ListMetricTagsKeysWithPossibleValues", trace.WithSpanKind(trace.SpanKindServer))
+	outputS1, span1 := tracer.Start(ctx.Request().Context(), "new_ListMetricTagsKeysWithPossibleValues", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_ListMetricTagsKeysWithPossibleValues")
 
 	tags, err := aDB.ListMetricTagsKeysWithPossibleValues(connectorTypes)
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span1.End()
@@ -873,7 +879,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 
 	filteredTags := map[string][]string{}
 	// tracer:
-	outputS2, span2 := tracer.Start(outputS, "new_ListFilteredMetrics(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	outputS2, span2 := tracer.Start(outputS1, "new_ListFilteredMetrics(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_ListFilteredMetrics(loop)")
 
 	for key, values := range tags {
@@ -885,8 +891,8 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 				key: {tagValue},
 			}, metricType, nil, connectorTypes)
 			if err != nil {
-				span.RecordError(err)
-				span.SetStatus(codes.Error, err.Error())
+				span3.RecordError(err)
+				span3.SetStatus(codes.Error, err.Error())
 				return err
 			}
 			span3.End()
@@ -2168,6 +2174,7 @@ func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 	}
 	// tracer :
 	outputS1, span := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetBenchmarkTreeIDs")
 
 	apiResourceType, err := h.GetResourceTypeMetric(outputS1, resourceType, connectionIDs, endTime)
 	if err != nil {
@@ -2193,6 +2200,7 @@ func (h *HttpHandler) GetResourceTypeMetric(ctx context.Context, resourceTypeStr
 	// tracer :
 	_, span := tracer.Start(ctx, "new_GetResourceType", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetResourceType")
+
 	resourceType, err := h.db.GetResourceType(resourceTypeStr)
 	if err != nil {
 		span.RecordError(err)
@@ -2202,6 +2210,9 @@ func (h *HttpHandler) GetResourceTypeMetric(ctx context.Context, resourceTypeStr
 		}
 		return nil, err
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("service_name", resourceType.ServiceName),
+	))
 	span.End()
 
 	var metricIndexed map[string]int
@@ -2489,6 +2500,7 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 	if req.Query == nil || *req.Query == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Query is required")
 	}
+	// tracer :
 	outputS, span := tracer.Start(ctx.Request().Context(), "new_RunSmartQuery", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_RunSmartQuery")
 
@@ -2498,6 +2510,9 @@ func (h *HttpHandler) RunQuery(ctx echo.Context) error {
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("query title ", resp.Title),
+	))
 	span.End()
 	return ctx.JSON(200, resp)
 }
@@ -2757,6 +2772,8 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 
 	resourceTypes, err := h.db.ListFilteredResourceTypes(tagMap, resourceTypeNames, serviceNames, connectors, summarized)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span.End()

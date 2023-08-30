@@ -134,6 +134,9 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 			span2.SetStatus(codes.Error, err.Error())
 			return err
 		}
+		span2.AddEvent("information", trace.WithAttributes(
+			attribute.String("benchmark id", b),
+		))
 		span2.End()
 
 		benchmarkIDs = append(benchmarkIDs, bs...)
@@ -200,6 +203,9 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark id", benchmarkID),
+	))
 	span1.End()
 
 	var response api.GetTopFieldResponse
@@ -388,6 +394,9 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark ID", benchmark.ID),
+	))
 	span1.End()
 
 	if benchmark == nil {
@@ -461,6 +470,9 @@ func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
 		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark ID", benchmark.ID),
+	))
 	span1.End()
 
 	if benchmark == nil {
@@ -501,7 +513,7 @@ func GetBenchmarkTree(ctx context.Context, db db.Database, client kaytu.Client, 
 			return tree, err
 		}
 		span2.SetAttributes(
-			attribute.String("ID", childObj.ID),
+			attribute.String("benchmark ID", childObj.ID),
 		)
 		span2.End()
 
@@ -606,6 +618,9 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark ID", benchmark.ID),
+	))
 	span1.End()
 
 	if benchmark == nil {
@@ -690,6 +705,9 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark Id", benchmark.ID),
+	))
 	span1.End()
 
 	if benchmark == nil {
@@ -716,7 +734,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 			return err
 		}
 		span3.SetAttributes(
-			attribute.String("ID", q.ID),
+			attribute.String("query ID", q.ID),
 		)
 		span3.End()
 
@@ -773,7 +791,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 			return err
 		}
 		span5.SetAttributes(
-			attribute.String("BenchmarkId", assignment.BenchmarkId),
+			attribute.String("Benchmark ID", assignment.BenchmarkId),
 		)
 		span5.End()
 
@@ -806,6 +824,9 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 		ctx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionId, err)
 		return err
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("connection ID", connectionId),
+	))
 	span1.End()
 
 	var assignments []api.BenchmarkAssignment
@@ -846,6 +867,9 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark ID", benchmark.ID),
+	))
 	span1.End()
 
 	var apiBenchmark api.Benchmark
@@ -891,6 +915,9 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 		span3.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span3.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark ID", benchmarkId),
+	))
 	span3.End()
 
 	for _, assignment := range dbAssignments {
@@ -936,6 +963,9 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 			h.logger.Error("delete benchmark assignment by benchmark id", zap.Error(err))
 			return err
 		}
+		span1.AddEvent("information", trace.WithAttributes(
+			attribute.String("benchmark ID", benchmarkId),
+		))
 		span1.End()
 	} else {
 		// trace :
@@ -951,6 +981,9 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 			ctx.Logger().Errorf("find benchmark assignment: %v", err)
 			return err
 		}
+		span1.AddEvent("information", trace.WithAttributes(
+			attribute.String("benchmark ID", benchmarkId),
+		))
 		span1.End()
 
 		// trace :
@@ -963,6 +996,9 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 			ctx.Logger().Errorf("delete benchmark assignment: %v", err)
 			return err
 		}
+		span2.AddEvent("information", trace.WithAttributes(
+			attribute.String("benchmark ID", benchmarkId),
+		))
 		span2.End()
 	}
 	return ctx.NoContent(http.StatusOK)
@@ -1022,6 +1058,9 @@ func (h *HttpHandler) GetBenchmark(ctx echo.Context) error {
 		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark ID", benchmark.ID),
+	))
 	span1.End()
 
 	if benchmark == nil {
@@ -1054,6 +1093,9 @@ func (h *HttpHandler) getBenchmarkPolicies(ctx context.Context, benchmarkID stri
 		span1.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark ID", b.ID),
+	))
 	span1.End()
 
 	if b == nil {
@@ -1092,7 +1134,7 @@ func (h *HttpHandler) getBenchmarkPolicies(ctx context.Context, benchmarkID stri
 			return nil, err
 		}
 		span4.SetAttributes(
-			attribute.String("ID", child.ID),
+			attribute.String("benchmark ID", child.ID),
 		)
 		span4.End()
 
@@ -1115,6 +1157,9 @@ func (h *HttpHandler) GetPolicy(ctx echo.Context) error {
 		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("policy ID", policyId),
+	))
 	span1.End()
 
 	if policy == nil {
@@ -1148,6 +1193,9 @@ func (h *HttpHandler) GetQuery(ctx echo.Context) error {
 		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("query ID", queryID),
+	))
 	span1.End()
 
 	if q == nil {
@@ -1254,6 +1302,9 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 		}
 		return err
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("query ID", insight.QueryID),
+	))
 	span1.End()
 
 	result := insight.ToApi()
@@ -1534,6 +1585,9 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("query ID", insightRow.QueryID),
+	))
 	span1.End()
 
 	timeAtToInsightResults, err := h.inventoryClient.GetInsightTrendResults(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, startTime, endTime)
