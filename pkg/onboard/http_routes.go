@@ -1431,6 +1431,9 @@ func (h HttpHandler) PutCredentials(ctx echo.Context) error {
 	if err := bindValidate(ctx, &req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
+	// trace :
+	_, span := tracer.Start(ctx.Request().Context(), "new_put(Azure or Aws)Credentials", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_put(Azure or Aws)Credentials")
 
 	switch req.Connector {
 	case source.CloudAzure:
@@ -1438,7 +1441,7 @@ func (h HttpHandler) PutCredentials(ctx echo.Context) error {
 	case source.CloudAWS:
 		return h.putAWSCredentials(ctx, req)
 	}
-
+	span.End()
 	return ctx.JSON(http.StatusBadRequest, "invalid source type")
 }
 
@@ -2424,6 +2427,7 @@ func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
 	span.End()
 
 	result := make([]api.ConnectionGroup, 0, len(connectionGroups))
+	// tracer :
 	outputS2, span2 := tracer.Start(outputS, "new_GetSources(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_GetSources(loop)")
 
