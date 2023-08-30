@@ -5,6 +5,7 @@ import (
 	"fmt"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"time"
 
@@ -85,6 +86,8 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 
 		child, err := db.GetBenchmark(childObj.ID)
 		if err != nil {
+			span3.RecordError(err)
+			span3.SetStatus(codes.Error, err.Error())
 			return err
 		}
 		span3.End()
@@ -127,6 +130,8 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 
 		query, err := db.GetQuery(*policy.QueryID)
 		if err != nil {
+			span5.RecordError(err)
+			span5.SetStatus(codes.Error, err.Error())
 			return err
 		}
 		span5.End()

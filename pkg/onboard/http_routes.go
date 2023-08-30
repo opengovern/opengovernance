@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"net/http"
 	"sort"
 	"strconv"
@@ -101,24 +103,35 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Router			/onboard/api/v1/connector [get]
 func (h HttpHandler) ListConnectors(ctx echo.Context) error {
 	//trace :
-	_, span := tracer.Start(ctx.Request().Context(), "ListConnectors")
+	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_ListConnectors", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_ListConnectors")
 
 	connectors, err := h.db.ListConnectors()
 	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	span.End()
+	span1.End()
 
 	var res []api.ConnectorCount
 
 	//trace :
-	_, spanCs := tracer.Start(ctx.Request().Context(), "CountSourcesOfType")
+	outputS2, span2 := tracer.Start(outputS, "new_CountSourcesOfType(loop)")
+	span2.SetName("new_CountSourcesOfType(loop)")
 
 	for _, c := range connectors {
+		_, span3 := tracer.Start(outputS2, "new_CountSourcesOfType", trace.WithSpanKind(trace.SpanKindServer))
+		span3.SetName("new_CountSourcesOfType")
+
 		count, err := h.db.CountSourcesOfType(c.Name)
 		if err != nil {
+			span3.RecordError(err)
+			span3.SetStatus(codes.Error, err.Error())
 			return err
 		}
+		span3.End()
+
 		tags := make(map[string]any)
 		err = json.Unmarshal(c.Tags, &tags)
 		if err != nil {
@@ -141,8 +154,7 @@ func (h HttpHandler) ListConnectors(ctx echo.Context) error {
 			ConnectionCount: count,
 		})
 	}
-	spanCs.End()
-
+	span2.End()
 	return ctx.JSON(http.StatusOK, res)
 }
 
@@ -193,13 +205,16 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 		acc.AccountName = &req.Name
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "CountSources")
+	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_CountSources", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_CountSources")
 
 	count, err := h.db.CountSources()
 	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	span.End()
+	span1.End()
 
 	if count >= httpserver.GetMaxConnections(ctx) {
 		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
@@ -213,13 +228,16 @@ func (h HttpHandler) PostSourceAws(ctx echo.Context) error {
 	src.Credential.Secret = string(secretBytes)
 
 	// trace :
-	_, spanCs := tracer.Start(ctx.Request().Context(), "CreateSource")
+	_, span2 := tracer.Start(outputS, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_CreateSource")
 
 	err = h.db.CreateSource(&src)
 	if err != nil {
+		span2.RecordError(err)
+		span2.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	spanCs.End()
+	span2.End()
 
 	return ctx.JSON(http.StatusOK, src.ToSourceResponse())
 }
@@ -241,13 +259,16 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "CountSources")
+	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_CountSources", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_CountSources")
 
 	count, err := h.db.CountSources()
 	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	span.End()
+	span1.End()
 
 	if count >= httpserver.GetMaxConnections(ctx) {
 		return echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
@@ -296,18 +317,21 @@ func (h HttpHandler) PostSourceAzure(ctx echo.Context) error {
 	}
 	src.Credential.Secret = string(secretBytes)
 	// trace :
-	_, spanCS := tracer.Start(ctx.Request().Context(), "CreateSource")
+	_, span2 := tracer.Start(outputS, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_CreateSource")
 
 	err = h.db.CreateSource(&src)
 	if err != nil {
+		span2.RecordError(err)
+		span2.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	spanCS.End()
+	span2.End()
 
 	return ctx.JSON(http.StatusOK, src.ToSourceResponse())
 }
 
-func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
+func (h HttpHandler) checkCredentialHealth(ctx context.Context, cred Credential) (bool, error) {
 	config, err := h.kms.Decrypt(cred.Secret, h.keyARN)
 	if err != nil {
 		return false, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -375,10 +399,16 @@ func (h HttpHandler) checkCredentialHealth(cred Credential) (bool, error) {
 		cred.HealthReason = utils.GetPointer("")
 	}
 	cred.LastHealthCheckTime = time.Now()
+	// tracer :
+	_, span := tracer.Start(ctx, "new_UpdateCredential", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_UpdateCredential")
 	_, dbErr := h.db.UpdateCredential(&cred)
 	if dbErr != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return false, echo.NewHTTPError(http.StatusInternalServerError, dbErr.Error())
 	}
+	span.End()
 
 	if err != nil {
 		return false, echo.NewHTTPError(http.StatusBadRequest, "credential is not healthy")
@@ -429,25 +459,31 @@ func (h HttpHandler) postAzureCredentials(ctx echo.Context, req api.CreateCreden
 	cred.Secret = string(secretBytes)
 
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "Transaction")
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_Transaction And checkCredentialHealth")
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		// trace :
-		_, spanCC := tracer.Start(ctx.Request().Context(), "CreateCredential")
+		_, span2 := tracer.Start(outputS, "mew_CreateCredential", trace.WithSpanKind(trace.SpanKindServer))
+		span2.SetName("mew_CreateCredential")
 
 		if err := h.db.CreateCredential(cred); err != nil {
+			span2.RecordError(err)
+			span2.SetStatus(codes.Error, err.Error())
 			return err
 		}
-		spanCC.End()
+		span2.End()
 
 		return nil
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span.End()
 
-	_, err = h.checkCredentialHealth(*cred)
+	_, err = h.checkCredentialHealth(outputS, *cred)
 	if err != nil {
 		return err
 	}
@@ -492,25 +528,31 @@ func (h HttpHandler) postAWSCredentials(ctx echo.Context, req api.CreateCredenti
 	}
 	cred.Secret = string(secretBytes)
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "Transaction")
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_Transaction ", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_Transaction")
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		// trace :
-		_, spanCC := tracer.Start(ctx.Request().Context(), "CreateCredential")
+		_, span2 := tracer.Start(outputS, "new_CreateCredential", trace.WithSpanKind(trace.SpanKindServer))
+		span2.SetName("new_CreateCredential")
 
 		if err := h.db.CreateCredential(cred); err != nil {
+			span2.RecordError(err)
+			span2.SetStatus(codes.Error, err.Error())
 			return err
 		}
-		spanCC.End()
+		span2.End()
 
 		return nil
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span.End()
 
-	_, err = h.checkCredentialHealth(*cred)
+	_, err = h.checkCredentialHealth(outputS, *cred)
 	if err != nil {
 		return err
 	}
@@ -578,10 +620,13 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 		pageNumber, _ = strconv.ParseInt(pageNumberStr, 10, 64)
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetCredentialsByFilters")
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetCredentialsByFilters", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetCredentialsByFilters")
 
 	credentials, err := h.db.GetCredentialsByFilters(connector, health, credentialTypes)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	span.End()
@@ -655,25 +700,32 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetCredentialByID")
+	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_GetCredentialByID", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetCredentialByID")
 
 	credential, err := h.db.GetCredentialByID(credId)
 	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+
 		if err == gorm.ErrRecordNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	span.End()
+	span1.End()
 
 	// trace :
-	_, spanGS := tracer.Start(ctx.Request().Context(), "GetSourcesByCredentialID")
+	_, span2 := tracer.Start(outputS, "new_GetSourcesByCredentialID", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_GetSourcesByCredentialID")
 
 	connections, err := h.db.GetSourcesByCredentialID(credId.String())
 	if err != nil {
+		span2.RecordError(err)
+		span2.SetStatus(codes.Error, err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	spanGS.End()
+	span2.End()
 
 	metadata := make(map[string]any)
 	err = json.Unmarshal(credential.Metadata, &metadata)
@@ -768,17 +820,26 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 		return nil, err
 	}
 	h.logger.Info("discovered subscriptions", zap.Int("count", len(subs)))
+	// tracer :
+	outputS, span := tracer.Start(ctx, "new_GetSourcesOfType", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetSourcesOfType")
 
 	existingConnections, err := h.db.GetSourcesOfType(credential.ConnectorType)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
+	span.End()
 
 	existingConnectionSubIDs := make([]string, 0, len(existingConnections))
 	subsToOnboard := make([]azureSubscription, 0)
 	for _, conn := range existingConnections {
 		existingConnectionSubIDs = append(existingConnectionSubIDs, conn.SourceId)
 	}
+	outputS2, span2 := tracer.Start(outputS, "new_UpdateSource(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_UpdateSource(loop)")
+
 	for _, sub := range subs {
 		if sub.SubModel.State != nil && *sub.SubModel.State == armsubscription.SubscriptionStateEnabled && !utils.Includes(existingConnectionSubIDs, sub.SubscriptionID) {
 			subsToOnboard = append(subsToOnboard, sub)
@@ -797,18 +858,28 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 						localConn.LifecycleState = ConnectionLifecycleStateDisabled
 					}
 					if conn.Name != name || localConn.LifecycleState != conn.LifecycleState {
+						_, span3 := tracer.Start(outputS2, "new_UpdateSource", trace.WithSpanKind(trace.SpanKindServer))
+						span3.SetName("new_UpdateSource")
+
 						_, err := h.db.UpdateSource(&localConn)
 						if err != nil {
+							span3.RecordError(err)
+							span3.SetStatus(codes.Error, err.Error())
 							h.logger.Error("failed to update source", zap.Error(err))
 							return nil, err
 						}
+						span3.End()
 					}
 				}
 			}
 		}
 	}
+	span2.End()
 
 	h.logger.Info("onboarding subscriptions", zap.Int("count", len(subsToOnboard)))
+
+	outputS4, span4 := tracer.Start(outputS, "new_CreateSource(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	span4.SetName("new_CreateSource(loop)")
 
 	for _, sub := range subsToOnboard {
 		h.logger.Info("onboarding subscription", zap.String("subscriptionId", sub.SubscriptionID))
@@ -842,11 +913,16 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 			fmt.Sprintf("Auto onboarded subscription %s", sub.SubscriptionID),
 			credential,
 		)
+		_, span5 := tracer.Start(outputS4, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
+		span5.SetName("new_CreateSource")
 
 		err = h.db.CreateSource(&src)
 		if err != nil {
+			span5.RecordError(err)
+			span5.SetStatus(codes.Error, err.Error())
 			return nil, err
 		}
+		span5.End()
 
 		metadata := make(map[string]any)
 		if src.Metadata.String() != "" {
@@ -873,6 +949,7 @@ func (h HttpHandler) autoOnboardAzureSubscriptions(ctx context.Context, credenti
 			Metadata:             metadata,
 		})
 	}
+	span4.End()
 
 	return onboardedSources, nil
 }
@@ -904,15 +981,26 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 		return nil, err
 	}
 	h.logger.Info("discovered accounts", zap.Int("count", len(accounts)))
+	// tracer :
+	outputS, span := tracer.Start(ctx, "new_GetSourcesOfType", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetSourcesOfType")
+
 	existingConnections, err := h.db.GetSourcesOfType(credential.ConnectorType)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
+	span.End()
 	existingConnectionAccountIDs := make([]string, 0, len(existingConnections))
 	for _, conn := range existingConnections {
 		existingConnectionAccountIDs = append(existingConnectionAccountIDs, conn.SourceId)
 	}
 	accountsToOnboard := make([]awsAccount, 0)
+	// tracer :
+	outputS1, span1 := tracer.Start(outputS, "new_UpdateSource(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_UpdateSource(loop)")
+
 	for _, account := range accounts {
 		if account.Account.Status == awsOrgTypes.AccountStatusActive && !utils.Includes(existingConnectionAccountIDs, account.AccountID) {
 			accountsToOnboard = append(accountsToOnboard, account)
@@ -932,18 +1020,26 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 						localConn.LifecycleState = ConnectionLifecycleStateArchived
 					}
 					if conn.Name != name || account.Account.Status != awsOrgTypes.AccountStatusActive {
+						_, span2 := tracer.Start(outputS1, "new_UpdateSource", trace.WithSpanKind(trace.SpanKindServer))
+						span2.SetName("new_UpdateSource")
+
 						_, err := h.db.UpdateSource(&localConn)
 						if err != nil {
+							span2.RecordError(err)
+							span2.SetStatus(codes.Error, err.Error())
 							h.logger.Error("failed to update source", zap.Error(err))
 							return nil, err
 						}
+						span2.End()
 					}
 				}
 			}
 		}
 	}
-
+	span1.End()
 	// TODO add tag filter
+	outputS3, span3 := tracer.Start(outputS1, "new_CountSources(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	span3.SetName("new_CountSources(loop)")
 
 	h.logger.Info("onboarding accounts", zap.Int("count", len(accountsToOnboard)))
 	for _, account := range accountsToOnboard {
@@ -963,10 +1059,17 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 		//	continue
 		//}
 		h.logger.Info("onboarding account", zap.String("accountID", account.AccountID))
+		_, span4 := tracer.Start(outputS3, "new_CountSources", trace.WithSpanKind(trace.SpanKindServer))
+		span4.SetName("new_CountSources")
+
 		count, err := h.db.CountSources()
 		if err != nil {
+			span4.RecordError(err)
+			span4.SetStatus(codes.Error, err.Error())
 			return nil, err
 		}
+		span4.End()
+
 		if count >= maxConnections {
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "maximum number of connections reached")
 		}
@@ -979,20 +1082,31 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 			fmt.Sprintf("Auto onboarded account %s", account.AccountID),
 			credential,
 		)
+		outputS5, span5 := tracer.Start(outputS3, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
+		span5.SetName("new_Transaction")
 
 		err = h.db.orm.Transaction(func(tx *gorm.DB) error {
+			_, span6 := tracer.Start(outputS5, "new_CreateSource", trace.WithSpanKind(trace.SpanKindServer))
+			span6.SetName("new_CreateSource")
+
 			err := h.db.CreateSource(&src)
 			if err != nil {
+				span6.RecordError(err)
+				span6.SetStatus(codes.Error, err.Error())
 				return err
 			}
+			span6.End()
 
 			//TODO: add enable account
 
 			return nil
 		})
 		if err != nil {
+			span5.RecordError(err)
+			span5.SetStatus(codes.Error, err.Error())
 			return nil, err
 		}
+		span5.End()
 
 		metadata := make(map[string]any)
 		if src.Metadata.String() != "" {
@@ -1019,6 +1133,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 			Metadata:             metadata,
 		})
 	}
+	span3.End()
 
 	return onboardedSources, nil
 }
@@ -1039,10 +1154,13 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetCredentialByID")
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetCredentialByID", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetCredentialByID")
 
 	credential, err := h.db.GetCredentialByID(credId)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		if err == gorm.ErrRecordNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
 		}
@@ -1077,10 +1195,13 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 		return ctx.JSON(http.StatusBadRequest, "invalid id")
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetCredentialByID")
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_GetCredentialByID")
+	span.SetName("new_GetCredentialByID")
 
 	cred, err := h.db.GetCredentialByID(id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		if err != gorm.ErrRecordNotFound {
 			return err
 		}
@@ -1148,25 +1269,31 @@ func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredent
 		cred.Name = &metadata.SpnName
 	}
 	// trace :
-	_, spanT := tracer.Start(ctx.Request().Context(), "Transaction")
+	outputS1, span1 := tracer.Start(outputS, "new_Transaction")
+	span1.SetName("new_Transaction")
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		// trace :
-		_, spanUC := tracer.Start(ctx.Request().Context(), "UpdateCredential")
+		_, span2 := tracer.Start(outputS1, "new_UpdateCredential")
+		span2.SetName("new_UpdateCredential")
 
 		if _, err := h.db.UpdateCredential(cred); err != nil {
+			span2.RecordError(err)
+			span2.SetStatus(codes.Error, err.Error())
 			return err
 		}
-		spanUC.End()
+		span2.End()
 
 		return nil
 	})
 	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	spanT.End()
+	span1.End()
 
-	_, err = h.checkCredentialHealth(*cred)
+	_, err = h.checkCredentialHealth(outputS, *cred)
 	if err != nil {
 		return err
 	}
@@ -1180,7 +1307,8 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		return ctx.JSON(http.StatusBadRequest, "invalid id")
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetCredentialByID")
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_GetCredentialByID", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetCredentialByID")
 
 	cred, err := h.db.GetCredentialByID(id)
 	if err != nil {
@@ -1259,25 +1387,27 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		cred.CredentialType = CredentialTypeManualAwsOrganization
 	}
 	// trace :
-	_, spanT := tracer.Start(ctx.Request().Context(), "Transaction")
+	outputS2, span2 := tracer.Start(outputS, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_Transaction")
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		// trace :
-		_, spanUC := tracer.Start(ctx.Request().Context(), "UpdateCredential")
+		_, span3 := tracer.Start(outputS2, "new_UpdateCredential", trace.WithSpanKind(trace.SpanKindServer))
+		span3.SetName("new_UpdateCredential")
 
 		if _, err := h.db.UpdateCredential(cred); err != nil {
 			return err
 		}
-		spanUC.End()
+		span3.End()
 
 		return nil
 	})
 	if err != nil {
 		return err
 	}
-	spanT.End()
+	span2.End()
 
-	_, err = h.checkCredentialHealth(*cred)
+	_, err = h.checkCredentialHealth(outputS, *cred)
 	if err != nil {
 		return err
 	}
@@ -1329,54 +1459,72 @@ func (h HttpHandler) DeleteCredential(ctx echo.Context) error {
 	}
 
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetCredentialByID")
+	outputS, span1 := tracer.Start(ctx.Request().Context(), "new_GetCredentialByID", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetCredentialByID")
 
 	credential, err := h.db.GetCredentialByID(credId)
 	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
 		if err == gorm.ErrRecordNotFound {
 			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	span.End()
+	span1.End()
 
 	// trace :
-	_, spanGS := tracer.Start(ctx.Request().Context(), "GetSourcesByCredentialID")
+	_, span2 := tracer.Start(outputS, "new_GetSourcesByCredentialID", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_GetSourcesByCredentialID")
 
 	sources, err := h.db.GetSourcesByCredentialID(credential.ID.String())
 	if err != nil {
+		span2.RecordError(err)
+		span2.SetStatus(codes.Error, err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-	spanGS.End()
+	span2.End()
 
 	// trace :
-	_, spanT := tracer.Start(ctx.Request().Context(), "Transaction")
+	outputS3, span3 := tracer.Start(outputS, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
+	span3.SetName("new_Transaction")
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		// trace :
-		_, spanDC := tracer.Start(ctx.Request().Context(), "DeleteCredential")
+		_, span4 := tracer.Start(outputS3, "new_DeleteCredential", trace.WithSpanKind(trace.SpanKindServer))
+		span4.SetName("new_DeleteCredential")
 
 		if err := h.db.DeleteCredential(credential.ID); err != nil {
+			span4.RecordError(err)
+			span4.SetStatus(codes.Error, err.Error())
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-		spanDC.End()
+		span4.End()
 
 		// trace :
-		_, spanUS := tracer.Start(ctx.Request().Context(), "UpdateSourceLifecycleState")
-
+		output5, span5 := tracer.Start(outputS3, "new_UpdateSourceLifecycleState(loop)", trace.WithSpanKind(trace.SpanKindServer))
+		span5.SetName("new_UpdateSourceLifecycleState(loop)")
 		for _, src := range sources {
+			// trace :
+			_, span6 := tracer.Start(output5, "new_UpdateSourceLifecycleState", trace.WithSpanKind(trace.SpanKindServer))
+			span6.SetName("new_UpdateSourceLifecycleState")
 			if err := h.db.UpdateSourceLifecycleState(src.ID, ConnectionLifecycleStateDisabled); err != nil {
+				span6.RecordError(err)
+				span6.SetStatus(codes.Error, err.Error())
 				return err
 			}
+			span6.End()
 		}
-		spanUS.End()
+		span5.End()
 
 		return nil
 	})
 	if err != nil {
+		span3.RecordError(err)
+		span3.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	spanT.End()
+	span3.End()
 
 	return ctx.JSON(http.StatusOK, struct{}{})
 }
@@ -1387,10 +1535,13 @@ func (h HttpHandler) GetSourceFullCred(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid source uuid")
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetSource")
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetSource", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetSource")
 
 	src, err := h.db.GetSource(sourceUUID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span.End()
@@ -1583,10 +1734,13 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 		updateMetadata = false
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetSource")
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_GetSource", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetSource")
 
 	connection, err := h.db.GetSource(sourceUUID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		h.logger.Error("failed to get source", zap.Error(err), zap.String("sourceId", sourceUUID.String()))
 		return err
 	}
@@ -1599,7 +1753,7 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 			return err
 		}
 	} else {
-		isHealthy, err := h.checkCredentialHealth(connection.Credential)
+		isHealthy, err := h.checkCredentialHealth(outputS, connection.Credential)
 		if err != nil {
 			if herr, ok := err.(*echo.HTTPError); ok {
 				if herr.Code == http.StatusInternalServerError {
@@ -1630,10 +1784,13 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetSource")
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetSource", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetSource")
 
 	src, err := h.db.GetSource(srcId)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		if err == gorm.ErrRecordNotFound {
 			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
 		}
@@ -1674,10 +1831,13 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetSource")
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_GetSource", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetSource")
 
 	src, err := h.db.GetSource(srcId)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		if err == gorm.ErrRecordNotFound {
 			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
 		}
@@ -1686,26 +1846,30 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 	span.End()
 
 	// trace :
-	_, spanT := tracer.Start(ctx.Request().Context(), "Transaction")
+	output1, span1 := tracer.Start(outputS, "new_Transaction")
 
 	err = h.db.orm.Transaction(func(tx *gorm.DB) error {
 		// trace :
-		_, spanDS := tracer.Start(ctx.Request().Context(), "DeleteSource")
+		outputS2, span2 := tracer.Start(output1, "new_DeleteSource")
 
 		if err := h.db.DeleteSource(srcId); err != nil {
+			span2.RecordError(err)
+			span2.SetStatus(codes.Error, err.Error())
 			return err
 		}
-		spanDS.End()
+		span2.End()
 
 		if src.Credential.CredentialType.IsManual() {
 			// trace :
-			_, spanDC := tracer.Start(ctx.Request().Context(), "DeleteCredential")
-
+			_, span3 := tracer.Start(outputS2, "new_DeleteCredential", trace.WithSpanKind(trace.SpanKindServer))
+			span3.SetName("new_DeleteCredential")
 			err = h.db.DeleteCredential(src.Credential.ID)
 			if err != nil {
+				span3.RecordError(err)
+				span3.SetStatus(codes.Error, err.Error())
 				return err
 			}
-			spanDC.End()
+			span3.End()
 		}
 
 		if err := h.sourceEventsQueue.Publish(api.SourceEvent{
@@ -1720,13 +1884,16 @@ func (h HttpHandler) DeleteSource(ctx echo.Context) error {
 		return nil
 	})
 	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
 		return err
 	}
-	spanT.End()
+	span1.End()
 
 	return ctx.NoContent(http.StatusOK)
 }
 
+// ___________________________________________________________________
 func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 	connectionId, err := uuid.Parse(ctx.Param("connectionId"))
 	if err != nil {
@@ -1740,7 +1907,8 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetSource")
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_GetSource", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetSource")
 
 	connection, err := h.db.GetSource(connectionId)
 	if err != nil {
@@ -1758,21 +1926,26 @@ func (h HttpHandler) ChangeConnectionLifecycleState(ctx echo.Context) error {
 
 	if reqState.IsEnabled() != connection.LifecycleState.IsEnabled() {
 		// trace :
-		_, spanUS := tracer.Start(ctx.Request().Context(), "UpdateSourceLifecycleState")
+		_, span2 := tracer.Start(outputS, "new_UpdateSourceLifecycleState")
+		span2.SetName("new_UpdateSourceLifecycleState")
 
 		if err := h.db.UpdateSourceLifecycleState(connectionId, reqState); err != nil {
+			span2.RecordError(err)
+			span2.SetStatus(codes.Error, err.Error())
 			return err
 		}
-		spanUS.End()
+		span2.End()
 
 	} else {
 		// trace :
-		_, spanUSLS := tracer.Start(ctx.Request().Context(), "UpdateSourceLifecycleState")
-
+		_, span3 := tracer.Start(outputS, "new_UpdateSourceLifecycleState", trace.WithSpanKind(trace.SpanKindServer))
+		span3.SetName("new_UpdateSourceLifecycleState")
 		err = h.db.UpdateSourceLifecycleState(connectionId, reqState)
-		spanUSLS.End()
+		span3.End()
 	}
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 
@@ -1786,19 +1959,25 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 	if len(sType) > 0 {
 		st := source.ParseTypes(sType)
 		// trace :
-		_, span := tracer.Start(ctx.Request().Context(), "GetSourcesOfTypes")
+		_, span := tracer.Start(ctx.Request().Context(), "new_GetSourcesOfTypes", trace.WithSpanKind(trace.SpanKindServer))
+		span.SetName("new_GetSourcesOfTypes")
 
 		sources, err = h.db.GetSourcesOfTypes(st)
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return err
 		}
 		span.End()
 	} else {
 		// trace :
-		_, span := tracer.Start(ctx.Request().Context(), "ListSources")
+		_, span := tracer.Start(ctx.Request().Context(), "new_ListSources", trace.WithSpanKind(trace.SpanKindServer))
+		span.SetName("new_ListSources")
 
 		sources, err = h.db.ListSources()
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return err
 		}
 		span.End()
@@ -1823,10 +2002,13 @@ func (h HttpHandler) GetSources(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetSources")
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetSources", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetSources")
 
 	srcs, err := h.db.GetSources(req.SourceIDs)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		if err == gorm.ErrRecordNotFound {
 			return echo.NewHTTPError(http.StatusBadRequest, "source not found")
 		}
@@ -1856,10 +2038,13 @@ func (h HttpHandler) CountSources(ctx echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid source type: %s", sType))
 		}
 		// trace :
-		_, span := tracer.Start(ctx.Request().Context(), "CountSourcesOfType")
+		_, span := tracer.Start(ctx.Request().Context(), "new_CountSourcesOfType", trace.WithSpanKind(trace.SpanKindServer))
+		span.SetName("new_CountSourcesOfType")
 
 		count, err = h.db.CountSourcesOfType(st)
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return err
 		}
 		span.End()
@@ -1867,10 +2052,13 @@ func (h HttpHandler) CountSources(ctx echo.Context) error {
 	} else {
 		var err error
 		// trace :
-		_, span := tracer.Start(ctx.Request().Context(), "CountSources")
+		_, span := tracer.Start(ctx.Request().Context(), "new_CountSources", trace.WithSpanKind(trace.SpanKindServer))
+		span.SetName("new_CountSources")
 
 		count, err = h.db.CountSources()
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return err
 		}
 		span.End()
@@ -1891,10 +2079,13 @@ func (h HttpHandler) CountSources(ctx echo.Context) error {
 func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 	var metrics api.CatalogMetrics
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "ListSources")
+	_, span := tracer.Start(ctx.Request().Context(), "new_ListSources", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListSources")
 
 	srcs, err := h.db.ListSources()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError)
 	}
 	span.End()
@@ -1984,10 +2175,13 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		healthStateSlice = append(healthStateSlice, source.HealthStatus(healthState))
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "ListSourcesWithFilters")
+	_, span := tracer.Start(ctx.Request().Context(), "new_ListSourcesWithFilters", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListSourcesWithFilters")
 
 	connections, err := h.db.ListSourcesWithFilters(connectors, connectionIDs, lifecycleStateSlice, healthStateSlice)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span.End()
@@ -2217,16 +2411,22 @@ func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
 		}
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "ListConnectionGroups")
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_ListConnectionGroups", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListConnectionGroups")
 
 	connectionGroups, err := h.db.ListConnectionGroups()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		h.logger.Error("error listing connection groups", zap.Error(err))
 		return err
 	}
 	span.End()
 
 	result := make([]api.ConnectionGroup, 0, len(connectionGroups))
+	outputS2, span2 := tracer.Start(outputS, "new_GetSources(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_GetSources(loop)")
+
 	for _, connectionGroup := range connectionGroups {
 		apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), h.steampipeConn)
 		if err != nil {
@@ -2235,14 +2435,17 @@ func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
 		}
 		if populateConnections {
 			// trace :
-			_, spanGS := tracer.Start(ctx.Request().Context(), "GetSources")
+			_, span3 := tracer.Start(outputS2, "new_GetSources", trace.WithSpanKind(trace.SpanKindServer))
+			span3.SetName("new_GetSources")
 
 			connections, err := h.db.GetSources(apiCg.ConnectionIds)
 			if err != nil {
+				span3.RecordError(err)
+				span3.SetStatus(codes.Error, err.Error())
 				h.logger.Error("error getting connections", zap.Error(err))
 				return err
 			}
-			spanGS.End()
+			span3.End()
 
 			apiCg.Connections = make([]api.Connection, 0, len(connections))
 			for _, connection := range connections {
@@ -2252,7 +2455,7 @@ func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
 
 		result = append(result, *apiCg)
 	}
-
+	span2.End()
 	return ctx.JSON(http.StatusOK, result)
 }
 
@@ -2279,10 +2482,13 @@ func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
 		}
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "GetConnectionGroupByName")
+	outputS, span := tracer.Start(ctx.Request().Context(), "new_GetConnectionGroupByName", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetConnectionGroupByName")
 
 	connectionGroup, err := h.db.GetConnectionGroupByName(connectionGroupName)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		h.logger.Error("error getting connection group", zap.Error(err))
 		return err
 	}
@@ -2296,14 +2502,17 @@ func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
 
 	if populateConnections {
 		// trace :
-		_, spanGS := tracer.Start(ctx.Request().Context(), "GetSources")
+		_, span1 := tracer.Start(outputS, "new_GetSources", trace.WithSpanKind(trace.SpanKindServer))
+		span1.SetName("new_GetSources")
 
 		connections, err := h.db.GetSources(apiCg.ConnectionIds)
 		if err != nil {
+			span1.RecordError(err)
+			span1.SetStatus(codes.Error, err.Error())
 			h.logger.Error("error getting connections", zap.Error(err))
 			return err
 		}
-		spanGS.End()
+		span1.End()
 
 		apiCg.Connections = make([]api.Connection, 0, len(connections))
 		for _, connection := range connections {

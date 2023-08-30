@@ -2,6 +2,8 @@ package metadata
 
 import (
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	_ "gorm.io/gorm"
 	"net/http"
 
@@ -48,11 +50,16 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Router			/metadata/api/v1/metadata/{key} [get]
 func (h HttpHandler) GetConfigMetadata(ctx echo.Context) error {
 	key := ctx.Param("key")
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetConfigMetadata", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetConfigMetadata")
 
 	metadata, err := src.GetConfigMetadata(h.db, h.redis, key)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span.End()
 	return ctx.JSON(http.StatusOK, metadata.GetCore())
 }
 
@@ -81,11 +88,16 @@ func (h HttpHandler) SetConfigMetadata(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	_, span := tracer.Start(ctx.Request().Context(), "new_SetConfigMetadata", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_SetConfigMetadata")
 
 	err = src.SetConfigMetadata(h.db, h.redis, key, req.Value)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span.End()
 
 	return ctx.JSON(http.StatusOK, nil)
 }
@@ -105,10 +117,13 @@ func (h HttpHandler) AddFilter(ctx echo.Context) error {
 		return err
 	}
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "AddFilter")
+	_, span := tracer.Start(ctx.Request().Context(), "new_AddFilter", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_AddFilter")
 
 	err := h.db.AddFilter(models.Filter{Name: req.Name, KeyValue: req.KeyValue})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	span.End()
@@ -125,10 +140,13 @@ func (h HttpHandler) AddFilter(ctx echo.Context) error {
 //	@Router		/metadata/api/v1/filter [get]
 func (h HttpHandler) GetFilters(ctx echo.Context) error {
 	// trace :
-	_, span := tracer.Start(ctx.Request().Context(), "ListFilters")
+	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilters", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_ListFilters")
 
 	filters, err := h.db.ListFilters()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil
 	}
 	span.End()
