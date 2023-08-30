@@ -307,6 +307,11 @@ func NewAWSAutoOnboardedConnection(logger *zap.Logger, cfg describe.AWSAccountCo
 		name = *account.AccountName
 	}
 
+	lifecycleState := ConnectionLifecycleStateDiscovered
+	if account.Account.Status != types.AccountStatusActive {
+		lifecycleState = ConnectionLifecycleStateArchived
+	}
+
 	s := Source{
 		ID:                   id,
 		SourceId:             account.AccountID,
@@ -315,7 +320,7 @@ func NewAWSAutoOnboardedConnection(logger *zap.Logger, cfg describe.AWSAccountCo
 		Type:                 source.CloudAWS,
 		CredentialID:         creds.ID,
 		Credential:           creds,
-		LifecycleState:       ConnectionLifecycleStateDiscovered,
+		LifecycleState:       lifecycleState,
 		AssetDiscoveryMethod: source.AssetDiscoveryMethodTypeScheduled,
 		LastHealthCheckTime:  time.Now(),
 		CreationMethod:       creationMethod,

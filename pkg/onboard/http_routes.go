@@ -1049,7 +1049,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 	span1.SetName("new_UpdateSource(loop)")
 
 	for _, account := range accounts {
-		if account.Account.Status == awsOrgTypes.AccountStatusActive && !utils.Includes(existingConnectionAccountIDs, account.AccountID) {
+		if !utils.Includes(existingConnectionAccountIDs, account.AccountID) {
 			accountsToOnboard = append(accountsToOnboard, account)
 		} else {
 			for _, conn := range existingConnections {
