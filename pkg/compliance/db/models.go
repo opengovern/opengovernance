@@ -91,9 +91,9 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 			span3.SetStatus(codes.Error, err.Error())
 			return err
 		}
-		span3.SetAttributes(
+		span3.AddEvent("log", trace.WithAttributes(
 			attribute.String("ID", child.ID),
-		)
+		))
 		span3.End()
 
 		if child == nil {
@@ -138,6 +138,9 @@ func (b *Benchmark) PopulateConnectors(ctx context.Context, db Database, api *ap
 			span5.SetStatus(codes.Error, err.Error())
 			return err
 		}
+		span5.AddEvent("log", trace.WithAttributes(
+			attribute.String("policyID", policy.ID),
+		))
 		span5.End()
 
 		if query == nil {
