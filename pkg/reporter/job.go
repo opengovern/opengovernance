@@ -496,6 +496,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 		var esRows pgx.Rows
 		esRows, err = w.kaytuSteampipeDb.Conn().Query(ctx, listQuery)
 		if err == nil {
+			w.logger.Error("failed to run es query", zap.Error(err), zap.String("query", listQuery))
 			return nil, err
 		}
 		w.logger.Info("es query done", zap.String("account", connection.ConnectionID), zap.String("query", listQuery))
@@ -542,11 +543,8 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 			var steampipeRows pgx.Rows
 			for retry := 0; retry < 5; retry++ {
 				steampipeRows, err = originalSteampipe.Conn().Query(context.Background(), getQuery, keyValues...)
-				if err != nil {
-					w.logger.Error("failed to run query", zap.Error(err), zap.String("query", query.GetQuery), zap.String("account", connection.ConnectionID))
-					return nil, err
-				}
 				if pgErr, ok := err.(*pgconn.PgError); ok {
+					w.logger.Error("failed to run query", zap.Error(err), zap.String("query", query.GetQuery), zap.String("account", connection.ConnectionID))
 					if pgErr.SQLState() != "42P01" { // table not found (relation does not exist)
 						return nil, err
 					}
