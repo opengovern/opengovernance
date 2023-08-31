@@ -499,6 +499,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 			return nil, err
 		}
 		w.logger.Info("es query done", zap.String("account", connection.ConnectionID), zap.String("query", listQuery))
+		w.logger.Core().Sync()
 		span2.End()
 
 		var mismatches []QueryMismatch
@@ -514,6 +515,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 					zap.String("query", query.ListQuery),
 					zap.String("account", connection.ConnectionID),
 					zap.Any("row", esRow))
+				w.logger.Core().Sync()
 				return nil, err
 			}
 
@@ -524,7 +526,8 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 			esRecords = append(esRecords, esRecord)
 		}
 		esRows.Close()
-
+		w.logger.Info("es query copied to memory", zap.Int("row_count", rowCount))
+		w.logger.Core().Sync()
 		for i, esRecord := range esRecords {
 			w.logger.Core().Sync()
 			getQuery := strings.ReplaceAll(query.GetQuery, "%ACCOUNT_ID%", connection.ConnectionID)
@@ -550,9 +553,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 				}
 				time.Sleep(3 * time.Second)
 			}
-
 			w.logger.Info("steampipe query done", zap.String("account", connection.ConnectionID), zap.String("query", getQuery))
-
 			found := false
 			w.logger.Info("comparing steampipe and es records", zap.Int("number", i))
 			w.logger.Core().Sync()

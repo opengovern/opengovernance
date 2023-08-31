@@ -2,7 +2,7 @@
   {
     "keyFields": ["id"],
     "tableName": "azure_network_interface",
-    "list": "SELECT * FROM azure_network_interface",
-    "get": "SELECT * FROM azure_network_interface WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+    "list": "SELECT * FROM azure_network_interface WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
+    "get": "SELECT * FROM azure_network_interface WHERE id = $1"
   }
 ]
