@@ -2,91 +2,91 @@
   {
     "keyFields": ["arn"],
     "tableName": "aws_ec2_instance",
-    "list": "SELECT * FROM aws_ec2_instance WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_ec2_instance WHERE arn = $1"
+    "list": "SELECT * FROM aws_ec2_instance",
+    "get": "SELECT * FROM aws_ec2_instance WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
   },
   {
     "keyFields": ["arn"],
     "tableName": "aws_vpc",
-    "list": "SELECT * FROM aws_vpc WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_vpc WHERE arn = $1"
+    "list": "SELECT * FROM aws_vpc;",
+    "get": "SELECT * FROM aws_vpc WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
   },
   {
     "keyFields": ["route_table_id"],
     "tableName": "aws_vpc_route_table",
-    "list": "SELECT * FROM aws_vpc_route_table WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_vpc_route_table WHERE route_table_id = $1"
+    "list": "SELECT * FROM aws_vpc_route_table",
+    "get": "SELECT * FROM aws_vpc_route_table WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND route_table_id = $1"
   },
   {
     "keyFields": ["arn"],
     "tableName": "aws_ebs_volume",
-    "list": "SELECT * FROM aws_ebs_volume WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_ebs_volume WHERE arn = $1"
+    "list": "SELECT * FROM aws_ebs_volume",
+    "get": "SELECT * FROM aws_ebs_volume WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
   },
   {
     "keyFields": ["name"],
     "tableName": "aws_s3_bucket",
-    "list": "SELECT * FROM aws_s3_bucket WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_s3_bucket WHERE name = $1"
+    "list": "SELECT * FROM aws_s3_bucket",
+    "get": "SELECT * FROM aws_s3_bucket WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND name = $1"
   },
   {
     "keyFields": ["arn"],
     "tableName": "aws_backup_vault",
-    "list": "SELECT * FROM aws_backup_vault WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_backup_vault WHERE arn = $1"
+    "list": "SELECT * FROM aws_backup_vault",
+    "get": "SELECT * FROM aws_backup_vault WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
   },
   {
     "keyFields": ["name"],
     "tableName": "aws_cloudformation_stack",
-    "list": "SELECT * FROM aws_cloudformation_stack WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_cloudformation_stack WHERE name = $1"
+    "list": "SELECT * FROM aws_cloudformation_stack",
+    "get": "SELECT * FROM aws_cloudformation_stack WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND name = $1"
   },
   {
     "keyFields": ["arn"],
     "tableName": "aws_ecr_repository",
-    "list": "SELECT * FROM aws_ecr_repository WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_ecr_repository WHERE arn = $1"
+    "list": "SELECT * FROM aws_ecr_repository",
+    "get": "SELECT * FROM aws_ecr_repository WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
   },
   {
     "keyFields": ["arn"],
     "tableName": "aws_ebs_snapshot",
-    "list": "SELECT * FROM aws_ebs_snapshot WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_ebs_snapshot WHERE arn = $1"
+    "list": "SELECT * FROM aws_ebs_snapshot",
+    "get": "SELECT * FROM aws_ebs_snapshot WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
   },
   {
     "keyFields": ["arn"],
     "tableName": "aws_ec2_application_load_balancer",
-    "list": "SELECT * FROM aws_ec2_application_load_balancer WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_ec2_application_load_balancer WHERE arn = $1"
+    "list": "SELECT * FROM aws_ec2_application_load_balancer",
+    "get": "SELECT * FROM aws_ec2_application_load_balancer WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
   },
   {
     "keyFields": ["arn"],
     "tableName": "aws_ec2_classic_load_balancer",
-    "list": "SELECT * FROM aws_ec2_classic_load_balancer WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_ec2_classic_load_balancer WHERE arn = $1"
+    "list": "SELECT * FROM aws_ec2_classic_load_balancer",
+    "get": "SELECT * FROM aws_ec2_classic_load_balancer WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
   },
   {
     "keyFields": ["arn"],
     "tableName": "aws_ec2_network_load_balancer",
-    "list": "SELECT * FROM aws_ec2_network_load_balancer WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_ec2_network_load_balancer WHERE arn = $1"
+    "list": "SELECT * FROM aws_ec2_network_load_balancer",
+    "get": "SELECT * FROM aws_ec2_network_load_balancer WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
   },
   {
     "keyFields": ["arn"],
     "tableName": "aws_ec2_gateway_load_balancer",
-    "list": "SELECT * FROM aws_ec2_gateway_load_balancer WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_ec2_gateway_load_balancer arn = $1"
+    "list": "SELECT * FROM aws_ec2_gateway_load_balancer",
+    "get": "SELECT * FROM aws_ec2_gateway_load_balancer WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
   },
   {
     "keyFields": ["arn"],
     "tableName": "aws_eks_cluster",
-    "list": "SELECT * FROM aws_eks_cluster WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_eks_cluster WHERE arn = $1"
+    "list": "SELECT * FROM aws_eks_cluster",
+    "get": "SELECT * FROM aws_eks_cluster WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
   },
   {
     "keyFields": ["arn"],
     "tableName": "aws_lambda_function",
-    "list": "SELECT * FROM aws_lambda_function WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%'",
-    "get": "SELECT * FROM aws_lambda_function WHERE arn = $1"
+    "list": "SELECT * FROM aws_lambda_function",
+    "get": "SELECT * FROM aws_lambda_function WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
   }
 ]

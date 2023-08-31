@@ -492,102 +492,103 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 		listQuery = strings.ReplaceAll(listQuery, "%KAYTU_ACCOUNT_ID%", connection.ID.String())
 
 		_, span2 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("steampipe-query-%s", query.TableName))
-		w.logger.Info("running es query", zap.String("account", connection.ConnectionID), zap.String("query", listQuery))
-		var esRows pgx.Rows
-		esRows, err = w.kaytuSteampipeDb.Conn().Query(ctx, listQuery)
-		if err != nil {
-			w.logger.Error("failed to run es query", zap.Error(err), zap.String("query", listQuery))
-			return nil, err
+		w.logger.Info("running steampipe query", zap.String("account", connection.ConnectionID), zap.String("query", listQuery))
+		var steampipeRows pgx.Rows
+		for retry := 0; retry < 5; retry++ {
+			steampipeRows, err = originalSteampipe.Conn().Query(ctx, listQuery)
+			if err == nil {
+				break
+			}
+			if pgErr, ok := err.(*pgconn.PgError); ok {
+				if pgErr.SQLState() != "42P01" { // table not found (relation does not exist)
+					return nil, err
+				}
+			}
+			time.Sleep(3 * time.Second)
 		}
-		w.logger.Info("es query done", zap.String("account", connection.ConnectionID), zap.String("query", listQuery))
-		w.logger.Core().Sync()
+		w.logger.Info("steampipe query done", zap.String("account", connection.ConnectionID), zap.String("query", listQuery))
 		span2.End()
 
 		var mismatches []QueryMismatch
 		var columns []string
 		rowCount := 0
-		var esRecords []map[string]any
-		for esRows.Next() {
+		var steampipeRecords []map[string]any
+		for steampipeRows.Next() {
 			rowCount++
-			esRow, err := esRows.Values()
+			steampipeRow, err := steampipeRows.Values()
 			if err != nil {
 				w.logger.Error("failed to get steampipe row values",
 					zap.Error(err),
 					zap.String("query", query.ListQuery),
 					zap.String("account", connection.ConnectionID),
-					zap.Any("row", esRow))
-				w.logger.Core().Sync()
+					zap.Any("row", steampipeRow))
 				return nil, err
 			}
 
-			esRecord := map[string]any{}
-			for idx, field := range esRows.FieldDescriptions() {
-				esRecord[string(field.Name)] = esRow[idx]
+			steampipeRecord := map[string]any{}
+			for idx, field := range steampipeRows.FieldDescriptions() {
+				steampipeRecord[string(field.Name)] = steampipeRow[idx]
 			}
-			esRecords = append(esRecords, esRecord)
+			steampipeRecords = append(steampipeRecords, steampipeRecord)
 		}
-		esRows.Close()
-		w.logger.Info("es query copied to memory", zap.Int("row_count", rowCount))
-		w.logger.Core().Sync()
-		for i, esRecord := range esRecords {
+		steampipeRows.Close()
+
+		esCount := 0
+		for i, steampipeRecord := range steampipeRecords {
 			w.logger.Core().Sync()
 			getQuery := strings.ReplaceAll(query.GetQuery, "%ACCOUNT_ID%", connection.ConnectionID)
 			getQuery = strings.ReplaceAll(getQuery, "%KAYTU_ACCOUNT_ID%", connection.ID.String())
 
 			var keyValues []any
 			for _, f := range query.KeyFields {
-				keyValues = append(keyValues, esRecord[f])
+				keyValues = append(keyValues, steampipeRecord[f])
 			}
 
-			w.logger.Info("running steampipe query", zap.String("account", connection.ConnectionID), zap.String("query", getQuery))
-			var steampipeRows pgx.Rows
-			for retry := 0; retry < 5; retry++ {
-				steampipeRows, err = originalSteampipe.Conn().Query(context.Background(), getQuery, keyValues...)
-				if pgErr, ok := err.(*pgconn.PgError); ok {
-					w.logger.Error("failed to run query", zap.Error(err), zap.String("query", query.GetQuery), zap.String("account", connection.ConnectionID))
-					if pgErr.SQLState() != "42P01" { // table not found (relation does not exist)
-						return nil, err
-					}
-				}
-				time.Sleep(3 * time.Second)
+			w.logger.Info("running es query", zap.String("account", connection.ConnectionID), zap.String("query", getQuery))
+			esRows, err := w.kaytuSteampipeDb.Conn().Query(context.Background(), getQuery, keyValues...)
+			if err != nil {
+				w.logger.Error("failed to run query", zap.Error(err), zap.String("query", query.GetQuery), zap.String("account", connection.ConnectionID))
+				return nil, err
 			}
-			w.logger.Info("steampipe query done", zap.String("account", connection.ConnectionID), zap.String("query", getQuery))
+			w.logger.Info("es query done", zap.String("account", connection.ConnectionID), zap.String("query", getQuery))
+
 			found := false
 			w.logger.Info("comparing steampipe and es records", zap.Int("number", i))
 			w.logger.Core().Sync()
 
 			_, span4 := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, fmt.Sprintf("compare-%s", query.TableName))
 
-			for steampipeRows.Next() {
+			for esRows.Next() {
+				esCount++
 				w.logger.Info("comparing steampipe and es records", zap.Int("number", i))
 				w.logger.Core().Sync()
-				steampipeRow, err := steampipeRows.Values()
+				esRow, err := esRows.Values()
 				if err != nil {
 					w.logger.Error("failed to get es row values",
 						zap.Error(err),
 						zap.String("query", query.GetQuery),
 						zap.String("account", connection.ConnectionID),
-						zap.Any("row", steampipeRow))
+						zap.Any("row", esRow))
 					return nil, err
 				}
 
 				found = true
 
-				steampipeRecord := map[string]any{}
-				steampipeRecordType := map[string]uint32{}
-				for idx, field := range steampipeRows.FieldDescriptions() {
-					steampipeRecord[string(field.Name)] = steampipeRow[idx]
-					steampipeRecordType[string(field.Name)] = field.DataTypeOID
+				esRecord := map[string]any{}
+				esRecordType := map[string]uint32{}
+				for idx, field := range esRows.FieldDescriptions() {
+					esRecord[string(field.Name)] = esRow[idx]
+					esRecordType[string(field.Name)] = field.DataTypeOID
 				}
 				for k, v := range steampipeRecord {
 					w.logger.Info("comparing steampipe and es records", zap.Int("number", i), zap.String("key", k))
 					w.logger.Core().Sync()
-					v2 := steampipeRecord[k]
+					v2 := esRecord[k]
 					// if its not json
 					var j1 []byte
 					var j2 []byte
 					// 3802 is jsonb and 114 is json
-					if steampipeRecordType[k] != 3802 && steampipeRecordType[k] != 114 {
+					if esRecordType[k] != 3802 && esRecordType[k] != 114 {
 						j1, err = json.Marshal(v)
 						if err != nil {
 							return nil, err
@@ -622,7 +623,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 					w.logger.Info("comparing steampipe and es jsons", zap.Int("number", i), zap.String("key", k), zap.String("steampipe", sj1), zap.String("es", sj2))
 					w.logger.Core().Sync()
 					if sj1 != sj2 {
-						if compareJsons(j1, j2) {
+						if compareJsons(j2, j1) {
 							ReporterJobsCount.WithLabelValues(query.TableName, "Succeeded").Inc()
 							continue
 						}
@@ -659,14 +660,14 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 				}
 			}
 			span4.End()
-			steampipeRows.Close()
+			esRows.Close()
 
 			if !found {
 				mismatches = append(mismatches, QueryMismatch{
 					KeyColumn:      fmt.Sprintf("%v", keyValues),
 					ConflictColumn: "",
-					Steampipe:      "Record Not Found",
-					Elasticsearch:  "",
+					Steampipe:      "",
+					Elasticsearch:  "Record Not Found",
 				})
 				ReporterJobsCount.WithLabelValues(query.TableName, "Failed").Inc()
 				w.logger.Warn("record not found",
@@ -675,6 +676,15 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 					zap.String("keyColumns", fmt.Sprintf("%v", keyValues)),
 				)
 			}
+		}
+		if esCount != rowCount {
+			mismatches = append(mismatches, QueryMismatch{
+				KeyColumn:      "ALL ROWS COUNT",
+				ConflictColumn: "ALL ROWS COUNT",
+				Steampipe:      fmt.Sprintf("Mismatched Row Count: %d", rowCount),
+				Elasticsearch:  fmt.Sprintf("Mismatched Row Count: %d", esCount),
+			})
+			ReporterJobsCount.WithLabelValues(query.TableName, "Failed").Inc()
 		}
 
 		results = append(results, TriggerQueryResponse{
