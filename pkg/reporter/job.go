@@ -495,7 +495,7 @@ func (w *Worker) Do(ctx context.Context, j Job) ([]TriggerQueryResponse, error) 
 		w.logger.Info("running es query", zap.String("account", connection.ConnectionID), zap.String("query", listQuery))
 		var esRows pgx.Rows
 		esRows, err = w.kaytuSteampipeDb.Conn().Query(ctx, listQuery)
-		if err == nil {
+		if err != nil {
 			w.logger.Error("failed to run es query", zap.Error(err), zap.String("query", listQuery))
 			return nil, err
 		}
