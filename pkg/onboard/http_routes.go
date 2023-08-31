@@ -71,6 +71,7 @@ func (h HttpHandler) Register(r *echo.Echo) {
 	credential.DELETE("/:credentialId", httpserver.AuthorizeHandler(h.DeleteCredential, api3.EditorRole))
 	credential.GET("/:credentialId", httpserver.AuthorizeHandler(h.GetCredential, api3.ViewerRole))
 	credential.POST("/:credentialId/autoonboard", httpserver.AuthorizeHandler(h.AutoOnboardCredential, api3.EditorRole))
+	credential.POST("/:credentialId/autoonboard/accounts", httpserver.AuthorizeHandler(h.CredentialAccounts, api3.EditorRole))
 
 	connections := v1.Group("/connections")
 	connections.GET("/summary", httpserver.AuthorizeHandler(h.ListConnectionsSummaries, api3.ViewerRole))
@@ -1059,7 +1060,7 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 						name = *account.AccountName
 					}
 
-					if conn.CreationMethod == source.SourceCreationMethodManual {
+					if conn.CredentialID.String() != credential.ID.String() {
 						h.logger.Warn("organization account is onboarded as an standalone account",
 							zap.String("accountID", account.AccountID),
 							zap.String("connectionID", conn.ID.String()))
@@ -1252,6 +1253,66 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, onboardedSources)
+}
+
+func (h HttpHandler) CredentialAccounts(ctx echo.Context) error {
+	credId, err := uuid.Parse(ctx.Param(paramCredentialId))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+	}
+	// trace :
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetCredentialByID", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetCredentialByID")
+
+	credential, err := h.db.GetCredentialByID(credId)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "credential not found")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	span.AddEvent("information", trace.WithAttributes(
+		attribute.String("credential name", *credential.Name),
+	))
+	span.End()
+
+	switch credential.ConnectorType {
+	case source.CloudAzure:
+		return errors.New("not implemented")
+		//onboardedSources, err = h.autoOnboardAzureSubscriptions(ctx.Request().Context(), *credential, maxConns)
+		//if err != nil {
+		//	return err
+		//}
+	case source.CloudAWS:
+		cnf, err := h.kms.Decrypt(credential.Secret, h.keyARN)
+		if err != nil {
+			return err
+		}
+		awsCnf, err := describe.AWSAccountConfigFromMap(cnf)
+		if err != nil {
+			return err
+		}
+		cfg, err := kaytuAws.GetConfig(
+			ctx.Request().Context(),
+			awsCnf.AccessKey,
+			awsCnf.SecretKey,
+			"",
+			"",
+			nil)
+		h.logger.Info("discovering accounts", zap.String("credentialId", credential.ID.String()))
+		if cfg.Region == "" {
+			cfg.Region = "us-east-1"
+		}
+		accounts, err := discoverAWSAccounts(ctx.Request().Context(), cfg)
+		if err != nil {
+			return err
+		}
+		return ctx.JSON(http.StatusOK, accounts)
+	default:
+		return echo.NewHTTPError(http.StatusBadRequest, "connector doesn't support auto onboard")
+	}
 }
 
 func (h HttpHandler) putAzureCredentials(ctx echo.Context, req api.UpdateCredentialRequest) error {
