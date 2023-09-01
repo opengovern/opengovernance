@@ -7,13 +7,13 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.1.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription v1.1.0
 	github.com/aws/aws-sdk-go v1.44.153
-	github.com/aws/aws-sdk-go-v2 v1.20.0
+	github.com/aws/aws-sdk-go-v2 v1.21.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.24
 	github.com/aws/aws-sdk-go-v2/service/iam v1.18.9
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.16.8
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.1
 	github.com/aws/aws-sdk-go-v2/service/sts v1.19.0
-	github.com/aws/smithy-go v1.14.0
+	github.com/aws/smithy-go v1.14.2
 	github.com/brpaz/echozap v1.1.3
 	github.com/confluentinc/confluent-kafka-go/v2 v2.1.1
 	github.com/coreos/go-oidc/v3 v3.1.0
@@ -32,9 +32,9 @@ require (
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
-	github.com/kaytu-io/kaytu-aws-describer v0.3.0
-	github.com/kaytu-io/kaytu-azure-describer v0.1.0
-	github.com/kaytu-io/kaytu-util v0.0.0-20230829090249-4ee7beb1c407
+	github.com/kaytu-io/kaytu-aws-describer v0.3.16
+	github.com/kaytu-io/kaytu-azure-describer v0.1.6
+	github.com/kaytu-io/kaytu-util v0.0.0-20230901113556-bcf9c526e128
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/labstack/gommon v0.4.0
@@ -187,11 +187,11 @@ require (
 	github.com/apparentlymart/go-cidr v1.1.0 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.9 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.13 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.25 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.3 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.37 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.31 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.41 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.35 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.16 // indirect
 	github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.16.0 // indirect
@@ -272,7 +272,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kinesisanalyticsv2 v1.14.18 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kinesisvideo v1.15.11 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kms v1.21.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/lambda v1.26.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/lambda v1.39.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/lightsail v1.26.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/macie2 v1.27.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/mediastore v1.13.10 // indirect
