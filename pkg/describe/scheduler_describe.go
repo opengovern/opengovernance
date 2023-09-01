@@ -126,6 +126,10 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 			}
 		}
 		if rtCount[dc.ResourceType]+currentCount > maxCount {
+			if dc.ResourceType == "Microsoft.CostManagement/CostByResourceType" {
+				s.logger.Info("ignoring azure cost", zap.Int("currentCount", currentCount), zap.Int("rtCount", rtCount[dc.ResourceType]))
+			}
+
 			dcs = append(dcs[:i], dcs[i+1:]...)
 			i--
 		}
