@@ -109,15 +109,28 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 	if len(connectionIds) > 0 {
 		return connectionIds, nil
 	}
+	// Check for duplicate connection group
+
+	check := make(map[string]int)
+	d := append(connectionGroup)
+	communityConnectionGroup := make([]string, 0)
+
+	for _, val := range d {
+		check[val] = 1
+	}
+
+	for connectionGr, _ := range check {
+		communityConnectionGroup = append(communityConnectionGroup, connectionGr)
+	}
 
 	var connectionIDS []string
-	for i := 0; i < len(connectionGroup); i++ {
-		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroup[i])
+	for i := 0; i < len(communityConnectionGroup); i++ {
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, communityConnectionGroup[i])
 		if err != nil {
 			return nil, err
 		}
 		if len(connectionGroupObj.ConnectionIds) == 0 {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionGroup has no connections")
+			return nil, err
 		}
 		connectionIDS = append(connectionGroupObj.ConnectionIds)
 	}
@@ -627,7 +640,7 @@ func GetBenchmarkTree(ctx context.Context, db db.Database, client kaytu.Client, 
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmark_id	path		string			true	"Benchmark ID"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"\
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
 //	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			startTime		query		int				false	"timestamp for start of the chart in epoch seconds"
