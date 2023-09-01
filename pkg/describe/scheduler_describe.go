@@ -86,6 +86,13 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 	}
 	s.logger.Info("got the jobs", zap.Int("length", len(dcs)))
 
+	counts, err := s.db.CountRunningDescribeJobsPerResourceType()
+	if err != nil {
+		s.logger.Error("failed to resource type count", zap.String("spot", "CountRunningDescribeJobsPerResourceType"), zap.Error(err))
+		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+		return err
+	}
+
 	if len(dcs) == 0 {
 		if count == 0 {
 			dcs, err = s.db.GetFailedDescribeConnectionJobs(ctx)
@@ -112,7 +119,13 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 			maxCount = 1
 		}
 
-		if rtCount[dc.ResourceType] > maxCount && i+1 < len(dcs) {
+		currentCount := 0
+		for _, c := range counts {
+			if c.ResourceType == dc.ResourceType {
+				currentCount = c.Count
+			}
+		}
+		if rtCount[dc.ResourceType]+currentCount > maxCount {
 			dcs = append(dcs[:i], dcs[i+1:]...)
 			i--
 		}

@@ -59,6 +59,24 @@ func (db Database) CountQueuedDescribeConnectionJobs() (int64, error) {
 	return count, nil
 }
 
+type ResourceTypeCount struct {
+	ResourceType string
+	Count        int
+}
+
+func (db Database) CountRunningDescribeJobsPerResourceType() ([]ResourceTypeCount, error) {
+	var count []ResourceTypeCount
+	runningJobs := []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress}
+	tx := db.orm.Raw(`select resource_type, count(*) as count from describe_connection_jobs where status in ? group by 1`, runningJobs).Find(&count)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return count, nil
+}
+
 func (db Database) GetLastDescribeConnectionJob(connectionID, resourceType string) (*DescribeConnectionJob, error) {
 	var job DescribeConnectionJob
 	tx := db.orm.Preload(clause.Associations).Where("connection_id = ? AND resource_type = ?", connectionID, resourceType).Order("updated_at DESC").First(&job)
@@ -103,7 +121,7 @@ func (db Database) ListRandomCreatedDescribeConnectionJobs(ctx context.Context, 
 	runningJobs := []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress}
 	tx := db.orm.Raw(`
 SELECT
-	*, random() as r
+	*, random() as r, (select count(*) from describe_connection_jobs where resource_type = dr.resource_type and status IN ('QUEUED', 'IN_PROGRESS'))
 FROM
 	describe_connection_jobs dr
 WHERE
