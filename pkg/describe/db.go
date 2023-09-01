@@ -103,22 +103,13 @@ func (db Database) ListRandomCreatedDescribeConnectionJobs(ctx context.Context, 
 	runningJobs := []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress}
 	tx := db.orm.Raw(`
 SELECT
-*
-FROM (
- SELECT
-  ROW_NUMBER() OVER (PARTITION BY resource_type) AS r,
-  t.*
- FROM (
-     SELECT
-      *
-     FROM
-       describe_connection_jobs dr
-     WHERE
-       status = ? AND
-       (select count(*) from describe_connection_jobs where connection_id = dr.connection_id AND status IN ?) <= 10
- ) AS t) AS rowed
+	*, random() as r
+FROM
+	describe_connection_jobs dr
 WHERE
- rowed.r <= 10
+	status = ? AND
+	(select count(*) from describe_connection_jobs where connection_id = dr.connection_id AND status IN ?) <= 10
+ORDER BY r DESC
 LIMIT ?
 `, api.DescribeResourceJobCreated, runningJobs, limit).Find(&job)
 	if tx.Error != nil {

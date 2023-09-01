@@ -101,6 +101,23 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 			return errors.New("queue is not empty to look for retries")
 		}
 	}
+
+	rtCount := map[string]int{}
+	for i := 0; i < len(dcs); i++ {
+		dc := dcs[i]
+		rtCount[dc.ResourceType]++
+
+		maxCount := 10
+		if dc.ResourceType == "Microsoft.CostManagement/CostByResourceType" {
+			maxCount = 1
+		}
+
+		if rtCount[dc.ResourceType] > maxCount && i+1 < len(dcs) {
+			dcs = append(dcs[:i], dcs[i+1:]...)
+			i--
+		}
+	}
+
 	s.logger.Info("preparing resource jobs to run", zap.Int("length", len(dcs)))
 
 	wp := concurrency.NewWorkPool(len(dcs))
