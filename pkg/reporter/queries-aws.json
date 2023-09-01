@@ -88,5 +88,65 @@
     "tableName": "aws_lambda_function",
     "list": "SELECT * FROM aws_lambda_function",
     "get": "SELECT * FROM aws_lambda_function WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
+  },
+  {
+    "keyFields": ["arn"],
+    "tableName": "aws_rds_db_cluster",
+    "list": "SELECT * FROM aws_rds_db_cluster",
+    "get": "SELECT * FROM aws_rds_db_cluster WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
+  },
+  {
+    "keyFields": ["arn"],
+    "tableName": "aws_vpc_eip",
+    "list": "SELECT * FROM aws_vpc_eip",
+    "get": "SELECT * FROM aws_vpc_eip WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
+  },
+  {
+    "keyFields": ["arn"],
+    "tableName": "aws_rds_db_instance",
+    "list": "SELECT * FROM aws_rds_db_instance",
+    "get": "SELECT * FROM aws_rds_db_instance WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
+  },
+  {
+    "keyFields": ["fargate_profile_arn"],
+    "tableName": "aws_eks_fargate_profile",
+    "list": "SELECT * FROM aws_eks_fargate_profile",
+    "get": "SELECT * FROM aws_eks_fargate_profile WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND fargate_profile_arn = $1"
+  },
+  {
+    "keyFields": ["title", "cluster_name", "region"],
+    "tableName": "aws_eks_node_group",
+    "list": "SELECT * FROM aws_eks_node_group",
+    "get": "SELECT * FROM aws_eks_node_group WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND title = $1 AND cluster_name = $2 AND region = $3"
+  },
+  {
+    "keyFields": ["arn"],
+    "tableName": "aws_vpc_security_group",
+    "list": "SELECT * FROM aws_vpc_security_group",
+    "get": "SELECT * FROM aws_vpc_security_group WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
+  },
+  {
+    "keyFields": ["user_name"],
+    "tableName": "aws_iam_access_key",
+    "list": "SELECT * FROM aws_iam_access_key",
+    "get": "SELECT * FROM aws_iam_access_key WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND user_name = $1"
+  },
+  {
+    "keyFields": ["arn"],
+    "tableName": "aws_iam_role",
+    "list": "SELECT * FROM aws_iam_role",
+    "get": "SELECT * FROM aws_iam_role WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
+  },
+  {
+    "keyFields": ["arn"],
+    "tableName": "aws_iam_user",
+    "list": "SELECT * FROM aws_iam_user",
+    "get": "SELECT * FROM aws_iam_user WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
+  },
+  {
+    "keyFields": ["arn"],
+    "tableName": "aws_iam_group",
+    "list": "SELECT * FROM aws_iam_group",
+    "get": "SELECT * FROM aws_iam_group WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND arn = $1"
   }
 ]
