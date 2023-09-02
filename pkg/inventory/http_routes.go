@@ -286,11 +286,16 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 
 func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
 	connectorMap := map[string]spend.ConnectorMetricTrendSummary{}
-	for i := 0; i < 1000; i++ {
+	maxJobID := 1000
+	for i := 0; i < maxJobID; i++ {
 		cm, err := h.MigrateSpendPart(i, true)
 		if err != nil {
 			return err
 		}
+		if len(cm) > 0 {
+			maxJobID = i + 1000
+		}
+
 		for key, newValue := range cm {
 			if v, ok := connectorMap[key]; ok {
 				v.CostValue += newValue.CostValue
@@ -304,6 +309,10 @@ func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
 		if err != nil {
 			return err
 		}
+		if len(cm) > 0 {
+			maxJobID = i + 1000
+		}
+
 		for key, newValue := range cm {
 			if v, ok := connectorMap[key]; ok {
 				v.CostValue += newValue.CostValue
