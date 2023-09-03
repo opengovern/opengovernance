@@ -125,7 +125,7 @@ SELECT
 FROM
 	describe_connection_jobs dr
 WHERE
-	status = ? AND
+	status = ?
 ORDER BY r DESC
 LIMIT ?
 `, api.DescribeResourceJobCreated, limit).Find(&job)
