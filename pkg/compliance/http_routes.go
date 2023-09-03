@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -30,11 +32,9 @@ import (
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	kaytuTypes "github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -109,18 +109,16 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 	if len(connectionIds) > 0 {
 		return connectionIds, nil
 	}
-	// Check for duplicate connection group
 
-	check := make(map[string]int)
-	d := append(connectionGroup)
-	communityConnectionGroup := make([]string, 0)
+	// Check for duplicate connection groups
+	check := make(map[string]bool)
+	var communityConnectionGroup []string
 
-	for _, val := range d {
-		check[val] = 1
-	}
-
-	for connectionGr, _ := range check {
-		communityConnectionGroup = append(communityConnectionGroup, connectionGr)
+	for _, entry := range connectionGroup {
+		if _, value := check[entry]; !value {
+			check[entry] = true
+			communityConnectionGroup = append(communityConnectionGroup, entry)
+		}
 	}
 
 	var connectionIDS []string
@@ -745,10 +743,10 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id	path		string	true	"Benchmark ID"
-//	@Param			connection_id	path		string	true	"Connection ID or 'all' for everything"
+//	@Param			benchmark_id		path		string	true	"Benchmark ID"
+//	@Param			connection_id		path		string	true	"Connection ID or 'all' for everything"
 //	@Param			connection_group	path		string	true	"Connection group "
-//	@Success		200				{object}	[]api.BenchmarkAssignment
+//	@Success		200					{object}	[]api.BenchmarkAssignment
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [post]
 func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	connectionID := ctx.Param("connection_id")
