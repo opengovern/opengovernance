@@ -126,10 +126,11 @@ FROM
 	describe_connection_jobs dr
 WHERE
 	status = ? AND
-	(select count(*) from describe_connection_jobs where connection_id = dr.connection_id AND status IN ?) <= 10
+	(select count(*) from describe_connection_jobs where connection_id = dr.connection_id AND status IN ?) <= 10 AND 
+	(select count(*) from describe_connection_jobs where resource_type = dr.resource_type AND status IN ?) < 20
 ORDER BY r DESC
 LIMIT ?
-`, api.DescribeResourceJobCreated, runningJobs, limit).Find(&job)
+`, api.DescribeResourceJobCreated, runningJobs, runningJobs, limit).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
