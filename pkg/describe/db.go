@@ -118,19 +118,17 @@ func (db Database) ListRandomCreatedDescribeConnectionJobs(ctx context.Context, 
 
 	var job []DescribeConnectionJob
 
-	runningJobs := []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress}
+	//runningJobs := []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress}
 	tx := db.orm.Raw(`
 SELECT
-	*, random() as r, (select count(*) from describe_connection_jobs where resource_type = dr.resource_type and status IN ('QUEUED', 'IN_PROGRESS'))
+	*, random() as r
 FROM
 	describe_connection_jobs dr
 WHERE
 	status = ? AND
-	(select count(*) from describe_connection_jobs where connection_id = dr.connection_id AND status IN ?) <= 10 AND 
-	(select count(*) from describe_connection_jobs where resource_type = dr.resource_type AND status IN ?) < 20
 ORDER BY r DESC
 LIMIT ?
-`, api.DescribeResourceJobCreated, runningJobs, runningJobs, limit).Find(&job)
+`, api.DescribeResourceJobCreated, limit).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
