@@ -1,36 +1,3 @@
-x-tagGroups:
-  - name: auth
-    tags:
-    - users
-    - roles
-    - keys
-  - name: compliance
-    tags:
-    - compliance
-    - benchmarks_assignemnt
-  - name: inventory
-    tags:
-    - insights
-    - benchmarks
-    - inventory
-    - cost
-    - location
-    - smart_query
-    - resource
-    - metadata
-    - services
-  - name: onboard
-    tags:
-    - onboard
-  - name: schedule
-    tags:
-    - describe
-    - schedule
-    - jobs
-    - stack
-  - name: workspace
-    tags:
-    - workspace
 definitions:
   echo.HTTPError:
     properties:
@@ -4180,6 +4147,18 @@ paths:
   /onboard/api/v1/catalog/metrics:
     get:
       description: Retrieving the list of metrics for catalog page.
+      parameters:
+      - collectionFormat: csv
+        description: Connector
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
       produces:
       - application/json
       responses:
