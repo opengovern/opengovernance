@@ -6702,6 +6702,11 @@ const docTemplate = `{
                     "minimum": 0,
                     "example": 15
                 },
+                "inProgressConnections": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 5
+                },
                 "totalConnections": {
                     "type": "integer",
                     "minimum": 0,

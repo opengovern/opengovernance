@@ -1604,6 +1604,10 @@ definitions:
         example: 15
         minimum: 0
         type: integer
+      inProgressConnections:
+        example: 5
+        minimum: 0
+        type: integer
       totalConnections:
         example: 20
         minimum: 0
