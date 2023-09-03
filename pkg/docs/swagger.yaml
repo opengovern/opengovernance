@@ -2647,11 +2647,6 @@ paths:
         in: query
         name: connection_group
         type: string
-      - description: 'Connection group '
-        in: path
-        name: connection_group
-        required: true
-        type: string
       produces:
       - application/json
       responses:
