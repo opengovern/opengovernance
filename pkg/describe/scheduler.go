@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
 	"net"
 	"strconv"
 	"strings"
@@ -33,8 +34,6 @@ import (
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	workspaceClient "github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
 	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
@@ -449,7 +448,7 @@ func InitializeScheduler(
 	describeServer.DoProcessReceivedMessages, _ = strconv.ParseBool(DoProcessReceivedMsgs)
 	s.MaxConcurrentCall, _ = strconv.ParseInt(MaxConcurrentCall, 10, 64)
 	if s.MaxConcurrentCall <= 0 {
-		s.MaxConcurrentCall = 500
+		s.MaxConcurrentCall = 5000
 	}
 
 	return s, nil
