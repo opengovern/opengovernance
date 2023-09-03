@@ -1445,7 +1445,7 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 //	@Summary		Get Assets Table
 //	@Description	Returns asset table with respect to the dimension and granularity
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
 //	@Param			startTime	query		int64	false	"timestamp for start in epoch seconds"
@@ -2043,7 +2043,7 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 //	@Summary		Get Spend Trend
 //	@Description	Returns spend table with respect to the dimension and granularity
 //	@Security		BearerToken
-//	@Tags			inventory
+//	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
 //	@Param			startTime		query		int64		false	"timestamp for start in epoch seconds"

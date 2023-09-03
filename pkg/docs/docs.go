@@ -2085,7 +2085,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "analytics"
                 ],
                 "summary": "Get Spend Trend",
                 "parameters": [
@@ -2268,7 +2268,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "inventory"
+                    "analytics"
                 ],
                 "summary": "Get Assets Table",
                 "parameters": [
@@ -7702,8 +7702,6 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {
