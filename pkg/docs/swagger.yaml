@@ -3808,7 +3808,7 @@ paths:
       - BearerToken: []
       summary: Get Spend Trend
       tags:
-      - inventory
+      - analytics
   /inventory/api/v2/analytics/spend/trend:
     get:
       consumes:
@@ -3918,7 +3918,7 @@ paths:
       - BearerToken: []
       summary: Get Assets Table
       tags:
-      - inventory
+      - analytics
   /inventory/api/v2/analytics/tag:
     get:
       consumes:
