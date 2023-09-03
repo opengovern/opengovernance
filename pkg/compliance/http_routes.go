@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -30,13 +32,16 @@ import (
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	kaytuTypes "github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+)
+
+const (
+	ConnectionIdParam    = "connectionId"
+	ConnectionGroupParam = "connectionGroup"
 )
 
 func (h *HttpHandler) Register(e *echo.Echo) {
@@ -88,6 +93,48 @@ func bindValidate(ctx echo.Context, i any) error {
 	}
 
 	return nil
+}
+
+func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
+	connectionIds := httpserver.QueryArrayParam(ctx, ConnectionIdParam)
+	connectionGroup := httpserver.QueryArrayParam(ctx, ConnectionGroupParam)
+	if len(connectionIds) == 0 && connectionGroup == nil {
+		return nil, nil
+	}
+
+	if len(connectionIds) > 0 && connectionGroup != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
+	}
+
+	if len(connectionIds) > 0 {
+		return connectionIds, nil
+	}
+
+	// Check for duplicate connection groups
+	check := make(map[string]bool)
+	var communityConnectionGroup []string
+
+	for _, entry := range connectionGroup {
+		if _, value := check[entry]; !value {
+			check[entry] = true
+			communityConnectionGroup = append(communityConnectionGroup, entry)
+		}
+	}
+
+	var connectionIDS []string
+	for i := 0; i < len(communityConnectionGroup); i++ {
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, communityConnectionGroup[i])
+		if err != nil {
+			return nil, err
+		}
+
+		if len(connectionGroupObj.ConnectionIds) == 0 {
+			return nil, err
+		}
+		connectionIDS = append(connectionGroupObj.ConnectionIds)
+	}
+
+	return connectionIDS, nil
 }
 
 var tracer = otel.Tracer("new_compliance")
@@ -170,6 +217,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 //	@Param			field			path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service)
 //	@Param			count			path		int								true	"Count"
 //	@Param			connectionId	query		[]string						false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string						false	"Connection groups to filter by "
 //	@Param			connector		query		[]source.Type					false	"Connector type to filter by"
 //	@Param			severities		query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by"
 //	@Success		200				{object}	api.GetTopFieldResponse
@@ -190,7 +238,10 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		esCount = 10000
 	}
 
-	connectionIDs := ctx.QueryParams()["connectionId"]
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 	severities := kaytuTypes.ParseFindingSeverities(ctx.QueryParams()["severities"])
 	//tracer :
@@ -272,12 +323,16 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			timeAt			query		int				false	"timestamp for values in epoch seconds"
 //	@Success		200				{object}	api.GetBenchmarksSummaryResponse
 //	@Router			/compliance/api/v1/benchmarks/summary [get]
 func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
 	if len(connectionIDs) > 20 {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
@@ -365,12 +420,16 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			benchmark_id	path		string			true	"Benchmark ID"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			timeAt			query		int				false	"timestamp for values in epoch seconds"
 //	@Success		200				{object}	api.BenchmarkEvaluationSummary
 //	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
 	if len(connectionIDs) > 20 {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
@@ -581,13 +640,17 @@ func GetBenchmarkTree(ctx context.Context, db db.Database, client kaytu.Client, 
 //	@Produce		json
 //	@Param			benchmark_id	path		string			true	"Benchmark ID"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			startTime		query		int				false	"timestamp for start of the chart in epoch seconds"
 //	@Param			endTime			query		int				false	"timestamp for end of the chart in epoch seconds"
 //	@Success		200				{object}	[]api.BenchmarkTrendDatapoint
 //	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/trend [get]
 func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
 	if len(connectionIDs) > 20 {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
@@ -611,6 +674,7 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
 	// tracer :
 	output1, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark")
+	span1.SetName("new_GetBenchmark")
 
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
@@ -681,14 +745,20 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id	path		string	true	"Benchmark ID"
-//	@Param			connection_id	path		string	true	"Connection ID or 'all' for everything"
-//	@Success		200				{object}	[]api.BenchmarkAssignment
+//	@Param			benchmark_id		path		string	true	"Benchmark ID"
+//	@Param			connection_id		query		string	false	"Connection ID or 'all' for everything"
+//	@Param			connection_group	query		string	false	"Connection group "
+//	@Success		200					{object}	[]api.BenchmarkAssignment
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [post]
 func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
-	connectionID := ctx.Param("connection_id")
-	if connectionID == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "connection id is empty")
+	connectionID := ctx.QueryParam(ConnectionIdParam)
+	connectionGroup := ctx.QueryParam(ConnectionGroupParam)
+	if len(connectionID) == 0 && connectionGroup == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "connectionId or connectionGroup must be set")
+	}
+
+	if len(connectionID) > 0 && connectionGroup != "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
 	}
 
 	benchmarkId := ctx.Param("benchmark_id")
@@ -698,6 +768,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	// trace :
 	outputS1, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmark")
+
 	benchmark, err := h.db.GetBenchmark(benchmarkId)
 
 	if err != nil {
@@ -750,7 +821,18 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	span2.End()
 
 	connections := make([]onboardApi.Connection, 0)
-	if strings.ToLower(connectionID) == "all" {
+	if connectionGroup != "" {
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroup)
+		if err != nil {
+			return err
+		}
+
+		if len(connectionGroupObj.ConnectionIds) == 0 {
+			return err
+		}
+
+		connections = append(connections, connectionGroupObj.Connections...)
+	} else if strings.ToLower(connectionID) == "all" {
 		srcs, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
 		if err != nil {
 			return err
@@ -939,20 +1021,80 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id	path	string	true	"Benchmark ID"
-//	@Param			connection_id	path	string	true	"Connection ID or 'all' for everything"
+//	@Param			benchmark_id		path	string	true	"Benchmark ID"
+//	@Param			connection_id		query	string	false	"Connection ID or 'all' for everything"
+//	@Param			connection_group	query	string	false	"Connection Group "
 //	@Success		200
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [delete]
 func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
-	connectionId := ctx.Param("connection_id")
-	if connectionId == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "connection id is empty")
+	connectionId := ctx.QueryParam(ConnectionIdParam)
+	connectionGroup := ctx.QueryParam(ConnectionGroupParam)
+
+	if len(connectionId) == 0 && connectionGroup == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "connectionId or connectionGroup must be set")
 	}
+
+	if len(connectionId) > 0 && connectionGroup != "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
+	}
+
 	benchmarkId := ctx.Param("benchmark_id")
 	if benchmarkId == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
 	}
-	if strings.ToLower(connectionId) == "all" {
+
+	if connectionGroup != "" {
+		var connectionIDS []string
+		// tracer :
+		outputS5, span5 := tracer.Start(ctx.Request().Context(), "new_GetConnectionGroup", trace.WithSpanKind(trace.SpanKindServer))
+		span5.SetName("new_GetConnectionGroup")
+
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroup)
+		if err != nil {
+			return err
+		}
+		span5.End()
+
+		if len(connectionGroupObj.ConnectionIds) == 0 {
+			return err
+		}
+
+		connectionIDS = append(connectionGroupObj.ConnectionIds)
+		for i := 0; i < len(connectionIDS); i++ {
+			// trace :
+			outputS3, span3 := tracer.Start(outputS5, "new_GetBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
+			span3.SetName("new_GetBenchmarkAssignmentByIds")
+
+			if _, err := h.db.GetBenchmarkAssignmentByIds(connectionIDS[i], benchmarkId); err != nil {
+				span3.RecordError(err)
+				span3.SetStatus(codes.Error, err.Error())
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return echo.NewHTTPError(http.StatusFound, "benchmark assignment not found")
+				}
+				ctx.Logger().Errorf("find benchmark assignment: %v", err)
+				return err
+			}
+			span3.AddEvent("information", trace.WithAttributes(
+				attribute.String("benchmark ID", benchmarkId),
+			))
+			span3.End()
+
+			// trace :
+			_, span4 := tracer.Start(outputS3, "new_DeleteBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
+			span4.SetName("new_DeleteBenchmarkAssignmentByIds")
+
+			if err := h.db.DeleteBenchmarkAssignmentByIds(connectionIDS[i], benchmarkId); err != nil {
+				span4.RecordError(err)
+				span4.SetStatus(codes.Error, err.Error())
+				ctx.Logger().Errorf("delete benchmark assignment: %v", err)
+				return err
+			}
+			span4.AddEvent("information", trace.WithAttributes(
+				attribute.String("benchmark ID", benchmarkId),
+			))
+			span4.End()
+		}
+	} else if strings.ToLower(connectionId) == "all" {
 		// trace :
 		_, span1 := tracer.Start(ctx.Request().Context(), "new_DeleteBenchmarkAssignmentByBenchmarkId", trace.WithSpanKind(trace.SpanKindServer))
 		span1.SetName("new_DeleteBenchmarkAssignmentByBenchmarkId")
@@ -1323,6 +1465,7 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 //	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			connector		query		[]source.Type	false	"filter insights by connector"
 //	@Param			connectionId	query		[]string		false	"filter the result by source id"
+//	@Param			connectionGroup	query		[]string		false	"filter the result by connection group "
 //	@Param			startTime		query		int				false	"unix seconds for the start time of the trend"
 //	@Param			endTime			query		int				false	"unix seconds for the end time of the trend"
 //	@Success		200				{object}	[]api.Insight
@@ -1330,7 +1473,10 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
@@ -1419,6 +1565,7 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			insightId		path		string		true	"Insight ID"
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
+//	@param			connectionGroup	query		[]string	false	"filter the result by connection group"
 //	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
 //	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
 //	@Success		200				{object}	api.Insight
@@ -1429,7 +1576,10 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
@@ -1536,6 +1686,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			insightId		path		string		true	"Insight ID"
 //	@Param			connectionId	query		[]string	false	"filter the result by source id"
+//	@param			connectionGroup	query		[]string	false	"filter the result by connection group"
 //	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
 //	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
 //	@Param			datapointCount	query		int			false	"number of datapoints to return"
@@ -1547,7 +1698,10 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
 	var startTime *time.Time
 	if ctx.QueryParam("startTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
@@ -1630,6 +1784,7 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 //	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
 //	@Param			connector		query		[]source.Type	false	"filter insights by connector"
 //	@Param			connectionId	query		[]string		false	"filter the result by source id"
+//	@param			connectionGroup	query		[]string		false	"filter the result by connection group"
 //	@Param			startTime		query		int				false	"unix seconds for the start time of the trend"
 //	@Param			endTime			query		int				false	"unix seconds for the end time of the trend"
 //	@Success		200				{object}	[]api.InsightGroup
@@ -1637,7 +1792,10 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
