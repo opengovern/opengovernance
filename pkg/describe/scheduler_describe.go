@@ -297,6 +297,8 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 				if rt != nil {
 					if rt.FastDiscovery {
 						interval = s.describeIntervalHours
+					} else if rt.CostDiscovery {
+						interval = 24
 					}
 				}
 			}
