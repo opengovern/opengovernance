@@ -10,10 +10,11 @@ const (
 )
 
 type CatalogMetrics struct {
-	TotalConnections     int `json:"totalConnections" example:"20" minimum:"0"`
-	ConnectionsEnabled   int `json:"connectionsEnabled" example:"20" minimum:"0"`
-	HealthyConnections   int `json:"healthyConnections" example:"15" minimum:"0"`
-	UnhealthyConnections int `json:"unhealthyConnections" example:"5" minimum:"0"`
+	TotalConnections      int `json:"totalConnections" example:"20" minimum:"0"`
+	ConnectionsEnabled    int `json:"connectionsEnabled" example:"20" minimum:"0"`
+	HealthyConnections    int `json:"healthyConnections" example:"15" minimum:"0"`
+	UnhealthyConnections  int `json:"unhealthyConnections" example:"5" minimum:"0"`
+	InProgressConnections int `json:"inProgressConnections" example:"5" minimum:"0"`
 }
 
 type CatalogConnector struct {

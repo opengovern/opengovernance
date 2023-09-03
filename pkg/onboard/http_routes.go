@@ -2292,11 +2292,16 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 		if src.LifecycleState.IsEnabled() {
 			metrics.ConnectionsEnabled++
 		}
+
 		switch src.HealthState {
 		case source.HealthStatusHealthy:
 			metrics.HealthyConnections++
 		case source.HealthStatusUnhealthy:
 			metrics.UnhealthyConnections++
+		}
+
+		if src.LifecycleState == ConnectionLifecycleStateInProgress {
+			metrics.InProgressConnections++
 		}
 	}
 
