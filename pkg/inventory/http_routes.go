@@ -1466,12 +1466,18 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	granularity := inventoryApi.SpendTableGranularity(ctx.QueryParam("granularity"))
+	if granularity == "" {
+		granularity = inventoryApi.SpendTableGranularityDaily
+	}
 	if granularity != inventoryApi.SpendTableGranularityDaily &&
 		granularity != inventoryApi.SpendTableGranularityMonthly &&
 		granularity != inventoryApi.SpendTableGranularityYearly {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
 	}
 	dimension := inventoryApi.SpendDimension(ctx.QueryParam("dimension"))
+	if dimension == "" {
+		dimension = inventoryApi.SpendDimensionMetric
+	}
 	if dimension != inventoryApi.SpendDimensionMetric &&
 		dimension != inventoryApi.SpendDimensionConnection {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid dimension")
@@ -2072,12 +2078,18 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	granularity := inventoryApi.SpendTableGranularity(ctx.QueryParam("granularity"))
+	if granularity == "" {
+		granularity = inventoryApi.SpendTableGranularityDaily
+	}
 	if granularity != inventoryApi.SpendTableGranularityDaily &&
 		granularity != inventoryApi.SpendTableGranularityMonthly &&
 		granularity != inventoryApi.SpendTableGranularityYearly {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
 	}
 	dimension := inventoryApi.SpendDimension(ctx.QueryParam("dimension"))
+	if dimension == "" {
+		dimension = inventoryApi.SpendDimensionMetric
+	}
 	if dimension != inventoryApi.SpendDimensionMetric &&
 		dimension != inventoryApi.SpendDimensionConnection {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid dimension")
