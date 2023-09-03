@@ -59,8 +59,8 @@ type DescribeConnectionJob struct {
 	AccountID    string
 	TriggerType  enums.DescribeTriggerType
 
-	ResourceType           string
-	Status                 api.DescribeResourceJobStatus
+	ResourceType           string                        `gorm:"index:idx_resource_type_status;index"`
+	Status                 api.DescribeResourceJobStatus `gorm:"index:idx_resource_type_status;index"`
 	RetryCount             int
 	FailureMessage         string // Should be NULLSTRING
 	ErrorCode              string // Should be NULLSTRING
