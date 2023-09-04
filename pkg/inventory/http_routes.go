@@ -854,6 +854,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	if len(connectionIDs) > MaxConns {
 		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 	connectorTypes, err = h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
@@ -991,7 +992,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	if len(connectionIDs) > MaxConns {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connections")
 	}
-
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
 	if endTimeStr != "" {
@@ -1124,6 +1125,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 	if len(connectionIDs) > MaxConns {
 		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 
 	endTime := time.Now()
 	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
@@ -1281,6 +1283,7 @@ func (h *HttpHandler) ListAnalyticsRegionsSummary(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 
 	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
 	if err != nil {
@@ -1454,9 +1457,9 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 //	@Param			endTime		query		int64	false	"timestamp for end in epoch seconds"
 //	@Param			granularity	query		string	false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
 //	@Param			dimension	query		string	false	"Dimension of the table, default is metric"		Enums(connection, metric)
-//
-//	@Success		200			{object}	[]inventoryApi.AssetTableRow
-//	@Router			/inventory/api/v2/analytics/table [get]
+
+// @Success		200			{object}	[]inventoryApi.AssetTableRow
+// @Router			/inventory/api/v2/analytics/table [get]
 func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 	var err error
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
@@ -1530,6 +1533,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -1776,6 +1780,7 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -1918,6 +1923,7 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
 	if err != nil {
@@ -1990,6 +1996,7 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
 	if err != nil {
@@ -2071,6 +2078,8 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
+
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -2210,6 +2219,8 @@ func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 	if len(connectionIDs) > MaxConns {
 		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
+
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {
