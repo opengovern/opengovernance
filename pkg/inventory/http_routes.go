@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	_ "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.opentelemetry.io/otel"
@@ -116,6 +117,7 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 	}
 
 	if len(connectionIds) > 0 {
+		connectionIds = demo.DecodeRequestArray(ctx, connectionIds)
 		return connectionIds, nil
 	}
 

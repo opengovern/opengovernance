@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
+	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -2335,6 +2336,7 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
 	if endTimeStr != "" {
@@ -2592,6 +2594,11 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	})
 
 	result.Connections = utils.Paginate(pageNumber, pageSize, result.Connections)
+	for i, v := range result.Connections {
+		v.ConnectionID = demo.EncodeResponseData(ctx, v.ConnectionID)
+		v.ConnectionName = demo.EncodeResponseData(ctx, v.ConnectionName)
+		result.Connections[i] = v
+	}
 	return ctx.JSON(http.StatusOK, result)
 }
 
