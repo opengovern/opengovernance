@@ -752,14 +752,9 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 //	@Success		200					{object}	[]api.BenchmarkAssignment
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [post]
 func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
-	connectionID := ctx.QueryParam(ConnectionIdParam)
-	connectionGroup := ctx.QueryParam(ConnectionGroupParam)
-	if len(connectionID) == 0 && len(connectionGroup) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "connectionId or connectionGroup must be set")
-	}
-
-	if len(connectionID) > 0 && len(connectionGroup) > 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
+	connectionID, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
 	}
 
 	benchmarkId := ctx.Param("benchmark_id")
@@ -822,34 +817,33 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	span2.End()
 
 	connections := make([]onboardApi.Connection, 0)
-	if connectionGroup != "" {
-		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroup)
-		if err != nil {
-			return err
-		}
-
-		if len(connectionGroupObj.ConnectionIds) == 0 {
-			return err
-		}
-
-		connections = append(connections, connectionGroupObj.Connections...)
-	} else if strings.ToLower(connectionID) == "all" {
-		srcs, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
-		if err != nil {
-			return err
-		}
-		for _, src := range srcs {
-			if src.Connector == connectorType &&
-				(src.LifecycleState == onboardApi.ConnectionLifecycleStateOnboard || src.LifecycleState == onboardApi.ConnectionLifecycleStateInProgress) {
-				connections = append(connections, src)
+	if len(connectionID) == 1 {
+		if strings.ToLower(connectionID[0]) == "all" {
+			srcs, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+			if err != nil {
+				return err
 			}
+			for _, src := range srcs {
+				if src.Connector == connectorType &&
+					(src.LifecycleState == onboardApi.ConnectionLifecycleStateOnboard || src.LifecycleState == onboardApi.ConnectionLifecycleStateInProgress) {
+					connections = append(connections, src)
+				}
+			}
+		} else {
+			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), connectionID[0])
+			if err != nil {
+				return err
+			}
+			connections = append(connections, *src)
 		}
 	} else {
-		src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), connectionID)
-		if err != nil {
-			return err
+		for _, connectionId := range connectionID {
+			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), connectionId)
+			if err != nil {
+				return err
+			}
+			connections = append(connections, *src)
 		}
-		connections = append(connections, *src)
 	}
 
 	result := make([]api.BenchmarkAssignment, 0, len(connections))
@@ -878,48 +872,55 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		)
 		span5.End()
 
-		result = append(result, api.BenchmarkAssignment{
-			BenchmarkId:  benchmarkId,
-			ConnectionId: connectionID,
-			AssignedAt:   assignment.AssignedAt,
-		})
+		for _, connectionId := range connectionID {
+			result = append(result, api.BenchmarkAssignment{
+				BenchmarkId:  benchmarkId,
+				ConnectionId: connectionId,
+				AssignedAt:   assignment.AssignedAt,
+			})
+		}
 	}
 	span4.End()
 	return ctx.JSON(http.StatusOK, result)
 }
 
 func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
-	connectionId := ctx.QueryParam(ConnectionIdParam)
-	connectionGroup := ctx.QueryParam(ConnectionGroupParam)
-
-	if connectionId == "" && connectionGroup == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "connection id or connection group must be set")
-	}
-	if connectionId != "" && connectionGroup != "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
+	connectionID, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
 	}
 
-	var dbAssignments []db.BenchmarkAssignment
-	var err error
+	var dbAssignments [][]db.BenchmarkAssignment
+	if len(connectionID) == 1 {
+		// trace :
+		_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentsBySourceId", trace.WithSpanKind(trace.SpanKindServer))
+		span1.SetName("new_GetBenchmarkAssignmentsBySourceId")
 
-	if connectionGroup != "" {
-		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroup)
+		dbAssignments[0], err = h.db.GetBenchmarkAssignmentsBySourceId(connectionID[0])
 		if err != nil {
+			span1.RecordError(err)
+			span1.SetStatus(codes.Error, err.Error())
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", connectionID[0]))
+			}
+			ctx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionID[0], err)
 			return err
 		}
-		if len(connectionGroupObj.ConnectionIds) > 0 {
-			return err
-		}
+		span1.AddEvent("information", trace.WithAttributes(
+			attribute.String("connection ID", connectionID[0]),
+		))
+		span1.End()
+	} else {
 		// trace :
 		outputS2, span2 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentsBySourceId(loop)", trace.WithSpanKind(trace.SpanKindServer))
 		span2.SetName("new_GetBenchmarkAssignmentsBySourceId(loop)")
 
-		for i := 0; i < len(connectionGroupObj.ConnectionIds); i++ {
+		for _, connectionId := range connectionID {
 			// trace :
 			_, span1 := tracer.Start(outputS2, "new_GetBenchmarkAssignmentsBySourceId", trace.WithSpanKind(trace.SpanKindServer))
 			span1.SetName("new_GetBenchmarkAssignmentsBySourceId")
 
-			dbAssignments, err = h.db.GetBenchmarkAssignmentsBySourceId(connectionGroupObj.ConnectionIds[i])
+			dbAssignmentsCG, err := h.db.GetBenchmarkAssignmentsBySourceId(connectionId)
 			if err != nil {
 				span1.RecordError(err)
 				span1.SetStatus(codes.Error, err.Error())
@@ -929,40 +930,25 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 				ctx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionId, err)
 				return err
 			}
+			dbAssignments = append(dbAssignments, dbAssignmentsCG)
+
 			span1.AddEvent("information", trace.WithAttributes(
 				attribute.String("connection ID", connectionId),
 			))
 			span1.End()
 		}
 		span2.End()
-	} else {
-		// trace :
-		_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentsBySourceId", trace.WithSpanKind(trace.SpanKindServer))
-		span1.SetName("new_GetBenchmarkAssignmentsBySourceId")
-
-		dbAssignments, err = h.db.GetBenchmarkAssignmentsBySourceId(connectionId)
-		if err != nil {
-			span1.RecordError(err)
-			span1.SetStatus(codes.Error, err.Error())
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", connectionId))
-			}
-			ctx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionId, err)
-			return err
-		}
-		span1.AddEvent("information", trace.WithAttributes(
-			attribute.String("connection ID", connectionId),
-		))
-		span1.End()
 	}
 
 	var assignments []api.BenchmarkAssignment
-	for _, assignment := range dbAssignments {
-		assignments = append(assignments, api.BenchmarkAssignment{
-			BenchmarkId:  assignment.BenchmarkId,
-			ConnectionId: assignment.ConnectionId,
-			AssignedAt:   assignment.AssignedAt,
-		})
+	for _, assignmentsArray := range dbAssignments {
+		for _, assignment := range assignmentsArray {
+			assignments = append(assignments, api.BenchmarkAssignment{
+				BenchmarkId:  assignment.BenchmarkId,
+				ConnectionId: assignment.ConnectionId,
+				AssignedAt:   assignment.AssignedAt,
+			})
+		}
 	}
 
 	return ctx.JSON(http.StatusOK, assignments)
@@ -1072,15 +1058,9 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 //	@Success		200
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [delete]
 func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
-	connectionId := ctx.QueryParam(ConnectionIdParam)
-	connectionGroup := ctx.QueryParam(ConnectionGroupParam)
-
-	if len(connectionId) == 0 && len(connectionGroup) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "connectionId or connectionGroup must be set")
-	}
-
-	if len(connectionId) > 0 && len(connectionGroup) > 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
+	connectionID, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
 	}
 
 	benchmarkId := ctx.Param("benchmark_id")
@@ -1088,29 +1068,67 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "benchmark id is empty")
 	}
 
-	if connectionGroup != "" {
-		var connectionIDS []string
+	if len(connectionID) == 1 {
+		if strings.ToLower(connectionID[0]) == "all" {
+			//trace :
+			_, span1 := tracer.Start(ctx.Request().Context(), "new_DeleteBenchmarkAssignmentByBenchmarkId", trace.WithSpanKind(trace.SpanKindServer))
+			span1.SetName("new_DeleteBenchmarkAssignmentByBenchmarkId")
+
+			if err := h.db.DeleteBenchmarkAssignmentByBenchmarkId(benchmarkId); err != nil {
+				span1.RecordError(err)
+				span1.SetStatus(codes.Error, err.Error())
+				h.logger.Error("delete benchmark assignment by benchmark id", zap.Error(err))
+				return err
+			}
+			span1.AddEvent("information", trace.WithAttributes(
+				attribute.String("benchmark ID", benchmarkId),
+			))
+			span1.End()
+		} else {
+			// trace :
+			outputS1, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
+			span1.SetName("new_GetBenchmarkAssignmentByIds")
+
+			if _, err := h.db.GetBenchmarkAssignmentByIds(connectionID[0], benchmarkId); err != nil {
+				span1.RecordError(err)
+				span1.SetStatus(codes.Error, err.Error())
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return echo.NewHTTPError(http.StatusFound, "benchmark assignment not found")
+				}
+				ctx.Logger().Errorf("find benchmark assignment: %v", err)
+				return err
+			}
+			span1.AddEvent("information", trace.WithAttributes(
+				attribute.String("benchmark ID", benchmarkId),
+			))
+			span1.End()
+
+			// trace :
+			_, span2 := tracer.Start(outputS1, "new_DeleteBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
+			span2.SetName("new_DeleteBenchmarkAssignmentByIds")
+
+			if err := h.db.DeleteBenchmarkAssignmentByIds(connectionID[0], benchmarkId); err != nil {
+				span2.RecordError(err)
+				span2.SetStatus(codes.Error, err.Error())
+				ctx.Logger().Errorf("delete benchmark assignment: %v", err)
+				return err
+			}
+			span2.AddEvent("information", trace.WithAttributes(
+				attribute.String("benchmark ID", benchmarkId),
+			))
+			span2.End()
+		}
+	} else {
 		// tracer :
-		outputS5, span5 := tracer.Start(ctx.Request().Context(), "new_GetConnectionGroup", trace.WithSpanKind(trace.SpanKindServer))
-		span5.SetName("new_GetConnectionGroup")
+		outputS5, span5 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentByIds(loop)", trace.WithSpanKind(trace.SpanKindServer))
+		span5.SetName("new_GetBenchmarkAssignmentByIds(loop)")
 
-		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroup)
-		if err != nil {
-			return err
-		}
-		span5.End()
-
-		if len(connectionGroupObj.ConnectionIds) == 0 {
-			return err
-		}
-
-		connectionIDS = append(connectionGroupObj.ConnectionIds)
-		for i := 0; i < len(connectionIDS); i++ {
+		for _, connectionId := range connectionID {
 			// trace :
 			outputS3, span3 := tracer.Start(outputS5, "new_GetBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
 			span3.SetName("new_GetBenchmarkAssignmentByIds")
 
-			if _, err := h.db.GetBenchmarkAssignmentByIds(connectionIDS[i], benchmarkId); err != nil {
+			if _, err := h.db.GetBenchmarkAssignmentByIds(connectionId, benchmarkId); err != nil {
 				span3.RecordError(err)
 				span3.SetStatus(codes.Error, err.Error())
 				if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -1128,7 +1146,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 			_, span4 := tracer.Start(outputS3, "new_DeleteBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
 			span4.SetName("new_DeleteBenchmarkAssignmentByIds")
 
-			if err := h.db.DeleteBenchmarkAssignmentByIds(connectionIDS[i], benchmarkId); err != nil {
+			if err := h.db.DeleteBenchmarkAssignmentByIds(connectionId, benchmarkId); err != nil {
 				span4.RecordError(err)
 				span4.SetStatus(codes.Error, err.Error())
 				ctx.Logger().Errorf("delete benchmark assignment: %v", err)
@@ -1139,54 +1157,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 			))
 			span4.End()
 		}
-	} else if strings.ToLower(connectionId) == "all" {
-		// trace :
-		_, span1 := tracer.Start(ctx.Request().Context(), "new_DeleteBenchmarkAssignmentByBenchmarkId", trace.WithSpanKind(trace.SpanKindServer))
-		span1.SetName("new_DeleteBenchmarkAssignmentByBenchmarkId")
-
-		if err := h.db.DeleteBenchmarkAssignmentByBenchmarkId(benchmarkId); err != nil {
-			span1.RecordError(err)
-			span1.SetStatus(codes.Error, err.Error())
-			h.logger.Error("delete benchmark assignment by benchmark id", zap.Error(err))
-			return err
-		}
-		span1.AddEvent("information", trace.WithAttributes(
-			attribute.String("benchmark ID", benchmarkId),
-		))
-		span1.End()
-	} else {
-		// trace :
-		outputS1, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
-		span1.SetName("new_GetBenchmarkAssignmentByIds")
-
-		if _, err := h.db.GetBenchmarkAssignmentByIds(connectionId, benchmarkId); err != nil {
-			span1.RecordError(err)
-			span1.SetStatus(codes.Error, err.Error())
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return echo.NewHTTPError(http.StatusFound, "benchmark assignment not found")
-			}
-			ctx.Logger().Errorf("find benchmark assignment: %v", err)
-			return err
-		}
-		span1.AddEvent("information", trace.WithAttributes(
-			attribute.String("benchmark ID", benchmarkId),
-		))
-		span1.End()
-
-		// trace :
-		_, span2 := tracer.Start(outputS1, "new_DeleteBenchmarkAssignmentByIds", trace.WithSpanKind(trace.SpanKindServer))
-		span2.SetName("new_DeleteBenchmarkAssignmentByIds")
-
-		if err := h.db.DeleteBenchmarkAssignmentByIds(connectionId, benchmarkId); err != nil {
-			span2.RecordError(err)
-			span2.SetStatus(codes.Error, err.Error())
-			ctx.Logger().Errorf("delete benchmark assignment: %v", err)
-			return err
-		}
-		span2.AddEvent("information", trace.WithAttributes(
-			attribute.String("benchmark ID", benchmarkId),
-		))
-		span2.End()
+		span5.End()
 	}
 	return ctx.NoContent(http.StatusOK)
 }
@@ -1625,6 +1596,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
