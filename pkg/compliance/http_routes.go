@@ -39,6 +39,11 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	ConnectionIdParam    = "connectionId"
+	ConnectionGroupParam = "connectionGroup"
+)
+
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
@@ -77,11 +82,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
 }
-
-const (
-	ConnectionIdParam    = "connectionId"
-	ConnectionGroupParam = "connectionGroup"
-)
 
 func bindValidate(ctx echo.Context, i any) error {
 	if err := ctx.Bind(i); err != nil {
