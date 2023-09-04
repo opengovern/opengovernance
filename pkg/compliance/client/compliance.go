@@ -32,7 +32,7 @@ func NewComplianceClient(baseURL string) ComplianceServiceClient {
 }
 
 func (s *complianceClient) GetAllBenchmarkAssignmentsBySourceId(ctx *httpclient.Context, sourceID string) ([]compliance.BenchmarkAssignment, error) {
-	url := fmt.Sprintf("%s/api/v1/assignments/connection/%s", s.baseURL, sourceID)
+	url := fmt.Sprintf("%s/api/v1/assignments/connection?connectionId=%s", s.baseURL, sourceID)
 
 	var response []compliance.BenchmarkAssignment
 	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {

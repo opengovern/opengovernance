@@ -2608,16 +2608,16 @@ paths:
       parameters:
       - description: Benchmark ID
         in: path
-        name: benchmark_id
+        name: benchmarkId
         required: true
         type: string
       - description: Connection ID or 'all' for everything
         in: query
-        name: connection_id
+        name: connectionId
         type: string
       - description: 'Connection Group '
         in: query
-        name: connection_group
+        name: connectionGroup
         type: string
       produces:
       - application/json
@@ -2636,16 +2636,16 @@ paths:
       parameters:
       - description: Benchmark ID
         in: path
-        name: benchmark_id
+        name: benchmarkId
         required: true
         type: string
       - description: Connection ID or 'all' for everything
         in: query
-        name: connection_id
+        name: connectionId
         type: string
       - description: 'Connection group '
         in: query
-        name: connection_group
+        name: connectionGroup
         type: string
       produces:
       - application/json

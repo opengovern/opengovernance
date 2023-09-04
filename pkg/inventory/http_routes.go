@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	_ "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.opentelemetry.io/otel"
@@ -75,7 +76,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	analyticsV2.GET("/tag", httpserver.AuthorizeHandler(h.ListAnalyticsTags, authApi.ViewerRole))
 	analyticsV2.GET("/trend", httpserver.AuthorizeHandler(h.ListAnalyticsMetricTrend, authApi.ViewerRole))
 	analyticsV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListAnalyticsComposition, authApi.ViewerRole))
-	analyticsV2.GET("/regions/summary", httpserver.AuthorizeHandler(h.ListAnalyticsRegionsSummary, authApi.ViewerRole))
 	analyticsV2.GET("/categories", httpserver.AuthorizeHandler(h.ListAnalyticsCategories, authApi.ViewerRole))
 	analyticsV2.GET("/table", httpserver.AuthorizeHandler(h.GetAssetsTable, authApi.ViewerRole))
 
@@ -116,6 +116,7 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 	}
 
 	if len(connectionIds) > 0 {
+		connectionIds = demo.DecodeRequestArray(ctx, connectionIds)
 		return connectionIds, nil
 	}
 
@@ -604,7 +605,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context, metricIDs []stri
 	// tracer :
 	_, span := tracer.Start(ctx, "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
-	mts, err := aDB.ListFilteredMetrics(tagMap, metricType, metricIDs, connectorTypes)
+	mts, err := aDB.ListFilteredMetrics(tagMap, metricType, metricIDs, connectorTypes, false)
 
 	if err != nil {
 		span.RecordError(err)
@@ -681,6 +682,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	if len(connectionIDs) > MaxConns {
 		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 	metricIDs := httpserver.QueryArrayParam(ctx, "metricIDs")
 
 	connectorTypes, err = h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
@@ -852,6 +854,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	if len(connectionIDs) > MaxConns {
 		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 	connectorTypes, err = h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
@@ -929,7 +932,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 
 			metrics, err := aDB.ListFilteredMetrics(map[string][]string{
 				key: {tagValue},
-			}, metricType, nil, connectorTypes)
+			}, metricType, nil, connectorTypes, false)
 			if err != nil {
 				span3.RecordError(err)
 				span3.SetStatus(codes.Error, err.Error())
@@ -989,7 +992,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	if len(connectionIDs) > MaxConns {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connections")
 	}
-
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
 	if endTimeStr != "" {
@@ -1021,7 +1024,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
 
-	metrics, err := aDB.ListFilteredMetrics(tagMap, metricType, ids, connectorTypes)
+	metrics, err := aDB.ListFilteredMetrics(tagMap, metricType, ids, connectorTypes, false)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -1122,6 +1125,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 	if len(connectionIDs) > MaxConns {
 		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 
 	endTime := time.Now()
 	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
@@ -1143,7 +1147,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
 
-	filteredMetrics, err := aDB.ListFilteredMetrics(map[string][]string{tagKey: nil}, metricType, nil, connectorTypes)
+	filteredMetrics, err := aDB.ListFilteredMetrics(map[string][]string{tagKey: nil}, metricType, nil, connectorTypes, false)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -1237,157 +1241,6 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, apiResult)
 }
 
-// ListAnalyticsRegionsSummary godoc
-//
-//	@Summary		List Regions Summary
-//	@Description	Retrieving list of regions analytics summary
-//	@Security		BearerToken
-//	@Tags			analytics
-//	@Accept			json
-//	@Produce		json
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			startTime		query		int64			false	"start time in unix seconds - default is now"
-//	@Param			endTime			query		int64			false	"end time in unix seconds - default is one week ago"
-//	@Param			sortBy			query		string			false	"column to sort by - default is resource_count"	Enums(resource_count, growth, growth_rate)
-//	@Param			pageSize		query		int				false	"page size - default is 20"
-//	@Param			pageNumber		query		int				false	"page number - default is 1"
-//	@Success		200				{object}	inventoryApi.RegionsResourceCountResponse
-//	@Router			/inventory/api/v2/analytics/regions/summary [get]
-func (h *HttpHandler) ListAnalyticsRegionsSummary(ctx echo.Context) error {
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now()
-	if endTimeStr != "" {
-		endTimeUnix, err := strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid integer")
-		}
-		endTime = time.Unix(endTimeUnix, 0)
-	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := endTime.AddDate(0, 0, -7)
-	if startTimeStr != "" {
-		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid integer")
-		}
-		startTime = time.Unix(startTimeUnix, 0)
-	}
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
-	if err != nil {
-		return err
-	}
-
-	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
-	}
-	sortBy := ctx.QueryParam("sortBy")
-	if sortBy == "" {
-		sortBy = "resource_count"
-	}
-
-	currentLocationDistribution, err := es.FetchRegionSummaryPage(h.client, connectors, connectionIDs, nil, endTime, 10000)
-	if err != nil {
-		return err
-	}
-
-	oldLocationDistribution, err := es.FetchRegionSummaryPage(h.client, connectors, connectionIDs, nil, startTime, 10000)
-	if err != nil {
-		return err
-	}
-
-	var locationResponses []inventoryApi.LocationResponse
-	for region, count := range currentLocationDistribution {
-		cnt := count
-		oldCount := 0
-		if value, ok := oldLocationDistribution[region]; ok {
-			oldCount = value
-		}
-		locationResponses = append(locationResponses, inventoryApi.LocationResponse{
-			Location:         region,
-			ResourceCount:    &cnt,
-			ResourceOldCount: &oldCount,
-		})
-	}
-
-	sort.Slice(locationResponses, func(i, j int) bool {
-		switch sortBy {
-		case "resource_count":
-			if locationResponses[i].ResourceCount == nil && locationResponses[j].ResourceCount == nil {
-				break
-			}
-			if locationResponses[i].ResourceCount == nil {
-				return false
-			}
-			if locationResponses[j].ResourceCount == nil {
-				return true
-			}
-			if *locationResponses[i].ResourceCount != *locationResponses[j].ResourceCount {
-				return *locationResponses[i].ResourceCount > *locationResponses[j].ResourceCount
-			}
-		case "growth":
-			diffi := utils.PSub(locationResponses[i].ResourceCount, locationResponses[i].ResourceOldCount)
-			diffj := utils.PSub(locationResponses[j].ResourceCount, locationResponses[j].ResourceOldCount)
-			if diffi == nil && diffj == nil {
-				break
-			}
-			if diffi == nil {
-				return false
-			}
-			if diffj == nil {
-				return true
-			}
-			if *diffi != *diffj {
-				return *diffi > *diffj
-			}
-		case "growth_rate":
-			diffi := utils.PSub(locationResponses[i].ResourceCount, locationResponses[i].ResourceOldCount)
-			diffj := utils.PSub(locationResponses[j].ResourceCount, locationResponses[j].ResourceOldCount)
-			if diffi == nil && diffj == nil {
-				break
-			}
-			if diffi == nil {
-				return false
-			}
-			if diffj == nil {
-				return true
-			}
-			if locationResponses[i].ResourceOldCount == nil && locationResponses[j].ResourceOldCount == nil {
-				break
-			}
-			if locationResponses[i].ResourceOldCount == nil {
-				return true
-			}
-			if locationResponses[j].ResourceOldCount == nil {
-				return false
-			}
-			if *locationResponses[i].ResourceOldCount == 0 && *locationResponses[j].ResourceOldCount == 0 {
-				break
-			}
-			if *locationResponses[i].ResourceOldCount == 0 {
-				return false
-			}
-			if *locationResponses[j].ResourceOldCount == 0 {
-				return true
-			}
-			if float64(*diffi)/float64(*locationResponses[i].ResourceOldCount) != float64(*diffj)/float64(*locationResponses[j].ResourceOldCount) {
-				return float64(*diffi)/float64(*locationResponses[i].ResourceOldCount) > float64(*diffj)/float64(*locationResponses[j].ResourceOldCount)
-			}
-		}
-		return locationResponses[i].Location < locationResponses[j].Location
-	})
-
-	response := inventoryApi.RegionsResourceCountResponse{
-		TotalCount: len(locationResponses),
-		Regions:    utils.Paginate(pageNumber, pageSize, locationResponses),
-	}
-
-	return ctx.JSON(http.StatusOK, response)
-}
-
 // ListAnalyticsCategories godoc
 //
 //	@Summary		List Analytics categories
@@ -1409,7 +1262,7 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListMetrics")
 
-	metrics, err := aDB.ListMetrics()
+	metrics, err := aDB.ListMetrics(false)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -1452,9 +1305,9 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 //	@Param			endTime		query		int64	false	"timestamp for end in epoch seconds"
 //	@Param			granularity	query		string	false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
 //	@Param			dimension	query		string	false	"Dimension of the table, default is metric"		Enums(connection, metric)
-//
-//	@Success		200			{object}	[]inventoryApi.AssetTableRow
-//	@Router			/inventory/api/v2/analytics/table [get]
+
+// @Success		200			{object}	[]inventoryApi.AssetTableRow
+// @Router			/inventory/api/v2/analytics/table [get]
 func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 	var err error
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
@@ -1483,7 +1336,16 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid dimension")
 	}
 
-	mt, err := es.FetchAssetTableByDimension(h.client, granularity, dimension, startTime, endTime)
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	ms, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets, nil, nil, false)
+	if err != nil {
+		return err
+	}
+	var metricIds []string
+	for _, m := range ms {
+		metricIds = append(metricIds, m.ID)
+	}
+	mt, err := es.FetchAssetTableByDimension(h.client, metricIds, granularity, dimension, startTime, endTime)
 	if err != nil {
 		return err
 	}
@@ -1528,6 +1390,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -1549,9 +1412,19 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
 	}
 
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, nil, connectorTypes, false)
+	if err != nil {
+		return err
+	}
+	var metricIds []string
+	for _, m := range metrics {
+		metricIds = append(metricIds, m.ID)
+	}
+
 	costMetricMap := make(map[string]inventoryApi.CostMetric)
 	if len(connectionIDs) > 0 {
-		hits, err := es.FetchConnectionDailySpendHistoryByMetric(h.client, connectionIDs, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
+		hits, err := es.FetchConnectionDailySpendHistoryByMetric(h.client, connectionIDs, connectorTypes, metricIds, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1583,7 +1456,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 			}
 		}
 	} else {
-		hits, err := es.FetchConnectorDailySpendHistoryByMetric(h.client, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
+		hits, err := es.FetchConnectorDailySpendHistoryByMetric(h.client, connectorTypes, metricIds, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1724,7 +1597,7 @@ func (h *HttpHandler) ListMetrics(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
 
-	metrics, err := aDB.ListFilteredMetrics(nil, metricType, nil, connectorTypes)
+	metrics, err := aDB.ListFilteredMetrics(nil, metricType, nil, connectorTypes, false)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -1774,6 +1647,7 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -1794,7 +1668,7 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
 
-	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, nil, nil)
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, nil, nil, false)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -1912,10 +1786,22 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 	var err error
 	metricIds := httpserver.QueryArrayParam(ctx, "metricIds")
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, connectorTypes, false)
+	if err != nil {
+		return err
+	}
+	metricIds = nil
+	for _, m := range metrics {
+		metricIds = append(metricIds, m.ID)
+	}
+
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
 	if err != nil {
@@ -1984,10 +1870,22 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 	var err error
 	metricIds := httpserver.QueryArrayParam(ctx, "metricIds")
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, connectorTypes, false)
+	if err != nil {
+		return err
+	}
+	metricIds = nil
+	for _, m := range metrics {
+		metricIds = append(metricIds, m.ID)
+	}
+
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
 	if err != nil {
@@ -2065,10 +1963,21 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	var err error
 	metricIds := httpserver.QueryArrayParam(ctx, "metricIds")
+	ms, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, nil, false)
+	if err != nil {
+		return err
+	}
+	metricIds = nil
+	for _, m := range ms {
+		metricIds = append(metricIds, m.ID)
+	}
+
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
+
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -2103,7 +2012,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 		span.SetName("new_ListFilteredMetrics")
 
-		metrics, err = aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, nil)
+		metrics, err = aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, nil, false)
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
@@ -2208,6 +2117,8 @@ func (h *HttpHandler) GetResourceTypeMetricsHandler(ctx echo.Context) error {
 	if len(connectionIDs) > MaxConns {
 		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
+
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now().Unix()
 	if endTimeStr != "" {

@@ -56,6 +56,11 @@ func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 		return err
 	}
 
+	if metric.Visible == nil {
+		v := true
+		metric.Visible = &v
+	}
+
 	var connectors []string
 	for _, c := range metric.Connectors {
 		connectors = append(connectors, c.String())
@@ -113,6 +118,7 @@ func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 		Query:       metric.Query,
 		Tables:      metric.Tables,
 		FinderQuery: metric.FinderQuery,
+		Visible:     *metric.Visible,
 		Tags:        tags,
 	}
 
