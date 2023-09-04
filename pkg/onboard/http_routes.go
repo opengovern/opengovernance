@@ -2271,7 +2271,8 @@ func (h HttpHandler) CountSources(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			onboard
 //	@Produce		json
-//	@Success		200	{object}	api.CatalogMetrics
+//	@Param			connector	query		[]source.Type	false	"Connector"
+//	@Success		200			{object}	api.CatalogMetrics
 //	@Router			/onboard/api/v1/catalog/metrics [get]
 func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 	var metrics api.CatalogMetrics
@@ -2279,7 +2280,9 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListSources", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListSources")
 
-	srcs, err := h.db.ListSources()
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+
+	srcs, err := h.db.ListSourcesWithFilters(connectors, nil, nil, nil)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())

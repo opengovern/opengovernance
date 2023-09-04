@@ -4209,6 +4209,18 @@ paths:
   /onboard/api/v1/catalog/metrics:
     get:
       description: Retrieving the list of metrics for catalog page.
+      parameters:
+      - collectionFormat: csv
+        description: Connector
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
       produces:
       - application/json
       responses:
