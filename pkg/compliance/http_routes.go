@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
@@ -200,6 +201,12 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		response.Findings = append(response.Findings, h.Source)
 	}
 	response.TotalCount = res.Hits.Total.Value
+
+	for i, v := range response.Findings {
+		v.ConnectionID = demo.DecodeRequestData(ctx, v.ConnectionID)
+		response.Findings[i] = v
+	}
+
 	return ctx.JSON(http.StatusOK, response)
 }
 
@@ -240,6 +247,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 	severities := kaytuTypes.ParseFindingSeverities(ctx.QueryParams()["severities"])
@@ -335,6 +343,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 	if len(connectionIDs) > 20 {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	timeAt := time.Now()
@@ -433,6 +442,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	if len(connectionIDs) > 20 {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	timeAt := time.Now()
@@ -655,6 +665,8 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 	if len(connectionIDs) > 20 {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
+
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	endTime := time.Now()
 	if endTimeStr := ctx.QueryParam("timeAt"); endTimeStr != "" {
@@ -756,6 +768,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionID = demo.DecodeRequestArray(ctx, connectionID)
 
 	benchmarkId := ctx.Param("benchmark_id")
 	if benchmarkId == "" {
@@ -881,6 +894,11 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		}
 	}
 	span4.End()
+	for i, v := range result {
+		v.ConnectionId = demo.EncodeResponseData(ctx, v.ConnectionId)
+		result[i] = v
+	}
+
 	return ctx.JSON(http.StatusOK, result)
 }
 
@@ -1041,6 +1059,11 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 			}
 		}
 	}
+	for i, v := range resp {
+		v.ConnectionID = demo.EncodeResponseData(ctx, v.ConnectionID)
+		resp[i] = v
+	}
+
 	return ctx.JSON(http.StatusOK, resp)
 }
 
@@ -1062,6 +1085,7 @@ func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionID = demo.DecodeRequestArray(ctx, connectionID)
 
 	benchmarkId := ctx.Param("benchmark_id")
 	if benchmarkId == "" {
@@ -1467,6 +1491,15 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 
 	result := insight.ToApi()
 
+	for i, v := range result.Results {
+		v.ConnectionID = demo.EncodeResponseData(ctx, v.ConnectionID)
+		result.Results[i] = v
+		for I, V := range v.Connections {
+			V.ConnectionID = demo.EncodeResponseData(ctx, V.ConnectionID)
+			v.Connections[I] = V
+		}
+	}
+
 	return ctx.JSON(200, result)
 }
 
@@ -1493,6 +1526,8 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
+
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
@@ -1568,6 +1603,19 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		}
 		result = append(result, apiRes)
 	}
+
+	for i1, v1 := range result {
+		for i2, v2 := range v1.Results {
+			v2.ConnectionID = demo.EncodeResponseData(ctx, v2.ConnectionID)
+			for i3, v3 := range v2.Connections {
+				v3.ConnectionID = demo.EncodeResponseData(ctx, v3.ConnectionID)
+				v2.Connections[i3] = v3
+			}
+			v1.Results[i2] = v2
+		}
+		result[i1] = v1
+	}
+
 	return ctx.JSON(200, result)
 }
 
@@ -1596,6 +1644,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
@@ -1690,6 +1739,17 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 		apiRes.OldTotalResultValue = nil
 	}
 
+	for i, v := range apiRes.Results {
+
+		v.ConnectionID = demo.EncodeResponseData(ctx, v.ConnectionID)
+		for I, V := range v.Connections {
+			V.ConnectionID = demo.EncodeResponseData(ctx, V.ConnectionID)
+			v.Connections[I] = V
+		}
+		apiRes.Results[i] = v
+
+	}
+
 	return ctx.JSON(200, apiRes)
 }
 
@@ -1719,6 +1779,8 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
+
 	var startTime *time.Time
 	if ctx.QueryParam("startTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
@@ -1813,6 +1875,7 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
@@ -1912,6 +1975,21 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 			apiRes.OldTotalResultValue = nil
 		}
 		result = append(result, apiRes)
+	}
+
+	for i1, v1 := range result {
+		for i2, v2 := range v1.Insights {
+			for i3, v3 := range v2.Results {
+				v3.ConnectionID = demo.EncodeResponseData(ctx, v3.ConnectionID)
+				for i4, v4 := range v3.Connections {
+					v4.ConnectionID = demo.EncodeResponseData(ctx, v4.ConnectionID)
+					v3.Connections[i4] = v4
+				}
+				v2.Results[i3] = v3
+			}
+			v1.Insights[i2] = v2
+		}
+		result[i1] = v1
 	}
 
 	return ctx.JSON(200, result)
