@@ -860,6 +860,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 	minCount := 1
 	if minCountStr := ctx.QueryParam("minCount"); minCountStr != "" {
 		minCountVal, err := strconv.ParseInt(minCountStr, 10, 64)
@@ -1459,8 +1460,8 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 //	@Param			granularity	query	string	false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
 //	@Param			dimension	query	string	false	"Dimension of the table, default is metric"		Enums(connection, metric)
 
-//	@Success	200	{object}	[]inventoryApi.AssetTableRow
-//	@Router		/inventory/api/v2/analytics/table [get]
+// @Success	200	{object}	[]inventoryApi.AssetTableRow
+// @Router		/inventory/api/v2/analytics/table [get]
 func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 	var err error
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
