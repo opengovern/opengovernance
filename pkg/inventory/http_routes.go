@@ -683,6 +683,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	if len(connectionIDs) > MaxConns {
 		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 	metricIDs := httpserver.QueryArrayParam(ctx, "metricIDs")
 
 	connectorTypes, err = h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)

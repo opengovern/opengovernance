@@ -703,6 +703,15 @@ func (h HttpHandler) ListCredentials(ctx echo.Context) error {
 		Credentials:          utils.Paginate(pageNumber, pageSize, apiCredentials),
 	}
 
+	for i, v := range result.Credentials {
+		for i2, v2 := range v.Connections {
+			v2.ConnectionID = demo.EncodeResponseData(ctx, v2.CredentialID)
+			v2.ConnectionName = demo.EncodeResponseData(ctx, v2.ConnectionName)
+			v.Connections[i2] = v2
+		}
+		result.Credentials[i] = v
+	}
+
 	return ctx.JSON(http.StatusOK, result)
 }
 
@@ -821,6 +830,13 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 			ExternalId:           awsCnf.ExternalID,
 		}
 	}
+	for i, v := range apiCredential.Connections {
+		v.ConnectionID = demo.EncodeResponseData(ctx, v.ConnectionID)
+		v.ConnectionName = demo.EncodeResponseData(ctx, v.ConnectionName)
+
+		apiCredential.Connections[i] = v
+	}
+
 	return ctx.JSON(http.StatusOK, apiCredential)
 }
 
@@ -1955,6 +1971,7 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 
 	connection.ID = demo.EncodeResponseData(ctx, connection.ID.String())
 	connection.Name = demo.EncodeResponseData(ctx, connection.Name)
+
 	return ctx.JSON(http.StatusOK, connection.toAPI())
 }
 
@@ -2605,6 +2622,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		v.ConnectionName = demo.EncodeResponseData(ctx, v.ConnectionName)
 		result.Connections[i] = v
 	}
+
 	return ctx.JSON(http.StatusOK, result)
 }
 
@@ -2676,12 +2694,14 @@ func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
 	}
 	span2.End()
 
-	for _, re := range result {
-		for i, v := range re.Connections {
-			v.ConnectionID = demo.EncodeResponseData(ctx, v.ConnectionID)
-			v.ConnectionName = demo.EncodeResponseData(ctx, v.ConnectionName)
-			re.Connections[i] = v
+	for i, v := range result {
+		v.ConnectionIds = demo.EncodeResponseArray(ctx, v.ConnectionIds)
+		for i1, v1 := range v.Connections {
+			v1.ConnectionID = demo.EncodeResponseData(ctx, v1.ConnectionID)
+			v1.ConnectionName = demo.EncodeResponseData(ctx, v1.ConnectionName)
+			v.Connections[i1] = v1
 		}
+		result[i] = v
 	}
 	return ctx.JSON(http.StatusOK, result)
 }
@@ -2750,10 +2770,12 @@ func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
 		}
 	}
 
+	apiCg.ConnectionIds = demo.EncodeResponseArray(ctx, apiCg.ConnectionIds)
 	for i, v := range apiCg.Connections {
 		v.ConnectionID = demo.EncodeResponseData(ctx, v.ConnectionID)
 		v.ConnectionName = demo.EncodeResponseData(ctx, v.ConnectionName)
 		apiCg.Connections[i] = v
 	}
+
 	return ctx.JSON(http.StatusOK, apiCg)
 }
