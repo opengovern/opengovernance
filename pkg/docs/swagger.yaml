@@ -2600,7 +2600,7 @@ paths:
       summary: Workspace user roleBindings.
       tags:
       - users
-  /compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id}:
+  /compliance/api/v1/assignments/{benchmark_id}/connection:
     delete:
       consumes:
       - application/json
@@ -2629,6 +2629,7 @@ paths:
       summary: Delete benchmark assignment
       tags:
       - benchmarks_assignment
+  /compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id}:
     post:
       consumes:
       - application/json
@@ -3911,35 +3912,6 @@ paths:
       - analytics
   /inventory/api/v2/analytics/table:
     get:
-      consumes:
-      - application/json
-      description: Returns asset table with respect to the dimension and granularity
-      parameters:
-      - description: timestamp for start in epoch seconds
-        in: query
-        name: startTime
-        type: integer
-      - description: timestamp for end in epoch seconds
-        in: query
-        name: endTime
-        type: integer
-      - description: Granularity of the table, default is daily
-        enum:
-        - monthly
-        - daily
-        - yearly
-        in: query
-        name: granularity
-        type: string
-      - description: Dimension of the table, default is metric
-        enum:
-        - connection
-        - metric
-        in: query
-        name: dimension
-        type: string
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
@@ -3947,11 +3919,6 @@ paths:
             items:
               $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AssetTableRow'
             type: array
-      security:
-      - BearerToken: []
-      summary: Get Assets Table
-      tags:
-      - analytics
   /inventory/api/v2/analytics/tag:
     get:
       consumes:

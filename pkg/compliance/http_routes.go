@@ -1079,7 +1079,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 //	@Param			connection_id		query	string	false	"Connection ID or 'all' for everything"
 //	@Param			connection_group	query	string	false	"Connection Group "
 //	@Success		200
-//	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [delete]
+//	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection [delete]
 func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {
 	connectionID, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {

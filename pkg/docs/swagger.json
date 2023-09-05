@@ -415,6 +415,52 @@
                 }
             }
         },
+        "/compliance/api/v1/assignments/{benchmark_id}/connection": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Delete benchmark assignment with source id and benchmark id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "benchmarks_assignment"
+                ],
+                "summary": "Delete benchmark assignment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection ID or 'all' for everything",
+                        "name": "connection_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connection Group ",
+                        "name": "connection_group",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id}": {
             "post": {
                 "security": [
@@ -463,50 +509,6 @@
                                 "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment"
                             }
                         }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Delete benchmark assignment with source id and benchmark id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "benchmarks_assignment"
-                ],
-                "summary": "Delete benchmark assignment",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Benchmark ID",
-                        "name": "benchmark_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Connection ID or 'all' for everything",
-                        "name": "connection_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Connection Group ",
-                        "name": "connection_group",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
                     }
                 }
             }
@@ -2339,57 +2341,6 @@
         },
         "/inventory/api/v2/analytics/table": {
             "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Returns asset table with respect to the dimension and granularity",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "analytics"
-                ],
-                "summary": "Get Assets Table",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "timestamp for start in epoch seconds",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "timestamp for end in epoch seconds",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "monthly",
-                            "daily",
-                            "yearly"
-                        ],
-                        "type": "string",
-                        "description": "Granularity of the table, default is daily",
-                        "name": "granularity",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "connection",
-                            "metric"
-                        ],
-                        "type": "string",
-                        "description": "Dimension of the table, default is metric",
-                        "name": "dimension",
-                        "in": "query"
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
