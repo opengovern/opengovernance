@@ -2600,7 +2600,7 @@ paths:
       summary: Workspace user roleBindings.
       tags:
       - users
-  /compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id}:
+  /compliance/api/v1/assignments/{benchmark_id}/connection:
     delete:
       consumes:
       - application/json
@@ -2611,11 +2611,20 @@ paths:
         name: benchmark_id
         required: true
         type: string
-      - description: Connection ID or 'all' for everything
-        in: path
-        name: connection_id
-        required: true
-        type: string
+      - collectionFormat: csv
+        description: Connection ID or 'all' for everything
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: 'Connection Group '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
       produces:
       - application/json
       responses:
@@ -2636,11 +2645,20 @@ paths:
         name: benchmark_id
         required: true
         type: string
-      - description: Connection ID or 'all' for everything
-        in: path
-        name: connection_id
-        required: true
-        type: string
+      - collectionFormat: csv
+        description: Connection ID or 'all' for everything
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: 'Connection group '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
       produces:
       - application/json
       responses:
@@ -2698,6 +2716,13 @@ paths:
         items:
           type: string
         name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: 'Connection groups to filter by '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
         type: array
       - collectionFormat: csv
         description: Connector type to filter by
@@ -2768,6 +2793,13 @@ paths:
         name: connectionId
         type: array
       - collectionFormat: csv
+        description: 'Connection groups to filter by '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - collectionFormat: csv
         description: Connector type to filter by
         in: query
         items:
@@ -2813,6 +2845,13 @@ paths:
         items:
           type: string
         name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: 'Connection groups to filter by '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
         type: array
       - collectionFormat: csv
         description: Connector type to filter by
@@ -2899,6 +2938,13 @@ paths:
         name: connectionId
         type: array
       - collectionFormat: csv
+        description: 'Connection groups to filter by '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - collectionFormat: csv
         description: Connector type to filter by
         in: query
         items:
@@ -2965,6 +3011,13 @@ paths:
           type: string
         name: connectionId
         type: array
+      - collectionFormat: csv
+        description: 'filter the result by connection group '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
       - description: unix seconds for the start time of the trend
         in: query
         name: startTime
@@ -3005,6 +3058,13 @@ paths:
           type: string
         name: connectionId
         type: array
+      - collectionFormat: csv
+        description: filter the result by connection group
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
       - description: unix seconds for the start time of the trend
         in: query
         name: startTime
@@ -3042,6 +3102,13 @@ paths:
         items:
           type: string
         name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: filter the result by connection group
+        in: query
+        items:
+          type: string
+        name: connectionGroup
         type: array
       - description: unix seconds for the start time of the trend
         in: query
@@ -3101,6 +3168,13 @@ paths:
         items:
           type: string
         name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: filter the result by connection group
+        in: query
+        items:
+          type: string
+        name: connectionGroup
         type: array
       - description: unix seconds for the start time of the trend
         in: query

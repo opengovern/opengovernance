@@ -2,11 +2,13 @@ package compliance
 
 import (
 	"context"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
 func (h *HttpHandler) GetBenchmarkTreeIDs(ctx context.Context, rootID string) ([]string, error) {
 	ids := []string{rootID}
+	// tracer :
 	_, span2 := tracer.Start(ctx, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_GetBenchmark")
 
@@ -14,6 +16,9 @@ func (h *HttpHandler) GetBenchmarkTreeIDs(ctx context.Context, rootID string) ([
 	if err != nil {
 		return nil, err
 	}
+	span2.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark ID", root.ID),
+	))
 	span2.End()
 
 	for _, child := range root.Children {

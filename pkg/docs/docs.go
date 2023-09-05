@@ -421,7 +421,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id}": {
+        "/compliance/api/v1/assignments/{benchmark_id}/connection": {
             "post": {
                 "security": [
                     {
@@ -448,11 +448,24 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection ID or 'all' for everything",
-                        "name": "connection_id",
-                        "in": "path",
-                        "required": true
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection group ",
+                        "name": "connectionGroup",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -493,11 +506,24 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection ID or 'all' for everything",
-                        "name": "connection_id",
-                        "in": "path",
-                        "required": true
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection Group ",
+                        "name": "connectionGroup",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -534,6 +560,16 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection groups to filter by ",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -602,6 +638,16 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection groups to filter by ",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -707,6 +753,16 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Connection IDs to filter by",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection groups to filter by ",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -848,6 +904,16 @@ const docTemplate = `{
                     {
                         "type": "array",
                         "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection groups to filter by ",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
                             "enum": [
                                 "",
                                 "AWS",
@@ -940,6 +1006,16 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "filter the result by connection group ",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "unix seconds for the start time of the trend",
                         "name": "startTime",
@@ -1020,6 +1096,16 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "filter the result by connection group",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "unix seconds for the start time of the trend",
                         "name": "startTime",
@@ -1079,6 +1165,16 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "filter the result by connection group",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "unix seconds for the start time of the trend",
                         "name": "startTime",
@@ -1132,6 +1228,16 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "filter the result by source id",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "filter the result by connection group",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
