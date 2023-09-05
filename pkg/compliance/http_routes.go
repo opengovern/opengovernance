@@ -758,9 +758,9 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id		path		string	true	"Benchmark ID"
-//	@Param			connection_id		query		string	false	"Connection ID or 'all' for everything"
-//	@Param			connection_group	query		string	false	"Connection group "
+//	@Param			benchmarkId		path		string	true	"Benchmark ID"
+//	@Param			connectionId		query		string	false	"Connection ID or 'all' for everything"
+//	@Param			connectionGroup	query		string	false	"Connection group "
 //	@Success		200					{object}	[]api.BenchmarkAssignment
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id} [post]
 func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
@@ -1075,9 +1075,9 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id		path	string	true	"Benchmark ID"
-//	@Param			connection_id		query	string	false	"Connection ID or 'all' for everything"
-//	@Param			connection_group	query	string	false	"Connection Group "
+//	@Param			benchmarkId		path	string	true	"Benchmark ID"
+//	@Param			connectionId		query	string	false	"Connection ID or 'all' for everything"
+//	@Param			connectionGroup	query	string	false	"Connection Group "
 //	@Success		200
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection [delete]
 func (h *HttpHandler) DeleteBenchmarkAssignment(ctx echo.Context) error {

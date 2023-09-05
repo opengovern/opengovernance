@@ -1968,10 +1968,6 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 			connection, err = h.checkConnectionHealth(ctx.Request().Context(), connection, updateMetadata)
 		}
 	}
-
-	connection.ID = demo.EncodeResponseData(ctx, connection.ID.String())
-	connection.Name = demo.EncodeResponseData(ctx, connection.Name)
-
 	return ctx.JSON(http.StatusOK, connection.toAPI())
 }
 
