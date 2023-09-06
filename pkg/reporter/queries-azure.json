@@ -4,5 +4,119 @@
     "tableName": "azure_network_interface",
     "list": "SELECT * FROM azure_network_interface",
     "get": "SELECT * FROM azure_network_interface WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_application_gateway",
+    "list": "SELECT * FROM azure_application_gateway",
+    "get": "SELECT * FROM azure_application_gateway WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_automation_account",
+    "list": "SELECT * FROM azure_automation_account",
+    "get": "SELECT * FROM azure_automation_account WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_recovery_services_vault",
+    "list": "SELECT * FROM azure_recovery_services_vault",
+    "get": "SELECT * FROM azure_recovery_services_vault WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_container_registry",
+    "list": "SELECT * FROM azure_container_registry",
+    "get": "SELECT * FROM azure_container_registry WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_cosmosdb_account",
+    "list": "SELECT * FROM azure_cosmosdb_account",
+    "get": "SELECT * FROM azure_cosmosdb_account WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_mssql_managed_instance",
+    "list": "SELECT * FROM azure_mssql_managed_instance",
+    "get": "SELECT * FROM azure_mssql_managed_instance WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_mysql_server",
+    "list": "SELECT * FROM azure_mysql_server",
+    "get": "SELECT * FROM azure_mysql_server WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_postgresql_server",
+    "list": "SELECT * FROM azure_postgresql_server",
+    "get": "SELECT * FROM azure_postgresql_server WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_sql_database",
+    "list": "SELECT * FROM azure_sql_database",
+    "get": "SELECT * FROM azure_sql_database WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_sql_database",
+    "list": "SELECT * FROM azure_sql_database",
+    "get": "SELECT * FROM azure_sql_database WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_sql_server",
+    "list": "SELECT * FROM azure_sql_server",
+    "get": "SELECT * FROM azure_sql_server WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_kubernetes_cluster",
+    "list": "SELECT * FROM azure_kubernetes_cluster",
+    "get": "SELECT * FROM azure_kubernetes_cluster WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_compute_virtual_machine",
+    "list": "SELECT * FROM azure_compute_virtual_machine",
+    "get": "SELECT * FROM azure_compute_virtual_machine WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_compute_virtual_machine",
+    "list": "SELECT * FROM azure_compute_virtual_machine",
+    "get": "SELECT * FROM azure_compute_virtual_machine WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_virtual_network",
+    "list": "SELECT * FROM azure_virtual_network",
+    "get": "SELECT * FROM azure_virtual_network WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_subnet",
+    "list": "SELECT * FROM azure_subnet",
+    "get": "SELECT * FROM azure_subnet WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_resource_group",
+    "list": "SELECT * FROM azure_resource_group",
+    "get": "SELECT * FROM azure_resource_group WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_route_table",
+    "list": "SELECT * FROM azure_route_table",
+    "get": "SELECT * FROM azure_route_table WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
+  },
+  {
+    "keyFields": ["id"],
+    "tableName": "azure_lb",
+    "list": "SELECT * FROM azure_lb",
+    "get": "SELECT * FROM azure_lb WHERE kaytu_account_id = '%KAYTU_ACCOUNT_ID%' AND id = $1"
   }
 ]
