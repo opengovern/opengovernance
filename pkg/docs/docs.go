@@ -442,20 +442,20 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Benchmark ID",
-                        "name": "benchmark_id",
+                        "name": "benchmarkId",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
                         "description": "Connection ID or 'all' for everything",
-                        "name": "connection_id",
+                        "name": "connectionId",
                         "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "Connection Group ",
-                        "name": "connection_group",
+                        "name": "connectionGroup",
                         "in": "query"
                     }
                 ],
@@ -488,20 +488,20 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Benchmark ID",
-                        "name": "benchmark_id",
+                        "name": "benchmarkId",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
                         "description": "Connection ID or 'all' for everything",
-                        "name": "connection_id",
+                        "name": "connectionId",
                         "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "Connection group ",
-                        "name": "connection_group",
+                        "name": "connectionGroup",
                         "in": "query"
                     }
                 ],
