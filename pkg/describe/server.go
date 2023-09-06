@@ -209,7 +209,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			terraformFile	formData	file	true	"File to upload"
+//	@Param			terraformFile	formData	file	true	"ُTerraform StateFile full path"
 //	@Param			tag				formData	string	false	"Tags Map[string][]string"
 //	@Param			config			formData	string	true	"Config json structure"
 //	@Success		200				{object}	api.Stack

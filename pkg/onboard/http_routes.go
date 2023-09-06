@@ -2321,6 +2321,7 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector			query		[]source.Type	false	"Connector"
 //	@Param			connectionId		query		[]string		false	"Connection IDs"
+//	@Param			connectionGroups	query		[]string		false	"Connection Groups"
 //	@Param			lifecycleState		query		string			false	"lifecycle state filter"	Enums(DISABLED, DISCOVERED, IN_PROGRESS, ONBOARD, ARCHIVED)
 //	@Param			healthState			query		string			false	"health state filter"		Enums(healthy,unhealthy)
 //	@Param			pageSize			query		int				false	"page size - default is 20"
@@ -2335,6 +2336,7 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionGroups := httpserver.QueryArrayParam(ctx, "connectionGroups")
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
 	if endTimeStr != "" {
@@ -2383,12 +2385,51 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListSourcesWithFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListSourcesWithFilters")
 
-	connections, err := h.db.ListSourcesWithFilters(connectors, connectionIDs, lifecycleStateSlice, healthStateSlice)
+	tmpConnections, err := h.db.ListSourcesWithFilters(connectors, connectionIDs, lifecycleStateSlice, healthStateSlice)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span.End()
+
+	_, span = tracer.Start(ctx.Request().Context(), "new_FilterConnectionGroups", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_FilterConnectionGroups")
+
+	var connections []Source
+	if len(connectionGroups) > 0 {
+		var validConnections []string
+		for _, group := range connectionGroups {
+			connectionGroup, err := h.db.GetConnectionGroupByName(group)
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				h.logger.Error("error getting connection group", zap.Error(err))
+				return err
+			}
+
+			span.AddEvent("information", trace.WithAttributes(
+				attribute.String("connectionGroup name", connectionGroup.Name),
+			))
+			apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), h.steampipeConn)
+			if err != nil {
+				h.logger.Error("error populating connection group", zap.Error(err))
+				return err
+			}
+			validConnections = append(validConnections, apiCg.ConnectionIds...)
+		}
+		for _, c := range tmpConnections {
+			for _, vc := range validConnections {
+				if c.ID.String() == vc {
+					connections = append(connections, c)
+					break
+				}
+			}
+		}
+	} else {
+		connections = tmpConnections
+	}
+
 	span.End()
 
 	needCostStr := ctx.QueryParam("needCost")
