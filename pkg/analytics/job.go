@@ -68,7 +68,7 @@ func (j *Job) Run(
 	onboardClient onboardClient.OnboardServiceClient,
 	logger *zap.Logger) error {
 	startTime := time.Now()
-	metrics, err := dbc.ListMetrics()
+	metrics, err := dbc.ListMetrics(true)
 	if err != nil {
 		return err
 	}

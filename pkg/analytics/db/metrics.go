@@ -27,6 +27,7 @@ type AnalyticMetric struct {
 	Query       string
 	Tables      pq.StringArray `gorm:"type:text[]"`
 	FinderQuery string
+	Visible     bool
 	Tags        []MetricTag         `gorm:"foreignKey:ID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	tagsMap     map[string][]string `gorm:"-:all"`
 }
@@ -43,9 +44,13 @@ func (m *AnalyticMetric) GetTagsMap() map[string][]string {
 	return m.tagsMap
 }
 
-func (db Database) ListMetrics() ([]AnalyticMetric, error) {
+func (db Database) ListMetrics(includeInvisible bool) ([]AnalyticMetric, error) {
 	var s []AnalyticMetric
-	tx := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations).Find(&s)
+	tx := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations)
+	if !includeInvisible {
+		tx = tx.Where("analytic_metrics.visible = true")
+	}
+	tx = tx.Find(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -65,7 +70,7 @@ func (db Database) GetMetric(metricType MetricType, table string) (*AnalyticMetr
 	return s, nil
 }
 
-func (db Database) ListFilteredMetrics(tags map[string][]string, metricType MetricType, metricIDs []string, connectorTypes []source.Type) ([]AnalyticMetric, error) {
+func (db Database) ListFilteredMetrics(tags map[string][]string, metricType MetricType, metricIDs []string, connectorTypes []source.Type, includeInvisible bool) ([]AnalyticMetric, error) {
 	var metrics []AnalyticMetric
 	query := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations)
 	if len(tags) != 0 {
@@ -82,6 +87,9 @@ func (db Database) ListFilteredMetrics(tags map[string][]string, metricType Metr
 		for _, ct := range connectorTypes {
 			query = query.Where("? = ANY (analytic_metrics.connectors)", ct)
 		}
+	}
+	if !includeInvisible {
+		query = query.Where("analytic_metrics.visible = true")
 	}
 	if len(metricIDs) != 0 {
 		query = query.Where("analytic_metrics.id IN ?", metricIDs)

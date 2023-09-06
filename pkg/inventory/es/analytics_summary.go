@@ -851,7 +851,7 @@ type AssetTableByDimensionQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchAssetTableByDimension(client kaytu.Client, granularity inventoryApi.SpendTableGranularity, dimension inventoryApi.SpendDimension, startTime, endTime time.Time) ([]DimensionTrend, error) {
+func FetchAssetTableByDimension(client kaytu.Client, metricIds []string, granularity inventoryApi.SpendTableGranularity, dimension inventoryApi.SpendDimension, startTime, endTime time.Time) ([]DimensionTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -875,6 +875,13 @@ func FetchAssetTableByDimension(client kaytu.Client, granularity inventoryApi.Sp
 			},
 		},
 	})
+	if len(metricIds) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"metric_id": metricIds,
+			},
+		})
+	}
 
 	dateGroupField := "date"
 	if granularity == inventoryApi.SpendTableGranularityMonthly {
