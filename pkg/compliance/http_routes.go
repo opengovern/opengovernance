@@ -79,6 +79,11 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
 }
 
+const (
+	ConnectionIdParam    = "connectionId"
+	ConnectionGroupParam = "connectionGroup"
+)
+
 func bindValidate(ctx echo.Context, i any) error {
 	if err := ctx.Bind(i); err != nil {
 		return err
@@ -90,11 +95,6 @@ func bindValidate(ctx echo.Context, i any) error {
 
 	return nil
 }
-
-const (
-	ConnectionIdParam    = "connectionId"
-	ConnectionGroupParam = "connectionGroup"
-)
 
 func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
 	connectionIds := httpserver.QueryArrayParam(ctx, ConnectionIdParam)
