@@ -95,6 +95,8 @@ func bindValidate(ctx echo.Context, i any) error {
 	return nil
 }
 
+var tracer = otel.Tracer("new_compliance")
+
 func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
 	connectionIds := httpserver.QueryArrayParam(ctx, ConnectionIdParam)
 	connectionGroup := httpserver.QueryArrayParam(ctx, ConnectionGroupParam)
@@ -134,8 +136,6 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 
 	return connectionIds, nil
 }
-
-var tracer = otel.Tracer("new_compliance")
 
 // GetFindings godoc
 //
