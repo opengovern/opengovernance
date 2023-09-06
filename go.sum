@@ -712,8 +712,6 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/netapp/armnetapp/v2 v2.1.0
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/netapp/armnetapp/v2 v2.1.0/go.mod h1:5L2jOYfMVXvq+wrHZyOj8qYJG26dvIBAcCIGjRuqSYo=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v1.0.0 h1:nBy98uKOIfun5z6wx6jwWLrULcM0+cjBalBFZlEZ7CA=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork v1.0.0/go.mod h1:243D9iHbcQXoFUtgHJwL7gl2zx1aDuDMjvBZVGr2uW0=
-github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2 v2.2.1 h1:bWh0Z2rOEDfB/ywv/l0iHN1JgyazE6kW/aIA89+CEK0=
-github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2 v2.2.1/go.mod h1:Bzf34hhAE9NSxailk8xVeLEZbUjOXcC+GnU1mMKdhLw=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/operationalinsights/armoperationalinsights/v2 v2.0.0-beta.3 h1:M1crtD5xLQdt1WFoO4g9onH2Bs23TprcK5JD4E4ttAM=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/operationalinsights/armoperationalinsights/v2 v2.0.0-beta.3/go.mod h1:/eYJMwoYM1BQZSyskkQQLyDW8SwIt8307FYFjak3rTk=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/postgresql/armpostgresql v1.1.1 h1:bbLzpw/L7oJXgFydh1z1SD1B8GTa8heWEM/DSVowRyM=
@@ -1718,6 +1716,8 @@ github.com/fsnotify/fsnotify v1.6.0/go.mod h1:sl3t1tCWJFWoRz9R8WJCbQihKKwmorjAbS
 github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa/go.mod h1:KnogPXtdwXqoenmZCw6S+25EAm2MkxbG0deNDu4cbSA=
 github.com/fvbommel/sortorder v1.0.1/go.mod h1:uk88iVf1ovNn1iLfgUVU2F9o5eO30ui720w+kxuqRs0=
 github.com/garyburd/redigo v0.0.0-20150301180006-535138d7bcd7/go.mod h1:NR3MbYisc3/PwhQ00EMzDiPmrwpPxAn5GI05/YaO1SY=
+github.com/gdexlab/go-render v1.0.1 h1:rxqB3vo5s4n1kF0ySmoNeSPRYkEsyHgln4jFIQY7v0U=
+github.com/gdexlab/go-render v1.0.1/go.mod h1:wRi5nW2qfjiGj4mPukH4UV0IknS1cHD4VgFTmJX5JzM=
 github.com/gertd/go-pluralize v0.2.1 h1:M3uASbVjMnTsPb0PNqg+E/24Vwigyo/tvyMTtAlLgiA=
 github.com/gertd/go-pluralize v0.2.1/go.mod h1:rbYaKDbsXxmRfr8uygAEKhOWsjyrrqrkHVpZvoOp8zk=
 github.com/getkin/kin-openapi v0.76.0/go.mod h1:660oXbgy5JFMKreazJaQTw7o+X00qeSyhcnluiMv+Xg=
@@ -1895,8 +1895,8 @@ github.com/godbus/dbus/v5 v5.0.6/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5x
 github.com/godror/godror v0.13.3/go.mod h1:2ouUT4kdhUBk7TAkHWD4SN0CdI0pgEQbo8FVHhbSKWg=
 github.com/gofrs/flock v0.8.0/go.mod h1:F1TvTiK9OcQqauNUHlbJvyl9Qa1QvF/gOUDKA14jxHU=
 github.com/gofrs/uuid v4.0.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
-github.com/gofrs/uuid v4.2.0+incompatible h1:yyYWMnhkhrKwwr8gAOcOCYxOOscHgDS9yZgBrnJfGa0=
-github.com/gofrs/uuid v4.2.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
+github.com/gofrs/uuid v4.4.0+incompatible h1:3qXRTX8/NbyulANqlc0lchS1gqAVxRgsuW1YrTJupqA=
+github.com/gofrs/uuid v4.4.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
 github.com/gogo/googleapis v1.1.0/go.mod h1:gf4bu3Q80BeJ6H1S1vYPm8/ELATdvryBaNFGgqEef3s=
 github.com/gogo/googleapis v1.2.0/go.mod h1:Njal3psf3qN6dwBtQfUmBZh2ybovJ0tlu3o/AC7HYjU=
 github.com/gogo/googleapis v1.4.0/go.mod h1:5YRNX2z1oM5gXdAkurHa942MDgEJyk02w4OecKY87+c=
@@ -2312,10 +2312,10 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
-github.com/kaytu-io/kaytu-aws-describer v0.3.16 h1:rWv3KXsoPwD2ZwuXT5IMsPe5vL0OHMbRxduzIUBjdGw=
-github.com/kaytu-io/kaytu-aws-describer v0.3.16/go.mod h1:telnzFL6Ogezae4zfGKd7Tp8XNTbsS75j75t3rzEnhQ=
-github.com/kaytu-io/kaytu-azure-describer v0.1.7 h1:fZW1DcFUnqV6zNv3b/oRy2/vVF+QShUCucdyp0e3euM=
-github.com/kaytu-io/kaytu-azure-describer v0.1.7/go.mod h1:unl46l7AOA/gSwyyzauPkLc+Ev1I61JxbZbtna8QVzI=
+github.com/kaytu-io/kaytu-aws-describer v0.3.17 h1:wxRqeYOoEF1edih4OxSjv+h3YBJGJPsOQV9Saumq67I=
+github.com/kaytu-io/kaytu-aws-describer v0.3.17/go.mod h1:telnzFL6Ogezae4zfGKd7Tp8XNTbsS75j75t3rzEnhQ=
+github.com/kaytu-io/kaytu-azure-describer v0.3.18 h1:DD4i67QZMhlLl79qrFndcFBU4ju2QsX+G93quhyIXfM=
+github.com/kaytu-io/kaytu-azure-describer v0.3.18/go.mod h1:qo1ynLCJ3LP6+p6jIJOGoLXVGErnUSjkiV4JovVbwJo=
 github.com/kaytu-io/kaytu-util v0.0.0-20230903092443-9fec3c452353 h1:KtcIz3lNF45jkZPFsBz1xesEm5mnGky95J9I19wO/n0=
 github.com/kaytu-io/kaytu-util v0.0.0-20230903092443-9fec3c452353/go.mod h1:9duNFl4GA1SPk4+Wmfkrk585DyFPPec4NBYyrmBA6GU=
 github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1 h1:tKxk2n0ZuXgt1QBZe8tb+ztYQitO1Z8glexWz08e2ow=
