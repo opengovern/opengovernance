@@ -2321,7 +2321,7 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector			query		[]source.Type	false	"Connector"
 //	@Param			connectionId		query		[]string		false	"Connection IDs"
-//	@Param  		connectionGroups	query 		[]string		false   "Connection Groups"
+//	@Param			connectionGroups	query		[]string		false	"Connection Groups"
 //	@Param			lifecycleState		query		string			false	"lifecycle state filter"	Enums(DISABLED, DISCOVERED, IN_PROGRESS, ONBOARD, ARCHIVED)
 //	@Param			healthState			query		string			false	"health state filter"		Enums(healthy,unhealthy)
 //	@Param			pageSize			query		int				false	"page size - default is 20"

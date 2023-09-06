@@ -1807,102 +1807,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v2/analytics/regions/summary": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving list of regions analytics summary",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "analytics"
-                ],
-                "summary": "List Regions Summary",
-                "parameters": [
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Connection group to filter by - mutually exclusive with connectionId",
-                        "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "start time in unix seconds - default is now",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "end time in unix seconds - default is one week ago",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "resource_count",
-                            "growth",
-                            "growth_rate"
-                        ],
-                        "type": "string",
-                        "description": "column to sort by - default is resource_count",
-                        "name": "sortBy",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page size - default is 20",
-                        "name": "pageSize",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page number - default is 1",
-                        "name": "pageNumber",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/inventory/api/v2/analytics/spend/composition": {
             "get": {
                 "security": [
@@ -2987,6 +2891,16 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection Groups",
+                        "name": "connectionGroups",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "DISABLED",
                             "DISCOVERED",
@@ -3608,7 +3522,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "file",
-                        "description": "File to upload",
+                        "description": "ُTerraform StateFile full path",
                         "name": "terraformFile",
                         "in": "formData",
                         "required": true
@@ -6189,27 +6103,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "description": "Region",
-                    "type": "string",
-                    "example": "na-west"
-                },
-                "resourceCount": {
-                    "description": "Number of resources in the region",
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 100
-                },
-                "resourceOldCount": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 50
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Metric": {
             "type": "object",
             "properties": {
@@ -6266,21 +6159,6 @@ const docTemplate = `{
                 },
                 "size": {
                     "type": "integer"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse": {
-            "type": "object",
-            "properties": {
-                "regions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse"
-                    }
-                },
-                "totalCount": {
-                    "type": "integer",
-                    "minimum": 0
                 }
             }
         },
@@ -7830,8 +7708,6 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {
