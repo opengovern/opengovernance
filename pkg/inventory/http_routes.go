@@ -1301,13 +1301,13 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 //	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
-//	@Param			startTime	query		int64	false	"timestamp for start in epoch seconds"
-//	@Param			endTime		query		int64	false	"timestamp for end in epoch seconds"
-//	@Param			granularity	query		string	false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
-//	@Param			dimension	query		string	false	"Dimension of the table, default is metric"		Enums(connection, metric)
+//	@Param			startTime	query	int64	false	"timestamp for start in epoch seconds"
+//	@Param			endTime		query	int64	false	"timestamp for end in epoch seconds"
+//	@Param			granularity	query	string	false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
+//	@Param			dimension	query	string	false	"Dimension of the table, default is metric"		Enums(connection, metric)
 
-// @Success		200			{object}	[]inventoryApi.AssetTableRow
-// @Router			/inventory/api/v2/analytics/table [get]
+//	@Success	200	{object}	[]inventoryApi.AssetTableRow
+//	@Router		/inventory/api/v2/analytics/table [get]
 func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 	var err error
 	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())

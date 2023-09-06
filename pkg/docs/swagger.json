@@ -415,7 +415,7 @@
                 }
             }
         },
-        "/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id}": {
+        "/compliance/api/v1/assignments/{benchmark_id}/connection": {
             "post": {
                 "security": [
                     {
@@ -437,20 +437,28 @@
                     {
                         "type": "string",
                         "description": "Benchmark ID",
-                        "name": "benchmark_id",
+                        "name": "benchmarkId",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection ID or 'all' for everything",
-                        "name": "connection_id",
+                        "name": "connectionId",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group ",
-                        "name": "connection_group",
+                        "name": "connectionGroup",
                         "in": "query"
                     }
                 ],
@@ -492,15 +500,23 @@
                         "required": true
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection ID or 'all' for everything",
-                        "name": "connection_id",
+                        "name": "connectionId",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection Group ",
-                        "name": "connection_group",
+                        "name": "connectionGroup",
                         "in": "query"
                     }
                 ],
@@ -1785,102 +1801,6 @@
                 }
             }
         },
-        "/inventory/api/v2/analytics/regions/summary": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving list of regions analytics summary",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "analytics"
-                ],
-                "summary": "List Regions Summary",
-                "parameters": [
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Connection group to filter by - mutually exclusive with connectionId",
-                        "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "start time in unix seconds - default is now",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "end time in unix seconds - default is one week ago",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "resource_count",
-                            "growth",
-                            "growth_rate"
-                        ],
-                        "type": "string",
-                        "description": "column to sort by - default is resource_count",
-                        "name": "sortBy",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page size - default is 20",
-                        "name": "pageSize",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page number - default is 1",
-                        "name": "pageNumber",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/inventory/api/v2/analytics/spend/composition": {
             "get": {
                 "security": [
@@ -2339,57 +2259,6 @@
         },
         "/inventory/api/v2/analytics/table": {
             "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Returns asset table with respect to the dimension and granularity",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "analytics"
-                ],
-                "summary": "Get Assets Table",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "timestamp for start in epoch seconds",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "timestamp for end in epoch seconds",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "monthly",
-                            "daily",
-                            "yearly"
-                        ],
-                        "type": "string",
-                        "description": "Granularity of the table, default is daily",
-                        "name": "granularity",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "connection",
-                            "metric"
-                        ],
-                        "type": "string",
-                        "description": "Dimension of the table, default is metric",
-                        "name": "dimension",
-                        "in": "query"
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -6167,27 +6036,6 @@
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "description": "Region",
-                    "type": "string",
-                    "example": "na-west"
-                },
-                "resourceCount": {
-                    "description": "Number of resources in the region",
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 100
-                },
-                "resourceOldCount": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 50
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Metric": {
             "type": "object",
             "properties": {
@@ -6244,21 +6092,6 @@
                 },
                 "size": {
                     "type": "integer"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse": {
-            "type": "object",
-            "properties": {
-                "regions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse"
-                    }
-                },
-                "totalCount": {
-                    "type": "integer",
-                    "minimum": 0
                 }
             }
         },

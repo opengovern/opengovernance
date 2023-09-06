@@ -40,6 +40,11 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	ConnectionIdParam    = "connectionId"
+	ConnectionGroupParam = "connectionGroup"
+)
+
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
@@ -758,17 +763,17 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId		path		string	true	"Benchmark ID"
+//	@Param			benchmarkId		path		string		true	"Benchmark ID"
 //	@Param			connectionId	query		[]string	false	"Connection ID or 'all' for everything"
 //	@Param			connectionGroup	query		[]string	false	"Connection group "
 //	@Success		200				{object}	[]api.BenchmarkAssignment
 //	@Router			/compliance/api/v1/assignments/{benchmark_id}/connection [post]
 func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
-	connectionID, err := h.getConnectionIdFilterFromParams(ctx)
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
 	}
-	connectionID = demo.DecodeRequestArray(ctx, connectionID)
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 
 	benchmarkId := ctx.Param("benchmark_id")
 	if benchmarkId == "" {
@@ -830,32 +835,21 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	span2.End()
 
 	connections := make([]onboardApi.Connection, 0)
-	if len(connectionID) == 1 {
-		if strings.ToLower(connectionID[0]) == "all" {
-			srcs, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
-			if err != nil {
-				return err
+	if len(connectionIDs) == 1 && strings.ToLower(connectionIDs[0]) == "all" {
+		srcs, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+		if err != nil {
+			return err
+		}
+		for _, src := range srcs {
+			if src.Connector == connectorType &&
+				(src.LifecycleState == onboardApi.ConnectionLifecycleStateOnboard || src.LifecycleState == onboardApi.ConnectionLifecycleStateInProgress) {
+				connections = append(connections, src)
 			}
-			for _, src := range srcs {
-				if src.Connector == connectorType &&
-					(src.LifecycleState == onboardApi.ConnectionLifecycleStateOnboard || src.LifecycleState == onboardApi.ConnectionLifecycleStateInProgress) {
-					connections = append(connections, src)
-				}
-			}
-		} else {
-			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), connectionID[0])
-			if err != nil {
-				return err
-			}
-			connections = append(connections, *src)
 		}
 	} else {
-		for _, connectionId := range connectionID {
-			src, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), connectionId)
-			if err != nil {
-				return err
-			}
-			connections = append(connections, *src)
+		connections, err = h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), connectionIDs)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -885,7 +879,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		)
 		span5.End()
 
-		for _, connectionId := range connectionID {
+		for _, connectionId := range connectionIDs {
 			result = append(result, api.BenchmarkAssignment{
 				BenchmarkId:  benchmarkId,
 				ConnectionId: connectionId,
@@ -1075,7 +1069,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 //	@Tags			benchmarks_assignment
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId		path	string	true	"Benchmark ID"
+//	@Param			benchmark_id	path	string		true	"Benchmark ID"
 //	@Param			connectionId	query	[]string	false	"Connection ID or 'all' for everything"
 //	@Param			connectionGroup	query	[]string	false	"Connection Group "
 //	@Success		200

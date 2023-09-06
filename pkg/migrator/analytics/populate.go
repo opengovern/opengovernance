@@ -125,7 +125,7 @@ func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 	err = dbc.Model(&analyticsDB.AnalyticMetric{}).Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "id"}}, // key column
 		DoUpdates: clause.AssignmentColumns([]string{"connectors", "name", "query",
-			"tables", "finder_query", "type"}), // column needed to be updated
+			"tables", "finder_query", "type", "visible"}), // column needed to be updated
 	}).Create(dbMetric).Error
 
 	if err != nil {

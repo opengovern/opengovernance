@@ -3,6 +3,7 @@ package inventory
 import (
 	"time"
 
+	analyticsDb "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/lib/pq"
@@ -24,6 +25,8 @@ func (db Database) Initialize() error {
 		&SmartQuery{},
 		&SmartQueryHistory{},
 		&ResourceTypeTag{},
+		&analyticsDb.AnalyticMetric{},
+		&analyticsDb.MetricTag{},
 	)
 	if err != nil {
 		return err

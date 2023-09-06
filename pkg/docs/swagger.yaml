@@ -1198,22 +1198,6 @@ definitions:
         example: EC2-Service-Example
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse:
-    properties:
-      location:
-        description: Region
-        example: na-west
-        type: string
-      resourceCount:
-        description: Number of resources in the region
-        example: 100
-        minimum: 0
-        type: integer
-      resourceOldCount:
-        example: 50
-        minimum: 0
-        type: integer
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Metric:
     properties:
       connectors:
@@ -1254,16 +1238,6 @@ definitions:
       "no":
         type: integer
       size:
-        type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse:
-    properties:
-      regions:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse'
-        type: array
-      totalCount:
-        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType:
@@ -2600,7 +2574,7 @@ paths:
       summary: Workspace user roleBindings.
       tags:
       - users
-  /compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id}:
+  /compliance/api/v1/assignments/{benchmark_id}/connection:
     delete:
       consumes:
       - application/json
@@ -2608,17 +2582,23 @@ paths:
       parameters:
       - description: Benchmark ID
         in: path
-        name: benchmarkId
+        name: benchmark_id
         required: true
         type: string
-      - description: Connection ID or 'all' for everything
+      - collectionFormat: csv
+        description: Connection ID or 'all' for everything
         in: query
+        items:
+          type: string
         name: connectionId
-        type: string
-      - description: 'Connection Group '
+        type: array
+      - collectionFormat: csv
+        description: 'Connection Group '
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       produces:
       - application/json
       responses:
@@ -2639,14 +2619,20 @@ paths:
         name: benchmarkId
         required: true
         type: string
-      - description: Connection ID or 'all' for everything
+      - collectionFormat: csv
+        description: Connection ID or 'all' for everything
         in: query
+        items:
+          type: string
         name: connectionId
-        type: string
-      - description: 'Connection group '
+        type: array
+      - collectionFormat: csv
+        description: 'Connection group '
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       produces:
       - application/json
       responses:
@@ -3533,70 +3519,6 @@ paths:
       summary: List metrics
       tags:
       - analytics
-  /inventory/api/v2/analytics/regions/summary:
-    get:
-      consumes:
-      - application/json
-      description: Retrieving list of regions analytics summary
-      parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
-        type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by - mutually exclusive with connectionGroup
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
-        in: query
-        name: connectionGroup
-        type: string
-      - description: start time in unix seconds - default is now
-        in: query
-        name: startTime
-        type: integer
-      - description: end time in unix seconds - default is one week ago
-        in: query
-        name: endTime
-        type: integer
-      - description: column to sort by - default is resource_count
-        enum:
-        - resource_count
-        - growth
-        - growth_rate
-        in: query
-        name: sortBy
-        type: string
-      - description: page size - default is 20
-        in: query
-        name: pageSize
-        type: integer
-      - description: page number - default is 1
-        in: query
-        name: pageNumber
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse'
-      security:
-      - BearerToken: []
-      summary: List Regions Summary
-      tags:
-      - analytics
   /inventory/api/v2/analytics/spend/composition:
     get:
       consumes:
@@ -3911,35 +3833,6 @@ paths:
       - analytics
   /inventory/api/v2/analytics/table:
     get:
-      consumes:
-      - application/json
-      description: Returns asset table with respect to the dimension and granularity
-      parameters:
-      - description: timestamp for start in epoch seconds
-        in: query
-        name: startTime
-        type: integer
-      - description: timestamp for end in epoch seconds
-        in: query
-        name: endTime
-        type: integer
-      - description: Granularity of the table, default is daily
-        enum:
-        - monthly
-        - daily
-        - yearly
-        in: query
-        name: granularity
-        type: string
-      - description: Dimension of the table, default is metric
-        enum:
-        - connection
-        - metric
-        in: query
-        name: dimension
-        type: string
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
@@ -3947,11 +3840,6 @@ paths:
             items:
               $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AssetTableRow'
             type: array
-      security:
-      - BearerToken: []
-      summary: Get Assets Table
-      tags:
-      - analytics
   /inventory/api/v2/analytics/tag:
     get:
       consumes:
