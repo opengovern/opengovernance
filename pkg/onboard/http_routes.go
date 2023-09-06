@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
+	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -820,7 +821,6 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 			ExternalId:           awsCnf.ExternalID,
 		}
 	}
-
 	return ctx.JSON(http.StatusOK, apiCredential)
 }
 
@@ -1252,6 +1252,11 @@ func (h HttpHandler) AutoOnboardCredential(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "connector doesn't support auto onboard")
 	}
 
+	for i, v := range onboardedSources {
+		v.ConnectionName = demo.EncodeResponseData(ctx, v.ConnectionName)
+		v.ConnectionID = demo.EncodeResponseData(ctx, v.ConnectionID)
+		onboardedSources[i] = v
+	}
 	return ctx.JSON(http.StatusOK, onboardedSources)
 }
 
@@ -1947,6 +1952,9 @@ func (h HttpHandler) GetConnectionHealth(ctx echo.Context) error {
 			connection, err = h.checkConnectionHealth(ctx.Request().Context(), connection, updateMetadata)
 		}
 	}
+
+	connection.ID = demo.EncodeResponseData(ctx, connection.ID.String())
+	connection.Name = demo.EncodeResponseData(ctx, connection.Name)
 	return ctx.JSON(http.StatusOK, connection.toAPI())
 }
 
@@ -1986,7 +1994,6 @@ func (h HttpHandler) GetSource(ctx echo.Context) error {
 		apiRes.Credential = src.Credential.ToAPI()
 		apiRes.Credential.Config = src.Credential.Secret
 	}
-
 	return ctx.JSON(http.StatusOK, apiRes)
 }
 
@@ -2335,6 +2342,7 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionIDs = demo.DecodeRequestArray(ctx, connectionIDs)
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
 	if endTimeStr != "" {
@@ -2592,6 +2600,11 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	})
 
 	result.Connections = utils.Paginate(pageNumber, pageSize, result.Connections)
+	for i, v := range result.Connections {
+		v.ConnectionID = demo.EncodeResponseData(ctx, v.ConnectionID)
+		v.ConnectionName = demo.EncodeResponseData(ctx, v.ConnectionName)
+		result.Connections[i] = v
+	}
 	return ctx.JSON(http.StatusOK, result)
 }
 
@@ -2662,6 +2675,14 @@ func (h HttpHandler) ListConnectionGroups(ctx echo.Context) error {
 		result = append(result, *apiCg)
 	}
 	span2.End()
+
+	for _, re := range result {
+		for i, v := range re.Connections {
+			v.ConnectionID = demo.EncodeResponseData(ctx, v.ConnectionID)
+			v.ConnectionName = demo.EncodeResponseData(ctx, v.ConnectionName)
+			re.Connections[i] = v
+		}
+	}
 	return ctx.JSON(http.StatusOK, result)
 }
 
@@ -2729,5 +2750,10 @@ func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
 		}
 	}
 
+	for i, v := range apiCg.Connections {
+		v.ConnectionID = demo.EncodeResponseData(ctx, v.ConnectionID)
+		v.ConnectionName = demo.EncodeResponseData(ctx, v.ConnectionName)
+		apiCg.Connections[i] = v
+	}
 	return ctx.JSON(http.StatusOK, apiCg)
 }

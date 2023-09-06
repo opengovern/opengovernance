@@ -2600,7 +2600,7 @@ paths:
       summary: Workspace user roleBindings.
       tags:
       - users
-  /compliance/api/v1/assignments/{benchmark_id}/connection:
+  /compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id}:
     delete:
       consumes:
       - application/json
@@ -2611,20 +2611,14 @@ paths:
         name: benchmark_id
         required: true
         type: string
-      - collectionFormat: csv
-        description: Connection ID or 'all' for everything
+      - description: Connection ID or 'all' for everything
         in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - collectionFormat: csv
-        description: 'Connection Group '
+        name: connection_id
+        type: string
+      - description: 'Connection Group '
         in: query
-        items:
-          type: string
-        name: connectionGroup
-        type: array
+        name: connection_group
+        type: string
       produces:
       - application/json
       responses:
@@ -2645,20 +2639,14 @@ paths:
         name: benchmark_id
         required: true
         type: string
-      - collectionFormat: csv
-        description: Connection ID or 'all' for everything
+      - description: Connection ID or 'all' for everything
         in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - collectionFormat: csv
-        description: 'Connection group '
+        name: connection_id
+        type: string
+      - description: 'Connection group '
         in: query
-        items:
-          type: string
-        name: connectionGroup
-        type: array
+        name: connection_group
+        type: string
       produces:
       - application/json
       responses:

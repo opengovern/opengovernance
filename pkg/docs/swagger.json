@@ -415,7 +415,7 @@
                 }
             }
         },
-        "/compliance/api/v1/assignments/{benchmark_id}/connection": {
+        "/compliance/api/v1/assignments/{benchmark_id}/connection/{connection_id}": {
             "post": {
                 "security": [
                     {
@@ -442,23 +442,15 @@
                         "required": true
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
+                        "type": "string",
                         "description": "Connection ID or 'all' for everything",
-                        "name": "connectionId",
+                        "name": "connection_id",
                         "in": "query"
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
+                        "type": "string",
                         "description": "Connection group ",
-                        "name": "connectionGroup",
+                        "name": "connection_group",
                         "in": "query"
                     }
                 ],
@@ -500,23 +492,15 @@
                         "required": true
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
+                        "type": "string",
                         "description": "Connection ID or 'all' for everything",
-                        "name": "connectionId",
+                        "name": "connection_id",
                         "in": "query"
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
+                        "type": "string",
                         "description": "Connection Group ",
-                        "name": "connectionGroup",
+                        "name": "connection_group",
                         "in": "query"
                     }
                 ],
