@@ -40,11 +40,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	ConnectionIdParam    = "connectionId"
-	ConnectionGroupParam = "connectionGroup"
-)
-
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
@@ -95,6 +90,11 @@ func bindValidate(ctx echo.Context, i any) error {
 
 	return nil
 }
+
+const (
+	ConnectionIdParam    = "connectionId"
+	ConnectionGroupParam = "connectionGroup"
+)
 
 func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
 	connectionIds := httpserver.QueryArrayParam(ctx, ConnectionIdParam)
