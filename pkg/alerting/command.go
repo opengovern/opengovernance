@@ -33,8 +33,14 @@ func start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("new logger: %w", err)
 	}
+
 	handler, err := InitializeHttpHandler(
-		PostgreSQLHost, PostgreSQLPort, PostgreSQLDb, PostgreSQLUser, PostgreSQLPassword, PostgreSQLSSLMode,
+		PostgreSQLHost,
+		PostgreSQLPort,
+		PostgreSQLDb,
+		PostgreSQLUser,
+		PostgreSQLPassword,
+		PostgreSQLSSLMode,
 		logger,
 	)
 	if err != nil {

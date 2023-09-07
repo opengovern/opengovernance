@@ -7,19 +7,16 @@ import (
 )
 
 type HttpHandler struct {
-	db     Database
-	logger *zap.Logger
+	db Database
 }
 
 func InitializeHttpHandler(
 	postgresHost string, postgresPort string, postgresDb string, postgresUsername string, postgresPassword string, postgresSSLMode string,
 	logger *zap.Logger,
 ) (h *HttpHandler, err error) {
-	h = &HttpHandler{}
 
 	fmt.Println("Initializing http handler")
 
-	// setup postgres connection
 	cfg := postgres.Config{
 		Host:    postgresHost,
 		Port:    postgresPort,
@@ -32,15 +29,16 @@ func InitializeHttpHandler(
 	if err != nil {
 		return nil, fmt.Errorf("new postgres client: %w", err)
 	}
-
-	h.db = Database{orm: orm}
 	fmt.Println("Connected to the postgres database: ", postgresDb)
 
-	err = h.db.Initialize()
+	db := NewDatabase(orm)
+	err = db.Initialize()
 	if err != nil {
 		return nil, err
 	}
 	fmt.Println("Initialized postgres database: ", postgresDb)
 
-	return h, nil
+	return &HttpHandler{
+		db: db,
+	}, nil
 }
