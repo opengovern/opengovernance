@@ -2084,11 +2084,7 @@
                         "in": "query"
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
+                        "type": "string",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"

@@ -3708,13 +3708,10 @@ paths:
           type: string
         name: connectionId
         type: array
-      - collectionFormat: csv
-        description: Connection group to filter by - mutually exclusive with connectionId
+      - description: Connection group to filter by - mutually exclusive with connectionId
         in: query
-        items:
-          type: string
         name: connectionGroup
-        type: array
+        type: string
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
