@@ -2818,7 +2818,7 @@ func (h *HttpHandler) connectionsFilter(ctx echo.Context, filter map[string]inte
 					if err != nil {
 						return nil, err
 					}
-					var allGroupsMap map[string][]string
+					allGroupsMap := make(map[string][]string)
 					var allGroupsStr []string
 					for _, group := range allGroups {
 						g, err := group.ToAPI(ctx.Request().Context(), h.steampipeConn)

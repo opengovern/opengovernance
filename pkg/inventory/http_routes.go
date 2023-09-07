@@ -2827,7 +2827,7 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 					if err != nil {
 						return nil, err
 					}
-					var allGroupsMap map[string][]string
+					allGroupsMap := make(map[string][]string)
 					var allGroupsStr []string
 					for _, g := range allGroups {
 						allGroupsMap[g.Name] = make([]string, 0, len(g.ConnectionIds))
