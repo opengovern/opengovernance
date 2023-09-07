@@ -105,12 +105,12 @@ var tracer = otel.Tracer("new_inventory")
 
 func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
 	connectionIds := httpserver.QueryArrayParam(ctx, ConnectionIdParam)
-	connectionGroup := ctx.QueryParam(ConnectionGroupParam)
-	if len(connectionIds) == 0 && connectionGroup == "" {
+	connectionGroup := httpserver.QueryArrayParam(ctx, ConnectionGroupParam)
+	if len(connectionIds) == 0 && len(connectionGroup) == 0 {
 		return nil, nil
 	}
 
-	if len(connectionIds) > 0 && connectionGroup != "" {
+	if len(connectionIds) > 0 && len(connectionGroup) > 0 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
 	}
 
@@ -118,16 +118,25 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 		return connectionIds, nil
 	}
 
-	connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroup)
-	if err != nil {
-		return nil, err
+	connectionMap := map[string]bool{}
+	for _, connectionGroupID := range connectionGroup {
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroupID)
+		if err != nil {
+			return nil, err
+		}
+		for _, connectionID := range connectionGroupObj.ConnectionIds {
+			connectionMap[connectionID] = true
+		}
+	}
+	connectionIds = make([]string, 0, len(connectionMap))
+	for connectionID := range connectionMap {
+		connectionIds = append(connectionIds, connectionID)
+	}
+	if len(connectionIds) == 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionGroup(s) do not have any connections")
 	}
 
-	if len(connectionGroupObj.ConnectionIds) == 0 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionGroup has no connections")
-	}
-
-	return connectionGroupObj.ConnectionIds, nil
+	return connectionIds, nil
 }
 
 func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
@@ -655,7 +664,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context, metricIDs []stri
 //	@Param			metricType		query		string			false	"Metric type, default: assets"	Enums(assets, spend)
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			metricIDs		query		[]string		false	"Metric IDs"
 //	@Param			endTime			query		int64			false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		int64			false	"timestamp for resource count change comparison in epoch seconds"
@@ -838,7 +847,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]string	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			minCount		query		int			false	"Minimum number of resources/spend with this tag value, default 1"
 //	@Param			startTime		query		int64		false	"Start time in unix timestamp format, default now - 1 month"
 //	@Param			endTime			query		int64		false	"End time in unix timestamp format, default now"
@@ -966,7 +975,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 //	@Param			ids				query		[]string		false	"Metric IDs to filter by"
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
@@ -1086,7 +1095,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 //	@Param			top				query		int				true	"How many top values to return default is 5"
 //	@Param			connector		query		[]source.Type	false	"Connector types to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			endTime			query		int64			false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		int64			false	"timestamp for resource count change comparison in epoch seconds"
 //	@Success		200				{object}	inventoryApi.ListResourceTypeCompositionResponse
@@ -1641,7 +1650,7 @@ func (h *HttpHandler) ListMetrics(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			top				query		int				false	"How many top values to return default is 5"
 //	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
@@ -1783,7 +1792,7 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			metricIds		query		[]string		false	"Metrics IDs"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			granularity		query		string			false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
@@ -1866,7 +1875,7 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			metricIds		query		[]string		false	"Metrics IDs"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			granularity		query		string			false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
@@ -2104,7 +2113,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			endTime			query		int64		false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		int64		false	"timestamp for resource count change comparison in epoch seconds"
 //	@Param			resourceType	path		string		true	"ResourceType"
