@@ -2813,13 +2813,13 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 			if dimKey, ok := dimFilter["Key"]; ok {
 				if dimKey == "ConnectionID" {
 					connections = dimFilterFunction(dimFilter, allConnectionsStr)
-					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v all: %v, result: %v", dimFilter, allConnectionsStr, connections))
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, connections))
 				} else if dimKey == "Provider" {
 					providers := dimFilterFunction(dimFilter, []string{"AWS", "Azure"})
-					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v all: %v, result: %v", dimFilter, []string{"AWS", "Azure"}, providers))
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, providers))
 					for _, c := range allConnections {
 						if arrayContains(providers, c.Connector.String()) {
-							connections = append(connections, c.ConnectionID)
+							connections = append(connections, c.ID.String())
 						}
 					}
 				} else if dimKey == "ConnectionGroup" {
@@ -2837,7 +2837,7 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 						}
 					}
 					groups := dimFilterFunction(dimFilter, allGroupsStr)
-					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v all: %v, result: %v", dimFilter, allGroupsStr, groups))
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, groups))
 
 					for _, g := range groups {
 						for _, conn := range allGroupsMap[g] {
@@ -2851,11 +2851,11 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 					for _, c := range allConnections {
 						allConnectionsNames = append(allConnectionsNames, c.ConnectionName)
 						connectionNames := dimFilterFunction(dimFilter, allConnectionsNames)
-						h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v all: %v, result: %v", dimFilter, allConnectionsNames, connectionNames))
+						h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, connectionNames))
 
 						for _, conn := range allConnections {
 							if arrayContains(connectionNames, conn.ConnectionName) {
-								connections = append(connections, conn.ConnectionID)
+								connections = append(connections, conn.ID.String())
 							}
 						}
 					}
