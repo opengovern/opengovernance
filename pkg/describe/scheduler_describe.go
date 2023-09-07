@@ -116,7 +116,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 
 		maxCount := 25
 		if dc.ResourceType == "Microsoft.CostManagement/CostByResourceType" {
-			maxCount = 5
+			maxCount = 1
 		}
 
 		currentCount := 0
