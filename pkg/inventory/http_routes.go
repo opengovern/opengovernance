@@ -1377,9 +1377,10 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 //	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
+//	@Param			filter			query		string			false	"Filter costs"
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost,growth,growth_rate)
@@ -1423,6 +1424,19 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 	var metricIds []string
 	for _, m := range metrics {
 		metricIds = append(metricIds, m.ID)
+	}
+
+	filterStr := ctx.QueryParam("filter")
+	if filterStr != "" {
+		var filter map[string]interface{}
+		err = json.Unmarshal([]byte(filterStr), &filter)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "could not parse filter")
+		}
+		connectionIDs, err = h.connectionsFilter(filter)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("invalid filter: %s", err.Error()))
+		}
 	}
 
 	costMetricMap := make(map[string]inventoryApi.CostMetric)
@@ -2780,4 +2794,162 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, result)
+}
+
+func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string, error) {
+	var connections []string
+	allConnections, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, []source.Type{source.CloudAWS, source.CloudAzure})
+	if err != nil {
+		return nil, err
+	}
+	var allConnectionsStr []string
+	for _, c := range allConnections {
+		allConnectionsStr = append(allConnectionsStr, c.ConnectionID)
+	}
+	for key, value := range filter {
+		if key == "Dimensions" {
+			dimFilter := value.(map[string]interface{})
+			if dimKey, ok := dimFilter["Key"]; ok {
+				if dimKey == "ConnectionID" {
+					connections = dimFilterFunction(dimFilter, allConnectionsStr)
+				} else if dimKey == "Provider" {
+					providers := dimFilterFunction(dimFilter, []string{"AWS", "Azure"})
+					for _, c := range allConnections {
+						if arrayContains(providers, c.Connector.String()) {
+							connections = append(connections, c.ConnectionID)
+						}
+					}
+				} else if dimKey == "ConnectionGroup" {
+					allGroups, err := h.onboardClient.ListConnectionGroups(&httpclient.Context{UserRole: authApi.KaytuAdminRole})
+					if err != nil {
+						return nil, err
+					}
+					var allGroupsMap map[string][]string
+					var allGroupsStr []string
+					for _, g := range allGroups {
+						allGroupsMap[g.Name] = make([]string, 0, len(g.ConnectionIds))
+						for _, cid := range g.ConnectionIds {
+							allGroupsMap[g.Name] = append(allGroupsMap[g.Name], cid)
+							allGroupsStr = append(allGroupsStr, cid)
+						}
+					}
+					groups := dimFilterFunction(dimFilter, allGroupsStr)
+					for _, g := range groups {
+						for _, conn := range allGroupsMap[g] {
+							if !arrayContains(connections, conn) {
+								connections = append(connections, conn)
+							}
+						}
+					}
+				} else if dimKey == "ConnectionName" {
+					var allConnectionsNames []string
+					for _, c := range allConnections {
+						allConnectionsNames = append(allConnectionsNames, c.ConnectionName)
+						connectionNames := dimFilterFunction(dimFilter, allConnectionsNames)
+						for _, conn := range allConnections {
+							if arrayContains(connectionNames, conn.ConnectionName) {
+								connections = append(connections, conn.ConnectionID)
+							}
+						}
+					}
+				}
+			} else {
+				return nil, fmt.Errorf("missing key")
+			}
+		} else if key == "AND" {
+			andFilters := value.([]map[string]interface{})
+			counter := make(map[string]int)
+			for _, f := range andFilters {
+				values, err := h.connectionsFilter(f)
+				if err != nil {
+					return nil, err
+				}
+				for _, v := range values {
+					if c, ok := counter[v]; ok {
+						counter[v] = c + 1
+					} else {
+						counter[v] = 1
+					}
+					if counter[v] == len(andFilters) {
+						connections = append(connections, v)
+					}
+				}
+			}
+		} else if key == "OR" {
+			orFilters := value.([]map[string]interface{})
+			for _, f := range orFilters {
+				values, err := h.connectionsFilter(f)
+				if err != nil {
+					return nil, err
+				}
+				for _, v := range values {
+					if !arrayContains(connections, v) {
+						connections = append(connections, v)
+					}
+				}
+			}
+		} else {
+			return nil, fmt.Errorf("invalid key: ", key)
+		}
+	}
+	return connections, nil
+}
+
+func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) []string {
+	values := dimFilter["Values"].([]string)
+	var output []string
+	if matchOption, ok := dimFilter["MatchOption"]; ok {
+		switch matchOption {
+		case "EQUAL":
+			output = values
+		case "STARTS_WITH":
+			for _, v := range values {
+				for _, conn := range allValues {
+					if strings.HasPrefix(conn, v) {
+						if !arrayContains(output, conn) {
+							output = append(output, conn)
+						}
+					}
+				}
+			}
+		case "ENDS_WITH":
+			for _, v := range values {
+				for _, conn := range allValues {
+					if strings.HasSuffix(conn, v) {
+						if !arrayContains(output, conn) {
+							output = append(output, conn)
+						}
+					}
+				}
+			}
+		case "CONTAINS":
+			for _, v := range values {
+				for _, conn := range allValues {
+					if strings.Contains(conn, v) {
+						if !arrayContains(output, conn) {
+							output = append(output, conn)
+						}
+					}
+				}
+			}
+		case "ABSENT":
+			for _, conn := range allValues {
+				if !arrayContains(values, conn) {
+					output = append(output, conn)
+				}
+			}
+		}
+	} else {
+		output = values
+	}
+	return output
+}
+
+func arrayContains(array []string, key string) bool {
+	for _, v := range array {
+		if v == key {
+			return true
+		}
+	}
+	return false
 }

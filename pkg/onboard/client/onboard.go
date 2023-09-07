@@ -34,6 +34,7 @@ type OnboardServiceClient interface {
 	ListCredentials(ctx *httpclient.Context, connector []source.Type, credentialType *api.CredentialType, health *string, pageSize, pageNumber int) (api.ListCredentialResponse, error)
 	TriggerAutoOnboard(ctx *httpclient.Context, credentialId string) ([]api.Connection, error)
 	GetConnectionGroup(ctx *httpclient.Context, connectionGroupName string) (*api.ConnectionGroup, error)
+	ListConnectionGroups(ctx *httpclient.Context) ([]api.ConnectionGroup, error)
 }
 
 type onboardClient struct {
@@ -372,4 +373,18 @@ func (s *onboardClient) GetConnectionGroup(ctx *httpclient.Context, connectionGr
 	}
 
 	return &connectionGroup, nil
+}
+
+func (s *onboardClient) ListConnectionGroups(ctx *httpclient.Context) ([]api.ConnectionGroup, error) {
+	url := fmt.Sprintf("%s/api/v1/connection-groups", s.baseURL)
+
+	var connectionGroup []api.ConnectionGroup
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &connectionGroup); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+
+	return connectionGroup, nil
 }

@@ -2319,6 +2319,7 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 //	@Tags			connections
 //	@Accept			json
 //	@Produce		json
+//	@Param			filter				query		string			false	"Filter costs"
 //	@Param			connector			query		[]source.Type	false	"Connector"
 //	@Param			connectionId		query		[]string		false	"Connection IDs"
 //	@Param			connectionGroups	query		[]string		false	"Connection Groups"
@@ -2385,6 +2386,19 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListSourcesWithFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListSourcesWithFilters")
 
+	filterStr := ctx.QueryParam("filter")
+	if filterStr != "" {
+		var filter map[string]interface{}
+		err = json.Unmarshal([]byte(filterStr), &filter)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "could not parse filter")
+		}
+		connectionIDs, err = h.connectionsFilter(ctx, filter)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("invalid filter: %s", err.Error()))
+		}
+	}
+
 	tmpConnections, err := h.db.ListSourcesWithFilters(connectors, connectionIDs, lifecycleStateSlice, healthStateSlice)
 	if err != nil {
 		span.RecordError(err)
@@ -2397,7 +2411,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	span.SetName("new_FilterConnectionGroups")
 
 	var connections []Source
-	if len(connectionGroups) > 0 {
+	if len(connectionGroups) > 0 && filterStr == "" {
 		var validConnections []string
 		for _, group := range connectionGroups {
 			connectionGroup, err := h.db.GetConnectionGroupByName(group)
@@ -2771,4 +2785,166 @@ func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, apiCg)
+}
+
+func (h *HttpHandler) connectionsFilter(ctx echo.Context, filter map[string]interface{}) ([]string, error) {
+	var connections []string
+	allConnections, err := h.db.ListSources()
+	if err != nil {
+		return nil, err
+	}
+	var allConnectionsStr []string
+	for _, c := range allConnections {
+		allConnectionsStr = append(allConnectionsStr, c.SourceId)
+	}
+	for key, value := range filter {
+		if key == "Dimensions" {
+			dimFilter := value.(map[string]interface{})
+			if dimKey, ok := dimFilter["Key"]; ok {
+				if dimKey == "ConnectionID" {
+					connections = dimFilterFunction(dimFilter, allConnectionsStr)
+				} else if dimKey == "Provider" {
+					providers := dimFilterFunction(dimFilter, []string{"AWS", "Azure"})
+					for _, c := range allConnections {
+						if arrayContains(providers, c.Connector.Name.String()) {
+							connections = append(connections, c.SourceId)
+						}
+					}
+				} else if dimKey == "ConnectionGroup" {
+					allGroups, err := h.db.ListConnectionGroups()
+					if err != nil {
+						return nil, err
+					}
+					var allGroupsMap map[string][]string
+					var allGroupsStr []string
+					for _, group := range allGroups {
+						g, err := group.ToAPI(ctx.Request().Context(), h.steampipeConn)
+						if err != nil {
+							return nil, err
+						}
+						allGroupsMap[g.Name] = make([]string, 0, len(g.ConnectionIds))
+						for _, cid := range g.ConnectionIds {
+							allGroupsMap[g.Name] = append(allGroupsMap[g.Name], cid)
+							allGroupsStr = append(allGroupsStr, cid)
+						}
+					}
+					groups := dimFilterFunction(dimFilter, allGroupsStr)
+					for _, g := range groups {
+						for _, conn := range allGroupsMap[g] {
+							if !arrayContains(connections, conn) {
+								connections = append(connections, conn)
+							}
+						}
+					}
+				} else if dimKey == "ConnectionName" {
+					var allConnectionsNames []string
+					for _, c := range allConnections {
+						allConnectionsNames = append(allConnectionsNames, c.Name)
+						connectionNames := dimFilterFunction(dimFilter, allConnectionsNames)
+						for _, conn := range allConnections {
+							if arrayContains(connectionNames, conn.Name) {
+								connections = append(connections, conn.SourceId)
+							}
+						}
+					}
+				}
+			} else {
+				return nil, fmt.Errorf("missing key")
+			}
+		} else if key == "AND" {
+			andFilters := value.([]map[string]interface{})
+			counter := make(map[string]int)
+			for _, f := range andFilters {
+				values, err := h.connectionsFilter(ctx, f)
+				if err != nil {
+					return nil, err
+				}
+				for _, v := range values {
+					if c, ok := counter[v]; ok {
+						counter[v] = c + 1
+					} else {
+						counter[v] = 1
+					}
+					if counter[v] == len(andFilters) {
+						connections = append(connections, v)
+					}
+				}
+			}
+		} else if key == "OR" {
+			orFilters := value.([]map[string]interface{})
+			for _, f := range orFilters {
+				values, err := h.connectionsFilter(ctx, f)
+				if err != nil {
+					return nil, err
+				}
+				for _, v := range values {
+					if !arrayContains(connections, v) {
+						connections = append(connections, v)
+					}
+				}
+			}
+		} else {
+			return nil, fmt.Errorf("invalid key: ", key)
+		}
+	}
+	return connections, nil
+}
+
+func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) []string {
+	values := dimFilter["Values"].([]string)
+	var output []string
+	if matchOption, ok := dimFilter["MatchOption"]; ok {
+		switch matchOption {
+		case "EQUAL":
+			output = values
+		case "STARTS_WITH":
+			for _, v := range values {
+				for _, conn := range allValues {
+					if strings.HasPrefix(conn, v) {
+						if !arrayContains(output, conn) {
+							output = append(output, conn)
+						}
+					}
+				}
+			}
+		case "ENDS_WITH":
+			for _, v := range values {
+				for _, conn := range allValues {
+					if strings.HasSuffix(conn, v) {
+						if !arrayContains(output, conn) {
+							output = append(output, conn)
+						}
+					}
+				}
+			}
+		case "CONTAINS":
+			for _, v := range values {
+				for _, conn := range allValues {
+					if strings.Contains(conn, v) {
+						if !arrayContains(output, conn) {
+							output = append(output, conn)
+						}
+					}
+				}
+			}
+		case "ABSENT":
+			for _, conn := range allValues {
+				if !arrayContains(values, conn) {
+					output = append(output, conn)
+				}
+			}
+		}
+	} else {
+		output = values
+	}
+	return output
+}
+
+func arrayContains(array []string, key string) bool {
+	for _, v := range array {
+		if v == key {
+			return true
+		}
+	}
+	return false
 }

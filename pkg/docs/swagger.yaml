@@ -3686,6 +3686,10 @@ paths:
         API returns information such as the total cost and costs per each service
         based on the specified filters.
       parameters:
+      - description: Filter costs
+        in: query
+        name: filter
+        type: string
       - collectionFormat: csv
         description: Connector type to filter by
         in: query
@@ -3704,13 +3708,10 @@ paths:
           type: string
         name: connectionId
         type: array
-      - collectionFormat: csv
-        description: Connection group to filter by - mutually exclusive with connectionId
+      - description: Connection group to filter by - mutually exclusive with connectionId
         in: query
-        items:
-          type: string
         name: connectionGroup
-        type: array
+        type: string
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -4337,6 +4338,10 @@ paths:
       - application/json
       description: Retrieving a list of connections summaries
       parameters:
+      - description: Filter costs
+        in: query
+        name: filter
+        type: string
       - collectionFormat: csv
         description: Connector
         in: query

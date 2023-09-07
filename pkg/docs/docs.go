@@ -2059,6 +2059,12 @@ const docTemplate = `{
                 "summary": "List spend metrics",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Filter costs",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "enum": [
@@ -2084,11 +2090,7 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
+                        "type": "string",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -3042,6 +3044,12 @@ const docTemplate = `{
                 ],
                 "summary": "List connections summaries",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter costs",
+                        "name": "filter",
+                        "in": "query"
+                    },
                     {
                         "type": "array",
                         "items": {
@@ -7885,8 +7893,6 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {

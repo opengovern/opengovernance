@@ -2053,6 +2053,12 @@
                 "summary": "List spend metrics",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Filter costs",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "enum": [
@@ -2078,11 +2084,7 @@
                         "in": "query"
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
+                        "type": "string",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -3036,6 +3038,12 @@
                 ],
                 "summary": "List connections summaries",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter costs",
+                        "name": "filter",
+                        "in": "query"
+                    },
                     {
                         "type": "array",
                         "items": {
