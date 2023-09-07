@@ -2896,7 +2896,10 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 }
 
 func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) []string {
-	values := dimFilter["Values"].([]string)
+	var values []string
+	for _, v := range dimFilter["Values"].([]interface{}) {
+		values = append(values, fmt.Sprintf("%v", v))
+	}
 	var output []string
 	if matchOption, ok := dimFilter["MatchOption"]; ok {
 		switch matchOption {
