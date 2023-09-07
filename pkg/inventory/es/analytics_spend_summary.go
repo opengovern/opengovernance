@@ -52,6 +52,11 @@ type FetchConnectionDailySpendHistoryByMetricQueryResponse struct {
 								} `json:"hits"`
 							} `json:"hit_select"`
 						} `json:"end_cost_group"`
+						AvailableConnectorsGroup struct {
+							Buckets []struct {
+								Key string `json:"key"`
+							} `json:"buckets"`
+						} `json:"available_connectors_group"`
 					} `json:"buckets"`
 				} `json:"metric_id_group"`
 			} `json:"buckets"`
@@ -139,6 +144,12 @@ func FetchConnectionDailySpendHistoryByMetric(client kaytu.Client, connectionIDs
 								},
 							},
 						},
+						"available_connectors_group": map[string]any{
+							"terms": map[string]any{
+								"field": "connector",
+								"size":  1,
+							},
+						},
 					},
 				},
 			},
@@ -171,18 +182,19 @@ func FetchConnectionDailySpendHistoryByMetric(client kaytu.Client, connectionIDs
 				EndDateCost:   0,
 			}
 			for _, v := range metricBucket.StartCostGroup.HitSelect.Hits.Hits {
-				if hit.Connector == source.Nil {
-					hit.Connector = v.Source.Connector
-				}
 				hit.StartDateCost = v.Source.CostValue
 				hit.MetricName = v.Source.MetricName
 			}
 			for _, v := range metricBucket.EndCostGroup.HitSelect.Hits.Hits {
-				if hit.Connector == source.Nil {
-					hit.Connector = v.Source.Connector
-				}
 				hit.EndDateCost = v.Source.CostValue
 				hit.MetricName = v.Source.MetricName
+			}
+			for _, v := range metricBucket.AvailableConnectorsGroup.Buckets {
+				if hit.Connector == source.Nil {
+					c, _ := source.ParseType(v.Key)
+					hit.Connector = c
+					break
+				}
 			}
 			hits = append(hits, hit)
 		}
