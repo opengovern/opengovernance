@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	_ "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -304,7 +303,7 @@ func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
 		startJobId = int(jobId)
 	}
 
-	maxJobID := 1000
+	maxJobID := startJobId + 1000
 	for i := startJobId; i < maxJobID; i++ {
 		cm, err := h.MigrateSpendPart(i, true)
 		if err != nil {
