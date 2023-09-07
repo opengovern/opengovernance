@@ -1371,23 +1371,23 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 
 // ListAnalyticsSpendMetricsHandler godoc
 //
-//		@Summary		List spend metrics
-//		@Description	Retrieving cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.
-//		@Security		BearerToken
-//		@Tags			analytics
-//		@Accept			json
-//		@Produce		json
-//	 	@Param 	        filter			query       string          false   "Filter costs"
-//		@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//		@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//		@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
-//		@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
-//		@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
-//		@Param			sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost,growth,growth_rate)
-//		@Param			pageSize		query		int				false	"page size - default is 20"
-//		@Param			pageNumber		query		int				false	"page number - default is 1"
-//		@Success		200				{object}	inventoryApi.ListCostMetricsResponse
-//		@Router			/inventory/api/v2/analytics/spend/metric [get]
+//	@Summary		List spend metrics
+//	@Description	Retrieving cost metrics with respect to specified filters. The API returns information such as the total cost and costs per each service based on the specified filters.
+//	@Security		BearerToken
+//	@Tags			analytics
+//	@Accept			json
+//	@Produce		json
+//	@Param			filter			query		string			false	"Filter costs"
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
+//	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
+//	@Param			sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost,growth,growth_rate)
+//	@Param			pageSize		query		int				false	"page size - default is 20"
+//	@Param			pageNumber		query		int				false	"page number - default is 1"
+//	@Success		200				{object}	inventoryApi.ListCostMetricsResponse
+//	@Router			/inventory/api/v2/analytics/spend/metric [get]
 func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 	var err error
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))

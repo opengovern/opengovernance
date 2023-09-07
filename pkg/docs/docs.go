@@ -2059,6 +2059,12 @@ const docTemplate = `{
                 "summary": "List spend metrics",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Filter costs",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "enum": [
@@ -3042,6 +3048,12 @@ const docTemplate = `{
                 ],
                 "summary": "List connections summaries",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter costs",
+                        "name": "filter",
+                        "in": "query"
+                    },
                     {
                         "type": "array",
                         "items": {

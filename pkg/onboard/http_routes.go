@@ -2319,7 +2319,7 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 //	@Tags			connections
 //	@Accept			json
 //	@Produce		json
-//	@Param 	        filter			query       string          false   "Filter costs"
+//	@Param			filter				query		string			false	"Filter costs"
 //	@Param			connector			query		[]source.Type	false	"Connector"
 //	@Param			connectionId		query		[]string		false	"Connection IDs"
 //	@Param			connectionGroups	query		[]string		false	"Connection Groups"
