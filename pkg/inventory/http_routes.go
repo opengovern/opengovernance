@@ -97,7 +97,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	metadata := v2.Group("/metadata")
 	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, authApi.ViewerRole))
 
-	v1.GET("/migrate-analytics", httpserver.AuthorizeHandler(h.MigrateAnalytics, authApi.AdminRole))
+	//v1.GET("/migrate-analytics", httpserver.AuthorizeHandler(h.MigrateAnalytics, authApi.AdminRole))
 	v1.GET("/migrate-spend", httpserver.AuthorizeHandler(h.MigrateSpend, authApi.AdminRole))
 }
 
@@ -294,8 +294,18 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 
 func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
 	connectorMap := map[string]spend.ConnectorMetricTrendSummary{}
+
+	startJobId := 0
+	if jobIdStr := ctx.QueryParam("startJobId"); jobIdStr != "" {
+		jobId, err := strconv.ParseInt(jobIdStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		startJobId = int(jobId)
+	}
+
 	maxJobID := 1000
-	for i := 0; i < maxJobID; i++ {
+	for i := startJobId; i < maxJobID; i++ {
 		cm, err := h.MigrateSpendPart(i, true)
 		if err != nil {
 			return err
