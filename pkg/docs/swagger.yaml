@@ -3172,6 +3172,102 @@ paths:
       summary: List insight groups
       tags:
       - insights
+  /compliance/api/v1/insight/group/{insightGroupId}:
+    get:
+      description: |-
+        Retrieving the specified insight group with ID.
+        Returns "all:provider" job results if connectionId is not defined.
+      parameters:
+      - description: Insight Group ID
+        in: path
+        name: insightGroupId
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: filter the result by source id
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: filter the result by connection group
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - description: unix seconds for the start time of the trend
+        in: query
+        name: startTime
+        type: integer
+      - description: unix seconds for the end time of the trend
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup'
+      security:
+      - BearerToken: []
+      summary: Get insight group
+      tags:
+      - insights
+  /compliance/api/v1/insight/group/{insightGroupId}/trend:
+    get:
+      description: |-
+        Retrieving insight group results datapoints for a specified connection during a specified time period.
+        Returns "all:provider" job results if connectionId is not defined.
+      parameters:
+      - description: Insight Group ID
+        in: path
+        name: insightGroupId
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: filter the result by source id
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: filter the result by connection group
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - description: unix seconds for the start time of the trend
+        in: query
+        name: startTime
+        type: integer
+      - description: unix seconds for the end time of the trend
+        in: query
+        name: endTime
+        type: integer
+      - description: number of datapoints to return
+        in: query
+        name: datapointCount
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get insight group trend
+      tags:
+      - insights
   /compliance/api/v1/metadata/insight/{insightId}:
     get:
       description: Retrieving insight metadata by id
@@ -3366,10 +3462,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: timestamp for resource count in epoch seconds
         in: query
         name: endTime
@@ -3429,10 +3528,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - collectionFormat: csv
         description: Metric IDs
         in: query
@@ -3545,10 +3647,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: How many top values to return default is 5
         in: query
         name: top
@@ -3599,10 +3704,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -3673,10 +3781,13 @@ paths:
           type: string
         name: metricIds
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -3797,10 +3908,13 @@ paths:
           type: string
         name: metricIds
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -3895,10 +4009,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: Minimum number of resources/spend with this tag value, default
           1
         in: query
@@ -3981,10 +4098,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -4024,10 +4144,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: timestamp for resource count in epoch seconds
         in: query
         name: endTime

@@ -74,6 +74,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	insights := v1.Group("/insight")
 	insightGroups := insights.Group("/group")
 	insightGroups.GET("", httpserver.AuthorizeHandler(h.ListInsightGroups, authApi.ViewerRole))
+	insightGroups.GET("/:groupId", httpserver.AuthorizeHandler(h.GetInsightGroup, authApi.ViewerRole))
+	insightGroups.GET("/:groupId/trend", httpserver.AuthorizeHandler(h.GetInsightGroupTrend, authApi.ViewerRole))
 	insights.GET("", httpserver.AuthorizeHandler(h.ListInsights, authApi.ViewerRole))
 	insights.GET("/:insightId", httpserver.AuthorizeHandler(h.GetInsight, authApi.ViewerRole))
 	insights.GET("/:insightId/trend", httpserver.AuthorizeHandler(h.GetInsightTrend, authApi.ViewerRole))
@@ -1525,6 +1527,75 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	return ctx.JSON(200, result)
 }
 
+func (h *HttpHandler) getInsightApiRes(ctx echo.Context, insightRow *db.Insight, connectionIDs []string, startTime, endTime time.Time) (*api.Insight, error) {
+	insightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, &endTime)
+	if err != nil {
+		return nil, err
+	}
+
+	oldInsightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, &startTime)
+	if err != nil {
+		h.logger.Warn("failed to get old insight results", zap.Error(err))
+		oldInsightResults = make([]insight.InsightResource, 0)
+	}
+
+	apiRes := insightRow.ToApi()
+	for _, insightResult := range insightResults {
+		connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
+		for _, connection := range insightResult.IncludedConnections {
+			connections = append(connections, api.InsightConnection{
+				ConnectionID: connection.ConnectionID,
+				OriginalID:   connection.OriginalID,
+			})
+		}
+
+		bucket, key, err := utils.ParseHTTPSubpathS3URIToBucketAndKey(insightResult.S3Location)
+		getObjectOutput, err := h.s3Client.GetObject(ctx.Request().Context(), &s3.GetObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(key),
+		})
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		objectBuffer, err := io.ReadAll(getObjectOutput.Body)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		var steampipeResults steampipe.Result
+		err = json.Unmarshal(objectBuffer, &steampipeResults)
+		if err != nil {
+			return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		apiRes.Results = append(apiRes.Results, api.InsightResult{
+			JobID:        insightResult.JobID,
+			InsightID:    insightRow.ID,
+			ConnectionID: insightResult.SourceID,
+			ExecutedAt:   time.UnixMilli(insightResult.ExecutedAt),
+			Result:       insightResult.Result,
+			Locations:    insightResult.Locations,
+			Connections:  connections,
+			Details: &api.InsightDetail{
+				Headers: steampipeResults.Headers,
+				Rows:    steampipeResults.Data,
+			},
+		})
+		apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, &insightResult.Result)
+	}
+	for _, oldInsightResult := range oldInsightResults {
+		localOldInsightResult := oldInsightResult.Result
+		apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, &localOldInsightResult)
+		if apiRes.FirstOldResultDate == nil || apiRes.FirstOldResultDate.After(time.UnixMilli(oldInsightResult.ExecutedAt)) {
+			apiRes.FirstOldResultDate = utils.GetPointer(time.UnixMilli(oldInsightResult.ExecutedAt))
+		}
+	}
+	if apiRes.FirstOldResultDate != nil && apiRes.FirstOldResultDate.After(startTime) {
+		apiRes.OldTotalResultValue = nil
+	}
+
+	return &apiRes, nil
+}
+
 // GetInsight godoc
 //
 //	@Summary		Get insight
@@ -1541,8 +1612,7 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 //	@Success		200				{object}	api.Insight
 //	@Router			/compliance/api/v1/insight/{insightId} [get]
 func (h *HttpHandler) GetInsight(ctx echo.Context) error {
-	insightIdStr := ctx.Param("insightId")
-	insightId, err := strconv.ParseUint(insightIdStr, 10, 64)
+	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
@@ -1579,72 +1649,41 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	}
 	span1.End()
 
-	insightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, &endTime)
+	apiRes, err := h.getInsightApiRes(ctx, insightRow, connectionIDs, startTime, endTime)
 	if err != nil {
 		return err
 	}
 
-	oldInsightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, &startTime)
-	if err != nil {
-		h.logger.Warn("failed to get old insight results", zap.Error(err))
-		oldInsightResults = make([]insight.InsightResource, 0)
-	}
-
-	apiRes := insightRow.ToApi()
-	for _, insightResult := range insightResults {
-		connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
-		for _, connection := range insightResult.IncludedConnections {
-			connections = append(connections, api.InsightConnection{
-				ConnectionID: connection.ConnectionID,
-				OriginalID:   connection.OriginalID,
-			})
-		}
-
-		bucket, key, err := utils.ParseHTTPSubpathS3URIToBucketAndKey(insightResult.S3Location)
-		getObjectOutput, err := h.s3Client.GetObject(ctx.Request().Context(), &s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String(key),
-		})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		objectBuffer, err := io.ReadAll(getObjectOutput.Body)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-		var steampipeResults steampipe.Result
-		err = json.Unmarshal(objectBuffer, &steampipeResults)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-		}
-
-		apiRes.Results = append(apiRes.Results, api.InsightResult{
-			JobID:        insightResult.JobID,
-			InsightID:    insightRow.ID,
-			ConnectionID: insightResult.SourceID,
-			ExecutedAt:   time.UnixMilli(insightResult.ExecutedAt),
-			Result:       insightResult.Result,
-			Locations:    insightResult.Locations,
-			Connections:  connections,
-			Details: &api.InsightDetail{
-				Headers: steampipeResults.Headers,
-				Rows:    steampipeResults.Data,
-			},
-		})
-		apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, &insightResult.Result)
-	}
-	for _, oldInsightResult := range oldInsightResults {
-		localOldInsightResult := oldInsightResult.Result
-		apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, &localOldInsightResult)
-		if apiRes.FirstOldResultDate == nil || apiRes.FirstOldResultDate.After(time.UnixMilli(oldInsightResult.ExecutedAt)) {
-			apiRes.FirstOldResultDate = utils.GetPointer(time.UnixMilli(oldInsightResult.ExecutedAt))
-		}
-	}
-	if apiRes.FirstOldResultDate != nil && apiRes.FirstOldResultDate.After(startTime) {
-		apiRes.OldTotalResultValue = nil
-	}
-
 	return ctx.JSON(200, apiRes)
+}
+
+func (h *HttpHandler) getInsightTrendApiRes(ctx echo.Context, insightRow *db.Insight, connectionIDs []string, startTime, endTime *time.Time, datapointCount *int) ([]api.InsightTrendDatapoint, error) {
+	timeAtToInsightResults, err := h.inventoryClient.GetInsightTrendResults(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]api.InsightTrendDatapoint, 0, len(timeAtToInsightResults))
+	for timeAt, insightResults := range timeAtToInsightResults {
+		datapoint := api.InsightTrendDatapoint{
+			Timestamp: timeAt,
+			Value:     0,
+		}
+		for _, insightResult := range insightResults {
+			datapoint.Value += int(insightResult.Result)
+		}
+		result = append(result, datapoint)
+	}
+
+	if datapointCount != nil {
+		result = internal.DownSampleInsightTrendDatapoints(result, *datapointCount)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Timestamp < result[j].Timestamp
+	})
+
+	return result, nil
 }
 
 // GetInsightTrend godoc
@@ -1664,8 +1703,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 //	@Success		200				{object}	[]api.InsightTrendDatapoint
 //	@Router			/compliance/api/v1/insight/{insightId}/trend [get]
 func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
-	insightIdStr := ctx.Param("insightId")
-	insightId, err := strconv.ParseUint(insightIdStr, 10, 64)
+	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
 	}
@@ -1715,30 +1753,10 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	))
 	span1.End()
 
-	timeAtToInsightResults, err := h.inventoryClient.GetInsightTrendResults(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, startTime, endTime)
+	result, err := h.getInsightTrendApiRes(ctx, insightRow, connectionIDs, startTime, endTime, datapointCount)
 	if err != nil {
 		return err
 	}
-
-	result := make([]api.InsightTrendDatapoint, 0, len(timeAtToInsightResults))
-	for timeAt, insightResults := range timeAtToInsightResults {
-		datapoint := api.InsightTrendDatapoint{
-			Timestamp: timeAt,
-			Value:     0,
-		}
-		for _, insightResult := range insightResults {
-			datapoint.Value += int(insightResult.Result)
-		}
-		result = append(result, datapoint)
-	}
-
-	if datapointCount != nil {
-		result = internal.DownSampleInsightTrendDatapoints(result, *datapointCount)
-	}
-
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Timestamp < result[j].Timestamp
-	})
 
 	return ctx.JSON(200, result)
 }
@@ -1867,6 +1885,178 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 		}
 		result = append(result, apiRes)
 	}
+
+	return ctx.JSON(200, result)
+}
+
+// GetInsightGroup godoc
+//
+//	@Summary		Get insight group
+//	@Description	Retrieving the specified insight group with ID.
+//	@Description	Returns "all:provider" job results if connectionId is not defined.
+//	@Security		BearerToken
+//	@Tags			insights
+//	@Produce		json
+//	@Param			insightGroupId	path		string		true	"Insight Group ID"
+//	@Param			connectionId	query		[]string	false	"filter the result by source id"
+//	@param			connectionGroup	query		[]string	false	"filter the result by connection group"
+//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
+//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
+//	@Success		200				{object}	api.InsightGroup
+//	@Router			/compliance/api/v1/insight/group/{insightGroupId} [get]
+func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
+	insightGroupId, err := strconv.ParseUint(ctx.Param("insightGroupId"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
+	endTime := time.Now()
+	if ctx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		endTime = time.Unix(t, 0)
+	}
+	startTime := endTime.Add(-1 * 7 * 24 * time.Hour)
+	if ctx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		startTime = time.Unix(t, 0)
+	}
+
+	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListInsightGroups", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_ListInsightGroups")
+
+	insightGroupRow, err := h.db.GetInsightGroup(uint(insightGroupId))
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	span1.End()
+
+	apiRes := insightGroupRow.ToApi()
+
+	for _, insightRow := range insightGroupRow.Insights {
+		localInsightRow := insightRow
+		insightApiRes, err := h.getInsightApiRes(ctx, &localInsightRow, connectionIDs, startTime, endTime)
+		if err != nil {
+			h.logger.Error("failed to get insight api res", zap.Error(err),
+				zap.Uint("insight id", insightRow.ID), zap.Uint("insight group id", uint(insightGroupId)))
+			return err
+		}
+		apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, insightApiRes.TotalResultValue)
+		apiRes.OldTotalResultValue = utils.PAdd(apiRes.OldTotalResultValue, insightApiRes.OldTotalResultValue)
+		if apiRes.FirstOldResultDate == nil ||
+			insightApiRes.FirstOldResultDate != nil && apiRes.FirstOldResultDate.After(*insightApiRes.FirstOldResultDate) {
+			apiRes.FirstOldResultDate = insightApiRes.FirstOldResultDate
+		}
+		apiRes.Insights = append(apiRes.Insights, *insightApiRes)
+	}
+	if apiRes.FirstOldResultDate != nil && apiRes.FirstOldResultDate.After(startTime) {
+		apiRes.OldTotalResultValue = nil
+	}
+
+	return ctx.JSON(200, apiRes)
+}
+
+// GetInsightGroupTrend godoc
+//
+//	@Summary		Get insight group trend
+//	@Description	Retrieving insight group results datapoints for a specified connection during a specified time period.
+//	@Description	Returns "all:provider" job results if connectionId is not defined.
+//	@Security		BearerToken
+//	@Tags			insights
+//	@Produce		json
+//	@Param			insightGroupId	path		string		true	"Insight Group ID"
+//	@Param			connectionId	query		[]string	false	"filter the result by source id"
+//	@param			connectionGroup	query		[]string	false	"filter the result by connection group"
+//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
+//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
+//	@Param			datapointCount	query		int			false	"number of datapoints to return"
+//	@Success		200				{object}	[]api.InsightTrendDatapoint
+//	@Router			/compliance/api/v1/insight/group/{insightGroupId}/trend [get]
+func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
+	insightGroupId, err := strconv.ParseUint(ctx.Param("insightGroupId"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid id")
+	}
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
+	var startTime *time.Time
+	if ctx.QueryParam("startTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		tt := time.Unix(t, 0)
+		startTime = &tt
+	}
+	var endTime *time.Time
+	if ctx.QueryParam("endTime") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid time")
+		}
+		tt := time.Unix(t, 0)
+		endTime = &tt
+	}
+	var datapointCount *int
+	if ctx.QueryParam("datapointCount") != "" {
+		t, err := strconv.ParseInt(ctx.QueryParam("datapointCount"), 10, 64)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid datapointCount")
+		}
+		tt := int(t)
+		datapointCount = &tt
+	}
+
+	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListInsightGroups", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_ListInsightGroups")
+
+	insightGroupRow, err := h.db.GetInsightGroup(uint(insightGroupId))
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	span1.End()
+
+	dateToResultMap := make(map[int]api.InsightTrendDatapoint)
+
+	for _, insightRow := range insightGroupRow.Insights {
+		localInsightRow := insightRow
+		insightTrendApiRes, err := h.getInsightTrendApiRes(ctx, &localInsightRow, connectionIDs, startTime, endTime, datapointCount)
+		if err != nil {
+			h.logger.Error("failed to get insight trend api res", zap.Error(err),
+				zap.Uint("insight id", insightRow.ID), zap.Uint("insight group id", uint(insightGroupId)))
+			return err
+		}
+		for _, insightTrendDatapoint := range insightTrendApiRes {
+			if v, ok := dateToResultMap[insightTrendDatapoint.Timestamp]; !ok {
+				dateToResultMap[insightTrendDatapoint.Timestamp] = insightTrendDatapoint
+			} else {
+				v.Value += insightTrendDatapoint.Value
+				dateToResultMap[insightTrendDatapoint.Timestamp] = v
+			}
+		}
+	}
+
+	result := make([]api.InsightTrendDatapoint, 0, len(dateToResultMap))
+	for _, insightTrendDatapoint := range dateToResultMap {
+		result = append(result, insightTrendDatapoint)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Timestamp < result[j].Timestamp
+	})
 
 	return ctx.JSON(200, result)
 }

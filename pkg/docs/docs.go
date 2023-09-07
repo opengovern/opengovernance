@@ -1131,6 +1131,147 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/insight/group/{insightGroupId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving the specified insight group with ID.\nReturns \"all:provider\" job results if connectionId is not defined.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "Get insight group",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Insight Group ID",
+                        "name": "insightGroupId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "filter the result by source id",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "filter the result by connection group",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the start time of the trend",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the end time of the trend",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/insight/group/{insightGroupId}/trend": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving insight group results datapoints for a specified connection during a specified time period.\nReturns \"all:provider\" job results if connectionId is not defined.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "Get insight group trend",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Insight Group ID",
+                        "name": "insightGroupId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "filter the result by source id",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "filter the result by connection group",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the start time of the trend",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the end time of the trend",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of datapoints to return",
+                        "name": "datapointCount",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/insight/{insightId}": {
             "get": {
                 "security": [
@@ -1588,7 +1729,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -1681,7 +1826,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -1852,7 +2001,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -1931,7 +2084,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -2038,7 +2195,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -2221,7 +2382,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -2369,7 +2534,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -2494,7 +2663,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -2561,7 +2734,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -7708,6 +7885,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {
