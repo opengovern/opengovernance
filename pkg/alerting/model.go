@@ -3,18 +3,18 @@ package alerting
 import "encoding/json"
 
 type Rule struct {
-	ID        uint            `json:"id"`
-	EventType json.RawMessage `json:"event_type"`
-	Scope     json.RawMessage `json:"scope"`
-	Operator  *string         `json:"operator"`
-	Value     *int64          `json:"value"`
-	ActionID  *uint           `json:"action_id"`
+	ID        uint
+	EventType json.RawMessage
+	Scope     json.RawMessage
+	Operator  string
+	Value     int64
+	ActionID  uint
 }
 
 type Action struct {
-	ID      uint            `json:"id"`
-	Method  *string         `json:"method"`
-	Url     *string         `json:"url"`
-	Headers json.RawMessage `json:"headers"`
-	Body    *string         `json:"body"`
+	ID      uint
+	Method  string
+	Url     string
+	Headers json.RawMessage
+	Body    string
 }
