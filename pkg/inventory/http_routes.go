@@ -1437,6 +1437,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 		if err != nil {
 			return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("invalid filter: %s", err.Error()))
 		}
+		h.logger.Warn(fmt.Sprintf("===Filtered Connections: %v", connectionIDs))
 	}
 
 	costMetricMap := make(map[string]inventoryApi.CostMetric)
@@ -2812,8 +2813,10 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 			if dimKey, ok := dimFilter["Key"]; ok {
 				if dimKey == "ConnectionID" {
 					connections = dimFilterFunction(dimFilter, allConnectionsStr)
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v all: %v, result: %v", dimFilter, allConnectionsStr, connections))
 				} else if dimKey == "Provider" {
 					providers := dimFilterFunction(dimFilter, []string{"AWS", "Azure"})
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v all: %v, result: %v", dimFilter, []string{"AWS", "Azure"}, providers))
 					for _, c := range allConnections {
 						if arrayContains(providers, c.Connector.String()) {
 							connections = append(connections, c.ConnectionID)
@@ -2834,6 +2837,8 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 						}
 					}
 					groups := dimFilterFunction(dimFilter, allGroupsStr)
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v all: %v, result: %v", dimFilter, allGroupsStr, groups))
+
 					for _, g := range groups {
 						for _, conn := range allGroupsMap[g] {
 							if !arrayContains(connections, conn) {
@@ -2846,6 +2851,8 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 					for _, c := range allConnections {
 						allConnectionsNames = append(allConnectionsNames, c.ConnectionName)
 						connectionNames := dimFilterFunction(dimFilter, allConnectionsNames)
+						h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v all: %v, result: %v", dimFilter, allConnectionsNames, connectionNames))
+
 						for _, conn := range allConnections {
 							if arrayContains(connectionNames, conn.ConnectionName) {
 								connections = append(connections, conn.ConnectionID)
