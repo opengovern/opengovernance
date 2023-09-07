@@ -2,7 +2,10 @@ package alerting
 
 import (
 	"context"
+	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 	"os"
 )
 
@@ -13,6 +16,8 @@ var (
 	PostgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
 	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
+
+	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
 
 func Command() *cobra.Command {
@@ -24,5 +29,17 @@ func Command() *cobra.Command {
 }
 
 func start(ctx context.Context) error {
-	return nil
+	logger, err := zap.NewProduction()
+	if err != nil {
+		return fmt.Errorf("new logger: %w", err)
+	}
+	handler, err := InitializeHttpHandler(
+		PostgreSQLHost, PostgreSQLPort, PostgreSQLDb, PostgreSQLUser, PostgreSQLPassword, PostgreSQLSSLMode,
+		logger,
+	)
+	if err != nil {
+		return fmt.Errorf("init http handler: %w", err)
+	}
+
+	return httpserver.RegisterAndStart(logger, HttpAddress, handler)
 }

@@ -3,6 +3,7 @@ package summarizer
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/alerting"
 	"strings"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -37,6 +38,7 @@ type Worker struct {
 	logger           *zap.Logger
 	es               kaytu.Client
 	db               inventory.Database
+	dbAlerting       alerting.Database
 	complianceClient client.ComplianceServiceClient
 	pusher           *push.Pusher
 }
@@ -151,6 +153,7 @@ func InitializeWorker(
 	}
 
 	w.db = inventory.NewDatabase(orm)
+	w.dbAlerting = alerting.NewDatabase(orm)
 	fmt.Println("Connected to the postgres database: ", postgresDb)
 
 	return w, nil
