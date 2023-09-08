@@ -2811,7 +2811,7 @@ func (h *HttpHandler) connectionsFilter(ctx echo.Context, filter map[string]inte
 	}
 	var allConnectionsStr []string
 	for _, c := range allConnections {
-		allConnectionsStr = append(allConnectionsStr, c.SourceId)
+		allConnectionsStr = append(allConnectionsStr, c.ID.String())
 	}
 	for key, value := range filter {
 		if key == "Dimensions" {

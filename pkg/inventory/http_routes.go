@@ -2811,7 +2811,7 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 	}
 	var allConnectionsStr []string
 	for _, c := range allConnections {
-		allConnectionsStr = append(allConnectionsStr, c.ConnectionID)
+		allConnectionsStr = append(allConnectionsStr, c.ID.String())
 	}
 	for key, value := range filter {
 		if key == "Dimensions" {
