@@ -1942,7 +1942,7 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 	span1.End()
 
 	apiRes := insightGroupRow.ToApi()
-
+	apiRes.Insights = make([]api.Insight, 0, len(insightGroupRow.Insights))
 	for _, insightRow := range insightGroupRow.Insights {
 		localInsightRow := insightRow
 		insightApiRes, err := h.getInsightApiRes(ctx, &localInsightRow, connectionIDs, startTime, endTime)
@@ -2031,10 +2031,8 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 	span1.End()
 
 	dateToResultMap := make(map[int]api.InsightTrendDatapoint)
-	h.logger.Info("insight group", zap.Any("insightGroupRow", insightGroupRow))
 	for _, insightRow := range insightGroupRow.Insights {
 		localInsightRow := insightRow
-		h.logger.Info("processing insight", zap.Any("insightRow", insightRow))
 		insightTrendApiRes, err := h.getInsightTrendApiRes(ctx, &localInsightRow, connectionIDs, startTime, endTime, datapointCount)
 		if err != nil {
 			h.logger.Error("failed to get insight trend api res", zap.Error(err),
