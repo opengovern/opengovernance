@@ -9,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"math"
 	"strconv"
 	"time"
