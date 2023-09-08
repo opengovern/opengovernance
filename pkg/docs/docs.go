@@ -2192,8 +2192,8 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Metrics IDs",
-                        "name": "metricIds",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -2202,8 +2202,8 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection group to filter by - mutually exclusive with connectionId",
-                        "name": "connectionGroup",
+                        "description": "Metrics IDs",
+                        "name": "metricIds",
                         "in": "query"
                     },
                     {
@@ -2311,6 +2311,16 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Metrics IDs",
                         "name": "metricIds",
                         "in": "query"
@@ -2379,8 +2389,8 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Metrics IDs",
-                        "name": "metricIds",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -2389,8 +2399,8 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection group to filter by - mutually exclusive with connectionId",
-                        "name": "connectionGroup",
+                        "description": "Metrics IDs",
+                        "name": "metricIds",
                         "in": "query"
                     },
                     {
@@ -7893,6 +7903,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {
