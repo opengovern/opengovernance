@@ -2412,7 +2412,22 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	span.SetName("new_FilterConnectionGroups")
 
 	var connections []Source
-	if len(connectionGroups) > 0 && filterStr == "" {
+	if filterStr != "" && len(connectionIDs) == 0 {
+		result := api.ListConnectionSummaryResponse{
+			ConnectionCount:       len(connections),
+			TotalCost:             0,
+			TotalResourceCount:    0,
+			TotalOldResourceCount: 0,
+			TotalUnhealthyCount:   0,
+
+			TotalDisabledCount:   0,
+			TotalDiscoveredCount: 0,
+			TotalOnboardedCount:  0,
+			TotalArchivedCount:   0,
+			Connections:          make([]api.Connection, 0, len(connections)),
+		}
+		return ctx.JSON(http.StatusOK, result)
+	} else if len(connectionGroups) > 0 && filterStr == "" {
 		var validConnections []string
 		for _, group := range connectionGroups {
 			connectionGroup, err := h.db.GetConnectionGroupByName(group)

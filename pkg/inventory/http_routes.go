@@ -1450,7 +1450,13 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 	}
 
 	costMetricMap := make(map[string]inventoryApi.CostMetric)
-	if len(connectionIDs) > 0 {
+	if filterStr != "" && len(connectionIDs) == 0 {
+		return ctx.JSON(http.StatusOK, inventoryApi.ListCostMetricsResponse{
+			TotalCount: 0,
+			TotalCost:  0,
+			Metrics:    []inventoryApi.CostMetric{},
+		})
+	} else if len(connectionIDs) > 0 {
 		hits, err := es.FetchConnectionDailySpendHistoryByMetric(h.client, connectionIDs, connectorTypes, metricIds, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
