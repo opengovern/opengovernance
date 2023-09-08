@@ -2968,12 +2968,6 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]
 					}
 				}
 			}
-		case strings.Contains(matchOption.(string), "ABSENT"):
-			for _, conn := range allValues {
-				if !arrayContains(values, conn) {
-					output = append(output, conn)
-				}
-			}
 		default:
 			return nil, fmt.Errorf("invalid option")
 		}
