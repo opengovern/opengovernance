@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
@@ -617,7 +616,7 @@ type FetchConnectionAnalyticsResourcesCountAtTimeReturnValue struct {
 	LatestEvaluatedAt int64
 }
 
-func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connectors []source.Type, connectionIDs []string, t time.Time, size int) (map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue, error) {
+func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connectors []source.Type, connectionIDs []string, metricIDs []string, t time.Time, size int) (map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue, error) {
 	res := make(map[string]any)
 	var filters []any
 	filters = append(filters, map[string]any{
@@ -628,6 +627,12 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 			},
 		},
 	})
+
+	if len(metricIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"metric_id": metricIDs},
+		})
+	}
 
 	if len(connectors) > 0 {
 		connectorsStr := make([]string, 0, len(connectors))

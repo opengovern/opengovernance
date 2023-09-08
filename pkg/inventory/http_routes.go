@@ -2223,6 +2223,7 @@ func (h *HttpHandler) GetResourceTypeMetric(ctx context.Context, resourceTypeStr
 }
 
 func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
 	performanceStartTime := time.Now()
 	var err error
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
@@ -2262,7 +2263,16 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	fmt.Println("ListConnectionsData part1 ", time.Now().Sub(performanceStartTime).Milliseconds())
 	res := map[string]inventoryApi.ConnectionData{}
 	if needResourceCount {
-		resourceCountsMap, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, endTime, EsFetchPageSize)
+		metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets, nil, connectors, false)
+		if err != nil {
+			return err
+		}
+		var metricIDs []string
+		for _, m := range metrics {
+			metricIDs = append(metricIDs, m.ID)
+		}
+
+		resourceCountsMap, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, metricIDs, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -2281,7 +2291,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			res[connectionId] = v
 		}
 		fmt.Println("ListConnectionsData part2 ", time.Now().Sub(performanceStartTime).Milliseconds())
-		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, startTime, EsFetchPageSize)
+		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, metricIDs, startTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -2334,6 +2344,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
 	connectionId := ctx.Param("connectionId")
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
@@ -2358,7 +2369,16 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 		ConnectionID: connectionId,
 	}
 
-	resourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, []string{connectionId}, endTime, EsFetchPageSize)
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets, nil, nil, false)
+	if err != nil {
+		return err
+	}
+	var metricIDs []string
+	for _, m := range metrics {
+		metricIDs = append(metricIDs, m.ID)
+	}
+
+	resourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, []string{connectionId}, metricIDs, endTime, EsFetchPageSize)
 	for esConnectionId, resourceCountAndEvaluated := range resourceCounts {
 		if esConnectionId != connectionId {
 			continue
@@ -2370,7 +2390,7 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 		}
 	}
 
-	oldResourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, []string{connectionId}, startTime, EsFetchPageSize)
+	oldResourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, []string{connectionId}, metricIDs, startTime, EsFetchPageSize)
 	for esConnectionId, resourceCountAndEvaluated := range oldResourceCounts {
 		if esConnectionId != connectionId {
 			continue
