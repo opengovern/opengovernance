@@ -436,8 +436,9 @@ func (db Database) GetInsightGroup(id uint) (*InsightGroup, error) {
 		insightMap[insight.ID] = insights[i]
 	}
 
-	for i, insight := range res.Insights {
-		res.Insights[i] = insightMap[insight.ID]
+	res.Insights = make([]Insight, 0, len(insightMap))
+	for _, insight := range insightMap {
+		res.Insights = append(res.Insights, insight)
 	}
 
 	return &res, nil

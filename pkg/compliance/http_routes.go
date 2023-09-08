@@ -1931,7 +1931,7 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 	}
 
 	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListInsightGroups", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_ListInsightGroups")
+	span1.SetName("new_GetInsightGroup")
 
 	insightGroupRow, err := h.db.GetInsightGroup(uint(insightGroupId))
 	if err != nil {
@@ -2020,7 +2020,7 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 	}
 
 	_, span1 := tracer.Start(ctx.Request().Context(), "new_ListInsightGroups", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_ListInsightGroups")
+	span1.SetName("new_GetInsightGroups")
 
 	insightGroupRow, err := h.db.GetInsightGroup(uint(insightGroupId))
 	if err != nil {
@@ -2031,9 +2031,10 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 	span1.End()
 
 	dateToResultMap := make(map[int]api.InsightTrendDatapoint)
-
+	h.logger.Info("insight group", zap.Any("insightGroupRow", insightGroupRow))
 	for _, insightRow := range insightGroupRow.Insights {
 		localInsightRow := insightRow
+		h.logger.Info("processing insight", zap.Any("insightRow", insightRow))
 		insightTrendApiRes, err := h.getInsightTrendApiRes(ctx, &localInsightRow, connectionIDs, startTime, endTime, datapointCount)
 		if err != nil {
 			h.logger.Error("failed to get insight trend api res", zap.Error(err),
