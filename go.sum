@@ -644,6 +644,8 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/cosmos/armcosmos/v2 v2.5.0
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/cosmos/armcosmos/v2 v2.5.0/go.mod h1:T0ryqIz5h5qg4HOBni+VeRn24alSqOx1Se1IAwUByOk=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/costmanagement/armcostmanagement v1.1.1 h1:ehSLdbLah6kk6HTVc6e/lrbmbz7MMbpNxkOd3OYlhB0=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/costmanagement/armcostmanagement v1.1.1/go.mod h1:Am1cUioOk0HdZIsjpXJkQ4RIeQbwYsW6LkNIc5z/5XY=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dashboard/armdashboard v1.1.1 h1:3KtlgO9iB2kLl10kIQT8e8V11L4d4sm/B4y0kScBZz8=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dashboard/armdashboard v1.1.1/go.mod h1:sld5X1UsK8vk5+Sgj1X0Go6/bx1FLZuZLIuXrfpuyLY=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/databoxedge/armdataboxedge v1.1.0 h1:nLp2oUQNdI/2AjMp0AmgkPcj/8SJ0gWSKj0o2qMKwMA=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/databoxedge/armdataboxedge v1.1.0/go.mod h1:kxzUJzkDVeeosIWUmqtmYlXwb6Wyx+53tGzSJ26Y+hg=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/databricks/armdatabricks v0.7.1 h1:90KaNwKY4bDNuFcF6nL2PON5iI2y8J1QgAd0LBrl1S4=
@@ -666,6 +668,8 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/devtestlabs/armdevtestlabs
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/devtestlabs/armdevtestlabs v1.1.1/go.mod h1:vmOnh2bxdq3uJX4FhEBvYzRiXa9HS2A5nq4z3yZ3gEI=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.1.0 h1:8iR6OLffWWorFdzL2JFCab5xpD8VKEE2DUBBl+HNTDY=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.1.0/go.mod h1:copqlcjMWc/wgQ1N2fzsJFQxDdqKGg1EQt8T5wJMOGE=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dnsresolver/armdnsresolver v1.1.0 h1:DYvwlCusaANLVQDmg+Srpk4MhKUhMWHxu26zyvwNjeI=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dnsresolver/armdnsresolver v1.1.0/go.mod h1:vSQllvBNZ09dc4x+73TSGd1Xq3yBdeEKum6fFEaHXU4=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/eventgrid/armeventgrid/v2 v2.1.1 h1:q8d6Cw16DrwJ+o82GMEQ+xt65q7w4m7VcI4C+gK/7Jk=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/eventgrid/armeventgrid/v2 v2.1.1/go.mod h1:ZHJdpjiGjZBBILAyAUTP93YSLF/Foo1J72HSx30gMeQ=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/eventhub/armeventhub v1.1.1 h1:gZ1ZZvrVUhDNsGNpbo2N87Y0CJB8p3IS5UH9Z4Ui97g=
@@ -770,6 +774,8 @@ github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/synapse/armsynapse v0.7.1 
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/synapse/armsynapse v0.7.1/go.mod h1:/qXm1V20g6thMJPjEP5fPJ0/Dj1UOAXzzGsLpNEWukg=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/timeseriesinsights/armtimeseriesinsights v1.1.0 h1:c547eMEBf4l2tUMcV1QLTQNK79nocuWtA1Gc2hzAjSU=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/timeseriesinsights/armtimeseriesinsights v1.1.0/go.mod h1:Ae4+zKkPmzlcgVwNIvAfbh9J2pgXqHBG9bdrHYkjr6o=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/trafficmanager/armtrafficmanager v1.2.0 h1:Vgqz25NjJ3AtN6JUdRXFzjMcgvCWcT4xd5+A7DXW7Eg=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/trafficmanager/armtrafficmanager v1.2.0/go.mod h1:k+1M+7xoDh1I7TrPdRUcAOWAenZVGORvt3LKdWfAhDE=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/virtualmachineimagebuilder/armvirtualmachineimagebuilder v1.2.1 h1:k8SYtWDR2WyrOI/WM9Uj0tzp0G9hfvBPyMKftv8dtQQ=
 github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/virtualmachineimagebuilder/armvirtualmachineimagebuilder v1.2.1/go.mod h1:Vvx5jcO9aa2+96TveIolZLBr1wvDKEBMn7U34Q+HGn4=
 github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0 h1:u/LLAOFgsMv7HmNL4Qufg58y+qElGOt5qv0z1mURkRY=
@@ -952,6 +958,7 @@ github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a/go.mod h1:DAHtR1m6l
 github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535/go.mod h1:oGkLhpf+kjZl6xBf758TQhh5XrAeiJv/7FRz/2spLIg=
+github.com/aws/aws-lambda-go v1.13.3 h1:SuCy7H3NLyp+1Mrfp+m80jcbi9KYWAs9/BXwppwRDzY=
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
 github.com/aws/aws-sdk-go v1.15.11/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
 github.com/aws/aws-sdk-go v1.25.37/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
@@ -1164,6 +1171,8 @@ github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.9 h1:gVv2vXOMqJeR4ZH
 github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.9/go.mod h1:EF5RLnD9l0xvEWwMRcktIS/dI6lF8lU5eV3B13k6sWo=
 github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.8 h1:x4I8/XPnHOV+1BzZfaqRb8QfrY6AK7bKmEbHVwyctXo=
 github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.8/go.mod h1:xfchFk5f70DzZZaH/QYaqMLF+PDH/fg7gGbkIeeaMJM=
+github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.35 h1:UKjpIDLVF90RfV88XurdduMoTxPqtGHZMIDYZQM7RO4=
+github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.35/go.mod h1:B3dUg0V6eJesUTi+m27NUkj7n8hdDKYUpxj8f4+TqaQ=
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.8/go.mod h1:rDVhIMAX9N2r8nWxDUlbubvvaFMnfsm+3jAV7q+rpM4=
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.17/go.mod h1:4nYOrY41Lrbk2170/BGkcJKBhws9Pfn8MG3aGqjjeFI=
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.19/go.mod h1:02CP6iuYP+IVnBX5HULVdSAku/85eHB2Y9EsFhrkEwU=
@@ -1208,6 +1217,8 @@ github.com/aws/aws-sdk-go-v2/service/oam v1.1.11 h1:dRgn7qpyEtXcP0prnPyaTUTiCQso
 github.com/aws/aws-sdk-go-v2/service/oam v1.1.11/go.mod h1:4y8cA064jS3qZpi0UJbWi7oYVK/2r+i19WzZKbVc984=
 github.com/aws/aws-sdk-go-v2/service/opensearch v1.10.12 h1:J3/Tngh2ByHOtyV/FS34tsS4HNi1xGVhXgpwB9ubz6Q=
 github.com/aws/aws-sdk-go-v2/service/opensearch v1.10.12/go.mod h1:7mh4ks7MsQUuhHFCr10LIF9gKVS+0yylPUmCEM/kzJE=
+github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.4.5 h1:LZ7Go1RITMeMdyBIHPVN5LPgKo2eN3uMEYhgvbb5bTs=
+github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.4.5/go.mod h1:q4vucelgv/GslFK1qpKfH+40n9K73M2a0OHyjgcGDB8=
 github.com/aws/aws-sdk-go-v2/service/opsworkscm v1.15.0 h1:/73YE6gJ8J/NN4eGuivf1ULo8voen9lTO8uCvyW0wpM=
 github.com/aws/aws-sdk-go-v2/service/opsworkscm v1.15.0/go.mod h1:hlMjhgmZFZZdmvgABZBDUrNU4QY5Kgf2e6qvzkWWl8w=
 github.com/aws/aws-sdk-go-v2/service/organizations v1.16.8 h1:ay2kKjWoadTWcvMBmvpnsrzQxf/Ic+yYDeyPK8HN3Dk=
@@ -1228,6 +1239,8 @@ github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.2.13 h1:fusEc+Eh71495
 github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.2.13/go.mod h1:iCGvQ7jpY2Ea3xyHnNmExEmRv3et3zbpt/byVhid7DU=
 github.com/aws/aws-sdk-go-v2/service/resourceexplorer2 v1.2.13 h1:9uj47asgRDlwNqZIlzDt5HjnD2wakHy4yUXSz3e9V0M=
 github.com/aws/aws-sdk-go-v2/service/resourceexplorer2 v1.2.13/go.mod h1:2nZFXAepd6OTyH90JTsgjdgq4K6+jVh/5nXtiEpjHtw=
+github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.15.5 h1:vGG3XHVsXq1QdSfrTlbTYqBzTQJJyeD8Ma4+VR2v1G4=
+github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.15.5/go.mod h1:APTOQHAgtU1059dM0zUcKxu0EVsYC+YdgCdQgvYoqIU=
 github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.14.11 h1:V0qTr5u2XiWYEhncMjQ2eoRzFXwgWTVAuIC1fAZ1I9E=
 github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.14.11/go.mod h1:i/CXT+v8caoM60a7brYlrVG64srBa1Op0Q5Nl6askyo=
 github.com/aws/aws-sdk-go-v2/service/route53 v1.24.0 h1:ncUXZRu4ns8DWTGQwpMNFZ/wgqBQUtrK8AtjwIYoLZI=
@@ -1286,6 +1299,8 @@ github.com/aws/aws-sdk-go-v2/service/support v1.11.0 h1:WzIExMMIGoNrd0U/4CWb543e
 github.com/aws/aws-sdk-go-v2/service/support v1.11.0/go.mod h1:2/Jc1DNqZGSgTg9VuFil5U+Fz6vjth/nndHugOsfrCE=
 github.com/aws/aws-sdk-go-v2/service/synthetics v1.9.1 h1:SZ1SrpWzzMEfTP84X/zm9ZdB9nJIPaewVaXl0LRJ78Y=
 github.com/aws/aws-sdk-go-v2/service/synthetics v1.9.1/go.mod h1:RbISV34MpeaX5BOEVhlNiX5dJ0yFSwPl2WeNqNQ48aE=
+github.com/aws/aws-sdk-go-v2/service/timestreamwrite v1.18.5 h1:2ylxixpuRhccaZK4K73l6niof0ccMrfoDXGtDhQ8LZ0=
+github.com/aws/aws-sdk-go-v2/service/timestreamwrite v1.18.5/go.mod h1:buYLLyS+R/JuRlr6XPTzaVO09EFw4B4S+l1kto3EvXY=
 github.com/aws/aws-sdk-go-v2/service/waf v1.11.19 h1:ZvJJZauRxvRoliuin5NG8LGZBs3EQXcntjkPx8h7mi0=
 github.com/aws/aws-sdk-go-v2/service/waf v1.11.19/go.mod h1:Njlk6JmJxtDIX12y9lsV3nVRrE3J3Jo8rzGSlF2dc74=
 github.com/aws/aws-sdk-go-v2/service/wafregional v1.12.18 h1:E/tfURfCZL7/GhMOkz7Q1ZmILwXi28C1Ym0OCL6/h3c=
@@ -1916,6 +1931,8 @@ github.com/golang-jwt/jwt/v4 v4.0.0/go.mod h1:/xlHOz8bRuivTWchD4jCa+NbatV+wEUSzw
 github.com/golang-jwt/jwt/v4 v4.2.0/go.mod h1:/xlHOz8bRuivTWchD4jCa+NbatV+wEUSzwAxVc6locg=
 github.com/golang-jwt/jwt/v4 v4.5.0 h1:7cYmW1XlMY7h7ii7UhUyChSgS5wUJEnm9uZVTGqOWzg=
 github.com/golang-jwt/jwt/v4 v4.5.0/go.mod h1:m21LjoU+eqJr34lmDMbreY2eSTRJ1cv77w39/MY0Ch0=
+github.com/golang-jwt/jwt/v5 v5.0.0 h1:1n1XNM9hk7O9mnQoNBGolZvzebBQ7p93ULHRc28XJUE=
+github.com/golang-jwt/jwt/v5 v5.0.0/go.mod h1:pqrtFR0X4osieyHYxtmOUWsAWrfe1Q5UVIyoH402zdk=
 github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe/go.mod h1:8vg3r2VgvsThLBIFL93Qb5yWzgyZWhEmBwUJWevAkK0=
 github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 h1:au07oEsX2xN0ktxqI+Sida1w446QrXBRJ0nee3SNZlA=
 github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9/go.mod h1:8vg3r2VgvsThLBIFL93Qb5yWzgyZWhEmBwUJWevAkK0=
@@ -2314,8 +2331,12 @@ github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/kaytu-io/kaytu-aws-describer v0.3.17 h1:wxRqeYOoEF1edih4OxSjv+h3YBJGJPsOQV9Saumq67I=
 github.com/kaytu-io/kaytu-aws-describer v0.3.17/go.mod h1:telnzFL6Ogezae4zfGKd7Tp8XNTbsS75j75t3rzEnhQ=
+github.com/kaytu-io/kaytu-aws-describer v0.5.0 h1:989reA8pKvV+S3d11iJZBofaFZszd1hf8fQdG3ttusI=
+github.com/kaytu-io/kaytu-aws-describer v0.5.0/go.mod h1:158M48TdM2BX65sSnba4QOxQ+EZMTqyGA4nipafmckU=
 github.com/kaytu-io/kaytu-azure-describer v0.3.18 h1:DD4i67QZMhlLl79qrFndcFBU4ju2QsX+G93quhyIXfM=
 github.com/kaytu-io/kaytu-azure-describer v0.3.18/go.mod h1:qo1ynLCJ3LP6+p6jIJOGoLXVGErnUSjkiV4JovVbwJo=
+github.com/kaytu-io/kaytu-azure-describer v0.4.0 h1:k2faYBjplWFUN+Cb+7dO9Da3eq0O1M+0lzePBPZhyYI=
+github.com/kaytu-io/kaytu-azure-describer v0.4.0/go.mod h1:7abs1ZhVMaqiRqaf5IoDv/UnRgX9mK32KQvEAbWyRuI=
 github.com/kaytu-io/kaytu-util v0.0.0-20230907134645-2e927b7c158e h1:5SycGRRs6mbPl7BUy797d3zTTjRHRdirVLm0+DxiGGM=
 github.com/kaytu-io/kaytu-util v0.0.0-20230907134645-2e927b7c158e/go.mod h1:9duNFl4GA1SPk4+Wmfkrk585DyFPPec4NBYyrmBA6GU=
 github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1 h1:tKxk2n0ZuXgt1QBZe8tb+ztYQitO1Z8glexWz08e2ow=

@@ -32,8 +32,8 @@ require (
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
-	github.com/kaytu-io/kaytu-aws-describer v0.3.17
-	github.com/kaytu-io/kaytu-azure-describer v0.3.18
+	github.com/kaytu-io/kaytu-aws-describer v0.5.0
+	github.com/kaytu-io/kaytu-azure-describer v0.4.0
 	github.com/kaytu-io/kaytu-util v0.0.0-20230907134645-2e927b7c158e
 	github.com/kaytu-io/terraform-package v0.0.0-20230520063842-ebccc514e5a1
 	github.com/labstack/echo/v4 v4.11.1
@@ -99,6 +99,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice v1.0.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/cosmos/armcosmos/v2 v2.5.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/costmanagement/armcostmanagement v1.1.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dashboard/armdashboard v1.1.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/databoxedge/armdataboxedge v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/databricks/armdatabricks v0.7.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/datafactory/armdatafactory/v2 v2.0.0 // indirect
@@ -110,6 +111,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/deviceprovisioningservices/armdeviceprovisioningservices v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/devtestlabs/armdevtestlabs v1.1.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.1.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dnsresolver/armdnsresolver v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/eventgrid/armeventgrid/v2 v2.1.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/eventhub/armeventhub v1.1.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/frontdoor/armfrontdoor v1.2.0 // indirect
@@ -159,6 +161,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/streamanalytics/armstreamanalytics v1.1.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/synapse/armsynapse v0.7.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/timeseriesinsights/armtimeseriesinsights v1.1.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/trafficmanager/armtrafficmanager v1.2.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/virtualmachineimagebuilder/armvirtualmachineimagebuilder v1.2.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0 // indirect
 	github.com/Azure/azure-storage-blob-go v0.14.0 // indirect
@@ -186,6 +189,7 @@ require (
 	github.com/apparentlymart/go-cidr v1.1.0 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
+	github.com/aws/aws-lambda-go v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.13 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.25 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.3 // indirect
@@ -262,7 +266,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/inspector2 v1.16.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.9 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.8 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.35 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.27 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.8 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kafka v1.18.0 // indirect
@@ -283,6 +287,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/networkfirewall v1.20.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/oam v1.1.11 // indirect
 	github.com/aws/aws-sdk-go-v2/service/opensearch v1.10.12 // indirect
+	github.com/aws/aws-sdk-go-v2/service/opensearchserverless v1.4.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/opsworkscm v1.15.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/pinpoint v1.19.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/pipes v1.2.6 // indirect
@@ -292,6 +297,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/redshift v1.26.10 // indirect
 	github.com/aws/aws-sdk-go-v2/service/redshiftserverless v1.2.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/resourceexplorer2 v1.2.13 // indirect
+	github.com/aws/aws-sdk-go-v2/service/resourcegroups v1.15.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi v1.14.11 // indirect
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.24.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/route53domains v1.14.10 // indirect
@@ -319,6 +325,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/storagegateway v1.18.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/support v1.11.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/synthetics v1.9.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/timestreamwrite v1.18.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/waf v1.11.19 // indirect
 	github.com/aws/aws-sdk-go-v2/service/wafregional v1.12.18 // indirect
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.22.9 // indirect
@@ -375,6 +382,7 @@ require (
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
+	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang/glog v1.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
