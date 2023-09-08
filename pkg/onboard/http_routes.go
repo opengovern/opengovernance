@@ -2818,10 +2818,16 @@ func (h *HttpHandler) connectionsFilter(ctx echo.Context, filter map[string]inte
 			dimFilter := value.(map[string]interface{})
 			if dimKey, ok := dimFilter["Key"]; ok {
 				if dimKey == "ConnectionID" {
-					connections = dimFilterFunction(dimFilter, allConnectionsStr)
+					connections, err = dimFilterFunction(dimFilter, allConnectionsStr)
+					if err != nil {
+						return nil, err
+					}
 					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, connections))
 				} else if dimKey == "Provider" {
-					providers := dimFilterFunction(dimFilter, []string{"AWS", "Azure"})
+					providers, err := dimFilterFunction(dimFilter, []string{"AWS", "Azure"})
+					if err != nil {
+						return nil, err
+					}
 					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, providers))
 					for _, c := range allConnections {
 						if arrayContains(providers, c.Connector.Name.String()) {
@@ -2846,7 +2852,10 @@ func (h *HttpHandler) connectionsFilter(ctx echo.Context, filter map[string]inte
 							allGroupsStr = append(allGroupsStr, cid)
 						}
 					}
-					groups := dimFilterFunction(dimFilter, allGroupsStr)
+					groups, err := dimFilterFunction(dimFilter, allGroupsStr)
+					if err != nil {
+						return nil, err
+					}
 					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, groups))
 					for _, g := range groups {
 						for _, conn := range allGroupsMap[g] {
@@ -2860,7 +2869,10 @@ func (h *HttpHandler) connectionsFilter(ctx echo.Context, filter map[string]inte
 					for _, c := range allConnections {
 						allConnectionsNames = append(allConnectionsNames, c.Name)
 					}
-					connectionNames := dimFilterFunction(dimFilter, allConnectionsNames)
+					connectionNames, err := dimFilterFunction(dimFilter, allConnectionsNames)
+					if err != nil {
+						return nil, err
+					}
 					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, connectionNames))
 					for _, conn := range allConnections {
 						if arrayContains(connectionNames, conn.Name) {
@@ -2918,17 +2930,17 @@ func (h *HttpHandler) connectionsFilter(ctx echo.Context, filter map[string]inte
 	return connections, nil
 }
 
-func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) []string {
+func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]string, error) {
 	var values []string
 	for _, v := range dimFilter["Values"].([]interface{}) {
 		values = append(values, fmt.Sprintf("%v", v))
 	}
 	var output []string
 	if matchOption, ok := dimFilter["MatchOption"]; ok {
-		switch matchOption {
-		case "EQUAL":
+		switch {
+		case strings.Contains(matchOption.(string), "EQUAL"):
 			output = values
-		case "STARTS_WITH":
+		case strings.Contains(matchOption.(string), "STARTS_WITH"):
 			for _, v := range values {
 				for _, conn := range allValues {
 					if strings.HasPrefix(conn, v) {
@@ -2938,7 +2950,7 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) []s
 					}
 				}
 			}
-		case "ENDS_WITH":
+		case strings.Contains(matchOption.(string), "ENDS_WITH"):
 			for _, v := range values {
 				for _, conn := range allValues {
 					if strings.HasSuffix(conn, v) {
@@ -2948,7 +2960,7 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) []s
 					}
 				}
 			}
-		case "CONTAINS":
+		case strings.Contains(matchOption.(string), "CONTAINS"):
 			for _, v := range values {
 				for _, conn := range allValues {
 					if strings.Contains(conn, v) {
@@ -2958,17 +2970,28 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) []s
 					}
 				}
 			}
-		case "ABSENT":
+		case strings.Contains(matchOption.(string), "ABSENT"):
 			for _, conn := range allValues {
 				if !arrayContains(values, conn) {
 					output = append(output, conn)
 				}
 			}
+		default:
+			return nil, fmt.Errorf("invalid option")
+		}
+		if strings.HasPrefix(matchOption.(string), "~") {
+			var notOutput []string
+			for _, v := range allValues {
+				if !arrayContains(output, v) {
+					notOutput = append(notOutput, v)
+				}
+			}
+			return notOutput, nil
 		}
 	} else {
 		output = values
 	}
-	return output
+	return output, nil
 }
 
 func arrayContains(array []string, key string) bool {
