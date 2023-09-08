@@ -39,6 +39,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 // ListRules godoc
 //
 //	@Summary		List rules
+//	@Description	returns list of all rules
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Produce		json
@@ -68,6 +69,7 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 // CreateRule godoc
 //
 //	@Summary		Create rule
+//	@Description	create a rule by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Param			request		body		api.RequestRule			true	"Request Body"
@@ -102,6 +104,7 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 // DeleteRule godoc
 //
 //	@Summary		Delete rule
+//	@Description	Deleting a single rule for the given rule id
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Param			ruleID		path		string			true	"Rule ID"
@@ -127,6 +130,7 @@ func (h *HttpHandler) DeleteRule(ctx echo.Context) error {
 // UpdateRule godoc
 //
 //	@Summary		Update rule
+//	@Description	Retrieving a rule by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Param			request		body		api.RequestRule			true	"Request Body"
@@ -160,6 +164,7 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 // ListActions godoc
 //
 //	@Summary		List actions
+//	@Description	returns list of all actions
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Produce		json
@@ -188,6 +193,7 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 // CreateAction godoc
 //
 //	@Summary		Create action
+//	@Description	create an action by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Param			request		body	api.RequestAction		true	"Request Body"
@@ -223,6 +229,7 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 // DeleteAction godoc
 //
 //	@Summary		Delete action
+//	@Description	Deleting a single action for the given action id
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Param			actionID		path	string		true	"ActionID"
@@ -249,6 +256,7 @@ func (h *HttpHandler) DeleteAction(ctx echo.Context) error {
 // UpdateAction godoc
 //
 //	@Summary		Update action
+//	@Description	Retrieving an action by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Param			request		body	api.RequestAction		true	"Request Body"
