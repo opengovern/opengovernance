@@ -2348,7 +2348,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		endTime = time.Unix(endTimeUnix, 0)
 	}
 	startTimeStr := ctx.QueryParam("startTime")
-	startTime := endTime.AddDate(0, 0, -7)
+	startTime := endTime.AddDate(0, -1, 0)
 	if startTimeStr != "" {
 		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
 		if err != nil {
