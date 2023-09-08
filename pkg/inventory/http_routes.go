@@ -2865,15 +2865,15 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 					var allConnectionsNames []string
 					for _, c := range allConnections {
 						allConnectionsNames = append(allConnectionsNames, c.ConnectionName)
-						connectionNames := dimFilterFunction(dimFilter, allConnectionsNames)
-						h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, connectionNames))
-
-						for _, conn := range allConnections {
-							if arrayContains(connectionNames, conn.ConnectionName) {
-								connections = append(connections, conn.ID.String())
-							}
+					}
+					connectionNames := dimFilterFunction(dimFilter, allConnectionsNames)
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, connectionNames))
+					for _, conn := range allConnections {
+						if arrayContains(connectionNames, conn.ConnectionName) {
+							connections = append(connections, conn.ID.String())
 						}
 					}
+
 				}
 			} else {
 				return nil, fmt.Errorf("missing key")

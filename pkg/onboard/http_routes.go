@@ -2859,12 +2859,12 @@ func (h *HttpHandler) connectionsFilter(ctx echo.Context, filter map[string]inte
 					var allConnectionsNames []string
 					for _, c := range allConnections {
 						allConnectionsNames = append(allConnectionsNames, c.Name)
-						connectionNames := dimFilterFunction(dimFilter, allConnectionsNames)
-						h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, connectionNames))
-						for _, conn := range allConnections {
-							if arrayContains(connectionNames, conn.Name) {
-								connections = append(connections, conn.ID.String())
-							}
+					}
+					connectionNames := dimFilterFunction(dimFilter, allConnectionsNames)
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, connectionNames))
+					for _, conn := range allConnections {
+						if arrayContains(connectionNames, conn.Name) {
+							connections = append(connections, conn.ID.String())
 						}
 					}
 				}
