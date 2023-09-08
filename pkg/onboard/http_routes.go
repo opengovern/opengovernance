@@ -2814,7 +2814,7 @@ func (h *HttpHandler) connectionsFilter(ctx echo.Context, filter map[string]inte
 		allConnectionsStr = append(allConnectionsStr, c.ID.String())
 	}
 	for key, value := range filter {
-		if key == "Dimensions" {
+		if key == "Match" {
 			dimFilter := value.(map[string]interface{})
 			if dimKey, ok := dimFilter["Key"]; ok {
 				if dimKey == "ConnectionID" {
