@@ -2859,12 +2859,7 @@ func (h *HttpHandler) connectionsFilter(ctx echo.Context, filter map[string]inte
 		} else if key == "AND" {
 			var andFilters []map[string]interface{}
 			for _, v := range value.([]interface{}) {
-				var andFilter map[string]interface{}
-				andFiltersStr := fmt.Sprintf("%v", v)
-				err = json.Unmarshal([]byte(andFiltersStr), &andFilter)
-				if err != nil {
-					return nil, err
-				}
+				andFilter := v.(map[string]interface{})
 				andFilters = append(andFilters, andFilter)
 			}
 			counter := make(map[string]int)
@@ -2887,12 +2882,7 @@ func (h *HttpHandler) connectionsFilter(ctx echo.Context, filter map[string]inte
 		} else if key == "OR" {
 			var orFilters []map[string]interface{}
 			for _, v := range value.([]interface{}) {
-				var orFilter map[string]interface{}
-				orFiltersStr := fmt.Sprintf("%v", v)
-				err = json.Unmarshal([]byte(orFiltersStr), &orFilter)
-				if err != nil {
-					return nil, err
-				}
+				orFilter := v.(map[string]interface{})
 				orFilters = append(orFilters, orFilter)
 			}
 			for _, f := range orFilters {
