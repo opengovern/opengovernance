@@ -482,9 +482,7 @@ func FetchConnectorDailySpendHistoryByMetric(client kaytu.Client, connectors []s
 
 			hit.StartDateCost = metricBucket.StartCostGroup.CostValueSumGroup.Value
 			hit.EndDateCost = metricBucket.EndCostGroup.CostValueSumGroup.Value
-			if len(metricBucket.MetricNameGroup.Buckets) > 0 {
-				hit.MetricName = metricBucket.MetricNameGroup.Buckets[0].Key
-			}
+			hit.MetricName = metricBucket.Key
 
 			hits = append(hits, hit)
 		}
