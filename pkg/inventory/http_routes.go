@@ -2823,7 +2823,7 @@ func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string
 		allConnectionsStr = append(allConnectionsStr, c.ID.String())
 	}
 	for key, value := range filter {
-		if key == "Dimensions" {
+		if key == "Match" {
 			dimFilter := value.(map[string]interface{})
 			if dimKey, ok := dimFilter["Key"]; ok {
 				if dimKey == "ConnectionID" {
@@ -2975,12 +2975,6 @@ func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]
 							output = append(output, conn)
 						}
 					}
-				}
-			}
-		case strings.Contains(matchOption.(string), "ABSENT"):
-			for _, conn := range allValues {
-				if !arrayContains(values, conn) {
-					output = append(output, conn)
 				}
 			}
 		default:
