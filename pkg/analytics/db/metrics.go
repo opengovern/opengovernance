@@ -59,6 +59,17 @@ func (db Database) ListMetrics(includeInvisible bool) ([]AnalyticMetric, error) 
 	return s, nil
 }
 
+func (db Database) GetMetricByID(metricID string) (*AnalyticMetric, error) {
+	var s *AnalyticMetric
+
+	tx := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations).Where("id = ?", metricID).Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return s, nil
+}
+
 func (db Database) GetMetric(metricType MetricType, table string) (*AnalyticMetric, error) {
 	var s *AnalyticMetric
 	tx := db.orm.Model(AnalyticMetric{}).Preload(clause.Associations).Where("type = ?", metricType).Where("? = ANY (tables)", table).Find(&s)

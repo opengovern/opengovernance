@@ -69,6 +69,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	analyticsV2 := v2.Group("/analytics")
 	analyticsV2.GET("/metrics/list", httpserver.AuthorizeHandler(h.ListMetrics, authApi.ViewerRole))
+	analyticsV2.GET("/metrics/:metric_id", httpserver.AuthorizeHandler(h.GetMetric, authApi.ViewerRole))
 
 	analyticsV2.GET("/metric", httpserver.AuthorizeHandler(h.ListAnalyticsMetricsHandler, authApi.ViewerRole))
 	analyticsV2.GET("/tag", httpserver.AuthorizeHandler(h.ListAnalyticsTags, authApi.ViewerRole))
@@ -1654,6 +1655,51 @@ func (h *HttpHandler) ListMetrics(ctx echo.Context) error {
 		apiMetrics = append(apiMetrics, apiMetric)
 	}
 	return ctx.JSON(http.StatusOK, apiMetrics)
+}
+
+// GetMetric godoc
+//
+//	@Summary		List metrics
+//	@Description	Returns list of metrics
+//	@Security		BearerToken
+//	@Tags			analytics
+//	@Accept			json
+//	@Produce		json
+//	@Param			metric_id	path		string	true	"MetricID"
+//
+//	@Success		200			{object}	inventoryApi.AnalyticsMetric
+//	@Router			/inventory/api/v2/analytics/metrics/{metric_id} [get]
+func (h *HttpHandler) GetMetric(ctx echo.Context) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	var err error
+
+	metricID := ctx.Param("metric_id")
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetMetric", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetMetric")
+
+	metric, err := aDB.GetMetricByID(metricID)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	if metric == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "metric not found")
+	}
+
+	span.End()
+
+	apiMetric := inventoryApi.AnalyticsMetric{
+		ID:          metric.ID,
+		Connectors:  source.ParseTypes(metric.Connectors),
+		Type:        metric.Type,
+		Name:        metric.Name,
+		Query:       metric.Query,
+		Tables:      metric.Tables,
+		FinderQuery: metric.FinderQuery,
+		Tags:        metric.GetTagsMap(),
+	}
+	return ctx.JSON(http.StatusOK, apiMetric)
 }
 
 // ListAnalyticsSpendComposition godoc

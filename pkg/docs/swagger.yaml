@@ -3583,6 +3583,29 @@ paths:
       summary: List analytics metrics
       tags:
       - analytics
+  /inventory/api/v2/analytics/metrics/{metric_id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns list of metrics
+      parameters:
+      - description: MetricID
+        in: path
+        name: metric_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AnalyticsMetric'
+      security:
+      - BearerToken: []
+      summary: List metrics
+      tags:
+      - analytics
   /inventory/api/v2/analytics/metrics/list:
     get:
       consumes:

@@ -1956,6 +1956,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/inventory/api/v2/analytics/metrics/{metric_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Returns list of metrics",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "analytics"
+                ],
+                "summary": "List metrics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "MetricID",
+                        "name": "metric_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AnalyticsMetric"
+                        }
+                    }
+                }
+            }
+        },
         "/inventory/api/v2/analytics/spend/composition": {
             "get": {
                 "security": [
