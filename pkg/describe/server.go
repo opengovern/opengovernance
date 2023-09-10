@@ -150,25 +150,26 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		if !connection.IsEnabled() {
 			continue
 		}
+		rtToDescribe := resourceTypes
 
-		if resourceTypes == nil {
+		if len(rtToDescribe) == 0 {
 			switch connection.Connector {
 			case source.CloudAWS:
 				if forceFull {
-					resourceTypes = aws.ListResourceTypes()
+					rtToDescribe = aws.ListResourceTypes()
 				} else {
-					resourceTypes = aws.ListFastDiscoveryResourceTypes()
+					rtToDescribe = aws.ListFastDiscoveryResourceTypes()
 				}
 			case source.CloudAzure:
 				if forceFull {
-					resourceTypes = azure.ListResourceTypes()
+					rtToDescribe = azure.ListResourceTypes()
 				} else {
-					resourceTypes = azure.ListFastDiscoveryResourceTypes()
+					rtToDescribe = azure.ListFastDiscoveryResourceTypes()
 				}
 			}
 		}
 
-		for _, resourceType := range resourceTypes {
+		for _, resourceType := range rtToDescribe {
 			err = h.Scheduler.describe(connection, resourceType, false, false)
 			if err != nil {
 				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
