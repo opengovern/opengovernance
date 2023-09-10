@@ -1,21 +1,29 @@
 package api
 
-import "encoding/json"
+type Operator = string
 
-type ResponseRule struct {
-	ID        uint            `json:"id"`
-	EventType json.RawMessage `json:"event_type"`
-	Scope     json.RawMessage `json:"scope"`
-	Operator  string          `json:"operator"`
-	Value     int64           `json:"value"`
-	ActionID  uint            `json:"action_id"`
+const (
+	Operator_GreaterThan        Operator = ">"
+	Operator_LessThan           Operator = "<"
+	Operator_LessThanOrEqual    Operator = "<="
+	Operator_GreaterThanOrEqual Operator = ">="
+	Operator_Equal              Operator = "="
+	Operator_DoesNotEqual       Operator = "!="
+)
+
+type EventType struct {
+	InsightId int64
 }
 
-type RequestRule struct {
-	ID        uint            `json:"id"`
-	EventType json.RawMessage `json:"event_type"`
-	Scope     json.RawMessage `json:"scope"`
-	Operator  string          `json:"operator"`
-	Value     int64           `json:"value"`
-	ActionID  uint            `json:"action_id"`
+type Scope struct {
+	ConnectionId string
+}
+
+type ApiRule struct {
+	ID        uint      `json:"id"`
+	EventType EventType `json:"event_type"`
+	Scope     Scope     `json:"scope"`
+	Operator  Operator  `json:"operator"`
+	Value     int64     `json:"value"`
+	ActionID  uint      `json:"action_id"`
 }

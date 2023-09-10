@@ -1,11 +1,11 @@
 package alerting
 
 import (
+	"encoding/json"
 	"github.com/go-errors/errors"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
-
 	"github.com/labstack/echo/v4"
 	"strconv"
 )
@@ -13,15 +13,15 @@ import (
 func (h *HttpHandler) Register(e *echo.Echo) {
 	ruleGroup := e.Group("/api/rule")
 	ruleGroup.GET("/list", httpserver.AuthorizeHandler(h.ListRules, authapi.ViewerRole))
-	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.ViewerRole))
-	ruleGroup.DELETE("/delete/:ruleID", httpserver.AuthorizeHandler(h.DeleteRule, authapi.ViewerRole))
-	ruleGroup.GET("/update", httpserver.AuthorizeHandler(h.UpdateRule, authapi.ViewerRole))
+	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
+	ruleGroup.DELETE("/delete/:ruleID", httpserver.AuthorizeHandler(h.DeleteRule, authapi.EditorRole))
+	ruleGroup.GET("/update", httpserver.AuthorizeHandler(h.UpdateRule, authapi.EditorRole))
 
 	actionGroup := e.Group("/api/action")
 	actionGroup.GET("/list", httpserver.AuthorizeHandler(h.ListActions, authapi.ViewerRole))
-	actionGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateAction, authapi.ViewerRole))
-	actionGroup.DELETE("/delete/:actionID", httpserver.AuthorizeHandler(h.DeleteAction, authapi.ViewerRole))
-	actionGroup.GET("/update", httpserver.AuthorizeHandler(h.UpdateAction, authapi.ViewerRole))
+	actionGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateAction, authapi.EditorRole))
+	actionGroup.DELETE("/delete/:actionID", httpserver.AuthorizeHandler(h.DeleteAction, authapi.EditorRole))
+	actionGroup.GET("/update", httpserver.AuthorizeHandler(h.UpdateAction, authapi.EditorRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -43,7 +43,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Produce		json
-//	@Success		200			{object}	[]api.ResponseRule
+//	@Success		200			{object}	[]api.ApiRule
 //	@Router			/alerting/api/rule/list [get]
 func (h *HttpHandler) ListRules(ctx echo.Context) error {
 	rules, err := h.db.ListRules()
@@ -51,12 +51,25 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 		return err
 	}
 
-	var response []api.ResponseRule
+	var response []api.ApiRule
 	for _, rule := range rules {
-		response = append(response, api.ResponseRule{
+
+		var eventType api.EventType
+		err := json.Unmarshal(rule.EventType, &eventType)
+		if err != nil {
+			return err
+		}
+
+		var scope api.Scope
+		err = json.Unmarshal(rule.Scope, &scope)
+		if err != nil {
+			return err
+		}
+
+		response = append(response, api.ApiRule{
 			ID:        rule.ID,
-			EventType: rule.EventType,
-			Scope:     rule.Scope,
+			EventType: eventType,
+			Scope:     scope,
 			Operator:  rule.Operator,
 			Value:     rule.Value,
 			ActionID:  rule.ActionID,
@@ -72,29 +85,41 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 //	@Description	create a rule by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			request		body		api.RequestRule			true	"Request Body"
+//	@Param			request		body		api.ApiRule			true	"Request Body"
 //	@Success		200
 //	@Router			/alerting/api/rule/create [post]
 func (h *HttpHandler) CreateRule(ctx echo.Context) error {
-	var req api.RequestRule
+	var req api.ApiRule
 	if err := bindValidate(ctx, &req); err != nil {
 		return err
 	}
 
-	if &req.ID == nil || &req.Value == nil || &req.Scope == nil || &req.ActionID == nil || &req.Operator == nil || &req.EventType == nil {
+	EmptyFields := api.ApiRule{}
+	if req.ID == EmptyFields.ID || req.Value == EmptyFields.Value || req.Scope == EmptyFields.Scope ||
+		req.ActionID == EmptyFields.ActionID || req.Operator == EmptyFields.Operator || req.EventType == EmptyFields.EventType {
 		return errors.New("All the fields in struct must be set")
+	}
+
+	scope, err := json.Marshal(req.Scope)
+	if err != nil {
+		return err
+	}
+
+	event, err := json.Marshal(req.EventType)
+	if err != nil {
+		return err
 	}
 
 	request := Rule{
 		ID:        req.ID,
-		EventType: req.EventType,
-		Scope:     req.Scope,
+		EventType: event,
+		Scope:     scope,
 		Operator:  req.Operator,
 		Value:     req.Value,
 		ActionID:  req.ActionID,
 	}
 
-	if err := h.db.CreateRule(request); err != nil {
+	if err := h.db.CreateRule(&request); err != nil {
 		return err
 	}
 
@@ -113,7 +138,7 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 func (h *HttpHandler) DeleteRule(ctx echo.Context) error {
 	idS := ctx.Param("ruleID")
 	if idS == "" {
-		return errors.New("The ruleID input must be set")
+		return errors.New("ruleID is required")
 	}
 	id, err := strconv.ParseUint(idS, 10, 64)
 	if err != nil {
@@ -133,28 +158,38 @@ func (h *HttpHandler) DeleteRule(ctx echo.Context) error {
 //	@Description	Retrieving a rule by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			request		body		api.RequestRule			true	"Request Body"
+//	@Param			request		body		api.ApiRule			true	"Request Body"
 //	@Success		200
 //	@Router			/alerting/api/rule/update [get]
 func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
-	var req api.RequestRule
+	var req api.ApiRule
 	if err := bindValidate(ctx, &req); err != nil {
 		return err
 	}
 	if req.ID == 0 {
-		return errors.New("The ruleID must be set")
+		return errors.New("ruleID is required")
+	}
+
+	scope, err := json.Marshal(req.Scope)
+	if err != nil {
+		return err
+	}
+
+	event, err := json.Marshal(req.EventType)
+	if err != nil {
+		return err
 	}
 
 	request := Rule{
 		ID:        req.ID,
-		EventType: req.EventType,
-		Scope:     req.Scope,
+		EventType: event,
+		Scope:     scope,
 		Operator:  req.Operator,
 		Value:     req.Value,
 		ActionID:  req.ActionID,
 	}
 
-	err := h.db.UpdateRule(request)
+	err = h.db.UpdateRule(&request)
 	if err != nil {
 		return err
 	}
@@ -168,7 +203,7 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Produce		json
-//	@Success		200		{object}	[]api.ResponseAction
+//	@Success		200		{object}	[]api.ApiAction
 //	@Router			/alerting/api/action/list [get]
 func (h *HttpHandler) ListActions(ctx echo.Context) error {
 	actions, err := h.db.ListAction()
@@ -176,13 +211,20 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 		return err
 	}
 
-	var response []api.ResponseAction
+	var response []api.ApiAction
 	for _, action := range actions {
-		response = append(response, api.ResponseAction{
+
+		var headers api.Headers
+		err := json.Unmarshal(action.Headers, headers)
+		if err != nil {
+			return err
+		}
+
+		response = append(response, api.ApiAction{
 			ID:      action.ID,
 			Method:  action.Method,
 			Url:     action.Url,
-			Headers: action.Headers,
+			Headers: headers,
 			Body:    action.Body,
 		})
 	}
@@ -196,29 +238,35 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 //	@Description	create an action by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			request		body	api.RequestAction		true	"Request Body"
+//	@Param			request		body	api.ApiAction		true	"Request Body"
 //	@Success		200
 //	@Router			/alerting/api/action/create [post]
 func (h *HttpHandler) CreateAction(ctx echo.Context) error {
-	var req api.RequestAction
+	var req api.ApiAction
+	var testEmptyFields api.ApiAction
 	err := bindValidate(ctx, &req)
 	if err != nil {
 		return err
 	}
 
-	if &req.ID == nil || &req.Url == nil || &req.Body == nil || &req.Method == nil || req.Headers == nil {
+	if req.ID == testEmptyFields.ID || req.Url == testEmptyFields.Url || req.Body == testEmptyFields.Body ||
+		req.Method == testEmptyFields.Method || req.Headers == testEmptyFields.Headers {
 		return errors.New("All the fields in struct must be set")
+	}
+	headers, err := json.Marshal(req.Headers)
+	if err != nil {
+		return err
 	}
 
 	request := Action{
 		ID:      req.ID,
 		Method:  req.Method,
 		Url:     req.Url,
-		Headers: req.Headers,
+		Headers: headers,
 		Body:    req.Body,
 	}
 
-	err = h.db.CreateAction(request)
+	err = h.db.CreateAction(&request)
 	if err != nil {
 		return err
 	}
@@ -238,7 +286,7 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 func (h *HttpHandler) DeleteAction(ctx echo.Context) error {
 	idS := ctx.Param("actionID")
 	if idS == "" {
-		return errors.New("The actionID must be set")
+		return errors.New("actionID is required")
 	}
 	id, err := strconv.ParseUint(idS, 10, 64)
 	if err != nil {
@@ -259,27 +307,32 @@ func (h *HttpHandler) DeleteAction(ctx echo.Context) error {
 //	@Description	Retrieving an action by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			request		body	api.RequestAction		true	"Request Body"
+//	@Param			request		body	api.ApiAction		true	"Request Body"
 //	@Success		200
 //	@Router			/alerting/api/action/update [get]
 func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
-	var req api.RequestAction
+	var req api.ApiAction
 	if err := bindValidate(ctx, &req); err != nil {
 		return err
 	}
 	if req.ID == 0 {
-		return errors.New("ActionID in struct must be set")
+		return errors.New("actionID is required")
+	}
+
+	headers, err := json.Marshal(req.Headers)
+	if err != nil {
+		return err
 	}
 
 	request := Action{
 		ID:      req.ID,
 		Method:  req.Method,
 		Url:     req.Url,
-		Headers: req.Headers,
+		Headers: headers,
 		Body:    req.Body,
 	}
 
-	err := h.db.UpdateAction(request)
+	err = h.db.UpdateAction(&request)
 	if err != nil {
 		return err
 	}
