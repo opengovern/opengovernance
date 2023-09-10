@@ -3776,18 +3776,18 @@ paths:
         name: connectionId
         type: array
       - collectionFormat: csv
-        description: Metrics IDs
-        in: query
-        items:
-          type: string
-        name: metricIds
-        type: array
-      - collectionFormat: csv
         description: Connection group to filter by - mutually exclusive with connectionId
         in: query
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Metrics IDs
+        in: query
+        items:
+          type: string
+        name: metricIds
         type: array
       - description: timestamp for start in epoch seconds
         in: query
@@ -3856,6 +3856,13 @@ paths:
         name: connectionId
         type: array
       - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - collectionFormat: csv
         description: Metrics IDs
         in: query
         items:
@@ -3903,18 +3910,18 @@ paths:
         name: connectionId
         type: array
       - collectionFormat: csv
-        description: Metrics IDs
-        in: query
-        items:
-          type: string
-        name: metricIds
-        type: array
-      - collectionFormat: csv
         description: Connection group to filter by - mutually exclusive with connectionId
         in: query
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Metrics IDs
+        in: query
+        items:
+          type: string
+        name: metricIds
         type: array
       - description: timestamp for start in epoch seconds
         in: query

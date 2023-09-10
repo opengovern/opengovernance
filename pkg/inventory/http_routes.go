@@ -1807,8 +1807,8 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			metricIds		query		[]string		false	"Metrics IDs"
 //	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			metricIds		query		[]string		false	"Metrics IDs"
 //	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			granularity		query		string			false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
@@ -1890,8 +1890,8 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			metricIds		query		[]string		false	"Metrics IDs"
 //	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			metricIds		query		[]string		false	"Metrics IDs"
 //	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			granularity		query		string			false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
@@ -1985,6 +1985,7 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 //	@Param			granularity		query		string		false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
 //	@Param			dimension		query		string		false	"Dimension of the table, default is metric"		Enums(connection, metric)
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			metricIds		query		[]string	false	"Metrics IDs"
 //
 //	@Success		200				{object}	[]inventoryApi.SpendTableRow

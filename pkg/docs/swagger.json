@@ -2186,8 +2186,8 @@
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Metrics IDs",
-                        "name": "metricIds",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -2196,8 +2196,8 @@
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection group to filter by - mutually exclusive with connectionId",
-                        "name": "connectionGroup",
+                        "description": "Metrics IDs",
+                        "name": "metricIds",
                         "in": "query"
                     },
                     {
@@ -2305,6 +2305,16 @@
                             "type": "string"
                         },
                         "collectionFormat": "csv",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Metrics IDs",
                         "name": "metricIds",
                         "in": "query"
@@ -2373,8 +2383,8 @@
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Metrics IDs",
-                        "name": "metricIds",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
@@ -2383,8 +2393,8 @@
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection group to filter by - mutually exclusive with connectionId",
-                        "name": "connectionGroup",
+                        "description": "Metrics IDs",
+                        "name": "metricIds",
                         "in": "query"
                     },
                     {
