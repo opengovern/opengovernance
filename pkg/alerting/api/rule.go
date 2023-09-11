@@ -27,3 +27,12 @@ type ApiRule struct {
 	Value     int64     `json:"value"`
 	ActionID  uint      `json:"action_id"`
 }
+
+type UpdateRuleRequest struct {
+	ID        uint       `json:"id"`
+	EventType *EventType `json:"event_type"`
+	Scope     *Scope     `json:"scope"`
+	Operator  *Operator  `json:"operator"`
+	Value     *int64     `json:"value"`
+	ActionID  *uint      `json:"action_id"`
+}

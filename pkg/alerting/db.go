@@ -1,6 +1,7 @@
 package alerting
 
 import (
+	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	"gorm.io/gorm"
 )
 
@@ -34,34 +35,42 @@ func (db Database) ListRules() ([]Rule, error) {
 	return listRules, nil
 }
 
-func (db Database) CreateRule(rule *Rule) error {
-	return db.orm.Model(&Rule{}).Create(rule).Error
+func (db Database) CreateRule(id uint, eventType []byte, scope []byte, operator api.Operator, value int64, actionID uint) error {
+	rule := Rule{
+		ID:        id,
+		EventType: eventType,
+		Scope:     scope,
+		Operator:  operator,
+		Value:     value,
+		ActionID:  actionID,
+	}
+	return db.orm.Model(&Rule{}).Create(&rule).Error
 }
 
 func (db Database) DeleteRule(ruleId uint) error {
 	return db.orm.Model(&Action{}).Where("id = ?", ruleId).Delete(Rule{}).Error
 }
 
-func (db Database) UpdateRule(rule *Rule) error {
+func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, operator *api.Operator, value *int64, actionID *uint) error {
 	var inputs map[string]interface{}
 
-	if rule.EventType != nil {
-		inputs["eventType"] = rule.EventType
+	if eventType != nil {
+		inputs["event_type"] = *eventType
 	}
-	if rule.Scope != nil {
-		inputs["scope"] = rule.Scope
+	if scope != nil {
+		inputs["scope"] = *scope
 	}
-	if rule.Operator != "" {
-		inputs["operator"] = rule.Operator
+	if operator != nil {
+		inputs["operator"] = *operator
 	}
-	if rule.Value != 0 {
-		inputs["value"] = rule.Value
+	if value != nil {
+		inputs["value"] = *value
 	}
-	if rule.ActionID != 0 {
-		inputs["actionId"] = rule.ActionID
+	if actionID != nil {
+		inputs["action_id"] = *actionID
 	}
 
-	return db.orm.Model(&Action{}).Where("id = ?", rule.ID).Updates(inputs).Error
+	return db.orm.Model(&Action{}).Where("id = ?", id).Updates(inputs).Error
 }
 
 func (db Database) ListAction() ([]Action, error) {
@@ -74,7 +83,14 @@ func (db Database) ListAction() ([]Action, error) {
 	return actions, nil
 }
 
-func (db Database) CreateAction(action *Action) error {
+func (db Database) CreateAction(id uint, method string, url string, headers []byte, body string) error {
+	action := Action{
+		ID:      id,
+		Method:  method,
+		Url:     url,
+		Headers: headers,
+		Body:    body,
+	}
 	return db.orm.Model(&Action{}).Create(&action).Error
 }
 
@@ -82,21 +98,21 @@ func (db Database) DeleteAction(actionId uint) error {
 	return db.orm.Model(&Action{}).Where("id = ?", actionId).Delete(&Action{}).Error
 }
 
-func (db Database) UpdateAction(action *Action) error {
+func (db Database) UpdateAction(id uint, headers *[]byte, url *string, body *string, method *string) error {
 	var inputs map[string]interface{}
 
-	if action.Headers != nil {
-		inputs["header"] = action.Headers
+	if headers != nil {
+		inputs["header"] = *headers
 	}
-	if action.Body != "" {
-		inputs["body"] = action.Body
+	if body != nil {
+		inputs["body"] = *body
 	}
-	if action.Url != "" {
-		inputs["url"] = action.Url
+	if url != nil {
+		inputs["url"] = *url
 	}
-	if action.Method != "" {
-		inputs["method"] = action.Method
+	if method != nil {
+		inputs["method"] = *method
 	}
 
-	return db.orm.Model(&Action{}).Where("id = ?", action.ID).Updates(inputs).Error
+	return db.orm.Model(&Action{}).Where("id = ?", id).Updates(inputs).Error
 }
