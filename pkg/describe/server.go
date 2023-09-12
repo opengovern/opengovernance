@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"github.com/kaytu-io/terraform-package/external/states/statefile"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -202,19 +203,20 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 // CreateStack godoc
 //
-//	@Summary		Create stack
-//	@Description	Create a stack by giving terraform statefile and additional resources
-//	@Description	Config structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}
-//	@Description	Config structure for aws: {accessKey: string, secretKey: string}
-//	@Security		BearerToken
-//	@Tags			stack
-//	@Accept			json
-//	@Produce		json
-//	@Param			terraformFile	formData	file	true	"ُTerraform StateFile full path"
-//	@Param			tag				formData	string	false	"Tags Map[string][]string"
-//	@Param			config			formData	string	true	"Config json structure"
-//	@Success		200				{object}	api.Stack
-//	@Router			/schedule/api/v1/stacks/create [post]
+//		@Summary		Create stack
+//		@Description	Create a stack by giving terraform statefile and additional resources
+//		@Description	Config structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}
+//		@Description	Config structure for aws: {accessKey: string, secretKey: string}
+//		@Security		BearerToken
+//		@Tags			stack
+//		@Accept			json
+//		@Produce		json
+//		@Param			terraformFile	formData	file	false	"ُTerraform StateFile full path"
+//		@Param			tag				formData	string	false	"Tags Map[string][]string"
+//		@Param			config			formData	string	true	"Config json structure"
+//	 @Param	 		stateConfig		formData 	string  false	"Config json structure for remote state backend"
+//		@Success		200				{object}	api.Stack
+//		@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
 	var tags map[string][]string
 	tagsData := ctx.FormValue("tag")
@@ -230,27 +232,51 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 			return err
 		}
 	}
-	if file == nil {
+	stateConfig := ctx.FormValue("stateConfig")
+	if file == nil && stateConfig == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "No resource provided")
 	}
-	src, err := file.Open()
-	if err != nil {
-		return err
+	configStr := ctx.FormValue("config")
+	if configStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Please provide the credentials")
 	}
-	defer src.Close()
 
-	data, err := ioutil.ReadAll(src)
-	if err != nil {
-		return err
+	var terraformResourceTypes []string
+	var arns []string
+	if file != nil {
+		src, err := file.Open()
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+
+		data, err := io.ReadAll(src)
+		if err != nil {
+			return err
+		}
+		if !strings.HasSuffix(file.Filename, ".tfstate") {
+			echo.NewHTTPError(http.StatusBadRequest, "File must have a .tfstate suffix")
+		}
+		arns, err = internal.GetArns(string(data))
+		if err != nil {
+			return err
+		}
+		terraformResourceTypes, err = internal.GetTypes(string(data))
+		if err != nil {
+			return err
+		}
+		resources = append(resources, arns...)
+	} else {
+		internal.ConfigureAWSAccount(configStr)
+		conf := make(map[string]interface{})
+		err = json.Unmarshal([]byte(stateConfig), &conf)
+		if err != nil {
+			fmt.Println("Error unmarshaling JSON:", err)
+		}
+		state := internal.GetRemoteState(conf)
+		arns = statefile.GetArnsFromStateFile(state)
+		terraformResourceTypes = statefile.GetResourcesTypesFromState(state)
 	}
-	if !strings.HasSuffix(file.Filename, ".tfstate") {
-		echo.NewHTTPError(http.StatusBadRequest, "File must have a .tfstate suffix")
-	}
-	arns, err := internal.GetArns(string(data))
-	if err != nil {
-		return err
-	}
-	resources = append(resources, arns...)
 
 	var recordTags []*StackTag
 	if len(tags) != 0 {
@@ -271,7 +297,6 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		}
 	}
 
-	terraformResourceTypes, err := internal.GetTypes(string(data))
 	terraformResourceTypes = removeDuplicates(terraformResourceTypes)
 	if err != nil {
 		return err
@@ -291,11 +316,6 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 				resourceTypes = append(resourceTypes, rt)
 			}
 		}
-	}
-
-	configStr := ctx.FormValue("config")
-	if configStr == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "Please provide the credentials")
 	}
 
 	accs, err := internal.ParseAccountsFromArns(resources)

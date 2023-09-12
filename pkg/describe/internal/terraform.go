@@ -1,6 +1,12 @@
 package internal
 
 import (
+	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hcldec"
+	"github.com/kaytu-io/terraform-package/external/backend"
+	"github.com/kaytu-io/terraform-package/external/backend/remote-state/s3"
+	"github.com/kaytu-io/terraform-package/external/states"
+	"github.com/kaytu-io/terraform-package/external/tfdiags"
 	"io"
 	"strings"
 
@@ -58,4 +64,57 @@ func GetResourceIDFromArn(arns []string) ([]string, error) {
 		}
 	}
 	return resources, nil
+}
+
+func GetRemoteState(config map[string]interface{}) *states.State {
+	c := backend.TestWrapConfig(config)
+
+	b := s3.New()
+
+	var diags tfdiags.Diagnostics
+
+	// To make things easier for test authors, we'll allow a nil body here
+	// (even though that's not normally valid) and just treat it as an empty
+	// body.
+	if c == nil {
+		c = hcl.EmptyBody()
+	}
+
+	schema := b.ConfigSchema()
+	spec := schema.DecoderSpec()
+	obj, decDiags := hcldec.Decode(c, spec, nil)
+	diags = diags.Append(decDiags)
+
+	newObj, valDiags := b.PrepareConfig(obj)
+	diags = diags.Append(valDiags.InConfigBody(c, ""))
+
+	// it's valid for a Backend to have warnings (e.g. a Deprecation) as such we should only raise on errors
+	if diags.HasErrors() {
+		panic(diags.ErrWithWarnings())
+	}
+
+	obj = newObj
+
+	confDiags := b.Configure(obj)
+	if len(confDiags) != 0 {
+		confDiags = confDiags.InConfigBody(c, "")
+		panic(confDiags.ErrWithWarnings())
+	}
+
+	ws, err := b.Workspaces()
+	if err != nil {
+		panic(err)
+	}
+
+	stateMgr, err := b.StateMgr(ws[0])
+	if err != nil {
+		panic(err)
+	}
+	err = stateMgr.RefreshState()
+	if err != nil {
+		panic(err)
+	}
+
+	state := stateMgr.State()
+	return state
 }
