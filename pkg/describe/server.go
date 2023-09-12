@@ -266,9 +266,9 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		}
 		resources = append(resources, arns...)
 	} else {
-		err, accessKey, secretKey, sessionToken := internal.ConfigureAWSAccount(configStr)
+		err = internal.ConfigureAWSAccount(configStr)
 		if err != nil {
-			echo.NewHTTPError(http.StatusBadRequest, "Error configuration")
+			return echo.NewHTTPError(http.StatusBadRequest, "Could not parse state backend configs")
 		}
 		conf := make(map[string]interface{})
 		err = json.Unmarshal([]byte(stateConfig), &conf)
@@ -279,9 +279,9 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		resources = statefile.GetArnsFromStateFile(state)
 		terraformResourceTypes = statefile.GetResourcesTypesFromState(state)
 
-		err = internal.ConfigureAWSManual(accessKey, secretKey, sessionToken)
+		err = internal.RestartCredentials()
 		if err != nil {
-			echo.NewHTTPError(http.StatusBadRequest, "Error configuration")
+			return echo.NewHTTPError(http.StatusBadRequest, "Could not reset configs")
 		}
 	}
 
