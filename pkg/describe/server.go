@@ -242,6 +242,7 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 
 	var terraformResourceTypes []string
 	var arns []string
+	fmt.Println("file:", file)
 	if file != nil {
 		src, err := file.Open()
 		if err != nil {
@@ -270,11 +271,15 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		conf := make(map[string]interface{})
 		err = json.Unmarshal([]byte(stateConfig), &conf)
 		if err != nil {
-			fmt.Println("Error unmarshaling JSON:", err)
+			echo.NewHTTPError(http.StatusBadRequest, "Error unmarshaling config json")
 		}
+		fmt.Println("conf:", conf)
 		state := internal.GetRemoteState(conf)
+		fmt.Println("state:", state)
 		arns = statefile.GetArnsFromStateFile(state)
+		fmt.Println("arns:", arns)
 		terraformResourceTypes = statefile.GetResourcesTypesFromState(state)
+		fmt.Println("terraformResourceTypes:", terraformResourceTypes)
 	}
 
 	var recordTags []*StackTag
