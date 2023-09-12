@@ -1073,6 +1073,9 @@ definitions:
         items:
           $ref: '#/definitions/source.Type'
         type: array
+      cost_dimension_id:
+        example: microsoft_compute_disks
+        type: string
       cost_dimension_name:
         example: microsoft.compute/disks
         type: string

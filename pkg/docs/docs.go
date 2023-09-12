@@ -6157,6 +6157,10 @@ const docTemplate = `{
                         "Azure"
                     ]
                 },
+                "cost_dimension_id": {
+                    "type": "string",
+                    "example": "microsoft_compute_disks"
+                },
                 "cost_dimension_name": {
                     "type": "string",
                     "example": "microsoft.compute/disks"

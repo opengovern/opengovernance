@@ -1483,6 +1483,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 				costMetricMap[localHit.MetricID] = inventoryApi.CostMetric{
 					Connector:            []source.Type{localHit.Connector},
 					CostDimensionName:    localHit.MetricName,
+					CostDimensionID:      localHit.MetricID,
 					TotalCost:            &localHit.TotalCost,
 					DailyCostAtStartTime: &localHit.StartDateCost,
 					DailyCostAtEndTime:   &localHit.EndDateCost,
@@ -1516,6 +1517,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 				costMetricMap[localHit.MetricID] = inventoryApi.CostMetric{
 					Connector:            []source.Type{connector},
 					CostDimensionName:    localHit.MetricName,
+					CostDimensionID:      localHit.MetricID,
 					TotalCost:            &localHit.TotalCost,
 					DailyCostAtStartTime: &localHit.StartDateCost,
 					DailyCostAtEndTime:   &localHit.EndDateCost,
