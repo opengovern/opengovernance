@@ -241,7 +241,6 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 	}
 
 	var terraformResourceTypes []string
-	fmt.Println("file:", file)
 	if file != nil {
 		src, err := file.Open()
 		if err != nil {
@@ -266,19 +265,23 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		}
 		resources = append(resources, arns...)
 	} else {
-		internal.ConfigureAWSAccount(configStr)
+		err, accessKey, secretKey, sessionToken := internal.ConfigureAWSAccount(configStr)
+		if err != nil {
+			echo.NewHTTPError(http.StatusBadRequest, "Error configuration")
+		}
 		conf := make(map[string]interface{})
 		err = json.Unmarshal([]byte(stateConfig), &conf)
 		if err != nil {
 			echo.NewHTTPError(http.StatusBadRequest, "Error unmarshaling config json")
 		}
-		fmt.Println("conf:", conf)
 		state := internal.GetRemoteState(conf)
-		fmt.Println("state:", state)
 		resources = statefile.GetArnsFromStateFile(state)
-		fmt.Println("arns:", resources)
 		terraformResourceTypes = statefile.GetResourcesTypesFromState(state)
-		fmt.Println("terraformResourceTypes:", terraformResourceTypes)
+
+		err = internal.ConfigureAWSManual(accessKey, secretKey, sessionToken)
+		if err != nil {
+			echo.NewHTTPError(http.StatusBadRequest, "Error configuration")
+		}
 	}
 
 	var recordTags []*StackTag
