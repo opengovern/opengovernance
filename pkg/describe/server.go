@@ -242,7 +242,6 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 	}
 
 	var terraformResourceTypes []string
-	var arns []string
 	fmt.Println("file:", file)
 	if file != nil {
 		src, err := file.Open()
@@ -258,7 +257,7 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		if !strings.HasSuffix(file.Filename, ".tfstate") {
 			echo.NewHTTPError(http.StatusBadRequest, "File must have a .tfstate suffix")
 		}
-		arns, err = internal.GetArns(string(data))
+		arns, err := internal.GetArns(string(data))
 		if err != nil {
 			return err
 		}
@@ -277,8 +276,8 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		fmt.Println("conf:", conf)
 		state := internal.GetRemoteState(conf)
 		fmt.Println("state:", state)
-		arns = statefile.GetArnsFromStateFile(state)
-		fmt.Println("arns:", arns)
+		resources = statefile.GetArnsFromStateFile(state)
+		fmt.Println("arns:", resources)
 		terraformResourceTypes = statefile.GetResourcesTypesFromState(state)
 		fmt.Println("terraformResourceTypes:", terraformResourceTypes)
 	}
