@@ -55,6 +55,16 @@ func (s *Scheduler) RunDescribeJobScheduler() {
 
 	for ; ; <-t.C {
 		s.scheduleDescribeJob()
+	}
+}
+
+func (s *Scheduler) RunStackScheduler() {
+	s.logger.Info("Scheduling stack jobs on a timer")
+
+	t := time.NewTicker(1 * time.Minute)
+	defer t.Stop()
+
+	for ; ; <-t.C {
 		s.scheduleStackJobs()
 	}
 }
@@ -493,6 +503,8 @@ func (s *Scheduler) scheduleStackJobs() error {
 				s.logger.Error(fmt.Sprintf("failed to create helm release for stack: %s", stack.StackID), zap.Error(err))
 				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
 				s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("failed to create helm release: %s", err.Error()))
+			} else {
+				s.logger.Error(fmt.Sprintf("helm release for stack %s not created", stack.StackID))
 			}
 		} else {
 			if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
