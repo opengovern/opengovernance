@@ -3755,9 +3755,8 @@ const docTemplate = `{
                     {
                         "type": "file",
                         "description": "ُTerraform StateFile full path",
-                        "name": "terraformFile",
-                        "in": "formData",
-                        "required": true
+                        "name": "stateFile",
+                        "in": "formData"
                     },
                     {
                         "type": "string",
@@ -3771,6 +3770,12 @@ const docTemplate = `{
                         "name": "config",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Config json structure for terraform remote state backend",
+                        "name": "remoteStateConfig",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -7940,8 +7945,6 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {

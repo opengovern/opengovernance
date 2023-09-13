@@ -202,20 +202,20 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 
 // CreateStack godoc
 //
-//		@Summary		Create stack
-//		@Description	Create a stack by giving terraform statefile and additional resources
-//		@Description	Config structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}
-//		@Description	Config structure for aws: {accessKey: string, secretKey: string}
-//		@Security		BearerToken
-//		@Tags			stack
-//		@Accept			json
-//		@Produce		json
-//		@Param			terraformFile	formData	file	false	"ُTerraform StateFile full path"
-//		@Param			tag				formData	string	false	"Tags Map[string][]string"
-//		@Param			config			formData	string	true	"Config json structure"
-//	 @Param	 		stateConfig		formData 	string  false	"Config json structure for remote state backend"
-//		@Success		200				{object}	api.Stack
-//		@Router			/schedule/api/v1/stacks/create [post]
+//	@Summary		Create stack
+//	@Description	Create a stack by giving terraform statefile and additional resources
+//	@Description	Config structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}
+//	@Description	Config structure for aws: {accessKey: string, secretKey: string}
+//	@Security		BearerToken
+//	@Tags			stack
+//	@Accept			json
+//	@Produce		json
+//	@Param			stateFile			formData	file	false	"ُTerraform StateFile full path"
+//	@Param			tag					formData	string	false	"Tags Map[string][]string"
+//	@Param			config				formData	string	true	"Config json structure"
+//	@Param			remoteStateConfig	formData	string	false	"Config json structure for terraform remote state backend"
+//	@Success		200					{object}	api.Stack
+//	@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
 	var tags map[string][]string
 	tagsData := ctx.FormValue("tag")
@@ -225,13 +225,13 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 
 	var resources []string
 
-	file, err := ctx.FormFile("terraformFile")
+	file, err := ctx.FormFile("stateFile")
 	if err != nil {
 		if err.Error() != "http: no such file" {
 			return err
 		}
 	}
-	stateConfig := ctx.FormValue("stateConfig")
+	stateConfig := ctx.FormValue("remoteStateConfig")
 	if file == nil && stateConfig == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "No resource provided")
 	}

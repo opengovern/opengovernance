@@ -3749,9 +3749,8 @@
                     {
                         "type": "file",
                         "description": "ُTerraform StateFile full path",
-                        "name": "terraformFile",
-                        "in": "formData",
-                        "required": true
+                        "name": "stateFile",
+                        "in": "formData"
                     },
                     {
                         "type": "string",
@@ -3765,6 +3764,12 @@
                         "name": "config",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Config json structure for terraform remote state backend",
+                        "name": "remoteStateConfig",
+                        "in": "formData"
                     }
                 ],
                 "responses": {

@@ -4948,8 +4948,7 @@ paths:
       parameters:
       - description: ُTerraform StateFile full path
         in: formData
-        name: terraformFile
-        required: true
+        name: stateFile
         type: file
       - description: Tags Map[string][]string
         in: formData
@@ -4959,6 +4958,10 @@ paths:
         in: formData
         name: config
         required: true
+        type: string
+      - description: Config json structure for terraform remote state backend
+        in: formData
+        name: remoteStateConfig
         type: string
       produces:
       - application/json
