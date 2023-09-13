@@ -4,6 +4,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/kaytu-io/terraform-package/external/backend"
+	azurem "github.com/kaytu-io/terraform-package/external/backend/remote-state/azure"
 	"github.com/kaytu-io/terraform-package/external/backend/remote-state/s3"
 	"github.com/kaytu-io/terraform-package/external/states"
 	"github.com/kaytu-io/terraform-package/external/tfdiags"
@@ -12,6 +13,11 @@ import (
 
 	"github.com/kaytu-io/terraform-package/external/states/statefile"
 )
+
+type Config struct {
+	Type   string                 `json:"type"`
+	Config map[string]interface{} `json:"config"`
+}
 
 func GetArns(content string) ([]string, error) {
 	reader := io.Reader(strings.NewReader(content))
@@ -66,10 +72,16 @@ func GetResourceIDFromArn(arns []string) ([]string, error) {
 	return resources, nil
 }
 
-func GetRemoteState(config map[string]interface{}) *states.State {
-	c := backend.TestWrapConfig(config)
+func GetRemoteState(config Config) *states.State {
 
-	b := s3.New()
+	c := backend.TestWrapConfig(config.Config)
+
+	var b backend.Backend
+	if config.Type == "s3" {
+		b = s3.New()
+	} else if config.Type == "azurem" {
+		b = azurem.New()
+	}
 
 	var diags tfdiags.Diagnostics
 
