@@ -523,6 +523,12 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		})
 		// ---------
 
+		// --------- describe
+		EnsureRunGoroutin(func() {
+			s.RunStackScheduler()
+		})
+		// ---------
+
 		// --------- inventory summarizer
 		EnsureRunGoroutin(func() {
 			s.RunMustSummerizeJobScheduler()
