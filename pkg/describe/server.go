@@ -265,14 +265,18 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		}
 		resources = append(resources, arns...)
 	} else {
-		err = internal.ConfigureAWSAccount(configStr)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Could not parse state backend configs")
-		}
-		conf := make(map[string]interface{})
+		var conf internal.Config
 		err = json.Unmarshal([]byte(stateConfig), &conf)
 		if err != nil {
 			echo.NewHTTPError(http.StatusBadRequest, "Error unmarshaling config json")
+		}
+		if conf.Type == "s3" {
+			err = internal.ConfigureAWSAccount(configStr)
+		} else if conf.Type == "azurem" {
+			err = internal.ConfigureAzureAccount(configStr)
+		}
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Could not parse state backend configs")
 		}
 		state := internal.GetRemoteState(conf)
 		resources = statefile.GetArnsFromStateFile(state)
