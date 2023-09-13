@@ -23,6 +23,7 @@ import (
 	awsmodel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/insight/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/insight/es"
+	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -100,94 +101,92 @@ func (j Job) Do(client kaytu.Client, steampipeOption *steampipe.Option, onboardC
 	var count int64
 	var (
 		locationsMap   map[string]struct{}
-		connectionsMap map[string]string
+		connectionsMap = map[string]string{
+			j.SourceID: j.AccountID,
+		}
 	)
 	ctx := &httpclient.Context{
-		UserRole: authApi.AdminRole,
+		UserRole: authApi.InternalRole,
 	}
 	var err error
 	var res *steampipe.Result
-	if strings.TrimSpace(j.Query) == "accounts_count" {
-		var totalAccounts int64
-		totalAccounts, _ = onboardClient.CountSources(ctx, j.SourceType)
-		count = totalAccounts
-		res = &steampipe.Result{
-			Headers: []string{"count"},
-			Data:    [][]any{{count}},
-		}
-	} else {
-		isAllConnectionsQuery := "FALSE"
-		if strings.HasPrefix(strings.ToLower(j.SourceID), "all:") {
-			isAllConnectionsQuery = "TRUE"
-		}
-		query := strings.ReplaceAll(j.Query, "$CONNECITON_ID", j.SourceID)
-		query = strings.ReplaceAll(query, "$IS_ALL_CONNECTIONS_QUERY", isAllConnectionsQuery)
-		if j.IsStack == true {
-			steampipeOption.Host = fmt.Sprintf("%s-steampipe-service.%s.svc.cluster.local", j.SourceID, CurrentWorkspaceID)
-		} else {
-			steampipeOption.Host = SteampipeHost
-		}
-		steampipeConn, err := steampipe.NewSteampipeDatabase(*steampipeOption)
+	isAllConnectionsQuery := "FALSE"
+	if strings.HasPrefix(strings.ToLower(j.SourceID), "all:") {
+		srcs, err := onboardClient.ListSources(ctx, []source.Type{j.SourceType})
 		if err != nil {
-			logger.Error("failed to create steampipe connection", zap.Error(err))
-			fail(fmt.Errorf("failed to create steampipe connection: %w", err))
+			logger.Error("failed to list sources", zap.Error(err))
+			fail(fmt.Errorf("listing sources: %w", err))
 			return
 		}
-		fmt.Println("Initialized steampipe database: ", *steampipeConn)
-
-		res, err = steampipeConn.QueryAll(context.TODO(), query)
-		steampipeConn.Conn().Close()
-		if res != nil {
-			count = int64(len(res.Data))
-			for colNo, col := range res.Headers {
-				if strings.ToLower(col) != "kaytu_metadata" {
-					continue
-				}
-				for _, row := range res.Data {
-					for cellColNo, cell := range row {
-						if cellColNo != colNo {
-							continue
-						}
-						if cell == nil {
-							continue
-						}
-						switch j.SourceType {
-						case source.CloudAWS:
-							var metadata awsmodel.Metadata
-							err = json.Unmarshal([]byte(cell.(string)), &metadata)
-							if err != nil {
-								break
-							}
-							if locationsMap == nil {
-								locationsMap = make(map[string]struct{})
-							}
-							locationsMap[metadata.Region] = struct{}{}
-							if connectionsMap == nil {
-								connectionsMap = make(map[string]string)
-							}
-							connectionsMap[metadata.SourceID] = metadata.AccountID
-						case source.CloudAzure:
-							var metadata azuremodel.Metadata
-							err = json.Unmarshal([]byte(cell.(string)), &metadata)
-							if err != nil {
-								break
-							}
-							if locationsMap == nil {
-								locationsMap = make(map[string]struct{})
-							}
-							locationsMap[metadata.Location] = struct{}{}
-							if connectionsMap == nil {
-								connectionsMap = make(map[string]string)
-							}
-							connectionsMap[metadata.SourceID] = metadata.SubscriptionID
-						}
-						break
-					}
-				}
-				break
+		connectionsMap = make(map[string]string)
+		for _, src := range srcs {
+			if src.LifecycleState != onboardApi.ConnectionLifecycleStateOnboard {
+				continue
 			}
+			connectionsMap[src.ID.String()] = src.ConnectionID
+		}
+		isAllConnectionsQuery = "TRUE"
+	}
+	query := strings.ReplaceAll(j.Query, "$CONNECITON_ID", j.SourceID)
+	query = strings.ReplaceAll(query, "$IS_ALL_CONNECTIONS_QUERY", isAllConnectionsQuery)
+	if j.IsStack == true {
+		steampipeOption.Host = fmt.Sprintf("%s-steampipe-service.%s.svc.cluster.local", j.SourceID, CurrentWorkspaceID)
+	} else {
+		steampipeOption.Host = SteampipeHost
+	}
+	steampipeConn, err := steampipe.NewSteampipeDatabase(*steampipeOption)
+	if err != nil {
+		logger.Error("failed to create steampipe connection", zap.Error(err))
+		fail(fmt.Errorf("failed to create steampipe connection: %w", err))
+		return
+	}
+	fmt.Println("Initialized steampipe database: ", *steampipeConn)
+
+	res, err = steampipeConn.QueryAll(context.TODO(), query)
+	steampipeConn.Conn().Close()
+	if res != nil {
+		count = int64(len(res.Data))
+		for colNo, col := range res.Headers {
+			if strings.ToLower(col) != "kaytu_metadata" {
+				continue
+			}
+			for _, row := range res.Data {
+				for cellColNo, cell := range row {
+					if cellColNo != colNo {
+						continue
+					}
+					if cell == nil {
+						continue
+					}
+					switch j.SourceType {
+					case source.CloudAWS:
+						var metadata awsmodel.Metadata
+						err = json.Unmarshal([]byte(cell.(string)), &metadata)
+						if err != nil {
+							break
+						}
+						if locationsMap == nil {
+							locationsMap = make(map[string]struct{})
+						}
+						locationsMap[metadata.Region] = struct{}{}
+					case source.CloudAzure:
+						var metadata azuremodel.Metadata
+						err = json.Unmarshal([]byte(cell.(string)), &metadata)
+						if err != nil {
+							break
+						}
+						if locationsMap == nil {
+							locationsMap = make(map[string]struct{})
+						}
+						locationsMap[metadata.Location] = struct{}{}
+					}
+					break
+				}
+			}
+			break
 		}
 	}
+
 	if err == nil {
 		logger.Info("Got the results, uploading to s3")
 		objectName := fmt.Sprintf("%d-%d.out", j.InsightID, j.JobID)
