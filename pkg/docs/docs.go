@@ -6574,13 +6574,9 @@ const docTemplate = `{
                     "description": "Category (Tags[category])",
                     "type": "string"
                 },
-                "description": {
-                    "description": "Description",
-                    "type": "string"
-                },
                 "id": {
                     "description": "Query Id",
-                    "type": "integer"
+                    "type": "string"
                 },
                 "provider": {
                     "description": "Provider",
@@ -7949,6 +7945,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

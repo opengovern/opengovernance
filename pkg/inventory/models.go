@@ -15,11 +15,11 @@ type ResourceTypeTag struct {
 }
 
 type SmartQuery struct {
-	gorm.Model
-	Connector   string
-	Title       string
-	Description string
-	Query       string
+	ID        string `gorm:"primarykey"`
+	Connector source.Type
+	Title     string
+	Query     string
+	IsPopular bool
 }
 
 type SmartQueryHistory struct {

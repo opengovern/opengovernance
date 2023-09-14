@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -29,6 +30,26 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 	err = filepath.Walk(analyticsPath+"/spend", func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".json") {
 			return PopulateItem(logger, dbc, path, info, false)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	err = filepath.Walk(analyticsPath+"/finder/popular", func(path string, info fs.FileInfo, err error) error {
+		if strings.HasSuffix(path, ".json") {
+			return PopulateFinderItem(logger, dbc, path, info, true)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	err = filepath.Walk(analyticsPath+"/finder/others", func(path string, info fs.FileInfo, err error) error {
+		if strings.HasSuffix(path, ".json") {
+			return PopulateFinderItem(logger, dbc, path, info, false)
 		}
 		return nil
 	})
@@ -138,6 +159,41 @@ func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 			Columns:   []clause.Column{{Name: "key"}, {Name: "id"}}, // key column
 			DoUpdates: clause.AssignmentColumns([]string{"value"}),  // column needed to be updated
 		}).Create(t).Error
+	}
+	return nil
+}
+
+func PopulateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInfo, isPopular bool) error {
+	id := strings.TrimSuffix(info.Name(), ".json")
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	var item SmartQuery
+	err = json.Unmarshal(content, &item)
+	if err != nil {
+		return err
+	}
+
+	dbMetric := inventory.SmartQuery{
+		ID:        id,
+		Connector: item.Connector,
+		Title:     item.Title,
+		Query:     item.Query,
+		IsPopular: isPopular,
+	}
+
+	err = dbc.Model(&inventory.SmartQuery{}).Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "id"}}, // key column
+		DoUpdates: clause.AssignmentColumns([]string{"connector", "title", "query",
+			"is_popular"}), // column needed to be updated
+	}).Create(dbMetric).Error
+
+	if err != nil {
+		logger.Error("failure in insert", zap.Error(err))
+		return err
 	}
 	return nil
 }

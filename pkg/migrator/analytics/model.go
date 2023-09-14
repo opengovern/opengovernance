@@ -11,3 +11,9 @@ type Metric struct {
 	Tags        map[string][]string `json:"tags"`
 	Visible     *bool               `json:"visible"`
 }
+
+type SmartQuery struct {
+	Connector source.Type `json:"connector"`
+	Title     string      `json:"title"`
+	Query     string      `json:"query"`
+}

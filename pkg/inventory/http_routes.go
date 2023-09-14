@@ -2525,14 +2525,17 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 	for _, item := range queries {
 		category := ""
 
+		tags := map[string]string{}
+		if item.IsPopular {
+			tags["popular"] = "true"
+		}
 		result = append(result, inventoryApi.SmartQueryItem{
-			ID:          item.Model.ID,
-			Provider:    item.Connector,
-			Title:       item.Title,
-			Category:    category,
-			Description: item.Description,
-			Query:       item.Query,
-			Tags:        nil,
+			ID:       item.ID,
+			Provider: item.Connector.String(),
+			Title:    item.Title,
+			Category: category,
+			Query:    item.Query,
+			Tags:     tags,
 		})
 	}
 	return ctx.JSON(200, result)
