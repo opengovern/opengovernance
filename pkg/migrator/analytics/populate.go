@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
@@ -164,6 +165,8 @@ func PopulateItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInf
 }
 
 func PopulateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.FileInfo, isPopular bool) error {
+
+	context.Background()
 	id := strings.TrimSuffix(info.Name(), ".json")
 
 	content, err := os.ReadFile(path)

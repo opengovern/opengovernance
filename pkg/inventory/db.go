@@ -57,7 +57,7 @@ func (db Database) GetQueriesWithFilters(search *string, connectors []source.Typ
 		return nil, tx.Error
 	}
 
-	v := map[uint]SmartQuery{}
+	v := map[string]SmartQuery{}
 	for _, item := range s {
 		if _, ok := v[item.ID]; !ok {
 			v[item.ID] = item
