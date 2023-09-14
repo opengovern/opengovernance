@@ -223,8 +223,6 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		json.Unmarshal([]byte(tagsData), &tags)
 	}
 
-	var resources []string
-
 	file, err := ctx.FormFile("stateFile")
 	if err != nil {
 		if err.Error() != "http: no such file" {
@@ -233,13 +231,14 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 	}
 	stateConfig := ctx.FormValue("remoteStateConfig")
 	if file == nil && stateConfig == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "No resource provided")
+		return echo.NewHTTPError(http.StatusBadRequest, "No state file or remote backend provided")
 	}
 	configStr := ctx.FormValue("config")
 	if configStr == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Please provide the credentials")
 	}
 
+	var resources []string
 	var terraformResourceTypes []string
 	if file != nil {
 		src, err := file.Open()
@@ -293,7 +292,7 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		for key, value := range tags {
 			recordTags = append(recordTags, &StackTag{
 				Key:   key,
-				Value: pq.StringArray(value),
+				Value: value,
 			})
 		}
 	}
