@@ -477,8 +477,8 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc Descri
 // ================================================ STACKS ================================================
 
 func (s *Scheduler) scheduleStackJobs() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
+	//ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	//defer cancel()
 	s.logger.Info("Schedule stack jobs started")
 
 	kubeClient, err := s.httpServer.newKubeClient()
