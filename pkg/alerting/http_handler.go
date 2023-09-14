@@ -83,48 +83,52 @@ func (h HttpHandler) TriggerLoop() {
 			diff := 24 * time.Hour
 			oneDayAgo := time.Now().Add(-diff)
 			timeNow := time.Now()
-			number := strconv.Itoa(int(eventType.InsightId))
-			insight, err := h.complianceClient.GetInsight(&httpclient.Context{UserRole: api2.InternalRole}, number, []string{scope.ConnectionId}, &oneDayAgo, &timeNow)
+			insightID := strconv.Itoa(int(eventType.InsightId))
+			insight, err := h.complianceClient.GetInsight(&httpclient.Context{UserRole: api2.InternalRole}, insightID, []string{scope.ConnectionId}, &oneDayAgo, &timeNow)
 			if err != nil {
 				fmt.Errorf("error in getting GetInsight , error  equal to : %s", err)
 				return
 			}
+			if insight.TotalResultValue == nil {
+				continue
+			}
 
 			stat := compareValue(rule.Operator, int(rule.Value), int(*insight.TotalResultValue))
-			if stat == true {
-				var action Action
-				err = h.db.orm.Model(Rule{}).Where("id = ?", rule.ActionID).Find(&action).Error
-				if err != nil {
-					fmt.Errorf("error in getting action , error equal to : %s", err)
-					return
-				}
-
-				reqBody, err := json.Marshal(action.Body)
-				if err != nil {
-					fmt.Errorf("error in marshaling the body ,error equal to : %s", err)
-					return
-				}
-
-				req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer(reqBody))
-				if err != nil {
-					fmt.Errorf("error in sending the request , error equal to : %s", err)
-					return
-				}
-				req.Header.Add("Content-Type", "application/json")
-
-				res, err := http.DefaultClient.Do(req)
-				if err != nil {
-					fmt.Errorf("error equal to : %s", err)
-					return
-				}
-
-				err = res.Body.Close()
-				if err != nil {
-					fmt.Errorf("error equal to : %s", err)
-					return
-				}
-			} else {
+			if !stat {
 				continue
+			}
+			var action Action
+			action, err = h.db.GetAction(rule.ActionID)
+			if err != nil {
+				fmt.Errorf("error in getting action , error equal to : %v", err)
+			}
+
+			req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer([]byte(action.Body)))
+			if err != nil {
+				fmt.Printf("error in sending the request , error equal to : %v", err)
+				return
+			}
+			var headers map[string]string
+			err = json.Unmarshal(action.Headers, &headers)
+			if err != nil {
+				fmt.Printf("error in unmarshaling the headers  , error : %v", err)
+				return
+			}
+
+			for k, v := range headers {
+				req.Header.Add(k, v)
+			}
+
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				fmt.Printf("error equal to : %s", err)
+				return
+			}
+
+			err = res.Body.Close()
+			if err != nil {
+				fmt.Errorf("error equal to : %s", err)
+				return
 			}
 		}
 	}
@@ -135,40 +139,29 @@ func compareValue(operator string, value int, totalValue int) bool {
 	case ">":
 		if totalValue > value {
 			return true
-		} else {
-			return false
 		}
 	case "<":
 		if totalValue < value {
 			return true
-		} else {
-			return false
 		}
 	case ">=":
 		if totalValue >= value {
 			return true
-		} else {
-			return false
 		}
 	case "<=":
 		if totalValue <= value {
 			return true
-		} else {
-			return false
 		}
 	case "=":
 		if totalValue == value {
 			return true
-		} else {
-			return false
 		}
 	case "!=":
 		if totalValue != value {
 			return true
-		} else {
-			return false
 		}
 	default:
 		return false
 	}
+	return false
 }

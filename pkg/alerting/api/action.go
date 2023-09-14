@@ -1,9 +1,5 @@
 package api
 
-type Headers struct {
-	Authorizations string
-}
-
 type ApiAction struct {
 	ID      uint              `json:"id"`
 	Method  string            `json:"method"`

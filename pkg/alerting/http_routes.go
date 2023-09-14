@@ -85,8 +85,8 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 //	@Description	create a rule by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			request	body		api.ApiRule	true	"Request Body"
-//	@Success		200		{object}	string
+//	@Param			request		body		api.ApiRule	true	"Request Body"
+//	@Success		200			{object}	string
 //	@Router			/alerting/api/rule/create [post]
 func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 	var req api.ApiRule
