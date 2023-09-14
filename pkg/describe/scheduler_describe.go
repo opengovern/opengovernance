@@ -479,9 +479,11 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc Descri
 func (s *Scheduler) scheduleStackJobs() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
+	s.logger.Info("Schedule stack jobs started")
 
 	kubeClient, err := s.httpServer.newKubeClient()
 	if err != nil {
+		s.logger.Error(fmt.Sprintf("failt to make new kube client: %s", err.Error()))
 		return fmt.Errorf("failt to make new kube client: %w", err)
 	}
 	s.httpServer.kubeClient = kubeClient
@@ -492,12 +494,12 @@ func (s *Scheduler) scheduleStackJobs() error {
 		return err
 	}
 	for _, stack := range stacks {
-
 		helmRelease, err := s.httpServer.findHelmRelease(ctx, stack.ToApi(), CurrentWorkspaceID)
 		if err != nil {
+			s.logger.Error(fmt.Sprintf("could not find helm release: %s", err.Error()))
 			return fmt.Errorf("could not find helm release: %w", err)
 		}
-
+		s.logger.Info(fmt.Sprintf("Helm release creating for stack: %s", stack.StackID))
 		if helmRelease == nil {
 			if err := s.httpServer.createStackHelmRelease(ctx, CurrentWorkspaceID, stack.ToApi()); err != nil {
 				s.logger.Error(fmt.Sprintf("failed to create helm release for stack: %s", stack.StackID), zap.Error(err))
@@ -508,8 +510,10 @@ func (s *Scheduler) scheduleStackJobs() error {
 			}
 		} else {
 			if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
+				s.logger.Info(fmt.Sprintf("Helm release created for stack: %s", stack.StackID))
 				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCreated)
 			} else if meta.IsStatusConditionFalse(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
+				s.logger.Info(fmt.Sprintf("Helm release not ready for stack: %s", stack.StackID))
 				if !helmRelease.Spec.Suspend {
 					helmRelease.Spec.Suspend = true
 					err = s.httpServer.kubeClient.Update(ctx, helmRelease)
@@ -528,6 +532,7 @@ func (s *Scheduler) scheduleStackJobs() error {
 					}
 				}
 			} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
+				s.logger.Info(fmt.Sprintf("Helm release stalled for stack: %s", stack.StackID))
 				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusStalled) // Temporary for debug
 			}
 		}
