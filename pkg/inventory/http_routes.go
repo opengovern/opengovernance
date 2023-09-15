@@ -2531,7 +2531,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 		}
 		result = append(result, inventoryApi.SmartQueryItem{
 			ID:         item.ID,
-			Connectors: item.Connectors,
+			Connectors: source.ParseTypes(item.Connectors),
 			Title:      item.Title,
 			Category:   category,
 			Query:      item.Query,

@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"github.com/lib/pq"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
@@ -15,8 +16,8 @@ type ResourceTypeTag struct {
 }
 
 type SmartQuery struct {
-	ID         string `gorm:"primarykey"`
-	Connectors []source.Type
+	ID         string         `gorm:"primarykey"`
+	Connectors pq.StringArray `gorm:"type:text[]"`
 	Title      string
 	Query      string
 	IsPopular  bool

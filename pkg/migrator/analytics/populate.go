@@ -180,9 +180,14 @@ func PopulateFinderItem(logger *zap.Logger, dbc *gorm.DB, path string, info fs.F
 		return err
 	}
 
+	var connectors []string
+	for _, c := range item.Connectors {
+		connectors = append(connectors, string(c))
+	}
+
 	dbMetric := inventory.SmartQuery{
 		ID:         id,
-		Connectors: item.Connectors,
+		Connectors: connectors,
 		Title:      item.Title,
 		Query:      item.Query,
 		IsPopular:  isPopular,
