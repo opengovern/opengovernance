@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
 	"io"
@@ -128,8 +129,8 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		rtCount[dc.ResourceType]++
 
 		maxCount := 25
-		if dc.ResourceType == "Microsoft.CostManagement/CostByResourceType" {
-			maxCount = 1
+		if m, ok := es.ResourceRateLimit[dc.ResourceType]; ok {
+			maxCount = m
 		}
 
 		currentCount := 0
