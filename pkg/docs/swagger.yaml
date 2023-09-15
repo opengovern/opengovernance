@@ -1167,11 +1167,6 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest:
     properties:
-      connectorsFilter:
-        description: Specifies the Connectors
-        items:
-          $ref: '#/definitions/source.Type'
-        type: array
       titleFilter:
         description: Specifies the Title
         type: string
@@ -1370,11 +1365,13 @@ definitions:
       category:
         description: Category (Tags[category])
         type: string
+      connectors:
+        description: Provider
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
       id:
         description: Query Id
-        type: string
-      provider:
-        description: Provider
         type: string
       query:
         description: Query

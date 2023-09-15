@@ -2513,7 +2513,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetQueriesWithFilters")
 
-	queries, err := h.db.GetQueriesWithFilters(search, req.Connectors)
+	queries, err := h.db.GetQueriesWithFilters(search)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -2530,12 +2530,12 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 			tags["popular"] = "true"
 		}
 		result = append(result, inventoryApi.SmartQueryItem{
-			ID:       item.ID,
-			Provider: item.Connector.String(),
-			Title:    item.Title,
-			Category: category,
-			Query:    item.Query,
-			Tags:     tags,
+			ID:         item.ID,
+			Connectors: item.Connectors,
+			Title:      item.Title,
+			Category:   category,
+			Query:      item.Query,
+			Tags:       tags,
 		})
 	}
 	return ctx.JSON(200, result)

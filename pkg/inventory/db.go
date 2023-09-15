@@ -35,21 +35,13 @@ func (db Database) Initialize() error {
 	return nil
 }
 
-// GetQueriesWithFilters gets list of all queries filtered by tags and search
-func (db Database) GetQueriesWithFilters(search *string, connectors []source.Type) ([]SmartQuery, error) {
+func (db Database) GetQueriesWithFilters(search *string) ([]SmartQuery, error) {
 	var s []SmartQuery
 
 	m := db.orm.Model(&SmartQuery{})
 
 	if search != nil {
 		m = m.Where("title like ?", "%"+*search+"%")
-	}
-	if len(connectors) > 0 {
-		connectorStr := make([]string, 0, len(connectors))
-		for _, c := range connectors {
-			connectorStr = append(connectorStr, c.String())
-		}
-		m = m.Where("connector IN ?", connectorStr)
 	}
 	tx := m.Find(&s)
 

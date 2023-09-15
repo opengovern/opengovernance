@@ -13,7 +13,7 @@ type Metric struct {
 }
 
 type SmartQuery struct {
-	Connector source.Type `json:"connector"`
-	Title     string      `json:"title"`
-	Query     string      `json:"query"`
+	Connectors []source.Type `json:"connectors"`
+	Title      string        `json:"title"`
+	Query      string        `json:"query"`
 }

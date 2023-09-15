@@ -6294,13 +6294,6 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest": {
             "type": "object",
             "properties": {
-                "connectorsFilter": {
-                    "description": "Specifies the Connectors",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/source.Type"
-                    }
-                },
                 "titleFilter": {
                     "description": "Specifies the Title",
                     "type": "string"
@@ -6574,12 +6567,15 @@ const docTemplate = `{
                     "description": "Category (Tags[category])",
                     "type": "string"
                 },
+                "connectors": {
+                    "description": "Provider",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    }
+                },
                 "id": {
                     "description": "Query Id",
-                    "type": "string"
-                },
-                "provider": {
-                    "description": "Provider",
                     "type": "string"
                 },
                 "query": {
