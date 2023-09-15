@@ -9,9 +9,9 @@ type ApiAction struct {
 }
 
 type UpdateActionRequest struct {
-	ID      uint               `json:"id"`
-	Method  *string            `json:"method"`
-	Url     *string            `json:"url"`
-	Headers *map[string]string `json:"headers"`
-	Body    *string            `json:"body"`
+	ID      uint              `json:"id"`
+	Method  *string           `json:"method"`
+	Url     *string           `json:"url"`
+	Headers map[string]string `json:"headers"`
+	Body    *string           `json:"body"`
 }
