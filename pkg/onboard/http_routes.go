@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
+	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -821,6 +822,11 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		}
 	}
 
+	for idx, c := range apiCredential.Connections {
+		c.ConnectionName = demo.EncodeResponseData(ctx, c.ConnectionName)
+		c.ConnectionID = demo.EncodeResponseData(ctx, c.ConnectionID)
+		apiCredential.Connections[idx] = c
+	}
 	return ctx.JSON(http.StatusOK, apiCredential)
 }
 
@@ -2663,6 +2669,11 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	})
 
 	result.Connections = utils.Paginate(pageNumber, pageSize, result.Connections)
+	for idx, cnn := range result.Connections {
+		cnn.ConnectionID = demo.EncodeResponseData(ctx, cnn.ConnectionID)
+		cnn.ConnectionName = demo.EncodeResponseData(ctx, cnn.ConnectionName)
+		result.Connections[idx] = cnn
+	}
 	return ctx.JSON(http.StatusOK, result)
 }
 
