@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -2136,6 +2137,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		}
 
 		var category, accountID string
+		dimensionName := m.DimensionName
 		if dimension == inventoryApi.SpendDimensionMetric {
 			for _, metric := range metrics {
 				if m.DimensionID == metric.ID {
@@ -2153,15 +2155,16 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 			}
 		} else if dimension == inventoryApi.SpendDimensionConnection {
 			if v, ok := connectionAccountIDMap[m.DimensionID]; ok {
-				accountID = v
+				accountID = demo.EncodeResponseData(ctx, v)
 			} else {
 				src, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.InternalRole}, m.DimensionID)
 				if err != nil {
 					return err
 				}
-				accountID = src.ConnectionID
+				accountID = demo.EncodeResponseData(ctx, src.ConnectionID)
 				connectionAccountIDMap[m.DimensionID] = accountID
 			}
+			dimensionName = demo.EncodeResponseData(ctx, dimensionName)
 		}
 
 		table = append(table, inventoryApi.SpendTableRow{
@@ -2169,7 +2172,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 			AccountID:     accountID,
 			Connector:     m.Connector,
 			Category:      category,
-			DimensionName: m.DimensionName,
+			DimensionName: dimensionName,
 			CostValue:     costValue,
 		})
 	}
