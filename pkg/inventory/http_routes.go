@@ -518,18 +518,19 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) (map[str
 			monthStr := time.Unix(dateTimestamp, 0).Format("2006-01")
 			yearStr := time.Unix(dateTimestamp, 0).Format("2006")
 			connection := spend.ConnectionMetricTrendSummary{
-				ConnectionID:   connectionID,
-				ConnectionName: conn.ConnectionName,
-				Connector:      hit.Connector,
-				Date:           dateStr,
-				DateEpoch:      dateTimestamp * 1000,
-				Month:          monthStr,
-				Year:           yearStr,
-				MetricID:       metricID,
-				MetricName:     metricName,
-				CostValue:      hit.CostValue,
-				PeriodStart:    hit.PeriodStart * 1000,
-				PeriodEnd:      hit.PeriodEnd * 1000,
+				ConnectionID:    connectionID,
+				ConnectionName:  conn.ConnectionName,
+				Connector:       hit.Connector,
+				Date:            dateStr,
+				DateEpoch:       dateTimestamp * 1000,
+				Month:           monthStr,
+				Year:            yearStr,
+				MetricID:        metricID,
+				MetricName:      metricName,
+				CostValue:       hit.CostValue,
+				PeriodStart:     hit.PeriodStart * 1000,
+				PeriodEnd:       hit.PeriodEnd * 1000,
+				IsJobSuccessful: true,
 			}
 			key := fmt.Sprintf("%s-%s-%s", connectionID.String(), metricID, dateStr)
 			if v, ok := connectionMap[key]; ok {
@@ -540,16 +541,18 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) (map[str
 			}
 
 			connector := spend.ConnectorMetricTrendSummary{
-				Connector:   hit.Connector,
-				Date:        dateStr,
-				DateEpoch:   dateTimestamp * 1000,
-				Month:       monthStr,
-				Year:        yearStr,
-				MetricID:    metricID,
-				MetricName:  metricName,
-				CostValue:   hit.CostValue,
-				PeriodStart: hit.PeriodStart * 1000,
-				PeriodEnd:   hit.PeriodEnd * 1000,
+				Connector:                  hit.Connector,
+				Date:                       dateStr,
+				DateEpoch:                  dateTimestamp * 1000,
+				Month:                      monthStr,
+				Year:                       yearStr,
+				MetricID:                   metricID,
+				MetricName:                 metricName,
+				CostValue:                  hit.CostValue,
+				PeriodStart:                hit.PeriodStart * 1000,
+				PeriodEnd:                  hit.PeriodEnd * 1000,
+				TotalConnections:           0, //TODO
+				TotalSuccessfulConnections: 0, //TODO
 			}
 			key = fmt.Sprintf("%s-%s-%s", connector.Connector, metricID, dateStr)
 			if dateStr == "2023-07-05" && metricID == "spend_amazon_elastic_compute_cloud___compute" {
@@ -1390,12 +1393,13 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 //	@Param			filter			query		string			false	"Filter costs"
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost,growth,growth_rate)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
+//	@Param			metricIDs		query		[]string		false	"Metric IDs"
 //	@Success		200				{object}	inventoryApi.ListCostMetricsResponse
 //	@Router			/inventory/api/v2/analytics/spend/metric [get]
 func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
@@ -1427,11 +1431,12 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 	}
 
 	aDB := analyticsDB.NewDatabase(h.db.orm)
-	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, nil, connectorTypes, false)
+	metricIds := httpserver.QueryArrayParam(ctx, "metricIDs")
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, connectorTypes, false)
 	if err != nil {
 		return err
 	}
-	var metricIds []string
+	metricIds = []string{}
 	for _, m := range metrics {
 		metricIds = append(metricIds, m.ID)
 	}

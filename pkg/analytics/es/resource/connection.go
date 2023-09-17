@@ -11,16 +11,17 @@ const (
 )
 
 type ConnectionMetricTrendSummary struct {
-	ConnectionID   uuid.UUID   `json:"connection_id"`
-	ConnectionName string      `json:"connection_name"`
-	Connector      source.Type `json:"connector"`
-	EvaluatedAt    int64       `json:"evaluated_at"`
-	Date           string      `json:"date"`
-	Month          string      `json:"month"`
-	Year           string      `json:"year"`
-	MetricID       string      `json:"metric_id"`
-	MetricName     string      `json:"metric_name"`
-	ResourceCount  int         `json:"resource_count"`
+	ConnectionID    uuid.UUID   `json:"connection_id"`
+	ConnectionName  string      `json:"connection_name"`
+	Connector       source.Type `json:"connector"`
+	EvaluatedAt     int64       `json:"evaluated_at"`
+	Date            string      `json:"date"`
+	Month           string      `json:"month"`
+	Year            string      `json:"year"`
+	MetricID        string      `json:"metric_id"`
+	MetricName      string      `json:"metric_name"`
+	ResourceCount   int         `json:"resource_count"`
+	IsJobSuccessful bool        `json:"is_job_successful"`
 }
 
 func (r ConnectionMetricTrendSummary) KeysAndIndex() ([]string, string) {

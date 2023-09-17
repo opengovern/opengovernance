@@ -10,3 +10,9 @@ type DescribeSingleResourceRequest struct {
 	SecretKey        string
 	AdditionalFields map[string]string
 }
+
+type DescribeStatus struct {
+	ConnectionID string
+	Connector    string
+	Status       DescribeResourceJobStatus
+}

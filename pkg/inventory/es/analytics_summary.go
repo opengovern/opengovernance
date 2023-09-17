@@ -329,6 +329,10 @@ func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, m
 				rangeKey := int((evaluatedAtRangeBucket.From + evaluatedAtRangeBucket.To) / 2)
 				for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
 					hits[rangeKey] += hit.Source.ResourceCount
+					//hits[rangeKey].TotalConnectionCount++
+					//if hit.Source.IsJobSuccessful {
+					//	hits[rangeKey].TotalSuccessConnectionCount++
+					//}
 				}
 			}
 		}
@@ -463,6 +467,10 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 				rangeKey := int((evaluatedAtRangeBucket.From + evaluatedAtRangeBucket.To) / 2)
 				for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
 					hits[rangeKey] += hit.Source.ResourceCount
+					//hits[rangeKey].TotalConnectionCount++
+					//if hit.Source.IsJobSuccessful {
+					//	hits[rangeKey].TotalSuccessConnectionCount++
+					//}
 				}
 			}
 		}

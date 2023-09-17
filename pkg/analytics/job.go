@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
+	api3 "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	"reflect"
 	"strings"
 	"time"
@@ -45,6 +47,7 @@ func (j *Job) Do(
 	kfkProducer *confluent_kafka.Producer,
 	kfkTopic string,
 	onboardClient onboardClient.OnboardServiceClient,
+	schedulerClient client.SchedulerServiceClient,
 	logger *zap.Logger,
 ) JobResult {
 	result := JobResult{
@@ -53,7 +56,7 @@ func (j *Job) Do(
 		Error:  "",
 	}
 
-	if err := j.Run(db, steampipeDB, kfkProducer, kfkTopic, onboardClient, logger); err != nil {
+	if err := j.Run(db, steampipeDB, kfkProducer, kfkTopic, schedulerClient, onboardClient, logger); err != nil {
 		result.Error = err.Error()
 		result.Status = JobCompletedWithFailure
 	}
@@ -65,6 +68,7 @@ func (j *Job) Run(
 	steampipeDB *steampipe.Database,
 	kfkProducer *confluent_kafka.Producer,
 	kfkTopic string,
+	schedulerClient client.SchedulerServiceClient,
 	onboardClient onboardClient.OnboardServiceClient,
 	logger *zap.Logger) error {
 	startTime := time.Now()
@@ -77,6 +81,30 @@ func (j *Job) Run(
 
 	for _, metric := range metrics {
 		if metric.Type == db.MetricTypeAssets {
+			s := map[string]api3.DescribeStatus{}
+			for _, resourceType := range metric.Tables {
+				status, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: api2.InternalRole}, resourceType)
+				if err != nil {
+					return err
+				}
+
+				for _, st := range status {
+					if v, ok := s[st.ConnectionID]; ok {
+						if st.Status != api3.DescribeResourceJobSucceeded {
+							v.Status = st.Status
+							s[st.ConnectionID] = v
+						}
+					} else {
+						s[st.ConnectionID] = st
+					}
+				}
+			}
+
+			var status []api3.DescribeStatus
+			for _, v := range s {
+				status = append(status, v)
+			}
+
 			err = j.DoAssetMetric(
 				steampipeDB,
 				kfkProducer,
@@ -86,11 +114,39 @@ func (j *Job) Run(
 				metric,
 				connectionCache,
 				startTime,
+				status,
 			)
 			if err != nil {
 				return err
 			}
 		} else {
+			awsStatus, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: api2.InternalRole}, "AWS::CostExplorer::ByServiceDaily")
+			if err != nil {
+				return err
+			}
+
+			azureStatus, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: api2.InternalRole}, "Microsoft.CostManagement/CostByResourceType")
+			if err != nil {
+				return err
+			}
+
+			s := map[string]api3.DescribeStatus{}
+			for _, st := range append(awsStatus, azureStatus...) {
+				if v, ok := s[st.ConnectionID]; ok {
+					if st.Status != api3.DescribeResourceJobSucceeded {
+						v.Status = st.Status
+						s[st.ConnectionID] = v
+					}
+				} else {
+					s[st.ConnectionID] = st
+				}
+			}
+
+			var status []api3.DescribeStatus
+			for _, v := range s {
+				status = append(status, v)
+			}
+
 			for i := 6; i >= 0; i-- {
 				theDate := time.Now().UTC().AddDate(0, 0, -1*i)
 				year, month, day := theDate.Date()
@@ -107,6 +163,7 @@ func (j *Job) Run(
 					connectionCache,
 					start,
 					end,
+					status,
 				)
 				if err != nil {
 					return err
@@ -126,6 +183,7 @@ func (j *Job) DoAssetMetric(
 	metric db.AnalyticMetric,
 	connectionCache map[string]api.Connection,
 	startTime time.Time,
+	status []api3.DescribeStatus,
 ) error {
 	connectionResultMap := map[string]resource.ConnectionMetricTrendSummary{}
 	providerResultMap := map[string]resource.ConnectorMetricTrendSummary{}
@@ -135,6 +193,15 @@ func (j *Job) DoAssetMetric(
 	res, err := steampipeDB.QueryAll(context.TODO(), metric.Query)
 	if err != nil {
 		return err
+	}
+
+	connectorCount := map[string]int64{}
+	connectorSuccessCount := map[string]int64{}
+	for _, st := range status {
+		connectorCount[st.Connector]++
+		if st.Status == api3.DescribeResourceJobSucceeded {
+			connectorSuccessCount[st.Connector]++
+		}
 	}
 
 	for _, record := range res.Data {
@@ -173,21 +240,31 @@ func (j *Job) DoAssetMetric(
 			connectionCache[sourceID] = *conn
 		}
 
+		isJobSuccessful := true
+		for _, st := range status {
+			if st.ConnectionID == conn.ID.String() {
+				if st.Status == api3.DescribeResourceJobFailed || st.Status == api3.DescribeResourceJobTimeout {
+					isJobSuccessful = false
+				}
+			}
+		}
+
 		if v, ok := connectionResultMap[conn.ID.String()]; ok {
 			v.ResourceCount += int(count)
 			connectionResultMap[conn.ID.String()] = v
 		} else {
 			vn := resource.ConnectionMetricTrendSummary{
-				ConnectionID:   conn.ID,
-				ConnectionName: conn.ConnectionName,
-				Connector:      conn.Connector,
-				MetricID:       metric.ID,
-				MetricName:     metric.Name,
-				ResourceCount:  int(count),
-				EvaluatedAt:    startTime.UnixMilli(),
-				Date:           startTime.Format("2006-01-02"),
-				Month:          startTime.Format("2006-01"),
-				Year:           startTime.Format("2006"),
+				ConnectionID:    conn.ID,
+				ConnectionName:  conn.ConnectionName,
+				Connector:       conn.Connector,
+				EvaluatedAt:     startTime.UnixMilli(),
+				Date:            startTime.Format("2006-01-02"),
+				Month:           startTime.Format("2006-01"),
+				Year:            startTime.Format("2006"),
+				MetricID:        metric.ID,
+				MetricName:      metric.Name,
+				ResourceCount:   int(count),
+				IsJobSuccessful: isJobSuccessful,
 			}
 			connectionResultMap[conn.ID.String()] = vn
 		}
@@ -197,14 +274,16 @@ func (j *Job) DoAssetMetric(
 			providerResultMap[conn.Connector.String()] = v
 		} else {
 			vn := resource.ConnectorMetricTrendSummary{
-				Connector:     conn.Connector,
-				EvaluatedAt:   startTime.UnixMilli(),
-				Date:          startTime.Format("2006-01-02"),
-				Month:         startTime.Format("2006-01"),
-				Year:          startTime.Format("2006"),
-				MetricID:      metric.ID,
-				MetricName:    metric.Name,
-				ResourceCount: int(count),
+				Connector:                  conn.Connector,
+				EvaluatedAt:                startTime.UnixMilli(),
+				Date:                       startTime.Format("2006-01-02"),
+				Month:                      startTime.Format("2006-01"),
+				Year:                       startTime.Format("2006"),
+				MetricID:                   metric.ID,
+				MetricName:                 metric.Name,
+				ResourceCount:              int(count),
+				TotalConnections:           connectorCount[string(conn.Connector)],
+				TotalSuccessfulConnections: connectorSuccessCount[string(conn.Connector)],
 			}
 			providerResultMap[conn.Connector.String()] = vn
 		}
@@ -259,6 +338,7 @@ func (j *Job) DoSpendMetric(
 	connectionCache map[string]api.Connection,
 	startTime time.Time,
 	endTime time.Time,
+	status []api3.DescribeStatus,
 ) error {
 	connectionResultMap := map[string]spend.ConnectionMetricTrendSummary{}
 	providerResultMap := map[string]spend.ConnectorMetricTrendSummary{}
@@ -272,6 +352,15 @@ func (j *Job) DoSpendMetric(
 	res, err := steampipeDB.QueryAll(context.TODO(), query)
 	if err != nil {
 		return err
+	}
+
+	connectorCount := map[string]int64{}
+	connectorSuccessCount := map[string]int64{}
+	for _, st := range status {
+		connectorCount[st.Connector]++
+		if st.Status == api3.DescribeResourceJobSucceeded {
+			connectorSuccessCount[st.Connector]++
+		}
 	}
 
 	for _, record := range res.Data {
@@ -306,24 +395,34 @@ func (j *Job) DoSpendMetric(
 			connectionCache[connectionID] = *conn
 		}
 
+		isJobSuccessful := true
+		for _, st := range status {
+			if st.ConnectionID == conn.ID.String() {
+				if st.Status == api3.DescribeResourceJobFailed || st.Status == api3.DescribeResourceJobTimeout {
+					isJobSuccessful = false
+				}
+			}
+		}
+
 		dateTimestamp := startTime.Add(endTime.Sub(startTime) / 2)
 		if v, ok := connectionResultMap[conn.ID.String()]; ok {
 			v.CostValue += sum
 			connectionResultMap[conn.ID.String()] = v
 		} else {
 			vn := spend.ConnectionMetricTrendSummary{
-				ConnectionID:   conn.ID,
-				ConnectionName: conn.ConnectionName,
-				Connector:      conn.Connector,
-				Date:           dateTimestamp.Format("2006-01-02"),
-				DateEpoch:      dateTimestamp.UnixMilli(),
-				Month:          dateTimestamp.Format("2006-01"),
-				Year:           dateTimestamp.Format("2006"),
-				MetricID:       metric.ID,
-				MetricName:     metric.Name,
-				CostValue:      sum,
-				PeriodStart:    startTime.UnixMilli(),
-				PeriodEnd:      endTime.UnixMilli(),
+				ConnectionID:    conn.ID,
+				ConnectionName:  conn.ConnectionName,
+				Connector:       conn.Connector,
+				Date:            dateTimestamp.Format("2006-01-02"),
+				DateEpoch:       dateTimestamp.UnixMilli(),
+				Month:           dateTimestamp.Format("2006-01"),
+				Year:            dateTimestamp.Format("2006"),
+				MetricID:        metric.ID,
+				MetricName:      metric.Name,
+				CostValue:       sum,
+				PeriodStart:     startTime.UnixMilli(),
+				PeriodEnd:       endTime.UnixMilli(),
+				IsJobSuccessful: isJobSuccessful,
 			}
 			connectionResultMap[conn.ID.String()] = vn
 		}
@@ -333,16 +432,18 @@ func (j *Job) DoSpendMetric(
 			providerResultMap[conn.Connector.String()] = v
 		} else {
 			vn := spend.ConnectorMetricTrendSummary{
-				Connector:   conn.Connector,
-				Date:        dateTimestamp.Format("2006-01-02"),
-				DateEpoch:   dateTimestamp.UnixMilli(),
-				Month:       dateTimestamp.Format("2006-01"),
-				Year:        dateTimestamp.Format("2006"),
-				MetricID:    metric.ID,
-				MetricName:  metric.Name,
-				CostValue:   sum,
-				PeriodStart: startTime.UnixMilli(),
-				PeriodEnd:   endTime.UnixMilli(),
+				Connector:                  conn.Connector,
+				Date:                       dateTimestamp.Format("2006-01-02"),
+				DateEpoch:                  dateTimestamp.UnixMilli(),
+				Month:                      dateTimestamp.Format("2006-01"),
+				Year:                       dateTimestamp.Format("2006"),
+				MetricID:                   metric.ID,
+				MetricName:                 metric.Name,
+				CostValue:                  sum,
+				PeriodStart:                startTime.UnixMilli(),
+				PeriodEnd:                  endTime.UnixMilli(),
+				TotalConnections:           connectorCount[string(conn.Connector)],
+				TotalSuccessfulConnections: connectorSuccessCount[string(conn.Connector)],
 			}
 			providerResultMap[conn.Connector.String()] = vn
 		}

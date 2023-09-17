@@ -61,6 +61,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerDescribeJobV1, apiAuth.AdminRole))
 	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
 	v1.PUT("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, apiAuth.InternalRole))
+	v1.GET("/describe/status", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
 
 	stacks := v1.Group("/stacks")
 	stacks.GET("", httpserver.AuthorizeHandler(h.ListStack, apiAuth.ViewerRole))
@@ -187,6 +188,15 @@ func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
 	}
 	return ctx.JSON(http.StatusOK, "")
+}
+
+func (h HttpServer) GetDescribeStatus(ctx echo.Context) error {
+	resourceType := ctx.QueryParam("resource_type")
+	status, err := h.DB.GetDescribeStatus(resourceType)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, status)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {

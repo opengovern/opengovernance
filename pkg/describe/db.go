@@ -6,6 +6,7 @@ import (
 	"fmt"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -232,6 +233,25 @@ func (db Database) UpdateDescribeConnectionJobToInProgress(id uint) error {
 	}
 
 	return nil
+}
+
+func (db Database) GetDescribeStatus(resourceType string) ([]api.DescribeStatus, error) {
+	var job []api.DescribeStatus
+
+	tx := db.orm.Raw(`with conns as (
+    select 
+        connection_id, max(updated_at) as updated_at 
+    from describe_connection_jobs 
+    where lower(resource_type) = ? and status in ('SUCCEEDED', 'FAILED', 'TIMEOUT') group by 1
+)
+select j.connection_id, j.connector, j.status from describe_connection_jobs j inner join conns c on j.connection_id = c.connection_id where j.updated_at = c.updated_at;`, strings.ToLower(resourceType)).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
 }
 
 //
