@@ -2127,7 +2127,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -2166,6 +2170,16 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "page number - default is 1",
                         "name": "pageNumber",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Metric IDs",
+                        "name": "metricIDs",
                         "in": "query"
                     }
                 ],
@@ -6498,6 +6512,12 @@ const docTemplate = `{
                 "date": {
                     "type": "string",
                     "format": "date-time"
+                },
+                "totalConnectionCount": {
+                    "type": "integer"
+                },
+                "totalSuccessfulDescribedConnectionCount": {
+                    "type": "integer"
                 }
             }
         },

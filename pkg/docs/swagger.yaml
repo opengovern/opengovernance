@@ -1318,6 +1318,10 @@ definitions:
       date:
         format: date-time
         type: string
+      totalConnectionCount:
+        type: integer
+      totalSuccessfulDescribedConnectionCount:
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryRequest:
     properties:
@@ -3728,10 +3732,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -3757,6 +3764,13 @@ paths:
         in: query
         name: pageNumber
         type: integer
+      - collectionFormat: csv
+        description: Metric IDs
+        in: query
+        items:
+          type: string
+        name: metricIDs
+        type: array
       produces:
       - application/json
       responses:
