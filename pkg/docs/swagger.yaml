@@ -3896,6 +3896,10 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - description: Connector
+        in: query
+        name: connector
+        type: string
       - collectionFormat: csv
         description: Metrics IDs
         in: query
