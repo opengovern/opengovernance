@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.24
 	github.com/aws/aws-sdk-go-v2/service/iam v1.18.9
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.16.8
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.38.5
 	github.com/aws/aws-sdk-go-v2/service/sts v1.19.0
 	github.com/aws/smithy-go v1.14.2
 	github.com/brpaz/echozap v1.1.3
@@ -33,9 +33,9 @@ require (
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
-	github.com/kaytu-io/kaytu-aws-describer v0.5.0
-	github.com/kaytu-io/kaytu-azure-describer v0.4.0
-	github.com/kaytu-io/kaytu-util v0.0.0-20230907134645-2e927b7c158e
+	github.com/kaytu-io/kaytu-aws-describer v0.5.5
+	github.com/kaytu-io/kaytu-azure-describer v0.4.6
+	github.com/kaytu-io/kaytu-util v0.0.0-20230909233654-d1d27d2e49ef
 	github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/labstack/gommon v0.4.0
@@ -200,7 +200,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.41 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.35 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.34 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.16 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.1.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.16.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/account v1.10.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/acm v1.14.8 // indirect
@@ -268,11 +268,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/imagebuilder v1.23.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/inspector v1.12.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/inspector2 v1.16.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.9 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.14 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.36 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.35 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.27 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.8 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.35 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.15.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kafka v1.18.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/keyspaces v1.1.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.15.21 // indirect
