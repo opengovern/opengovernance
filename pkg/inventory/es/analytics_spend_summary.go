@@ -655,10 +655,10 @@ type ConnectorSpendTrendQueryResponse struct {
 					Key     string `json:"key"`
 					Buckets []struct {
 						MaxConnections struct {
-							Value int64 `json:"value"`
+							Value float64 `json:"value"`
 						} `json:"max_total"`
 						MaxSuccessfulConnections struct {
-							Value int64 `json:"value"`
+							Value float64 `json:"value"`
 						} `json:"max_successful"`
 					} `json:"buckets"`
 				} `json:"jobs"`
