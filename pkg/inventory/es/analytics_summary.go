@@ -392,6 +392,8 @@ type DatapointWithFailures struct {
 	TotalConnections           int64
 
 	connectionSuccess map[string]bool
+	connectorSuccess  map[string]int64
+	connectorTotal    map[string]int64
 }
 
 func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []source.Type, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]DatapointWithFailures, error) {
@@ -491,28 +493,34 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 			for _, evaluatedAtRangeBucket := range connector.EvaluatedAtRangeGroup.Buckets {
 				rangeKey := int((evaluatedAtRangeBucket.From + evaluatedAtRangeBucket.To) / 2)
 				for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
-					if v, ok := hits[rangeKey]; !ok {
+					v, ok := hits[rangeKey]
+					if !ok {
 						hits[rangeKey] = DatapointWithFailures{
-							Count:                      hit.Source.ResourceCount,
-							TotalSuccessfulConnections: hit.Source.TotalSuccessfulConnections,
-							TotalConnections:           hit.Source.TotalConnections,
+							connectorTotal:   map[string]int64{},
+							connectorSuccess: map[string]int64{},
 						}
-					} else {
-						v.Count += hit.Source.ResourceCount
-
-						if hit.Source.TotalConnections > v.TotalConnections {
-							v.TotalConnections = hit.Source.TotalConnections
-						}
-						if hit.Source.TotalSuccessfulConnections < v.TotalSuccessfulConnections {
-							v.TotalSuccessfulConnections = hit.Source.TotalSuccessfulConnections
-						}
-						hits[rangeKey] = v
 					}
+
+					v.Count += hit.Source.ResourceCount
+					v.connectorTotal[hit.Source.Connector.String()] = max(v.connectorTotal[hit.Source.Connector.String()], hit.Source.TotalConnections)
+					v.connectorSuccess[hit.Source.Connector.String()] = min(v.connectorSuccess[hit.Source.Connector.String()], hit.Source.TotalSuccessfulConnections)
+					hits[rangeKey] = v
 				}
 			}
 		}
 	}
 
+	for k, v := range hits {
+		for _, total := range v.connectorTotal {
+			v.TotalConnections += total
+		}
+		for _, total := range v.connectorSuccess {
+			v.TotalSuccessfulConnections += total
+		}
+		v.connectorSuccess = nil
+		v.connectorTotal = nil
+		hits[k] = v
+	}
 	return hits, nil
 }
 
