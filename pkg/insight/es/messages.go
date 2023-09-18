@@ -15,8 +15,6 @@ const (
 type InsightResourceType string
 
 const (
-	InsightResourceHistory         InsightResourceType = "history"
-	InsightResourceLast            InsightResourceType = "last"
 	InsightResourceProviderHistory InsightResourceType = "provider_history"
 	InsightResourceProviderLast    InsightResourceType = "provider_last"
 )
@@ -53,6 +51,8 @@ type InsightResource struct {
 	Locations []string `json:"locations,omitempty"`
 	// IncludedConnections list of the connections ids of the resources included in this insight
 	IncludedConnections []InsightConnection `json:"included_connections,omitempty"`
+	// PerConnectionCount is the count of insight results per connection
+	PerConnectionCount map[string]int64 `json:"per_connection_count,omitempty"`
 
 	S3Location string `json:"s3_location"`
 }

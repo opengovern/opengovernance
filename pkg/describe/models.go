@@ -72,7 +72,6 @@ type InsightJob struct {
 	InsightID      uint   `gorm:"index:idx_source_id_insight_id"`
 	SourceID       string `gorm:"index:idx_source_id_insight_id"`
 	AccountID      string
-	ScheduleUUID   string
 	SourceType     source.Type
 	Status         insightapi.InsightJobStatus
 	FailureMessage string

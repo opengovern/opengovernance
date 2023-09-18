@@ -51,24 +51,17 @@ type InsightResultQueryHits struct {
 
 func BuildFindInsightResultsQuery(
 	connectors []source.Type,
-	connectionIDsFilter []string,
 	startTimeFilter, endTimeFilter *time.Time,
 	insightIDFilter []uint,
-	useHistoricalData, useProviderAggregate bool) map[string]any {
+	useHistoricalData bool) map[string]any {
 	boolQuery := map[string]any{}
 	var filters []any
 
 	var resourceType es.InsightResourceType
 	if useHistoricalData {
-		resourceType = es.InsightResourceHistory
-		if useProviderAggregate {
-			resourceType = es.InsightResourceProviderHistory
-		}
+		resourceType = es.InsightResourceProviderHistory
 	} else {
-		resourceType = es.InsightResourceLast
-		if useProviderAggregate {
-			resourceType = es.InsightResourceProviderLast
-		}
+		resourceType = es.InsightResourceProviderLast
 	}
 
 	filters = append(filters, map[string]any{
@@ -88,12 +81,6 @@ func BuildFindInsightResultsQuery(
 		}
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"provider": connectorsStr},
-		})
-	}
-
-	if connectionIDsFilter != nil {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"source_id": connectionIDsFilter},
 		})
 	}
 
@@ -132,12 +119,7 @@ func BuildFindInsightResultsQuery(
 }
 
 func FetchInsightValueAtTime(client kaytu.Client, t time.Time, connectors []source.Type, connectionIDs []string, insightIds []uint, useHistoricalData bool) (map[uint][]es.InsightResource, error) {
-	var query map[string]any
-	if len(connectionIDs) == 0 {
-		query = BuildFindInsightResultsQuery(connectors, nil, nil, &t, insightIds, useHistoricalData, true)
-	} else {
-		query = BuildFindInsightResultsQuery(connectors, connectionIDs, nil, &t, insightIds, useHistoricalData, false)
-	}
+	query := BuildFindInsightResultsQuery(connectors, nil, &t, insightIds, useHistoricalData)
 	query["size"] = 0
 	delete(query, "sort")
 	query["aggs"] = map[string]any{
@@ -205,7 +187,18 @@ func FetchInsightValueAtTime(client kaytu.Client, t time.Time, connectors []sour
 	for _, insightIdBucket := range response.Aggregations.InsightIDGroup.Buckets {
 		for _, sourceIdBucket := range insightIdBucket.SourceIDGroup.Buckets {
 			for _, hit := range sourceIdBucket.LatestGroup.Hits.Hits {
-				result[uint(insightIdBucket.Key)] = append(result[uint(insightIdBucket.Key)], hit.Source)
+				insightResult := hit.Source
+				if len(connectionIDs) > 0 {
+					insightResult.Result = 0
+					insightResult.PerConnectionCount = make(map[string]int64)
+					for _, connectionID := range connectionIDs {
+						if count, ok := hit.Source.PerConnectionCount[connectionID]; ok {
+							insightResult.Result += count
+							insightResult.PerConnectionCount[connectionID] = count
+						}
+					}
+				}
+				result[uint(insightIdBucket.Key)] = append(result[uint(insightIdBucket.Key)], insightResult)
 			}
 		}
 	}
@@ -213,12 +206,7 @@ func FetchInsightValueAtTime(client kaytu.Client, t time.Time, connectors []sour
 }
 
 func FetchInsightValueAfter(client kaytu.Client, t time.Time, connectors []source.Type, connectionIDs []string, insightIds []uint) (map[uint][]es.InsightResource, error) {
-	var query map[string]any
-	if len(connectionIDs) == 0 {
-		query = BuildFindInsightResultsQuery(connectors, nil, &t, nil, insightIds, true, true)
-	} else {
-		query = BuildFindInsightResultsQuery(connectors, connectionIDs, &t, nil, insightIds, true, false)
-	}
+	query := BuildFindInsightResultsQuery(connectors, &t, nil, insightIds, true)
 	query["size"] = 0
 	delete(query, "sort")
 
@@ -288,7 +276,18 @@ func FetchInsightValueAfter(client kaytu.Client, t time.Time, connectors []sourc
 	for _, insightIdBucket := range response.Aggregations.InsightIDGroup.Buckets {
 		for _, sourceIdBucket := range insightIdBucket.SourceIDGroup.Buckets {
 			for _, hit := range sourceIdBucket.LatestGroup.Hits.Hits {
-				result[uint(insightIdBucket.Key)] = append(result[uint(insightIdBucket.Key)], hit.Source)
+				insightResult := hit.Source
+				if len(connectionIDs) > 0 {
+					insightResult.Result = 0
+					insightResult.PerConnectionCount = make(map[string]int64)
+					for _, connectionID := range connectionIDs {
+						if count, ok := hit.Source.PerConnectionCount[connectionID]; ok {
+							insightResult.Result += count
+							insightResult.PerConnectionCount[connectionID] = count
+						}
+					}
+				}
+				result[uint(insightIdBucket.Key)] = append(result[uint(insightIdBucket.Key)], insightResult)
 			}
 		}
 		sort.Slice(result[uint(insightIdBucket.Key)], func(i, j int) bool {
@@ -323,12 +322,7 @@ type InsightHistoryResultQueryResponse struct {
 }
 
 func FetchInsightAggregatedPerQueryValuesBetweenTimes(client kaytu.Client, startTime time.Time, endTime time.Time, datapointCount int, connectors []source.Type, connectionIDs []string, insightIds []uint) (map[uint]map[int][]es.InsightResource, error) {
-	var query map[string]any
-	if len(connectionIDs) == 0 {
-		query = BuildFindInsightResultsQuery(connectors, nil, &startTime, &endTime, insightIds, true, true)
-	} else {
-		query = BuildFindInsightResultsQuery(connectors, connectionIDs, &startTime, &endTime, insightIds, true, false)
-	}
+	query := BuildFindInsightResultsQuery(connectors, &startTime, &endTime, insightIds, true)
 	query["size"] = 0
 	delete(query, "sort")
 
@@ -419,7 +413,18 @@ func FetchInsightAggregatedPerQueryValuesBetweenTimes(client kaytu.Client, start
 			//rangeBucketKey := int((rangeBucket.From+rangeBucket.To)/2) / 1000 // convert to seconds
 			for _, sourceIDBucket := range rangeBucket.SourceIDGroup.Buckets {
 				for _, hit := range sourceIDBucket.LatestGroup.Hits.Hits {
-					result[uint(insightIDBucket.Key)][rangeBucketKey] = append(result[uint(insightIDBucket.Key)][rangeBucketKey], hit.Source)
+					insightResult := hit.Source
+					if len(connectionIDs) > 0 {
+						insightResult.Result = 0
+						insightResult.PerConnectionCount = make(map[string]int64)
+						for _, connectionID := range connectionIDs {
+							if count, ok := hit.Source.PerConnectionCount[connectionID]; ok {
+								insightResult.Result += count
+								insightResult.PerConnectionCount[connectionID] = count
+							}
+						}
+					}
+					result[uint(insightIDBucket.Key)][rangeBucketKey] = append(result[uint(insightIDBucket.Key)][rangeBucketKey], insightResult)
 				}
 			}
 			sort.Slice(result[uint(insightIDBucket.Key)][rangeBucketKey], func(i, j int) bool {
