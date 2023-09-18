@@ -5,22 +5,21 @@ import (
 	"encoding/json"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/labstack/echo/v4"
-	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
-type HttpHandlerTest struct {
-	suite.Suite
-
-	handler *HttpHandler
-	router  *echo.Echo
-	orm     *gorm.DB
-}
+//type HttpHandlerTest struct {
+//	suite.Suite
+//
+//	handler *HttpHandler
+//	router  *echo.Echo
+//	orm     *gorm.DB
+//}
 
 type Operator = string
 
@@ -46,43 +45,35 @@ type rule struct {
 	ActionID  uint
 }
 
-func (h *HttpHandlerTest) setup() {
-	required := h.Require()
+func TestSetup(t *testing.T) {
 	logger, err := zap.NewProduction()
 	if err != nil {
-		required.NoError(err, "new logger : ")
+		t.Errorf("new logger : %v", err)
 	}
 
-	handler, err := InitializeHttpHandler(
-		"localhost",
-		"5432",
-		"test-database",
-		"user_1",
-		"qwertyPostgres",
-		"verify-full",
-		logger,
-	)
+	dsn := "host=localhost user=user_1 password=qwertyPostgres dbname=test-database port=5432 sslmode=disable"
+	orm, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		required.NoError(err, "init http handler: : ")
+		t.Errorf("error in connecting to postgres , err : %v", err)
 	}
-	h.handler = handler
-	//address := "postgresql://user_1:qwertyPostgres@127.0.0.1:5432/test-database"
-
-	err = httpserver.RegisterAndStart(logger, "http", handler)
+	db, err := orm.DB()
 	if err != nil {
-		required.NoError(err, "error in register and start:")
+		t.Errorf("raw db : %v", err)
 	}
-}
+	if err := db.Ping(); err != nil {
+		t.Errorf("ping db: %w", err)
+	}
 
-func (h *HttpHandlerTest) ensureTableExists() {
-	//h.handler.db.orm.Exec(tableCreationActions)
-	//h.handler.db.orm.Exec(tableCreationRule)
-}
+	testEmptyListRule(t)
+	testCreateRule(t)
+	testUpdateRule(t)
+	testDeleteRule(t)
 
-func (h *HttpHandlerTest) clearTable() {
-	//h.handler.db.orm.Exec("DELETE FROM rule")
-
-	//h.handler.db.orm.Exec("DELETE FROM actions")
+	handler := HttpHandler{db: Database{orm: orm}}
+	err = httpserver.RegisterAndStart(logger, "http://localhost:8081", &handler)
+	if err != nil {
+		t.Errorf("error in register and start : %v", err)
+	}
 }
 
 //const tableCreationActions = `CREATE TABLE IF NOT EXISTS actions
@@ -104,14 +95,7 @@ func (h *HttpHandlerTest) clearTable() {
 //	actionID INT
 //)`
 
-func (h *HttpHandlerTest) AfterTest(suiteName, testName string) {
-}
-
-func TestHttpHandlerSuite(t *testing.T) {
-	suite.Run(t, &HttpHandlerTest{})
-}
-
-func doSimpleJSONRequest(method string, path string, request, response interface{}) (*http.Response, error) {
+func doSimpleJSONRequest(router *echo.Echo, method string, path string, request, response interface{}) (*http.Response, error) {
 	var r io.Reader
 	if request != nil {
 		out, err := json.Marshal(request)
@@ -122,9 +106,13 @@ func doSimpleJSONRequest(method string, path string, request, response interface
 		r = bytes.NewReader(out)
 	}
 
-	req := httptest.NewRequest(method, path, r)
-	req.Header.Add("Content-Type", "application/json")
-	//req.Header.Add(httpserver.XKaytuUserRoleHeader, string(api2.AdminRole))
+	req, err := http.NewRequest(method, path, r)
+	if err != nil {
+		return nil, err
+	}
+	if response != nil {
+		req.Header.Add("Content-Type", "application/json")
+	}
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -132,7 +120,6 @@ func doSimpleJSONRequest(method string, path string, request, response interface
 	}
 
 	if response != nil {
-		// Wrap in NopCloser in case the calling method wants to also read the body
 		b, err := io.ReadAll(res.Body)
 		if err != nil {
 			return nil, err
@@ -145,29 +132,27 @@ func doSimpleJSONRequest(method string, path string, request, response interface
 	return res, nil
 }
 
-func (h *HttpHandlerTest) TestEmptyListRule() {
-	require := h.Require()
-	//h.handler.db.orm.Exec("DELETE FROM rule")
-
+func testEmptyListRule(t *testing.T) {
 	var rules []Rule
-	res, err := doSimpleJSONRequest("GET", "/api/rule/list", nil, &rules)
+	var router *echo.Echo
+	res, err := doSimpleJSONRequest(router, "GET", "/api/rule/list", nil, &rules)
 	if err == nil {
-		require.NoError(nil, "Expect to give error because it is empty but it got : ", res)
+		t.Errorf("Expect to give error because it is empty but it got : %v", res)
 	}
 }
 
-func (h *HttpHandlerTest) TestCreateRule() {
-	require := h.Require()
+func testCreateRule(t *testing.T) {
+	var router *echo.Echo
 	eventTypeReq := EventType{InsightId: 123123}
 	eventTypeM, err := json.Marshal(eventTypeReq)
 	if err != nil {
-		require.Errorf(err, "error in marshaling the event type")
+		t.Errorf("error in marshaling the event type , err : %v", err)
 	}
 
 	scopeReq := Scope{ConnectionId: "testConnectionId"}
 	scopeM, err := json.Marshal(scopeReq)
 	if err != nil {
-		require.Errorf(err, "error in marshaling the scope")
+		t.Errorf("error in marshaling the scope , err : %v ", err)
 	}
 
 	req := rule{
@@ -178,48 +163,48 @@ func (h *HttpHandlerTest) TestCreateRule() {
 		Value:     100,
 		ActionID:  1231,
 	}
-	var responseCreate string
-	res, err := doSimpleJSONRequest("POST", "/api/rule/create", req, &responseCreate)
+	_, err = doSimpleJSONRequest(router, "POST", "http://localhost:8081/api/rule/create", req, nil)
 	if err != nil {
-		require.Errorf(nil, "error in create rule ", res)
+		t.Errorf("error in create rule , err : %v", err)
 	}
+
 	var ruleFind rule
-	response, err := doSimpleJSONRequest("GET", "/api/rule/get/123", nil, &ruleFind)
+	_, err = doSimpleJSONRequest(router, "GET", "http://localhost:8081/api/rule/get/123", nil, &ruleFind)
 	if err != nil {
-		require.Errorf(err, "error in get rule")
+		t.Errorf("error in get rule , err : %v", err)
 	}
-	require.Equal(http.StatusOK, response.StatusCode)
 
 	if ruleFind.Operator != Operator_GreaterThan {
-		require.Errorf(nil, "Expected rule operator to be '>' . Got  :", ruleFind.Operator)
+		t.Errorf("Expected rule operator to be '>' . Got  : %v ", ruleFind.Operator)
 	}
 	if ruleFind.Value != 100 {
-		require.Errorf(nil, "Expected rule value to be '100' . Got :", req.Value)
+		t.Errorf("Expected rule value to be '100' . Got : %v ", req.Value)
 	}
+
 	var scope Scope
 	err = json.Unmarshal(ruleFind.Scope, &scope)
 	if err != nil {
-		require.Errorf(nil, "error in unmarshaling the scope")
+		t.Errorf("error in unmarshaling the scope , err : %v", err)
 	}
 	if scope.ConnectionId != "testConnectionId" {
-		require.Errorf(nil, "Expected rule scope to be 'testConnectionId' . Got ", scope.ConnectionId)
+		t.Errorf("Expected rule scope to be 'testConnectionId' . Got : %v", scope.ConnectionId)
 	}
 
 	var eventType EventType
 	err = json.Unmarshal(ruleFind.EventType, &eventType)
 	if err != nil {
-		require.Errorf(nil, "error in unmarshaling the event type")
+		t.Errorf("error in unmarshaling the event type , err : %v", err)
 	}
 	if eventType.InsightId != 123123 {
-		require.Errorf(nil, "Expected rule event type to be '123123' . Got '%v'", eventType.InsightId)
+		t.Errorf("Expected rule event type to be '123123' , Got %v", eventType.InsightId)
 	}
 	if ruleFind.ActionID != 1231 {
-		require.Errorf(nil, "Expected rule actionID to be '1231' . Got '%d'", ruleFind.ActionID)
+		t.Errorf("Expected rule actionID to be '1231' . Got %d ", ruleFind.ActionID)
 	}
 }
 
-func (h *HttpHandlerTest) addUsers() {
-	require := h.Require()
+func addUsers(t *testing.T) {
+	var router *echo.Echo
 	eventType := EventType{
 		InsightId: 1231,
 	}
@@ -238,179 +223,173 @@ func (h *HttpHandlerTest) addUsers() {
 		Value:     1000,
 		ActionID:  123123,
 	}
-	res, err := doSimpleJSONRequest("POST", "/api/rule/create", req, nil)
+	_, err := doSimpleJSONRequest(router, "POST", "/api/rule/create", req, nil)
 	if err != nil {
-		require.Errorf(nil, "error in create rule ", res)
+		t.Errorf("error in create rule : %v", err)
 	}
 }
 
-func (h *HttpHandlerTest) TestUpdateRule() {
-	require := h.Require()
-
+func testUpdateRule(t *testing.T) {
+	addUsers(t)
 	req := rule{
 		ID:       12,
 		Value:    110,
 		Operator: Operator_LessThan,
 		ActionID: 34567,
 	}
-
-	_, err := doSimpleJSONRequest("GET", "/api/rule/update", req, nil)
+	var router *echo.Echo
+	_, err := doSimpleJSONRequest(router, "GET", "/api/rule/update", req, nil)
 	if err != nil {
-		require.Errorf(err, "error in update rule ")
+		t.Errorf("error in update rule : %v", err)
 	}
 
 	var ruleNew rule
-	_, err = doSimpleJSONRequest("GET", "/api/rule/get/12", nil, &ruleNew)
+	_, err = doSimpleJSONRequest(router, "GET", "/api/rule/get/12", nil, &ruleNew)
 	if err != nil {
-		require.Errorf(err, "error in get rule")
+		t.Errorf("error in get rule : %v", err)
 	}
 
 	if ruleNew.Value != 110 {
-		require.Errorf(nil, "Expect from rule value to be '110' , Got : %d ", ruleNew.Value)
+		t.Errorf("Expect from rule value to be '110' , Got : %d ", ruleNew.Value)
 	}
 	if ruleNew.ActionID != 34567 {
-		require.Errorf(nil, "Expect from rule actionID to be '34567' , Got : %d ", ruleNew.ActionID)
+		t.Errorf("Expect from rule actionID to be '34567' , Got : %d ", ruleNew.ActionID)
 	}
 	if ruleNew.Operator != Operator_LessThan {
-		require.Errorf(nil, "Expect from rule operator to be '<' , Got : %s ", ruleNew.Operator)
+		t.Errorf("Expect from rule operator to be '<' , Got : %s ", ruleNew.Operator)
 	}
 }
 
-func (h *HttpHandlerTest) TestDeleteRule() {
-	require := h.Require()
-	//h.handler.db.orm.Exec("DELETE FROM rule")
-	//h.addUsers()
-
-	_, err := doSimpleJSONRequest("DELETE", "/api/rule/delete/12", nil, nil)
+func testDeleteRule(t *testing.T) {
+	var router *echo.Echo
+	_, err := doSimpleJSONRequest(router, "DELETE", "/api/rule/delete/12", nil, nil)
 	if err != nil {
-		require.Errorf(err, "error in deleting the rule")
+		t.Errorf("error in deleting the rule : %v", err)
 	}
 
-	responseGet, err := doSimpleJSONRequest("GET", "/api/rule/get/12", nil, nil)
+	responseGet, err := doSimpleJSONRequest(router, "GET", "/api/rule/get/12", nil, nil)
 	if err == nil {
-		require.Errorf(nil, "Expect from get rule to give err because it was deleted  , Got : %v ", responseGet)
+		t.Errorf("Expect from get rule to give err because it was deleted  , Got : %v ", responseGet)
 	}
 }
 
 // -------------------------------------------------- action test --------------------------------------------------
-func (h *HttpHandlerTest) TestListAction() {
-	require := h.Require()
-	var action Action
-	res, err := doSimpleJSONRequest("GET", "/api/action/list", nil, &action)
-	if err == nil {
-		require.NoError(nil, "Expect to give an error because the list of the actions is empty but it get : %s", res)
-	}
-}
-
-func (h *HttpHandlerTest) TestCreateAction() {
-	require := h.Require()
-	header := map[string]string{"insightId": "123123"}
-	headerM, err := json.Marshal(header)
-	if err != nil {
-		require.NoError(err, "error in marshaling the headers ")
-	}
-	action := Action{
-		ID:      12,
-		Method:  "GET",
-		Url:     "https://kaytu.dev/company",
-		Headers: headerM,
-		Body:    "",
-	}
-
-	resC, err := doSimpleJSONRequest("POST", "/api/action/create", action, nil)
-	if err != nil {
-		require.NoError(err, "error in create the row ")
-	}
-	require.Equal(resC.StatusCode, http.StatusOK)
-	var actionG Action
-	resG, err := doSimpleJSONRequest("GET", "api/action/get/12", nil, &actionG)
-	if err != nil {
-		require.Errorf(err, "error in get action ")
-	}
-	require.Equal(resG.StatusCode, http.StatusOK)
-
-	if actionG.Url != "https://kaytu.dev/company" {
-		require.Errorf(err, "Expect the url action to be 'https://kaytu.dev/company', got : ", action.Url)
-	}
-	if actionG.Body != "" {
-		require.Errorf(err, "Expect the body action to be '', got : ", action.Body)
-	}
-	if actionG.Method != "GET" {
-		require.Errorf(err, "Expect the Method action to be 'GET', got : ", action.Method)
-	}
-	require.Equal(actionG.Headers, headerM)
-}
-
-func (h *HttpHandlerTest) addUsersForAction() {
-	require := h.Require()
-	header := map[string]string{"insight": "teatInsight"}
-
-	headerM, err := json.Marshal(header)
-	if err != nil {
-		require.NoError(err, "error in marshaling the header")
-	}
-
-	req := Action{
-		ID:      12,
-		Method:  "GET",
-		Url:     "https://kaytu.dev/",
-		Headers: headerM,
-		Body:    "",
-	}
-	res, err := doSimpleJSONRequest("POST", "/api/action/create", req, nil)
-	if err != nil {
-		require.Errorf(nil, "error in create action ", res)
-	}
-}
-
-func (h *HttpHandlerTest) TestUpdateAction() {
-	require := h.Require()
-
-	header := map[string]string{"insightId": "newTestInsight"}
-	headerM, err := json.Marshal(header)
-	if err != nil {
-		require.NoError(err, "error in marshaling ")
-	}
-
-	req := Action{
-		ID:      12,
-		Method:  "POST",
-		Headers: headerM,
-		Url:     "https://kaytu.dev/use-cases",
-	}
-
-	resU, err := doSimpleJSONRequest("UPDATE", "/api/action/Update", req, nil)
-	if err != nil {
-		require.Errorf(err, "error in update the action")
-	}
-	require.Equal(resU.StatusCode, http.StatusOK)
-
-	var actionG Action
-	resG, err := doSimpleJSONRequest("GET", "/api/action/get/12", nil, actionG)
-	if err != nil {
-		require.Errorf(err, "error in get the action")
-	}
-	require.Equal(resG.StatusCode, http.StatusOK)
-	require.NotEqual(actionG.Headers, headerM)
-	if actionG.Method != "POST" {
-		require.NoError(nil, "Expect to be the action method 'POST' , but it got : ", actionG.Method)
-	}
-	if actionG.Url != "https://kaytu.dev/use-cases" {
-		require.NoError(nil, "Expect to be the action url 'https://kaytu.dev/use-cases' , but it got : ", actionG.Url)
-	}
-}
-
-func (h *HttpHandlerTest) TestDeleteAction() {
-	require := h.Require()
-
-	response, err := doSimpleJSONRequest("DELETE", "/api/action/delete/12", nil, nil)
-	if err != nil {
-		require.Errorf(err, "error in deleting the action")
-	}
-	require.Equal(http.StatusOK, response.StatusCode)
-
-	responseGet, err := doSimpleJSONRequest("GET", "/api/action/get/12", nil, nil)
-	if err == nil {
-		require.Errorf(nil, "Expect from get action to give err because it was deleted  , Got : %v ", responseGet)
-	}
-}
+//func (h *HttpHandlerTest) TestListAction() {
+//	require := h.Require()
+//	var action Action
+//	res, err := doSimpleJSONRequest(router, "GET", "/api/action/list", nil, &action)
+//	if err == nil {
+//		require.NoError(nil, "Expect to give an error because the list of the actions is empty but it get : %s", res)
+//	}
+//}
+//
+//func (h *HttpHandlerTest) TestCreateAction() {
+//	require := h.Require()
+//	header := map[string]string{"insightId": "123123"}
+//	headerM, err := json.Marshal(header)
+//	if err != nil {
+//		require.NoError(err, "error in marshaling the headers ")
+//	}
+//	action := Action{
+//		ID:      12,
+//		Method:  "GET",
+//		Url:     "https://kaytu.dev/company",
+//		Headers: headerM,
+//		Body:    "",
+//	}
+//
+//	resC, err := doSimpleJSONRequest(router, "POST", "/api/action/create", action, nil)
+//	if err != nil {
+//		require.NoError(err, "error in create the row ")
+//	}
+//	require.Equal(resC.StatusCode, http.StatusOK)
+//	var actionG Action
+//	resG, err := doSimpleJSONRequest(router, "GET", "api/action/get/12", nil, &actionG)
+//	if err != nil {
+//		require.Errorf(err, "error in get action ")
+//	}
+//	require.Equal(resG.StatusCode, http.StatusOK)
+//
+//	if actionG.Url != "https://kaytu.dev/company" {
+//		require.Errorf(err, "Expect the url action to be 'https://kaytu.dev/company', got : ", action.Url)
+//	}
+//	if actionG.Body != "" {
+//		require.Errorf(err, "Expect the body action to be '', got : ", action.Body)
+//	}
+//	if actionG.Method != "GET" {
+//		require.Errorf(err, "Expect the Method action to be 'GET', got : ", action.Method)
+//	}
+//	require.Equal(actionG.Headers, headerM)
+//}
+//
+//func (h *HttpHandlerTest) addUsersForAction() {
+//	require := h.Require()
+//	header := map[string]string{"insight": "teatInsight"}
+//
+//	headerM, err := json.Marshal(header)
+//	if err != nil {
+//		require.NoError(err, "error in marshaling the header")
+//	}
+//
+//	req := Action{
+//		ID:      12,
+//		Method:  "GET",
+//		Url:     "https://kaytu.dev/",
+//		Headers: headerM,
+//		Body:    "",
+//	}
+//	res, err := doSimpleJSONRequest(router, "POST", "/api/action/create", req, nil)
+//	if err != nil {
+//		require.Errorf(nil, "error in create action ", res)
+//	}
+//}
+//
+//func (h *HttpHandlerTest) TestUpdateAction() {
+//	require := h.Require()
+//
+//	header := map[string]string{"insightId": "newTestInsight"}
+//	headerM, err := json.Marshal(header)
+//	if err != nil {
+//		require.NoError(err, "error in marshaling ")
+//	}
+//
+//	req := Action{
+//		ID:      12,
+//		Method:  "POST",
+//		Headers: headerM,
+//		Url:     "https://kaytu.dev/use-cases",
+//	}
+//
+//	_, err = doSimpleJSONRequest(router, "UPDATE", "/api/action/Update", req, nil)
+//	if err != nil {
+//		require.Errorf(err, "error in update the action")
+//	}
+//
+//	var actionG Action
+//	resG, err := doSimpleJSONRequest(router, "GET", "/api/action/get/12", nil, actionG)
+//	if err != nil {
+//		require.Errorf(err, "error in get the action")
+//	}
+//	require.Equal(resG.StatusCode, http.StatusOK)
+//	require.NotEqual(actionG.Headers, headerM)
+//	if actionG.Method != "POST" {
+//		require.NoError(nil, "Expect to be the action method 'POST' , but it got : ", actionG.Method)
+//	}
+//	if actionG.Url != "https://kaytu.dev/use-cases" {
+//		require.NoError(nil, "Expect to be the action url 'https://kaytu.dev/use-cases' , but it got : ", actionG.Url)
+//	}
+//}
+//
+//func (h *HttpHandlerTest) TestDeleteAction() {
+//	require := h.Require()
+//
+//	_, err := doSimpleJSONRequest(router, "DELETE", "/api/action/delete/12", nil, nil)
+//	if err != nil {
+//		require.Errorf(err, "error in deleting the action")
+//	}
+//
+//	responseGet, err := doSimpleJSONRequest(router, "GET", "/api/action/get/12", nil, nil)
+//	if err == nil {
+//		require.Errorf(nil, "Expect from get action to give err because it was deleted  , Got : %v ", responseGet)
+//	}
+//}

@@ -12,14 +12,15 @@ import (
 )
 
 func (h *HttpHandler) Register(e *echo.Echo) {
-	ruleGroup := e.Group("/api/rule")
+	v1 := e.Group("/api/v1")
+	ruleGroup := v1.Group("/rule")
 	ruleGroup.GET("/list", httpserver.AuthorizeHandler(h.ListRules, authapi.ViewerRole))
 	ruleGroup.GET("/get/:ruleId", httpserver.AuthorizeHandler(h.GetRule, authapi.EditorRole))
 	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
 	ruleGroup.DELETE("/delete/:ruleID", httpserver.AuthorizeHandler(h.DeleteRule, authapi.EditorRole))
 	ruleGroup.GET("/update", httpserver.AuthorizeHandler(h.UpdateRule, authapi.EditorRole))
 
-	actionGroup := e.Group("/api/action")
+	actionGroup := v1.Group("/action")
 	actionGroup.GET("/list", httpserver.AuthorizeHandler(h.ListActions, authapi.ViewerRole))
 	actionGroup.GET("/get/:actionId", httpserver.AuthorizeHandler(h.GetAction, authapi.EditorRole))
 	actionGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateAction, authapi.EditorRole))

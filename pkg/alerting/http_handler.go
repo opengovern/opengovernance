@@ -97,6 +97,7 @@ func (h HttpHandler) TriggerLoop() {
 			if !stat {
 				continue
 			}
+
 			var action Action
 			action, err = h.db.GetAction(rule.ActionID)
 			if err != nil {
