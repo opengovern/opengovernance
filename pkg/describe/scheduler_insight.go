@@ -30,13 +30,6 @@ func (s *Scheduler) RunInsightJobScheduler() {
 }
 
 func (s *Scheduler) scheduleInsightJob(forceCreate bool) {
-	srcs, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.KaytuAdminRole}, nil)
-	if err != nil {
-		s.logger.Error("Failed to fetch list of sources", zap.Error(err))
-		InsightJobsCount.WithLabelValues("failure").Inc()
-		return
-	}
-
 	insights, err := s.complianceClient.ListInsightsMetadata(&httpclient.Context{UserRole: api2.ViewerRole}, nil)
 	if err != nil {
 		s.logger.Error("Failed to fetch list of insights", zap.Error(err))
@@ -45,24 +38,6 @@ func (s *Scheduler) scheduleInsightJob(forceCreate bool) {
 	}
 
 	for _, ins := range insights {
-		for _, src := range srcs {
-			if !src.IsEnabled() {
-				continue
-			}
-			if ins.Connector != source.Nil && src.Connector != ins.Connector {
-				// insight is not for this source
-				continue
-			}
-
-			err := s.runInsightJob(forceCreate, ins, src.ID.String(), src.ConnectionID, src.Connector)
-			if err != nil {
-				s.logger.Error("Failed to run InsightJob", zap.Error(err))
-				InsightJobsCount.WithLabelValues("failure").Inc()
-				continue
-			}
-			InsightJobsCount.WithLabelValues("successful").Inc()
-		}
-
 		id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
 		err := s.runInsightJob(forceCreate, ins, id, id, ins.Connector)
 		if err != nil {
@@ -83,7 +58,7 @@ func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceapi.Insight, s
 	if forceCreate || lastJob == nil ||
 		lastJob.CreatedAt.Add(time.Duration(s.insightIntervalHours)*time.Hour).Before(time.Now()) {
 
-		job := newInsightJob(ins, string(srcType), srcID, accountID, "")
+		job := newInsightJob(ins, srcType, srcID, accountID, "")
 		err := s.db.AddInsightJob(&job)
 		if err != nil {
 			return err
@@ -102,31 +77,26 @@ func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceapi.Insight, s
 
 func enqueueInsightJobs(q queue.Interface, job InsightJob, ins complianceapi.Insight) error {
 	if err := q.Publish(insight.Job{
-		JobID:           job.ID,
-		InsightID:       job.InsightID,
-		SourceID:        job.SourceID,
-		ScheduleJobUUID: job.ScheduleUUID,
-		AccountID:       job.AccountID,
-		SourceType:      ins.Connector,
-		Internal:        ins.Internal,
-		Query:           ins.Query.QueryToExecute,
-		Description:     ins.Description,
-		ExecutedAt:      job.CreatedAt.UnixMilli(),
-		IsStack:         job.IsStack,
+		JobID:       job.ID,
+		InsightID:   job.InsightID,
+		SourceID:    job.SourceID,
+		AccountID:   job.AccountID,
+		SourceType:  ins.Connector,
+		Internal:    ins.Internal,
+		Query:       ins.Query.QueryToExecute,
+		Description: ins.Description,
+		ExecutedAt:  job.CreatedAt.UnixMilli(),
+		IsStack:     job.IsStack,
 	}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func newInsightJob(insight complianceapi.Insight, sourceType, sourceId, accountId string, scheduleUUID string) InsightJob {
-	srcType, _ := source.ParseType(sourceType)
+func newInsightJob(insight complianceapi.Insight, sourceType source.Type, sourceId, accountId string, scheduleUUID string) InsightJob {
 	return InsightJob{
 		InsightID:      insight.ID,
-		SourceID:       sourceId,
-		AccountID:      accountId,
-		ScheduleUUID:   scheduleUUID,
-		SourceType:     srcType,
+		SourceType:     sourceType,
 		Status:         insightapi.InsightJobInProgress,
 		FailureMessage: "",
 		IsStack:        false,

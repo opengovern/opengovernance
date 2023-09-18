@@ -100,35 +100,27 @@ func (j Job) Do(client kaytu.Client, steampipeOption *steampipe.Option, onboardC
 	}
 	var count int64
 	var (
-		locationsMap   map[string]struct{}
-		connectionsMap = map[string]string{
-			j.SourceID: j.AccountID,
-		}
+		locationsMap          map[string]struct{}
+		connectionsMap        = make(map[string]string)
+		perConnectionCountMap = make(map[string]int64)
 	)
-	ctx := &httpclient.Context{
-		UserRole: authApi.InternalRole,
-	}
 	var err error
 	var res *steampipe.Result
-	isAllConnectionsQuery := "FALSE"
-	if strings.HasPrefix(strings.ToLower(j.SourceID), "all:") {
-		srcs, err := onboardClient.ListSources(ctx, []source.Type{j.SourceType})
-		if err != nil {
-			logger.Error("failed to list sources", zap.Error(err))
-			fail(fmt.Errorf("listing sources: %w", err))
-			return
-		}
-		connectionsMap = make(map[string]string)
-		for _, src := range srcs {
-			if src.LifecycleState != onboardApi.ConnectionLifecycleStateOnboard {
-				continue
-			}
-			connectionsMap[src.ID.String()] = src.ConnectionID
-		}
-		isAllConnectionsQuery = "TRUE"
+
+	srcs, err := onboardClient.ListSources(&httpclient.Context{
+		UserRole: authApi.InternalRole,
+	}, []source.Type{j.SourceType})
+	if err != nil {
+		logger.Error("failed to list sources", zap.Error(err))
+		fail(fmt.Errorf("listing sources: %w", err))
+		return
 	}
-	query := strings.ReplaceAll(j.Query, "$CONNECITON_ID", j.SourceID)
-	query = strings.ReplaceAll(query, "$IS_ALL_CONNECTIONS_QUERY", isAllConnectionsQuery)
+	for _, src := range srcs {
+		if src.LifecycleState != onboardApi.ConnectionLifecycleStateOnboard {
+			continue
+		}
+		connectionsMap[src.ID.String()] = src.ConnectionID
+	}
 	if j.IsStack == true {
 		steampipeOption.Host = fmt.Sprintf("%s-steampipe-service.%s.svc.cluster.local", j.SourceID, CurrentWorkspaceID)
 	} else {
@@ -142,19 +134,15 @@ func (j Job) Do(client kaytu.Client, steampipeOption *steampipe.Option, onboardC
 	}
 	fmt.Println("Initialized steampipe database: ", *steampipeConn)
 
-	res, err = steampipeConn.QueryAll(context.TODO(), query)
+	res, err = steampipeConn.QueryAll(context.TODO(), j.Query)
 	steampipeConn.Conn().Close()
 	if res != nil {
 		count = int64(len(res.Data))
 		for colNo, col := range res.Headers {
-			if strings.ToLower(col) != "kaytu_metadata" {
-				continue
-			}
-			for _, row := range res.Data {
-				for cellColNo, cell := range row {
-					if cellColNo != colNo {
-						continue
-					}
+			switch strings.ToLower(col) {
+			case "kaytu_metadata":
+				for _, row := range res.Data {
+					cell := row[colNo]
 					if cell == nil {
 						continue
 					}
@@ -180,10 +168,20 @@ func (j Job) Do(client kaytu.Client, steampipeOption *steampipe.Option, onboardC
 						}
 						locationsMap[metadata.Location] = struct{}{}
 					}
-					break
 				}
+			case "kaytu_account_id":
+				for _, row := range res.Data {
+					cell := row[colNo]
+					if cell == nil {
+						continue
+					}
+					if connectionIdStr, ok := cell.(string); ok {
+						perConnectionCountMap[connectionIdStr]++
+					}
+				}
+			default:
+				continue
 			}
-			break
 		}
 	}
 
@@ -236,6 +234,7 @@ func (j Job) Do(client kaytu.Client, steampipeOption *steampipe.Option, onboardC
 						ResourceType:        resourceType,
 						Locations:           locations,
 						IncludedConnections: connections,
+						PerConnectionCount:  perConnectionCountMap,
 						S3Location:          result.Location,
 					})
 				}
