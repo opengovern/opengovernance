@@ -97,6 +97,8 @@ func newInsightJob(insight complianceapi.Insight, sourceType source.Type, source
 	return InsightJob{
 		InsightID:      insight.ID,
 		SourceType:     sourceType,
+		SourceID:       sourceId,
+		AccountID:      accountId,
 		Status:         insightapi.InsightJobInProgress,
 		FailureMessage: "",
 		IsStack:        false,
