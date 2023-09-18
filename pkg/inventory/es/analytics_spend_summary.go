@@ -532,7 +532,7 @@ type ConnectionSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.SpendTableGranularity, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]float64, error) {
+func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.SpendTableGranularity, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -601,9 +601,13 @@ func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.Spe
 		return nil, err
 	}
 
-	result := make(map[string]float64)
+	result := make(map[string]DatapointWithFailures)
 	for _, bucket := range response.Aggregations.DateGroup.Buckets {
-		result[bucket.Key] = bucket.CostSumGroup.Value
+		result[bucket.Key] = DatapointWithFailures{
+			Cost:                       bucket.CostSumGroup.Value,
+			TotalSuccessfulConnections: 0,
+			TotalConnections:           0,
+		}
 	}
 
 	return result, nil
@@ -622,7 +626,7 @@ type ConnectorSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.SpendTableGranularity, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]float64, error) {
+func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.SpendTableGranularity, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -686,9 +690,13 @@ func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.Spen
 		return nil, err
 	}
 
-	result := make(map[string]float64)
+	result := make(map[string]DatapointWithFailures)
 	for _, bucket := range response.Aggregations.DateGroup.Buckets {
-		result[bucket.Key] = bucket.CostSumGroup.Value
+		result[bucket.Key] = DatapointWithFailures{
+			Cost:                       bucket.CostSumGroup.Value,
+			TotalSuccessfulConnections: 0,
+			TotalConnections:           0,
+		}
 	}
 
 	return result, nil

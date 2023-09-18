@@ -1056,7 +1056,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		metricIDs = append(metricIDs, metric.ID)
 	}
 
-	timeToCountMap := make(map[int]int)
+	timeToCountMap := make(map[int]es.DatapointWithFailures)
 	if endTime.Round(24 * time.Hour).Before(endTime) {
 		endTime = endTime.Round(24 * time.Hour).Add(24 * time.Hour)
 	} else {
@@ -1085,8 +1085,13 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	}
 
 	apiDatapoints := make([]inventoryApi.ResourceTypeTrendDatapoint, 0, len(timeToCountMap))
-	for timeAt, count := range timeToCountMap {
-		apiDatapoints = append(apiDatapoints, inventoryApi.ResourceTypeTrendDatapoint{Count: count, Date: time.UnixMilli(int64(timeAt))})
+	for timeAt, val := range timeToCountMap {
+		apiDatapoints = append(apiDatapoints, inventoryApi.ResourceTypeTrendDatapoint{
+			Count:                                   val.Count,
+			TotalDescribedConnectionCount:           val.TotalConnections,
+			TotalSuccessfulDescribedConnectionCount: val.TotalSuccessfulConnections,
+			Date:                                    time.UnixMilli(int64(timeAt)),
+		})
 	}
 	sort.Slice(apiDatapoints, func(i, j int) bool {
 		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
@@ -1906,7 +1911,7 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
 	}
 
-	timepointToCost := map[string]float64{}
+	timepointToCost := map[string]es.DatapointWithFailures{}
 	if len(connectionIDs) > 0 {
 		timepointToCost, err = es.FetchConnectionSpendTrend(h.client, granularity, metricIds, connectionIDs, connectorTypes, startTime, endTime)
 	} else {
@@ -1925,7 +1930,12 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 			format = "2006"
 		}
 		dt, _ := time.Parse(format, timeAt)
-		apiDatapoints = append(apiDatapoints, inventoryApi.CostTrendDatapoint{Cost: costVal, Date: dt})
+		apiDatapoints = append(apiDatapoints, inventoryApi.CostTrendDatapoint{
+			Cost:                                    costVal.Cost,
+			TotalDescribedConnectionCount:           costVal.TotalConnections,
+			TotalSuccessfulDescribedConnectionCount: costVal.TotalSuccessfulConnections,
+			Date:                                    dt,
+		})
 	}
 	sort.Slice(apiDatapoints, func(i, j int) bool {
 		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)

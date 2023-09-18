@@ -6217,6 +6217,12 @@ const docTemplate = `{
                 "date": {
                     "type": "string",
                     "format": "date-time"
+                },
+                "totalConnectionCount": {
+                    "type": "integer"
+                },
+                "totalSuccessfulDescribedConnectionCount": {
+                    "type": "integer"
                 }
             }
         },
