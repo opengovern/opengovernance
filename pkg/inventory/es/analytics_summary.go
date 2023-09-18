@@ -330,18 +330,28 @@ func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, m
 				for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
 					v, ok := hits[rangeKey]
 					if !ok {
-						v = DatapointWithFailures{}
+						v = DatapointWithFailures{
+							connectionSuccess: map[string]bool{},
+						}
 					}
 
 					v.Count += hit.Source.ResourceCount
-					v.TotalConnections++
-					if hit.Source.IsJobSuccessful {
-						v.TotalSuccessfulConnections++
-					}
+					v.connectionSuccess[hit.Source.ConnectionID.String()] = v.connectionSuccess[hit.Source.ConnectionID.String()] && hit.Source.IsJobSuccessful
 					hits[rangeKey] = v
 				}
 			}
 		}
+	}
+
+	for k, v := range hits {
+		v.TotalConnections = int64(len(v.connectionSuccess))
+		for _, success := range v.connectionSuccess {
+			if success {
+				v.TotalSuccessfulConnections++
+			}
+		}
+		v.connectionSuccess = nil
+		hits[k] = v
 	}
 
 	return hits, nil
@@ -380,6 +390,8 @@ type DatapointWithFailures struct {
 	Count                      int
 	TotalSuccessfulConnections int64
 	TotalConnections           int64
+
+	connectionSuccess map[string]bool
 }
 
 func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []source.Type, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]DatapointWithFailures, error) {
@@ -487,8 +499,13 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 						}
 					} else {
 						v.Count += hit.Source.ResourceCount
-						v.TotalConnections += hit.Source.TotalConnections
-						v.TotalSuccessfulConnections += hit.Source.TotalSuccessfulConnections
+
+						if hit.Source.TotalConnections > v.TotalConnections {
+							v.TotalConnections = hit.Source.TotalConnections
+						}
+						if hit.Source.TotalSuccessfulConnections < v.TotalSuccessfulConnections {
+							v.TotalSuccessfulConnections = hit.Source.TotalSuccessfulConnections
+						}
 						hits[rangeKey] = v
 					}
 				}
