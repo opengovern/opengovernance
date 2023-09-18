@@ -753,8 +753,8 @@ func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.Spen
 	for _, bucket := range response.Aggregations.DateGroup.Buckets {
 		var totalConnections, totalSuccessfulConnections int64
 		for _, job := range bucket.Jobs.Buckets {
-			totalConnections += job.MaxConnections.Value
-			totalSuccessfulConnections += job.MaxSuccessfulConnections.Value
+			totalConnections += int64(job.MaxConnections.Value)
+			totalSuccessfulConnections += int64(job.MaxSuccessfulConnections.Value)
 		}
 		result[bucket.Key] = DatapointWithFailures{
 			Cost:                       bucket.CostSumGroup.Value,
