@@ -17,15 +17,14 @@ type InsightConnection struct {
 }
 
 type InsightResult struct {
-	JobID              uint                `json:"jobID" example:"1"`                                           // Job ID
-	InsightID          uint                `json:"insightID" example:"23"`                                      // Insight ID
-	ConnectionID       string              `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
-	ExecutedAt         time.Time           `json:"executedAt" example:"2023-04-21T08:53:09.928Z"`               // Time of Execution
-	Result             int64               `json:"result" example:"1000"`                                       // Result
-	Locations          []string            `json:"locations"`                                                   // Locations
-	Connections        []InsightConnection `json:"connections,omitempty"`                                       // Connections
-	PerConnectionCount map[string]int64    `json:"perConnectionCount,omitempty"`                                // Per Connection Count
-	Details            *InsightDetail      `json:"details,omitempty"`                                           // Insight Details
+	JobID        uint                `json:"jobID" example:"1"`                                           // Job ID
+	InsightID    uint                `json:"insightID" example:"23"`                                      // Insight ID
+	ConnectionID string              `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
+	ExecutedAt   time.Time           `json:"executedAt" example:"2023-04-21T08:53:09.928Z"`               // Time of Execution
+	Result       int64               `json:"result" example:"1000"`                                       // Result
+	Locations    []string            `json:"locations"`                                                   // Locations
+	Connections  []InsightConnection `json:"connections,omitempty"`                                       // Connections
+	Details      *InsightDetail      `json:"details,omitempty"`                                           // Insight Details
 }
 
 type Insight struct {

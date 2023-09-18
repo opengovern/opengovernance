@@ -15,8 +15,6 @@ const (
 type InsightResourceType string
 
 const (
-	InsightResourceHistory         InsightResourceType = "history"
-	InsightResourceLast            InsightResourceType = "last"
 	InsightResourceProviderHistory InsightResourceType = "provider_history"
 	InsightResourceProviderLast    InsightResourceType = "provider_last"
 )

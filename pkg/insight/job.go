@@ -215,10 +215,7 @@ func (j Job) Do(client kaytu.Client, steampipeOption *steampipe.Option, onboardC
 				}
 
 				var resources []kafka.Doc
-				resourceTypeList := []es.InsightResourceType{es.InsightResourceHistory, es.InsightResourceLast}
-				if strings.HasPrefix(strings.ToLower(j.SourceID), "all:") {
-					resourceTypeList = []es.InsightResourceType{es.InsightResourceProviderHistory, es.InsightResourceProviderLast}
-				}
+				resourceTypeList := []es.InsightResourceType{es.InsightResourceProviderHistory, es.InsightResourceProviderLast}
 				for _, resourceType := range resourceTypeList {
 					resources = append(resources, es.InsightResource{
 						JobID:               j.JobID,

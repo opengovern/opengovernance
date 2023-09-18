@@ -1539,6 +1539,11 @@ func (h *HttpHandler) getInsightApiRes(ctx echo.Context, insightRow *db.Insight,
 		oldInsightResults = make([]insight.InsightResource, 0)
 	}
 
+	enabledConnections := make(map[string]bool)
+	for _, connectionID := range connectionIDs {
+		enabledConnections[connectionID] = true
+	}
+
 	apiRes := insightRow.ToApi()
 	for _, insightResult := range insightResults {
 		connections := make([]api.InsightConnection, 0, len(insightResult.IncludedConnections))
@@ -1567,6 +1572,30 @@ func (h *HttpHandler) getInsightApiRes(ctx echo.Context, insightRow *db.Insight,
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
+		steampipeFilteredResults := steampipeResults
+		if len(connectionIDs) > 0 {
+			steampipeFilteredResults.Data = make([][]any, 0)
+			for colIdx, header := range steampipeResults.Headers {
+				if strings.ToLower(header) != "kaytu_account_id" {
+					continue
+				}
+				for _, row := range steampipeResults.Data {
+					if len(row) <= colIdx {
+						continue
+					}
+					if row[colIdx] == nil {
+						continue
+					}
+					if accountID, ok := row[colIdx].(string); ok {
+						if _, ok := enabledConnections[accountID]; ok {
+							localRow := row
+							steampipeFilteredResults.Data = append(steampipeFilteredResults.Data, localRow)
+						}
+					}
+				}
+			}
+		}
+
 		apiRes.Results = append(apiRes.Results, api.InsightResult{
 			JobID:        insightResult.JobID,
 			InsightID:    insightRow.ID,
@@ -1576,8 +1605,8 @@ func (h *HttpHandler) getInsightApiRes(ctx echo.Context, insightRow *db.Insight,
 			Locations:    insightResult.Locations,
 			Connections:  connections,
 			Details: &api.InsightDetail{
-				Headers: steampipeResults.Headers,
-				Rows:    steampipeResults.Data,
+				Headers: steampipeFilteredResults.Headers,
+				Rows:    steampipeFilteredResults.Data,
 			},
 		})
 		apiRes.TotalResultValue = utils.PAdd(apiRes.TotalResultValue, &insightResult.Result)
