@@ -519,19 +519,19 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) (map[str
 			monthStr := time.Unix(dateTimestamp, 0).Format("2006-01")
 			yearStr := time.Unix(dateTimestamp, 0).Format("2006")
 			connection := spend.ConnectionMetricTrendSummary{
-				ConnectionID:       connectionID,
-				ConnectionName:     conn.ConnectionName,
-				Connector:          hit.Connector,
-				Date:               dateStr,
-				DateEpoch:          dateTimestamp * 1000,
-				Month:              monthStr,
-				Year:               yearStr,
-				MetricID:           metricID,
-				MetricName:         metricName,
-				CostValue:          hit.CostValue,
-				PeriodStart:        hit.PeriodStart * 1000,
-				PeriodEnd:          hit.PeriodEnd * 1000,
-				SuccessfulJobCount: 1,
+				ConnectionID:    connectionID,
+				ConnectionName:  conn.ConnectionName,
+				Connector:       hit.Connector,
+				Date:            dateStr,
+				DateEpoch:       dateTimestamp * 1000,
+				Month:           monthStr,
+				Year:            yearStr,
+				MetricID:        metricID,
+				MetricName:      metricName,
+				CostValue:       hit.CostValue,
+				PeriodStart:     hit.PeriodStart * 1000,
+				PeriodEnd:       hit.PeriodEnd * 1000,
+				IsJobSuccessful: true,
 			}
 			key := fmt.Sprintf("%s-%s-%s", connectionID.String(), metricID, dateStr)
 			if v, ok := connectionMap[key]; ok {

@@ -527,12 +527,14 @@ type ConnectionSpendTrendQueryResponse struct {
 				CostSumGroup struct {
 					Value float64 `json:"value"`
 				} `json:"cost_sum_group"`
-				SuccessfulJobCount struct {
-					Value float64 `json:"value"`
-				} `json:"successful_job_count_group"`
-				TotalJobCount struct {
-					Value float64 `json:"value"`
-				} `json:"total_job_count_group"`
+				JobSuccessful struct {
+					Buckets []struct {
+						Key             string `json:"key_as_string"`
+						ConnectionCount struct {
+							Value int64 `json:"value"`
+						} `json:"connection_count"`
+					} `json:"buckets"`
+				} `json:"job_successful"`
 			} `json:"buckets"`
 		} `json:"date_group"`
 	} `json:"aggregations"`
@@ -591,14 +593,19 @@ func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.Spe
 						"field": "cost_value",
 					},
 				},
-				"successful_job_count_group": map[string]any{
-					"sum": map[string]string{
-						"field": "successful_job_count",
+				"job_successful": map[string]any{
+					"terms": map[string]any{
+						"field": "is_job_successful",
+						"size":  es.EsFetchPageSize,
 					},
-				},
-				"total_job_count_group": map[string]any{
-					"value_count": map[string]string{
-						"field": "successful_job_count",
+					"aggs": map[string]any{
+						"connection_count": map[string]any{
+							"cardinality": map[string]any{
+								"field":               "connection_id",
+								"precision_threshold": 100,
+								"rehash":              false,
+							},
+						},
 					},
 				},
 			},
@@ -619,10 +626,17 @@ func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.Spe
 
 	result := make(map[string]DatapointWithFailures)
 	for _, bucket := range response.Aggregations.DateGroup.Buckets {
+		var totalConnections, totalSuccessfulConnections int64
+		for _, jobSuccess := range bucket.JobSuccessful.Buckets {
+			if jobSuccess.Key == "true" {
+				totalSuccessfulConnections += jobSuccess.ConnectionCount.Value
+			}
+			totalConnections += jobSuccess.ConnectionCount.Value
+		}
 		result[bucket.Key] = DatapointWithFailures{
 			Cost:                       bucket.CostSumGroup.Value,
-			TotalSuccessfulConnections: int64(bucket.SuccessfulJobCount.Value),
-			TotalConnections:           int64(bucket.TotalJobCount.Value),
+			TotalSuccessfulConnections: totalSuccessfulConnections,
+			TotalConnections:           totalConnections,
 		}
 	}
 
@@ -637,12 +651,17 @@ type ConnectorSpendTrendQueryResponse struct {
 				CostSumGroup struct {
 					Value float64 `json:"value"`
 				} `json:"cost_sum_group"`
-				TotalConnections struct {
-					Value float64 `json:"value"`
-				} `json:"total_connections"`
-				TotalSuccessfulConnections struct {
-					Value float64 `json:"value"`
-				} `json:"total_successful_connections"`
+				Jobs struct {
+					Key     string `json:"key"`
+					Buckets []struct {
+						MaxConnections struct {
+							Value int64 `json:"value"`
+						} `json:"max_total"`
+						MaxSuccessfulConnections struct {
+							Value int64 `json:"value"`
+						} `json:"max_successful"`
+					} `json:"buckets"`
+				} `json:"jobs"`
 			} `json:"buckets"`
 		} `json:"date_group"`
 	} `json:"aggregations"`
@@ -696,14 +715,22 @@ func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.Spen
 						"field": "cost_value",
 					},
 				},
-				"total_connections": map[string]any{
-					"sum": map[string]string{
-						"field": "total_connections",
+				"jobs": map[string]any{
+					"terms": map[string]any{
+						"field": "connector",
+						"size":  es.EsFetchPageSize,
 					},
-				},
-				"total_successful_connections": map[string]any{
-					"sum": map[string]string{
-						"field": "total_successful_connections",
+					"aggs": map[string]any{
+						"max_total": map[string]any{
+							"max": map[string]string{
+								"field": "total_connections",
+							},
+						},
+						"max_successful": map[string]any{
+							"max": map[string]string{
+								"field": "total_successful_connections",
+							},
+						},
 					},
 				},
 			},
@@ -724,10 +751,15 @@ func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.Spen
 
 	result := make(map[string]DatapointWithFailures)
 	for _, bucket := range response.Aggregations.DateGroup.Buckets {
+		var totalConnections, totalSuccessfulConnections int64
+		for _, job := range bucket.Jobs.Buckets {
+			totalConnections += job.MaxConnections.Value
+			totalSuccessfulConnections += job.MaxSuccessfulConnections.Value
+		}
 		result[bucket.Key] = DatapointWithFailures{
 			Cost:                       bucket.CostSumGroup.Value,
-			TotalSuccessfulConnections: int64(bucket.TotalSuccessfulConnections.Value),
-			TotalConnections:           int64(bucket.TotalConnections.Value),
+			TotalSuccessfulConnections: totalSuccessfulConnections,
+			TotalConnections:           totalConnections,
 		}
 	}
 
