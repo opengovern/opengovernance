@@ -603,7 +603,6 @@ func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.Spe
 							"cardinality": map[string]any{
 								"field":               "connection_id",
 								"precision_threshold": 100,
-								"rehash":              false,
 							},
 						},
 					},
