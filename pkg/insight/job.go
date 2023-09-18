@@ -134,6 +134,8 @@ func (j Job) Do(client kaytu.Client, steampipeOption *steampipe.Option, onboardC
 	}
 	fmt.Println("Initialized steampipe database: ", *steampipeConn)
 
+	logger.Info("running insight query", zap.Uint("insightId", j.InsightID), zap.String("connectionId", j.SourceID), zap.String("query", j.Query))
+
 	res, err = steampipeConn.QueryAll(context.TODO(), j.Query)
 	steampipeConn.Conn().Close()
 	if res != nil {
