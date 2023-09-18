@@ -58,7 +58,7 @@ func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceapi.Insight, s
 	if forceCreate || lastJob == nil ||
 		lastJob.CreatedAt.Add(time.Duration(s.insightIntervalHours)*time.Hour).Before(time.Now()) {
 
-		job := newInsightJob(ins, srcType, srcID, accountID, "")
+		job := newInsightJob(ins, srcType, srcID, accountID)
 		err := s.db.AddInsightJob(&job)
 		if err != nil {
 			return err
@@ -93,7 +93,7 @@ func enqueueInsightJobs(q queue.Interface, job InsightJob, ins complianceapi.Ins
 	return nil
 }
 
-func newInsightJob(insight complianceapi.Insight, sourceType source.Type, sourceId, accountId string, scheduleUUID string) InsightJob {
+func newInsightJob(insight complianceapi.Insight, sourceType source.Type, sourceId, accountId string) InsightJob {
 	return InsightJob{
 		InsightID:      insight.ID,
 		SourceType:     sourceType,

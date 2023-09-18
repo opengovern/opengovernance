@@ -784,7 +784,7 @@ func (s *Scheduler) runStackInsights(stack apiDescribe.Stack) error {
 		return err
 	}
 	for _, insight := range insights {
-		job := newInsightJob(insight, stack.SourceType, stack.StackID, stack.AccountIDs[0], "")
+		job := newInsightJob(insight, stack.SourceType, stack.StackID, stack.AccountIDs[0])
 		job.IsStack = true
 
 		err = s.db.AddInsightJob(&job)
