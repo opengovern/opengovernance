@@ -395,11 +395,11 @@ func (j *Job) DoSpendMetric(
 			connectionCache[connectionID] = *conn
 		}
 
-		isJobSuccessful := true
+		successfulJobCount := 1
 		for _, st := range status {
 			if st.ConnectionID == conn.ID.String() {
 				if st.Status == api3.DescribeResourceJobFailed || st.Status == api3.DescribeResourceJobTimeout {
-					isJobSuccessful = false
+					successfulJobCount = 0
 				}
 			}
 		}
@@ -410,19 +410,19 @@ func (j *Job) DoSpendMetric(
 			connectionResultMap[conn.ID.String()] = v
 		} else {
 			vn := spend.ConnectionMetricTrendSummary{
-				ConnectionID:    conn.ID,
-				ConnectionName:  conn.ConnectionName,
-				Connector:       conn.Connector,
-				Date:            dateTimestamp.Format("2006-01-02"),
-				DateEpoch:       dateTimestamp.UnixMilli(),
-				Month:           dateTimestamp.Format("2006-01"),
-				Year:            dateTimestamp.Format("2006"),
-				MetricID:        metric.ID,
-				MetricName:      metric.Name,
-				CostValue:       sum,
-				PeriodStart:     startTime.UnixMilli(),
-				PeriodEnd:       endTime.UnixMilli(),
-				IsJobSuccessful: isJobSuccessful,
+				ConnectionID:       conn.ID,
+				ConnectionName:     conn.ConnectionName,
+				Connector:          conn.Connector,
+				Date:               dateTimestamp.Format("2006-01-02"),
+				DateEpoch:          dateTimestamp.UnixMilli(),
+				Month:              dateTimestamp.Format("2006-01"),
+				Year:               dateTimestamp.Format("2006"),
+				MetricID:           metric.ID,
+				MetricName:         metric.Name,
+				CostValue:          sum,
+				PeriodStart:        startTime.UnixMilli(),
+				PeriodEnd:          endTime.UnixMilli(),
+				SuccessfulJobCount: successfulJobCount,
 			}
 			connectionResultMap[conn.ID.String()] = vn
 		}
