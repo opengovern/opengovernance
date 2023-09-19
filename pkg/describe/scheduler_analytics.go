@@ -22,6 +22,7 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 		lastJob, err := s.db.FetchLastAnalyticsJob()
 		if err != nil {
 			s.logger.Error("Failed to find the last job to check for AnalyticsJob", zap.Error(err))
+			AnalyticsJobsCount.WithLabelValues("failure").Inc()
 			continue
 		}
 		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.analyticsIntervalHours)*time.Hour).Before(time.Now()) {
@@ -120,6 +121,7 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 
 			var result analytics.JobResult
 			if err := json.Unmarshal(msg.Body, &result); err != nil {
+				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
 				s.logger.Error("Failed to unmarshal analytics.JobResult results", zap.Error(err))
 				err = msg.Nack(false, false)
 				if err != nil {
@@ -132,8 +134,16 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 				zap.Uint("jobId", result.JobID),
 				zap.String("status", string(result.Status)),
 			)
+
+			if result.Status == analytics.JobCompleted {
+				AnalyticsJobResultsCount.WithLabelValues("successful").Inc()
+			} else {
+				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
+			}
+			
 			err := s.db.UpdateAnalyticsJob(result.JobID, result.Status, result.Error)
 			if err != nil {
+				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
 				s.logger.Error("Failed to update the status of AnalyticsJob",
 					zap.Uint("jobId", result.JobID),
 					zap.Error(err))
@@ -145,11 +155,13 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 			}
 
 			if err := msg.Ack(false); err != nil {
+				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
 				s.logger.Error("Failed acking message", zap.Error(err))
 			}
 		case <-t.C:
 			err := s.db.UpdateAnalyticsJobsTimedOut(s.analyticsIntervalHours)
 			if err != nil {
+				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
 				s.logger.Error("Failed to update timed out AnalyticsJob", zap.Error(err))
 			}
 		}
