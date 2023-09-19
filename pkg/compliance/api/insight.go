@@ -63,8 +63,9 @@ type InsightGroup struct {
 }
 
 type InsightTrendDatapoint struct {
-	Timestamp int `json:"timestamp" example:"1686346668"` // Time
-	Value     int `json:"value" example:"1000"`           // Resource Count
+	Timestamp       int `json:"timestamp" example:"1686346668"` // Time
+	ConnectionCount int `json:"connectionCount" example:"10"`   // Connection Count
+	Value           int `json:"value" example:"1000"`           // Resource Count
 }
 
 type InsightGroupTrendResponse struct {

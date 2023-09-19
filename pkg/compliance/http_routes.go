@@ -1695,11 +1695,13 @@ func (h *HttpHandler) getInsightTrendApiRes(ctx echo.Context, insightRow *db.Ins
 	result := make([]api.InsightTrendDatapoint, 0, len(timeAtToInsightResults))
 	for timeAt, insightResults := range timeAtToInsightResults {
 		datapoint := api.InsightTrendDatapoint{
-			Timestamp: timeAt,
-			Value:     0,
+			Timestamp:       timeAt,
+			ConnectionCount: 0,
+			Value:           0,
 		}
 		for _, insightResult := range insightResults {
 			datapoint.Value += int(insightResult.Result)
+			datapoint.ConnectionCount = max(datapoint.ConnectionCount, len(insightResult.IncludedConnections))
 		}
 		result = append(result, datapoint)
 	}

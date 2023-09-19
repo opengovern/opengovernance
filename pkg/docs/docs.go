@@ -5736,6 +5736,11 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint": {
             "type": "object",
             "properties": {
+                "connectionCount": {
+                    "description": "Connection Count",
+                    "type": "integer",
+                    "example": 10
+                },
                 "timestamp": {
                     "description": "Time",
                     "type": "integer",
