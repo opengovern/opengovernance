@@ -37,7 +37,7 @@ func (db Database) ListRules() ([]Rule, error) {
 
 func (db Database) GetRule(id uint) (Rule, error) {
 	var rule Rule
-	err := db.orm.Exec("rule").Where("id = ? ", id).Find(&rule).Error
+	err := db.orm.Model(&Rule{}).Where("id = ? ", id).Find(&rule).Error
 	if err != nil {
 		return Rule{}, err
 	}
@@ -94,7 +94,7 @@ func (db Database) ListAction() ([]Action, error) {
 
 func (db Database) GetAction(id uint) (Action, error) {
 	var action Action
-	err := db.orm.Model(Action{}).Where("id = ?", id).Find(&action).Error
+	err := db.orm.Model(&Action{}).Where("id = ?", id).Find(&action).Error
 	if err != nil {
 		return Action{}, err
 	}
