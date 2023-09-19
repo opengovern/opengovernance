@@ -3,16 +3,16 @@ package alerting
 import "encoding/json"
 
 type Rule struct {
-	ID        uint
+	ID        uint `gorm:"primaryKey"`
 	EventType json.RawMessage
 	Scope     json.RawMessage
 	Operator  string
 	Value     int64
-	ActionID  uint
+	ActionID  uint `gorm:"foreignkey:ActionID"`
 }
 
 type Action struct {
-	ID      uint
+	ID      uint `gorm:"primaryKey"`
 	Method  string
 	Url     string
 	Headers json.RawMessage
