@@ -240,6 +240,23 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 			return err
 		}
 	}
+	if file != nil {
+		src, err := file.Open()
+		if err != nil {
+			return err
+		}
+		data, err := io.ReadAll(src)
+		if err != nil {
+			return err
+		}
+		if string(data) == "{}" {
+			file = nil
+		}
+		err = src.Close()
+		if err != nil {
+			return err
+		}
+	}
 	stateConfig := ctx.FormValue("remoteStateConfig")
 	if file == nil && stateConfig == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "No state file or remote backend provided")
