@@ -747,6 +747,10 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint:
     properties:
+      connectionCount:
+        description: Connection Count
+        example: 10
+        type: integer
       timestamp:
         description: Time
         example: 1686346668
