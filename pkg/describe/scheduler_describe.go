@@ -721,17 +721,17 @@ func (s *Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		UserRole: apiAuth.AdminRole,
 	}
 	benchmarks, err := s.complianceClient.ListBenchmarks(ctx)
-	var provider source.Type
+	var provider string
 	for _, resource := range stack.Resources {
 		if strings.Contains(resource, "aws") {
-			provider = source.CloudAWS
+			provider = "aws"
 		} else if strings.Contains(resource, "subscriptions") {
-			provider = source.CloudAzure
+			provider = "azure"
 		}
 	}
 	for _, benchmark := range benchmarks {
 		connectorMatch := false
-		for _, p := range benchmark.Connectors {
+		for _, p := range benchmark.Tags["plugin"] {
 			if p == provider {
 				connectorMatch = true
 			}
