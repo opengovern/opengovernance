@@ -495,10 +495,12 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 				for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
 					v, ok := hits[rangeKey]
 					if !ok {
-						hits[rangeKey] = DatapointWithFailures{
+						v = DatapointWithFailures{
 							connectorTotal:   map[string]int64{},
 							connectorSuccess: map[string]int64{},
 						}
+
+						hits[rangeKey] = v
 					}
 
 					v.Count += hit.Source.ResourceCount
