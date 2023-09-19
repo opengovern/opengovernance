@@ -27,8 +27,8 @@ func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
 	if err != nil {
 		tb.Errorf("error in connecting to postgres , err : %v", err)
 	}
-	handler.db.orm.Exec("DELETE FROM rule")
-	handler.db.orm.Exec("DELETE FROM action")
+	handler.db.orm.Exec("DELETE FROM rules")
+	handler.db.orm.Exec("DELETE FROM actions")
 
 	e, tp := httpserver.Register(logger, handler)
 
@@ -37,7 +37,7 @@ func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
 
 	// Return a function to teardown the test
 	return func(tb testing.TB) {
-		handler.db.orm.Exec("DELETE FROM rule")
+		handler.db.orm.Exec("DELETE FROM rules")
 		handler.db.orm.Exec("DELETE FROM actions")
 
 		err = tp.Shutdown(context.Background())
@@ -66,15 +66,13 @@ func doSimpleJSONRequest(method string, path string, request, response interface
 	if err != nil {
 		return nil, err
 	}
-	if response != nil {
-		req.Header.Add("Content-Type", "application/json")
-	}
+	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add(httpserver.XKaytuUserRoleHeader, string(api2.AdminRole))
-
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 
 	if response != nil {
 		b, err := io.ReadAll(res.Body)
@@ -121,11 +119,11 @@ func TestCreateRule(t *testing.T) {
 	_, err = doSimpleJSONRequest("GET", "/api/v1/rule/get/"+idS, nil, &foundRule)
 	require.NoError(t, err, "error getting rule")
 
-	//require.Equal(t, api.Operator_GreaterThan, foundRule.Operator)
-	require.Equal(t, 100, foundRule.Value)
+	require.Equal(t, api.Operator_GreaterThan, foundRule.Operator)
+	require.Equal(t, 100, int(foundRule.Value))
 	require.Equal(t, "testConnectionId", foundRule.Scope.ConnectionId)
-	require.Equal(t, 123123, foundRule.EventType.InsightId)
-	require.Equal(t, 1231, foundRule.ActionID)
+	require.Equal(t, 123123, int(foundRule.EventType.InsightId))
+	require.Equal(t, 1231, int(foundRule.ActionID))
 }
 
 func addRule(t *testing.T) uint {
@@ -168,8 +166,8 @@ func TestUpdateRule(t *testing.T) {
 	_, err = doSimpleJSONRequest("GET", "/api/v1/rule/get/"+idS, nil, &ruleNew)
 	require.NoError(t, err, "error getting rule")
 
-	require.Equal(t, 110, ruleNew.Value)
-	require.Equal(t, 34567, ruleNew.ActionID)
+	require.Equal(t, 110, int(ruleNew.Value))
+	require.Equal(t, 34567, int(ruleNew.ActionID))
 	require.Equal(t, api.Operator_LessThan, ruleNew.Operator)
 }
 
@@ -183,7 +181,6 @@ func TestDeleteRule(t *testing.T) {
 
 	var rule api.ApiRule
 	_, err = doSimpleJSONRequest("GET", "/api/v1/rule/get/"+idS, nil, &rule)
-	require.NoError(t, err, "err getting rule")
 	require.Empty(t, rule)
 }
 
@@ -266,7 +263,7 @@ func TestUpdateAction(t *testing.T) {
 
 	var actionG api.ApiAction
 	idS := strconv.FormatUint(uint64(id), 10)
-	_, err = doSimpleJSONRequest("GET", "/api/v1/action/get/"+idS, nil, actionG)
+	_, err = doSimpleJSONRequest("GET", "/api/v1/action/get/"+idS, nil, &actionG)
 	require.NoError(t, err, "error getting action")
 
 	require.Equal(t, map[string]string{"insightId": "newTestInsight"}, actionG.Headers)

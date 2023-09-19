@@ -1,11 +1,13 @@
 package alerting
 
-import "encoding/json"
+import (
+	"gorm.io/datatypes"
+)
 
 type Rule struct {
 	ID        uint `gorm:"primaryKey"`
-	EventType json.RawMessage
-	Scope     json.RawMessage
+	EventType datatypes.JSON
+	Scope     datatypes.JSON
 	Operator  string
 	Value     int64
 	ActionID  uint `gorm:"foreignkey:ActionID"`
@@ -15,6 +17,6 @@ type Action struct {
 	ID      uint `gorm:"primaryKey"`
 	Method  string
 	Url     string
-	Headers json.RawMessage
+	Headers datatypes.JSON
 	Body    string
 }
