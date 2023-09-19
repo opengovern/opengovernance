@@ -628,7 +628,11 @@ func (h HttpServer) ListStackInsights(ctx echo.Context) error {
 	for _, insightId := range insightIds {
 		insight, err := h.Scheduler.complianceClient.GetInsight(httpclient.FromEchoContext(ctx), insightId, []string{connectionId}, &startTime, &endTime)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("error for insight %s: %s", insightId, err.Error()))
+			if strings.Contains(err.Error(), "no data for insight found") {
+				continue
+			} else {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("error for insight %s: %s", insightId, err.Error()))
+			}
 		}
 		var totalResaults int64
 		var filteredResults []complianceapi.InsightResult
