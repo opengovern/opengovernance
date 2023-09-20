@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -252,6 +253,9 @@ func (s *Service) RandomAccount() (*onboardApi.Connection, error) {
 		return nil, err
 	}
 
+	if len(srcs) == 0 {
+		return nil, errors.New("no accounts to run")
+	}
 	idx := rand.Intn(len(srcs))
 	return &srcs[idx], nil
 }
@@ -259,9 +263,15 @@ func (s *Service) RandomAccount() (*onboardApi.Connection, error) {
 func (s *Service) RandomQuery(sourceType source.Type) *Query {
 	switch sourceType {
 	case source.CloudAWS:
+		if len(awsQueries) == 0 {
+			return nil
+		}
 		idx := rand.Intn(len(awsQueries))
 		return &awsQueries[idx]
 	case source.CloudAzure:
+		if len(azureQueries) == 0 {
+			return nil
+		}
 		idx := rand.Intn(len(azureQueries))
 		return &azureQueries[idx]
 	}
