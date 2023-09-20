@@ -17,7 +17,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	ruleGroup.GET("/list", httpserver.AuthorizeHandler(h.ListRules, authapi.ViewerRole))
 	ruleGroup.GET("/get/:ruleId", httpserver.AuthorizeHandler(h.GetRule, authapi.EditorRole))
 	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
-	ruleGroup.DELETE("/delete/:ruleID", httpserver.AuthorizeHandler(h.DeleteRule, authapi.EditorRole))
+	ruleGroup.DELETE("/delete/:ruleId", httpserver.AuthorizeHandler(h.DeleteRule, authapi.EditorRole))
 	ruleGroup.GET("/update", httpserver.AuthorizeHandler(h.UpdateRule, authapi.EditorRole))
 
 	actionGroup := v1.Group("/action")
@@ -202,7 +202,7 @@ func (h *HttpHandler) DeleteRule(ctx echo.Context) error {
 //	@Description	Retrieving a rule by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			request	body		api.ApiRule	true	"Request Body"
+//	@Param			request	body		api.UpdateRuleRequest	true	"Request Body"
 //	@Success		200		{object}	string
 //	@Router			/alerting/api/rule/update [get]
 func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
@@ -281,7 +281,7 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 func (h *HttpHandler) GetAction(ctx echo.Context) error {
 	idS := ctx.Param("actionId")
 	if idS == "" {
-		return errors.New("ruleId is required")
+		return errors.New("actionId is required")
 	}
 	id, err := strconv.ParseUint(idS, 10, 64)
 	if err != nil {
@@ -377,7 +377,7 @@ func (h *HttpHandler) DeleteAction(ctx echo.Context) error {
 //	@Description	Retrieving an action by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			request	body		api.ApiAction	true	"Request Body"
+//	@Param			request	body		api.UpdateActionRequest	true	"Request Body"
 //	@Success		200		{object}	string
 //	@Router			/alerting/api/action/update [get]
 func (h *HttpHandler) UpdateAction(ctx echo.Context) error {

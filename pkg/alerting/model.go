@@ -10,7 +10,7 @@ type Rule struct {
 	Scope     datatypes.JSON
 	Operator  string
 	Value     int64
-	ActionID  uint `gorm:"foreignkey:ActionID"`
+	ActionID  uint `gorm:"foreignKey:action_id"`
 }
 
 type Action struct {

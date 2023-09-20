@@ -37,9 +37,6 @@ func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
 
 	// Return a function to teardown the test
 	return func(tb testing.TB) {
-		handler.db.orm.Exec("DELETE FROM rules")
-		handler.db.orm.Exec("DELETE FROM actions")
-
 		err = tp.Shutdown(context.Background())
 		if err != nil {
 			tb.Errorf("error in stopping the server ,err : %v ", err)
@@ -72,7 +69,9 @@ func doSimpleJSONRequest(method string, path string, request, response interface
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		return nil, fmt.Errorf("invalid status code : %d", res.StatusCode)
+	}
 
 	if response != nil {
 		b, err := io.ReadAll(res.Body)
@@ -85,6 +84,20 @@ func doSimpleJSONRequest(method string, path string, request, response interface
 		}
 	}
 	return res, nil
+}
+
+func addRule(t *testing.T) uint {
+	req := api.ApiRule{
+		ID:        12,
+		EventType: api.EventType{InsightId: 1231},
+		Scope:     api.Scope{ConnectionId: "testConnectionID"},
+		Operator:  ">",
+		Value:     1000,
+		ActionID:  123123,
+	}
+	_, err := doSimpleJSONRequest("POST", "/api/v1/rule/create", req, nil)
+	require.NoError(t, err, "error creating rule")
+	return 12
 }
 
 func TestEmptyListRule(t *testing.T) {
@@ -114,8 +127,8 @@ func TestCreateRule(t *testing.T) {
 	_, err := doSimpleJSONRequest("POST", "/api/v1/rule/create", req, nil)
 	require.NoError(t, err, "error creating rule")
 
-	var foundRule api.ApiRule
 	idS := strconv.FormatUint(uint64(id), 10)
+	var foundRule api.ApiRule
 	_, err = doSimpleJSONRequest("GET", "/api/v1/rule/get/"+idS, nil, &foundRule)
 	require.NoError(t, err, "error getting rule")
 
@@ -124,20 +137,6 @@ func TestCreateRule(t *testing.T) {
 	require.Equal(t, "testConnectionId", foundRule.Scope.ConnectionId)
 	require.Equal(t, 123123, int(foundRule.EventType.InsightId))
 	require.Equal(t, 1231, int(foundRule.ActionID))
-}
-
-func addRule(t *testing.T) uint {
-	req := api.ApiRule{
-		ID:        12,
-		EventType: api.EventType{InsightId: 1231},
-		Scope:     api.Scope{ConnectionId: "testConnectionID"},
-		Operator:  ">",
-		Value:     1000,
-		ActionID:  123123,
-	}
-	_, err := doSimpleJSONRequest("POST", "/api/v1/rule/create", req, nil)
-	require.NoError(t, err, "error creating rule")
-	return 12
 }
 
 func TestUpdateRule(t *testing.T) {
@@ -153,7 +152,7 @@ func TestUpdateRule(t *testing.T) {
 		ActionID: 34567,
 	}
 	reqUpdate := api.UpdateRuleRequest{
-		ID:       req.ID,
+		ID:       id,
 		Value:    &req.Value,
 		Operator: &req.Operator,
 		ActionID: &req.ActionID,
@@ -185,6 +184,18 @@ func TestDeleteRule(t *testing.T) {
 }
 
 // -------------------------------------------------- action test --------------------------------------------------
+func addAction(t *testing.T) uint {
+	req := api.ApiAction{
+		ID:      12,
+		Method:  "GET",
+		Url:     "https://kaytu.dev/",
+		Headers: map[string]string{"insight": "teatInsight"},
+		Body:    "testBody",
+	}
+	_, err := doSimpleJSONRequest("POST", "/api/v1/action/create", req, nil)
+	require.NoError(t, err)
+	return 12
+}
 
 func TestListAction(t *testing.T) {
 	teardownSuite, _ := setupSuite(t)
@@ -197,9 +208,9 @@ func TestListAction(t *testing.T) {
 }
 
 func TestCreateAction(t *testing.T) {
-	teardownSuite, handler := setupSuite(t)
+	teardownSuite, _ := setupSuite(t)
 	defer teardownSuite(t)
-
+	//var id uint  = 12
 	action := api.ApiAction{
 		ID:      12,
 		Method:  "GET",
@@ -210,39 +221,15 @@ func TestCreateAction(t *testing.T) {
 	_, err := doSimpleJSONRequest("POST", "/api/v1/action/create", action, nil)
 	require.NoError(t, err)
 
-	var actionG Action
-	err = handler.db.orm.Model(&Action{}).Where("id = ? ", 12).Find(&actionG).Error
-	require.NoError(t, err, "error getting action")
-	t.Error(actionG)
+	var foundAction api.ApiAction
+	//idS := strconv.FormatUint(uint64(id), 10)
+	_, err = doSimpleJSONRequest("GET", "/api/v1/action/get/12", nil, &foundAction)
+	require.NoError(t, err, "error getting rule")
 
-	var header map[string]string
-	err = json.Unmarshal(actionG.Headers, &header)
-	require.NoError(t, err, "error in Unmarshalling the header ")
-
-	response := api.ApiAction{
-		ID:      actionG.ID,
-		Method:  actionG.Method,
-		Url:     actionG.Url,
-		Headers: header,
-		Body:    actionG.Body,
-	}
-	require.Equal(t, "https://kaytu.dev/company", response.Url)
-	require.Equal(t, "testBody", response.Body)
-	require.Equal(t, "GET", response.Method)
-	require.Equal(t, map[string]string{"insightId": "123123"}, response.Headers)
-}
-
-func addAction(t *testing.T) uint {
-	req := api.ApiAction{
-		ID:      12,
-		Method:  "GET",
-		Url:     "https://kaytu.dev/",
-		Headers: map[string]string{"insight": "teatInsight"},
-		Body:    "testBody",
-	}
-	_, err := doSimpleJSONRequest("POST", "/api/v1/action/create", req, nil)
-	require.NoError(t, err)
-	return 12
+	require.Equal(t, "https://kaytu.dev/company", foundAction.Url)
+	require.Equal(t, "testBody", foundAction.Body)
+	require.Equal(t, "GET", foundAction.Method)
+	require.Equal(t, map[string]string{"insightId": "123123"}, foundAction.Headers)
 }
 
 func TestUpdateAction(t *testing.T) {
@@ -258,7 +245,7 @@ func TestUpdateAction(t *testing.T) {
 		Url:     "https://kaytu.dev/use-cases",
 	}
 
-	_, err := doSimpleJSONRequest("UPDATE", "/api/v1/action/Update", req, nil)
+	_, err := doSimpleJSONRequest("GET", "/api/v1/action/update", req, nil)
 	require.NoError(t, err, "error updating action")
 
 	var actionG api.ApiAction
@@ -279,8 +266,8 @@ func TestDeleteAction(t *testing.T) {
 	idS := strconv.FormatUint(uint64(id), 10)
 	_, err := doSimpleJSONRequest("DELETE", "/api/v1/action/delete/"+idS, nil, nil)
 	require.NoError(t, err, "error deleting action")
-	//require.Equal(t, http.StatusOK, resD.Code)
 
-	_, err = doSimpleJSONRequest("GET", "/api/v1/action/get/"+idS, nil, nil)
-	require.NotEqual(t, nil, err, "error getting action")
+	var action Action
+	_, err = doSimpleJSONRequest("GET", "/api/v1/action/get/"+idS, nil, &action)
+	require.Error(t, err)
 }

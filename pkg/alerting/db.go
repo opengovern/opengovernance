@@ -57,11 +57,11 @@ func (db Database) CreateRule(id uint, eventType []byte, scope []byte, operator 
 }
 
 func (db Database) DeleteRule(ruleId uint) error {
-	return db.orm.Model(&Action{}).Where("id = ?", ruleId).Delete(Rule{}).Error
+	return db.orm.Model(&Rule{}).Where("id = ?", ruleId).Delete(&Rule{}).Error
 }
 
 func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, operator *api.Operator, value *int64, actionID *uint) error {
-	var inputs map[string]interface{}
+	inputs := make(map[string]interface{})
 
 	if eventType != nil {
 		inputs["event_type"] = *eventType
@@ -79,7 +79,7 @@ func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, operato
 		inputs["action_id"] = *actionID
 	}
 
-	return db.orm.Model(&Action{}).Where("id = ?", id).Updates(inputs).Error
+	return db.orm.Model(&Rule{}).Where("id = ?", id).Updates(inputs).Error
 }
 
 func (db Database) ListAction() ([]Action, error) {
@@ -117,10 +117,10 @@ func (db Database) DeleteAction(actionId uint) error {
 }
 
 func (db Database) UpdateAction(id uint, headers *[]byte, url *string, body *string, method *string) error {
-	var inputs map[string]interface{}
+	inputs := make(map[string]interface{})
 
 	if headers != nil {
-		inputs["header"] = *headers
+		inputs["headers"] = *headers
 	}
 	if body != nil {
 		inputs["body"] = *body
