@@ -153,7 +153,8 @@ FROM
 WHERE
 	status = ? AND
 	NOT(error_code IN ('AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND
-	(retry_count < 3 OR retry_count IS NULL) AND
+	(retry_count < 5 OR retry_count IS NULL) AND
+	()
 	(select count(*) from describe_connection_jobs where connection_id = dr.connection_id AND status IN (?, ?)) = 0
 	LIMIT 10
 `, api.DescribeResourceJobFailed, api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress).Find(&job)
@@ -200,6 +201,43 @@ func (db Database) UpdateDescribeConnectionJobsTimedOut(describeIntervalHours in
 		Model(&DescribeConnectionJob{}).
 		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
 		Where("status IN ?", []string{string(api.DescribeResourceJobCreated)}).
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+// UpdateResourceTypeDescribeConnectionJobsTimedOut updates the status of DescribeResourceJobs
+// that have timed out while in the status of 'CREATED' or 'QUEUED' for longer
+// than time interval for the specific resource type.
+func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType string, describeIntervalHours int64) error {
+	tx := db.orm.
+		Model(&DescribeConnectionJob{}).
+		Where("updated_at < NOW() - INTERVAL '20 minutes'").
+		Where("status IN ?", []string{string(api.DescribeResourceJobInProgress)}).
+		Where("resource_type = ?", resourceType).
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	tx = db.orm.
+		Model(&DescribeConnectionJob{}).
+		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
+		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
+		Where("resource_type = ?", resourceType).
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	tx = db.orm.
+		Model(&DescribeConnectionJob{}).
+		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
+		Where("status IN ?", []string{string(api.DescribeResourceJobCreated)}).
+		Where("resource_type = ?", resourceType).
 		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted"})
 	if tx.Error != nil {
 		return tx.Error
