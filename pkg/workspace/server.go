@@ -612,14 +612,15 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 	}
 
 	workspace := &Workspace{
-		ID:          fmt.Sprintf("ws-%d", id),
-		Name:        strings.ToLower(request.Name),
-		OwnerId:     userID,
-		URI:         uri,
-		Status:      api.StatusProvisioning,
-		Description: request.Description,
-		Size:        api.SizeXS,
-		Tier:        api.Tier(request.Tier),
+		ID:             fmt.Sprintf("ws-%d", id),
+		Name:           strings.ToLower(request.Name),
+		OwnerId:        userID,
+		URI:            uri,
+		Status:         api.StatusProvisioning,
+		Description:    request.Description,
+		Size:           api.SizeXS,
+		Tier:           api.Tier(request.Tier),
+		OrganizationID: request.OrganizationID,
 	}
 	if err := s.db.CreateWorkspace(workspace); err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {
