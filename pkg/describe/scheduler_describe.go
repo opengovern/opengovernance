@@ -107,21 +107,59 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		return err
 	}
 
-	if len(dcs) == 0 {
-		if count == 0 {
-			dcs, err = s.db.GetFailedDescribeConnectionJobs(ctx)
+	fdcs, err := s.db.GetFailedDescribeConnectionJobs(ctx)
+	if err != nil {
+		s.logger.Error("failed to fetch failed describe resource jobs", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
+		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+		return err
+	}
+	for i := range fdcs {
+		if fdcs[i].Connector == source.CloudAWS {
+			resourceType, err := aws.GetResourceType(fdcs[i].ResourceType)
 			if err != nil {
-				s.logger.Error("failed to fetch failed describe resource jobs", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
-				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 				return err
 			}
-			if len(dcs) == 0 {
-				return errors.New("no job to run")
+			if resourceType.FastDiscovery {
+				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-s.describeIntervalHours))) {
+					fdcs = append(fdcs[:i], fdcs[i+1:]...)
+					i--
+				}
+			} else if resourceType.CostDiscovery {
+				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-24))) {
+					fdcs = append(fdcs[:i], fdcs[i+1:]...)
+					i--
+				}
+			} else {
+				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-s.fullDiscoveryIntervalHours))) {
+					fdcs = append(fdcs[:i], fdcs[i+1:]...)
+					i--
+				}
 			}
-		} else {
-			return errors.New("queue is not empty to look for retries")
+		} else if fdcs[i].Connector == source.CloudAzure {
+			resourceType, err := azure.GetResourceType(fdcs[i].ResourceType)
+			if err != nil {
+				return err
+			}
+			if resourceType.FastDiscovery {
+				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-s.describeIntervalHours))) {
+					fdcs = append(fdcs[:i], fdcs[i+1:]...)
+					i--
+				}
+			} else if resourceType.CostDiscovery {
+				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-24))) {
+					fdcs = append(fdcs[:i], fdcs[i+1:]...)
+					i--
+				}
+			} else {
+				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-s.fullDiscoveryIntervalHours))) {
+					fdcs = append(fdcs[:i], fdcs[i+1:]...)
+					i--
+				}
+			}
 		}
 	}
+
+	dcs = append(dcs, fdcs...)
 
 	rtCount := map[string]int{}
 	for i := 0; i < len(dcs); i++ {
