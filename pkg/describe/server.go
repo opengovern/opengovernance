@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"github.com/kaytu-io/terraform-package/external/states/statefile"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -60,6 +61,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerDescribeJobV1, apiAuth.AdminRole))
 	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
 	v1.PUT("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, apiAuth.InternalRole))
+	v1.GET("/describe/status", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
 
 	stacks := v1.Group("/stacks")
 	stacks.GET("", httpserver.AuthorizeHandler(h.ListStack, apiAuth.ViewerRole))
@@ -150,25 +152,26 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		if !connection.IsEnabled() {
 			continue
 		}
+		rtToDescribe := resourceTypes
 
-		if resourceTypes == nil {
+		if len(rtToDescribe) == 0 {
 			switch connection.Connector {
 			case source.CloudAWS:
 				if forceFull {
-					resourceTypes = aws.ListResourceTypes()
+					rtToDescribe = aws.ListResourceTypes()
 				} else {
-					resourceTypes = aws.ListFastDiscoveryResourceTypes()
+					rtToDescribe = aws.ListFastDiscoveryResourceTypes()
 				}
 			case source.CloudAzure:
 				if forceFull {
-					resourceTypes = azure.ListResourceTypes()
+					rtToDescribe = azure.ListResourceTypes()
 				} else {
-					resourceTypes = azure.ListFastDiscoveryResourceTypes()
+					rtToDescribe = azure.ListFastDiscoveryResourceTypes()
 				}
 			}
 		}
 
-		for _, resourceType := range resourceTypes {
+		for _, resourceType := range rtToDescribe {
 			err = h.Scheduler.describe(connection, resourceType, false, false)
 			if err != nil {
 				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
@@ -185,6 +188,15 @@ func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
 	}
 	return ctx.JSON(http.StatusOK, "")
+}
+
+func (h HttpServer) GetDescribeStatus(ctx echo.Context) error {
+	resourceType := ctx.QueryParam("resource_type")
+	status, err := h.DB.GetDescribeStatus(resourceType)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, status)
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -209,10 +221,11 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Tags			stack
 //	@Accept			json
 //	@Produce		json
-//	@Param			terraformFile	formData	file	true	"File to upload"
-//	@Param			tag				formData	string	false	"Tags Map[string][]string"
-//	@Param			config			formData	string	true	"Config json structure"
-//	@Success		200				{object}	api.Stack
+//	@Param			stateFile			formData	file	false	"ُTerraform StateFile full path"
+//	@Param			tag					formData	string	false	"Tags Map[string][]string"
+//	@Param			config				formData	string	true	"Config json structure"
+//	@Param			remoteStateConfig	formData	string	false	"Config json structure for terraform remote state backend"
+//	@Success		200					{object}	api.Stack
 //	@Router			/schedule/api/v1/stacks/create [post]
 func (h HttpServer) CreateStack(ctx echo.Context) error {
 	var tags map[string][]string
@@ -221,42 +234,93 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		json.Unmarshal([]byte(tagsData), &tags)
 	}
 
-	var resources []string
-
-	file, err := ctx.FormFile("terraformFile")
+	file, err := ctx.FormFile("stateFile")
 	if err != nil {
 		if err.Error() != "http: no such file" {
 			return err
 		}
 	}
-	if file == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "No resource provided")
+	if file != nil {
+		src, err := file.Open()
+		if err != nil {
+			return err
+		}
+		data, err := io.ReadAll(src)
+		if err != nil {
+			return err
+		}
+		if string(data) == "{}" {
+			file = nil
+		}
+		err = src.Close()
+		if err != nil {
+			return err
+		}
 	}
-	src, err := file.Open()
-	if err != nil {
-		return err
+	stateConfig := ctx.FormValue("remoteStateConfig")
+	if file == nil && stateConfig == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "No state file or remote backend provided")
 	}
-	defer src.Close()
+	configStr := ctx.FormValue("config")
+	if configStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Please provide the credentials")
+	}
 
-	data, err := ioutil.ReadAll(src)
-	if err != nil {
-		return err
+	var resources []string
+	var terraformResourceTypes []string
+	if file != nil {
+		src, err := file.Open()
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+
+		data, err := io.ReadAll(src)
+		if err != nil {
+			return err
+		}
+		if !strings.HasSuffix(file.Filename, ".tfstate") {
+			echo.NewHTTPError(http.StatusBadRequest, "File must have a .tfstate suffix")
+		}
+		arns, err := internal.GetArns(string(data))
+		if err != nil {
+			return err
+		}
+		terraformResourceTypes, err = internal.GetTypes(string(data))
+		if err != nil {
+			return err
+		}
+		resources = append(resources, arns...)
+	} else {
+		var conf internal.Config
+		err = json.Unmarshal([]byte(stateConfig), &conf)
+		if err != nil {
+			echo.NewHTTPError(http.StatusBadRequest, "Error unmarshaling config json")
+		}
+		if conf.Type == "s3" {
+			err = internal.ConfigureAWSAccount(configStr)
+		} else if conf.Type == "azurem" {
+			err = internal.ConfigureAzureAccount(configStr)
+		}
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Could not parse state backend configs")
+		}
+		state := internal.GetRemoteState(conf)
+		resources = statefile.GetArnsFromStateFile(state)
+		terraformResourceTypes = statefile.GetResourcesTypesFromState(state)
+
+		err = internal.RestartCredentials()
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Could not reset configs")
+		}
 	}
-	if !strings.HasSuffix(file.Filename, ".tfstate") {
-		echo.NewHTTPError(http.StatusBadRequest, "File must have a .tfstate suffix")
-	}
-	arns, err := internal.GetArns(string(data))
-	if err != nil {
-		return err
-	}
-	resources = append(resources, arns...)
 
 	var recordTags []*StackTag
 	if len(tags) != 0 {
 		for key, value := range tags {
 			recordTags = append(recordTags, &StackTag{
 				Key:   key,
-				Value: pq.StringArray(value),
+				Value: value,
 			})
 		}
 	}
@@ -270,7 +334,6 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		}
 	}
 
-	terraformResourceTypes, err := internal.GetTypes(string(data))
 	terraformResourceTypes = removeDuplicates(terraformResourceTypes)
 	if err != nil {
 		return err
@@ -290,11 +353,6 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 				resourceTypes = append(resourceTypes, rt)
 			}
 		}
-	}
-
-	configStr := ctx.FormValue("config")
-	if configStr == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "Please provide the credentials")
 	}
 
 	accs, err := internal.ParseAccountsFromArns(resources)
@@ -598,7 +656,11 @@ func (h HttpServer) ListStackInsights(ctx echo.Context) error {
 	for _, insightId := range insightIds {
 		insight, err := h.Scheduler.complianceClient.GetInsight(httpclient.FromEchoContext(ctx), insightId, []string{connectionId}, &startTime, &endTime)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("error for insight %s: %s", insightId, err.Error()))
+			if strings.Contains(err.Error(), "no data for insight found") {
+				continue
+			} else {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("error for insight %s: %s", insightId, err.Error()))
+			}
 		}
 		var totalResaults int64
 		var filteredResults []complianceapi.InsightResult

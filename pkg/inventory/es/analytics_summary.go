@@ -9,11 +9,11 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"math"
 	"strconv"
 	"time"
 
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
@@ -248,7 +248,7 @@ type ConnectionMetricTrendSummaryQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
+func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]DatapointWithFailures, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -301,7 +301,7 @@ func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, m
 		},
 	}
 
-	hits := make(map[int]int)
+	hits := make(map[int]DatapointWithFailures)
 	for _, connectionID := range connectionIDs {
 		localFilters := append(filters, map[string]any{
 			"term": map[string]string{"connection_id": connectionID},
@@ -328,10 +328,30 @@ func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, m
 			for _, evaluatedAtRangeBucket := range metricBucket.EvaluatedAtRangeGroup.Buckets {
 				rangeKey := int((evaluatedAtRangeBucket.From + evaluatedAtRangeBucket.To) / 2)
 				for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
-					hits[rangeKey] += hit.Source.ResourceCount
+					v, ok := hits[rangeKey]
+					if !ok {
+						v = DatapointWithFailures{
+							connectionSuccess: map[string]bool{},
+						}
+					}
+
+					v.Count += hit.Source.ResourceCount
+					v.connectionSuccess[hit.Source.ConnectionID.String()] = v.connectionSuccess[hit.Source.ConnectionID.String()] && hit.Source.IsJobSuccessful
+					hits[rangeKey] = v
 				}
 			}
 		}
+	}
+
+	for k, v := range hits {
+		v.TotalConnections = int64(len(v.connectionSuccess))
+		for _, success := range v.connectionSuccess {
+			if success {
+				v.TotalSuccessfulConnections++
+			}
+		}
+		v.connectionSuccess = nil
+		hits[k] = v
 	}
 
 	return hits, nil
@@ -365,7 +385,18 @@ type ConnectorMetricTrendSummaryQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []source.Type, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]int, error) {
+type DatapointWithFailures struct {
+	Cost                       float64
+	Count                      int
+	TotalSuccessfulConnections int64
+	TotalConnections           int64
+
+	connectionSuccess map[string]bool
+	connectorSuccess  map[string]int64
+	connectorTotal    map[string]int64
+}
+
+func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []source.Type, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]DatapointWithFailures, error) {
 	res := make(map[string]any)
 	var filters []any
 
@@ -456,18 +487,42 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 		return nil, err
 	}
 
-	hits := make(map[int]int)
+	hits := make(map[int]DatapointWithFailures)
 	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
 		for _, connector := range metricBucket.ConnectorGroup.Buckets {
 			for _, evaluatedAtRangeBucket := range connector.EvaluatedAtRangeGroup.Buckets {
 				rangeKey := int((evaluatedAtRangeBucket.From + evaluatedAtRangeBucket.To) / 2)
 				for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
-					hits[rangeKey] += hit.Source.ResourceCount
+					v, ok := hits[rangeKey]
+					if !ok {
+						v = DatapointWithFailures{
+							connectorTotal:   map[string]int64{},
+							connectorSuccess: map[string]int64{},
+						}
+
+						hits[rangeKey] = v
+					}
+
+					v.Count += hit.Source.ResourceCount
+					v.connectorTotal[hit.Source.Connector.String()] = max(v.connectorTotal[hit.Source.Connector.String()], hit.Source.TotalConnections)
+					v.connectorSuccess[hit.Source.Connector.String()] = min(v.connectorSuccess[hit.Source.Connector.String()], hit.Source.TotalSuccessfulConnections)
+					hits[rangeKey] = v
 				}
 			}
 		}
 	}
 
+	for k, v := range hits {
+		for _, total := range v.connectorTotal {
+			v.TotalConnections += total
+		}
+		for _, total := range v.connectorSuccess {
+			v.TotalSuccessfulConnections += total
+		}
+		v.connectorSuccess = nil
+		v.connectorTotal = nil
+		hits[k] = v
+	}
 	return hits, nil
 }
 
@@ -617,7 +672,7 @@ type FetchConnectionAnalyticsResourcesCountAtTimeReturnValue struct {
 	LatestEvaluatedAt int64
 }
 
-func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connectors []source.Type, connectionIDs []string, t time.Time, size int) (map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue, error) {
+func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connectors []source.Type, connectionIDs []string, metricIDs []string, t time.Time, size int) (map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue, error) {
 	res := make(map[string]any)
 	var filters []any
 	filters = append(filters, map[string]any{
@@ -628,6 +683,12 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 			},
 		},
 	})
+
+	if len(metricIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"metric_id": metricIDs},
+		})
+	}
 
 	if len(connectors) > 0 {
 		connectorsStr := make([]string, 0, len(connectors))
@@ -851,7 +912,7 @@ type AssetTableByDimensionQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchAssetTableByDimension(client kaytu.Client, granularity inventoryApi.SpendTableGranularity, dimension inventoryApi.SpendDimension, startTime, endTime time.Time) ([]DimensionTrend, error) {
+func FetchAssetTableByDimension(client kaytu.Client, metricIds []string, granularity inventoryApi.SpendTableGranularity, dimension inventoryApi.SpendDimension, startTime, endTime time.Time) ([]DimensionTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -875,6 +936,13 @@ func FetchAssetTableByDimension(client kaytu.Client, granularity inventoryApi.Sp
 			},
 		},
 	})
+	if len(metricIds) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{
+				"metric_id": metricIds,
+			},
+		})
+	}
 
 	dateGroupField := "date"
 	if granularity == inventoryApi.SpendTableGranularityMonthly {

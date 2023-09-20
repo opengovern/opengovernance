@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
+	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -821,6 +822,11 @@ func (h HttpHandler) GetCredential(ctx echo.Context) error {
 		}
 	}
 
+	for idx, c := range apiCredential.Connections {
+		c.ConnectionName = demo.EncodeResponseData(ctx, c.ConnectionName)
+		c.ConnectionID = demo.EncodeResponseData(ctx, c.ConnectionID)
+		apiCredential.Connections[idx] = c
+	}
 	return ctx.JSON(http.StatusOK, apiCredential)
 }
 
@@ -2319,8 +2325,10 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 //	@Tags			connections
 //	@Accept			json
 //	@Produce		json
+//	@Param			filter				query		string			false	"Filter costs"
 //	@Param			connector			query		[]source.Type	false	"Connector"
 //	@Param			connectionId		query		[]string		false	"Connection IDs"
+//	@Param			connectionGroups	query		[]string		false	"Connection Groups"
 //	@Param			lifecycleState		query		string			false	"lifecycle state filter"	Enums(DISABLED, DISCOVERED, IN_PROGRESS, ONBOARD, ARCHIVED)
 //	@Param			healthState			query		string			false	"health state filter"		Enums(healthy,unhealthy)
 //	@Param			pageSize			query		int				false	"page size - default is 20"
@@ -2335,6 +2343,7 @@ func (h HttpHandler) CatalogMetrics(ctx echo.Context) error {
 func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	connectionGroups := httpserver.QueryArrayParam(ctx, "connectionGroups")
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
 	if endTimeStr != "" {
@@ -2345,7 +2354,7 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		endTime = time.Unix(endTimeUnix, 0)
 	}
 	startTimeStr := ctx.QueryParam("startTime")
-	startTime := endTime.AddDate(0, 0, -7)
+	startTime := endTime.AddDate(0, -1, 0)
 	if startTimeStr != "" {
 		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
 		if err != nil {
@@ -2383,12 +2392,80 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListSourcesWithFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListSourcesWithFilters")
 
-	connections, err := h.db.ListSourcesWithFilters(connectors, connectionIDs, lifecycleStateSlice, healthStateSlice)
+	filterStr := ctx.QueryParam("filter")
+	if filterStr != "" {
+		var filter map[string]interface{}
+		err = json.Unmarshal([]byte(filterStr), &filter)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "could not parse filter")
+		}
+		connectionIDs, err = h.connectionsFilter(ctx, filter)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("invalid filter: %s", err.Error()))
+		}
+		h.logger.Warn(fmt.Sprintf("===Filtered Connections: %v", connectionIDs))
+	}
+
+	tmpConnections, err := h.db.ListSourcesWithFilters(connectors, connectionIDs, lifecycleStateSlice, healthStateSlice)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	span.End()
+
+	_, span = tracer.Start(ctx.Request().Context(), "new_FilterConnectionGroups", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_FilterConnectionGroups")
+
+	var connections []Source
+	if filterStr != "" && len(connectionIDs) == 0 {
+		result := api.ListConnectionSummaryResponse{
+			ConnectionCount:       len(connections),
+			TotalCost:             0,
+			TotalResourceCount:    0,
+			TotalOldResourceCount: 0,
+			TotalUnhealthyCount:   0,
+
+			TotalDisabledCount:   0,
+			TotalDiscoveredCount: 0,
+			TotalOnboardedCount:  0,
+			TotalArchivedCount:   0,
+			Connections:          make([]api.Connection, 0, len(connections)),
+		}
+		return ctx.JSON(http.StatusOK, result)
+	} else if len(connectionGroups) > 0 && filterStr == "" {
+		var validConnections []string
+		for _, group := range connectionGroups {
+			connectionGroup, err := h.db.GetConnectionGroupByName(group)
+			if err != nil {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
+				h.logger.Error("error getting connection group", zap.Error(err))
+				return err
+			}
+
+			span.AddEvent("information", trace.WithAttributes(
+				attribute.String("connectionGroup name", connectionGroup.Name),
+			))
+			apiCg, err := connectionGroup.ToAPI(ctx.Request().Context(), h.steampipeConn)
+			if err != nil {
+				h.logger.Error("error populating connection group", zap.Error(err))
+				return err
+			}
+			validConnections = append(validConnections, apiCg.ConnectionIds...)
+		}
+		for _, c := range tmpConnections {
+			for _, vc := range validConnections {
+				if c.ID.String() == vc {
+					connections = append(connections, c)
+					break
+				}
+			}
+		}
+	} else {
+		connections = tmpConnections
+	}
+
 	span.End()
 
 	needCostStr := ctx.QueryParam("needCost")
@@ -2592,6 +2669,11 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	})
 
 	result.Connections = utils.Paginate(pageNumber, pageSize, result.Connections)
+	for idx, cnn := range result.Connections {
+		cnn.ConnectionID = demo.EncodeResponseData(ctx, cnn.ConnectionID)
+		cnn.ConnectionName = demo.EncodeResponseData(ctx, cnn.ConnectionName)
+		result.Connections[idx] = cnn
+	}
 	return ctx.JSON(http.StatusOK, result)
 }
 
@@ -2730,4 +2812,198 @@ func (h HttpHandler) GetConnectionGroup(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, apiCg)
+}
+
+func (h *HttpHandler) connectionsFilter(ctx echo.Context, filter map[string]interface{}) ([]string, error) {
+	var connections []string
+	allConnections, err := h.db.ListSources()
+	if err != nil {
+		return nil, err
+	}
+	var allConnectionsStr []string
+	for _, c := range allConnections {
+		allConnectionsStr = append(allConnectionsStr, c.ID.String())
+	}
+	for key, value := range filter {
+		if key == "Match" {
+			dimFilter := value.(map[string]interface{})
+			if dimKey, ok := dimFilter["Key"]; ok {
+				if dimKey == "ConnectionID" {
+					connections, err = dimFilterFunction(dimFilter, allConnectionsStr)
+					if err != nil {
+						return nil, err
+					}
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, connections))
+				} else if dimKey == "Provider" {
+					providers, err := dimFilterFunction(dimFilter, []string{"AWS", "Azure"})
+					if err != nil {
+						return nil, err
+					}
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, providers))
+					for _, c := range allConnections {
+						if arrayContains(providers, c.Connector.Name.String()) {
+							connections = append(connections, c.ID.String())
+						}
+					}
+				} else if dimKey == "ConnectionGroup" {
+					allGroups, err := h.db.ListConnectionGroups()
+					if err != nil {
+						return nil, err
+					}
+					allGroupsMap := make(map[string][]string)
+					var allGroupsStr []string
+					for _, group := range allGroups {
+						g, err := group.ToAPI(ctx.Request().Context(), h.steampipeConn)
+						if err != nil {
+							return nil, err
+						}
+						allGroupsMap[g.Name] = make([]string, 0, len(g.ConnectionIds))
+						for _, cid := range g.ConnectionIds {
+							allGroupsMap[g.Name] = append(allGroupsMap[g.Name], cid)
+							allGroupsStr = append(allGroupsStr, cid)
+						}
+					}
+					groups, err := dimFilterFunction(dimFilter, allGroupsStr)
+					if err != nil {
+						return nil, err
+					}
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, groups))
+					for _, g := range groups {
+						for _, conn := range allGroupsMap[g] {
+							if !arrayContains(connections, conn) {
+								connections = append(connections, conn)
+							}
+						}
+					}
+				} else if dimKey == "ConnectionName" {
+					var allConnectionsNames []string
+					for _, c := range allConnections {
+						allConnectionsNames = append(allConnectionsNames, c.Name)
+					}
+					connectionNames, err := dimFilterFunction(dimFilter, allConnectionsNames)
+					if err != nil {
+						return nil, err
+					}
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, connectionNames))
+					for _, conn := range allConnections {
+						if arrayContains(connectionNames, conn.Name) {
+							connections = append(connections, conn.ID.String())
+						}
+					}
+				}
+			} else {
+				return nil, fmt.Errorf("missing key")
+			}
+		} else if key == "AND" {
+			var andFilters []map[string]interface{}
+			for _, v := range value.([]interface{}) {
+				andFilter := v.(map[string]interface{})
+				andFilters = append(andFilters, andFilter)
+			}
+			counter := make(map[string]int)
+			for _, f := range andFilters {
+				values, err := h.connectionsFilter(ctx, f)
+				if err != nil {
+					return nil, err
+				}
+				for _, v := range values {
+					if c, ok := counter[v]; ok {
+						counter[v] = c + 1
+					} else {
+						counter[v] = 1
+					}
+					if counter[v] == len(andFilters) {
+						connections = append(connections, v)
+					}
+				}
+			}
+		} else if key == "OR" {
+			var orFilters []map[string]interface{}
+			for _, v := range value.([]interface{}) {
+				orFilter := v.(map[string]interface{})
+				orFilters = append(orFilters, orFilter)
+			}
+			for _, f := range orFilters {
+				values, err := h.connectionsFilter(ctx, f)
+				if err != nil {
+					return nil, err
+				}
+				for _, v := range values {
+					if !arrayContains(connections, v) {
+						connections = append(connections, v)
+					}
+				}
+			}
+		} else {
+			return nil, fmt.Errorf("invalid key: ", key)
+		}
+	}
+	return connections, nil
+}
+
+func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]string, error) {
+	var values []string
+	for _, v := range dimFilter["Values"].([]interface{}) {
+		values = append(values, fmt.Sprintf("%v", v))
+	}
+	var output []string
+	if matchOption, ok := dimFilter["MatchOption"]; ok {
+		switch {
+		case strings.Contains(matchOption.(string), "EQUAL"):
+			output = values
+		case strings.Contains(matchOption.(string), "STARTS_WITH"):
+			for _, v := range values {
+				for _, conn := range allValues {
+					if strings.HasPrefix(conn, v) {
+						if !arrayContains(output, conn) {
+							output = append(output, conn)
+						}
+					}
+				}
+			}
+		case strings.Contains(matchOption.(string), "ENDS_WITH"):
+			for _, v := range values {
+				for _, conn := range allValues {
+					if strings.HasSuffix(conn, v) {
+						if !arrayContains(output, conn) {
+							output = append(output, conn)
+						}
+					}
+				}
+			}
+		case strings.Contains(matchOption.(string), "CONTAINS"):
+			for _, v := range values {
+				for _, conn := range allValues {
+					if strings.Contains(conn, v) {
+						if !arrayContains(output, conn) {
+							output = append(output, conn)
+						}
+					}
+				}
+			}
+		default:
+			return nil, fmt.Errorf("invalid option")
+		}
+		if strings.HasPrefix(matchOption.(string), "~") {
+			var notOutput []string
+			for _, v := range allValues {
+				if !arrayContains(output, v) {
+					notOutput = append(notOutput, v)
+				}
+			}
+			return notOutput, nil
+		}
+	} else {
+		output = values
+	}
+	return output, nil
+}
+
+func arrayContains(array []string, key string) bool {
+	for _, v := range array {
+		if v == key {
+			return true
+		}
+	}
+	return false
 }

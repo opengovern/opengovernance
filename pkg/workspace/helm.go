@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/workspace/api"
 
 	"reflect"
 	"time"
@@ -44,7 +45,8 @@ type DockerConfig struct {
 	Config string `json:"config"`
 }
 type WorkspaceConfig struct {
-	Name string `json:"name"`
+	Name string            `json:"name"`
+	Size api.WorkspaceSize `json:"size"`
 }
 
 func (s *Server) newKubeClient() (client.Client, error) {
@@ -86,6 +88,7 @@ func (s *Server) createHelmRelease(ctx context.Context, workspace *Workspace) er
 			ReplicaCount: 1,
 			Workspace: WorkspaceConfig{
 				Name: workspace.Name,
+				Size: workspace.Size,
 			},
 			Insights: InsightsConfig{
 				S3: S3Config{

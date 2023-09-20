@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	_ "github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -70,12 +70,12 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	analyticsV2 := v2.Group("/analytics")
 	analyticsV2.GET("/metrics/list", httpserver.AuthorizeHandler(h.ListMetrics, authApi.ViewerRole))
+	analyticsV2.GET("/metrics/:metric_id", httpserver.AuthorizeHandler(h.GetMetric, authApi.ViewerRole))
 
 	analyticsV2.GET("/metric", httpserver.AuthorizeHandler(h.ListAnalyticsMetricsHandler, authApi.ViewerRole))
 	analyticsV2.GET("/tag", httpserver.AuthorizeHandler(h.ListAnalyticsTags, authApi.ViewerRole))
 	analyticsV2.GET("/trend", httpserver.AuthorizeHandler(h.ListAnalyticsMetricTrend, authApi.ViewerRole))
 	analyticsV2.GET("/composition/:key", httpserver.AuthorizeHandler(h.ListAnalyticsComposition, authApi.ViewerRole))
-	analyticsV2.GET("/regions/summary", httpserver.AuthorizeHandler(h.ListAnalyticsRegionsSummary, authApi.ViewerRole))
 	analyticsV2.GET("/categories", httpserver.AuthorizeHandler(h.ListAnalyticsCategories, authApi.ViewerRole))
 	analyticsV2.GET("/table", httpserver.AuthorizeHandler(h.GetAssetsTable, authApi.ViewerRole))
 
@@ -98,7 +98,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	metadata := v2.Group("/metadata")
 	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, authApi.ViewerRole))
 
-	v1.GET("/migrate-analytics", httpserver.AuthorizeHandler(h.MigrateAnalytics, authApi.AdminRole))
+	//v1.GET("/migrate-analytics", httpserver.AuthorizeHandler(h.MigrateAnalytics, authApi.AdminRole))
 	v1.GET("/migrate-spend", httpserver.AuthorizeHandler(h.MigrateSpend, authApi.AdminRole))
 }
 
@@ -106,12 +106,12 @@ var tracer = otel.Tracer("new_inventory")
 
 func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]string, error) {
 	connectionIds := httpserver.QueryArrayParam(ctx, ConnectionIdParam)
-	connectionGroup := ctx.QueryParam(ConnectionGroupParam)
-	if len(connectionIds) == 0 && connectionGroup == "" {
+	connectionGroup := httpserver.QueryArrayParam(ctx, ConnectionGroupParam)
+	if len(connectionIds) == 0 && len(connectionGroup) == 0 {
 		return nil, nil
 	}
 
-	if len(connectionIds) > 0 && connectionGroup != "" {
+	if len(connectionIds) > 0 && len(connectionGroup) > 0 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
 	}
 
@@ -119,16 +119,25 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 		return connectionIds, nil
 	}
 
-	connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroup)
-	if err != nil {
-		return nil, err
+	connectionMap := map[string]bool{}
+	for _, connectionGroupID := range connectionGroup {
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroupID)
+		if err != nil {
+			return nil, err
+		}
+		for _, connectionID := range connectionGroupObj.ConnectionIds {
+			connectionMap[connectionID] = true
+		}
+	}
+	connectionIds = make([]string, 0, len(connectionMap))
+	for connectionID := range connectionMap {
+		connectionIds = append(connectionIds, connectionID)
+	}
+	if len(connectionIds) == 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionGroup(s) do not have any connections")
 	}
 
-	if len(connectionGroupObj.ConnectionIds) == 0 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionGroup has no connections")
-	}
-
-	return connectionGroupObj.ConnectionIds, nil
+	return connectionIds, nil
 }
 
 func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
@@ -286,8 +295,18 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 
 func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
 	connectorMap := map[string]spend.ConnectorMetricTrendSummary{}
-	maxJobID := 1000
-	for i := 0; i < maxJobID; i++ {
+
+	startJobId := 0
+	if jobIdStr := ctx.QueryParam("startJobId"); jobIdStr != "" {
+		jobId, err := strconv.ParseInt(jobIdStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		startJobId = int(jobId)
+	}
+
+	maxJobID := startJobId + 1000
+	for i := startJobId; i < maxJobID; i++ {
 		cm, err := h.MigrateSpendPart(i, true)
 		if err != nil {
 			return err
@@ -500,18 +519,19 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) (map[str
 			monthStr := time.Unix(dateTimestamp, 0).Format("2006-01")
 			yearStr := time.Unix(dateTimestamp, 0).Format("2006")
 			connection := spend.ConnectionMetricTrendSummary{
-				ConnectionID:   connectionID,
-				ConnectionName: conn.ConnectionName,
-				Connector:      hit.Connector,
-				Date:           dateStr,
-				DateEpoch:      dateTimestamp * 1000,
-				Month:          monthStr,
-				Year:           yearStr,
-				MetricID:       metricID,
-				MetricName:     metricName,
-				CostValue:      hit.CostValue,
-				PeriodStart:    hit.PeriodStart * 1000,
-				PeriodEnd:      hit.PeriodEnd * 1000,
+				ConnectionID:    connectionID,
+				ConnectionName:  conn.ConnectionName,
+				Connector:       hit.Connector,
+				Date:            dateStr,
+				DateEpoch:       dateTimestamp * 1000,
+				Month:           monthStr,
+				Year:            yearStr,
+				MetricID:        metricID,
+				MetricName:      metricName,
+				CostValue:       hit.CostValue,
+				PeriodStart:     hit.PeriodStart * 1000,
+				PeriodEnd:       hit.PeriodEnd * 1000,
+				IsJobSuccessful: true,
 			}
 			key := fmt.Sprintf("%s-%s-%s", connectionID.String(), metricID, dateStr)
 			if v, ok := connectionMap[key]; ok {
@@ -522,16 +542,18 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) (map[str
 			}
 
 			connector := spend.ConnectorMetricTrendSummary{
-				Connector:   hit.Connector,
-				Date:        dateStr,
-				DateEpoch:   dateTimestamp * 1000,
-				Month:       monthStr,
-				Year:        yearStr,
-				MetricID:    metricID,
-				MetricName:  metricName,
-				CostValue:   hit.CostValue,
-				PeriodStart: hit.PeriodStart * 1000,
-				PeriodEnd:   hit.PeriodEnd * 1000,
+				Connector:                  hit.Connector,
+				Date:                       dateStr,
+				DateEpoch:                  dateTimestamp * 1000,
+				Month:                      monthStr,
+				Year:                       yearStr,
+				MetricID:                   metricID,
+				MetricName:                 metricName,
+				CostValue:                  hit.CostValue,
+				PeriodStart:                hit.PeriodStart * 1000,
+				PeriodEnd:                  hit.PeriodEnd * 1000,
+				TotalConnections:           0, //TODO
+				TotalSuccessfulConnections: 0, //TODO
 			}
 			key = fmt.Sprintf("%s-%s-%s", connector.Connector, metricID, dateStr)
 			if dateStr == "2023-07-05" && metricID == "spend_amazon_elastic_compute_cloud___compute" {
@@ -604,7 +626,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context, metricIDs []stri
 	// tracer :
 	_, span := tracer.Start(ctx, "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
-	mts, err := aDB.ListFilteredMetrics(tagMap, metricType, metricIDs, connectorTypes)
+	mts, err := aDB.ListFilteredMetrics(tagMap, metricType, metricIDs, connectorTypes, false)
 
 	if err != nil {
 		span.RecordError(err)
@@ -656,7 +678,7 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context, metricIDs []stri
 //	@Param			metricType		query		string			false	"Metric type, default: assets"	Enums(assets, spend)
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			metricIDs		query		[]string		false	"Metric IDs"
 //	@Param			endTime			query		int64			false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		int64			false	"timestamp for resource count change comparison in epoch seconds"
@@ -839,7 +861,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]string	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			minCount		query		int			false	"Minimum number of resources/spend with this tag value, default 1"
 //	@Param			startTime		query		int64		false	"Start time in unix timestamp format, default now - 1 month"
 //	@Param			endTime			query		int64		false	"End time in unix timestamp format, default now"
@@ -929,7 +951,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 
 			metrics, err := aDB.ListFilteredMetrics(map[string][]string{
 				key: {tagValue},
-			}, metricType, nil, connectorTypes)
+			}, metricType, nil, connectorTypes, false)
 			if err != nil {
 				span3.RecordError(err)
 				span3.SetStatus(codes.Error, err.Error())
@@ -967,7 +989,7 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 //	@Param			ids				query		[]string		false	"Metric IDs to filter by"
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
@@ -1021,7 +1043,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
 
-	metrics, err := aDB.ListFilteredMetrics(tagMap, metricType, ids, connectorTypes)
+	metrics, err := aDB.ListFilteredMetrics(tagMap, metricType, ids, connectorTypes, false)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -1034,7 +1056,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		metricIDs = append(metricIDs, metric.ID)
 	}
 
-	timeToCountMap := make(map[int]int)
+	timeToCountMap := make(map[int]es.DatapointWithFailures)
 	if endTime.Round(24 * time.Hour).Before(endTime) {
 		endTime = endTime.Round(24 * time.Hour).Add(24 * time.Hour)
 	} else {
@@ -1063,8 +1085,13 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	}
 
 	apiDatapoints := make([]inventoryApi.ResourceTypeTrendDatapoint, 0, len(timeToCountMap))
-	for timeAt, count := range timeToCountMap {
-		apiDatapoints = append(apiDatapoints, inventoryApi.ResourceTypeTrendDatapoint{Count: count, Date: time.UnixMilli(int64(timeAt))})
+	for timeAt, val := range timeToCountMap {
+		apiDatapoints = append(apiDatapoints, inventoryApi.ResourceTypeTrendDatapoint{
+			Count:                                   val.Count,
+			TotalDescribedConnectionCount:           val.TotalConnections,
+			TotalSuccessfulDescribedConnectionCount: val.TotalSuccessfulConnections,
+			Date:                                    time.UnixMilli(int64(timeAt)),
+		})
 	}
 	sort.Slice(apiDatapoints, func(i, j int) bool {
 		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
@@ -1087,7 +1114,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 //	@Param			top				query		int				true	"How many top values to return default is 5"
 //	@Param			connector		query		[]source.Type	false	"Connector types to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			endTime			query		int64			false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		int64			false	"timestamp for resource count change comparison in epoch seconds"
 //	@Success		200				{object}	inventoryApi.ListResourceTypeCompositionResponse
@@ -1143,7 +1170,7 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
 
-	filteredMetrics, err := aDB.ListFilteredMetrics(map[string][]string{tagKey: nil}, metricType, nil, connectorTypes)
+	filteredMetrics, err := aDB.ListFilteredMetrics(map[string][]string{tagKey: nil}, metricType, nil, connectorTypes, false)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -1237,157 +1264,6 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, apiResult)
 }
 
-// ListAnalyticsRegionsSummary godoc
-//
-//	@Summary		List Regions Summary
-//	@Description	Retrieving list of regions analytics summary
-//	@Security		BearerToken
-//	@Tags			analytics
-//	@Accept			json
-//	@Produce		json
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			startTime		query		int64			false	"start time in unix seconds - default is now"
-//	@Param			endTime			query		int64			false	"end time in unix seconds - default is one week ago"
-//	@Param			sortBy			query		string			false	"column to sort by - default is resource_count"	Enums(resource_count, growth, growth_rate)
-//	@Param			pageSize		query		int				false	"page size - default is 20"
-//	@Param			pageNumber		query		int				false	"page number - default is 1"
-//	@Success		200				{object}	inventoryApi.RegionsResourceCountResponse
-//	@Router			/inventory/api/v2/analytics/regions/summary [get]
-func (h *HttpHandler) ListAnalyticsRegionsSummary(ctx echo.Context) error {
-	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now()
-	if endTimeStr != "" {
-		endTimeUnix, err := strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid integer")
-		}
-		endTime = time.Unix(endTimeUnix, 0)
-	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := endTime.AddDate(0, 0, -7)
-	if startTimeStr != "" {
-		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid integer")
-		}
-		startTime = time.Unix(startTimeUnix, 0)
-	}
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
-	if err != nil {
-		return err
-	}
-
-	pageNumber, pageSize, err := utils.PageConfigFromStrings(ctx.QueryParam("pageNumber"), ctx.QueryParam("pageSize"))
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
-	}
-	sortBy := ctx.QueryParam("sortBy")
-	if sortBy == "" {
-		sortBy = "resource_count"
-	}
-
-	currentLocationDistribution, err := es.FetchRegionSummaryPage(h.client, connectors, connectionIDs, nil, endTime, 10000)
-	if err != nil {
-		return err
-	}
-
-	oldLocationDistribution, err := es.FetchRegionSummaryPage(h.client, connectors, connectionIDs, nil, startTime, 10000)
-	if err != nil {
-		return err
-	}
-
-	var locationResponses []inventoryApi.LocationResponse
-	for region, count := range currentLocationDistribution {
-		cnt := count
-		oldCount := 0
-		if value, ok := oldLocationDistribution[region]; ok {
-			oldCount = value
-		}
-		locationResponses = append(locationResponses, inventoryApi.LocationResponse{
-			Location:         region,
-			ResourceCount:    &cnt,
-			ResourceOldCount: &oldCount,
-		})
-	}
-
-	sort.Slice(locationResponses, func(i, j int) bool {
-		switch sortBy {
-		case "resource_count":
-			if locationResponses[i].ResourceCount == nil && locationResponses[j].ResourceCount == nil {
-				break
-			}
-			if locationResponses[i].ResourceCount == nil {
-				return false
-			}
-			if locationResponses[j].ResourceCount == nil {
-				return true
-			}
-			if *locationResponses[i].ResourceCount != *locationResponses[j].ResourceCount {
-				return *locationResponses[i].ResourceCount > *locationResponses[j].ResourceCount
-			}
-		case "growth":
-			diffi := utils.PSub(locationResponses[i].ResourceCount, locationResponses[i].ResourceOldCount)
-			diffj := utils.PSub(locationResponses[j].ResourceCount, locationResponses[j].ResourceOldCount)
-			if diffi == nil && diffj == nil {
-				break
-			}
-			if diffi == nil {
-				return false
-			}
-			if diffj == nil {
-				return true
-			}
-			if *diffi != *diffj {
-				return *diffi > *diffj
-			}
-		case "growth_rate":
-			diffi := utils.PSub(locationResponses[i].ResourceCount, locationResponses[i].ResourceOldCount)
-			diffj := utils.PSub(locationResponses[j].ResourceCount, locationResponses[j].ResourceOldCount)
-			if diffi == nil && diffj == nil {
-				break
-			}
-			if diffi == nil {
-				return false
-			}
-			if diffj == nil {
-				return true
-			}
-			if locationResponses[i].ResourceOldCount == nil && locationResponses[j].ResourceOldCount == nil {
-				break
-			}
-			if locationResponses[i].ResourceOldCount == nil {
-				return true
-			}
-			if locationResponses[j].ResourceOldCount == nil {
-				return false
-			}
-			if *locationResponses[i].ResourceOldCount == 0 && *locationResponses[j].ResourceOldCount == 0 {
-				break
-			}
-			if *locationResponses[i].ResourceOldCount == 0 {
-				return false
-			}
-			if *locationResponses[j].ResourceOldCount == 0 {
-				return true
-			}
-			if float64(*diffi)/float64(*locationResponses[i].ResourceOldCount) != float64(*diffj)/float64(*locationResponses[j].ResourceOldCount) {
-				return float64(*diffi)/float64(*locationResponses[i].ResourceOldCount) > float64(*diffj)/float64(*locationResponses[j].ResourceOldCount)
-			}
-		}
-		return locationResponses[i].Location < locationResponses[j].Location
-	})
-
-	response := inventoryApi.RegionsResourceCountResponse{
-		TotalCount: len(locationResponses),
-		Regions:    utils.Paginate(pageNumber, pageSize, locationResponses),
-	}
-
-	return ctx.JSON(http.StatusOK, response)
-}
-
 // ListAnalyticsCategories godoc
 //
 //	@Summary		List Analytics categories
@@ -1409,7 +1285,7 @@ func (h *HttpHandler) ListAnalyticsCategories(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListMetrics")
 
-	metrics, err := aDB.ListMetrics()
+	metrics, err := aDB.ListMetrics(false)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -1483,7 +1359,16 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid dimension")
 	}
 
-	mt, err := es.FetchAssetTableByDimension(h.client, granularity, dimension, startTime, endTime)
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	ms, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets, nil, nil, false)
+	if err != nil {
+		return err
+	}
+	var metricIds []string
+	for _, m := range ms {
+		metricIds = append(metricIds, m.ID)
+	}
+	mt, err := es.FetchAssetTableByDimension(h.client, metricIds, granularity, dimension, startTime, endTime)
 	if err != nil {
 		return err
 	}
@@ -1511,14 +1396,16 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 //	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
+//	@Param			filter			query		string			false	"Filter costs"
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			sortBy			query		string			false	"Sort by field - default is cost"	Enums(dimension,cost,growth,growth_rate)
 //	@Param			pageSize		query		int				false	"page size - default is 20"
 //	@Param			pageNumber		query		int				false	"page number - default is 1"
+//	@Param			metricIDs		query		[]string		false	"Metric IDs"
 //	@Success		200				{object}	inventoryApi.ListCostMetricsResponse
 //	@Router			/inventory/api/v2/analytics/spend/metric [get]
 func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
@@ -1549,9 +1436,40 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
 	}
 
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	metricIds := httpserver.QueryArrayParam(ctx, "metricIDs")
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, connectorTypes, false)
+	if err != nil {
+		return err
+	}
+	metricIds = []string{}
+	for _, m := range metrics {
+		metricIds = append(metricIds, m.ID)
+	}
+
+	filterStr := ctx.QueryParam("filter")
+	if filterStr != "" {
+		var filter map[string]interface{}
+		err = json.Unmarshal([]byte(filterStr), &filter)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, "could not parse filter")
+		}
+		connectionIDs, err = h.connectionsFilter(filter)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("invalid filter: %s", err.Error()))
+		}
+		h.logger.Warn(fmt.Sprintf("===Filtered Connections: %v", connectionIDs))
+	}
+
 	costMetricMap := make(map[string]inventoryApi.CostMetric)
-	if len(connectionIDs) > 0 {
-		hits, err := es.FetchConnectionDailySpendHistoryByMetric(h.client, connectionIDs, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
+	if filterStr != "" && len(connectionIDs) == 0 {
+		return ctx.JSON(http.StatusOK, inventoryApi.ListCostMetricsResponse{
+			TotalCount: 0,
+			TotalCost:  0,
+			Metrics:    []inventoryApi.CostMetric{},
+		})
+	} else if len(connectionIDs) > 0 {
+		hits, err := es.FetchConnectionDailySpendHistoryByMetric(h.client, connectionIDs, connectorTypes, metricIds, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1576,6 +1494,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 				costMetricMap[localHit.MetricID] = inventoryApi.CostMetric{
 					Connector:            []source.Type{localHit.Connector},
 					CostDimensionName:    localHit.MetricName,
+					CostDimensionID:      localHit.MetricID,
 					TotalCost:            &localHit.TotalCost,
 					DailyCostAtStartTime: &localHit.StartDateCost,
 					DailyCostAtEndTime:   &localHit.EndDateCost,
@@ -1583,7 +1502,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 			}
 		}
 	} else {
-		hits, err := es.FetchConnectorDailySpendHistoryByMetric(h.client, connectorTypes, nil, startTime, endTime, EsFetchPageSize)
+		hits, err := es.FetchConnectorDailySpendHistoryByMetric(h.client, connectorTypes, metricIds, startTime, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1609,6 +1528,7 @@ func (h *HttpHandler) ListAnalyticsSpendMetricsHandler(ctx echo.Context) error {
 				costMetricMap[localHit.MetricID] = inventoryApi.CostMetric{
 					Connector:            []source.Type{connector},
 					CostDimensionName:    localHit.MetricName,
+					CostDimensionID:      localHit.MetricID,
 					TotalCost:            &localHit.TotalCost,
 					DailyCostAtStartTime: &localHit.StartDateCost,
 					DailyCostAtEndTime:   &localHit.EndDateCost,
@@ -1724,7 +1644,7 @@ func (h *HttpHandler) ListMetrics(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
 
-	metrics, err := aDB.ListFilteredMetrics(nil, metricType, nil, connectorTypes)
+	metrics, err := aDB.ListFilteredMetrics(nil, metricType, nil, connectorTypes, false)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -1750,6 +1670,51 @@ func (h *HttpHandler) ListMetrics(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, apiMetrics)
 }
 
+// GetMetric godoc
+//
+//	@Summary		List metrics
+//	@Description	Returns list of metrics
+//	@Security		BearerToken
+//	@Tags			analytics
+//	@Accept			json
+//	@Produce		json
+//	@Param			metric_id	path		string	true	"MetricID"
+//
+//	@Success		200			{object}	inventoryApi.AnalyticsMetric
+//	@Router			/inventory/api/v2/analytics/metrics/{metric_id} [get]
+func (h *HttpHandler) GetMetric(ctx echo.Context) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	var err error
+
+	metricID := ctx.Param("metric_id")
+	_, span := tracer.Start(ctx.Request().Context(), "new_GetMetric", trace.WithSpanKind(trace.SpanKindServer))
+	span.SetName("new_GetMetric")
+
+	metric, err := aDB.GetMetricByID(metricID)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	if metric == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "metric not found")
+	}
+
+	span.End()
+
+	apiMetric := inventoryApi.AnalyticsMetric{
+		ID:          metric.ID,
+		Connectors:  source.ParseTypes(metric.Connectors),
+		Type:        metric.Type,
+		Name:        metric.Name,
+		Query:       metric.Query,
+		Tables:      metric.Tables,
+		FinderQuery: metric.FinderQuery,
+		Tags:        metric.GetTagsMap(),
+	}
+	return ctx.JSON(http.StatusOK, apiMetric)
+}
+
 // ListAnalyticsSpendComposition godoc
 //
 //	@Summary		List cost composition
@@ -1760,7 +1725,7 @@ func (h *HttpHandler) ListMetrics(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			top				query		int				false	"How many top values to return default is 5"
 //	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
@@ -1794,7 +1759,7 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_ListFilteredMetrics")
 
-	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, nil, nil)
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, nil, nil, false)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -1901,8 +1866,8 @@ func (h *HttpHandler) ListAnalyticsSpendComposition(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			metricIds		query		[]string		false	"Metrics IDs"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			granularity		query		string			false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
@@ -1912,6 +1877,17 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 	var err error
 	metricIds := httpserver.QueryArrayParam(ctx, "metricIds")
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, connectorTypes, false)
+	if err != nil {
+		return err
+	}
+	metricIds = nil
+	for _, m := range metrics {
+		metricIds = append(metricIds, m.ID)
+	}
+
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
@@ -1935,7 +1911,7 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
 	}
 
-	timepointToCost := map[string]float64{}
+	timepointToCost := map[string]es.DatapointWithFailures{}
 	if len(connectionIDs) > 0 {
 		timepointToCost, err = es.FetchConnectionSpendTrend(h.client, granularity, metricIds, connectionIDs, connectorTypes, startTime, endTime)
 	} else {
@@ -1954,7 +1930,12 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 			format = "2006"
 		}
 		dt, _ := time.Parse(format, timeAt)
-		apiDatapoints = append(apiDatapoints, inventoryApi.CostTrendDatapoint{Cost: costVal, Date: dt})
+		apiDatapoints = append(apiDatapoints, inventoryApi.CostTrendDatapoint{
+			Cost:                                    costVal.Cost,
+			TotalDescribedConnectionCount:           costVal.TotalConnections,
+			TotalSuccessfulDescribedConnectionCount: costVal.TotalSuccessfulConnections,
+			Date:                                    dt,
+		})
 	}
 	sort.Slice(apiDatapoints, func(i, j int) bool {
 		return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
@@ -1973,8 +1954,8 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 //	@Produce		json
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			metricIds		query		[]string		false	"Metrics IDs"
-//	@Param			connectionGroup	query		string			false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
 //	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
 //	@Param			granularity		query		string			false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
@@ -1984,6 +1965,17 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 	var err error
 	metricIds := httpserver.QueryArrayParam(ctx, "metricIds")
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+
+	aDB := analyticsDB.NewDatabase(h.db.orm)
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, connectorTypes, false)
+	if err != nil {
+		return err
+	}
+	metricIds = nil
+	for _, m := range metrics {
+		metricIds = append(metricIds, m.ID)
+	}
+
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
@@ -2057,6 +2049,8 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 //	@Param			granularity		query		string		false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
 //	@Param			dimension		query		string		false	"Dimension of the table, default is metric"		Enums(connection, metric)
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup	query		[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connector		query		string		false	"Connector"
 //	@Param			metricIds		query		[]string	false	"Metrics IDs"
 //
 //	@Success		200				{object}	[]inventoryApi.SpendTableRow
@@ -2065,6 +2059,16 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	var err error
 	metricIds := httpserver.QueryArrayParam(ctx, "metricIds")
+	ms, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, nil, false)
+	if err != nil {
+		return err
+	}
+	metricIds = nil
+	for _, m := range ms {
+		metricIds = append(metricIds, m.ID)
+	}
+
+	connector, _ := source.ParseType(ctx.QueryParam("connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
@@ -2103,7 +2107,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 		span.SetName("new_ListFilteredMetrics")
 
-		metrics, err = aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, nil)
+		metrics, err = aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, nil, false)
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())
@@ -2112,7 +2116,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		span.End()
 	}
 
-	mt, err := es.FetchSpendTableByDimension(h.client, dimension, connectionIDs, metricIds, startTime, endTime)
+	mt, err := es.FetchSpendTableByDimension(h.client, dimension, connectionIDs, connector, metricIds, startTime, endTime)
 	if err != nil {
 		return err
 	}
@@ -2143,6 +2147,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		}
 
 		var category, accountID string
+		dimensionName := m.DimensionName
 		if dimension == inventoryApi.SpendDimensionMetric {
 			for _, metric := range metrics {
 				if m.DimensionID == metric.ID {
@@ -2160,15 +2165,16 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 			}
 		} else if dimension == inventoryApi.SpendDimensionConnection {
 			if v, ok := connectionAccountIDMap[m.DimensionID]; ok {
-				accountID = v
+				accountID = demo.EncodeResponseData(ctx, v)
 			} else {
 				src, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.InternalRole}, m.DimensionID)
 				if err != nil {
 					return err
 				}
-				accountID = src.ConnectionID
+				accountID = demo.EncodeResponseData(ctx, src.ConnectionID)
 				connectionAccountIDMap[m.DimensionID] = accountID
 			}
+			dimensionName = demo.EncodeResponseData(ctx, dimensionName)
 		}
 
 		table = append(table, inventoryApi.SpendTableRow{
@@ -2176,7 +2182,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 			AccountID:     accountID,
 			Connector:     m.Connector,
 			Category:      category,
-			DimensionName: m.DimensionName,
+			DimensionName: dimensionName,
 			CostValue:     costValue,
 		})
 	}
@@ -2192,7 +2198,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			connectionGroup	query		[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
 //	@Param			endTime			query		int64		false	"timestamp for resource count in epoch seconds"
 //	@Param			startTime		query		int64		false	"timestamp for resource count change comparison in epoch seconds"
 //	@Param			resourceType	path		string		true	"ResourceType"
@@ -2286,6 +2292,7 @@ func (h *HttpHandler) GetResourceTypeMetric(ctx context.Context, resourceTypeStr
 }
 
 func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
 	performanceStartTime := time.Now()
 	var err error
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
@@ -2325,7 +2332,16 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 	fmt.Println("ListConnectionsData part1 ", time.Now().Sub(performanceStartTime).Milliseconds())
 	res := map[string]inventoryApi.ConnectionData{}
 	if needResourceCount {
-		resourceCountsMap, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, endTime, EsFetchPageSize)
+		metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets, nil, connectors, false)
+		if err != nil {
+			return err
+		}
+		var metricIDs []string
+		for _, m := range metrics {
+			metricIDs = append(metricIDs, m.ID)
+		}
+
+		resourceCountsMap, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, metricIDs, endTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -2344,7 +2360,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			res[connectionId] = v
 		}
 		fmt.Println("ListConnectionsData part2 ", time.Now().Sub(performanceStartTime).Milliseconds())
-		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, startTime, EsFetchPageSize)
+		oldResourceCount, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, connectors, connectionIDs, metricIDs, startTime, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -2397,6 +2413,7 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
+	aDB := analyticsDB.NewDatabase(h.db.orm)
 	connectionId := ctx.Param("connectionId")
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
@@ -2421,7 +2438,16 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 		ConnectionID: connectionId,
 	}
 
-	resourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, []string{connectionId}, endTime, EsFetchPageSize)
+	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets, nil, nil, false)
+	if err != nil {
+		return err
+	}
+	var metricIDs []string
+	for _, m := range metrics {
+		metricIDs = append(metricIDs, m.ID)
+	}
+
+	resourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, []string{connectionId}, metricIDs, endTime, EsFetchPageSize)
 	for esConnectionId, resourceCountAndEvaluated := range resourceCounts {
 		if esConnectionId != connectionId {
 			continue
@@ -2433,7 +2459,7 @@ func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
 		}
 	}
 
-	oldResourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, []string{connectionId}, startTime, EsFetchPageSize)
+	oldResourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, []string{connectionId}, metricIDs, startTime, EsFetchPageSize)
 	for esConnectionId, resourceCountAndEvaluated := range oldResourceCounts {
 		if esConnectionId != connectionId {
 			continue
@@ -2507,7 +2533,7 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetQueriesWithFilters", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_GetQueriesWithFilters")
 
-	queries, err := h.db.GetQueriesWithFilters(search, req.Connectors)
+	queries, err := h.db.GetQueriesWithFilters(search)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -2519,14 +2545,17 @@ func (h *HttpHandler) ListQueries(ctx echo.Context) error {
 	for _, item := range queries {
 		category := ""
 
+		tags := map[string]string{}
+		if item.IsPopular {
+			tags["popular"] = "true"
+		}
 		result = append(result, inventoryApi.SmartQueryItem{
-			ID:          item.Model.ID,
-			Provider:    item.Connector,
-			Title:       item.Title,
-			Category:    category,
-			Description: item.Description,
-			Query:       item.Query,
-			Tags:        nil,
+			ID:         item.ID,
+			Connectors: source.ParseTypes(item.Connectors),
+			Title:      item.Title,
+			Category:   category,
+			Query:      item.Query,
+			Tags:       tags,
 		})
 	}
 	return ctx.JSON(200, result)
@@ -2873,4 +2902,196 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, result)
+}
+
+func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string, error) {
+	var connections []string
+	allConnections, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, []source.Type{source.CloudAWS, source.CloudAzure})
+	if err != nil {
+		return nil, err
+	}
+	var allConnectionsStr []string
+	for _, c := range allConnections {
+		allConnectionsStr = append(allConnectionsStr, c.ID.String())
+	}
+	for key, value := range filter {
+		if key == "Match" {
+			dimFilter := value.(map[string]interface{})
+			if dimKey, ok := dimFilter["Key"]; ok {
+				if dimKey == "ConnectionID" {
+					connections, err = dimFilterFunction(dimFilter, allConnectionsStr)
+					if err != nil {
+						return nil, err
+					}
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, connections))
+				} else if dimKey == "Provider" {
+					providers, err := dimFilterFunction(dimFilter, []string{"AWS", "Azure"})
+					if err != nil {
+						return nil, err
+					}
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, providers))
+					for _, c := range allConnections {
+						if arrayContains(providers, c.Connector.String()) {
+							connections = append(connections, c.ID.String())
+						}
+					}
+				} else if dimKey == "ConnectionGroup" {
+					allGroups, err := h.onboardClient.ListConnectionGroups(&httpclient.Context{UserRole: authApi.KaytuAdminRole})
+					if err != nil {
+						return nil, err
+					}
+					allGroupsMap := make(map[string][]string)
+					var allGroupsStr []string
+					for _, g := range allGroups {
+						allGroupsMap[g.Name] = make([]string, 0, len(g.ConnectionIds))
+						for _, cid := range g.ConnectionIds {
+							allGroupsMap[g.Name] = append(allGroupsMap[g.Name], cid)
+							allGroupsStr = append(allGroupsStr, cid)
+						}
+					}
+					groups, err := dimFilterFunction(dimFilter, allGroupsStr)
+					if err != nil {
+						return nil, err
+					}
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, groups))
+
+					for _, g := range groups {
+						for _, conn := range allGroupsMap[g] {
+							if !arrayContains(connections, conn) {
+								connections = append(connections, conn)
+							}
+						}
+					}
+				} else if dimKey == "ConnectionName" {
+					var allConnectionsNames []string
+					for _, c := range allConnections {
+						allConnectionsNames = append(allConnectionsNames, c.ConnectionName)
+					}
+					connectionNames, err := dimFilterFunction(dimFilter, allConnectionsNames)
+					if err != nil {
+						return nil, err
+					}
+					h.logger.Warn(fmt.Sprintf("===Dim Filter Function on filter %v, result: %v", dimFilter, connectionNames))
+					for _, conn := range allConnections {
+						if arrayContains(connectionNames, conn.ConnectionName) {
+							connections = append(connections, conn.ID.String())
+						}
+					}
+
+				}
+			} else {
+				return nil, fmt.Errorf("missing key")
+			}
+		} else if key == "AND" {
+			var andFilters []map[string]interface{}
+			for _, v := range value.([]interface{}) {
+				andFilter := v.(map[string]interface{})
+				andFilters = append(andFilters, andFilter)
+			}
+			counter := make(map[string]int)
+			for _, f := range andFilters {
+				values, err := h.connectionsFilter(f)
+				if err != nil {
+					return nil, err
+				}
+				for _, v := range values {
+					if c, ok := counter[v]; ok {
+						counter[v] = c + 1
+					} else {
+						counter[v] = 1
+					}
+					if counter[v] == len(andFilters) {
+						connections = append(connections, v)
+					}
+				}
+			}
+		} else if key == "OR" {
+			var orFilters []map[string]interface{}
+			for _, v := range value.([]interface{}) {
+				orFilter := v.(map[string]interface{})
+				orFilters = append(orFilters, orFilter)
+			}
+			for _, f := range orFilters {
+				values, err := h.connectionsFilter(f)
+				if err != nil {
+					return nil, err
+				}
+				for _, v := range values {
+					if !arrayContains(connections, v) {
+						connections = append(connections, v)
+					}
+				}
+			}
+		} else {
+			return nil, fmt.Errorf("invalid key: ", key)
+		}
+	}
+	return connections, nil
+}
+
+func dimFilterFunction(dimFilter map[string]interface{}, allValues []string) ([]string, error) {
+	var values []string
+	for _, v := range dimFilter["Values"].([]interface{}) {
+		values = append(values, fmt.Sprintf("%v", v))
+	}
+	var output []string
+	if matchOption, ok := dimFilter["MatchOption"]; ok {
+		switch {
+		case strings.Contains(matchOption.(string), "EQUAL"):
+			output = values
+		case strings.Contains(matchOption.(string), "STARTS_WITH"):
+			for _, v := range values {
+				for _, conn := range allValues {
+					if strings.HasPrefix(conn, v) {
+						if !arrayContains(output, conn) {
+							output = append(output, conn)
+						}
+					}
+				}
+			}
+		case strings.Contains(matchOption.(string), "ENDS_WITH"):
+			for _, v := range values {
+				for _, conn := range allValues {
+					if strings.HasSuffix(conn, v) {
+						if !arrayContains(output, conn) {
+							output = append(output, conn)
+						}
+					}
+				}
+			}
+		case strings.Contains(matchOption.(string), "CONTAINS"):
+			for _, v := range values {
+				for _, conn := range allValues {
+					if strings.Contains(conn, v) {
+						if !arrayContains(output, conn) {
+							output = append(output, conn)
+						}
+					}
+				}
+			}
+		default:
+			return nil, fmt.Errorf("invalid option")
+		}
+		if strings.HasPrefix(matchOption.(string), "~") {
+			var notOutput []string
+			for _, v := range allValues {
+				if !arrayContains(output, v) {
+					notOutput = append(notOutput, v)
+				}
+			}
+			return notOutput, nil
+		}
+	} else {
+		output = values
+	}
+	return output, nil
+}
+
+func arrayContains(array []string, key string) bool {
+	for _, v := range array {
+		if v == key {
+			return true
+		}
+	}
+	return false
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -152,7 +153,8 @@ FROM
 WHERE
 	status = ? AND
 	NOT(error_code IN ('AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND
-	(retry_count < 3 OR retry_count IS NULL) AND
+	(retry_count < 5 OR retry_count IS NULL) AND
+	()
 	(select count(*) from describe_connection_jobs where connection_id = dr.connection_id AND status IN (?, ?)) = 0
 	LIMIT 10
 `, api.DescribeResourceJobFailed, api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress).Find(&job)
@@ -207,6 +209,43 @@ func (db Database) UpdateDescribeConnectionJobsTimedOut(describeIntervalHours in
 	return nil
 }
 
+// UpdateResourceTypeDescribeConnectionJobsTimedOut updates the status of DescribeResourceJobs
+// that have timed out while in the status of 'CREATED' or 'QUEUED' for longer
+// than time interval for the specific resource type.
+func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType string, describeIntervalHours int64) error {
+	tx := db.orm.
+		Model(&DescribeConnectionJob{}).
+		Where("updated_at < NOW() - INTERVAL '20 minutes'").
+		Where("status IN ?", []string{string(api.DescribeResourceJobInProgress)}).
+		Where("resource_type = ?", resourceType).
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	tx = db.orm.
+		Model(&DescribeConnectionJob{}).
+		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
+		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
+		Where("resource_type = ?", resourceType).
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	tx = db.orm.
+		Model(&DescribeConnectionJob{}).
+		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
+		Where("status IN ?", []string{string(api.DescribeResourceJobCreated)}).
+		Where("resource_type = ?", resourceType).
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
 // UpdateDescribeConnectionJobStatus updates the status of the DescribeResourceJob to the provided status.
 // If the status if 'FAILED', msg could be used to indicate the failure reason
 func (db Database) UpdateDescribeConnectionJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount int64) error {
@@ -232,6 +271,25 @@ func (db Database) UpdateDescribeConnectionJobToInProgress(id uint) error {
 	}
 
 	return nil
+}
+
+func (db Database) GetDescribeStatus(resourceType string) ([]api.DescribeStatus, error) {
+	var job []api.DescribeStatus
+
+	tx := db.orm.Raw(`with conns as (
+    select 
+        connection_id, max(updated_at) as updated_at 
+    from describe_connection_jobs 
+    where lower(resource_type) = ? and status in ('SUCCEEDED', 'FAILED', 'TIMEOUT') group by 1
+)
+select j.connection_id, j.connector, j.status from describe_connection_jobs j inner join conns c on j.connection_id = c.connection_id where j.updated_at = c.updated_at;`, strings.ToLower(resourceType)).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
 }
 
 //

@@ -1380,6 +1380,147 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/insight/group/{insightGroupId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving the specified insight group with ID.\nReturns \"all:provider\" job results if connectionId is not defined.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "Get insight group",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Insight Group ID",
+                        "name": "insightGroupId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "filter the result by source id",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "filter the result by connection group",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the start time of the trend",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the end time of the trend",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup"
+                        }
+                    }
+                }
+            }
+        },
+        "/compliance/api/v1/insight/group/{insightGroupId}/trend": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving insight group results datapoints for a specified connection during a specified time period.\nReturns \"all:provider\" job results if connectionId is not defined.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "insights"
+                ],
+                "summary": "Get insight group trend",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Insight Group ID",
+                        "name": "insightGroupId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "filter the result by source id",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "filter the result by connection group",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the start time of the trend",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "unix seconds for the end time of the trend",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "number of datapoints to return",
+                        "name": "datapointCount",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/insight/{insightId}": {
             "get": {
                 "security": [
@@ -1837,7 +1978,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -1930,7 +2075,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -2056,14 +2205,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/api/v2/analytics/regions/summary": {
+        "/inventory/api/v2/analytics/metrics/{metric_id}": {
             "get": {
                 "security": [
                     {
                         "BearerToken": []
                     }
                 ],
-                "description": "Retrieving list of regions analytics summary",
+                "description": "Returns list of metrics",
                 "consumes": [
                     "application/json"
                 ],
@@ -2073,80 +2222,21 @@ const docTemplate = `{
                 "tags": [
                     "analytics"
                 ],
-                "summary": "List Regions Summary",
+                "summary": "List metrics",
                 "parameters": [
                     {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connection IDs to filter by - mutually exclusive with connectionGroup",
-                        "name": "connectionId",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
-                        "description": "Connection group to filter by - mutually exclusive with connectionId",
-                        "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "start time in unix seconds - default is now",
-                        "name": "startTime",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "end time in unix seconds - default is one week ago",
-                        "name": "endTime",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "resource_count",
-                            "growth",
-                            "growth_rate"
-                        ],
-                        "type": "string",
-                        "description": "column to sort by - default is resource_count",
-                        "name": "sortBy",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page size - default is 20",
-                        "name": "pageSize",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page number - default is 1",
-                        "name": "pageNumber",
-                        "in": "query"
+                        "description": "MetricID",
+                        "name": "metric_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AnalyticsMetric"
                         }
                     }
                 }
@@ -2197,7 +2287,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -2251,6 +2345,12 @@ const docTemplate = `{
                 "summary": "List spend metrics",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Filter costs",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "enum": [
@@ -2276,7 +2376,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -2315,6 +2419,16 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "page number - default is 1",
                         "name": "pageNumber",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Metric IDs",
+                        "name": "metricIDs",
                         "in": "query"
                     }
                 ],
@@ -2378,14 +2492,18 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Metrics IDs",
-                        "name": "metricIds",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "Connection group to filter by - mutually exclusive with connectionId",
-                        "name": "connectionGroup",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Metrics IDs",
+                        "name": "metricIds",
                         "in": "query"
                     },
                     {
@@ -2493,6 +2611,22 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Connector",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Metrics IDs",
                         "name": "metricIds",
                         "in": "query"
@@ -2561,14 +2695,18 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Metrics IDs",
-                        "name": "metricIds",
+                        "description": "Connection group to filter by - mutually exclusive with connectionId",
+                        "name": "connectionGroup",
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "Connection group to filter by - mutually exclusive with connectionId",
-                        "name": "connectionGroup",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Metrics IDs",
+                        "name": "metricIds",
                         "in": "query"
                     },
                     {
@@ -2714,7 +2852,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -2839,7 +2981,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -2906,7 +3052,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connection group to filter by - mutually exclusive with connectionId",
                         "name": "connectionGroup",
                         "in": "query"
@@ -3211,6 +3361,12 @@ const docTemplate = `{
                 "summary": "List connections summaries",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Filter costs",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
                         "type": "array",
                         "items": {
                             "enum": [
@@ -3233,6 +3389,16 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Connection IDs",
                         "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection Groups",
+                        "name": "connectionGroups",
                         "in": "query"
                     },
                     {
@@ -3857,10 +4023,9 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "file",
-                        "description": "File to upload",
-                        "name": "terraformFile",
-                        "in": "formData",
-                        "required": true
+                        "description": "ُTerraform StateFile full path",
+                        "name": "stateFile",
+                        "in": "formData"
                     },
                     {
                         "type": "string",
@@ -3874,6 +4039,12 @@ const docTemplate = `{
                         "name": "config",
                         "in": "formData",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Config json structure for terraform remote state backend",
+                        "name": "remoteStateConfig",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -5895,6 +6066,11 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint": {
             "type": "object",
             "properties": {
+                "connectionCount": {
+                    "description": "Connection Count",
+                    "type": "integer",
+                    "example": 10
+                },
                 "timestamp": {
                     "description": "Time",
                     "type": "integer",
@@ -6341,6 +6517,10 @@ const docTemplate = `{
                         "Azure"
                     ]
                 },
+                "cost_dimension_id": {
+                    "type": "string",
+                    "example": "microsoft_compute_disks"
+                },
                 "cost_dimension_name": {
                     "type": "string",
                     "example": "microsoft.compute/disks"
@@ -6372,6 +6552,12 @@ const docTemplate = `{
                 "date": {
                     "type": "string",
                     "format": "date-time"
+                },
+                "totalConnectionCount": {
+                    "type": "integer"
+                },
+                "totalSuccessfulDescribedConnectionCount": {
+                    "type": "integer"
                 }
             }
         },
@@ -6469,13 +6655,6 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest": {
             "type": "object",
             "properties": {
-                "connectorsFilter": {
-                    "description": "Specifies the Connectors",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/source.Type"
-                    }
-                },
                 "titleFilter": {
                     "description": "Specifies the Title",
                     "type": "string"
@@ -6516,27 +6695,6 @@ const docTemplate = `{
                 "serviceName": {
                     "type": "string",
                     "example": "EC2-Service-Example"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "description": "Region",
-                    "type": "string",
-                    "example": "na-west"
-                },
-                "resourceCount": {
-                    "description": "Number of resources in the region",
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 100
-                },
-                "resourceOldCount": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 50
                 }
             }
         },
@@ -6596,21 +6754,6 @@ const docTemplate = `{
                 },
                 "size": {
                     "type": "integer"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse": {
-            "type": "object",
-            "properties": {
-                "regions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse"
-                    }
-                },
-                "totalCount": {
-                    "type": "integer",
-                    "minimum": 0
                 }
             }
         },
@@ -6716,6 +6859,12 @@ const docTemplate = `{
                 "date": {
                     "type": "string",
                     "format": "date-time"
+                },
+                "totalConnectionCount": {
+                    "type": "integer"
+                },
+                "totalSuccessfulDescribedConnectionCount": {
+                    "type": "integer"
                 }
             }
         },
@@ -6785,16 +6934,15 @@ const docTemplate = `{
                     "description": "Category (Tags[category])",
                     "type": "string"
                 },
-                "description": {
-                    "description": "Description",
-                    "type": "string"
+                "connectors": {
+                    "description": "Provider",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/source.Type"
+                    }
                 },
                 "id": {
                     "description": "Query Id",
-                    "type": "integer"
-                },
-                "provider": {
-                    "description": "Provider",
                     "type": "string"
                 },
                 "query": {

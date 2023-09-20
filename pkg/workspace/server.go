@@ -618,6 +618,7 @@ func (s *Server) CreateWorkspace(c echo.Context) error {
 		URI:         uri,
 		Status:      api.StatusProvisioning,
 		Description: request.Description,
+		Size:        api.SizeXS,
 		Tier:        api.Tier(request.Tier),
 	}
 	if err := s.db.CreateWorkspace(workspace); err != nil {

@@ -130,18 +130,16 @@ type SummaryQueryHit struct {
 }
 
 type SmartQueryItem struct {
-	ID          uint              `json:"id"`          // Query Id
-	Provider    string            `json:"provider"`    // Provider
-	Title       string            `json:"title"`       // Title
-	Description string            `json:"description"` // Description
-	Category    string            `json:"category"`    // Category (Tags[category])
-	Query       string            `json:"query"`       // Query
-	Tags        map[string]string `json:"tags"`        // Tags
+	ID         string            `json:"id"`         // Query Id
+	Connectors []source.Type     `json:"connectors"` // Provider
+	Title      string            `json:"title"`      // Title
+	Category   string            `json:"category"`   // Category (Tags[category])
+	Query      string            `json:"query"`      // Query
+	Tags       map[string]string `json:"tags"`       // Tags
 }
 
 type ListQueryRequest struct {
-	TitleFilter string        `json:"titleFilter"`      // Specifies the Title
-	Connectors  []source.Type `json:"connectorsFilter"` // Specifies the Connectors
+	TitleFilter string `json:"titleFilter"` // Specifies the Title
 }
 
 type ConnectionData struct {

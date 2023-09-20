@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
 	"io"
@@ -55,7 +56,20 @@ func (s *Scheduler) RunDescribeJobScheduler() {
 
 	for ; ; <-t.C {
 		s.scheduleDescribeJob()
-		s.scheduleStackJobs()
+	}
+}
+
+func (s *Scheduler) RunStackScheduler() {
+	s.logger.Info("Scheduling stack jobs on a timer")
+
+	t := time.NewTicker(1 * time.Minute)
+	defer t.Stop()
+
+	for ; ; <-t.C {
+		err := s.scheduleStackJobs()
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("Scheduling stack jobs error: %v", err.Error()))
+		}
 	}
 }
 
@@ -93,21 +107,59 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		return err
 	}
 
-	if len(dcs) == 0 {
-		if count == 0 {
-			dcs, err = s.db.GetFailedDescribeConnectionJobs(ctx)
+	fdcs, err := s.db.GetFailedDescribeConnectionJobs(ctx)
+	if err != nil {
+		s.logger.Error("failed to fetch failed describe resource jobs", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
+		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+		return err
+	}
+	for i := range fdcs {
+		if fdcs[i].Connector == source.CloudAWS {
+			resourceType, err := aws.GetResourceType(fdcs[i].ResourceType)
 			if err != nil {
-				s.logger.Error("failed to fetch failed describe resource jobs", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
-				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 				return err
 			}
-			if len(dcs) == 0 {
-				return errors.New("no job to run")
+			if resourceType.FastDiscovery {
+				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-s.describeIntervalHours))) {
+					fdcs = append(fdcs[:i], fdcs[i+1:]...)
+					i--
+				}
+			} else if resourceType.CostDiscovery {
+				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-24))) {
+					fdcs = append(fdcs[:i], fdcs[i+1:]...)
+					i--
+				}
+			} else {
+				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-s.fullDiscoveryIntervalHours))) {
+					fdcs = append(fdcs[:i], fdcs[i+1:]...)
+					i--
+				}
 			}
-		} else {
-			return errors.New("queue is not empty to look for retries")
+		} else if fdcs[i].Connector == source.CloudAzure {
+			resourceType, err := azure.GetResourceType(fdcs[i].ResourceType)
+			if err != nil {
+				return err
+			}
+			if resourceType.FastDiscovery {
+				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-s.describeIntervalHours))) {
+					fdcs = append(fdcs[:i], fdcs[i+1:]...)
+					i--
+				}
+			} else if resourceType.CostDiscovery {
+				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-24))) {
+					fdcs = append(fdcs[:i], fdcs[i+1:]...)
+					i--
+				}
+			} else {
+				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-s.fullDiscoveryIntervalHours))) {
+					fdcs = append(fdcs[:i], fdcs[i+1:]...)
+					i--
+				}
+			}
 		}
 	}
+
+	dcs = append(dcs, fdcs...)
 
 	rtCount := map[string]int{}
 	for i := 0; i < len(dcs); i++ {
@@ -115,8 +167,8 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		rtCount[dc.ResourceType]++
 
 		maxCount := 25
-		if dc.ResourceType == "Microsoft.CostManagement/CostByResourceType" {
-			maxCount = 5
+		if m, ok := es.ResourceRateLimit[dc.ResourceType]; ok {
+			maxCount = m
 		}
 
 		currentCount := 0
@@ -469,9 +521,11 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc Descri
 func (s *Scheduler) scheduleStackJobs() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
+	s.logger.Info("Schedule stack jobs started")
 
 	kubeClient, err := s.httpServer.newKubeClient()
 	if err != nil {
+		s.logger.Error(fmt.Sprintf("failt to make new kube client: %s", err.Error()))
 		return fmt.Errorf("failt to make new kube client: %w", err)
 	}
 	s.httpServer.kubeClient = kubeClient
@@ -482,22 +536,26 @@ func (s *Scheduler) scheduleStackJobs() error {
 		return err
 	}
 	for _, stack := range stacks {
-
 		helmRelease, err := s.httpServer.findHelmRelease(ctx, stack.ToApi(), CurrentWorkspaceID)
 		if err != nil {
+			s.logger.Error(fmt.Sprintf("could not find helm release: %s", err.Error()))
 			return fmt.Errorf("could not find helm release: %w", err)
 		}
-
+		s.logger.Info(fmt.Sprintf("Helm release creating for stack: %s", stack.StackID))
 		if helmRelease == nil {
 			if err := s.httpServer.createStackHelmRelease(ctx, CurrentWorkspaceID, stack.ToApi()); err != nil {
 				s.logger.Error(fmt.Sprintf("failed to create helm release for stack: %s", stack.StackID), zap.Error(err))
 				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusFailed)
 				s.db.UpdateStackFailureMessage(stack.StackID, fmt.Sprintf("failed to create helm release: %s", err.Error()))
+			} else {
+				s.logger.Error(fmt.Sprintf("helm release for stack %s not created", stack.StackID))
 			}
 		} else {
 			if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
+				s.logger.Info(fmt.Sprintf("Helm release created for stack: %s", stack.StackID))
 				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusCreated)
 			} else if meta.IsStatusConditionFalse(helmRelease.Status.Conditions, apimeta.ReadyCondition) {
+				s.logger.Info(fmt.Sprintf("Helm release not ready for stack: %s", stack.StackID))
 				if !helmRelease.Spec.Suspend {
 					helmRelease.Spec.Suspend = true
 					err = s.httpServer.kubeClient.Update(ctx, helmRelease)
@@ -516,6 +574,7 @@ func (s *Scheduler) scheduleStackJobs() error {
 					}
 				}
 			} else if meta.IsStatusConditionTrue(helmRelease.Status.Conditions, apimeta.StalledCondition) {
+				s.logger.Info(fmt.Sprintf("Helm release stalled for stack: %s", stack.StackID))
 				s.db.UpdateStackStatus(stack.StackID, apiDescribe.StackStatusStalled) // Temporary for debug
 			}
 		}
@@ -710,8 +769,8 @@ func (s *Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 	}
 	for _, benchmark := range benchmarks {
 		connectorMatch := false
-		for _, p := range benchmark.Connectors {
-			if p == provider {
+		for _, p := range benchmark.Tags["plugin"] {
+			if strings.ToLower(p) == strings.ToLower(provider.String()) {
 				connectorMatch = true
 			}
 		}
@@ -763,7 +822,7 @@ func (s *Scheduler) runStackInsights(stack apiDescribe.Stack) error {
 		return err
 	}
 	for _, insight := range insights {
-		job := newInsightJob(insight, string(stack.SourceType), stack.StackID, stack.AccountIDs[0], "")
+		job := newInsightJob(insight, stack.SourceType, stack.StackID, stack.AccountIDs[0])
 		job.IsStack = true
 
 		err = s.db.AddInsightJob(&job)

@@ -803,6 +803,10 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint:
     properties:
+      connectionCount:
+        description: Connection Count
+        example: 10
+        type: integer
       timestamp:
         description: Time
         example: 1686346668
@@ -1129,6 +1133,9 @@ definitions:
         items:
           $ref: '#/definitions/source.Type'
         type: array
+      cost_dimension_id:
+        example: microsoft_compute_disks
+        type: string
       cost_dimension_name:
         example: microsoft.compute/disks
         type: string
@@ -1153,6 +1160,10 @@ definitions:
       date:
         format: date-time
         type: string
+      totalConnectionCount:
+        type: integer
+      totalSuccessfulDescribedConnectionCount:
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CountPair:
     properties:
@@ -1220,11 +1231,6 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListQueryRequest:
     properties:
-      connectorsFilter:
-        description: Specifies the Connectors
-        items:
-          $ref: '#/definitions/source.Type'
-        type: array
       titleFilter:
         description: Specifies the Title
         type: string
@@ -1253,22 +1259,6 @@ definitions:
       serviceName:
         example: EC2-Service-Example
         type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse:
-    properties:
-      location:
-        description: Region
-        example: na-west
-        type: string
-      resourceCount:
-        description: Number of resources in the region
-        example: 100
-        minimum: 0
-        type: integer
-      resourceOldCount:
-        example: 50
-        minimum: 0
-        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Metric:
     properties:
@@ -1310,16 +1300,6 @@ definitions:
       "no":
         type: integer
       size:
-        type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse:
-    properties:
-      regions:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.LocationResponse'
-        type: array
-      totalCount:
-        minimum: 0
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ResourceType:
@@ -1402,6 +1382,10 @@ definitions:
       date:
         format: date-time
         type: string
+      totalConnectionCount:
+        type: integer
+      totalSuccessfulDescribedConnectionCount:
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RunQueryRequest:
     properties:
@@ -1449,14 +1433,13 @@ definitions:
       category:
         description: Category (Tags[category])
         type: string
-      description:
-        description: Description
-        type: string
+      connectors:
+        description: Provider
+        items:
+          $ref: '#/definitions/source.Type'
+        type: array
       id:
         description: Query Id
-        type: integer
-      provider:
-        description: Provider
         type: string
       query:
         description: Query
@@ -3406,6 +3389,102 @@ paths:
       summary: List insight groups
       tags:
       - insights
+  /compliance/api/v1/insight/group/{insightGroupId}:
+    get:
+      description: |-
+        Retrieving the specified insight group with ID.
+        Returns "all:provider" job results if connectionId is not defined.
+      parameters:
+      - description: Insight Group ID
+        in: path
+        name: insightGroupId
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: filter the result by source id
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: filter the result by connection group
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - description: unix seconds for the start time of the trend
+        in: query
+        name: startTime
+        type: integer
+      - description: unix seconds for the end time of the trend
+        in: query
+        name: endTime
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightGroup'
+      security:
+      - BearerToken: []
+      summary: Get insight group
+      tags:
+      - insights
+  /compliance/api/v1/insight/group/{insightGroupId}/trend:
+    get:
+      description: |-
+        Retrieving insight group results datapoints for a specified connection during a specified time period.
+        Returns "all:provider" job results if connectionId is not defined.
+      parameters:
+      - description: Insight Group ID
+        in: path
+        name: insightGroupId
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: filter the result by source id
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: filter the result by connection group
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - description: unix seconds for the start time of the trend
+        in: query
+        name: startTime
+        type: integer
+      - description: unix seconds for the end time of the trend
+        in: query
+        name: endTime
+        type: integer
+      - description: number of datapoints to return
+        in: query
+        name: datapointCount
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.InsightTrendDatapoint'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get insight group trend
+      tags:
+      - insights
   /compliance/api/v1/metadata/insight/{insightId}:
     get:
       description: Retrieving insight metadata by id
@@ -3600,10 +3679,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: timestamp for resource count in epoch seconds
         in: query
         name: endTime
@@ -3663,10 +3745,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - collectionFormat: csv
         description: Metric IDs
         in: query
@@ -3715,6 +3800,29 @@ paths:
       summary: List analytics metrics
       tags:
       - analytics
+  /inventory/api/v2/analytics/metrics/{metric_id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns list of metrics
+      parameters:
+      - description: MetricID
+        in: path
+        name: metric_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.AnalyticsMetric'
+      security:
+      - BearerToken: []
+      summary: List metrics
+      tags:
+      - analytics
   /inventory/api/v2/analytics/metrics/list:
     get:
       consumes:
@@ -3753,70 +3861,6 @@ paths:
       summary: List metrics
       tags:
       - analytics
-  /inventory/api/v2/analytics/regions/summary:
-    get:
-      consumes:
-      - application/json
-      description: Retrieving list of regions analytics summary
-      parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
-        type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by - mutually exclusive with connectionGroup
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
-        in: query
-        name: connectionGroup
-        type: string
-      - description: start time in unix seconds - default is now
-        in: query
-        name: startTime
-        type: integer
-      - description: end time in unix seconds - default is one week ago
-        in: query
-        name: endTime
-        type: integer
-      - description: column to sort by - default is resource_count
-        enum:
-        - resource_count
-        - growth
-        - growth_rate
-        in: query
-        name: sortBy
-        type: string
-      - description: page size - default is 20
-        in: query
-        name: pageSize
-        type: integer
-      - description: page number - default is 1
-        in: query
-        name: pageNumber
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.RegionsResourceCountResponse'
-      security:
-      - BearerToken: []
-      summary: List Regions Summary
-      tags:
-      - analytics
   /inventory/api/v2/analytics/spend/composition:
     get:
       consumes:
@@ -3843,10 +3887,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: How many top values to return default is 5
         in: query
         name: top
@@ -3879,6 +3926,10 @@ paths:
         API returns information such as the total cost and costs per each service
         based on the specified filters.
       parameters:
+      - description: Filter costs
+        in: query
+        name: filter
+        type: string
       - collectionFormat: csv
         description: Connector type to filter by
         in: query
@@ -3897,10 +3948,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -3926,6 +3980,13 @@ paths:
         in: query
         name: pageNumber
         type: integer
+      - collectionFormat: csv
+        description: Metric IDs
+        in: query
+        items:
+          type: string
+        name: metricIDs
+        type: array
       produces:
       - application/json
       responses:
@@ -3965,16 +4026,19 @@ paths:
         name: connectionId
         type: array
       - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - collectionFormat: csv
         description: Metrics IDs
         in: query
         items:
           type: string
         name: metricIds
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
-        in: query
-        name: connectionGroup
-        type: string
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -4042,6 +4106,17 @@ paths:
         name: connectionId
         type: array
       - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - description: Connector
+        in: query
+        name: connector
+        type: string
+      - collectionFormat: csv
         description: Metrics IDs
         in: query
         items:
@@ -4089,16 +4164,19 @@ paths:
         name: connectionId
         type: array
       - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - collectionFormat: csv
         description: Metrics IDs
         in: query
         items:
           type: string
         name: metricIds
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
-        in: query
-        name: connectionGroup
-        type: string
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -4193,10 +4271,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: Minimum number of resources/spend with this tag value, default
           1
         in: query
@@ -4279,10 +4360,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: timestamp for start in epoch seconds
         in: query
         name: startTime
@@ -4322,10 +4406,13 @@ paths:
           type: string
         name: connectionId
         type: array
-      - description: Connection group to filter by - mutually exclusive with connectionId
+      - collectionFormat: csv
+        description: Connection group to filter by - mutually exclusive with connectionId
         in: query
+        items:
+          type: string
         name: connectionGroup
-        type: string
+        type: array
       - description: timestamp for resource count in epoch seconds
         in: query
         name: endTime
@@ -4512,6 +4599,10 @@ paths:
       - application/json
       description: Retrieving a list of connections summaries
       parameters:
+      - description: Filter costs
+        in: query
+        name: filter
+        type: string
       - collectionFormat: csv
         description: Connector
         in: query
@@ -4529,6 +4620,13 @@ paths:
         items:
           type: string
         name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: Connection Groups
+        in: query
+        items:
+          type: string
+        name: connectionGroups
         type: array
       - description: lifecycle state filter
         enum:
@@ -5079,10 +5177,9 @@ paths:
         Config structure for azure: {tenantId: string, objectId: string, secretId: string, clientId: string, clientSecret:string}
         Config structure for aws: {accessKey: string, secretKey: string}
       parameters:
-      - description: File to upload
+      - description: ُTerraform StateFile full path
         in: formData
-        name: terraformFile
-        required: true
+        name: stateFile
         type: file
       - description: Tags Map[string][]string
         in: formData
@@ -5092,6 +5189,10 @@ paths:
         in: formData
         name: config
         required: true
+        type: string
+      - description: Config json structure for terraform remote state backend
+        in: formData
+        name: remoteStateConfig
         type: string
       produces:
       - application/json

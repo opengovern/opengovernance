@@ -14,6 +14,7 @@ type Workspace struct {
 	URI            string              `json:"uri"`
 	Status         api.WorkspaceStatus `json:"status"`
 	Description    string              `json:"description"`
+	Size           api.WorkspaceSize   `json:"workspace_size"`
 	Tier           api.Tier            `json:"tier"`
 	OrganizationID int                 `json:"organization_id"`
 	Organization   Organization        `json:"organization" gorm:"foreignKey:OrganizationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`

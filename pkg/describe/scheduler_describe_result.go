@@ -3,6 +3,8 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-aws-describer/aws"
+	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"strings"
 	"time"
 
@@ -76,11 +78,47 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				s.logger.Error("failure while sending ack for message", zap.Error(err))
 			}
 		case <-t.C:
-			err := s.db.UpdateDescribeConnectionJobsTimedOut(s.describeTimeoutHours)
-			s.logger.Warn("describe resource job timed out", zap.Error(err))
-			DescribeResourceJobsCount.WithLabelValues("failure").Inc()
-			if err != nil {
-				s.logger.Error("failed to update timed out DescribeResourceJobs", zap.Error(err))
+			awsResources := aws.ListResourceTypes()
+			for _, r := range awsResources {
+				var interval int64
+				resourceType, err := aws.GetResourceType(r)
+				if err != nil {
+					s.logger.Error(fmt.Sprintf("failed to get resource type %s", r), zap.Error(err))
+				}
+				if resourceType.FastDiscovery {
+					interval = s.describeIntervalHours
+				} else if resourceType.CostDiscovery {
+					interval = 24
+				} else {
+					interval = s.fullDiscoveryIntervalHours
+				}
+				err = s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
+				s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
+				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+				if err != nil {
+					s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
+				}
+			}
+			azureResources := azure.ListResourceTypes()
+			for _, r := range azureResources {
+				var interval int64
+				resourceType, err := azure.GetResourceType(r)
+				if err != nil {
+					s.logger.Error(fmt.Sprintf("failed to get resource type %s", r), zap.Error(err))
+				}
+				if resourceType.FastDiscovery {
+					interval = s.describeIntervalHours
+				} else if resourceType.CostDiscovery {
+					interval = 24
+				} else {
+					interval = s.fullDiscoveryIntervalHours
+				}
+				err = s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
+				s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
+				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+				if err != nil {
+					s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
+				}
 			}
 		}
 	}

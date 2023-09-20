@@ -90,6 +90,13 @@ var AnalyticsJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help:      "Count of analytics jobs in scheduler service",
 }, []string{"status"})
 
+var AnalyticsJobResultsCount = promauto.NewCounterVec(prometheus.CounterOpts{
+	Namespace: "kaytu",
+	Subsystem: "scheduler",
+	Name:      "schedule_analytics_job_results_total",
+	Help:      "Count of analytics job results in scheduler service",
+}, []string{"status"})
+
 var ComplianceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Name: "kaytu_scheduler_schedule_compliance_job_total",
 	Help: "Count of describe jobs in scheduler service",
@@ -520,6 +527,12 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		})
 		EnsureRunGoroutin(func() {
 			s.RunDescribeResourceJobs(ctx)
+		})
+		// ---------
+
+		// --------- describe
+		EnsureRunGoroutin(func() {
+			s.RunStackScheduler()
 		})
 		// ---------
 

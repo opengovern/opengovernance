@@ -16,6 +16,7 @@ type TimeRangeFilter struct {
 }
 type SchedulerServiceClient interface {
 	GetStack(ctx *httpclient.Context, stackID string) (*api.Stack, error)
+	GetDescribeStatus(ctx *httpclient.Context, resourceType string) ([]api.DescribeStatus, error)
 }
 
 type schedulerClient struct {
@@ -37,4 +38,17 @@ func (s *schedulerClient) GetStack(ctx *httpclient.Context, stackID string) (*ap
 		return nil, err
 	}
 	return &stack, nil
+}
+
+func (s *schedulerClient) GetDescribeStatus(ctx *httpclient.Context, resourceType string) ([]api.DescribeStatus, error) {
+	url := fmt.Sprintf("%s/api/v1/describe/status?resource_type=%s", s.baseURL, resourceType)
+
+	var res []api.DescribeStatus
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return res, nil
 }

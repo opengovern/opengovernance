@@ -7,6 +7,7 @@ import (
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/config"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
@@ -29,6 +30,7 @@ type WorkerConfig struct {
 	PostgreSQL config.Postgres
 	Steampipe  config.Postgres
 	Onboard    config.KaytuService
+	Scheduler  config.KaytuService
 }
 
 func WorkerCommand() *cobra.Command {
@@ -76,15 +78,16 @@ func WorkerCommand() *cobra.Command {
 }
 
 type Worker struct {
-	id             string
-	jobQueue       queue.Interface
-	jobResultQueue queue.Interface
-	config         WorkerConfig
-	logger         *zap.Logger
-	db             db.Database
-	steampipeDB    *steampipe.Database
-	onboardClient  onboardClient.OnboardServiceClient
-	kfkProducer    *confluent_kafka.Producer
+	id              string
+	jobQueue        queue.Interface
+	jobResultQueue  queue.Interface
+	config          WorkerConfig
+	logger          *zap.Logger
+	db              db.Database
+	steampipeDB     *steampipe.Database
+	onboardClient   onboardClient.OnboardServiceClient
+	schedulerClient client.SchedulerServiceClient
+	kfkProducer     *confluent_kafka.Producer
 }
 
 func InitializeWorker(
@@ -181,6 +184,7 @@ func InitializeWorker(
 	w.logger = logger
 
 	w.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL, nil)
+	w.schedulerClient = client.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
 	return w, nil
 }
 
@@ -217,7 +221,7 @@ func (w *Worker) Run() error {
 
 	w.logger.Info("Running the job", zap.Uint("jobID", job.JobID))
 
-	result := job.Do(w.db, w.steampipeDB, w.kfkProducer, w.config.Kafka.Topic, w.onboardClient, w.logger)
+	result := job.Do(w.db, w.steampipeDB, w.kfkProducer, w.config.Kafka.Topic, w.onboardClient, w.schedulerClient, w.logger)
 
 	w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 
