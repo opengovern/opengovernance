@@ -1539,6 +1539,15 @@ func (h *HttpHandler) getInsightApiRes(ctx echo.Context, insightRow *db.Insight,
 		oldInsightResults = make([]insight.InsightResource, 0)
 	}
 
+	connections, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), []source.Type{insightRow.Connector})
+	if err != nil {
+		return nil, err
+	}
+	connectionToNameMap := make(map[string]string)
+	for _, connection := range connections {
+		connectionToNameMap[connection.ID.String()] = connection.ConnectionName
+	}
+
 	enabledConnections := make(map[string]bool)
 	for _, connectionID := range connectionIDs {
 		enabledConnections[connectionID] = true
@@ -1570,6 +1579,29 @@ func (h *HttpHandler) getInsightApiRes(ctx echo.Context, insightRow *db.Insight,
 		err = json.Unmarshal(objectBuffer, &steampipeResults)
 		if err != nil {
 			return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		// Add account name
+		steampipeResults.Headers = append(steampipeResults.Headers, "account_name")
+		for colIdx, header := range steampipeResults.Headers {
+			if strings.ToLower(header) != "kaytu_account_id" {
+				continue
+			}
+			for rowIdx, row := range steampipeResults.Data {
+				if len(row) <= colIdx {
+					continue
+				}
+				if row[colIdx] == nil {
+					continue
+				}
+				if accountID, ok := row[colIdx].(string); ok {
+					if accountName, ok := connectionToNameMap[accountID]; ok {
+						steampipeResults.Data[rowIdx] = append(steampipeResults.Data[rowIdx], accountName)
+					} else {
+						steampipeResults.Data[rowIdx] = append(steampipeResults.Data[rowIdx], "null")
+					}
+				}
+			}
 		}
 
 		steampipeFilteredResults := steampipeResults
