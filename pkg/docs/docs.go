@@ -170,7 +170,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiAction"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest"
                         }
                     }
                 ],
@@ -255,22 +255,28 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "returns list of all rules",
+                "description": "returns an action",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "alerting"
                 ],
-                "summary": "List rules",
+                "summary": "get rules",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Action ID",
+                        "name": "actionId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiRule"
-                            }
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiRule"
                         }
                     }
                 }
@@ -295,7 +301,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiRule"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateRuleRequest"
                         }
                     }
                 ],
@@ -5004,6 +5010,52 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateRuleRequest": {
+            "type": "object",
+            "properties": {
+                "action_id": {
+                    "type": "integer"
+                },
+                "event_type": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "operator": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Operator"
+                },
+                "scope": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_analytics_db.MetricType": {
             "type": "string",
             "enum": [
@@ -7872,6 +7924,14 @@ const docTemplate = `{
                     "type": "string",
                     "example": "google-oauth2|204590896945502695694"
                 },
+                "size": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceSize"
+                        }
+                    ],
+                    "example": "sm"
+                },
                 "status": {
                     "allOf": [
                         {
@@ -7971,6 +8031,14 @@ const docTemplate = `{
                     "type": "string",
                     "example": "google-oauth2|204590896945502695694"
                 },
+                "size": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceSize"
+                        }
+                    ],
+                    "example": "sm"
+                },
                 "status": {
                     "allOf": [
                         {
@@ -7996,6 +8064,21 @@ const docTemplate = `{
                     "example": "v0.45.4"
                 }
             }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceSize": {
+            "type": "string",
+            "enum": [
+                "xs",
+                "sm",
+                "md",
+                "lg"
+            ],
+            "x-enum-varnames": [
+                "SizeXS",
+                "SizeSM",
+                "SizeMD",
+                "SizeLG"
+            ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus": {
             "type": "string",

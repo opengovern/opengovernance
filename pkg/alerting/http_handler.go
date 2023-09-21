@@ -60,7 +60,7 @@ func (h HttpHandler) TriggerLoop() {
 	for ; ; <-timer.C {
 		rules, err := h.db.ListRules()
 		if err != nil {
-			fmt.Errorf("error in giving list rules error equal to : %s", err)
+			fmt.Printf("error in giving list rules error equal to : %v", err)
 			return
 		}
 
@@ -69,14 +69,14 @@ func (h HttpHandler) TriggerLoop() {
 			var scope api.Scope
 			err := json.Unmarshal(rule.Scope, &scope)
 			if err != nil {
-				fmt.Errorf("error in unmarshaling scope , error  equal to : %s", err)
+				fmt.Printf("error in unmarshaling scope , error  equal to : %v", err)
 				return
 			}
 
 			var eventType api.EventType
 			err = json.Unmarshal(rule.EventType, &eventType)
 			if err != nil {
-				fmt.Errorf("error in unmarshaling event type , error equal to : %s ", err)
+				fmt.Printf("error in unmarshaling event type , error equal to : %v ", err)
 				return
 			}
 
@@ -86,22 +86,20 @@ func (h HttpHandler) TriggerLoop() {
 			insightID := strconv.Itoa(int(eventType.InsightId))
 			insight, err := h.complianceClient.GetInsight(&httpclient.Context{UserRole: api2.InternalRole}, insightID, []string{scope.ConnectionId}, &oneDayAgo, &timeNow)
 			if err != nil {
-				fmt.Errorf("error in getting GetInsight , error  equal to : %s", err)
+				fmt.Printf("error in getting GetInsight , error  equal to : %v", err)
 				return
 			}
 			if insight.TotalResultValue == nil {
 				continue
 			}
-
 			stat := compareValue(rule.Operator, int(rule.Value), int(*insight.TotalResultValue))
 			if !stat {
 				continue
 			}
-
 			var action Action
 			action, err = h.db.GetAction(rule.ActionID)
 			if err != nil {
-				fmt.Errorf("error in getting action , error equal to : %v", err)
+				fmt.Printf("error in getting action , error equal to : %v", err)
 			}
 
 			req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer([]byte(action.Body)))
@@ -122,13 +120,13 @@ func (h HttpHandler) TriggerLoop() {
 
 			res, err := http.DefaultClient.Do(req)
 			if err != nil {
-				fmt.Printf("error equal to : %s", err)
+				fmt.Printf("error equal to : %v", err)
 				return
 			}
 
 			err = res.Body.Close()
 			if err != nil {
-				fmt.Errorf("error equal to : %s", err)
+				fmt.Printf("error equal to : %v", err)
 				return
 			}
 		}

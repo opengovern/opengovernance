@@ -59,6 +59,36 @@ definitions:
       connectionId:
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest:
+    properties:
+      body:
+        type: string
+      headers:
+        additionalProperties:
+          type: string
+        type: object
+      id:
+        type: integer
+      method:
+        type: string
+      url:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateRuleRequest:
+    properties:
+      action_id:
+        type: integer
+      event_type:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType'
+      id:
+        type: integer
+      operator:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Operator'
+      scope:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope'
+      value:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_analytics_db.MetricType:
     enum:
     - assets
@@ -2104,6 +2134,10 @@ definitions:
       ownerId:
         example: google-oauth2|204590896945502695694
         type: string
+      size:
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceSize'
+        example: sm
       status:
         allOf:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus'
@@ -2171,6 +2205,10 @@ definitions:
       ownerId:
         example: google-oauth2|204590896945502695694
         type: string
+      size:
+        allOf:
+        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceSize'
+        example: sm
       status:
         allOf:
         - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus'
@@ -2186,6 +2224,18 @@ definitions:
         example: v0.45.4
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceSize:
+    enum:
+    - xs
+    - sm
+    - md
+    - lg
+    type: string
+    x-enum-varnames:
+    - SizeXS
+    - SizeSM
+    - SizeMD
+    - SizeLG
   github_com_kaytu-io_kaytu-engine_pkg_workspace_api.WorkspaceStatus:
     enum:
     - PROVISIONED
@@ -2503,7 +2553,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiAction'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest'
       responses:
         "200":
           description: OK
@@ -2555,19 +2605,23 @@ paths:
       - alerting
   /alerting/api/rule/list:
     get:
-      description: returns list of all rules
+      description: returns an action
+      parameters:
+      - description: Action ID
+        in: path
+        name: actionId
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiRule'
-            type: array
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiRule'
       security:
       - BearerToken: []
-      summary: List rules
+      summary: get rules
       tags:
       - alerting
   /alerting/api/rule/update:
@@ -2579,7 +2633,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiRule'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateRuleRequest'
       responses:
         "200":
           description: OK

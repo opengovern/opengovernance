@@ -139,13 +139,7 @@ func TestCreateRule(t *testing.T) {
 	require.Equal(t, 123123, int(foundRule.EventType.InsightId))
 	require.Equal(t, 1231, int(foundRule.ActionID))
 }
-func getRule(ids string, t *testing.T) {
-	teardownSuite, h := setupSuite(t)
-	defer teardownSuite(t)
 
-	h.db.orm.Model(&Rule{}).Where("id = ? ", idS).Find()
-
-}
 func TestUpdateRule(t *testing.T) {
 	teardownSuite, _ := setupSuite(t)
 	defer teardownSuite(t)
