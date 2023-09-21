@@ -1,4 +1,4 @@
-package alerting_service
+package main
 
 import (
 	"fmt"

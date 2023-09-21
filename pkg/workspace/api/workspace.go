@@ -3,9 +3,10 @@ package api
 import "time"
 
 type CreateWorkspaceRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Tier        string `json:"tier"`
+	Name           string `json:"name"`
+	Description    string `json:"description"`
+	Tier           string `json:"tier"`
+	OrganizationID int    `json:"organization_id"`
 }
 
 type CreateWorkspaceResponse struct {

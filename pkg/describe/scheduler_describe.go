@@ -98,7 +98,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 		return err
 	}
-	s.logger.Info("got the jobs", zap.Int("length", len(dcs)))
+	s.logger.Info("got the jobs", zap.Int("length", len(dcs)), zap.Int("limit", int(s.MaxConcurrentCall)))
 
 	counts, err := s.db.CountRunningDescribeJobsPerResourceType()
 	if err != nil {
@@ -107,16 +107,21 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		return err
 	}
 
-	fdcs, err := s.db.GetFailedDescribeConnectionJobs(ctx)
+	ctx, failedsSpan := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, "GetFailedJobs")
+
+	fdcs, err := s.db.GetFailedDescribeConnectionJobs(ctx, 1000)
 	if err != nil {
 		s.logger.Error("failed to fetch failed describe resource jobs", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 		return err
 	}
+	s.logger.Info(fmt.Sprintf("found %v failed jobs before filtering", len(fdcs)))
 	for i := range fdcs {
 		if fdcs[i].Connector == source.CloudAWS {
 			resourceType, err := aws.GetResourceType(fdcs[i].ResourceType)
 			if err != nil {
+				s.logger.Error("failed to get aws resource type", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
+				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 				return err
 			}
 			if resourceType.FastDiscovery {
@@ -138,6 +143,8 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		} else if fdcs[i].Connector == source.CloudAzure {
 			resourceType, err := azure.GetResourceType(fdcs[i].ResourceType)
 			if err != nil {
+				s.logger.Error("failed to get azure resource type", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
+				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 				return err
 			}
 			if resourceType.FastDiscovery {
@@ -158,6 +165,9 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 			}
 		}
 	}
+
+	s.logger.Info(fmt.Sprintf("retrying %v failed jobs", len(fdcs)))
+	failedsSpan.End()
 
 	dcs = append(dcs, fdcs...)
 
