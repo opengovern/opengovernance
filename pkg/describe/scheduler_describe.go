@@ -98,7 +98,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 		return err
 	}
-	s.logger.Info("got the jobs", zap.Int("length", len(dcs)))
+	s.logger.Info("got the jobs", zap.Int("length", len(dcs)), zap.Int("limit", int(s.MaxConcurrentCall)))
 
 	counts, err := s.db.CountRunningDescribeJobsPerResourceType()
 	if err != nil {
