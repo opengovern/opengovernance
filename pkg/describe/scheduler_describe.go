@@ -109,12 +109,13 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 
 	ctx, failedsSpan := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, "GetFailedJobs")
 
-	fdcs, err := s.db.GetFailedDescribeConnectionJobs(ctx)
+	fdcs, err := s.db.GetFailedDescribeConnectionJobs(ctx, 1000)
 	if err != nil {
 		s.logger.Error("failed to fetch failed describe resource jobs", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
 		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
 		return err
 	}
+	s.logger.Info(fmt.Sprintf("found %v failed jobs before filtering", len(fdcs)))
 	for i := range fdcs {
 		if fdcs[i].Connector == source.CloudAWS {
 			resourceType, err := aws.GetResourceType(fdcs[i].ResourceType)

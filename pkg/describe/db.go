@@ -139,7 +139,7 @@ LIMIT ?
 	return job, nil
 }
 
-func (db Database) GetFailedDescribeConnectionJobs(ctx context.Context) ([]DescribeConnectionJob, error) {
+func (db Database) GetFailedDescribeConnectionJobs(ctx context.Context, limit int) ([]DescribeConnectionJob, error) {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
@@ -155,8 +155,8 @@ WHERE
 	NOT(error_code IN ('AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND
 	(retry_count < 5 OR retry_count IS NULL) AND
 	(select count(*) from describe_connection_jobs where connection_id = dr.connection_id AND status IN (?, ?)) = 0
-	LIMIT 10
-`, api.DescribeResourceJobFailed, api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress).Find(&job)
+	LIMIT ?
+`, api.DescribeResourceJobFailed, api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress, limit).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
