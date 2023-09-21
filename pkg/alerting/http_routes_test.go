@@ -89,7 +89,7 @@ func doSimpleJSONRequest(method string, path string, request, response interface
 func addRule(t *testing.T) uint {
 	req := api.ApiRule{
 		ID:        12,
-		EventType: api.EventType{InsightId: 1231},
+		EventType: api.EventType{InsightId: 1231, BenchmarkId: "CIS v1.4.0"},
 		Scope:     api.Scope{ConnectionId: "testConnectionID"},
 		Operator:  ">",
 		Value:     1000,

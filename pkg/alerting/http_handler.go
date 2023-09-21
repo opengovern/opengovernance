@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	apiCompliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
@@ -65,7 +66,6 @@ func (h HttpHandler) TriggerLoop() {
 		}
 
 		for _, rule := range rules {
-
 			var scope api.Scope
 			err := json.Unmarshal(rule.Scope, &scope)
 			if err != nil {
@@ -80,57 +80,99 @@ func (h HttpHandler) TriggerLoop() {
 				return
 			}
 
-			diff := 24 * time.Hour
-			oneDayAgo := time.Now().Add(-diff)
-			timeNow := time.Now()
-			insightID := strconv.Itoa(int(eventType.InsightId))
-			insight, err := h.complianceClient.GetInsight(&httpclient.Context{UserRole: api2.InternalRole}, insightID, []string{scope.ConnectionId}, &oneDayAgo, &timeNow)
+			statInsight, err := triggerInsight(h, rule, eventType, scope)
 			if err != nil {
-				fmt.Printf("error in getting GetInsight , error  equal to : %v", err)
-				return
+				fmt.Printf("error in trigger insight : %v", err)
 			}
-			if insight.TotalResultValue == nil {
-				continue
-			}
-			stat := compareValue(rule.Operator, int(rule.Value), int(*insight.TotalResultValue))
-			if !stat {
-				continue
-			}
-			var action Action
-			action, err = h.db.GetAction(rule.ActionID)
-			if err != nil {
-				fmt.Printf("error in getting action , error equal to : %v", err)
+			if statInsight {
+				err = sendAlert(h, rule)
+				if err != nil {
+					fmt.Printf("error in send alert for insigh , err : %v ", err)
+					return
+				}
 			}
 
-			req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer([]byte(action.Body)))
+			statCompliance, err := triggerCompliance(h, rule, scope, eventType)
 			if err != nil {
-				fmt.Printf("error in sending the request , error equal to : %v", err)
-				return
+				fmt.Printf("error in trigger compliance : %v ", err)
 			}
-			var headers map[string]string
-			err = json.Unmarshal(action.Headers, &headers)
-			if err != nil {
-				fmt.Printf("error in unmarshaling the headers  , error : %v", err)
-				return
-			}
-
-			for k, v := range headers {
-				req.Header.Add(k, v)
-			}
-
-			res, err := http.DefaultClient.Do(req)
-			if err != nil {
-				fmt.Printf("error equal to : %v", err)
-				return
-			}
-
-			err = res.Body.Close()
-			if err != nil {
-				fmt.Printf("error equal to : %v", err)
-				return
+			if statCompliance {
+				err = sendAlert(h, rule)
+				if err != nil {
+					fmt.Printf("error in send alert for compliance , err : %v ", err)
+					return
+				}
 			}
 		}
 	}
+}
+
+func sendAlert(h HttpHandler, rule Rule) error {
+	var action Action
+	action, err := h.db.GetAction(rule.ActionID)
+	if err != nil {
+		fmt.Printf("error in getting action , error equal to : %v", err)
+	}
+
+	req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer([]byte(action.Body)))
+	if err != nil {
+		return fmt.Errorf("error in sending the request , error equal to : %v", err)
+	}
+	var headers map[string]string
+	err = json.Unmarshal(action.Headers, &headers)
+	if err != nil {
+		return fmt.Errorf("error in unmarshaling the headers  , error : %v", err)
+	}
+	for k, v := range headers {
+		req.Header.Add(k, v)
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("error equal to : %v", err)
+	}
+
+	err = res.Body.Close()
+	if err != nil {
+		return fmt.Errorf("error equal to : %v", err)
+	}
+	return nil
+}
+
+func triggerInsight(h HttpHandler, rule Rule, eventType api.EventType, scope api.Scope) (bool, error) {
+	diff := 24 * time.Hour
+	oneDayAgo := time.Now().Add(-diff)
+	timeNow := time.Now()
+	insightID := strconv.Itoa(int(eventType.InsightId))
+	insight, err := h.complianceClient.GetInsight(&httpclient.Context{UserRole: api2.InternalRole}, insightID, []string{scope.ConnectionId}, &oneDayAgo, &timeNow)
+	if err != nil {
+		return false, fmt.Errorf("error in getting GetInsight , error  equal to : %v", err)
+	}
+	if insight.TotalResultValue == nil {
+		return false, nil
+	}
+	stat := compareValue(rule.Operator, int(rule.Value), int(*insight.TotalResultValue))
+	if !stat {
+		return false, nil
+	}
+	return true, nil
+}
+
+func triggerCompliance(h HttpHandler, rule Rule, scope api.Scope, eventType api.EventType) (bool, error) {
+	reqCompliance := apiCompliance.GetFindingsRequest{
+		Filters: apiCompliance.FindingFilters{ConnectionID: []string{scope.ConnectionId}, BenchmarkID: []string{eventType.BenchmarkId}},
+		Page:    apiCompliance.Page{No: 1, Size: 1},
+	}
+	compliance, err := h.complianceClient.GetFindings(&httpclient.Context{UserRole: api2.InternalRole}, reqCompliance)
+	if err != nil {
+		return false, fmt.Errorf("error getting compliance , err : %v ", err)
+	}
+
+	stat := compareValue(rule.Operator, int(rule.Value), int(compliance.TotalCount))
+	if !stat {
+		return false, nil
+	}
+	return true, nil
 }
 
 func compareValue(operator string, value int, totalValue int) bool {

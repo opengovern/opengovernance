@@ -12,7 +12,8 @@ const (
 )
 
 type EventType struct {
-	InsightId int64
+	InsightId   int64
+	BenchmarkId string
 }
 
 type Scope struct {
