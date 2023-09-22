@@ -94,7 +94,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				}
 				err = s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
 				s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
-				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+				DescribeResourceJobsCount.WithLabelValues("failure", "timedout_aws").Inc()
 				if err != nil {
 					s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
 				}
@@ -115,7 +115,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				}
 				err = s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
 				s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
-				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+				DescribeResourceJobsCount.WithLabelValues("failure", "timedout_azure").Inc()
 				if err != nil {
 					s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
 				}

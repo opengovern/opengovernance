@@ -80,7 +80,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 	count, err := s.db.CountQueuedDescribeConnectionJobs()
 	if err != nil {
 		s.logger.Error("failed to get queue length", zap.String("spot", "CountQueuedDescribeConnectionJobs"), zap.Error(err))
-		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+		DescribeResourceJobsCount.WithLabelValues("failure", "queue_length").Inc()
 		return err
 	}
 
@@ -95,7 +95,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 	dcs, err := s.db.ListRandomCreatedDescribeConnectionJobs(ctx, int(s.MaxConcurrentCall))
 	if err != nil {
 		s.logger.Error("failed to fetch describe resource jobs", zap.String("spot", "ListRandomCreatedDescribeResourceJobs"), zap.Error(err))
-		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+		DescribeResourceJobsCount.WithLabelValues("failure", "fetch_error").Inc()
 		return err
 	}
 	s.logger.Info("got the jobs", zap.Int("length", len(dcs)), zap.Int("limit", int(s.MaxConcurrentCall)))
@@ -103,7 +103,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 	counts, err := s.db.CountRunningDescribeJobsPerResourceType()
 	if err != nil {
 		s.logger.Error("failed to resource type count", zap.String("spot", "CountRunningDescribeJobsPerResourceType"), zap.Error(err))
-		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+		DescribeResourceJobsCount.WithLabelValues("failure", "resource_type_count").Inc()
 		return err
 	}
 
@@ -112,7 +112,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 	fdcs, err := s.db.GetFailedDescribeConnectionJobs(ctx, 1000)
 	if err != nil {
 		s.logger.Error("failed to fetch failed describe resource jobs", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
-		DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+		DescribeResourceJobsCount.WithLabelValues("failure", "fetch_jobs").Inc()
 		return err
 	}
 	s.logger.Info(fmt.Sprintf("found %v failed jobs before filtering", len(fdcs)))
@@ -121,7 +121,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 			resourceType, err := aws.GetResourceType(fdcs[i].ResourceType)
 			if err != nil {
 				s.logger.Error("failed to get aws resource type", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
-				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+				DescribeResourceJobsCount.WithLabelValues("failure", "aws_resource_type").Inc()
 				return err
 			}
 			if resourceType.FastDiscovery {
@@ -144,7 +144,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 			resourceType, err := azure.GetResourceType(fdcs[i].ResourceType)
 			if err != nil {
 				s.logger.Error("failed to get azure resource type", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
-				DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+				DescribeResourceJobsCount.WithLabelValues("failure", "azure_resource_type").Inc()
 				return err
 			}
 			if resourceType.FastDiscovery {
@@ -212,7 +212,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 				src, err = s.onboardClient.GetSource(&httpclient.Context{UserRole: apiAuth.KaytuAdminRole}, dc.ConnectionID)
 				if err != nil {
 					s.logger.Error("failed to get source", zap.String("spot", "GetSourceByUUID"), zap.Error(err), zap.Uint("jobID", dc.ID))
-					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+					DescribeResourceJobsCount.WithLabelValues("failure", "get_source").Inc()
 					return err
 				}
 
@@ -246,10 +246,10 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 				err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, cred.Secret, s.WorkspaceName, dc.ConnectionID)
 				if err != nil {
 					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dc.ID))
-					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+					DescribeResourceJobsCount.WithLabelValues("failure", "enqueue_stack").Inc()
 					return nil, err
 				}
-				DescribeResourceJobsCount.WithLabelValues("successful").Inc()
+				DescribeResourceJobsCount.WithLabelValues("successful", "").Inc()
 				return nil, nil
 			})
 		default:
@@ -260,10 +260,11 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 			wp.AddJob(func() (interface{}, error) {
 				err := s.enqueueCloudNativeDescribeJob(ctx, c.dc, c.src.Credential.Config.(string), s.WorkspaceName, s.kafkaResourcesTopic)
 				if err != nil {
-					DescribeResourceJobsCount.WithLabelValues("failure").Inc()
+					s.logger.Error("Failed to enqueueCloudNativeDescribeConnectionJob", zap.Error(err), zap.Uint("jobID", dc.ID))
+					DescribeResourceJobsCount.WithLabelValues("failure", "enqueue").Inc()
 					return nil, err
 				}
-				DescribeResourceJobsCount.WithLabelValues("successful").Inc()
+				DescribeResourceJobsCount.WithLabelValues("successful", "").Inc()
 				return nil, nil
 			})
 		}
