@@ -116,7 +116,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		return err
 	}
 	s.logger.Info(fmt.Sprintf("found %v failed jobs before filtering", len(fdcs)))
-	for i := range fdcs {
+	for i := 0; i < len(fdcs); i++ {
 		if fdcs[i].Connector == source.CloudAWS {
 			resourceType, err := aws.GetResourceType(fdcs[i].ResourceType)
 			if err != nil {
