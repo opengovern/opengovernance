@@ -194,7 +194,6 @@ require (
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
-	github.com/aws/aws-lambda-go v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.13 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.25 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.3 // indirect
@@ -387,7 +386,6 @@ require (
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
-	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang/glog v1.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -430,7 +428,6 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kaytu-io/steampipe-plugin-kaytu v0.0.0-20230922141319-65a72ba3523e // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
