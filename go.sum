@@ -2340,6 +2340,10 @@ github.com/kaytu-io/kaytu-azure-describer v0.4.7 h1:pAYIylncm/P8xgtiuWJ0fWnLpXo9
 github.com/kaytu-io/kaytu-azure-describer v0.4.7/go.mod h1:7abs1ZhVMaqiRqaf5IoDv/UnRgX9mK32KQvEAbWyRuI=
 github.com/kaytu-io/kaytu-util v0.0.0-20230909233654-d1d27d2e49ef h1:5ANqzXM/dCOoS4OqNp2m0l2O3fv4ueZ5Tq64JxQ5Dws=
 github.com/kaytu-io/kaytu-util v0.0.0-20230909233654-d1d27d2e49ef/go.mod h1:9duNFl4GA1SPk4+Wmfkrk585DyFPPec4NBYyrmBA6GU=
+github.com/kaytu-io/steampipe-plugin-kaytu v0.0.0-20230922141319-65a72ba3523e h1:4Gnb0yHSLTKNkxexu2Ljj3tfk8LLMEoDJnhKyw4u0QI=
+github.com/kaytu-io/steampipe-plugin-kaytu v0.0.0-20230922141319-65a72ba3523e/go.mod h1:2GrGLEESni9gjHezMXB7mcKDofknX1UL0Yy3wLCZPsQ=
+github.com/kaytu-io/steampipe-plugin-kaytu v0.0.0-20230922145422-5cdd2b914708 h1:vrDFMrc4gp9Qt+qHsndLw+kGAtiyrSaDkly5VE1hRV0=
+github.com/kaytu-io/steampipe-plugin-kaytu v0.0.0-20230922145422-5cdd2b914708/go.mod h1:2GrGLEESni9gjHezMXB7mcKDofknX1UL0Yy3wLCZPsQ=
 github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9 h1:cuwf0h1VmlT/C1hL3FewDUFaeqpegGUvKGezO50nel4=
 github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9/go.mod h1:EGCIxB3DvH/TAf9abPZH0JUFYdROVQguY8SQLMzsiS0=
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:CzGEWj7cYgsdH8dAjBGEr58BoE7ScuLd+fwFZ44+/x8=
