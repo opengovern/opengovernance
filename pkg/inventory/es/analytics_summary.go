@@ -499,7 +499,6 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 							connectorTotal:   map[string]int64{},
 							connectorSuccess: map[string]int64{},
 						}
-
 						hits[rangeKey] = v
 					}
 
@@ -512,6 +511,7 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 		}
 	}
 
+	fmt.Println(hits)
 	for k, v := range hits {
 		for _, total := range v.connectorTotal {
 			v.TotalConnections += total
