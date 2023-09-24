@@ -336,7 +336,11 @@ func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, m
 					}
 
 					v.Count += hit.Source.ResourceCount
-					v.connectionSuccess[hit.Source.ConnectionID.String()] = v.connectionSuccess[hit.Source.ConnectionID.String()] && hit.Source.IsJobSuccessful
+					if _, ok := v.connectionSuccess[hit.Source.ConnectionID.String()]; !ok {
+						v.connectionSuccess[hit.Source.ConnectionID.String()] = hit.Source.IsJobSuccessful
+					} else {
+						v.connectionSuccess[hit.Source.ConnectionID.String()] = v.connectionSuccess[hit.Source.ConnectionID.String()] && hit.Source.IsJobSuccessful
+					}
 					hits[rangeKey] = v
 				}
 			}
@@ -504,7 +508,11 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 
 					v.Count += hit.Source.ResourceCount
 					v.connectorTotal[hit.Source.Connector.String()] = max(v.connectorTotal[hit.Source.Connector.String()], hit.Source.TotalConnections)
-					v.connectorSuccess[hit.Source.Connector.String()] = min(v.connectorSuccess[hit.Source.Connector.String()], hit.Source.TotalSuccessfulConnections)
+					if _, ok := v.connectorSuccess[hit.Source.Connector.String()]; !ok {
+						v.connectorSuccess[hit.Source.Connector.String()] = hit.Source.TotalSuccessfulConnections
+					} else {
+						v.connectorSuccess[hit.Source.Connector.String()] = min(v.connectorSuccess[hit.Source.Connector.String()], hit.Source.TotalSuccessfulConnections)
+					}
 					hits[rangeKey] = v
 				}
 			}
