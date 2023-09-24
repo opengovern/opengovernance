@@ -87,11 +87,17 @@ func doSimpleJSONRequest(method string, path string, request, response interface
 }
 
 func addRule(t *testing.T) uint {
+	operatorInfo := api.OperatorInformation{Field: "age", Operator: "<", Value: "100"}
+	operator := api.OperatorStruct{
+		OperatorInfo: &operatorInfo,
+		ConditionStr: nil,
+	}
+
 	req := api.ApiRule{
 		ID:        12,
 		EventType: api.EventType{InsightId: 1231, BenchmarkId: "CIS v1.4.0"},
 		Scope:     api.Scope{ConnectionId: "testConnectionID"},
-		Operator:  ">",
+		Operator:  operator,
 		Value:     1000,
 		ActionID:  123123,
 	}
@@ -115,12 +121,18 @@ func TestCreateRule(t *testing.T) {
 	teardownSuite, _ := setupSuite(t)
 	defer teardownSuite(t)
 
+	operatorInfo := api.OperatorInformation{Field: "age", Operator: "<", Value: "100"}
+	operator := api.OperatorStruct{
+		OperatorInfo: &operatorInfo,
+		ConditionStr: nil,
+	}
+
 	var id uint = 123
 	req := api.ApiRule{
 		ID:        id,
 		EventType: api.EventType{InsightId: 123123},
 		Scope:     api.Scope{ConnectionId: "testConnectionId"},
-		Operator:  ">",
+		Operator:  operator,
 		Value:     100,
 		ActionID:  1231,
 	}
@@ -143,15 +155,21 @@ func TestCreateRule(t *testing.T) {
 func TestUpdateRule(t *testing.T) {
 	teardownSuite, _ := setupSuite(t)
 	defer teardownSuite(t)
-
 	id := addRule(t)
+
+	operatorInfo := api.OperatorInformation{Field: "age", Operator: "<", Value: "100"}
+	operator := api.OperatorStruct{
+		OperatorInfo: &operatorInfo,
+		ConditionStr: nil,
+	}
 
 	req := api.ApiRule{
 		ID:       id,
 		Value:    110,
-		Operator: api.Operator_LessThan,
+		Operator: operator,
 		ActionID: 34567,
 	}
+
 	reqUpdate := api.UpdateRuleRequest{
 		ID:       id,
 		Value:    &req.Value,

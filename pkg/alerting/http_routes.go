@@ -174,6 +174,7 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
 	operator, err := json.Marshal(req.Operator)
 	if err != nil {
 		return err

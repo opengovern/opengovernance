@@ -1,15 +1,15 @@
 package api
 
-//type OperatorI = string
-//
-//const (
-//	Operator_GreaterThan        OperatorI = ">"
-//	Operator_LessThan           OperatorI = "<"
-//	Operator_LessThanOrEqual    OperatorI = "<="
-//	Operator_GreaterThanOrEqual OperatorI = ">="
-//	Operator_Equal              OperatorI = "="
-//	Operator_DoesNotEqual       OperatorI = "!="
-//)
+type OperatorType = string
+
+const (
+	Operator_GreaterThan        OperatorType = ">"
+	Operator_LessThan           OperatorType = "<"
+	Operator_LessThanOrEqual    OperatorType = "<="
+	Operator_GreaterThanOrEqual OperatorType = ">="
+	Operator_Equal              OperatorType = "="
+	Operator_DoesNotEqual       OperatorType = "!="
+)
 
 type EventType struct {
 	InsightId   int64
@@ -27,7 +27,7 @@ type OperatorStruct struct {
 
 type OperatorInformation struct {
 	Field    string
-	Operator string
+	Operator OperatorType
 	Value    string
 }
 
