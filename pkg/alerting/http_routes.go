@@ -77,11 +77,17 @@ func (h *HttpHandler) GetRule(ctx echo.Context) error {
 		return err
 	}
 
+	var operator api.OperatorStruct
+	err = json.Unmarshal(rule.Operator, &operator)
+	if err != nil {
+		return err
+	}
+
 	response := api.ApiRule{
 		ID:        rule.ID,
 		EventType: eventType,
 		Scope:     scope,
-		Operator:  rule.Operator,
+		Operator:  operator,
 		Value:     rule.Value,
 		ActionID:  rule.ActionID,
 	}
@@ -119,11 +125,17 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 			return err
 		}
 
+		var operator api.OperatorStruct
+		err = json.Unmarshal(rule.Operator, &operator)
+		if err != nil {
+			return err
+		}
+
 		response = append(response, api.ApiRule{
 			ID:        rule.ID,
 			EventType: eventType,
 			Scope:     scope,
-			Operator:  rule.Operator,
+			Operator:  operator,
 			Value:     rule.Value,
 			ActionID:  rule.ActionID,
 		})
@@ -162,8 +174,12 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	operator, err := json.Marshal(req.Operator)
+	if err != nil {
+		return err
+	}
 
-	if err := h.db.CreateRule(req.ID, event, scope, req.Operator, req.Value, req.ActionID); err != nil {
+	if err := h.db.CreateRule(req.ID, event, scope, operator, req.Value, req.ActionID); err != nil {
 		return err
 	}
 
@@ -224,7 +240,12 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 		return err
 	}
 
-	err = h.db.UpdateRule(req.ID, &eventType, &scope, req.Operator, req.Value, req.ActionID)
+	operator, err := json.Marshal(req.Operator)
+	if err != nil {
+		return err
+	}
+
+	err = h.db.UpdateRule(req.ID, &eventType, &scope, &operator, req.Value, req.ActionID)
 	if err != nil {
 		return err
 	}

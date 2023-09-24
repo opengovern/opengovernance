@@ -1,7 +1,6 @@
 package alerting
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	"gorm.io/gorm"
 )
 
@@ -44,7 +43,7 @@ func (db Database) GetRule(id uint) (Rule, error) {
 	return rule, nil
 }
 
-func (db Database) CreateRule(id uint, eventType []byte, scope []byte, operator api.Operator, value int64, actionID uint) error {
+func (db Database) CreateRule(id uint, eventType []byte, scope []byte, operator []byte, value int64, actionID uint) error {
 	rule := Rule{
 		ID:        id,
 		EventType: eventType,
@@ -60,7 +59,7 @@ func (db Database) DeleteRule(ruleId uint) error {
 	return db.orm.Model(&Rule{}).Where("id = ?", ruleId).Delete(&Rule{}).Error
 }
 
-func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, operator *api.Operator, value *int64, actionID *uint) error {
+func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, operator *[]byte, value *int64, actionID *uint) error {
 	inputs := make(map[string]interface{})
 
 	if eventType != nil {

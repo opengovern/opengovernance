@@ -79,8 +79,14 @@ func (h HttpHandler) TriggerLoop() {
 				fmt.Printf("error in unmarshaling event type , error equal to : %v ", err)
 				return
 			}
+			var operator api.OperatorStruct
+			err = json.Unmarshal(rule.Operator, &operator)
+			if err != nil {
+				fmt.Printf("error in unmarshaling operator , error equal to : %v ", err)
+				return
+			}
 
-			statInsight, err := triggerInsight(h, rule, eventType, scope)
+			statInsight, err := triggerInsight(h, rule, operator, eventType, scope)
 			if err != nil {
 				fmt.Printf("error in trigger insight : %v", err)
 			}
@@ -92,7 +98,7 @@ func (h HttpHandler) TriggerLoop() {
 				}
 			}
 
-			statCompliance, err := triggerCompliance(h, rule, scope, eventType)
+			statCompliance, err := triggerCompliance(h, rule, operator, scope, eventType)
 			if err != nil {
 				fmt.Printf("error in trigger compliance : %v ", err)
 			}
@@ -139,7 +145,7 @@ func sendAlert(h HttpHandler, rule Rule) error {
 	return nil
 }
 
-func triggerInsight(h HttpHandler, rule Rule, eventType api.EventType, scope api.Scope) (bool, error) {
+func triggerInsight(h HttpHandler, rule Rule, operator api.OperatorStruct, eventType api.EventType, scope api.Scope) (bool, error) {
 	diff := 24 * time.Hour
 	oneDayAgo := time.Now().Add(-diff)
 	timeNow := time.Now()
@@ -151,14 +157,18 @@ func triggerInsight(h HttpHandler, rule Rule, eventType api.EventType, scope api
 	if insight.TotalResultValue == nil {
 		return false, nil
 	}
-	stat := compareValue(rule.Operator, int(rule.Value), int(*insight.TotalResultValue))
+
+	stat, err := calculationOperations(operator, int(rule.Value), int(*insight.TotalResultValue))
+	if err != nil {
+		return false, err
+	}
 	if !stat {
 		return false, nil
 	}
 	return true, nil
 }
 
-func triggerCompliance(h HttpHandler, rule Rule, scope api.Scope, eventType api.EventType) (bool, error) {
+func triggerCompliance(h HttpHandler, rule Rule, operator api.OperatorStruct, scope api.Scope, eventType api.EventType) (bool, error) {
 	reqCompliance := apiCompliance.GetFindingsRequest{
 		Filters: apiCompliance.FindingFilters{ConnectionID: []string{scope.ConnectionId}, BenchmarkID: []string{eventType.BenchmarkId}},
 		Page:    apiCompliance.Page{No: 1, Size: 1},
@@ -168,11 +178,115 @@ func triggerCompliance(h HttpHandler, rule Rule, scope api.Scope, eventType api.
 		return false, fmt.Errorf("error getting compliance , err : %v ", err)
 	}
 
-	stat := compareValue(rule.Operator, int(rule.Value), int(compliance.TotalCount))
+	stat, err := calculationOperations(operator, int(rule.Value), int(compliance.TotalCount))
+	if err != nil {
+		return false, err
+	}
 	if !stat {
 		return false, nil
 	}
 	return true, nil
+}
+
+func calculationOperations(operator api.OperatorStruct, value int, totalValue int) (bool, error) {
+	for {
+		if oneCondition := operator.OperatorInfo; oneCondition != nil {
+			stat := compareValue(oneCondition.Operator, value, totalValue)
+			return stat, nil
+		} else if operator.ConditionStr != nil {
+			stat, err := calculationConditionStr(operator, value, totalValue)
+			if err != nil {
+				return false, err
+			}
+			return stat, nil
+		} else {
+			break
+		}
+	}
+	return false, fmt.Errorf("error entering the operation")
+}
+
+func calculationConditionStr(operator api.OperatorStruct, value int, totalValue int) (bool, error) {
+	conditionType := operator.ConditionStr.ConditionType
+	if conditionType == "AND" {
+		stat, err := calculationConditionStrAND(operator, value, totalValue)
+		if err != nil {
+			return false, err
+		}
+		return stat, nil
+	} else if conditionType == "OR" {
+		stat, err := calculationConditionStrOr(operator, value, totalValue)
+		if err != nil {
+			return false, err
+		}
+		return stat, nil
+	}
+	return false, fmt.Errorf("please enter right condition")
+}
+
+func calculationConditionStrAND(operator api.OperatorStruct, value int, totalValue int) (bool, error) {
+	// AND condition
+	for i := 0; i < len(operator.ConditionStr.OperatorStr); i++ {
+		operator = operator.ConditionStr.OperatorStr[i]
+		if operator.OperatorInfo != nil {
+			stat := compareValue(operator.OperatorInfo.Operator, value, totalValue)
+			if !stat {
+				return false, nil
+			} else {
+				if i == len(operator.ConditionStr.OperatorStr) {
+					return true, nil
+				}
+				continue
+			}
+		} else if operator.ConditionStr.OperatorStr != nil {
+			for j := 0; j < len(operator.ConditionStr.OperatorStr); j++ {
+				stat, _ := calculationConditionStr(operator.ConditionStr.OperatorStr[j], value, totalValue)
+				if !stat {
+					return false, nil
+				} else {
+					if i == len(operator.ConditionStr.OperatorStr) {
+						return true, nil
+					}
+					continue
+				}
+			}
+		} else {
+			return false, fmt.Errorf("error condition is impty")
+		}
+	}
+	return false, nil
+}
+
+func calculationConditionStrOr(operator api.OperatorStruct, value int, totalValue int) (bool, error) {
+	for i := 0; i < len(operator.ConditionStr.OperatorStr); i++ {
+		operator = operator.ConditionStr.OperatorStr[i]
+		if operator.OperatorInfo != nil {
+			stat := compareValue(operator.OperatorInfo.Operator, value, totalValue)
+			if stat {
+				return true, nil
+			} else {
+				if i == len(operator.ConditionStr.OperatorStr) {
+					return false, nil
+				}
+				continue
+			}
+		} else if operator.ConditionStr.OperatorStr != nil {
+			for j := 0; j < len(operator.ConditionStr.OperatorStr); j++ {
+				stat, _ := calculationConditionStr(operator.ConditionStr.OperatorStr[j], value, totalValue)
+				if stat {
+					return true, nil
+				} else {
+					if i == len(operator.ConditionStr.OperatorStr) {
+						return false, nil
+					}
+					continue
+				}
+			}
+		} else {
+			return false, fmt.Errorf("error condition is impty ")
+		}
+	}
+	return false, fmt.Errorf("error")
 }
 
 func compareValue(operator string, value int, totalValue int) bool {
