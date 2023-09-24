@@ -189,19 +189,15 @@ func triggerCompliance(h HttpHandler, rule Rule, operator api.OperatorStruct, sc
 }
 
 func calculationOperations(operator api.OperatorStruct, value int, totalValue int) (bool, error) {
-	for {
-		if oneCondition := operator.OperatorInfo; oneCondition != nil {
-			stat := compareValue(oneCondition.Operator, value, totalValue)
-			return stat, nil
-		} else if operator.ConditionStr != nil {
-			stat, err := calculationConditionStr(operator, value, totalValue)
-			if err != nil {
-				return false, err
-			}
-			return stat, nil
-		} else {
-			break
+	if oneCondition := operator.OperatorInfo; oneCondition != nil {
+		stat := compareValue(oneCondition.Operator, value, totalValue)
+		return stat, nil
+	} else if operator.ConditionStr != nil {
+		stat, err := calculationConditionStr(operator, value, totalValue)
+		if err != nil {
+			return false, err
 		}
+		return stat, nil
 	}
 	return false, fmt.Errorf("error entering the operation")
 }
@@ -258,6 +254,7 @@ func calculationConditionStrAND(operator api.OperatorStruct, value int, totalVal
 }
 
 func calculationConditionStrOr(operator api.OperatorStruct, value int, totalValue int) (bool, error) {
+	// OR condition
 	for i := 0; i < len(operator.ConditionStr.OperatorStr); i++ {
 		operator = operator.ConditionStr.OperatorStr[i]
 		if operator.OperatorInfo != nil {
