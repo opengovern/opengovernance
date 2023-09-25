@@ -115,6 +115,12 @@ func (j Job) Do(client kaytu.Client, steampipeOption *steampipe.Option, onboardC
 		fail(fmt.Errorf("listing sources: %w", err))
 		return
 	}
+	if len(srcs) == 0 {
+		return JobResult{
+			JobID:  j.JobID,
+			Status: status,
+		}
+	}
 	for _, src := range srcs {
 		if src.LifecycleState != onboardApi.ConnectionLifecycleStateOnboard {
 			continue
