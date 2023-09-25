@@ -13,6 +13,11 @@ const (
 
 type ResourceSummaryType string
 
+type Tag struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 type Resource struct {
 	// ID is the globally unique ID of the resource.
 	ID string `json:"id"`
@@ -32,6 +37,8 @@ type Resource struct {
 	SourceJobID uint `json:"source_job_id"`
 	// Metadata is arbitrary data associated with each resource
 	Metadata map[string]string `json:"metadata"`
+	// Tags is the list of tags associated with the resource
+	Tags []Tag `json:"tags"`
 	// Name is the name of the resource.
 	Name string `json:"name"`
 	// ResourceGroup is the group of resource (Azure only)
@@ -50,10 +57,6 @@ func (r Resource) KeysAndIndex() ([]string, string) {
 	}, ResourceTypeToESIndex(r.ResourceType)
 }
 
-type Tag struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
 type LookupResource struct {
 	// ResourceID is the globally unique ID of the resource.
 	ResourceID string `json:"resource_id"`
