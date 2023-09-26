@@ -88,7 +88,6 @@ func (h *HttpHandler) GetRule(ctx echo.Context) error {
 		EventType: eventType,
 		Scope:     scope,
 		Operator:  operator,
-		Value:     rule.Value,
 		ActionID:  rule.ActionID,
 	}
 
@@ -136,7 +135,6 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 			EventType: eventType,
 			Scope:     scope,
 			Operator:  operator,
-			Value:     rule.Value,
 			ActionID:  rule.ActionID,
 		})
 	}
@@ -160,7 +158,7 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 	}
 
 	EmptyFields := api.ApiRule{}
-	if req.ID == EmptyFields.ID || req.Value == EmptyFields.Value || req.Scope == EmptyFields.Scope ||
+	if req.ID == EmptyFields.ID || req.Scope == EmptyFields.Scope ||
 		req.ActionID == EmptyFields.ActionID || req.Operator == EmptyFields.Operator || req.EventType == EmptyFields.EventType {
 		return errors.New("All the fields in struct must be set")
 	}
@@ -180,7 +178,7 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 		return err
 	}
 
-	if err := h.db.CreateRule(req.ID, event, scope, operator, req.Value, req.ActionID); err != nil {
+	if err := h.db.CreateRule(req.ID, event, scope, operator, req.ActionID); err != nil {
 		return err
 	}
 
@@ -246,7 +244,7 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 		return err
 	}
 
-	err = h.db.UpdateRule(req.ID, &eventType, &scope, &operator, req.Value, req.ActionID)
+	err = h.db.UpdateRule(req.ID, &eventType, &scope, &operator, req.ActionID)
 	if err != nil {
 		return err
 	}

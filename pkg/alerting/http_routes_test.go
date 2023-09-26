@@ -87,18 +87,18 @@ func doSimpleJSONRequest(method string, path string, request, response interface
 }
 
 func addRule(t *testing.T) uint {
-	operatorInfo := api.OperatorInformation{Field: "age", Operator: "<", Value: "100"}
+	operatorInfo := api.OperatorInformation{Operator: "<", Value: 1000}
 	operator := api.OperatorStruct{
 		OperatorInfo: &operatorInfo,
 		ConditionStr: nil,
 	}
 
+	benchmarkId := "CIS v1.4.0"
 	req := api.ApiRule{
 		ID:        12,
-		EventType: api.EventType{InsightId: 1231, BenchmarkId: "CIS v1.4.0"},
+		EventType: api.EventType{BenchmarkId: &benchmarkId},
 		Scope:     api.Scope{ConnectionId: "testConnectionID"},
 		Operator:  operator,
-		Value:     1000,
 		ActionID:  123123,
 	}
 	_, err := doSimpleJSONRequest("POST", "/api/v1/rule/create", req, nil)
@@ -121,19 +121,19 @@ func TestCreateRule(t *testing.T) {
 	teardownSuite, _ := setupSuite(t)
 	defer teardownSuite(t)
 
-	operatorInfo := api.OperatorInformation{Field: "age", Operator: "<", Value: "100"}
+	operatorInfo := api.OperatorInformation{Operator: "<", Value: 100}
 	operator := api.OperatorStruct{
 		OperatorInfo: &operatorInfo,
 		ConditionStr: nil,
 	}
 
 	var id uint = 123
+	var insightId int64 = 123123
 	req := api.ApiRule{
 		ID:        id,
-		EventType: api.EventType{InsightId: 123123},
+		EventType: api.EventType{InsightId: &insightId},
 		Scope:     api.Scope{ConnectionId: "testConnectionId"},
 		Operator:  operator,
-		Value:     100,
 		ActionID:  1231,
 	}
 	_, err := doSimpleJSONRequest("POST", "/api/v1/rule/create", req, nil)
@@ -144,11 +144,11 @@ func TestCreateRule(t *testing.T) {
 
 	_, err = doSimpleJSONRequest("GET", "/api/v1/rule/get/"+idS, nil, &foundRule)
 	require.NoError(t, err, "error getting rule")
-
-	require.Equal(t, api.Operator_GreaterThan, foundRule.Operator)
-	require.Equal(t, 100, int(foundRule.Value))
+	t.Errorf("error in operator : %v", foundRule.Operator)
+	require.Equal(t, operator, foundRule.Operator)
+	require.Equal(t, 100, int(foundRule.Operator.OperatorInfo.Value))
 	require.Equal(t, "testConnectionId", foundRule.Scope.ConnectionId)
-	require.Equal(t, 123123, int(foundRule.EventType.InsightId))
+	require.Equal(t, 123123, foundRule.EventType.InsightId)
 	require.Equal(t, 1231, int(foundRule.ActionID))
 }
 
@@ -157,7 +157,7 @@ func TestUpdateRule(t *testing.T) {
 	defer teardownSuite(t)
 	id := addRule(t)
 
-	operatorInfo := api.OperatorInformation{Field: "age", Operator: "<", Value: "100"}
+	operatorInfo := api.OperatorInformation{Operator: "<", Value: 110}
 	operator := api.OperatorStruct{
 		OperatorInfo: &operatorInfo,
 		ConditionStr: nil,
@@ -165,14 +165,12 @@ func TestUpdateRule(t *testing.T) {
 
 	req := api.ApiRule{
 		ID:       id,
-		Value:    110,
 		Operator: operator,
 		ActionID: 34567,
 	}
 
 	reqUpdate := api.UpdateRuleRequest{
 		ID:       id,
-		Value:    &req.Value,
 		Operator: &req.Operator,
 		ActionID: &req.ActionID,
 	}
@@ -184,7 +182,7 @@ func TestUpdateRule(t *testing.T) {
 	_, err = doSimpleJSONRequest("GET", "/api/v1/rule/get/"+idS, nil, &ruleNew)
 	require.NoError(t, err, "error getting rule")
 
-	require.Equal(t, 110, int(ruleNew.Value))
+	require.Equal(t, 110, int(ruleNew.Operator.OperatorInfo.Value))
 	require.Equal(t, 34567, int(ruleNew.ActionID))
 	require.Equal(t, api.Operator_LessThan, ruleNew.Operator)
 }
@@ -290,4 +288,30 @@ func TestDeleteAction(t *testing.T) {
 	var action Action
 	_, err = doSimpleJSONRequest("GET", "/api/v1/action/get/"+idS, nil, &action)
 	require.Error(t, err)
+}
+
+func TestCalculationOperations(t *testing.T) {
+	var conditionStruct api.ConditionStruct
+	var operator []api.OperatorStruct
+
+	OperatorInfo := api.OperatorInformation{Operator: ">", Value: 100}
+	operatorInformation2 := api.OperatorInformation{Operator: "<", Value: 230}
+
+	operator = append(operator, api.OperatorStruct{
+		OperatorInfo: &OperatorInfo,
+	})
+	operator = append(operator, api.OperatorStruct{
+		OperatorInfo: &operatorInformation2,
+	})
+
+	conditionStruct.ConditionType = "AND"
+	conditionStruct.OperatorStr = operator
+	t.Errorf("number operator : %v", len(conditionStruct.OperatorStr))
+	stat, err := calculationOperations(api.OperatorStruct{ConditionStr: &conditionStruct}, 200)
+	if err != nil {
+		t.Errorf("Error calculationOperations: %v ", err)
+	}
+	if !stat {
+		t.Errorf("Error in calculate the calculationOperations")
+	}
 }

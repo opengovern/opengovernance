@@ -12,8 +12,8 @@ const (
 )
 
 type EventType struct {
-	InsightId   int64
-	BenchmarkId string
+	InsightId   *int64
+	BenchmarkId *string
 }
 
 type Scope struct {
@@ -26,9 +26,8 @@ type OperatorStruct struct {
 }
 
 type OperatorInformation struct {
-	Field    string
 	Operator OperatorType
-	Value    string
+	Value    int64
 }
 
 type ConditionStruct struct {
@@ -41,7 +40,6 @@ type ApiRule struct {
 	EventType EventType      `json:"event_type"`
 	Scope     Scope          `json:"scope"`
 	Operator  OperatorStruct `json:"operator"`
-	Value     int64          `json:"value"`
 	ActionID  uint           `json:"action_id"`
 }
 
@@ -50,6 +48,5 @@ type UpdateRuleRequest struct {
 	EventType *EventType      `json:"event_type"`
 	Scope     *Scope          `json:"scope"`
 	Operator  *OperatorStruct `json:"operator"`
-	Value     *int64          `json:"value"`
 	ActionID  *uint           `json:"action_id"`
 }
