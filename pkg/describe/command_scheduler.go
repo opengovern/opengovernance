@@ -119,8 +119,6 @@ func SchedulerCommand() *cobra.Command {
 				PostgreSQLDb,
 				PostgreSQLSSLMode,
 				HttpServerAddress,
-				DescribeIntervalHours,
-				FullDiscoveryIntervalHours,
 				DescribeTimeoutHours,
 				ComplianceIntervalHours,
 				ComplianceTimeoutHours,

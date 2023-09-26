@@ -234,8 +234,6 @@ func InitializeScheduler(
 	postgresDb string,
 	postgresSSLMode string,
 	httpServerAddress string,
-	describeIntervalHours string,
-	fullDiscoveryIntervalHours string,
 	describeTimeoutHours string,
 	complianceIntervalHours string,
 	complianceTimeoutHours string,
@@ -382,11 +380,11 @@ func InitializeScheduler(
 	}
 	s.httpServer = NewHTTPServer(httpServerAddress, s.db, s, helmConfig)
 
-	s.describeIntervalHours, err = strconv.ParseInt(describeIntervalHours, 10, 64)
+	s.describeIntervalHours, err = strconv.ParseInt(DescribeIntervalHours, 10, 64)
 	if err != nil {
 		return nil, err
 	}
-	s.fullDiscoveryIntervalHours, err = strconv.ParseInt(fullDiscoveryIntervalHours, 10, 64)
+	s.fullDiscoveryIntervalHours, err = strconv.ParseInt(FullDiscoveryIntervalHours, 10, 64)
 	if err != nil {
 		return nil, err
 	}
