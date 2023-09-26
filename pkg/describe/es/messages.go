@@ -38,7 +38,7 @@ type Resource struct {
 	// Metadata is arbitrary data associated with each resource
 	Metadata map[string]string `json:"metadata"`
 	// Tags is the list of tags associated with the resource
-	Tags []Tag `json:"tags"`
+	CanonicalTags []Tag `json:"canonical_tags"`
 	// Name is the name of the resource.
 	Name string `json:"name"`
 	// ResourceGroup is the group of resource (Azure only)

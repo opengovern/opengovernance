@@ -151,7 +151,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			CreatedAt:     resource.Job.DescribedAt,
 			Description:   description,
 			Metadata:      resource.Metadata,
-			Tags:          tags,
+			CanonicalTags: tags,
 		}
 		kmsg, _ := json.Marshal(kafkaResource)
 		if len(kmsg) >= 32766 {
@@ -266,7 +266,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 			Location:      resource.Location,
 			ScheduleJobID: uint(resource.Job.ScheduleJobId),
 			CreatedAt:     resource.Job.DescribedAt,
-			Tags:          tags,
+			CanonicalTags: tags,
 		}
 		kmsg, _ := json.Marshal(kafkaResource)
 		if len(kmsg) >= 32766 {
