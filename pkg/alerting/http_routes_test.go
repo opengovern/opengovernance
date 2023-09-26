@@ -144,11 +144,10 @@ func TestCreateRule(t *testing.T) {
 
 	_, err = doSimpleJSONRequest("GET", "/api/v1/rule/get/"+idS, nil, &foundRule)
 	require.NoError(t, err, "error getting rule")
-	t.Errorf("error in operator : %v", foundRule.Operator)
 	require.Equal(t, operator, foundRule.Operator)
 	require.Equal(t, 100, int(foundRule.Operator.OperatorInfo.Value))
 	require.Equal(t, "testConnectionId", foundRule.Scope.ConnectionId)
-	require.Equal(t, 123123, foundRule.EventType.InsightId)
+	require.Equal(t, 123123, int(*foundRule.EventType.InsightId))
 	require.Equal(t, 1231, int(foundRule.ActionID))
 }
 
@@ -306,8 +305,32 @@ func TestCalculationOperations(t *testing.T) {
 
 	conditionStruct.ConditionType = "AND"
 	conditionStruct.OperatorStr = operator
-	t.Errorf("number operator : %v", len(conditionStruct.OperatorStr))
 	stat, err := calculationOperations(api.OperatorStruct{ConditionStr: &conditionStruct}, 200)
+	if err != nil {
+		t.Errorf("Error calculationOperations: %v ", err)
+	}
+	if !stat {
+		t.Errorf("Error in calculate the calculationOperations")
+	}
+}
+
+func TestCalculationOperationsOr(t *testing.T) {
+	var conditionStruct api.ConditionStruct
+	var operator []api.OperatorStruct
+
+	OperatorInfo := api.OperatorInformation{Operator: ">", Value: 300}
+	operatorInformation2 := api.OperatorInformation{Operator: ">", Value: 150}
+
+	operator = append(operator, api.OperatorStruct{
+		OperatorInfo: &OperatorInfo,
+	})
+	operator = append(operator, api.OperatorStruct{
+		OperatorInfo: &operatorInformation2,
+	})
+
+	conditionStruct.ConditionType = "OR"
+	conditionStruct.OperatorStr = operator
+	stat, err := calculationOperations(api.OperatorStruct{ConditionStr: &conditionStruct}, 400)
 	if err != nil {
 		t.Errorf("Error calculationOperations: %v ", err)
 	}

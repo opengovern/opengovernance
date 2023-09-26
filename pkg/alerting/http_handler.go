@@ -226,25 +226,27 @@ func calculationConditionStr(operator api.OperatorStruct, totalValue int64) (boo
 
 func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (bool, error) {
 	// AND condition
-	for i := 0; i < len(operator.ConditionStr.OperatorStr); i++ {
-		operator = operator.ConditionStr.OperatorStr[i]
-		if operator.OperatorInfo != nil {
-			stat := compareValue(operator.OperatorInfo.Operator, operator.OperatorInfo.Value, totalValue)
+	numberOperatorStr := len(operator.ConditionStr.OperatorStr)
+	for i := 0; i < numberOperatorStr; i++ {
+		operatorNew := operator.ConditionStr.OperatorStr[i]
+		if operatorNew.OperatorInfo != nil {
+
+			stat := compareValue(operatorNew.OperatorInfo.Operator, operatorNew.OperatorInfo.Value, totalValue)
 			if !stat {
 				return false, nil
 			} else {
-				if i == len(operator.ConditionStr.OperatorStr)-1 {
+				if i == numberOperatorStr-1 {
 					return true, nil
 				}
 				continue
 			}
-		} else if operator.ConditionStr.OperatorStr != nil {
-			for j := 0; j < len(operator.ConditionStr.OperatorStr); j++ {
-				stat, _ := calculationConditionStr(operator.ConditionStr.OperatorStr[j], totalValue)
+		} else if operatorNew.ConditionStr.OperatorStr != nil {
+			for j := 0; j < numberOperatorStr; j++ {
+				stat, _ := calculationConditionStr(operatorNew.ConditionStr.OperatorStr[j], totalValue)
 				if !stat {
 					return false, nil
 				} else {
-					if i == len(operator.ConditionStr.OperatorStr)-1 {
+					if i == numberOperatorStr-1 {
 						return true, nil
 					}
 					continue
@@ -259,25 +261,26 @@ func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (
 
 func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (bool, error) {
 	// OR condition
-	for i := 0; i < len(operator.ConditionStr.OperatorStr); i++ {
+	numberOperatorStr := len(operator.ConditionStr.OperatorStr)
+	for i := 0; i < numberOperatorStr; i++ {
 		operator = operator.ConditionStr.OperatorStr[i]
 		if operator.OperatorInfo != nil {
 			stat := compareValue(operator.OperatorInfo.Operator, operator.OperatorInfo.Value, totalValue)
 			if stat {
 				return true, nil
 			} else {
-				if i == len(operator.ConditionStr.OperatorStr)-1 {
+				if i == numberOperatorStr-1 {
 					return false, nil
 				}
 				continue
 			}
 		} else if operator.ConditionStr.OperatorStr != nil {
-			for j := 0; j < len(operator.ConditionStr.OperatorStr); j++ {
+			for j := 0; j < numberOperatorStr; j++ {
 				stat, _ := calculationConditionStr(operator.ConditionStr.OperatorStr[j], totalValue)
 				if stat {
 					return true, nil
 				} else {
-					if i == len(operator.ConditionStr.OperatorStr)-1 {
+					if i == numberOperatorStr-1 {
 						return false, nil
 					}
 					continue
