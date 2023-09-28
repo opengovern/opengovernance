@@ -50,12 +50,8 @@ const (
 	// MetadataKeyMetricsJobInterval is the interval in minutes for metrics job
 	MetadataKeyMetricsJobInterval MetadataKey = "metrics_job_interval"
 	// MetadataKeyDataRetention retention period in days
-	MetadataKeyDataRetention         MetadataKey = "data_retention_duration"
-	MetadataKeyAWSComplianceGitURL   MetadataKey = "aws_compliance_git_url"
-	MetadataKeyAzureComplianceGitURL MetadataKey = "azure_compliance_git_url"
-	MetadataKeyInsightsGitURL        MetadataKey = "insights_git_url"
-	MetadataKeyQueriesGitURL         MetadataKey = "queries_git_url"
-	MetadataKeyAnalyticsGitURL       MetadataKey = "analytics_git_url"
+	MetadataKeyDataRetention   MetadataKey = "data_retention_duration"
+	MetadataKeyAnalyticsGitURL MetadataKey = "analytics_git_url"
 )
 
 var MetadataKeys = []MetadataKey{
@@ -85,10 +81,6 @@ var MetadataKeys = []MetadataKey{
 	MetadataKeyInsightJobInterval,
 	MetadataKeyMetricsJobInterval,
 	MetadataKeyDataRetention,
-	MetadataKeyAWSComplianceGitURL,
-	MetadataKeyAzureComplianceGitURL,
-	MetadataKeyInsightsGitURL,
-	MetadataKeyQueriesGitURL,
 	MetadataKeyAnalyticsGitURL,
 }
 
@@ -150,14 +142,6 @@ func (k MetadataKey) GetConfigMetadataType() ConfigMetadataType {
 		return ConfigMetadataTypeInt
 	case MetadataKeyDataRetention:
 		return ConfigMetadataTypeInt
-	case MetadataKeyAWSComplianceGitURL:
-		return ConfigMetadataTypeString
-	case MetadataKeyAzureComplianceGitURL:
-		return ConfigMetadataTypeString
-	case MetadataKeyInsightsGitURL:
-		return ConfigMetadataTypeString
-	case MetadataKeyQueriesGitURL:
-		return ConfigMetadataTypeString
 	case MetadataKeyAnalyticsGitURL:
 		return ConfigMetadataTypeString
 	}
@@ -218,14 +202,6 @@ func (k MetadataKey) GetMinAuthRole() api.Role {
 		return api.KaytuAdminRole
 	case MetadataKeyDataRetention:
 		return api.KaytuAdminRole
-	case MetadataKeyAWSComplianceGitURL:
-		return api.AdminRole
-	case MetadataKeyAzureComplianceGitURL:
-		return api.AdminRole
-	case MetadataKeyInsightsGitURL:
-		return api.AdminRole
-	case MetadataKeyQueriesGitURL:
-		return api.AdminRole
 	case MetadataKeyAnalyticsGitURL:
 		return api.AdminRole
 	}
