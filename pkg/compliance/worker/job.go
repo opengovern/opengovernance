@@ -244,7 +244,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
 		"9193", "--database-password", "abcd")
-	cmdOut, err = cmd.Output()
+	cmdOut, err := cmd.Output()
 	if err != nil {
 		logger.Error("start failed", zap.Error(err), zap.String("body", string(cmdOut)))
 		return err
