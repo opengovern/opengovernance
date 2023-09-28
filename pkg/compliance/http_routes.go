@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -845,7 +844,7 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 	for _, src := range connections {
 		assignment := &db.BenchmarkAssignment{
 			BenchmarkId:  benchmarkId,
-			ConnectionId: src.ConnectionID,
+			ConnectionId: src.ID.String(),
 			AssignedAt:   time.Now(),
 		}
 		//trace :
