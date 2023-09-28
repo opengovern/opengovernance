@@ -211,14 +211,22 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		return err
 	}
 
-	cmd := exec.Command("steampipe", "plugin", "list")
-	cmdOut, err := cmd.Output()
-	if err != nil {
-		logger.Error("plugin list failed", zap.Error(err), zap.String("body", string(cmdOut)))
-		return err
+	for retry := 0; retry < 5; retry++ {
+		cmd := exec.Command("steampipe", "plugin", "list")
+		cmdOut, err := cmd.Output()
+		if err != nil {
+			logger.Error("plugin list failed", zap.Error(err), zap.String("body", string(cmdOut)))
+			time.Sleep(5 * time.Second)
+			if retry == 4 {
+				return err
+			}
+			continue
+		}
+
+		break
 	}
 
-	cmd = exec.Command("steampipe", "service", "stop", "--force")
+	cmd := exec.Command("steampipe", "service", "stop", "--force")
 	err = cmd.Start()
 	if err != nil {
 		logger.Error("first stop failed", zap.Error(err))
