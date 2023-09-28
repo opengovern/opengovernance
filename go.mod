@@ -33,9 +33,9 @@ require (
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
-	github.com/kaytu-io/kaytu-aws-describer v0.5.6
-	github.com/kaytu-io/kaytu-azure-describer v0.4.7
-	github.com/kaytu-io/kaytu-util v0.0.0-20230909233654-d1d27d2e49ef
+	github.com/kaytu-io/kaytu-aws-describer v0.6.0
+	github.com/kaytu-io/kaytu-azure-describer v0.5.0
+	github.com/kaytu-io/kaytu-util v0.0.0-20230928130613-576a6c6da85a
 	github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/labstack/gommon v0.4.0
@@ -428,7 +428,6 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kaytu-io/steampipe-plugin-kaytu v0.0.0-20230924104601-1fc6f2d8e0e2 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
