@@ -9,7 +9,6 @@ type Rule struct {
 	EventType datatypes.JSON
 	Scope     datatypes.JSON
 	Operator  datatypes.JSON
-	Value     int64
 	ActionID  uint `gorm:"foreignKey:action_id"`
 }
 

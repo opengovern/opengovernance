@@ -7,7 +7,6 @@ import (
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/labstack/echo/v4"
-	"net/http"
 	"strconv"
 )
 
@@ -15,14 +14,12 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 	ruleGroup := v1.Group("/rule")
 	ruleGroup.GET("/list", httpserver.AuthorizeHandler(h.ListRules, authapi.ViewerRole))
-	ruleGroup.GET("/get/:ruleId", httpserver.AuthorizeHandler(h.GetRule, authapi.EditorRole))
 	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
 	ruleGroup.DELETE("/delete/:ruleId", httpserver.AuthorizeHandler(h.DeleteRule, authapi.EditorRole))
 	ruleGroup.GET("/update", httpserver.AuthorizeHandler(h.UpdateRule, authapi.EditorRole))
 
 	actionGroup := v1.Group("/action")
 	actionGroup.GET("/list", httpserver.AuthorizeHandler(h.ListActions, authapi.ViewerRole))
-	actionGroup.GET("/get/:actionId", httpserver.AuthorizeHandler(h.GetAction, authapi.EditorRole))
 	actionGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateAction, authapi.EditorRole))
 	actionGroup.DELETE("/delete/:actionId", httpserver.AuthorizeHandler(h.DeleteAction, authapi.EditorRole))
 	actionGroup.GET("/update", httpserver.AuthorizeHandler(h.UpdateAction, authapi.EditorRole))
@@ -38,60 +35,6 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	}
 
 	return nil
-}
-
-// GetRule godoc
-//
-//	@Summary		get rules
-//	@Description	returns a rule
-//	@Security		BearerToken
-//	@Tags			alerting
-//	@Param			ruleId	path	string	true	"Rule ID"
-//	@Produce		json
-//	@Success		200	{object}	api.ApiRule
-//	@Router			/alerting/api/rule/list [get]
-func (h *HttpHandler) GetRule(ctx echo.Context) error {
-	idS := ctx.Param("ruleId")
-	if idS == "" {
-		return errors.New("ruleId is required")
-	}
-	id, err := strconv.ParseUint(idS, 10, 64)
-	if err != nil {
-		return err
-	}
-
-	rule, err := h.db.GetRule(uint(id))
-	if err != nil {
-		return err
-	}
-
-	var eventType api.EventType
-	err = json.Unmarshal(rule.EventType, &eventType)
-	if err != nil {
-		return err
-	}
-
-	var scope api.Scope
-	err = json.Unmarshal(rule.Scope, &scope)
-	if err != nil {
-		return err
-	}
-
-	var operator api.OperatorStruct
-	err = json.Unmarshal(rule.Operator, &operator)
-	if err != nil {
-		return err
-	}
-
-	response := api.ApiRule{
-		ID:        rule.ID,
-		EventType: eventType,
-		Scope:     scope,
-		Operator:  operator,
-		ActionID:  rule.ActionID,
-	}
-
-	return ctx.JSON(http.StatusOK, response)
 }
 
 // ListRules godoc
@@ -286,47 +229,6 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(200, response)
-}
-
-// GetAction godoc
-//
-//	@Summary		get rules
-//	@Description	returns an action
-//	@Security		BearerToken
-//	@Tags			alerting
-//	@Param			actionId	path	string	true	"Action ID"
-//	@Produce		json
-//	@Success		200	{object}	api.ApiRule
-//	@Router			/alerting/api/rule/list [get]
-func (h *HttpHandler) GetAction(ctx echo.Context) error {
-	idS := ctx.Param("actionId")
-	if idS == "" {
-		return errors.New("actionId is required")
-	}
-	id, err := strconv.ParseUint(idS, 10, 64)
-	if err != nil {
-		return err
-	}
-
-	action, err := h.db.GetAction(uint(id))
-	if err != nil {
-		return err
-	}
-
-	var header map[string]string
-	err = json.Unmarshal(action.Headers, &header)
-	if err != nil {
-		return err
-	}
-
-	response := api.ApiAction{
-		ID:      action.ID,
-		Method:  action.Method,
-		Url:     action.Url,
-		Headers: header,
-		Body:    action.Body,
-	}
-	return ctx.JSON(http.StatusOK, response)
 }
 
 // CreateAction godoc
