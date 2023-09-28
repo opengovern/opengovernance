@@ -17,6 +17,8 @@ type TimeRangeFilter struct {
 type SchedulerServiceClient interface {
 	GetStack(ctx *httpclient.Context, stackID string) (*api.Stack, error)
 	GetDescribeStatus(ctx *httpclient.Context, resourceType string) ([]api.DescribeStatus, error)
+	GetConnectionDescribeStatus(ctx *httpclient.Context, connectionID string) ([]api.ConnectionDescribeStatus, error)
+	ListPendingConnections(ctx *httpclient.Context) ([]string, error)
 }
 
 type schedulerClient struct {
@@ -44,6 +46,32 @@ func (s *schedulerClient) GetDescribeStatus(ctx *httpclient.Context, resourceTyp
 	url := fmt.Sprintf("%s/api/v1/describe/status?resource_type=%s", s.baseURL, resourceType)
 
 	var res []api.DescribeStatus
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return res, nil
+}
+
+func (s *schedulerClient) GetConnectionDescribeStatus(ctx *httpclient.Context, connectionID string) ([]api.ConnectionDescribeStatus, error) {
+	url := fmt.Sprintf("%s/api/v1/describe/connection/status?connection_id=%s", s.baseURL, connectionID)
+
+	var res []api.ConnectionDescribeStatus
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return res, nil
+}
+
+func (s *schedulerClient) ListPendingConnections(ctx *httpclient.Context) ([]string, error) {
+	url := fmt.Sprintf("%s/api/v1/describe/pending/connections", s.baseURL)
+
+	var res []string
 	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
 		if 400 <= statusCode && statusCode < 500 {
 			return nil, echo.NewHTTPError(statusCode, err.Error())

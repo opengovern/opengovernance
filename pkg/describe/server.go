@@ -62,6 +62,8 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
 	v1.PUT("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, apiAuth.InternalRole))
 	v1.GET("/describe/status", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
+	v1.GET("/describe/connection/status", httpserver.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.InternalRole))
+	v1.GET("/describe/pending/connections", httpserver.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.InternalRole))
 
 	stacks := v1.Group("/stacks")
 	stacks.GET("", httpserver.AuthorizeHandler(h.ListStack, apiAuth.ViewerRole))
@@ -192,7 +194,35 @@ func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
 
 func (h HttpServer) GetDescribeStatus(ctx echo.Context) error {
 	resourceType := ctx.QueryParam("resource_type")
+
 	status, err := h.DB.GetDescribeStatus(resourceType)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, status)
+}
+
+// GetConnectionDescribeStatus godoc
+//
+//	@Summary	Get connection describe status
+//	@Security	BearerToken
+//	@Tags		describe
+//	@Produce	json
+//	@Success	200
+//	@Param		connection_id	query	string	true	"Connection ID"
+//	@Router		/schedule/api/v1/describe/connection/status [put]
+func (h HttpServer) GetConnectionDescribeStatus(ctx echo.Context) error {
+	connectionID := ctx.QueryParam("connection_id")
+
+	status, err := h.DB.GetConnectionDescribeStatus(connectionID)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(http.StatusOK, status)
+}
+
+func (h HttpServer) ListAllPendingConnection(ctx echo.Context) error {
+	status, err := h.DB.ListAllPendingConnection()
 	if err != nil {
 		return err
 	}

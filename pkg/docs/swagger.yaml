@@ -1722,6 +1722,8 @@ definitions:
         maximum: 10000000
         minimum: 0
         type: number
+      describeJobRunning:
+        type: boolean
       description:
         example: This is an example connection
         type: string
@@ -2074,6 +2076,8 @@ definitions:
         type: string
       name:
         type: string
+      organization_id:
+        type: integer
       tier:
         type: string
     type: object
@@ -5014,6 +5018,24 @@ paths:
       summary: Create Azure source
       tags:
       - onboard
+  /schedule/api/v1/describe/connection/status:
+    put:
+      parameters:
+      - description: Connection ID
+        in: query
+        name: connection_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Get connection describe status
+      tags:
+      - describe
   /schedule/api/v1/describe/trigger/{connection_id}:
     put:
       description: Triggers a describe job to run immediately for the given connection

@@ -60,7 +60,8 @@ type Connection struct {
 	ResourceCount        *int       `json:"resourceCount" example:"100" minimum:"0" maximum:"1000000"`
 	OldResourceCount     *int       `json:"oldResourceCount" example:"100" minimum:"0" maximum:"1000000"`
 
-	Metadata map[string]any `json:"metadata"`
+	Metadata           map[string]any `json:"metadata"`
+	DescribeJobRunning bool
 }
 
 func (c Connection) IsEnabled() bool {

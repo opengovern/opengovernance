@@ -2,19 +2,20 @@ package compliance
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/migrator/internal"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func PopulateDatabase(dbc *gorm.DB, compliancePath, queryPath string) error {
+func PopulateDatabase(dbc *gorm.DB) error {
 	p := GitParser{}
-	if err := p.ExtractQueries(queryPath); err != nil {
+	if err := p.ExtractQueries(internal.QueriesGitPath); err != nil {
 		return err
 	}
 
-	if err := p.ExtractCompliance(compliancePath); err != nil {
+	if err := p.ExtractCompliance(internal.ComplianceGitPath); err != nil {
 		return err
 	}
 

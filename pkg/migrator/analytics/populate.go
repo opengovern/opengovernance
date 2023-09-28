@@ -6,7 +6,9 @@ import (
 	"fmt"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory"
+	"github.com/kaytu-io/kaytu-engine/pkg/migrator/internal"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
+	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -17,10 +19,17 @@ import (
 	"strings"
 )
 
-func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) error {
-	err := filepath.Walk(analyticsPath+"/assets", func(path string, info fs.FileInfo, err error) error {
+func PopulateDatabase(logger *zap.Logger, conf postgres.Config) error {
+	conf.DB = "inventory"
+	orm, err := postgres.NewClient(&conf, logger)
+	if err != nil {
+		logger.Error("failed to create postgres client", zap.Error(err))
+		return fmt.Errorf("new postgres client: %w", err)
+	}
+
+	err = filepath.Walk(internal.AnalyticsGitPath+"/assets", func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".json") {
-			return PopulateItem(logger, dbc, path, info, true)
+			return PopulateItem(logger, orm, path, info, true)
 		}
 		return nil
 	})
@@ -28,9 +37,9 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 		return err
 	}
 
-	err = filepath.Walk(analyticsPath+"/spend", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(internal.AnalyticsGitPath+"/spend", func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".json") {
-			return PopulateItem(logger, dbc, path, info, false)
+			return PopulateItem(logger, orm, path, info, false)
 		}
 		return nil
 	})
@@ -38,9 +47,9 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 		return err
 	}
 
-	err = filepath.Walk(analyticsPath+"/finder/popular", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(internal.AnalyticsGitPath+"/finder/popular", func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".json") {
-			return PopulateFinderItem(logger, dbc, path, info, true)
+			return PopulateFinderItem(logger, orm, path, info, true)
 		}
 		return nil
 	})
@@ -48,9 +57,9 @@ func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, analyticsPath string) er
 		return err
 	}
 
-	err = filepath.Walk(analyticsPath+"/finder/others", func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(internal.AnalyticsGitPath+"/finder/others", func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".json") {
-			return PopulateFinderItem(logger, dbc, path, info, false)
+			return PopulateFinderItem(logger, orm, path, info, false)
 		}
 		return nil
 	})

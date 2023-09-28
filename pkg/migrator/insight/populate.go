@@ -11,12 +11,12 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB, insightsPath string) error {
+func PopulateDatabase(logger *zap.Logger, dbc *gorm.DB) error {
 	p := GitParser{}
-	if err := p.ExtractInsights(path.Join(insightsPath, internal.InsightsSubPath)); err != nil {
+	if err := p.ExtractInsights(path.Join(internal.InsightsGitPath, internal.InsightsSubPath)); err != nil {
 		return err
 	}
-	if err := p.ExtractInsightGroups(path.Join(insightsPath, internal.InsightGroupsSubPath)); err != nil {
+	if err := p.ExtractInsightGroups(path.Join(internal.InsightsGitPath, internal.InsightGroupsSubPath)); err != nil {
 		return err
 	}
 

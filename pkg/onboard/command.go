@@ -36,6 +36,7 @@ var (
 
 	AWSPermissionCheckURL = os.Getenv("AWS_PERMISSION_CHECK_URL")
 	InventoryBaseURL      = os.Getenv("INVENTORY_BASE_URL")
+	DescribeBaseURL       = os.Getenv("DESCRIBE_BASE_URL")
 
 	KeyARN           = os.Getenv("KMS_KEY_ARN")
 	KMSAccountRegion = os.Getenv("KMS_ACCOUNT_REGION")
@@ -71,6 +72,7 @@ func start(ctx context.Context) error {
 		AWSPermissionCheckURL,
 		KeyARN,
 		InventoryBaseURL,
+		DescribeBaseURL,
 	)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)

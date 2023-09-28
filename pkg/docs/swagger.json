@@ -3909,6 +3909,36 @@
                 }
             }
         },
+        "/schedule/api/v1/describe/connection/status": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Get connection describe status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Connection ID",
+                        "name": "connection_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/describe/trigger/{connection_id}": {
             "put": {
                 "security": [
@@ -7333,6 +7363,9 @@
                     "minimum": 0,
                     "example": 1000
                 },
+                "describeJobRunning": {
+                    "type": "boolean"
+                },
                 "description": {
                     "type": "string",
                     "example": "This is an example connection"
@@ -7831,6 +7864,9 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "organization_id": {
+                    "type": "integer"
                 },
                 "tier": {
                     "type": "string"

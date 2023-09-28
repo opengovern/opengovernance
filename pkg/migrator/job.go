@@ -3,6 +3,8 @@ package migrator
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/go-git/go-git/v5"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"net/http"
 	"os"
 	"path"
@@ -29,12 +31,8 @@ import (
 )
 
 type GitConfig struct {
-	AWSComplianceGitURL   string
-	AzureComplianceGitURL string
-	InsightGitURL         string
-	QueryGitURL           string
-	AnalyticsGitURL       string
-	githubToken           string
+	AnalyticsGitURL string
+	githubToken     string
 }
 
 type Job struct {
@@ -128,34 +126,10 @@ func (w *Job) Run() error {
 	w.logger.Info("Starting migrator job")
 
 	gitConfig := GitConfig{
-		AWSComplianceGitURL:   w.conf.AWSComplianceGitURL,
-		AzureComplianceGitURL: w.conf.AzureComplianceGitURL,
-		InsightGitURL:         w.conf.InsightGitURL,
-		QueryGitURL:           w.conf.QueryGitURL,
-		AnalyticsGitURL:       w.conf.AnalyticsGitURL,
-		githubToken:           w.conf.GithubToken,
+		AnalyticsGitURL: w.conf.AnalyticsGitURL,
+		githubToken:     w.conf.GithubToken,
 	}
 
-	if value, err := w.metadataClient.GetConfigMetadata(&httpclient.Context{
-		UserRole: api.AdminRole,
-	}, models.MetadataKeyAWSComplianceGitURL); err == nil && len(value.GetValue().(string)) > 0 {
-		gitConfig.AWSComplianceGitURL = value.GetValue().(string)
-	}
-	if value, err := w.metadataClient.GetConfigMetadata(&httpclient.Context{
-		UserRole: api.AdminRole,
-	}, models.MetadataKeyAzureComplianceGitURL); err == nil && len(value.GetValue().(string)) > 0 {
-		gitConfig.AzureComplianceGitURL = value.GetValue().(string)
-	}
-	if value, err := w.metadataClient.GetConfigMetadata(&httpclient.Context{
-		UserRole: api.AdminRole,
-	}, models.MetadataKeyInsightsGitURL); err == nil && len(value.GetValue().(string)) > 0 {
-		gitConfig.InsightGitURL = value.GetValue().(string)
-	}
-	if value, err := w.metadataClient.GetConfigMetadata(&httpclient.Context{
-		UserRole: api.AdminRole,
-	}, models.MetadataKeyQueriesGitURL); err == nil && len(value.GetValue().(string)) > 0 {
-		gitConfig.QueryGitURL = value.GetValue().(string)
-	}
 	if value, err := w.metadataClient.GetConfigMetadata(&httpclient.Context{
 		UserRole: api.AdminRole,
 	}, models.MetadataKeyAnalyticsGitURL); err == nil && len(value.GetValue().(string)) > 0 {
@@ -176,18 +150,33 @@ func (w *Job) Run() error {
 		SSLMode: w.conf.PostgreSQL.SSLMode,
 	}
 
+	w.logger.Info("cloning analytics git")
+	os.RemoveAll(internal.AnalyticsGitPath)
+	_, err := git.PlainClone(internal.AnalyticsGitPath, false, &git.CloneOptions{
+		Auth: &githttp.BasicAuth{
+			Username: "abc123",
+			Password: gitConfig.githubToken,
+		},
+		URL:      gitConfig.AnalyticsGitURL,
+		Progress: os.Stdout,
+	})
+	if err != nil {
+		w.logger.Error("Failure while running analytics migration", zap.Error(err))
+		return err
+	}
+
 	w.logger.Info("Starting analytics migration")
-	if err := analytics.Run(w.logger, cfg, gitConfig.AnalyticsGitURL, gitConfig.githubToken); err != nil {
+	if err := analytics.PopulateDatabase(w.logger, cfg); err != nil {
 		w.logger.Error("Failure while running analytics migration", zap.Error(err))
 	}
 
 	w.logger.Info("Starting compliance migration")
-	if err := compliance.Run(w.db, []string{gitConfig.AWSComplianceGitURL, gitConfig.AzureComplianceGitURL}, gitConfig.QueryGitURL, gitConfig.githubToken); err != nil {
+	if err = compliance.PopulateDatabase(w.db.ORM); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running compliance migration: %v", err))
 	}
 
 	w.logger.Info("Starting insight migration")
-	if err := insight.Run(w.logger, w.db, gitConfig.InsightGitURL, gitConfig.githubToken); err != nil {
+	if err := insight.PopulateDatabase(w.logger, w.db.ORM); err != nil {
 		w.logger.Error(fmt.Sprintf("Failure while running insight migration: %v", err))
 	}
 
@@ -206,29 +195,9 @@ func (w *Job) Run() error {
 		w.logger.Error("Failure while running workspace migration", zap.Error(err))
 	}
 
-	err := os.RemoveAll(internal.ComplianceGitPath)
-	if err != nil {
-		w.logger.Error("Failure while removing compliance git path", zap.Error(err))
-	}
-	err = os.RemoveAll(internal.QueriesGitPath)
-	if err != nil {
-		w.logger.Error("Failure while removing queries git path", zap.Error(err))
-	}
-	err = os.RemoveAll(internal.InsightsGitPath)
-	if err != nil {
-		w.logger.Error("Failure while removing insights git path", zap.Error(err))
-	}
-	err = os.RemoveAll(internal.AnalyticsGitPath)
-	if err != nil {
-		w.logger.Error("Failure while removing analytics git path", zap.Error(err))
-	}
-
 	return nil
 }
 
 func (w *Job) Stop() {
-	os.RemoveAll(internal.ComplianceGitPath)
-	os.RemoveAll(internal.QueriesGitPath)
-	os.RemoveAll(internal.InsightsGitPath)
 	os.RemoveAll(internal.AnalyticsGitPath)
 }

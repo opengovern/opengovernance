@@ -2487,6 +2487,11 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 		}
 	}
 
+	pendingDescribeConnections, err := h.describeClient.ListPendingConnections(&httpclient.Context{UserRole: api3.InternalRole})
+	if err != nil {
+		return err
+	}
+
 	result := api.ListConnectionSummaryResponse{
 		ConnectionCount:       len(connections),
 		TotalCost:             0,
@@ -2672,6 +2677,12 @@ func (h HttpHandler) ListConnectionsSummaries(ctx echo.Context) error {
 	for idx, cnn := range result.Connections {
 		cnn.ConnectionID = demo.EncodeResponseData(ctx, cnn.ConnectionID)
 		cnn.ConnectionName = demo.EncodeResponseData(ctx, cnn.ConnectionName)
+		for _, pc := range pendingDescribeConnections {
+			if cnn.ID.String() == pc {
+				cnn.DescribeJobRunning = true
+				break
+			}
+		}
 		result.Connections[idx] = cnn
 	}
 	return ctx.JSON(http.StatusOK, result)

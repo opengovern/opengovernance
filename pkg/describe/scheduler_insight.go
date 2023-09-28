@@ -37,6 +37,17 @@ func (s *Scheduler) scheduleInsightJob(forceCreate bool) {
 		return
 	}
 
+	srcs, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.InternalRole}, nil)
+	if err != nil {
+		s.logger.Error("Failed to fetch list of sources", zap.Error(err))
+		InsightJobsCount.WithLabelValues("failure").Inc()
+		return
+	}
+
+	if len(srcs) == 0 {
+		return
+	}
+
 	for _, ins := range insights {
 		id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
 		err := s.runInsightJob(forceCreate, ins, id, id, ins.Connector)

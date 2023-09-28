@@ -3,6 +3,7 @@ package onboard
 import (
 	"context"
 	"fmt"
+	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
@@ -22,6 +23,7 @@ type HttpHandler struct {
 	kms                   *vault.KMSVaultSourceConfig
 	awsPermissionCheckURL string
 	inventoryClient       inventory.InventoryServiceClient
+	describeClient        describeClient.SchedulerServiceClient
 	validator             *validator.Validate
 	keyARN                string
 	logger                *zap.Logger
@@ -36,6 +38,7 @@ func InitializeHttpHandler(
 	awsPermissionCheckURL string,
 	keyARN string,
 	inventoryBaseURL string,
+	describeBaseURL string,
 ) (*HttpHandler, error) {
 
 	logger.Info("Initializing http handler")
@@ -95,6 +98,7 @@ func InitializeHttpHandler(
 	logger.Info("Initialized postgres database: ", zap.String("database", postgresDb))
 
 	inventoryClient := inventory.NewInventoryServiceClient(inventoryBaseURL)
+	describeCli := describeClient.NewSchedulerServiceClient(describeBaseURL)
 
 	return &HttpHandler{
 		logger:                logger,
@@ -104,6 +108,7 @@ func InitializeHttpHandler(
 		sourceEventsQueue:     sourceEventsQueue,
 		awsPermissionCheckURL: awsPermissionCheckURL,
 		inventoryClient:       inventoryClient,
+		describeClient:        describeCli,
 		keyARN:                keyARN,
 		validator:             validator.New(),
 	}, nil

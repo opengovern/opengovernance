@@ -128,6 +128,14 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			fmt.Println("===================================================== Cost", resource.UniqueId, "\n", resource.DescriptionJson)
 		}
 
+		var tags []es.Tag
+		for k, v := range resource.Tags {
+			tags = append(tags, es.Tag{
+				Key:   k,
+				Value: v,
+			})
+		}
+
 		kafkaResource := es.Resource{
 			ID:            resource.UniqueId,
 			ARN:           resource.Arn,
@@ -143,6 +151,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			CreatedAt:     resource.Job.DescribedAt,
 			Description:   description,
 			Metadata:      resource.Metadata,
+			CanonicalTags: tags,
 		}
 		kmsg, _ := json.Marshal(kafkaResource)
 		if len(kmsg) >= 32766 {
@@ -160,13 +169,6 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 		//id := kafka.HashOf(keys...)
 		//s.logger.Warn(fmt.Sprintf("sending resource id=%s : %s", id, string(kmsg)))
 
-		var tags []es.Tag
-		for k, v := range resource.Tags {
-			tags = append(tags, es.Tag{
-				Key:   k,
-				Value: v,
-			})
-		}
 		lookupResource := es.LookupResource{
 			ResourceID:    resource.UniqueId,
 			Name:          resource.Name,
@@ -241,6 +243,14 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 			return nil, err
 		}
 
+		var tags []es.Tag
+		for k, v := range resource.Tags {
+			tags = append(tags, es.Tag{
+				Key:   k,
+				Value: v,
+			})
+		}
+
 		kafkaResource := es.Resource{
 			ID:            resource.UniqueId,
 			ARN:           "",
@@ -256,6 +266,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 			Location:      resource.Location,
 			ScheduleJobID: uint(resource.Job.ScheduleJobId),
 			CreatedAt:     resource.Job.DescribedAt,
+			CanonicalTags: tags,
 		}
 		kmsg, _ := json.Marshal(kafkaResource)
 		if len(kmsg) >= 32766 {
@@ -272,13 +283,6 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		//id := kafka.HashOf(keys...)
 		//s.logger.Warn(fmt.Sprintf("sending resource id=%s : %s", id, string(kmsg)))
 
-		var tags []es.Tag
-		for k, v := range resource.Tags {
-			tags = append(tags, es.Tag{
-				Key:   k,
-				Value: v,
-			})
-		}
 		lookupResource := es.LookupResource{
 			ResourceID:    resource.UniqueId,
 			Name:          resource.Name,

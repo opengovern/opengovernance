@@ -13,12 +13,8 @@ type JobConfig struct {
 	PostgreSQL            config.Postgres
 	ElasticSearch         config.ElasticSearch
 	Metadata              config.KaytuService
-	QueryGitURL           string `yaml:"query_git_url"`
 	AnalyticsGitURL       string `yaml:"analytics_git_url"`
 	GithubToken           string `yaml:"github_token"`
-	AWSComplianceGitURL   string `yaml:"aws_compliance_git_url"`
-	InsightGitURL         string `yaml:"insight_git_url"`
-	AzureComplianceGitURL string `yaml:"azure_compliance_git_url"`
 	PrometheusPushAddress string `yaml:"prometheus_push_address"`
 
 	RabbitMqService  string `yaml:"rabbit_mq_service"`
