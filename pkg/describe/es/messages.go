@@ -87,7 +87,7 @@ type LookupResource struct {
 	// IsCommon
 	IsCommon bool `json:"is_common"`
 	// Tags
-	Tags []Tag `json:"tags"`
+	Tags []Tag `json:"canonical_tags"`
 }
 
 func (r LookupResource) KeysAndIndex() ([]string, string) {
