@@ -16,3 +16,8 @@ type DescribeStatus struct {
 	Connector    string
 	Status       DescribeResourceJobStatus
 }
+
+type ConnectionDescribeStatus struct {
+	ResourceType string
+	Status       DescribeResourceJobStatus
+}

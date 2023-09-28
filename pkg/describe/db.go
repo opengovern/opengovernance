@@ -292,6 +292,47 @@ select j.connection_id, j.connector, j.status from describe_connection_jobs j in
 	return job, nil
 }
 
+func (db Database) GetConnectionDescribeStatus(connectionID string) ([]api.ConnectionDescribeStatus, error) {
+	var job []api.ConnectionDescribeStatus
+
+	tx := db.orm.Raw(`with resourceTypes as (
+    select 
+        resource_type, max(updated_at) as updated_at 
+    from
+		describe_connection_jobs 
+    where 
+		connection_id = ?
+	group by 1
+)
+select 
+	j.resource_type, j.status 
+from 
+	describe_connection_jobs j inner join resourceTypes c on j.resource_type = c.resource_type 
+where 
+	connection_id = ? AND j.updated_at = c.updated_at;`,
+		connectionID, connectionID).Find(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return job, nil
+}
+
+func (db Database) ListAllPendingConnection() ([]string, error) {
+	var connectionIDs []string
+
+	tx := db.orm.Raw(`select distinct(connection_id) from describe_connection_jobs where status in ('CREATED', 'QUEDED', 'IN_PROGRESS')`).Find(&connectionIDs)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+	return connectionIDs, nil
+}
+
 //
 //func (db Database) ListPendingDescribeResourceJobs() ([]DescribeResourceJob, error) {
 //	var jobs []DescribeResourceJob
