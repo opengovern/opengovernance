@@ -882,54 +882,32 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 	}
 
 	var dbAssignments [][]db.BenchmarkAssignment
-	if len(connectionID) == 1 {
+	outputS2, span2 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentsBySourceId(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	span2.SetName("new_GetBenchmarkAssignmentsBySourceId(loop)")
+
+	for _, connectionId := range connectionID {
 		// trace :
-		_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentsBySourceId", trace.WithSpanKind(trace.SpanKindServer))
+		_, span1 := tracer.Start(outputS2, "new_GetBenchmarkAssignmentsBySourceId", trace.WithSpanKind(trace.SpanKindServer))
 		span1.SetName("new_GetBenchmarkAssignmentsBySourceId")
 
-		dbAssignments[0], err = h.db.GetBenchmarkAssignmentsBySourceId(connectionID[0])
+		dbAssignmentsCG, err := h.db.GetBenchmarkAssignmentsBySourceId(connectionId)
 		if err != nil {
 			span1.RecordError(err)
 			span1.SetStatus(codes.Error, err.Error())
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", connectionID[0]))
+				return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", connectionId))
 			}
-			ctx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionID[0], err)
+			ctx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionId, err)
 			return err
 		}
+		dbAssignments = append(dbAssignments, dbAssignmentsCG)
+
 		span1.AddEvent("information", trace.WithAttributes(
-			attribute.String("connection ID", connectionID[0]),
+			attribute.String("connection ID", connectionId),
 		))
 		span1.End()
-	} else {
-		// trace :
-		outputS2, span2 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentsBySourceId(loop)", trace.WithSpanKind(trace.SpanKindServer))
-		span2.SetName("new_GetBenchmarkAssignmentsBySourceId(loop)")
-
-		for _, connectionId := range connectionID {
-			// trace :
-			_, span1 := tracer.Start(outputS2, "new_GetBenchmarkAssignmentsBySourceId", trace.WithSpanKind(trace.SpanKindServer))
-			span1.SetName("new_GetBenchmarkAssignmentsBySourceId")
-
-			dbAssignmentsCG, err := h.db.GetBenchmarkAssignmentsBySourceId(connectionId)
-			if err != nil {
-				span1.RecordError(err)
-				span1.SetStatus(codes.Error, err.Error())
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark assignments for %s not found", connectionId))
-				}
-				ctx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionId, err)
-				return err
-			}
-			dbAssignments = append(dbAssignments, dbAssignmentsCG)
-
-			span1.AddEvent("information", trace.WithAttributes(
-				attribute.String("connection ID", connectionId),
-			))
-			span1.End()
-		}
-		span2.End()
 	}
+	span2.End()
 
 	var assignments []api.BenchmarkAssignment
 	for _, assignmentsArray := range dbAssignments {
