@@ -1,5 +1,7 @@
 package api
 
+import "github.com/kaytu-io/kaytu-util/pkg/source"
+
 type OperatorType = string
 
 const (
@@ -17,7 +19,9 @@ type EventType struct {
 }
 
 type Scope struct {
-	ConnectionId string
+	ConnectionId    string
+	ConnectionGroup string
+	ConnectorName   source.Type
 }
 
 type OperatorStruct struct {

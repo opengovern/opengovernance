@@ -6,10 +6,14 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	apiCompliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
@@ -18,6 +22,7 @@ import (
 
 type HttpHandler struct {
 	db               Database
+	onboardClient    onboardClient.OnboardServiceClient
 	complianceClient client.ComplianceServiceClient
 }
 
@@ -59,79 +64,121 @@ func (h HttpHandler) TriggerLoop() {
 	defer timer.Stop()
 
 	for ; ; <-timer.C {
-		rules, err := h.db.ListRules()
+		Trigger(h)
+	}
+}
+
+func Trigger(h HttpHandler) {
+	rules, err := h.db.ListRules()
+	if err != nil {
+		fmt.Printf("Error in giving list rules error equal to : %v", err)
+		return
+	}
+
+	for _, rule := range rules {
+		var scope api.Scope
+		err := json.Unmarshal(rule.Scope, &scope)
 		if err != nil {
-			fmt.Printf("Error in giving list rules error equal to : %v", err)
+			fmt.Printf("Error in unmarshaling scope , error  equal to : %v", err)
 			return
 		}
 
-		for _, rule := range rules {
-			var scope api.Scope
-			err := json.Unmarshal(rule.Scope, &scope)
-			if err != nil {
-				fmt.Printf("Error in unmarshaling scope , error  equal to : %v", err)
-				return
-			}
+		var eventType api.EventType
+		err = json.Unmarshal(rule.EventType, &eventType)
+		if err != nil {
+			fmt.Printf("Error in unmarshaling event type , error equal to : %v ", err)
+			return
+		}
 
-			var eventType api.EventType
-			err = json.Unmarshal(rule.EventType, &eventType)
-			if err != nil {
-				fmt.Printf("Error in unmarshaling event type , error equal to : %v ", err)
-				return
-			}
-			var operator api.OperatorStruct
-			err = json.Unmarshal(rule.Operator, &operator)
-			if err != nil {
-				fmt.Printf("Error in unmarshaling operator , error equal to : %v ", err)
-				return
-			}
+		var operator api.OperatorStruct
+		err = json.Unmarshal(rule.Operator, &operator)
+		if err != nil {
+			fmt.Printf("Error in unmarshaling operator , error equal to : %v ", err)
+			return
+		}
 
-			if eventType.InsightId != nil {
-				statInsight, err := triggerInsight(h, operator, eventType, scope)
-				if err != nil {
-					fmt.Printf("Error in trigger insight : %v", err)
-				}
-				if statInsight {
-					err = sendAlert(h, rule)
-					if err != nil {
-						fmt.Printf("Error in send alert for insigh , err : %v ", err)
-						return
-					}
-				}
-			} else if eventType.BenchmarkId != nil {
-				statCompliance, err := triggerCompliance(h, operator, scope, eventType)
-				if err != nil {
-					fmt.Printf("Error in trigger compliance : %v ", err)
-				}
-				if statCompliance {
-					err = sendAlert(h, rule)
-					if err != nil {
-						fmt.Printf("Error in send alert for compliance , err : %v ", err)
-						return
-					}
-				}
-			} else {
-				fmt.Printf("Error: insighId or complianceId not entered ")
+		if eventType.InsightId != nil {
+			statInsight, err := triggerInsight(h, operator, eventType, scope)
+			if err != nil {
+				fmt.Printf("Error in trigger insight : %v", err)
 			}
+			if statInsight {
+				err = sendAlert(h, rule)
+				if err != nil {
+					fmt.Printf("Error in send alert for insigh , err : %v ", err)
+					return
+				}
+			}
+		} else if eventType.BenchmarkId != nil {
+			statCompliance, err := triggerCompliance(h, operator, scope, eventType)
+			if err != nil {
+				fmt.Printf("Error in trigger compliance : %v ", err)
+			}
+			if statCompliance {
+				err = sendAlert(h, rule)
+				if err != nil {
+					fmt.Printf("Error in send alert for compliance , err : %v ", err)
+					return
+				}
+			}
+		} else {
+			fmt.Printf("Error: insighId or complianceId not entered ")
 		}
 	}
 }
 
+func getConnectionIdFilter(h HttpHandler, connectionIds []string, connectionGroup []string) ([]string, error) {
+	if len(connectionIds) == 0 && len(connectionGroup) == 0 {
+		return nil, nil
+	}
+
+	if len(connectionIds) > 0 && len(connectionGroup) > 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
+	}
+
+	if len(connectionIds) > 0 {
+		return connectionIds, nil
+	}
+	check := make(map[string]bool)
+	var connectionIDSChecked []string
+
+	for i := 0; i < len(connectionGroup); i++ {
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroup[i])
+		if err != nil {
+			return nil, err
+		}
+		if len(connectionGroupObj.ConnectionIds) == 0 {
+			return nil, err
+		}
+
+		// Check for duplicate connection groups
+		for _, entry := range connectionGroupObj.ConnectionIds {
+			if _, value := check[entry]; !value {
+				check[entry] = true
+				connectionIDSChecked = append(connectionIDSChecked, entry)
+			}
+		}
+	}
+	connectionIds = connectionIDSChecked
+
+	return connectionIds, nil
+}
+
 func sendAlert(h HttpHandler, rule Rule) error {
-	var action Action
 	action, err := h.db.GetAction(rule.ActionID)
 	if err != nil {
-		fmt.Printf("error in getting action , error equal to : %v", err)
+		return fmt.Errorf("error getting action , error equal to : %v", err)
 	}
 
 	req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer([]byte(action.Body)))
 	if err != nil {
-		return fmt.Errorf("error in sending the request , error equal to : %v", err)
+		return fmt.Errorf("error sending the request , error equal to : %v", err)
 	}
+
 	var headers map[string]string
 	err = json.Unmarshal(action.Headers, &headers)
 	if err != nil {
-		return fmt.Errorf("error in unmarshaling the headers  , error : %v", err)
+		return fmt.Errorf("error unmarshalling the headers  , error : %v", err)
 	}
 	for k, v := range headers {
 		req.Header.Add(k, v)
@@ -139,12 +186,12 @@ func sendAlert(h HttpHandler, rule Rule) error {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("error equal to : %v", err)
+		return err
 	}
 
 	err = res.Body.Close()
 	if err != nil {
-		return fmt.Errorf("error equal to : %v", err)
+		return err
 	}
 	return nil
 }
@@ -154,7 +201,11 @@ func triggerInsight(h HttpHandler, operator api.OperatorStruct, eventType api.Ev
 	oneDayAgo := time.Now().Add(-diff)
 	timeNow := time.Now()
 	insightID := strconv.Itoa(int(*eventType.InsightId))
-	insight, err := h.complianceClient.GetInsight(&httpclient.Context{UserRole: api2.InternalRole}, insightID, []string{scope.ConnectionId}, &oneDayAgo, &timeNow)
+	connectionIds, err := getConnectionIdFilter(h, []string{scope.ConnectionId}, []string{scope.ConnectionGroup})
+	if err != nil {
+		return false, err
+	}
+	insight, err := h.complianceClient.GetInsight(&httpclient.Context{UserRole: api2.InternalRole}, insightID, connectionIds, &oneDayAgo, &timeNow)
 	if err != nil {
 		return false, fmt.Errorf("error in getting GetInsight , error  equal to : %v", err)
 	}
@@ -173,8 +224,12 @@ func triggerInsight(h HttpHandler, operator api.OperatorStruct, eventType api.Ev
 }
 
 func triggerCompliance(h HttpHandler, operator api.OperatorStruct, scope api.Scope, eventType api.EventType) (bool, error) {
+	connectionIds, err := getConnectionIdFilter(h, []string{scope.ConnectionId}, []string{scope.ConnectionGroup})
+	if err != nil {
+		return false, err
+	}
 	reqCompliance := apiCompliance.GetFindingsRequest{
-		Filters: apiCompliance.FindingFilters{ConnectionID: []string{scope.ConnectionId}, BenchmarkID: []string{*eventType.BenchmarkId}},
+		Filters: apiCompliance.FindingFilters{ConnectionID: connectionIds, BenchmarkID: []string{*eventType.BenchmarkId}, Connector: []source.Type{scope.ConnectorName}},
 		Page:    apiCompliance.Page{No: 1, Size: 1},
 	}
 	compliance, err := h.complianceClient.GetFindings(&httpclient.Context{UserRole: api2.InternalRole}, reqCompliance)
@@ -226,27 +281,27 @@ func calculationConditionStr(operator api.OperatorStruct, totalValue int64) (boo
 
 func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (bool, error) {
 	// AND condition
-	numberOperatorStr := len(operator.ConditionStr.OperatorStr)
-	for i := 0; i < numberOperatorStr; i++ {
-		operatorNew := operator.ConditionStr.OperatorStr[i]
-		if operatorNew.OperatorInfo != nil {
+	numberConditionStr := len(operator.ConditionStr.OperatorStr)
+	for i := 0; i < numberConditionStr; i++ {
+		newOperator := operator.ConditionStr.OperatorStr[i]
+		if newOperator.OperatorInfo != nil {
 
-			stat := compareValue(operatorNew.OperatorInfo.Operator, operatorNew.OperatorInfo.Value, totalValue)
+			stat := compareValue(newOperator.OperatorInfo.Operator, newOperator.OperatorInfo.Value, totalValue)
 			if !stat {
 				return false, nil
 			} else {
-				if i == numberOperatorStr-1 {
+				if i == numberConditionStr-1 {
 					return true, nil
 				}
 				continue
 			}
-		} else if operatorNew.ConditionStr.OperatorStr != nil {
-			for j := 0; j < numberOperatorStr; j++ {
-				stat, _ := calculationConditionStr(operatorNew.ConditionStr.OperatorStr[j], totalValue)
+		} else if newOperator.ConditionStr.OperatorStr != nil {
+			for j := 0; j < numberConditionStr; j++ {
+				stat, _ := calculationConditionStr(newOperator.ConditionStr.OperatorStr[j], totalValue)
 				if !stat {
 					return false, nil
 				} else {
-					if i == numberOperatorStr-1 {
+					if i == numberConditionStr-1 {
 						return true, nil
 					}
 					continue
