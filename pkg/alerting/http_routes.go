@@ -46,7 +46,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Description	returns a rule
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			ruleId		path		string	true	"Rule ID"
+//	@Param			ruleId	path	string	true	"Rule ID"
 //	@Produce		json
 //	@Success		200	{object}	api.ApiRule
 //	@Router			/alerting/api/rule/list [get]
@@ -77,12 +77,17 @@ func (h *HttpHandler) GetRule(ctx echo.Context) error {
 		return err
 	}
 
+	var operator api.OperatorStruct
+	err = json.Unmarshal(rule.Operator, &operator)
+	if err != nil {
+		return err
+	}
+
 	response := api.ApiRule{
 		ID:        rule.ID,
 		EventType: eventType,
 		Scope:     scope,
-		Operator:  rule.Operator,
-		Value:     rule.Value,
+		Operator:  operator,
 		ActionID:  rule.ActionID,
 	}
 
@@ -119,12 +124,17 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 			return err
 		}
 
+		var operator api.OperatorStruct
+		err = json.Unmarshal(rule.Operator, &operator)
+		if err != nil {
+			return err
+		}
+
 		response = append(response, api.ApiRule{
 			ID:        rule.ID,
 			EventType: eventType,
 			Scope:     scope,
-			Operator:  rule.Operator,
-			Value:     rule.Value,
+			Operator:  operator,
 			ActionID:  rule.ActionID,
 		})
 	}
@@ -138,8 +148,8 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 //	@Description	create a rule by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			request		body		api.ApiRule	true	"Request Body"
-//	@Success		200			{object}	string
+//	@Param			request	body		api.ApiRule	true	"Request Body"
+//	@Success		200		{object}	string
 //	@Router			/alerting/api/rule/create [post]
 func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 	var req api.ApiRule
@@ -148,7 +158,7 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 	}
 
 	EmptyFields := api.ApiRule{}
-	if req.ID == EmptyFields.ID || req.Value == EmptyFields.Value || req.Scope == EmptyFields.Scope ||
+	if req.ID == EmptyFields.ID || req.Scope == EmptyFields.Scope ||
 		req.ActionID == EmptyFields.ActionID || req.Operator == EmptyFields.Operator || req.EventType == EmptyFields.EventType {
 		return errors.New("All the fields in struct must be set")
 	}
@@ -163,7 +173,12 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 		return err
 	}
 
-	if err := h.db.CreateRule(req.ID, event, scope, req.Operator, req.Value, req.ActionID); err != nil {
+	operator, err := json.Marshal(req.Operator)
+	if err != nil {
+		return err
+	}
+
+	if err := h.db.CreateRule(req.ID, event, scope, operator, req.ActionID); err != nil {
 		return err
 	}
 
@@ -224,7 +239,12 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 		return err
 	}
 
-	err = h.db.UpdateRule(req.ID, &eventType, &scope, req.Operator, req.Value, req.ActionID)
+	operator, err := json.Marshal(req.Operator)
+	if err != nil {
+		return err
+	}
+
+	err = h.db.UpdateRule(req.ID, &eventType, &scope, &operator, req.ActionID)
 	if err != nil {
 		return err
 	}
@@ -274,7 +294,7 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 //	@Description	returns an action
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			actionId		path		string	true	"Action ID"
+//	@Param			actionId	path	string	true	"Action ID"
 //	@Produce		json
 //	@Success		200	{object}	api.ApiRule
 //	@Router			/alerting/api/rule/list [get]
