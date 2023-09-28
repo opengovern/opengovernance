@@ -3,11 +3,9 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-	"time"
-
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"strings"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -163,8 +161,6 @@ func (w *Worker) Run() error {
 	if err := msg.Ack(false); err != nil {
 		w.logger.Error("Failed acking message", zap.Error(err))
 	}
-
-	time.Sleep(5 * time.Minute)
 
 	err = w.pusher.Push()
 	if err != nil {
