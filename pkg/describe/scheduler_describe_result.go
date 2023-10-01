@@ -191,7 +191,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 
 		i := 0
 		for {
-			_, err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs)
+			_, err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs, nil)
 			if err != nil {
 				s.logger.Error("failed to send delete message to kafka",
 					zap.Uint("jobId", res.JobID),
@@ -259,7 +259,7 @@ func (s *Scheduler) cleanupDeletedConnectionResources(connectionId string) error
 				return err
 			}
 		}
-		_, err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs)
+		_, err = kafka.SyncSend(s.logger, s.kafkaProducer, msgs, nil)
 		if err != nil {
 			s.logger.Error("failed to send delete message to kafka", zap.Error(err))
 			return err
