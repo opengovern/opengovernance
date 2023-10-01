@@ -300,9 +300,9 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		kmsg, _ = json.Marshal(lookupResource)
 		if len(kmsg) >= 32766 {
 			// it's gonna hit error in kafka connect
-			if !es.IsHandledAzureResourceType(resource.Job.ResourceType) {
-				LargeDescribeResourceMessage.WithLabelValues(resource.Job.ResourceType).Inc()
-			}
+			//if !es.IsHandledAzureResourceType(resource.Job.ResourceType) {
+			//	LargeDescribeResourceMessage.WithLabelValues(resource.Job.ResourceType).Inc()
+			//}
 			s.logger.Warn("too large message",
 				zap.String("resource_type", resource.Job.ResourceType),
 				zap.String("json", string(kmsg)),
