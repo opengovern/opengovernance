@@ -117,7 +117,7 @@ func (db Database) GetDescribeConnectionJobByConnectionID(connectionID string) (
 }
 
 func (db Database) QueueDescribeConnectionJob(id uint) error {
-	tx := db.orm.Exec("update describe_connection_jobs set status = ?, retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
+	tx := db.orm.Exec("update describe_connection_jobs set status = ?, queued_at = NOW(), retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -277,7 +277,7 @@ func (db Database) UpdateDescribeConnectionJobToInProgress(id uint) error {
 		Model(&DescribeConnectionJob{}).
 		Where("id = ?", id).
 		Where("status IN ?", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
-		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobInProgress})
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobInProgress, InProgressedAt: time.Now()})
 	if tx.Error != nil {
 		return tx.Error
 	}
