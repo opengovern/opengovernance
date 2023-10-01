@@ -2680,6 +2680,38 @@ func (h *HttpHandler) RunSmartQuery(ctx context.Context, title, query string, re
 		return nil, echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	// tracer :
+	connections, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.InternalRole}, nil)
+	if err != nil {
+		return nil, err
+	}
+	connectionToNameMap := make(map[string]string)
+	for _, connection := range connections {
+		connectionToNameMap[connection.ID.String()] = connection.ConnectionName
+	}
+
+	// Add account name
+	res.Headers = append(res.Headers, "account_name")
+	for colIdx, header := range res.Headers {
+		if strings.ToLower(header) != "kaytu_account_id" {
+			continue
+		}
+		for rowIdx, row := range res.Data {
+			if len(row) <= colIdx {
+				continue
+			}
+			if row[colIdx] == nil {
+				continue
+			}
+			if accountID, ok := row[colIdx].(string); ok {
+				if accountName, ok := connectionToNameMap[accountID]; ok {
+					res.Data[rowIdx] = append(res.Data[rowIdx], accountName)
+				} else {
+					res.Data[rowIdx] = append(res.Data[rowIdx], "null")
+				}
+			}
+		}
+	}
+
 	_, span := tracer.Start(ctx, "new_UpdateQueryHistory", trace.WithSpanKind(trace.SpanKindServer))
 	span.SetName("new_UpdateQueryHistory")
 
