@@ -60,6 +60,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerDescribeJobV1, apiAuth.AdminRole))
 	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
+	v1.PUT("/insight/trigger", httpserver.AuthorizeHandler(h.TriggerInsightJob, apiAuth.InternalRole))
 	v1.PUT("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, apiAuth.InternalRole))
 	v1.GET("/describe/status", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
 	v1.GET("/describe/connection/status", httpserver.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.InternalRole))
@@ -178,6 +179,30 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 			if err != nil {
 				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 			}
+		}
+	}
+	return ctx.JSON(http.StatusOK, "")
+}
+
+func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
+	insightID, err := strconv.ParseUint(ctx.QueryParam("insight_id"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight_id")
+	}
+
+	insights, err := h.Scheduler.complianceClient.ListInsightsMetadata(&httpclient.Context{UserRole: apiAuth.ViewerRole}, nil)
+	if err != nil {
+		return err
+	}
+	for _, ins := range insights {
+		if ins.ID != uint(insightID) {
+			continue
+		}
+
+		id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
+		err := h.Scheduler.runInsightJob(true, ins, id, id, ins.Connector)
+		if err != nil {
+			return err
 		}
 	}
 	return ctx.JSON(http.StatusOK, "")
