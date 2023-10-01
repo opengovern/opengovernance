@@ -962,6 +962,7 @@ github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a/go.mod h1:DAHtR1m6l
 github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535/go.mod h1:oGkLhpf+kjZl6xBf758TQhh5XrAeiJv/7FRz/2spLIg=
+github.com/aws/aws-lambda-go v1.13.3 h1:SuCy7H3NLyp+1Mrfp+m80jcbi9KYWAs9/BXwppwRDzY=
 github.com/aws/aws-lambda-go v1.13.3/go.mod h1:4UKl9IzQMoD+QF79YdCuzCwp8VbmG4VAQwij/eHl5CU=
 github.com/aws/aws-sdk-go v1.15.11/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
 github.com/aws/aws-sdk-go v1.25.37/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
@@ -1935,6 +1936,8 @@ github.com/golang-jwt/jwt/v4 v4.0.0/go.mod h1:/xlHOz8bRuivTWchD4jCa+NbatV+wEUSzw
 github.com/golang-jwt/jwt/v4 v4.2.0/go.mod h1:/xlHOz8bRuivTWchD4jCa+NbatV+wEUSzwAxVc6locg=
 github.com/golang-jwt/jwt/v4 v4.5.0 h1:7cYmW1XlMY7h7ii7UhUyChSgS5wUJEnm9uZVTGqOWzg=
 github.com/golang-jwt/jwt/v4 v4.5.0/go.mod h1:m21LjoU+eqJr34lmDMbreY2eSTRJ1cv77w39/MY0Ch0=
+github.com/golang-jwt/jwt/v5 v5.0.0 h1:1n1XNM9hk7O9mnQoNBGolZvzebBQ7p93ULHRc28XJUE=
+github.com/golang-jwt/jwt/v5 v5.0.0/go.mod h1:pqrtFR0X4osieyHYxtmOUWsAWrfe1Q5UVIyoH402zdk=
 github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe/go.mod h1:8vg3r2VgvsThLBIFL93Qb5yWzgyZWhEmBwUJWevAkK0=
 github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 h1:au07oEsX2xN0ktxqI+Sida1w446QrXBRJ0nee3SNZlA=
 github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9/go.mod h1:8vg3r2VgvsThLBIFL93Qb5yWzgyZWhEmBwUJWevAkK0=
@@ -2336,8 +2339,12 @@ github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/kaytu-io/kaytu-aws-describer v0.7.0 h1:+n/mqn4lGaUFVDf+wIECQcBbDnHspNjVUx2GUgrTUS0=
 github.com/kaytu-io/kaytu-aws-describer v0.7.0/go.mod h1:wVeyolbUEfk1T9bdeOdSloFqQNRtm7hkAPTuI6DjhZw=
+github.com/kaytu-io/kaytu-aws-describer v0.7.1 h1:/ExKH0QZ71XXkg2f+N7rE2o4P5PelVhIADAdR/CAB70=
+github.com/kaytu-io/kaytu-aws-describer v0.7.1/go.mod h1:wVeyolbUEfk1T9bdeOdSloFqQNRtm7hkAPTuI6DjhZw=
 github.com/kaytu-io/kaytu-azure-describer v0.6.0 h1:55iOBtvla51wM23KFTBIeo58LOxJaQhcV0W0BhBPkJI=
 github.com/kaytu-io/kaytu-azure-describer v0.6.0/go.mod h1:Z3Cp7IkIm9FILnCSVO3PWQBw7FuEFZHR0WGh3rbQnK8=
+github.com/kaytu-io/kaytu-azure-describer v0.6.1 h1:X4nfjI3H5HPLpcpJTXxWgly2e2jns9uaUZVE7CnTlys=
+github.com/kaytu-io/kaytu-azure-describer v0.6.1/go.mod h1:Z3Cp7IkIm9FILnCSVO3PWQBw7FuEFZHR0WGh3rbQnK8=
 github.com/kaytu-io/kaytu-util v0.0.0-20231001150701-52ad31bb8e80 h1:C2B4f1is0k1DnthkVmQld3V/fgQ8TPgcNZtkBLOARus=
 github.com/kaytu-io/kaytu-util v0.0.0-20231001150701-52ad31bb8e80/go.mod h1:9duNFl4GA1SPk4+Wmfkrk585DyFPPec4NBYyrmBA6GU=
 github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9 h1:cuwf0h1VmlT/C1hL3FewDUFaeqpegGUvKGezO50nel4=
