@@ -2,7 +2,6 @@ package summarizer
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"strconv"
 	"time"
 
@@ -158,7 +157,7 @@ func (j SummarizeJob) DoMustSummarizer(client kaytu.Client, db inventory.Databas
 			if end > len(msgs) {
 				end = len(msgs)
 			}
-			err = kafka.DoSend(producer, topic, -1, msgs[i:end], logger, describe.LargeDescribeResourceMessage)
+			err = kafka.DoSend(producer, topic, -1, msgs[i:end], logger)
 			if err != nil {
 				fail(fmt.Errorf("Failed to send to kafka: %v ", err))
 			}

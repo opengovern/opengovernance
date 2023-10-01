@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -285,7 +284,7 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 
 	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
 		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
-		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger, describe.LargeDescribeResourceMessage)
+		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
 		if err != nil {
 			h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()))
 			continue
@@ -350,7 +349,7 @@ func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
 
 	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
 		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
-		err := kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger, describe.LargeDescribeResourceMessage)
+		err := kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
 		if err != nil {
 			h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()))
 			continue
@@ -576,7 +575,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) (map[str
 
 	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
 		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
-		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger, describe.LargeDescribeResourceMessage)
+		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
 		if err != nil {
 			h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()))
 			continue

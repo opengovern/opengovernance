@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"strconv"
 	"strings"
 	"time"
@@ -246,7 +245,7 @@ func (j Job) Do(client kaytu.Client, steampipeOption *steampipe.Option, onboardC
 				}
 
 				logger.Info("sending docs to kafka", zap.Any("producer", producer), zap.String("topic", topic), zap.Int("count", len(resources)))
-				if err := kafka.DoSend(producer, topic, -1, resources, logger, describe.LargeDescribeResourceMessage); err != nil {
+				if err := kafka.DoSend(producer, topic, -1, resources, logger); err != nil {
 					fail(fmt.Errorf("send to kafka: %w", err))
 				}
 			} else {
