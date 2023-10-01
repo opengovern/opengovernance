@@ -60,6 +60,18 @@ func (db Database) CountQueuedDescribeConnectionJobs() (int64, error) {
 	return count, nil
 }
 
+func (db Database) CountDescribeConnectionJobsRunOverLastHour() (int64, error) {
+	var count int64
+	tx := db.orm.Model(&DescribeConnectionJob{}).Where("status != ? AND updated_at > now() - interval '1 hour'", api.DescribeResourceJobCreated).Count(&count)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, tx.Error
+	}
+	return count, nil
+}
+
 type ResourceTypeCount struct {
 	ResourceType string
 	Count        int

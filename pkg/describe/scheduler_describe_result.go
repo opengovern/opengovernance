@@ -165,6 +165,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				OldResourcesDeletedCount.WithLabelValues(string(res.DescribeJob.SourceType)).Inc()
 				resource := es.Resource{
 					ID:           esResourceID,
+					SourceID:     res.DescribeJob.SourceID,
 					ResourceType: res.DescribeJob.ResourceType,
 					SourceType:   res.DescribeJob.SourceType,
 				}
@@ -174,6 +175,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 
 				lookupResource := es.LookupResource{
 					ResourceID:   esResourceID,
+					SourceID:     res.DescribeJob.SourceID,
 					ResourceType: res.DescribeJob.ResourceType,
 					SourceType:   res.DescribeJob.SourceType,
 				}
