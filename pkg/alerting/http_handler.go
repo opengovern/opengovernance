@@ -201,11 +201,11 @@ func triggerInsight(h HttpHandler, operator api.OperatorStruct, eventType api.Ev
 	oneDayAgo := time.Now().Add(-diff)
 	timeNow := time.Now()
 	insightID := strconv.Itoa(int(*eventType.InsightId))
-	connectionIds, err := getConnectionIdFilter(h, []string{scope.ConnectionId}, []string{scope.ConnectionGroup})
-	if err != nil {
-		return false, err
-	}
-	insight, err := h.complianceClient.GetInsight(&httpclient.Context{UserRole: api2.InternalRole}, insightID, connectionIds, &oneDayAgo, &timeNow)
+	//connectionIds, err := getConnectionIdFilter(h, []string{scope.ConnectionId}, []string{scope.ConnectionGroup})
+	//if err != nil {
+	//	return false, err
+	//}
+	insight, err := h.complianceClient.GetInsight(&httpclient.Context{UserRole: api2.InternalRole}, insightID, []string{scope.ConnectionId}, &oneDayAgo, &timeNow)
 	if err != nil {
 		return false, fmt.Errorf("error in getting GetInsight , error  equal to : %v", err)
 	}
@@ -224,12 +224,12 @@ func triggerInsight(h HttpHandler, operator api.OperatorStruct, eventType api.Ev
 }
 
 func triggerCompliance(h HttpHandler, operator api.OperatorStruct, scope api.Scope, eventType api.EventType) (bool, error) {
-	connectionIds, err := getConnectionIdFilter(h, []string{scope.ConnectionId}, []string{scope.ConnectionGroup})
-	if err != nil {
-		return false, err
-	}
+	//connectionIds, err := getConnectionIdFilter(h, []string{scope.ConnectionId}, []string{scope.ConnectionGroup})
+	//if err != nil {
+	//	return false, err
+	//}
 	reqCompliance := apiCompliance.GetFindingsRequest{
-		Filters: apiCompliance.FindingFilters{ConnectionID: connectionIds, BenchmarkID: []string{*eventType.BenchmarkId}, Connector: []source.Type{scope.ConnectorName}},
+		Filters: apiCompliance.FindingFilters{ConnectionID: []string{scope.ConnectionId}, BenchmarkID: []string{*eventType.BenchmarkId}, Connector: []source.Type{scope.ConnectorName}},
 		Page:    apiCompliance.Page{No: 1, Size: 1},
 	}
 	compliance, err := h.complianceClient.GetFindings(&httpclient.Context{UserRole: api2.InternalRole}, reqCompliance)

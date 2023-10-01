@@ -7,12 +7,17 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	api3 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -410,6 +415,87 @@ func TestCalculationOperationsInCombination(t *testing.T) {
 	}
 }
 
+var (
+	server  *httptest.Server
+	com     client.ComplianceServiceClient
+	onboard onboardClient.OnboardServiceClient
+)
+
+func TestMain(m *testing.M) {
+	//mocking server
+	server = httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		switch strings.TrimSpace(request.URL.Path) {
+		case "/GetInsight":
+			mockGetInsightEndpoint(writer, request)
+		case "/GetFindings":
+			mockGetFindingsEndpoint(writer, request)
+		case "/GetConnectionGroup":
+			mockGetConnectionGroupEndpoint(writer, request)
+		default:
+			http.NotFoundHandler().ServeHTTP(writer, request)
+		}
+	}))
+
+	//	mocking compliance
+	com = client.NewComplianceClient(server.URL)
+	// mocking onboard
+	onboard = onboardClient.NewOnboardServiceClient(server.URL, nil)
+
+	m.Run()
+}
+
+func mockGetConnectionGroupEndpoint(w http.ResponseWriter, r *http.Request) {
+	connectionGroupName := r.URL.Query().Get("connectionGroupName")
+	sc := http.StatusOK
+	m := make(map[string]interface{})
+
+	if len(connectionGroupName) == 0 {
+		sc = http.StatusBadRequest
+	} else {
+		m["connectionGroup"] = api3.ConnectionGroup{ConnectionIds: []string{"mock"}}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(sc)
+	json.NewEncoder(w).Encode(m)
+}
+
+func mockGetFindingsEndpoint(w http.ResponseWriter, r *http.Request) {
+	benchmarkId := r.URL.Query().Get("benchmarkId")
+	connectionIds, ok := r.URL.Query()["connectionIds"]
+
+	sc := http.StatusOK
+	m := make(map[string]interface{})
+
+	if !ok || len(benchmarkId) == 0 || len(connectionIds[0]) == 0 {
+		sc = http.StatusBadRequest
+	} else {
+		m["TotalCount"] = "mock"
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(sc)
+	json.NewEncoder(w).Encode(m)
+}
+
+func mockGetInsightEndpoint(w http.ResponseWriter, r *http.Request) {
+	insightId := r.URL.Query().Get("insightId")
+	connectionIds, ok := r.URL.Query()["connectionIds"]
+
+	sc := http.StatusOK
+	m := make(map[string]interface{})
+
+	if !ok || len(insightId) == 0 || len(connectionIds[0]) == 0 {
+		sc = http.StatusBadRequest
+	} else {
+		m["totalResultValue"] = "mock"
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(sc)
+	json.NewEncoder(w).Encode(m)
+}
+
 func TestTrigger(t *testing.T) {
 	teardownSuite, h := setupSuite(t)
 	defer teardownSuite(t)
@@ -418,7 +504,6 @@ func TestTrigger(t *testing.T) {
 	defer actionServer()
 
 	//create Rule:
-
 	operatorInfo := api.OperatorInformation{Operator: "<", Value: 100}
 	operator := api.OperatorStruct{
 		OperatorInfo: &operatorInfo,
@@ -426,11 +511,13 @@ func TestTrigger(t *testing.T) {
 	}
 
 	var id uint = 123
-	var insightId int64 = 123123
+	//var insightId int64 = 123123
+	var benchmarkId string = "testBenchmarkId"
+
 	req := api.ApiRule{
 		ID:        id,
-		EventType: api.EventType{InsightId: &insightId},
-		Scope:     api.Scope{ConnectionId: "testConnectionId"},
+		EventType: api.EventType{BenchmarkId: &benchmarkId},
+		Scope:     api.Scope{ConnectionGroup: "testConnectionId"},
 		Operator:  operator,
 		ActionID:  1231,
 	}
@@ -438,12 +525,11 @@ func TestTrigger(t *testing.T) {
 	require.NoError(t, err, "error creating rule")
 
 	// create Action:
-
 	var idAction uint = 1231
 	action := api.ApiAction{
 		ID:      idAction,
 		Method:  "GET",
-		Url:     "https://kaytu.dev/company",
+		Url:     "localhost:8082/call",
 		Headers: map[string]string{"insightId": "123123"},
 		Body:    "testBody",
 	}
@@ -451,6 +537,8 @@ func TestTrigger(t *testing.T) {
 	require.NoError(t, err)
 
 	// trigger :
+	h.complianceClient = com
+	h.onboardClient = onboard
 	Trigger(*h)
 	t.Errorf("isCall equal to : %v", isCall)
 }
