@@ -49,10 +49,12 @@ type ComplianceReportJob struct {
 }
 
 type DescribeConnectionJob struct {
-	ID        uint `gorm:"primarykey"`
-	CreatedAt time.Time
-	UpdatedAt time.Time      `gorm:"index:,sort:desc"`
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	ID             uint `gorm:"primarykey"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time      `gorm:"index:,sort:desc"`
+	DeletedAt      gorm.DeletedAt `gorm:"index"`
+	QueuedAt       time.Time
+	InProgressedAt time.Time
 
 	ConnectionID string `gorm:"index:idx_source_id_full_discovery;index"`
 	Connector    source.Type
