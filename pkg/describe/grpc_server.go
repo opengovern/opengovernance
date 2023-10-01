@@ -131,8 +131,9 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 		var tags []es.Tag
 		for k, v := range resource.Tags {
 			tags = append(tags, es.Tag{
-				Key:   k,
-				Value: v,
+				// tags should be case-insensitive
+				Key:   strings.ToLower(k),
+				Value: strings.ToLower(v),
 			})
 		}
 
@@ -246,8 +247,9 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		var tags []es.Tag
 		for k, v := range resource.Tags {
 			tags = append(tags, es.Tag{
-				Key:   k,
-				Value: v,
+				// tags should be case-insensitive
+				Key:   strings.ToLower(k),
+				Value: strings.ToLower(v),
 			})
 		}
 
