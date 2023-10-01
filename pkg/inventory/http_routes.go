@@ -2689,24 +2689,33 @@ func (h *HttpHandler) RunSmartQuery(ctx context.Context, title, query string, re
 		connectionToNameMap[connection.ID.String()] = connection.ConnectionName
 	}
 
-	// Add account name
-	res.Headers = append(res.Headers, "account_name")
-	for colIdx, header := range res.Headers {
-		if strings.ToLower(header) != "kaytu_account_id" {
-			continue
+	accountIDExists := false
+	for _, header := range res.Headers {
+		if header == "kaytu_account_id" {
+			accountIDExists = true
 		}
-		for rowIdx, row := range res.Data {
-			if len(row) <= colIdx {
+	}
+
+	if accountIDExists {
+		// Add account name
+		res.Headers = append(res.Headers, "account_name")
+		for colIdx, header := range res.Headers {
+			if strings.ToLower(header) != "kaytu_account_id" {
 				continue
 			}
-			if row[colIdx] == nil {
-				continue
-			}
-			if accountID, ok := row[colIdx].(string); ok {
-				if accountName, ok := connectionToNameMap[accountID]; ok {
-					res.Data[rowIdx] = append(res.Data[rowIdx], accountName)
-				} else {
-					res.Data[rowIdx] = append(res.Data[rowIdx], "null")
+			for rowIdx, row := range res.Data {
+				if len(row) <= colIdx {
+					continue
+				}
+				if row[colIdx] == nil {
+					continue
+				}
+				if accountID, ok := row[colIdx].(string); ok {
+					if accountName, ok := connectionToNameMap[accountID]; ok {
+						res.Data[rowIdx] = append(res.Data[rowIdx], accountName)
+					} else {
+						res.Data[rowIdx] = append(res.Data[rowIdx], "null")
+					}
 				}
 			}
 		}
