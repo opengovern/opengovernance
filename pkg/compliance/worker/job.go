@@ -275,7 +275,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	for _, finding := range findings {
 		docs = append(docs, finding)
 	}
-	return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger)
+	return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger, nil)
 }
 
 func (j *Job) FilterFindings(esClient kaytu.Client, policyID string, findings []types.Finding) ([]types.Finding, error) {

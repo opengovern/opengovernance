@@ -284,7 +284,7 @@ func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
 
 	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
 		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
-		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
+		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger, nil)
 		if err != nil {
 			h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()))
 			continue
@@ -349,7 +349,7 @@ func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
 
 	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
 		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
-		err := kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
+		err := kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger, nil)
 		if err != nil {
 			h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()))
 			continue
@@ -575,7 +575,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) (map[str
 
 	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
 		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
-		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger)
+		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger, nil)
 		if err != nil {
 			h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()))
 			continue

@@ -320,7 +320,7 @@ func (j *Job) DoAssetMetric(
 	for _, item := range regionResultMap {
 		msgs = append(msgs, item)
 	}
-	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger); err != nil {
+	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger, nil); err != nil {
 		return err
 	}
 
@@ -456,7 +456,7 @@ func (j *Job) DoSpendMetric(
 	for _, item := range providerResultMap {
 		msgs = append(msgs, item)
 	}
-	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger); err != nil {
+	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger, nil); err != nil {
 		return err
 	}
 
