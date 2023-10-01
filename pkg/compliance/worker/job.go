@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	"os/exec"
 	"time"
 
@@ -275,7 +276,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 	for _, finding := range findings {
 		docs = append(docs, finding)
 	}
-	return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger)
+	return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger, describe.LargeDescribeResourceMessage)
 }
 
 func (j *Job) FilterFindings(esClient kaytu.Client, policyID string, findings []types.Finding) ([]types.Finding, error) {

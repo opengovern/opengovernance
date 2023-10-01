@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe"
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	"reflect"
@@ -320,7 +321,7 @@ func (j *Job) DoAssetMetric(
 	for _, item := range regionResultMap {
 		msgs = append(msgs, item)
 	}
-	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger); err != nil {
+	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger, describe.LargeDescribeResourceMessage); err != nil {
 		return err
 	}
 
@@ -456,7 +457,7 @@ func (j *Job) DoSpendMetric(
 	for _, item := range providerResultMap {
 		msgs = append(msgs, item)
 	}
-	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger); err != nil {
+	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger, describe.LargeDescribeResourceMessage); err != nil {
 		return err
 	}
 
