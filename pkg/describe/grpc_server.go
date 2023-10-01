@@ -186,9 +186,9 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 		kmsg, _ = json.Marshal(lookupResource)
 		if len(kmsg) >= 32766 {
 			// it's gonna hit error in kafka connect
-			if !es.IsHandledAWSResourceType(resource.Job.ResourceType) {
-				LargeDescribeResourceMessage.WithLabelValues(resource.Job.ResourceType).Inc()
-			}
+			//if !es.IsHandledAWSResourceType(resource.Job.ResourceType) {
+			//	LargeDescribeResourceMessage.WithLabelValues(resource.Job.ResourceType).Inc()
+			//}
 			s.logger.Warn("too large message",
 				zap.String("resource_type", resource.Job.ResourceType),
 				zap.String("json", string(kmsg)),
@@ -210,7 +210,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 
 	i := 0
 	for {
-		if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger); err != nil {
+		if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger, LargeDescribeResourceMessage); err != nil {
 			if i > 10 {
 				StreamFailureCount.WithLabelValues("aws").Inc()
 				s.logger.Warn("send to kafka",
