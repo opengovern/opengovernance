@@ -319,7 +319,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 
 	i := 0
 	for {
-		if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger); err != nil {
+		if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger, LargeDescribeResourceMessage); err != nil {
 			if i > 10 {
 				s.logger.Warn("send to kafka",
 					zap.String("connector:", "azure"),
