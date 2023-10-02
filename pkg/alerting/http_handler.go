@@ -128,11 +128,11 @@ func Trigger(h HttpHandler) {
 }
 
 func getConnectionIdFilter(h HttpHandler, connectionIds []string, connectionGroup []string) ([]string, error) {
-	if len(connectionIds) == 0 && len(connectionGroup) == 0 {
+	if len(connectionIds[0]) == 0 && len(connectionGroup[0]) == 0 {
 		return nil, nil
 	}
 
-	if len(connectionIds) > 0 && len(connectionGroup) > 0 {
+	if len(connectionIds[0]) > 0 && len(connectionGroup[0]) > 0 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
 	}
 
@@ -169,7 +169,6 @@ func sendAlert(h HttpHandler, rule Rule) error {
 	if err != nil {
 		return fmt.Errorf("error getting action , error equal to : %v", err)
 	}
-
 	req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer([]byte(action.Body)))
 	if err != nil {
 		return fmt.Errorf("error sending the request , error equal to : %v", err)
@@ -205,7 +204,8 @@ func triggerInsight(h HttpHandler, operator api.OperatorStruct, eventType api.Ev
 	if err != nil {
 		return false, err
 	}
-	insight, err := h.complianceClient.GetInsight(&httpclient.Context{UserRole: api2.InternalRole}, insightID, connectionIds, &oneDayAgo, &timeNow)
+
+	insight, _ := h.complianceClient.GetInsight(&httpclient.Context{UserRole: api2.InternalRole}, insightID, connectionIds, &oneDayAgo, &timeNow)
 	if err != nil {
 		return false, fmt.Errorf("error in getting GetInsight , error  equal to : %v", err)
 	}
@@ -251,6 +251,7 @@ func calculationOperations(operator api.OperatorStruct, totalValue int64) (bool,
 	if oneCondition := operator.OperatorInfo; oneCondition != nil {
 		stat := compareValue(oneCondition.Operator, oneCondition.Value, totalValue)
 		return stat, nil
+
 	} else if operator.ConditionStr != nil {
 		stat, err := calculationConditionStr(operator, totalValue)
 		if err != nil {
@@ -263,12 +264,14 @@ func calculationOperations(operator api.OperatorStruct, totalValue int64) (bool,
 
 func calculationConditionStr(operator api.OperatorStruct, totalValue int64) (bool, error) {
 	conditionType := operator.ConditionStr.ConditionType
+
 	if conditionType == "AND" {
 		stat, err := calculationConditionStrAND(operator, totalValue)
 		if err != nil {
 			return false, err
 		}
 		return stat, nil
+
 	} else if conditionType == "OR" {
 		stat, err := calculationConditionStrOr(operator, totalValue)
 		if err != nil {
@@ -276,51 +279,84 @@ func calculationConditionStr(operator api.OperatorStruct, totalValue int64) (boo
 		}
 		return stat, nil
 	}
+
 	return false, fmt.Errorf("please enter right condition")
 }
 
 func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (bool, error) {
 	// AND condition
-	numberConditionStr := len(operator.ConditionStr.OperatorStr)
-	for i := 0; i < numberConditionStr; i++ {
+	numberOperatorStr := len(operator.ConditionStr.OperatorStr)
+	for i := 0; i < numberOperatorStr; i++ {
 		newOperator := operator.ConditionStr.OperatorStr[i]
-		if newOperator.OperatorInfo != nil {
 
+		if newOperator.OperatorInfo != nil {
 			stat := compareValue(newOperator.OperatorInfo.Operator, newOperator.OperatorInfo.Value, totalValue)
 			if !stat {
 				return false, nil
 			} else {
-				if i == numberConditionStr-1 {
+				if i == numberOperatorStr-1 {
 					return true, nil
 				}
 				continue
 			}
-		} else if newOperator.ConditionStr.OperatorStr != nil {
-			for j := 0; j < numberConditionStr; j++ {
-				stat, _ := calculationConditionStr(newOperator.ConditionStr.OperatorStr[j], totalValue)
-				if !stat {
-					return false, nil
-				} else {
-					if i == numberConditionStr-1 {
-						return true, nil
-					}
-					continue
+
+		} else if newOperator.ConditionStr.ConditionType != "" {
+			newOperator2 := newOperator.ConditionStr
+			conditionType2 := newOperator2.ConditionType
+			numberOperatorStr2 := len(newOperator2.OperatorStr)
+
+			for j := 0; j < numberOperatorStr2; j++ {
+				stat, err := calculationOperations(newOperator2.OperatorStr[j], totalValue)
+				if err != nil {
+					return false, fmt.Errorf("error in calculationOperations : %v ", err)
 				}
+
+				if conditionType2 == "AND" {
+					if !stat {
+						return false, nil
+					} else {
+						if j == numberOperatorStr2-1 {
+							if i == numberOperatorStr-1 {
+								return true, nil
+							}
+							break
+						}
+						continue
+					}
+				} else if conditionType2 == "OR" {
+					if stat {
+						return true, nil
+					} else {
+						if j == numberOperatorStr2-1 {
+							if i == numberOperatorStr-1 {
+								return false, nil
+							}
+							break
+						}
+						continue
+					}
+				} else {
+					return false, fmt.Errorf("error: condition type is invalid")
+				}
+
 			}
+			continue
 		} else {
 			return false, fmt.Errorf("error condition is impty")
 		}
 	}
-	return false, nil
+	return false, fmt.Errorf("error")
 }
 
 func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (bool, error) {
 	// OR condition
 	numberOperatorStr := len(operator.ConditionStr.OperatorStr)
+
 	for i := 0; i < numberOperatorStr; i++ {
-		operator = operator.ConditionStr.OperatorStr[i]
-		if operator.OperatorInfo != nil {
-			stat := compareValue(operator.OperatorInfo.Operator, operator.OperatorInfo.Value, totalValue)
+		newOperator := operator.ConditionStr.OperatorStr[i]
+
+		if newOperator.OperatorInfo != nil {
+			stat := compareValue(newOperator.OperatorInfo.Operator, newOperator.OperatorInfo.Value, totalValue)
 			if stat {
 				return true, nil
 			} else {
@@ -329,21 +365,52 @@ func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (b
 				}
 				continue
 			}
-		} else if operator.ConditionStr.OperatorStr != nil {
-			for j := 0; j < numberOperatorStr; j++ {
-				stat, _ := calculationConditionStr(operator.ConditionStr.OperatorStr[j], totalValue)
-				if stat {
-					return true, nil
-				} else {
-					if i == numberOperatorStr-1 {
-						return false, nil
-					}
-					continue
+
+		} else if newOperator.ConditionStr.OperatorStr != nil {
+			newOperator2 := newOperator.ConditionStr
+			conditionType2 := newOperator2.ConditionType
+			numberConditionStr2 := len(newOperator2.OperatorStr)
+
+			for j := 0; j < numberConditionStr2; j++ {
+				stat, err := calculationOperations(newOperator2.OperatorStr[j], totalValue)
+				if err != nil {
+					return false, fmt.Errorf("error in calculationOperations : %v ", err)
 				}
+
+				if conditionType2 == "AND" {
+					if !stat {
+						return false, nil
+					} else {
+						if j == numberConditionStr2-1 {
+							if i == numberOperatorStr-1 {
+								return true, nil
+							}
+							break
+						}
+						continue
+					}
+				} else if conditionType2 == "OR" {
+					if stat {
+						return true, nil
+					} else {
+						if j == numberConditionStr2-1 {
+							if i == numberOperatorStr-1 {
+								return false, nil
+							}
+							break
+						}
+						continue
+					}
+				} else {
+					return false, fmt.Errorf("error: condition type is invalid")
+				}
+
 			}
+			continue
 		} else {
-			return false, fmt.Errorf("error condition is impty ")
+			return false, fmt.Errorf("error : condition is invalid ")
 		}
+
 	}
 	return false, fmt.Errorf("error")
 }

@@ -7,14 +7,27 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	compliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
+	api3 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
+)
+
+var (
+	isCallAction bool
+
+	server  *httptest.Server
+	com     client.ComplianceServiceClient
+	onboard onboardClient.OnboardServiceClient
 )
 
 func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
@@ -35,8 +48,37 @@ func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
 	go e.Start("localhost:8081")
 	time.Sleep(500 * time.Millisecond)
 
+	mux := http.NewServeMux()
+	s := http.Server{Addr: "localhost:8082", Handler: mux}
+	mux.HandleFunc("/call", func(writer http.ResponseWriter, request *http.Request) {
+		isCallAction = true
+	})
+	go s.ListenAndServe()
+
+	//mocking server
+	server = httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		switch request.URL.Path {
+		case "/api/v1/insight/123123":
+			mockGetInsightEndpoint(writer, request)
+		case "/api/v1/findings":
+			mockGetFindingsEndpoint(writer, request)
+		case "/api/v1/connection-groups/testConnectionId":
+			mockGetConnectionGroupEndpoint(writer, request)
+		default:
+			http.NotFoundHandler().ServeHTTP(writer, request)
+		}
+	}))
+
+	com = client.NewComplianceClient(server.URL)
+	onboard = onboardClient.NewOnboardServiceClient(server.URL, nil)
+
 	// Return a function to teardown the test
 	return func(tb testing.TB) {
+		err = s.Shutdown(context.Background())
+		if err != nil {
+			tb.Errorf("error in Shutdown the action server , err : %v ", err)
+		}
+
 		err = tp.Shutdown(context.Background())
 		if err != nil {
 			tb.Errorf("error stopping the server ,err : %v ", err)
@@ -45,24 +87,9 @@ func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
 		if err != nil {
 			tb.Errorf("error stopping the server ,err : %v ", err)
 		}
+
+		server.Close()
 	}, handler
-}
-
-func setupActionRequests(tb testing.TB) (func(), bool) {
-	var isCall bool
-	mux := http.NewServeMux()
-	s := http.Server{Addr: "localhost:8082", Handler: mux}
-	mux.HandleFunc("/call", func(writer http.ResponseWriter, request *http.Request) {
-		isCall = true
-	})
-	go s.ListenAndServe()
-
-	return func() {
-		err := s.Shutdown(context.Background())
-		if err != nil {
-			tb.Errorf("error in Shutdown the server , err : %v ", err)
-		}
-	}, isCall
 }
 
 func doSimpleJSONRequest(method string, path string, request, response interface{}) (*http.Response, error) {
@@ -248,6 +275,7 @@ func TestDeleteRule(t *testing.T) {
 }
 
 // -------------------------------------------------- action test --------------------------------------------------
+
 func addAction(t *testing.T) uint {
 	req := api.ApiAction{
 		ID:      12,
@@ -383,12 +411,12 @@ func TestCalculationOperationsWithAnd(t *testing.T) {
 
 func TestCalculationOperationsInCombination(t *testing.T) {
 	var conditionStruct api.ConditionStruct
-	conditionStruct.ConditionType = "AND"
+	conditionStruct.ConditionType = "OR"
 
 	var newCondition api.ConditionStruct
-	newCondition.ConditionType = "OR"
-	number1 := api.OperatorInformation{Operator: "<", Value: 250}
-	number2 := api.OperatorInformation{Operator: ">", Value: 220}
+	newCondition.ConditionType = "AND"
+	number1 := api.OperatorInformation{Operator: ">", Value: 700}
+	number2 := api.OperatorInformation{Operator: ">", Value: 750}
 	newCondition.OperatorStr = append(newCondition.OperatorStr, api.OperatorStruct{
 		OperatorInfo: &number2,
 	})
@@ -396,17 +424,54 @@ func TestCalculationOperationsInCombination(t *testing.T) {
 		OperatorInfo: &number1,
 	})
 
-	OperatorInfo := api.OperatorInformation{Operator: "<", Value: 300}
+	OperatorInfo := api.OperatorInformation{Operator: "<", Value: 600}
 	conditionStruct.OperatorStr = append(conditionStruct.OperatorStr, api.OperatorStruct{
-		OperatorInfo: &OperatorInfo, ConditionStr: &newCondition,
+		OperatorInfo: &OperatorInfo,
+	})
+	conditionStruct.OperatorStr = append(conditionStruct.OperatorStr, api.OperatorStruct{
+		ConditionStr: &newCondition,
 	})
 
-	stat, err := calculationOperations(api.OperatorStruct{OperatorInfo: nil, ConditionStr: &conditionStruct}, 400)
+	stat, err := calculationOperations(api.OperatorStruct{OperatorInfo: nil, ConditionStr: &conditionStruct}, 1000)
 	if err != nil {
 		t.Errorf("Error calculationOperations: %v ", err)
 	}
 	if !stat {
-		t.Errorf("Error in calculate the calculationOperations")
+		t.Errorf("error : state is false")
+	}
+}
+
+func mockGetConnectionGroupEndpoint(w http.ResponseWriter, r *http.Request) {
+	response := api3.ConnectionGroup{
+		ConnectionIds: []string{"connectionGroupTest"},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func mockGetFindingsEndpoint(w http.ResponseWriter, r *http.Request) {
+	response := compliance.GetFindingsResponse{
+		Findings:   nil,
+		TotalCount: 2000,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		panic(fmt.Errorf("error in encode the response of the Finding , error equal to : %v ", err))
+	}
+}
+
+func mockGetInsightEndpoint(w http.ResponseWriter, r *http.Request) {
+	var TotalResultValue int64 = 2000
+	insight := compliance.Insight{
+		TotalResultValue: &TotalResultValue,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(insight)
+	if err != nil {
+		panic(fmt.Errorf("error in encode the response of the insight , error equal to : %v ", err))
 	}
 }
 
@@ -414,22 +479,19 @@ func TestTrigger(t *testing.T) {
 	teardownSuite, h := setupSuite(t)
 	defer teardownSuite(t)
 
-	actionServer, isCall := setupActionRequests(t)
-	defer actionServer()
-
-	//create Rule:
-
-	operatorInfo := api.OperatorInformation{Operator: "<", Value: 100}
+	operatorInfo := api.OperatorInformation{Operator: ">", Value: 100}
 	operator := api.OperatorStruct{
 		OperatorInfo: &operatorInfo,
 		ConditionStr: nil,
 	}
 
 	var id uint = 123
-	var insightId int64 = 123123
+	//var insightId int64 = 123123
+	var benchmarkId string = "testBenchmarkId"
+
 	req := api.ApiRule{
 		ID:        id,
-		EventType: api.EventType{InsightId: &insightId},
+		EventType: api.EventType{BenchmarkId: &benchmarkId},
 		Scope:     api.Scope{ConnectionId: "testConnectionId"},
 		Operator:  operator,
 		ActionID:  1231,
@@ -438,12 +500,11 @@ func TestTrigger(t *testing.T) {
 	require.NoError(t, err, "error creating rule")
 
 	// create Action:
-
 	var idAction uint = 1231
 	action := api.ApiAction{
 		ID:      idAction,
 		Method:  "GET",
-		Url:     "https://kaytu.dev/company",
+		Url:     "http://localhost:8082/call",
 		Headers: map[string]string{"insightId": "123123"},
 		Body:    "testBody",
 	}
@@ -451,6 +512,11 @@ func TestTrigger(t *testing.T) {
 	require.NoError(t, err)
 
 	// trigger :
+	h.complianceClient = com
+	h.onboardClient = onboard
 	Trigger(*h)
-	t.Errorf("isCall equal to : %v", isCall)
+
+	if !isCallAction {
+		t.Errorf("isCall equal to : %v", isCallAction)
+	}
 }
