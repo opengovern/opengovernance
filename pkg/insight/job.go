@@ -129,6 +129,8 @@ func (j Job) Do(esConfig config.ElasticSearch, onboardClient client.OnboardServi
 		}
 		connectionsMap[src.ID.String()] = src.ConnectionID
 	}
+
+	steampipeSourceId := "all"
 	if j.IsStack == true {
 		esConfig, err = steampipe.GetStackElasticConfig(currentWorkspaceID, j.SourceID)
 		if err != nil {
@@ -136,9 +138,10 @@ func (j Job) Do(esConfig config.ElasticSearch, onboardClient client.OnboardServi
 			fail(fmt.Errorf("getting stack elastic config: %w", err))
 			return
 		}
+		steampipeSourceId = j.SourceID
 	}
 
-	err = steampipe.PopulateSteampipeConfig(esConfig, j.SourceType, j.SourceID, nil)
+	err = steampipe.PopulateSteampipeConfig(esConfig, j.SourceType, steampipeSourceId, nil)
 	if err != nil {
 		logger.Error("failed to populate steampipe config", zap.Error(err))
 		fail(fmt.Errorf("populating steampipe config: %w", err))

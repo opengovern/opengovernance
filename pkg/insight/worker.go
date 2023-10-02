@@ -14,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"
 )
@@ -27,13 +26,14 @@ type Worker struct {
 	jobQueue       queue.Interface
 	jobResultQueue queue.Interface
 
+	logger *zap.Logger
+
 	kfkProducer   *confluent_kafka.Producer
-	s3Bucket      string
-	logger        *zap.Logger
-	es            kaytu.Client
-	pusher        *push.Pusher
 	onboardClient client.OnboardServiceClient
-	uploader      *s3manager.Uploader
+	pusher        *push.Pusher
+
+	s3Bucket string
+	uploader *s3manager.Uploader
 }
 
 type WorkerConfig struct {
@@ -106,17 +106,6 @@ func InitializeWorker(
 	w.pusher = push.New(workerConfig.PrometheusPushAddress, "insight-worker")
 	w.pusher.Collector(DoInsightJobsCount).
 		Collector(DoInsightJobsDuration)
-
-	defaultAccountID := "all"
-	w.es, err = kaytu.NewClient(kaytu.ClientConfig{
-		Addresses: []string{workerConfig.ElasticSearch.Address},
-		Username:  &workerConfig.ElasticSearch.Username,
-		Password:  &workerConfig.ElasticSearch.Password,
-		AccountID: &defaultAccountID,
-	})
-	if err != nil {
-		return nil, err
-	}
 
 	w.onboardClient = client.NewOnboardServiceClient(workerConfig.Onboard.BaseURL, nil)
 
