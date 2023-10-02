@@ -20,10 +20,8 @@ import (
 
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
-	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/config"
-
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/auth0"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/db"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 
@@ -76,7 +74,7 @@ func Command() *cobra.Command {
 }
 
 type ServerConfig struct {
-	PostgreSQL config.Postgres
+	PostgreSQL config2.Postgres
 }
 
 // start runs both HTTP and GRPC server.
