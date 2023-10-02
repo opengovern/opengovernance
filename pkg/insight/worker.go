@@ -57,7 +57,7 @@ func InitializeWorker(
 		return nil, fmt.Errorf("'kfkTopic' must be set to a non empty string")
 	}
 
-	w = &Worker{id: id}
+	w = &Worker{id: id, config: workerConfig}
 	defer func() {
 		if err != nil && w != nil {
 			w.Stop()
