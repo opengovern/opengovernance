@@ -65,7 +65,7 @@ const (
 
 type JobSequencer struct {
 	gorm.Model
-	DependencyList   pq.Int64Array
+	DependencyList   pq.Int64Array `gorm:"type:bigint[]"`
 	DependencySource string
 	NextJob          string
 	Status           JobSequencerStatus
