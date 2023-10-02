@@ -7,9 +7,8 @@ import (
 	"os"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
-	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 )
@@ -41,7 +40,7 @@ func WorkerCommand() *cobra.Command {
 		id  string
 		cnf WorkerConfig
 	)
-	config2.ReadFromEnv(&cnf, nil)
+	config.ReadFromEnv(&cnf, nil)
 
 	cmd := &cobra.Command{
 		PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -105,7 +104,7 @@ func ServerCommand() *cobra.Command {
 
 func startHttpServer(ctx context.Context) error {
 	var conf ServerConfig
-	config2.ReadFromEnv(&conf, nil)
+	config.ReadFromEnv(&conf, nil)
 
 	logger, err := zap.NewProduction()
 	if err != nil {

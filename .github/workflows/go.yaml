@@ -443,6 +443,8 @@ jobs:
           push: true
           tags: ${{ vars.DOCKER_REGISTRY }}/insight-worker:${{ needs.tag.outputs.latest_tag }}
           file: docker/InsightWorkerDockerfile
+          build-args: |
+            PLUGIN_REGISTRY=${{ vars.DOCKER_REGISTRY }}
           context: .
   deploy-inventory-service:
     runs-on: ubuntu-latest

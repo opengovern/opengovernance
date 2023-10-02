@@ -6,7 +6,6 @@ import (
 	"fmt"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
@@ -25,12 +24,12 @@ var (
 )
 
 type WorkerConfig struct {
-	RabbitMQ   config.RabbitMQ
-	Kafka      config.Kafka
-	PostgreSQL config.Postgres
-	Steampipe  config.Postgres
-	Onboard    config.KaytuService
-	Scheduler  config.KaytuService
+	RabbitMQ   config2.RabbitMQ
+	Kafka      config2.Kafka
+	PostgreSQL config2.Postgres
+	Steampipe  config2.Postgres
+	Onboard    config2.KaytuService
+	Scheduler  config2.KaytuService
 }
 
 func WorkerCommand() *cobra.Command {

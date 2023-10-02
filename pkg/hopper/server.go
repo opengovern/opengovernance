@@ -1,7 +1,6 @@
 package hopper
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/describe"
@@ -12,7 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func initRabbitQueue(cnf config.RabbitMQ, queueName string) (queue.Interface, error) {
+func initRabbitQueue(cnf config2.RabbitMQ, queueName string) (queue.Interface, error) {
 	qCfg := queue.Config{}
 	qCfg.Server.Username = cnf.Username
 	qCfg.Server.Password = cnf.Password
@@ -30,8 +29,8 @@ func initRabbitQueue(cnf config.RabbitMQ, queueName string) (queue.Interface, er
 }
 
 type HopperConfig struct {
-	HttpServer config.HttpServer
-	RabbitMQ   config.RabbitMQ
+	HttpServer config2.HttpServer
+	RabbitMQ   config2.RabbitMQ
 }
 
 type HttpServer struct {

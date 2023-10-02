@@ -2,11 +2,10 @@ package insight
 
 import (
 	"errors"
-	"os"
-	"strings"
-
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
+	"os"
 )
 
 const (
@@ -15,26 +14,7 @@ const (
 )
 
 var (
-	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
-	ElasticSearchUsername = os.Getenv("ES_USERNAME")
-	ElasticSearchPassword = os.Getenv("ES_PASSWORD")
-
-	RabbitMQService  = os.Getenv("RABBITMQ_SERVICE")
-	RabbitMQPort     = 5672
-	RabbitMQUsername = os.Getenv("RABBITMQ_USERNAME")
-	RabbitMQPassword = os.Getenv("RABBITMQ_PASSWORD")
-
-	KafkaService = os.Getenv("KAFKA_SERVICE")
-
-	SteampipeHost     = os.Getenv("STEAMPIPE_HOST")
-	SteampipePort     = os.Getenv("STEAMPIPE_PORT")
-	SteampipeDb       = os.Getenv("STEAMPIPE_DB")
-	SteampipeUser     = os.Getenv("STEAMPIPE_USERNAME")
-	SteampipePassword = os.Getenv("STEAMPIPE_PASSWORD")
-
-	PrometheusPushAddress = os.Getenv("PROMETHEUS_PUSH_ADDRESS")
-
-	OnboardBaseURL = os.Getenv("ONBOARD_BASE_URL")
+	SteampipeHost = os.Getenv("STEAMPIPE_HOST")
 
 	S3Endpoint     = os.Getenv("S3_ENDPOINT")
 	S3AccessKey    = os.Getenv("S3_ACCESS_KEY")
@@ -47,15 +27,15 @@ var (
 
 func WorkerCommand() *cobra.Command {
 	var (
-		id             string
-		resourcesTopic string
+		id  string
+		cnf WorkerConfig
 	)
+	config.ReadFromEnv(&cnf, nil)
+
 	cmd := &cobra.Command{
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch {
 			case id == "":
-				return errors.New("missing required flag 'id'")
-			case resourcesTopic == "":
 				return errors.New("missing required flag 'id'")
 			default:
 				return nil
@@ -71,25 +51,10 @@ func WorkerCommand() *cobra.Command {
 
 			w, err := InitializeWorker(
 				id,
-				RabbitMQUsername,
-				RabbitMQPassword,
-				RabbitMQService,
-				RabbitMQPort,
+				cnf,
 				InsightJobsQueueName,
 				InsightResultsQueueName,
-				strings.Split(KafkaService, ","),
-				resourcesTopic,
 				logger,
-				PrometheusPushAddress,
-				SteampipeHost,
-				SteampipePort,
-				SteampipeDb,
-				SteampipeUser,
-				SteampipePassword,
-				ElasticSearchAddress,
-				ElasticSearchUsername,
-				ElasticSearchPassword,
-				OnboardBaseURL,
 				S3Endpoint, S3AccessKey,
 				S3AccessSecret, S3Region,
 				S3Bucket,
@@ -105,7 +70,6 @@ func WorkerCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&id, "id", "", "The worker id")
-	cmd.Flags().StringVarP(&resourcesTopic, "resources-topic", "t", "", "The kafka topic where the resources are published.")
 
 	return cmd
 }

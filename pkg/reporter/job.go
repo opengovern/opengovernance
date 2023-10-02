@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
@@ -24,7 +25,6 @@ import (
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
