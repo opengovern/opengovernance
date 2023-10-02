@@ -482,14 +482,19 @@ func NewAzureCredential(name string, credentialType CredentialType, metadata *Az
 	if err != nil {
 		return nil, err
 	}
-	return &Credential{
+	crd := &Credential{
 		ID:             id,
 		Name:           &name,
 		ConnectorType:  source.CloudAzure,
 		Secret:         fmt.Sprintf("sources/%s/%s", strings.ToLower(string(source.CloudAzure)), id),
 		CredentialType: credentialType,
 		Metadata:       jsonMetadata,
-	}, nil
+	}
+	if credentialType == CredentialTypeManualAzureSpn {
+		crd.AutoOnboardEnabled = true
+	}
+
+	return crd, nil
 }
 
 func NewAWSCredential(name string, metadata *AWSCredentialMetadata, credentialType CredentialType) (*Credential, error) {
@@ -498,14 +503,19 @@ func NewAWSCredential(name string, metadata *AWSCredentialMetadata, credentialTy
 	if err != nil {
 		return nil, err
 	}
-	return &Credential{
+	crd := &Credential{
 		ID:             id,
 		Name:           &name,
 		ConnectorType:  source.CloudAWS,
 		Secret:         fmt.Sprintf("sources/%s/%s", strings.ToLower(string(source.CloudAWS)), id),
 		CredentialType: credentialType,
 		Metadata:       jsonMetadata,
-	}, nil
+	}
+	if credentialType == CredentialTypeManualAwsOrganization {
+		crd.AutoOnboardEnabled = true
+	}
+
+	return crd, nil
 }
 
 type AWSCredentialMetadata struct {

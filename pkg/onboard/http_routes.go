@@ -1526,6 +1526,7 @@ func (h HttpHandler) putAWSCredentials(ctx echo.Context, req api.UpdateCredentia
 		config.AssumeRoleName != "" && config.ExternalID != nil {
 		cred.Name = metadata.OrganizationID
 		cred.CredentialType = CredentialTypeManualAwsOrganization
+		cred.AutoOnboardEnabled = true
 	}
 	// trace :
 	outputS2, span2 := tracer.Start(outputS, "new_Transaction", trace.WithSpanKind(trace.SpanKindServer))
