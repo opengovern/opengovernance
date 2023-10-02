@@ -157,7 +157,7 @@ func (j SummarizeJob) DoMustSummarizer(client kaytu.Client, db inventory.Databas
 			if end > len(msgs) {
 				end = len(msgs)
 			}
-			err = kafka.DoSend(producer, topic, -1, msgs[i:end], logger)
+			err = kafka.DoSend(producer, topic, -1, msgs[i:end], logger, nil)
 			if err != nil {
 				fail(fmt.Errorf("Failed to send to kafka: %v ", err))
 			}

@@ -49,59 +49,67 @@ func Run(es elasticsearchv7.Config, logger *zap.Logger, esFolder string) error {
 	}
 
 	for _, fp := range files {
-		fn := filepath.Base(fp)
-		idx := strings.LastIndex(fn, ".")
-		fne := fn[:idx]
-
-		tp := "_index_template"
-		if strings.HasSuffix(fne, "_component_template") {
-			tp = "_component_template"
-		}
-
-		url, err := url2.Parse(fmt.Sprintf("https://%s/%s/%s", address, tp, fne))
+		err = CreateTemplate(es, logger, address, fp)
 		if err != nil {
-			return err
-		}
-
-		f, err := os.Open(fp)
-		if err != nil {
-			return err
-		}
-
-		logger.Info("running es template migrate", zap.String("url", url.String()))
-		req, err := http.NewRequest("PUT", url.String(), f)
-		if err != nil {
-			return err
-		}
-
-		req.SetBasicAuth(es.Username, es.Password)
-		req.Header.Set("Content-type", "application/json")
-
-		client := http.Client{
-			Transport: &http.Transport{
-				MaxIdleConnsPerHost: 10,
-				TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
-			},
-		}
-		res, err := client.Do(req)
-		if err != nil {
-			return err
-		}
-
-		if res.StatusCode != http.StatusOK {
-			b, err := io.ReadAll(res.Body)
-			if err != nil {
-				return err
-			}
-
-			logger.Error("failed to create template",
-				zap.Int("statusCode", res.StatusCode),
-				zap.String("body", string(b)),
-			)
-			return errors.New("failed to create template")
+			logger.Error("failed to create template", zap.Error(err), zap.String("filepath", fp))
 		}
 	}
 
+	return nil
+}
+
+func CreateTemplate(es elasticsearchv7.Config, logger *zap.Logger, address, fp string) error {
+	fn := filepath.Base(fp)
+	idx := strings.LastIndex(fn, ".")
+	fne := fn[:idx]
+
+	tp := "_index_template"
+	if strings.HasSuffix(fne, "_component_template") {
+		tp = "_component_template"
+	}
+
+	url, err := url2.Parse(fmt.Sprintf("https://%s/%s/%s", address, tp, fne))
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Open(fp)
+	if err != nil {
+		return err
+	}
+
+	logger.Info("running es template migrate", zap.String("url", url.String()))
+	req, err := http.NewRequest("PUT", url.String(), f)
+	if err != nil {
+		return err
+	}
+
+	req.SetBasicAuth(es.Username, es.Password)
+	req.Header.Set("Content-type", "application/json")
+
+	client := http.Client{
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost: 10,
+			TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		b, err := io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+
+		logger.Error("failed to create template",
+			zap.Int("statusCode", res.StatusCode),
+			zap.String("body", string(b)),
+		)
+		return errors.New("failed to create template")
+	}
 	return nil
 }
 

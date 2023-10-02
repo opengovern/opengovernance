@@ -147,7 +147,12 @@ func (j *Job) Run(
 				status = append(status, v)
 			}
 
-			for i := 6; i >= 0; i-- {
+			days := 7
+			if time.Now().Day() == 6 {
+				days = 31
+			}
+
+			for i := days - 1; i >= 0; i-- {
 				theDate := time.Now().UTC().AddDate(0, 0, -1*i)
 				year, month, day := theDate.Date()
 				start := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
@@ -320,7 +325,7 @@ func (j *Job) DoAssetMetric(
 	for _, item := range regionResultMap {
 		msgs = append(msgs, item)
 	}
-	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger); err != nil {
+	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger, nil); err != nil {
 		return err
 	}
 
@@ -456,7 +461,7 @@ func (j *Job) DoSpendMetric(
 	for _, item := range providerResultMap {
 		msgs = append(msgs, item)
 	}
-	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger); err != nil {
+	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger, nil); err != nil {
 		return err
 	}
 

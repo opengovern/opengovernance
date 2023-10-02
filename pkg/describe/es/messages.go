@@ -54,6 +54,7 @@ type Resource struct {
 func (r Resource) KeysAndIndex() ([]string, string) {
 	return []string{
 		r.ID,
+		r.SourceID,
 	}, ResourceTypeToESIndex(r.ResourceType)
 }
 
@@ -93,6 +94,7 @@ type LookupResource struct {
 func (r LookupResource) KeysAndIndex() ([]string, string) {
 	return []string{
 		r.ResourceID,
+		r.SourceID,
 		string(r.SourceType),
 		strings.ToLower(r.ResourceType),
 	}, InventorySummaryIndex

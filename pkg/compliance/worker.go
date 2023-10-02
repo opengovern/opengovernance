@@ -3,10 +3,9 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"strings"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"

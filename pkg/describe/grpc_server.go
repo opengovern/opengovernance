@@ -131,8 +131,9 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 		var tags []es.Tag
 		for k, v := range resource.Tags {
 			tags = append(tags, es.Tag{
-				Key:   k,
-				Value: v,
+				// tags should be case-insensitive
+				Key:   strings.ToLower(k),
+				Value: strings.ToLower(v),
 			})
 		}
 
@@ -210,7 +211,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 
 	i := 0
 	for {
-		if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger); err != nil {
+		if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger, nil); err != nil {
 			if i > 10 {
 				StreamFailureCount.WithLabelValues("aws").Inc()
 				s.logger.Warn("send to kafka",
@@ -246,8 +247,9 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		var tags []es.Tag
 		for k, v := range resource.Tags {
 			tags = append(tags, es.Tag{
-				Key:   k,
-				Value: v,
+				// tags should be case-insensitive
+				Key:   strings.ToLower(k),
+				Value: strings.ToLower(v),
 			})
 		}
 
@@ -319,7 +321,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 
 	i := 0
 	for {
-		if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger); err != nil {
+		if err := kafka.DoSend(s.producer, resources.KafkaTopic, -1, msgs, s.logger, nil); err != nil {
 			if i > 10 {
 				s.logger.Warn("send to kafka",
 					zap.String("connector:", "azure"),

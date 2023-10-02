@@ -36,7 +36,8 @@ import (
 )
 
 const (
-	MaxQueued = 5000
+	MaxQueued      = 5000
+	MaxIn10Minutes = 8500
 )
 
 var (
@@ -90,6 +91,21 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		return errors.New("queue is full")
 	} else {
 		DescribePublishingBlocked.WithLabelValues("cloud queued").Set(0)
+	}
+
+	count, err = s.db.CountDescribeConnectionJobsRunOverLast10Minutes()
+	if err != nil {
+		s.logger.Error("failed to get last hour length", zap.String("spot", "CountDescribeConnectionJobsRunOverLastHour"), zap.Error(err))
+		DescribeResourceJobsCount.WithLabelValues("failure", "last_hour_length").Inc()
+		return err
+	}
+
+	if count > MaxIn10Minutes {
+		DescribePublishingBlocked.WithLabelValues("hour queued").Set(1)
+		s.logger.Error("too many jobs at last hour", zap.String("spot", "count > MaxQueued"), zap.Error(err))
+		return errors.New("too many jobs at last hour")
+	} else {
+		DescribePublishingBlocked.WithLabelValues("hour queued").Set(0)
 	}
 
 	dcs, err := s.db.ListRandomCreatedDescribeConnectionJobs(ctx, int(s.MaxConcurrentCall))

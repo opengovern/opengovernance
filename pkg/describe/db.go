@@ -60,6 +60,18 @@ func (db Database) CountQueuedDescribeConnectionJobs() (int64, error) {
 	return count, nil
 }
 
+func (db Database) CountDescribeConnectionJobsRunOverLast10Minutes() (int64, error) {
+	var count int64
+	tx := db.orm.Model(&DescribeConnectionJob{}).Where("status != ? AND updated_at > now() - interval '10 minutes'", api.DescribeResourceJobCreated).Count(&count)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return 0, nil
+		}
+		return 0, tx.Error
+	}
+	return count, nil
+}
+
 type ResourceTypeCount struct {
 	ResourceType string
 	Count        int
@@ -105,7 +117,7 @@ func (db Database) GetDescribeConnectionJobByConnectionID(connectionID string) (
 }
 
 func (db Database) QueueDescribeConnectionJob(id uint) error {
-	tx := db.orm.Exec("update describe_connection_jobs set status = ?, retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
+	tx := db.orm.Exec("update describe_connection_jobs set status = ?, queued_at = NOW(), retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -265,7 +277,7 @@ func (db Database) UpdateDescribeConnectionJobToInProgress(id uint) error {
 		Model(&DescribeConnectionJob{}).
 		Where("id = ?", id).
 		Where("status IN ?", []string{string(api.DescribeResourceJobCreated), string(api.DescribeResourceJobQueued)}).
-		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobInProgress})
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobInProgress, InProgressedAt: time.Now()})
 	if tx.Error != nil {
 		return tx.Error
 	}

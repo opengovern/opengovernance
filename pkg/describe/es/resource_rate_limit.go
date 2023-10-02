@@ -8,4 +8,5 @@ var ResourceRateLimit = map[string]int{
 	"AWS::IAM::Policy":                            3,
 	"AWS::IAM::Role":                              3,
 	"AWS::SES::ConfigurationSet":                  3,
+	"AWS::IAM::CredentialReport":                  1,
 }
