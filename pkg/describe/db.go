@@ -32,6 +32,7 @@ func (db Database) Initialize() error {
 	return db.orm.AutoMigrate(&ComplianceReportJob{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{},
 		&AnalyticsJob{}, &Stack{}, &StackTag{}, &StackEvaluation{},
 		&StackCredential{}, &DescribeConnectionJob{},
+		&JobSequencer{},
 	)
 }
 
@@ -1574,4 +1575,49 @@ func (db Database) ListFailedStacks() ([]Stack, error) {
 		return nil, tx.Error
 	}
 	return stacks, nil
+}
+
+func (db Database) CreateJobSequencer(job *JobSequencer) error {
+	tx := db.orm.
+		Model(&JobSequencer{}).
+		Create(job)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) ListWaitingJobSequencers() ([]JobSequencer, error) {
+	var jobs []JobSequencer
+	tx := db.orm.Model(&JobSequencer{}).
+		Where("status = ?", JobSequencerWaitingForDependencies).
+		Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return jobs, nil
+
+}
+
+func (db Database) UpdateJobSequencerFailed(id uint) error {
+	tx := db.orm.Model(&JobSequencer{}).
+		Where("id = ?", id).
+		Update("status", JobSequencerFailed)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+
+}
+
+func (db Database) UpdateJobSequencerFinished(id uint) error {
+	tx := db.orm.Model(&JobSequencer{}).
+		Where("id = ?", id).
+		Update("status", JobSequencerFinished)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/terraform-package/external/states/statefile"
 	"io"
 	"net/http"
@@ -61,6 +62,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerDescribeJobV1, apiAuth.AdminRole))
 	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
 	v1.PUT("/insight/trigger", httpserver.AuthorizeHandler(h.TriggerInsightJob, apiAuth.InternalRole))
+	v1.PUT("/compliance/trigger", httpserver.AuthorizeHandler(h.TriggerComplianceJob, apiAuth.InternalRole))
 	v1.PUT("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, apiAuth.InternalRole))
 	v1.GET("/describe/status", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
 	v1.GET("/describe/connection/status", httpserver.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.InternalRole))
@@ -205,6 +207,62 @@ func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 			return err
 		}
 	}
+	return ctx.JSON(http.StatusOK, "")
+}
+
+func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	benchmarkID := ctx.QueryParam("benchmark_id")
+	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(clientCtx, benchmarkID)
+	if err != nil {
+		return fmt.Errorf("error while getting benchmarks: %v", err)
+	}
+
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
+
+	var sources []onboardApi.Connection
+	assignments, err := h.Scheduler.complianceClient.ListAssignmentsByBenchmark(clientCtx, benchmark.ID)
+	if err != nil {
+		return fmt.Errorf("error while listing assignments: %v", err)
+	}
+
+	for _, ass := range assignments {
+		src, err := h.Scheduler.onboardClient.GetSource(clientCtx, ass.ConnectionID)
+		if err != nil {
+			return fmt.Errorf("error while get source: %v", err)
+		}
+
+		if !src.IsEnabled() {
+			continue
+		}
+		sources = append(sources, *src)
+	}
+
+	var dependencyIDs []int64
+	for _, src := range sources {
+		crj := newComplianceReportJob(src.ID.String(), src.Connector, benchmark.ID)
+		err = h.DB.CreateComplianceReportJob(&crj)
+		if err != nil {
+			ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
+			return fmt.Errorf("error while creating compliance job: %v", err)
+		}
+		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, src, &crj)
+		ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
+		dependencyIDs = append(dependencyIDs, int64(crj.ID))
+	}
+
+	err = h.DB.CreateJobSequencer(&JobSequencer{
+		DependencyList:   dependencyIDs,
+		DependencySource: string(JobSequencerJobTypeBenchmark),
+		NextJob:          string(JobSequencerJobTypeBenchmarkSummarizer),
+		Status:           JobSequencerWaitingForDependencies,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create job sequencer: %v", err)
+	}
+
 	return ctx.JSON(http.StatusOK, "")
 }
 

@@ -881,7 +881,7 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 		return err
 	}
 
-	var dbAssignments [][]db.BenchmarkAssignment
+	var dbAssignments []db.BenchmarkAssignment
 	outputS2, span2 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentsBySourceId(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_GetBenchmarkAssignmentsBySourceId(loop)")
 
@@ -900,7 +900,7 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 			ctx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionId, err)
 			return err
 		}
-		dbAssignments = append(dbAssignments, dbAssignmentsCG)
+		dbAssignments = append(dbAssignments, dbAssignmentsCG...)
 
 		span1.AddEvent("information", trace.WithAttributes(
 			attribute.String("connection ID", connectionId),
@@ -909,18 +909,36 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 	}
 	span2.End()
 
-	var assignments []api.BenchmarkAssignment
-	for _, assignmentsArray := range dbAssignments {
-		for _, assignment := range assignmentsArray {
-			assignments = append(assignments, api.BenchmarkAssignment{
-				BenchmarkId:  assignment.BenchmarkId,
-				ConnectionId: assignment.ConnectionId,
-				AssignedAt:   assignment.AssignedAt,
-			})
+	benchmarks, err := h.db.ListBenchmarks()
+	if err != nil {
+		return err
+	}
+
+	srcs, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.InternalRole}, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, benchmark := range benchmarks {
+		if benchmark.AutoAssign {
+			for _, src := range srcs {
+				exists := false
+				for _, assignment := range dbAssignments {
+					if assignment.ConnectionId == src.ID.String() && assignment.BenchmarkId == benchmark.ID {
+						exists = true
+					}
+				}
+				if !exists {
+					dbAssignments = append(dbAssignments, db.BenchmarkAssignment{
+						BenchmarkId:  benchmark.ID,
+						ConnectionId: src.ID.String(),
+					})
+				}
+			}
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, assignments)
+	return ctx.JSON(http.StatusOK, dbAssignments)
 }
 
 // ListAssignmentsByBenchmark godoc
@@ -1004,7 +1022,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 
 	for _, assignment := range dbAssignments {
 		for idx, r := range resp {
-			if r.ConnectionID == assignment.ConnectionId {
+			if r.ConnectionID == assignment.ConnectionId || benchmark.AutoAssign {
 				r.Status = true
 				resp[idx] = r
 			}

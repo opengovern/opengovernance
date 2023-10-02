@@ -14,6 +14,7 @@ import (
 
 type ComplianceServiceClient interface {
 	GetAllBenchmarkAssignmentsBySourceId(ctx *httpclient.Context, sourceID string) ([]compliance.BenchmarkAssignment, error)
+	ListAssignmentsByBenchmark(ctx *httpclient.Context, benchmarkID string) ([]compliance.BenchmarkAssignedSource, error)
 	GetBenchmark(ctx *httpclient.Context, benchmarkID string) (*compliance.Benchmark, error)
 	GetPolicy(ctx *httpclient.Context, policyID string) (*compliance.Policy, error)
 	GetQuery(ctx *httpclient.Context, queryID string) (*compliance.Query, error)
@@ -35,6 +36,16 @@ func (s *complianceClient) GetAllBenchmarkAssignmentsBySourceId(ctx *httpclient.
 	url := fmt.Sprintf("%s/api/v1/assignments/connection?connectionId=%s", s.baseURL, sourceID)
 
 	var response []compliance.BenchmarkAssignment
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+func (s *complianceClient) ListAssignmentsByBenchmark(ctx *httpclient.Context, benchmarkID string) ([]compliance.BenchmarkAssignedSource, error) {
+	url := fmt.Sprintf("%s/api/v1/assignments/benchmark/%s", s.baseURL, benchmarkID)
+
+	var response []compliance.BenchmarkAssignedSource
 	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
 		return nil, err
 	}

@@ -32,31 +32,43 @@ func (s *Scheduler) RunComplianceJobScheduler() {
 
 func (s *Scheduler) scheduleComplianceJob() error {
 	s.logger.Info("scheduleComplianceJob")
+	clientCtx := &httpclient.Context{UserRole: api2.InternalRole}
 
-	sources, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.KaytuAdminRole}, nil)
+	benchmarks, err := s.complianceClient.ListBenchmarks(clientCtx)
 	if err != nil {
 		ComplianceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("error while listing sources", zap.Error(err))
-		return fmt.Errorf("error while listing sources: %v", err)
+		s.logger.Error("error while listing benchmarks", zap.Error(err))
+		return fmt.Errorf("error while listing benchmarks: %v", err)
 	}
 
-	for _, src := range sources {
-		if !src.IsEnabled() {
-			continue
-		}
-		ctx := &httpclient.Context{
-			UserRole: api2.ViewerRole,
-		}
-		benchmarks, err := s.complianceClient.GetAllBenchmarkAssignmentsBySourceId(ctx, src.ID.String())
+	for _, benchmark := range benchmarks {
+
+		var sources []onboardApi.Connection
+		assignments, err := s.complianceClient.ListAssignmentsByBenchmark(clientCtx, benchmark.ID)
 		if err != nil {
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
-			s.logger.Error("error while getting benchmark assignments", zap.Error(err))
-			return fmt.Errorf("error while getting benchmark assignments: %v", err)
+			s.logger.Error("error while listing assignments", zap.Error(err))
+			return fmt.Errorf("error while listing assignments: %v", err)
 		}
 
-		for _, b := range benchmarks {
-			timeAfter := time.Now().Add(time.Duration(-s.complianceIntervalHours) * time.Hour)
-			jobs, err := s.db.ListComplianceReportsWithFilter(&timeAfter, nil, &b.ConnectionId, nil, &b.BenchmarkId)
+		for _, ass := range assignments {
+			src, err := s.onboardClient.GetSource(clientCtx, ass.ConnectionID)
+			if err != nil {
+				ComplianceJobsCount.WithLabelValues("failure").Inc()
+				s.logger.Error("error while get source", zap.Error(err))
+				return fmt.Errorf("error while get source: %v", err)
+			}
+
+			if !src.IsEnabled() {
+				continue
+			}
+			sources = append(sources, *src)
+		}
+
+		timeAfter := time.Now().Add(time.Duration(-s.complianceIntervalHours) * time.Hour)
+		for _, src := range sources {
+			connectionID := src.ID.String()
+			jobs, err := s.db.ListComplianceReportsWithFilter(&timeAfter, nil, &connectionID, nil, &benchmark.ID)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
 				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
@@ -68,7 +80,7 @@ func (s *Scheduler) scheduleComplianceJob() error {
 				continue
 			}
 
-			crj := newComplianceReportJob(src.ID.String(), src.Connector, b.BenchmarkId)
+			crj := newComplianceReportJob(src.ID.String(), src.Connector, benchmark.ID)
 			err = s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
@@ -78,10 +90,10 @@ func (s *Scheduler) scheduleComplianceJob() error {
 			}
 
 			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, src, &crj)
-
 			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
 		}
 	}
+
 	ComplianceJobsCount.WithLabelValues("successful").Inc()
 	return nil
 
