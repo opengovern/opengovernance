@@ -82,12 +82,17 @@ func WorkerCommand() *cobra.Command {
 	return cmd
 }
 
+type OpenAI struct {
+	Token string
+}
+
 type ServerConfig struct {
 	ES         config.ElasticSearch
 	PostgreSQL config.Postgres
 	Scheduler  config.KaytuService
 	Onboard    config.KaytuService
 	Inventory  config.KaytuService
+	OpenAI     OpenAI
 	RabbitMq   config.RabbitMQ
 	Http       config.HttpServer
 

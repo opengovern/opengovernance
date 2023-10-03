@@ -51,8 +51,12 @@ func (s *Scheduler) scheduleComplianceJob() error {
 			return fmt.Errorf("error while listing assignments: %v", err)
 		}
 
-		for _, ass := range assignments {
-			src, err := s.onboardClient.GetSource(clientCtx, ass.ConnectionID)
+		for _, assignment := range assignments {
+			if !assignment.Status {
+				continue
+			}
+
+			src, err := s.onboardClient.GetSource(clientCtx, assignment.ConnectionID)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
 				s.logger.Error("error while get source", zap.Error(err))
@@ -62,6 +66,7 @@ func (s *Scheduler) scheduleComplianceJob() error {
 			if !src.IsEnabled() {
 				continue
 			}
+
 			sources = append(sources, *src)
 		}
 

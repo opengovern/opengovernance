@@ -106,6 +106,10 @@ type TopFieldRecord struct {
 	Count int    `json:"count"`
 }
 
+type BenchmarkRemediation struct {
+	Remediation string `json:"remediation"`
+}
+
 type GetTopFieldResponse struct {
 	TotalCount int              `json:"totalCount" example:"100"`
 	Records    []TopFieldRecord `json:"records"`

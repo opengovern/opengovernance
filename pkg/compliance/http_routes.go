@@ -35,6 +35,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -83,6 +84,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings := v1.Group("/findings")
 	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
+
+	ai := v1.Group("/ai")
+	ai.POST("/benchmark/:benchmarkId/remediation", httpserver.AuthorizeHandler(h.GetBenchmarkRemediation, authApi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -313,6 +317,48 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetBenchmarkRemediation godoc
+//
+//	@Summary		Get benchmark remediation using AI
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			benchmarkId		path		string							true	"BenchmarkID"
+//	@Success		200				{object}	api.BenchmarkRemediation
+//	@Router			/compliance/api/v1/ai/benchmark/{benchmarkId}/remediation [post]
+func (h *HttpHandler) GetBenchmarkRemediation(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmarkId")
+
+	benchmark, err := h.db.GetBenchmark(benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	client := openai.NewClient("your token")
+	req := openai.ChatCompletionRequest{
+		Model: openai.GPT3Dot5Turbo,
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: "You will be provided with a problem on AWS, and your task is to create a numbered list of how to fix it using AWS console.",
+			},
+		},
+	}
+
+	req.Messages = append(req.Messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleUser,
+		Content: benchmark.Title,
+	})
+
+	resp, err := client.CreateChatCompletion(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, api.BenchmarkRemediation{Remediation: resp.Choices[0].Message.Content})
 }
 
 // ListBenchmarksSummary godoc
