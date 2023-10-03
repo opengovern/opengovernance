@@ -12,5 +12,5 @@ COPY --from=azuread /steampipe-plugin-azuread.plugin /home/steampipe/.steampipe/
 COPY --from=kaytu /steampipe-plugin-kaytu.plugin /home/steampipe/.steampipe/plugins/local/kaytu/kaytu.plugin
 
 USER root
-RUN chown -R steampipe. /home/steampipe/.steampipe/plugins/*
+RUN chown -R steampipe /home/steampipe/.steampipe/plugins/*
 USER steampipe
