@@ -337,7 +337,6 @@ func (h *HttpHandler) GetBenchmarkRemediation(ctx echo.Context) error {
 		return err
 	}
 
-	client := openai.NewClient("your token")
 	req := openai.ChatCompletionRequest{
 		Model: openai.GPT3Dot5Turbo,
 		Messages: []openai.ChatCompletionMessage{
@@ -353,7 +352,7 @@ func (h *HttpHandler) GetBenchmarkRemediation(ctx echo.Context) error {
 		Content: benchmark.Title,
 	})
 
-	resp, err := client.CreateChatCompletion(context.Background(), req)
+	resp, err := h.openAIClient.CreateChatCompletion(context.Background(), req)
 	if err != nil {
 		return err
 	}
