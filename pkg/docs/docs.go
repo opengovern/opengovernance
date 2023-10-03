@@ -256,28 +256,22 @@ const docTemplate = `{
                         "BearerToken": []
                     }
                 ],
-                "description": "returns an action",
+                "description": "returns list of all rules",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "alerting"
                 ],
-                "summary": "get rules",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Action ID",
-                        "name": "actionId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
+                "summary": "List rules",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiRule"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiRule"
+                            }
                         }
                     }
                 }
@@ -4996,25 +4990,61 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "operator": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Operator"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct"
                 },
                 "scope": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionStruct": {
+            "type": "object",
+            "properties": {
+                "conditionType": {
+                    "type": "string"
                 },
-                "value": {
-                    "type": "integer"
+                "operatorStr": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct"
+                    }
                 }
             }
         },
         "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType": {
             "type": "object",
             "properties": {
+                "benchmarkId": {
+                    "type": "string"
+                },
                 "insightId": {
                     "type": "integer"
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Operator": {
+        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorInformation": {
+            "type": "object",
+            "properties": {
+                "operator": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct": {
+            "type": "object",
+            "properties": {
+                "conditionStr": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionStruct"
+                },
+                "operatorInfo": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorInformation"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType": {
             "type": "string",
             "enum": [
                 "\u003e",
@@ -5036,8 +5066,14 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope": {
             "type": "object",
             "properties": {
+                "connectionGroup": {
+                    "type": "string"
+                },
                 "connectionId": {
                     "type": "string"
+                },
+                "connectorName": {
+                    "$ref": "#/definitions/source.Type"
                 }
             }
         },
@@ -5077,13 +5113,10 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "operator": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Operator"
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct"
                 },
                 "scope": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope"
-                },
-                "value": {
-                    "type": "integer"
                 }
             }
         },
@@ -7181,10 +7214,6 @@ const docTemplate = `{
                 "insight_job_interval",
                 "metrics_job_interval",
                 "data_retention_duration",
-                "aws_compliance_git_url",
-                "azure_compliance_git_url",
-                "insights_git_url",
-                "queries_git_url",
                 "analytics_git_url"
             ],
             "x-enum-varnames": [
@@ -7214,10 +7243,6 @@ const docTemplate = `{
                 "MetadataKeyInsightJobInterval",
                 "MetadataKeyMetricsJobInterval",
                 "MetadataKeyDataRetention",
-                "MetadataKeyAWSComplianceGitURL",
-                "MetadataKeyAzureComplianceGitURL",
-                "MetadataKeyInsightsGitURL",
-                "MetadataKeyQueriesGitURL",
                 "MetadataKeyAnalyticsGitURL"
             ]
         },
@@ -8421,15 +8446,13 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "dev-cluster.kaytu.io",
+	Host:             "api.kaytu.io",
 	BasePath:         "",
 	Schemes:          []string{"https"},
 	Title:            "Kaytu Service API",
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {

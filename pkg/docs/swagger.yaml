@@ -27,18 +27,41 @@ definitions:
       id:
         type: integer
       operator:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Operator'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct'
       scope:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope'
-      value:
-        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionStruct:
+    properties:
+      conditionType:
+        type: string
+      operatorStr:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct'
+        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType:
     properties:
+      benchmarkId:
+        type: string
       insightId:
         type: integer
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Operator:
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorInformation:
+    properties:
+      operator:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType'
+      value:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct:
+    properties:
+      conditionStr:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionStruct'
+      operatorInfo:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorInformation'
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType:
     enum:
     - '>'
     - <
@@ -56,8 +79,12 @@ definitions:
     - Operator_DoesNotEqual
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope:
     properties:
+      connectionGroup:
+        type: string
       connectionId:
         type: string
+      connectorName:
+        $ref: '#/definitions/source.Type'
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest:
     properties:
@@ -83,11 +110,9 @@ definitions:
       id:
         type: integer
       operator:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Operator'
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct'
       scope:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope'
-      value:
-        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_analytics_db.MetricType:
     enum:
@@ -1582,10 +1607,6 @@ definitions:
     - insight_job_interval
     - metrics_job_interval
     - data_retention_duration
-    - aws_compliance_git_url
-    - azure_compliance_git_url
-    - insights_git_url
-    - queries_git_url
     - analytics_git_url
     type: string
     x-enum-varnames:
@@ -1615,10 +1636,6 @@ definitions:
     - MetadataKeyInsightJobInterval
     - MetadataKeyMetricsJobInterval
     - MetadataKeyDataRetention
-    - MetadataKeyAWSComplianceGitURL
-    - MetadataKeyAzureComplianceGitURL
-    - MetadataKeyInsightsGitURL
-    - MetadataKeyQueriesGitURL
     - MetadataKeyAnalyticsGitURL
   github_com_kaytu-io_kaytu-engine_pkg_onboard_api.AWSCredentialConfig:
     properties:
@@ -2459,7 +2476,7 @@ definitions:
         example: 1
         type: integer
     type: object
-host: dev-cluster.kaytu.io
+host: api.kaytu.io
 info:
   contact: {}
   title: Kaytu Service API
@@ -2609,23 +2626,19 @@ paths:
       - alerting
   /alerting/api/rule/list:
     get:
-      description: returns an action
-      parameters:
-      - description: Action ID
-        in: path
-        name: actionId
-        required: true
-        type: string
+      description: returns list of all rules
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiRule'
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiRule'
+            type: array
       security:
       - BearerToken: []
-      summary: get rules
+      summary: List rules
       tags:
       - alerting
   /alerting/api/rule/update:
