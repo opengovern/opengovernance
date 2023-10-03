@@ -20,7 +20,7 @@ var (
 
 //	@title						Kaytu Service API
 //	@version					1.0
-//	@host						dev-cluster.kaytu.io
+//	@host						api.kaytu.io
 //	@schemes					https
 //	@securityDefinitions.apikey	BearerToken
 //	@tokenUrl					https://example.com/oauth/token
