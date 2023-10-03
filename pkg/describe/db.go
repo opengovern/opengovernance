@@ -169,7 +169,7 @@ WHERE
 	NOT(error_code IN ('AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND
 	(retry_count < 5 OR retry_count IS NULL)
 	ORDER BY created_at DESC LIMIT ?
-`, api.DescribeResourceJobFailed, api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress, limit).Find(&job)
+`, api.DescribeResourceJobFailed, limit).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
