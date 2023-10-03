@@ -168,7 +168,6 @@ WHERE
 	created_at > now() - interval '3 day' AND 
 	NOT(error_code IN ('AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND
 	(retry_count < 5 OR retry_count IS NULL) AND
-	(select count(*) from describe_connection_jobs where connection_id = dr.connection_id AND status IN (?, ?)) = 0
 	ORDER BY created_at DESC LIMIT ?
 `, api.DescribeResourceJobFailed, api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress, limit).Find(&job)
 	if tx.Error != nil {
