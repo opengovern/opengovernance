@@ -560,6 +560,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		EnsureRunGoroutin(func() {
 			s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
 		})
+		EnsureRunGoroutin(func() {
+			s.RunJobSequencer()
+		})
 		// ---------
 
 		// --------- insights
