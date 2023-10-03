@@ -140,7 +140,7 @@ func InitializeWorker(
 		logger.Error("failed to populate steampipe config for azure plugin", zap.Error(err))
 		return nil, err
 	}
-	err = steampipe.PopulateKaytuPluginSteampipeConfig(conf.ElasticSearch, conf.Steampipe, "all", nil)
+	err = steampipe.PopulateKaytuPluginSteampipeConfig(conf.ElasticSearch, conf.Steampipe, nil)
 	if err != nil {
 		logger.Error("failed to populate steampipe config for kaytu plugin", zap.Error(err))
 		return nil, err
