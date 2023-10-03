@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -86,7 +86,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
 
 	ai := v1.Group("/ai")
-	ai.POST("/benchmark/:benchmarkId/remediation", httpserver.AuthorizeHandler(h.GetBenchmarkRemediation, authApi.ViewerRole))
+	ai.POST("/policy/:policyID/remediation", httpserver.AuthorizeHandler(h.GetPolicyRemediation, authApi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -319,20 +319,20 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetBenchmarkRemediation godoc
+// GetPolicyRemediation godoc
 //
-//	@Summary		Get benchmark remediation using AI
+//	@Summary		Get policy remediation using AI
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId		path		string							true	"BenchmarkID"
+//	@Param			policyID		path		string							true	"PolicyID"
 //	@Success		200				{object}	api.BenchmarkRemediation
-//	@Router			/compliance/api/v1/ai/benchmark/{benchmarkId}/remediation [post]
-func (h *HttpHandler) GetBenchmarkRemediation(ctx echo.Context) error {
-	benchmarkID := ctx.Param("benchmarkId")
+//	@Router			/compliance/api/v1/ai/policy/{policyID}/remediation [post]
+func (h *HttpHandler) GetPolicyRemediation(ctx echo.Context) error {
+	policyID := ctx.Param("policyID")
 
-	benchmark, err := h.db.GetBenchmark(benchmarkID)
+	policy, err := h.db.GetPolicy(policyID)
 	if err != nil {
 		return err
 	}
@@ -349,7 +349,7 @@ func (h *HttpHandler) GetBenchmarkRemediation(ctx echo.Context) error {
 
 	req.Messages = append(req.Messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleUser,
-		Content: benchmark.Title,
+		Content: policy.Title,
 	})
 
 	resp, err := h.openAIClient.CreateChatCompletion(context.Background(), req)
