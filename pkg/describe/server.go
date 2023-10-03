@@ -229,6 +229,10 @@ func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
 	}
 
 	for _, ass := range assignments {
+		if !ass.Status {
+			continue
+		}
+
 		src, err := h.Scheduler.onboardClient.GetSource(clientCtx, ass.ConnectionID)
 		if err != nil {
 			return fmt.Errorf("error while get source: %v", err)
