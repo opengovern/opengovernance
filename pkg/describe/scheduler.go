@@ -1309,6 +1309,7 @@ func newKafkaProducer(brokers []string) (*confluent_kafka.Producer, error) {
 		"compression.type":             "lz4",
 		"message.timeout.ms":           10000,
 		"queue.buffering.max.messages": 100000,
+		"max.request.size":             104857600,
 	})
 }
 
