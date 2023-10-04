@@ -21,6 +21,7 @@ type ConnectorMetricTrendSummary struct {
 	PeriodEnd                  int64       `json:"period_end"`
 	TotalConnections           int64       `json:"total_connections"`
 	TotalSuccessfulConnections int64       `json:"total_successful_connections"`
+	EvaluatedAt                int64       `json:"evaluated_at"`
 }
 
 func (r ConnectorMetricTrendSummary) KeysAndIndex() ([]string, string) {

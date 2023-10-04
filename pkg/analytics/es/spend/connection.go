@@ -23,6 +23,7 @@ type ConnectionMetricTrendSummary struct {
 	PeriodStart     int64       `json:"period_start"`
 	PeriodEnd       int64       `json:"period_end"`
 	IsJobSuccessful bool        `json:"is_job_successful"`
+	EvaluatedAt     int64       `json:"evaluated_at"`
 }
 
 func (r ConnectionMetricTrendSummary) KeysAndIndex() ([]string, string) {
