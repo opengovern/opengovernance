@@ -5060,6 +5060,25 @@ paths:
       summary: Create Azure source
       tags:
       - onboard
+  /schedule/api/v1/compliance/trigger/{benchmark_id}:
+    put:
+      description: Triggers a compliance job to run immediately for the given benchmark
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Triggers compliance job
+      tags:
+      - describe
   /schedule/api/v1/describe/connection/status:
     put:
       parameters:
@@ -5102,6 +5121,25 @@ paths:
       security:
       - BearerToken: []
       summary: Triggers describer
+      tags:
+      - describe
+  /schedule/api/v1/insight/trigger/{insight_id}:
+    put:
+      description: Triggers a insight job to run immediately for the given insight
+      parameters:
+      - description: Insight ID
+        in: path
+        name: insight_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerToken: []
+      summary: Triggers insight job
       tags:
       - describe
   /schedule/api/v1/stacks:

@@ -117,6 +117,19 @@ func (db Database) GetDescribeConnectionJobByConnectionID(connectionID string) (
 	return jobs, nil
 }
 
+func (db Database) GetDescribeConnectionJobByID(id uint) (*DescribeConnectionJob, error) {
+	var job DescribeConnectionJob
+	tx := db.orm.Preload(clause.Associations).Where("id = ?", id).First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+
+	return &job, nil
+}
+
 func (db Database) QueueDescribeConnectionJob(id uint) error {
 	tx := db.orm.Exec("update describe_connection_jobs set status = ?, queued_at = NOW(), retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
 	if tx.Error != nil {

@@ -333,7 +333,7 @@ func (s *Scheduler) scheduleDescribeJob() {
 		}
 
 		for _, resourceType := range resourceTypes {
-			err = s.describe(connection, resourceType, true, false)
+			_, err = s.describe(connection, resourceType, true, false)
 			if err != nil {
 				s.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.String("resource_type", resourceType), zap.Error(err))
 			}
@@ -343,20 +343,20 @@ func (s *Scheduler) scheduleDescribeJob() {
 	DescribeJobsCount.WithLabelValues("successful").Inc()
 }
 
-func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType string, scheduled, costFullDiscovery bool) error {
+func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType string, scheduled bool, costFullDiscovery bool) (*DescribeConnectionJob, error) {
 	if connection.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
 		strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") {
 		// cost on org
 	} else {
 		if !connection.IsEnabled() {
-			return nil
+			return nil, nil
 		}
 	}
 
 	job, err := s.db.GetLastDescribeConnectionJob(connection.ID.String(), resourceType)
 	if err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		return err
+		return nil, err
 	}
 
 	if job != nil {
@@ -383,14 +383,14 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 			}
 
 			if job.UpdatedAt.After(time.Now().Add(time.Duration(-interval) * time.Hour)) {
-				return nil
+				return nil, nil
 			}
 		}
 
 		if job.Status == api.DescribeResourceJobCreated ||
 			job.Status == api.DescribeResourceJobQueued ||
 			job.Status == api.DescribeResourceJobInProgress {
-			return ErrJobInProgress
+			return nil, ErrJobInProgress
 		}
 	}
 
@@ -400,14 +400,14 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 		}, connection.ID.String(), false)
 		if err != nil {
 			DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-			return err
+			return nil, err
 		}
 		connection = *healthCheckedSrc
 	}
 
 	if scheduled && connection.AssetDiscoveryMethod != source.AssetDiscoveryMethodTypeScheduled {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		return errors.New("asset discovery is not scheduled")
+		return nil, errors.New("asset discovery is not scheduled")
 	}
 
 	if connection.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
@@ -419,7 +419,7 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 			connection.HealthState != source.HealthStatusHealthy {
 			//DescribeSourceJobsCount.WithLabelValues("failure").Inc()
 			//return errors.New("connection is not healthy or disabled")
-			return nil
+			return nil, nil
 		}
 	}
 
@@ -435,7 +435,7 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 	err = s.db.CreateDescribeConnectionJob(&daj)
 	if err != nil {
 		DescribeSourceJobsCount.WithLabelValues("failure").Inc()
-		return err
+		return nil, err
 	}
 	DescribeSourceJobsCount.WithLabelValues("successful").Inc()
 
@@ -448,7 +448,7 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 		}
 	}
 
-	return nil
+	return &daj, nil
 }
 
 func newDescribeConnectionJob(a apiOnboard.Connection, resourceType string, triggerType enums.DescribeTriggerType) DescribeConnectionJob {

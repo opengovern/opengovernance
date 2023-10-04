@@ -3945,6 +3945,37 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedule/api/v1/compliance/trigger/{benchmark_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Triggers a compliance job to run immediately for the given benchmark",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Triggers compliance job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/schedule/api/v1/describe/connection/status": {
             "put": {
                 "security": [
@@ -4007,6 +4038,37 @@ const docTemplate = `{
                         "description": "Resource Type",
                         "name": "resource_type",
                         "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/schedule/api/v1/insight/trigger/{insight_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Triggers a insight job to run immediately for the given insight",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "describe"
+                ],
+                "summary": "Triggers insight job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Insight ID",
+                        "name": "insight_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
