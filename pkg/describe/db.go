@@ -244,7 +244,7 @@ func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType
 		Where("updated_at < NOW() - INTERVAL '20 minutes'").
 		Where("status IN ?", []string{string(api.DescribeResourceJobInProgress)}).
 		Where("resource_type = ?", resourceType).
-		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out"})
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out", ErrorCode: "JobTimeOut"})
 	if tx.Error != nil {
 		return totalCount, tx.Error
 	}
@@ -254,7 +254,7 @@ func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType
 		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
 		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
 		Where("resource_type = ?", resourceType).
-		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run"})
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run", ErrorCode: "JobTimeOut"})
 	if tx.Error != nil {
 		return totalCount, tx.Error
 	}
@@ -264,7 +264,7 @@ func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType
 		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
 		Where("status IN ?", []string{string(api.DescribeResourceJobCreated)}).
 		Where("resource_type = ?", resourceType).
-		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted"})
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted", ErrorCode: "JobTimeOut"})
 	if tx.Error != nil {
 		return totalCount, tx.Error
 	}

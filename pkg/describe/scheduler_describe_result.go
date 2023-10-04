@@ -96,10 +96,10 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				} else {
 					interval = s.fullDiscoveryIntervalHours
 				}
-				count, err := s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
+				_, err = s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
 				//s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
 				//DescribeResourceJobsCount.WithLabelValues("failure", "timedout_aws").Inc()
-				ResourcesDescribedCount.WithLabelValues("aws", "failure").Add(float64(count))
+				//ResourcesDescribedCount.WithLabelValues("aws", "failure").Add(float64(count))
 				if err != nil {
 					s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
 				}
@@ -118,10 +118,10 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				} else {
 					interval = s.fullDiscoveryIntervalHours
 				}
-				count, err := s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
+				_, err = s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
 				//s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
 				//DescribeResourceJobsCount.WithLabelValues("failure", "timedout_azure").Inc()
-				ResourcesDescribedCount.WithLabelValues("azure", "failure").Add(float64(count))
+				//ResourcesDescribedCount.WithLabelValues("azure", "failure").Add(float64(count))
 				if err != nil {
 					s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
 				}
