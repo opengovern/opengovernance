@@ -517,6 +517,11 @@ definitions:
         example: Azure CIS v1.4.0
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkRemediation:
+    properties:
+      remediation:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree:
     properties:
       children:
@@ -557,6 +562,8 @@ definitions:
     - DirectionDescending
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters:
     properties:
+      activeOnly:
+        type: boolean
       benchmarkID:
         description: Benchmark ID
         example:
@@ -2862,6 +2869,28 @@ paths:
       summary: Workspace user roleBindings.
       tags:
       - users
+  /compliance/api/v1/ai/policy/{policyID}/remediation:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: PolicyID
+        in: path
+        name: policyID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkRemediation'
+      security:
+      - BearerToken: []
+      summary: Get policy remediation using AI
+      tags:
+      - compliance
   /compliance/api/v1/assignments/{benchmark_id}/connection:
     delete:
       consumes:

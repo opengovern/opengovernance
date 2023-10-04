@@ -197,7 +197,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	res, err := es.FindingsQuery(
 		h.client, req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
 		benchmarkIDs, req.Filters.PolicyID, req.Filters.Severity,
-		sorts, activeOnly, lastIdx, req.Page.Size)
+		sorts, req.Filters.ActiveOnly, lastIdx, req.Page.Size)
 	if err != nil {
 		return err
 	}
@@ -321,14 +321,14 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 
 // GetPolicyRemediation godoc
 //
-//	@Summary		Get policy remediation using AI
-//	@Security		BearerToken
-//	@Tags			compliance
-//	@Accept			json
-//	@Produce		json
-//	@Param			policyID		path		string							true	"PolicyID"
-//	@Success		200				{object}	api.BenchmarkRemediation
-//	@Router			/compliance/api/v1/ai/policy/{policyID}/remediation [post]
+//	@Summary	Get policy remediation using AI
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		policyID	path		string	true	"PolicyID"
+//	@Success	200			{object}	api.BenchmarkRemediation
+//	@Router		/compliance/api/v1/ai/policy/{policyID}/remediation [post]
 func (h *HttpHandler) GetPolicyRemediation(ctx echo.Context) error {
 	policyID := ctx.Param("policyID")
 

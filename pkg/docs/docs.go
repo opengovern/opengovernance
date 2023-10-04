@@ -631,6 +631,42 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/ai/policy/{policyID}/remediation": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get policy remediation using AI",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "PolicyID",
+                        "name": "policyID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkRemediation"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/assignments/benchmark/{benchmark_id}": {
             "get": {
                 "security": [
@@ -5693,6 +5729,14 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkRemediation": {
+            "type": "object",
+            "properties": {
+                "remediation": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree": {
             "type": "object",
             "properties": {
@@ -5750,6 +5794,9 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters": {
             "type": "object",
             "properties": {
+                "activeOnly": {
+                    "type": "boolean"
+                },
                 "benchmarkID": {
                     "description": "Benchmark ID",
                     "type": "array",
@@ -8453,6 +8500,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {
