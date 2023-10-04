@@ -428,6 +428,7 @@ func (j *Job) DoSpendMetric(
 				PeriodStart:     startTime.UnixMilli(),
 				PeriodEnd:       endTime.UnixMilli(),
 				IsJobSuccessful: isJobSuccessful,
+				EvaluatedAt:     time.Now().UnixMilli(),
 			}
 			connectionResultMap[conn.ID.String()] = vn
 		}
@@ -449,6 +450,7 @@ func (j *Job) DoSpendMetric(
 				PeriodEnd:                  endTime.UnixMilli(),
 				TotalConnections:           connectorCount[string(conn.Connector)],
 				TotalSuccessfulConnections: connectorSuccessCount[string(conn.Connector)],
+				EvaluatedAt:                time.Now().UnixMilli(),
 			}
 			providerResultMap[conn.Connector.String()] = vn
 		}

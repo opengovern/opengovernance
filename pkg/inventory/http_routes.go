@@ -532,6 +532,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) (map[str
 				PeriodStart:     hit.PeriodStart * 1000,
 				PeriodEnd:       hit.PeriodEnd * 1000,
 				IsJobSuccessful: true,
+				EvaluatedAt:     time.Now().UnixMilli(),
 			}
 			key := fmt.Sprintf("%s-%s-%s", connectionID.String(), metricID, dateStr)
 			if v, ok := connectionMap[key]; ok {
@@ -554,6 +555,7 @@ func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) (map[str
 				PeriodEnd:                  hit.PeriodEnd * 1000,
 				TotalConnections:           0, //TODO
 				TotalSuccessfulConnections: 0, //TODO
+				EvaluatedAt:                time.Now().UnixMilli(),
 			}
 			key = fmt.Sprintf("%s-%s-%s", connector.Connector, metricID, dateStr)
 			if dateStr == "2023-07-05" && metricID == "spend_amazon_elastic_compute_cloud___compute" {
