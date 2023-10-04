@@ -123,6 +123,16 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 
 	dependencyIDs := make([]int64, 0)
 	for _, resourceType := range resourceTypes {
+		switch src.Connector {
+		case source.CloudAWS:
+			if _, err := aws.GetResourceType(resourceType); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type: %s", resourceType))
+			}
+		case source.CloudAzure:
+			if _, err := azure.GetResourceType(resourceType); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type: %s", resourceType))
+			}
+		}
 		daj, err := h.Scheduler.describe(*src, resourceType, false, costFullDiscovery)
 		if err == ErrJobInProgress {
 			return echo.NewHTTPError(http.StatusConflict, err.Error())
@@ -191,6 +201,17 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		}
 
 		for _, resourceType := range rtToDescribe {
+			switch connection.Connector {
+			case source.CloudAWS:
+				if _, err := aws.GetResourceType(resourceType); err != nil {
+					continue
+				}
+			case source.CloudAzure:
+				if _, err := azure.GetResourceType(resourceType); err != nil {
+					continue
+				}
+			}
+
 			_, err = h.Scheduler.describe(connection, resourceType, false, false)
 			if err != nil {
 				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
