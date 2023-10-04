@@ -769,13 +769,20 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 		return err
 	}
 
-	response := make([]api.BenchmarkTrendDatapoint, 0, datapointCount)
+	var response []api.BenchmarkTrendDatapoint
 	for timeKey, datapoint := range evaluationAcrossTime[benchmarkID] {
-		response = append(response, api.BenchmarkTrendDatapoint{
-			Timestamp: timeKey,
-			Result:    datapoint.ComplianceResultSummary,
-			Checks:    datapoint.SeverityResult,
-		})
+		totalResultCount := datapoint.ComplianceResultSummary.OkCount + datapoint.ComplianceResultSummary.ErrorCount +
+			datapoint.ComplianceResultSummary.AlarmCount + datapoint.ComplianceResultSummary.InfoCount + datapoint.ComplianceResultSummary.SkipCount
+		totalChecksCount := datapoint.SeverityResult.CriticalCount + datapoint.SeverityResult.LowCount +
+			datapoint.SeverityResult.HighCount + datapoint.SeverityResult.MediumCount + datapoint.SeverityResult.UnknownCount +
+			datapoint.SeverityResult.PassedCount
+		if (totalResultCount + totalChecksCount) > 0 {
+			response = append(response, api.BenchmarkTrendDatapoint{
+				Timestamp: timeKey,
+				Result:    datapoint.ComplianceResultSummary,
+				Checks:    datapoint.SeverityResult,
+			})
+		}
 	}
 
 	sort.Slice(response, func(i, j int) bool {
