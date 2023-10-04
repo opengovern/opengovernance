@@ -30,6 +30,7 @@ type FindingFilters struct {
 	PolicyID       []string                 `json:"policyID" example:"azure_cis_v140_7_5"`                                                                        // Policy ID
 	Severity       []string                 `json:"severity" example:"low"`                                                                                       // Severity
 	Status         []types.ComplianceResult `json:"status" example:"alarm"`                                                                                       // Compliance result status
+	ActiveOnly     bool                     `json:"activeOnly"`
 }
 
 type FindingResponseFilters struct {

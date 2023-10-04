@@ -197,7 +197,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	res, err := es.FindingsQuery(
 		h.client, req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
 		benchmarkIDs, req.Filters.PolicyID, req.Filters.Severity,
-		sorts, lastIdx, req.Page.Size)
+		sorts, activeOnly, lastIdx, req.Page.Size)
 	if err != nil {
 		return err
 	}
