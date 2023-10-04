@@ -267,7 +267,7 @@ func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 //	@Router			/schedule/api/v1/compliance/trigger/{benchmark_id} [put]
 func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
-	benchmarkID := ctx.QueryParam("benchmark_id")
+	benchmarkID := ctx.Param("benchmark_id")
 	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(clientCtx, benchmarkID)
 	if err != nil {
 		return fmt.Errorf("error while getting benchmarks: %v", err)
