@@ -115,7 +115,7 @@ func FindingsQuery(client kaytu.Client,
 
 	if activeOnly {
 		filters = append(filters, map[string]any{
-			"terms": map[string]any{"stateActive": "true"},
+			"terms": map[string]any{"stateActive": ["true"]},
 		})
 	}
 	res["size"] = size
