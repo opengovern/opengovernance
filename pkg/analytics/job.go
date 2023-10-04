@@ -148,7 +148,7 @@ func (j *Job) Run(
 			}
 
 			days := 7
-			if time.Now().Day() == 6 {
+			if time.Now().Day() == 6 || time.Now().Day() == 4 {
 				days = 31
 			}
 
