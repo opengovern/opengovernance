@@ -398,7 +398,7 @@ func TestCalculationOperationsWithAnd(t *testing.T) {
 		OperatorInfo: &operatorInformation2,
 	})
 
-	conditionStruct.ConditionType = "AND"
+	conditionStruct.ConditionType = api.ConditionAnd
 	conditionStruct.Operator = operator
 	stat, err := calculationOperations(api.OperatorStruct{Condition: &conditionStruct}, 200)
 	if err != nil {
@@ -411,10 +411,10 @@ func TestCalculationOperationsWithAnd(t *testing.T) {
 
 func TestCalculationOperationsInCombination(t *testing.T) {
 	var conditionStruct api.ConditionStruct
-	conditionStruct.ConditionType = "OR"
+	conditionStruct.ConditionType = api.ConditionOr
 
 	var newCondition api.ConditionStruct
-	newCondition.ConditionType = "AND"
+	newCondition.ConditionType = api.ConditionAnd
 	number1 := api.OperatorInformation{OperatorType: ">", Value: 700}
 	number2 := api.OperatorInformation{OperatorType: ">", Value: 750}
 	newCondition.Operator = append(newCondition.Operator, api.OperatorStruct{
@@ -514,7 +514,7 @@ func TestTrigger(t *testing.T) {
 	// trigger :
 	h.complianceClient = com
 	h.onboardClient = onboard
-	_ = h.Trigger
+	_ = h.TriggerRulesList()
 
 	if !isCallAction {
 		t.Errorf("isCall equal to : %v", isCallAction)

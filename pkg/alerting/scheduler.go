@@ -232,14 +232,14 @@ func calculationOperations(operator api.OperatorStruct, totalValue int64) (bool,
 func calculationConditionStr(operator api.OperatorStruct, totalValue int64) (bool, error) {
 	conditionType := operator.Condition.ConditionType
 
-	if conditionType == "AND" {
+	if conditionType == api.ConditionAnd {
 		stat, err := calculationConditionStrAND(operator, totalValue)
 		if err != nil {
 			return false, err
 		}
 		return stat, nil
 
-	} else if conditionType == "OR" {
+	} else if conditionType == api.ConditionOr {
 		stat, err := calculationConditionStrOr(operator, totalValue)
 		if err != nil {
 			return false, err
@@ -278,7 +278,7 @@ func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (
 					return false, fmt.Errorf("error in calculationOperations : %v ", err)
 				}
 
-				if conditionType2 == "AND" {
+				if conditionType2 == api.ConditionAnd {
 					if !stat {
 						return false, nil
 					} else {
@@ -290,7 +290,7 @@ func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (
 						}
 						continue
 					}
-				} else if conditionType2 == "OR" {
+				} else if conditionType2 == api.ConditionOr {
 					if stat {
 						return true, nil
 					} else {
@@ -344,7 +344,7 @@ func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (b
 					return false, fmt.Errorf("error in calculationOperations : %v ", err)
 				}
 
-				if conditionType2 == "AND" {
+				if conditionType2 == api.ConditionAnd {
 					if !stat {
 						return false, nil
 					} else {
@@ -356,7 +356,7 @@ func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (b
 						}
 						continue
 					}
-				} else if conditionType2 == "OR" {
+				} else if conditionType2 == api.ConditionOr {
 					if stat {
 						return true, nil
 					} else {
@@ -382,7 +382,7 @@ func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (b
 	return false, fmt.Errorf("error")
 }
 
-func compareValue(operator string, value int64, totalValue int64) bool {
+func compareValue(operator api.OperatorType, value int64, totalValue int64) bool {
 	switch operator {
 	case ">":
 		if totalValue > value {
