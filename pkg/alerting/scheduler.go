@@ -94,41 +94,38 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 	return nil
 }
 
-func getConnectionIdFilter(h HttpHandler, connectionIds []string, connectionGroup []string) ([]string, error) {
-	if len(connectionIds[0]) == 0 && len(connectionGroup[0]) == 0 {
+func (h HttpHandler) getConnectionIdFilter(scope api.Scope) ([]string, error) {
+	if scope.ConnectionId == nil && scope.ConnectionGroup == nil {
 		return nil, nil
 	}
 
-	if len(connectionIds[0]) > 0 && len(connectionGroup[0]) > 0 {
+	if scope.ConnectionId != nil && scope.ConnectionGroup != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "connectionId and connectionGroup cannot be used together")
 	}
 
-	if len(connectionIds) > 0 {
-		return connectionIds, nil
+	if scope.ConnectionId != nil {
+		return []string{*scope.ConnectionId}, nil
 	}
 	check := make(map[string]bool)
 	var connectionIDSChecked []string
 
-	for i := 0; i < len(connectionGroup); i++ {
-		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, connectionGroup[i])
-		if err != nil {
-			return nil, err
-		}
-		if len(connectionGroupObj.ConnectionIds) == 0 {
-			return nil, err
-		}
+	connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, *scope.ConnectionGroup)
+	if err != nil {
+		return nil, err
+	}
+	if len(connectionGroupObj.ConnectionIds) == 0 {
+		return nil, err
+	}
 
-		// Check for duplicate connection groups
-		for _, entry := range connectionGroupObj.ConnectionIds {
-			if _, value := check[entry]; !value {
-				check[entry] = true
-				connectionIDSChecked = append(connectionIDSChecked, entry)
-			}
+	// Check for duplicate connection groups
+	for _, entry := range connectionGroupObj.ConnectionIds {
+		if _, value := check[entry]; !value {
+			check[entry] = true
+			connectionIDSChecked = append(connectionIDSChecked, entry)
 		}
 	}
-	connectionIds = connectionIDSChecked
 
-	return connectionIds, nil
+	return connectionIDSChecked, nil
 }
 
 func (h HttpHandler) sendAlert(rule Rule) error {
@@ -167,7 +164,7 @@ func (h HttpHandler) triggerInsight(operator api.OperatorStruct, eventType api.E
 	oneDayAgo := time.Now().Add(-diff)
 	timeNow := time.Now()
 	insightID := strconv.Itoa(int(*eventType.InsightId))
-	connectionIds, err := getConnectionIdFilter(h, []string{*scope.ConnectionId}, []string{*scope.ConnectionGroup})
+	connectionIds, err := h.getConnectionIdFilter(scope)
 	if err != nil {
 		return false, err
 	}
@@ -191,7 +188,7 @@ func (h HttpHandler) triggerInsight(operator api.OperatorStruct, eventType api.E
 }
 
 func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Scope, eventType api.EventType) (bool, error) {
-	connectionIds, err := getConnectionIdFilter(h, []string{*scope.ConnectionId}, []string{*scope.ConnectionGroup})
+	connectionIds, err := h.getConnectionIdFilter(scope)
 	if err != nil {
 		return false, err
 	}
@@ -384,27 +381,27 @@ func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (b
 
 func compareValue(operator api.OperatorType, value int64, totalValue int64) bool {
 	switch operator {
-	case ">":
+	case api.OperatorGreaterThan:
 		if totalValue > value {
 			return true
 		}
-	case "<":
+	case api.OperatorLessThan:
 		if totalValue < value {
 			return true
 		}
-	case ">=":
+	case api.OperatorGreaterThanOrEqual:
 		if totalValue >= value {
 			return true
 		}
-	case "<=":
+	case api.OperatorLessThanOrEqual:
 		if totalValue <= value {
 			return true
 		}
-	case "=":
+	case api.OperatorEqual:
 		if totalValue == value {
 			return true
 		}
-	case "!=":
+	case api.OperatorDoesNotEqual:
 		if totalValue != value {
 			return true
 		}

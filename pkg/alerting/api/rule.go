@@ -5,12 +5,12 @@ import "github.com/kaytu-io/kaytu-util/pkg/source"
 type OperatorType string
 
 const (
-	Operator_GreaterThan        OperatorType = ">"
-	Operator_LessThan           OperatorType = "<"
-	Operator_LessThanOrEqual    OperatorType = "<="
-	Operator_GreaterThanOrEqual OperatorType = ">="
-	Operator_Equal              OperatorType = "="
-	Operator_DoesNotEqual       OperatorType = "!="
+	OperatorGreaterThan        OperatorType = ">"
+	OperatorLessThan           OperatorType = "<"
+	OperatorLessThanOrEqual    OperatorType = "<="
+	OperatorGreaterThanOrEqual OperatorType = ">="
+	OperatorEqual              OperatorType = "="
+	OperatorDoesNotEqual       OperatorType = "!="
 )
 
 type ConditionType string
