@@ -66,6 +66,8 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			errCodeStr := strings.ReplaceAll(result.ErrorCode, "\x00", "")
 			if result.Status == api.DescribeResourceJobFailed {
 				ResourcesDescribedCount.WithLabelValues(strings.ToLower(result.DescribeJob.SourceType.String()), "failure").Inc()
+			} else if result.Status == api.DescribeResourceJobSucceeded {
+				ResourcesDescribedCount.WithLabelValues(strings.ToLower(result.DescribeJob.SourceType.String()), "successful").Inc()
 			}
 			if err := s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs))); err != nil {
 				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
