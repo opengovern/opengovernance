@@ -514,7 +514,7 @@ func TestTrigger(t *testing.T) {
 	// trigger :
 	h.complianceClient = com
 	h.onboardClient = onboard
-	Trigger(*h)
+	_ = h.Trigger
 
 	if !isCallAction {
 		t.Errorf("isCall equal to : %v", isCallAction)

@@ -10,4 +10,4 @@ steampipe-service
 summarizer-worker
 swagger-ui
 workspace-service
-
+alerting-service
