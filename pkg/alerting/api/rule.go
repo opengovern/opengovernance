@@ -28,7 +28,7 @@ type EventType struct {
 type Scope struct {
 	ConnectionId    *string      `json:"connection_id,omitempty"`
 	ConnectionGroup *string      `json:"connection_group,omitempty"`
-	ConnectorName   *source.Type `json:"connector_name,omitempty"`
+	Connector       *source.Type `json:"connector,omitempty"`
 }
 
 type OperatorStruct struct {
