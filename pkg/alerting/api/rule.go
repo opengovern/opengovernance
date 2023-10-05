@@ -2,7 +2,7 @@ package api
 
 import "github.com/kaytu-io/kaytu-util/pkg/source"
 
-type OperatorType = string
+type OperatorType string
 
 const (
 	Operator_GreaterThan        OperatorType = ">"
@@ -11,6 +11,13 @@ const (
 	Operator_GreaterThanOrEqual OperatorType = ">="
 	Operator_Equal              OperatorType = "="
 	Operator_DoesNotEqual       OperatorType = "!="
+)
+
+type ConditionType string
+
+const (
+	ConditionAnd ConditionType = "AND"
+	ConditionOr  ConditionType = "OR"
 )
 
 type EventType struct {
@@ -35,7 +42,7 @@ type OperatorInformation struct {
 }
 
 type ConditionStruct struct {
-	ConditionType string           `json:"condition_type"`
+	ConditionType ConditionType    `json:"condition_type"`
 	Operator      []OperatorStruct `json:"operator"`
 }
 
