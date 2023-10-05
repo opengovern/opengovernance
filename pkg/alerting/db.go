@@ -34,6 +34,15 @@ func (db Database) ListRules() ([]Rule, error) {
 	return listRules, nil
 }
 
+func (db Database) GetRule(id uint) (Rule, error) {
+	var rule Rule
+	err := db.orm.Model(&Rule{}).Where("id = ?", id).Find(&rule).Error
+	if err != nil {
+		return Rule{}, err
+	}
+	return rule, nil
+}
+
 func (db Database) CreateRule(id uint, eventType []byte, scope []byte, operator []byte, actionID uint) error {
 	rule := Rule{
 		ID:        id,
