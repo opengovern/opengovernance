@@ -119,7 +119,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 		var description any
 		err := json.Unmarshal([]byte(resource.DescriptionJson), &description)
 		if err != nil {
-			ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
+			//ResourcesDescribedCount.WithLabelValues("aws", "failure").Inc()
 			s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
 			return nil, err
 		}
@@ -202,7 +202,7 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 
 		msgs = append(msgs, kafkaResource)
 		msgs = append(msgs, lookupResource)
-		ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
+		//ResourcesDescribedCount.WithLabelValues("aws", "successful").Inc()
 	}
 
 	if !s.DoProcessReceivedMessages {
@@ -239,7 +239,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		var description any
 		err := json.Unmarshal([]byte(resource.DescriptionJson), &description)
 		if err != nil {
-			ResourcesDescribedCount.WithLabelValues("azure", "failure").Inc()
+			//ResourcesDescribedCount.WithLabelValues("azure", "failure").Inc()
 			s.logger.Error("failed to parse resource description json", zap.Error(err), zap.Uint32("jobID", resource.Job.JobId), zap.String("resourceID", resource.Id))
 			return nil, err
 		}
@@ -316,7 +316,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 
 		msgs = append(msgs, kafkaResource)
 		msgs = append(msgs, lookupResource)
-		ResourcesDescribedCount.WithLabelValues("azure", "successful").Inc()
+		//ResourcesDescribedCount.WithLabelValues("azure", "successful").Inc()
 	}
 
 	i := 0
