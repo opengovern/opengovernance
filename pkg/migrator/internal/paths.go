@@ -1,10 +1,11 @@
 package internal
 
 const (
-	AnalyticsGitPath  = "/tmp/loader-analytics-git"
-	ComplianceGitPath = AnalyticsGitPath + "/compliance"
-	QueriesGitPath    = AnalyticsGitPath + "/cloud-infrastructure-queries"
-	InsightsGitPath   = AnalyticsGitPath + "/insights"
+	AnalyticsGitPath          = "/tmp/loader-analytics-git"
+	ComplianceGitPath         = AnalyticsGitPath + "/compliance"
+	QueriesGitPath            = AnalyticsGitPath + "/cloud-infrastructure-queries"
+	InsightsGitPath           = AnalyticsGitPath + "/insights"
+	ResourceCollectionGitPath = AnalyticsGitPath + "/resource-collections"
 )
 
 const (
