@@ -108,20 +108,21 @@ func (h HttpHandler) getConnectionIdFilter(scope api.Scope) ([]string, error) {
 	}
 	check := make(map[string]bool)
 	var connectionIDSChecked []string
+	if scope.ConnectionGroup == nil {
+		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, *scope.ConnectionGroup)
+		if err != nil {
+			return nil, err
+		}
+		if len(connectionGroupObj.ConnectionIds) == 0 {
+			return nil, err
+		}
 
-	connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, *scope.ConnectionGroup)
-	if err != nil {
-		return nil, err
-	}
-	if len(connectionGroupObj.ConnectionIds) == 0 {
-		return nil, err
-	}
-
-	// Check for duplicate connection groups
-	for _, entry := range connectionGroupObj.ConnectionIds {
-		if _, value := check[entry]; !value {
-			check[entry] = true
-			connectionIDSChecked = append(connectionIDSChecked, entry)
+		// Check for duplicate connection groups
+		for _, entry := range connectionGroupObj.ConnectionIds {
+			if _, value := check[entry]; !value {
+				check[entry] = true
+				connectionIDSChecked = append(connectionIDSChecked, entry)
+			}
 		}
 	}
 
