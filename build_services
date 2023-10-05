@@ -17,3 +17,4 @@ swagger-ui
 workspace-service
 gpt-service
 analytics-worker
+alerting-service
