@@ -27,6 +27,8 @@ func (db Database) Initialize() error {
 		&ResourceTypeTag{},
 		&analyticsDb.AnalyticMetric{},
 		&analyticsDb.MetricTag{},
+		&ResourceCollection{},
+		&ResourceCollectionTag{},
 	)
 	if err != nil {
 		return err
