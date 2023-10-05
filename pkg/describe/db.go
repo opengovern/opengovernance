@@ -248,7 +248,6 @@ func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType
 	if tx.Error != nil {
 		return totalCount, tx.Error
 	}
-	totalCount += int(tx.RowsAffected)
 	tx = db.orm.
 		Model(&DescribeConnectionJob{}).
 		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
