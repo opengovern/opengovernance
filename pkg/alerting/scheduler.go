@@ -95,7 +95,7 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 }
 
 func (h HttpHandler) getConnectionIdFilter(scope api.Scope) ([]string, error) {
-	if scope.ConnectionId == nil && scope.ConnectionGroup == nil {
+	if scope.ConnectionId == nil && scope.ConnectionGroup == nil && scope.Connector == nil {
 		return nil, nil
 	}
 
@@ -181,10 +181,10 @@ func (h HttpHandler) triggerInsight(operator api.OperatorStruct, eventType api.E
 	if err != nil {
 		return false, err
 	}
-	if !stat {
-		return false, nil
-	}
-	return true, nil
+	h.logger.Info("Insight rule operation done",
+		zap.Bool("result", stat),
+		zap.Int64("totalCount", *insight.TotalResultValue))
+	return stat, nil
 }
 
 func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Scope, eventType api.EventType) (bool, error) {
@@ -192,23 +192,26 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 	if err != nil {
 		return false, err
 	}
+	filters := apiCompliance.FindingFilters{ConnectionID: connectionIds, BenchmarkID: []string{*eventType.BenchmarkId}}
+	if scope.Connector != nil {
+		filters.Connector = []source.Type{*scope.Connector}
+	}
 	reqCompliance := apiCompliance.GetFindingsRequest{
-		Filters: apiCompliance.FindingFilters{ConnectionID: connectionIds, BenchmarkID: []string{*eventType.BenchmarkId}, Connector: []source.Type{*scope.ConnectorName}},
+		Filters: filters,
 		Page:    apiCompliance.Page{No: 1, Size: 1},
 	}
 	compliance, err := h.complianceClient.GetFindings(&httpclient.Context{UserRole: authApi.InternalRole}, reqCompliance)
 	if err != nil {
 		return false, fmt.Errorf("error getting compliance , err : %v ", err)
 	}
-
 	stat, err := calculationOperations(operator, compliance.TotalCount)
 	if err != nil {
 		return false, err
 	}
-	if !stat {
-		return false, nil
-	}
-	return true, nil
+	h.logger.Info("Insight rule operation done",
+		zap.Bool("result", stat),
+		zap.Int64("totalCount", compliance.TotalCount))
+	return stat, nil
 }
 
 func calculationOperations(operator api.OperatorStruct, totalValue int64) (bool, error) {
