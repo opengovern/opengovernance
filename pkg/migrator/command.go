@@ -1,7 +1,6 @@
 package migrator
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/config"
 	utilConfig "github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -10,9 +9,9 @@ import (
 type JobConfig struct {
 	IsManual bool `yaml:"is_manual"`
 
-	PostgreSQL            config.Postgres
-	ElasticSearch         config.ElasticSearch
-	Metadata              config.KaytuService
+	PostgreSQL            utilConfig.Postgres
+	ElasticSearch         utilConfig.ElasticSearch
+	Metadata              utilConfig.KaytuService
 	AnalyticsGitURL       string `yaml:"analytics_git_url"`
 	GithubToken           string `yaml:"github_token"`
 	PrometheusPushAddress string `yaml:"prometheus_push_address"`

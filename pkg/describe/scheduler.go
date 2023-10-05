@@ -48,6 +48,7 @@ import (
 const (
 	JobCompletionInterval    = 1 * time.Minute
 	JobSchedulingInterval    = 1 * time.Minute
+	JobSequencerInterval     = 1 * time.Minute
 	JobTimeoutCheckInterval  = 1 * time.Minute
 	MaxJobInQueue            = 10000
 	ConcurrentDeletedSources = 1000
@@ -559,6 +560,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		EnsureRunGoroutin(func() {
 			s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
 		})
+		EnsureRunGoroutin(func() {
+			s.RunJobSequencer()
+		})
 		// ---------
 
 		// --------- insights
@@ -926,94 +930,6 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 	return fmt.Errorf("source events queue channel is closed")
 }
 
-//
-//func (s *Scheduler) RunComplianceReportScheduler() {
-//	s.logger.Info("Scheduling ComplianceReport jobs on a timer")
-//	t := time.NewTicker(JobComplianceReportInterval)
-//	defer t.Stop()
-//
-//	for ; ; <-t.C {
-//		sources, err := s.db.QuerySourcesDueForComplianceReport()
-//		if err != nil {
-//			s.logger.Error("Failed to find the next sources to create ComplianceReportJob", zap.Error(err))
-//			ComplianceJobsCount.WithLabelValues("failure").Inc()
-//			continue
-//		}
-//
-//		for _, source := range sources {
-//			if isPublishingBlocked(s.logger, s.complianceReportJobQueue) {
-//				s.logger.Warn("The jobs in queue is over the threshold", zap.Error(err))
-//				break
-//			}
-//
-//			s.logger.Error("Source is due for a steampipe check. Creating a ComplianceReportJob now", zap.String("sourceId", source.ID.String()))
-//			crj := newComplianceReportJob(source)
-//			err := s.db.CreateComplianceReportJob(&crj)
-//			if err != nil {
-//				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-//				s.logger.Error("Failed to create ComplianceReportJob for Source",
-//					zap.Uint("jobId", crj.ID),
-//					zap.String("sourceId", source.ID.String()),
-//					zap.Error(err),
-//				)
-//				continue
-//			}
-//
-//			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, source, &crj)
-//
-//			err = s.db.UpdateSourceReportGenerated(source.ID, s.complianceIntervalHours)
-//			if err != nil {
-//				s.logger.Error("Failed to update report job of Source: %s\n", zap.String("sourceId", source.ID.String()), zap.Error(err))
-//				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-//				continue
-//			}
-//			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
-//		}
-//		ComplianceJobsCount.WithLabelValues("successful").Inc()
-//	}
-//}
-
-func (s *Scheduler) RunComplianceReport() (int, error) {
-	createdJobCount := 0
-
-	sources, err := s.onboardClient.ListSources(&httpclient.Context{UserRole: api2.KaytuAdminRole}, nil)
-	if err != nil {
-		ComplianceJobsCount.WithLabelValues("failure").Inc()
-		return createdJobCount, fmt.Errorf("error while listing sources: %v", err)
-	}
-
-	for _, src := range sources {
-		if !src.IsEnabled() {
-			continue
-		}
-		ctx := &httpclient.Context{
-			UserRole: api2.ViewerRole,
-		}
-		benchmarks, err := s.complianceClient.GetAllBenchmarkAssignmentsBySourceId(ctx, src.ID.String())
-		if err != nil {
-			ComplianceJobsCount.WithLabelValues("failure").Inc()
-			return createdJobCount, fmt.Errorf("error while getting benchmark assignments: %v", err)
-		}
-
-		for _, b := range benchmarks {
-			crj := newComplianceReportJob(src.ID.String(), src.Connector, b.BenchmarkId)
-			err := s.db.CreateComplianceReportJob(&crj)
-			if err != nil {
-				ComplianceJobsCount.WithLabelValues("failure").Inc()
-				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				return createdJobCount, fmt.Errorf("error while creating compliance job: %v", err)
-			}
-
-			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, src, &crj)
-
-			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
-			createdJobCount++
-		}
-	}
-	ComplianceJobsCount.WithLabelValues("successful").Inc()
-	return createdJobCount, nil
-}
-
 // RunComplianceReportJobResultsConsumer consumes messages from the complianceReportJobResultQueue queue.
 // It will update the status of the jobs in the database based on the message.
 // It will also update the jobs status that are not completed in certain time to FAILED
@@ -1309,6 +1225,7 @@ func newKafkaProducer(brokers []string) (*confluent_kafka.Producer, error) {
 		"compression.type":             "lz4",
 		"message.timeout.ms":           10000,
 		"queue.buffering.max.messages": 100000,
+		"message.max.bytes":            104857600,
 	})
 }
 

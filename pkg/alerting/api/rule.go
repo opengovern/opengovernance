@@ -2,41 +2,48 @@ package api
 
 import "github.com/kaytu-io/kaytu-util/pkg/source"
 
-type OperatorType = string
+type OperatorType string
 
 const (
-	Operator_GreaterThan        OperatorType = ">"
-	Operator_LessThan           OperatorType = "<"
-	Operator_LessThanOrEqual    OperatorType = "<="
-	Operator_GreaterThanOrEqual OperatorType = ">="
-	Operator_Equal              OperatorType = "="
-	Operator_DoesNotEqual       OperatorType = "!="
+	OperatorGreaterThan        OperatorType = ">"
+	OperatorLessThan           OperatorType = "<"
+	OperatorLessThanOrEqual    OperatorType = "<="
+	OperatorGreaterThanOrEqual OperatorType = ">="
+	OperatorEqual              OperatorType = "="
+	OperatorDoesNotEqual       OperatorType = "!="
+)
+
+type ConditionType string
+
+const (
+	ConditionAnd ConditionType = "AND"
+	ConditionOr  ConditionType = "OR"
 )
 
 type EventType struct {
-	InsightId   *int64
-	BenchmarkId *string
+	InsightId   *int64  `json:"insight_id,omitempty"`
+	BenchmarkId *string `json:"benchmark_id,omitempty"`
 }
 
 type Scope struct {
-	ConnectionId    string
-	ConnectionGroup string
-	ConnectorName   source.Type
+	ConnectionId    *string      `json:"connection_id,omitempty"`
+	ConnectionGroup *string      `json:"connection_group,omitempty"`
+	ConnectorName   *source.Type `json:"connector_name,omitempty"`
 }
 
 type OperatorStruct struct {
-	OperatorInfo *OperatorInformation
-	ConditionStr *ConditionStruct
+	OperatorInfo *OperatorInformation `json:"operator_info,omitempty"`
+	Condition    *ConditionStruct     `json:"condition,omitempty"`
 }
 
 type OperatorInformation struct {
-	Operator OperatorType
-	Value    int64
+	OperatorType OperatorType `json:"operator_type"`
+	Value        int64        `json:"value"`
 }
 
 type ConditionStruct struct {
-	ConditionType string
-	OperatorStr   []OperatorStruct
+	ConditionType ConditionType    `json:"condition_type"`
+	Operator      []OperatorStruct `json:"operator"`
 }
 
 type ApiRule struct {

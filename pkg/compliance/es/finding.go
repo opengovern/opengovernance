@@ -71,6 +71,7 @@ func FindingsQuery(client kaytu.Client,
 	policyID []string,
 	severity []string,
 	sort []map[string]any,
+	activeOnly bool,
 	from, size int) (*FindingsQueryResponse, error) {
 
 	res := make(map[string]any)
@@ -109,6 +110,12 @@ func FindingsQuery(client kaytu.Client,
 	if len(provider) > 0 {
 		filters = append(filters, map[string]any{
 			"terms": map[string]any{"connector": provider},
+		})
+	}
+
+	if activeOnly {
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{"stateActive": []string{"true"}},
 		})
 	}
 	res["size"] = size

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/terraform-package/external/states/statefile"
 	"io"
 	"net/http"
@@ -58,11 +59,13 @@ func NewHTTPServer(
 func (h HttpServer) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
-	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerDescribeJobV1, apiAuth.AdminRole))
+	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerPerConnectionDescribeJob, apiAuth.AdminRole))
 	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
-	v1.PUT("/insight/trigger", httpserver.AuthorizeHandler(h.TriggerInsightJob, apiAuth.InternalRole))
+	v1.PUT("/insight/trigger/:insight_id", httpserver.AuthorizeHandler(h.TriggerInsightJob, apiAuth.AdminRole))
+	v1.PUT("/compliance/trigger/:benchmark_id", httpserver.AuthorizeHandler(h.TriggerComplianceJob, apiAuth.AdminRole))
+	v1.PUT("/analytics/trigger", httpserver.AuthorizeHandler(h.TriggerAnalyticsJob, apiAuth.InternalRole))
 	v1.PUT("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, apiAuth.InternalRole))
-	v1.GET("/describe/status", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
+	v1.GET("/describe/status/:resource_type", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
 	v1.GET("/describe/connection/status", httpserver.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.InternalRole))
 	v1.GET("/describe/pending/connections", httpserver.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.InternalRole))
 
@@ -78,7 +81,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	stacks.GET("/:stackId/insights", httpserver.AuthorizeHandler(h.ListStackInsights, apiAuth.ViewerRole))
 }
 
-// TriggerDescribeJobV1 godoc
+// TriggerPerConnectionDescribeJob godoc
 //
 //	@Summary		Triggers describer
 //	@Description	Triggers a describe job to run immediately for the given connection
@@ -89,7 +92,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 //	@Param			connection_id	path	string		true	"Connection ID"
 //	@Param			resource_type	query	[]string	false	"Resource Type"
 //	@Router			/schedule/api/v1/describe/trigger/{connection_id} [put]
-func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
+func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 	connectionID := ctx.Param("connection_id")
 	forceFull := ctx.QueryParam("force_full") == "true"
 	costFullDiscovery := ctx.QueryParam("cost_full_discovery") == "true"
@@ -118,15 +121,38 @@ func (h HttpServer) TriggerDescribeJobV1(ctx echo.Context) error {
 		}
 	}
 
+	dependencyIDs := make([]int64, 0)
 	for _, resourceType := range resourceTypes {
-		err = h.Scheduler.describe(*src, resourceType, false, costFullDiscovery)
+		switch src.Connector {
+		case source.CloudAWS:
+			if _, err := aws.GetResourceType(resourceType); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type: %s", resourceType))
+			}
+		case source.CloudAzure:
+			if _, err := azure.GetResourceType(resourceType); err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid resource type: %s", resourceType))
+			}
+		}
+		daj, err := h.Scheduler.describe(*src, resourceType, false, costFullDiscovery)
 		if err == ErrJobInProgress {
 			return echo.NewHTTPError(http.StatusConflict, err.Error())
 		}
 		if err != nil {
 			return err
 		}
+		dependencyIDs = append(dependencyIDs, int64(daj.ID))
 	}
+
+	err = h.DB.CreateJobSequencer(&JobSequencer{
+		DependencyList:   dependencyIDs,
+		DependencySource: string(JobSequencerJobTypeDescribe),
+		NextJob:          string(JobSequencerJobTypeAnalytics),
+		Status:           JobSequencerWaitingForDependencies,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create job sequencer: %v", err)
+	}
+
 	return ctx.NoContent(http.StatusOK)
 }
 
@@ -175,7 +201,18 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 		}
 
 		for _, resourceType := range rtToDescribe {
-			err = h.Scheduler.describe(connection, resourceType, false, false)
+			switch connection.Connector {
+			case source.CloudAWS:
+				if _, err := aws.GetResourceType(resourceType); err != nil {
+					continue
+				}
+			case source.CloudAzure:
+				if _, err := azure.GetResourceType(resourceType); err != nil {
+					continue
+				}
+			}
+
+			_, err = h.Scheduler.describe(connection, resourceType, false, false)
 			if err != nil {
 				h.Scheduler.logger.Error("failed to describe connection", zap.String("connection_id", connection.ID.String()), zap.Error(err))
 			}
@@ -184,8 +221,18 @@ func (h HttpServer) TriggerDescribeJob(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, "")
 }
 
+// TriggerInsightJob godoc
+//
+//	@Summary		Triggers insight job
+//	@Description	Triggers a insight job to run immediately for the given insight
+//	@Security		BearerToken
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200
+//	@Param			insight_id	path	string	true	"Insight ID"
+//	@Router			/schedule/api/v1/insight/trigger/{insight_id} [put]
 func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
-	insightID, err := strconv.ParseUint(ctx.QueryParam("insight_id"), 10, 64)
+	insightID, err := strconv.ParseUint(ctx.Param("insight_id"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid insight_id")
 	}
@@ -208,6 +255,76 @@ func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, "")
 }
 
+// TriggerComplianceJob godoc
+//
+//	@Summary		Triggers compliance job
+//	@Description	Triggers a compliance job to run immediately for the given benchmark
+//	@Security		BearerToken
+//	@Tags			describe
+//	@Produce		json
+//	@Success		200
+//	@Param			benchmark_id	path	string	true	"Benchmark ID"
+//	@Router			/schedule/api/v1/compliance/trigger/{benchmark_id} [put]
+func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
+	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
+	benchmarkID := ctx.Param("benchmark_id")
+	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(clientCtx, benchmarkID)
+	if err != nil {
+		return fmt.Errorf("error while getting benchmarks: %v", err)
+	}
+
+	if benchmark == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
+	}
+
+	var sources []onboardApi.Connection
+	assignments, err := h.Scheduler.complianceClient.ListAssignmentsByBenchmark(clientCtx, benchmark.ID)
+	if err != nil {
+		return fmt.Errorf("error while listing assignments: %v", err)
+	}
+
+	for _, ass := range assignments {
+		if !ass.Status {
+			continue
+		}
+
+		src, err := h.Scheduler.onboardClient.GetSource(clientCtx, ass.ConnectionID)
+		if err != nil {
+			return fmt.Errorf("error while get source: %v", err)
+		}
+
+		if !src.IsEnabled() {
+			continue
+		}
+		sources = append(sources, *src)
+	}
+
+	var dependencyIDs []int64
+	for _, src := range sources {
+		crj := newComplianceReportJob(src.ID.String(), src.Connector, benchmark.ID)
+		err = h.DB.CreateComplianceReportJob(&crj)
+		if err != nil {
+			ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
+			return fmt.Errorf("error while creating compliance job: %v", err)
+		}
+		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, src, &crj)
+		ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
+		dependencyIDs = append(dependencyIDs, int64(crj.ID))
+	}
+
+	err = h.DB.CreateJobSequencer(&JobSequencer{
+		DependencyList:   dependencyIDs,
+		DependencySource: string(JobSequencerJobTypeBenchmark),
+		NextJob:          string(JobSequencerJobTypeBenchmarkSummarizer),
+		Status:           JobSequencerWaitingForDependencies,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create job sequencer: %v", err)
+	}
+
+	return ctx.JSON(http.StatusOK, "")
+}
+
 func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
 	err := h.Scheduler.scheduleMustSummarizerJob()
 	if err != nil {
@@ -217,8 +334,17 @@ func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, "")
 }
 
+func (h HttpServer) TriggerAnalyticsJob(ctx echo.Context) error {
+	err := h.Scheduler.scheduleAnalyticsJob()
+	if err != nil {
+		errMsg := fmt.Sprintf("error scheduling summarize job: %v", err)
+		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
+	}
+	return ctx.JSON(http.StatusOK, "")
+}
+
 func (h HttpServer) GetDescribeStatus(ctx echo.Context) error {
-	resourceType := ctx.QueryParam("resource_type")
+	resourceType := ctx.Param("resource_type")
 
 	status, err := h.DB.GetDescribeStatus(resourceType)
 	if err != nil {

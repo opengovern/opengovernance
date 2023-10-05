@@ -4,36 +4,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os/exec"
 	"time"
 
-	"encoding/base64"
-
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
-	"github.com/kaytu-io/kaytu-engine/pkg/config"
-	client3 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	apiOnboard "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-	client2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
-
-	helmv2 "github.com/fluxcd/helm-controller/api/v2beta1"
-	corev1 "k8s.io/api/core/v1"
-	kuberTypes "k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
-	client4 "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type Job struct {
@@ -52,15 +40,15 @@ type Job struct {
 
 type JobResult struct {
 	JobID           uint
-	Status          api.ComplianceReportJobStatus
+	Status          complianceApi.ComplianceReportJobStatus
 	ReportCreatedAt int64
 	Error           string
 }
 
 func (j *Job) Do(
-	complianceClient client.ComplianceServiceClient,
-	onboardClient client2.OnboardServiceClient,
-	scheduleClient client3.SchedulerServiceClient,
+	complianceClient complianceClient.ComplianceServiceClient,
+	onboardClient onboardClient.OnboardServiceClient,
+	scheduleClient describeClient.SchedulerServiceClient,
 	elasticSearchConfig config.ElasticSearch,
 	kfkProducer *confluent_kafka.Producer,
 	kfkTopic string,
@@ -69,22 +57,22 @@ func (j *Job) Do(
 ) JobResult {
 	result := JobResult{
 		JobID:           j.JobID,
-		Status:          api.ComplianceReportJobCompleted,
+		Status:          complianceApi.ComplianceReportJobCompleted,
 		ReportCreatedAt: time.Now().UnixMilli(),
 		Error:           "",
 	}
 
 	if err := j.Run(complianceClient, onboardClient, scheduleClient, elasticSearchConfig, kfkProducer, kfkTopic, currentWorkspaceId, logger); err != nil {
 		result.Error = err.Error()
-		result.Status = api.ComplianceReportJobCompletedWithFailure
+		result.Status = complianceApi.ComplianceReportJobCompletedWithFailure
 	}
 	result.ReportCreatedAt = time.Now().UnixMilli()
 	return result
 }
 
-func (j *Job) RunBenchmark(logger *zap.Logger, esk kaytu.Client, benchmarkID string, complianceClient client.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]types.Finding, error) {
+func (j *Job) RunBenchmark(logger *zap.Logger, esk kaytu.Client, benchmarkID string, complianceClient complianceClient.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]types.Finding, error) {
 	ctx := &httpclient.Context{
-		UserRole: api2.AdminRole,
+		UserRole: authApi.AdminRole,
 	}
 
 	benchmark, err := complianceClient.GetBenchmark(ctx, benchmarkID)
@@ -155,11 +143,11 @@ func (j *Job) RunBenchmark(logger *zap.Logger, esk kaytu.Client, benchmarkID str
 	return findings, nil
 }
 
-func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient client2.OnboardServiceClient, schedulerClient client3.SchedulerServiceClient,
+func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient, onboardClient onboardClient.OnboardServiceClient, schedulerClient describeClient.SchedulerServiceClient,
 	elasticSearchConfig config.ElasticSearch, kfkProducer *confluent_kafka.Producer, kfkTopic string, currentWorkspaceId string, logger *zap.Logger) error {
 
 	ctx := &httpclient.Context{
-		UserRole: api2.AdminRole,
+		UserRole: authApi.AdminRole,
 	}
 	var accountId string
 	var connector source.Type
@@ -172,7 +160,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		accountId = stack.AccountIDs[0]
 		connector = stack.SourceType
 
-		eskConfig, err := getStackElasticConfig(currentWorkspaceId, stack.StackID)
+		eskConfig, err := steampipe.GetStackElasticConfig(currentWorkspaceId, stack.StackID)
 		esk, err = kaytu.NewClient(kaytu.ClientConfig{
 			Addresses: []string{eskConfig.Address},
 			Username:  &eskConfig.Username,
@@ -189,7 +177,7 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 		}
 		accountId = src.ConnectionID
 		connector = src.Connector
-		if src.LifecycleState != apiOnboard.ConnectionLifecycleStateOnboard {
+		if src.LifecycleState != onboardApi.ConnectionLifecycleStateOnboard {
 			return errors.New("connection not healthy")
 		}
 
@@ -206,64 +194,17 @@ func (j *Job) Run(complianceClient client.ComplianceServiceClient, onboardClient
 
 	fmt.Println("+++++ New elasticSearch Client created")
 
-	err := j.PopulateSteampipeConfig(elasticSearchConfig, accountId)
+	err := steampipe.PopulateSteampipeConfig(elasticSearchConfig, j.Connector, accountId, nil)
 	if err != nil {
+		logger.Error("failed to populate steampipe config", zap.Error(err))
 		return err
 	}
 
-	for retry := 0; retry < 5; retry++ {
-		cmd := exec.Command("steampipe", "plugin", "list")
-		cmdOut, err := cmd.Output()
-		if err != nil {
-			logger.Error("plugin list failed", zap.Error(err), zap.String("body", string(cmdOut)))
-			time.Sleep(5 * time.Second)
-			if retry == 4 {
-				return err
-			}
-			continue
-		}
-
-		break
-	}
-
-	cmd := exec.Command("steampipe", "service", "stop", "--force")
-	err = cmd.Start()
+	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
 	if err != nil {
-		logger.Error("first stop failed", zap.Error(err))
+		logger.Error("failed to start steampipe service", zap.Error(err))
 		return err
 	}
-	time.Sleep(5 * time.Second)
-	//NOTE: stop must be called twice. it's not a mistake
-	cmd = exec.Command("steampipe", "service", "stop", "--force")
-	err = cmd.Start()
-	if err != nil {
-		logger.Error("second stop failed", zap.Error(err))
-		return err
-	}
-	time.Sleep(5 * time.Second)
-
-	cmd = exec.Command("steampipe", "service", "start", "--database-listen", "network", "--database-port",
-		"9193", "--database-password", "abcd")
-	cmdOut, err := cmd.Output()
-	if err != nil {
-		logger.Error("start failed", zap.Error(err), zap.String("body", string(cmdOut)))
-		return err
-	}
-	time.Sleep(5 * time.Second)
-
-	fmt.Println("+++++ Steampipe service started")
-	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
-		Host: "localhost",
-		Port: "9193",
-		User: "steampipe",
-		Pass: "abcd",
-		Db:   "steampipe",
-	})
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("+++++ Steampipe database created")
 
 	findings, err := j.RunBenchmark(logger, esk, j.BenchmarkID, complianceClient, steampipeConn, connector)
 	if err != nil {
@@ -319,7 +260,7 @@ func (j *Job) FilterFindings(esClient kaytu.Client, policyID string, findings []
 	return findings, nil
 }
 
-func (j *Job) ExtractFindings(client kaytu.Client, benchmark *api.Benchmark, policy *api.Policy, query *api.Query, res *steampipe.Result) ([]types.Finding, error) {
+func (j *Job) ExtractFindings(client kaytu.Client, benchmark *complianceApi.Benchmark, policy *complianceApi.Policy, query *complianceApi.Query, res *steampipe.Result) ([]types.Finding, error) {
 	var findings []types.Finding
 	resourceType := ""
 	for _, record := range res.Data {
@@ -386,40 +327,4 @@ func (j *Job) ExtractFindings(client kaytu.Client, benchmark *api.Benchmark, pol
 		})
 	}
 	return findings, nil
-}
-
-func getStackElasticConfig(workspaceId string, stackId string) (config.ElasticSearch, error) {
-
-	scheme := runtime.NewScheme()
-	if err := helmv2.AddToScheme(scheme); err != nil {
-		return config.ElasticSearch{}, err
-	}
-	if err := corev1.AddToScheme(scheme); err != nil {
-		return config.ElasticSearch{}, err
-	}
-	kubeClient, err := client4.New(ctrl.GetConfigOrDie(), client4.Options{Scheme: scheme})
-	if err != nil {
-		return config.ElasticSearch{}, err
-	}
-
-	releaseName := stackId
-	secretName := fmt.Sprintf("%s-es-elastic-user", releaseName)
-
-	secret := &corev1.Secret{}
-	err = kubeClient.Get(context.TODO(), kuberTypes.NamespacedName{
-		Namespace: workspaceId,
-		Name:      secretName,
-	}, secret)
-	if err != nil {
-		return config.ElasticSearch{}, err
-	}
-	password, err := base64.URLEncoding.DecodeString(string(secret.Data["elastic"]))
-	if err != nil {
-		return config.ElasticSearch{}, err
-	}
-	return config.ElasticSearch{
-		Address:  fmt.Sprintf("https://%s-es-http:9200/", releaseName),
-		Username: "elastic",
-		Password: string(password),
-	}, nil
 }

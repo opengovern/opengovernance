@@ -2,6 +2,7 @@ package compliance
 
 import (
 	"fmt"
+	"github.com/sashabaranov/go-openai"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -31,6 +32,7 @@ type HttpHandler struct {
 	schedulerClient describeClient.SchedulerServiceClient
 	onboardClient   onboardClient.OnboardServiceClient
 	inventoryClient inventoryClient.InventoryServiceClient
+	openAIClient    *openai.Client
 }
 
 func InitializeHttpHandler(
@@ -111,6 +113,7 @@ func InitializeHttpHandler(
 	h.schedulerClient = describeClient.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
 	h.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL, nil)
 	h.inventoryClient = inventoryClient.NewInventoryServiceClient(conf.Inventory.BaseURL)
+	h.openAIClient = openai.NewClient(conf.OpenAI.Token)
 
 	return h, nil
 }

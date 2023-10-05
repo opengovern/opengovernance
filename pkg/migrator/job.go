@@ -185,8 +185,12 @@ func (w *Job) Run() error {
 		w.logger.Error("Failure while running onboard migration", zap.Error(err))
 	}
 
-	w.logger.Info("Starting inventory migration")
-	if err := inventory.Run(cfg, w.logger, "/inventory-data-config"); err != nil {
+	w.logger.Info("Starting inventory resource type migration")
+	if err := inventory.RunResourceType(cfg, w.logger, "/inventory-data-config"); err != nil {
+		w.logger.Error("Failure while running inventory migration", zap.Error(err))
+	}
+	w.logger.Info("Starting inventory resource collection migration")
+	if err := inventory.RunResourceCollection(cfg, w.logger, internal.ResourceCollectionGitPath); err != nil {
 		w.logger.Error("Failure while running inventory migration", zap.Error(err))
 	}
 

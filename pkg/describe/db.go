@@ -32,6 +32,7 @@ func (db Database) Initialize() error {
 	return db.orm.AutoMigrate(&ComplianceReportJob{}, &InsightJob{}, &CheckupJob{}, &SummarizerJob{},
 		&AnalyticsJob{}, &Stack{}, &StackTag{}, &StackEvaluation{},
 		&StackCredential{}, &DescribeConnectionJob{},
+		&JobSequencer{},
 	)
 }
 
@@ -116,6 +117,19 @@ func (db Database) GetDescribeConnectionJobByConnectionID(connectionID string) (
 	return jobs, nil
 }
 
+func (db Database) GetDescribeConnectionJobByID(id uint) (*DescribeConnectionJob, error) {
+	var job DescribeConnectionJob
+	tx := db.orm.Preload(clause.Associations).Where("id = ?", id).First(&job)
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, tx.Error
+	}
+
+	return &job, nil
+}
+
 func (db Database) QueueDescribeConnectionJob(id uint) error {
 	tx := db.orm.Exec("update describe_connection_jobs set status = ?, queued_at = NOW(), retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
 	if tx.Error != nil {
@@ -165,11 +179,10 @@ FROM
 WHERE
 	status = ? AND
 	created_at > now() - interval '3 day' AND 
-	NOT(error_code IN ('AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND
-	(retry_count < 5 OR retry_count IS NULL) AND
-	(select count(*) from describe_connection_jobs where connection_id = dr.connection_id AND status IN (?, ?)) = 0
-	ORDER BY created_at DESC LIMIT ?
-`, api.DescribeResourceJobFailed, api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress, limit).Find(&job)
+	NOT(error_code IN ('InvalidApiVersionParameter', 'AuthorizationFailed', 'AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND
+	(retry_count < 5 OR retry_count IS NULL)
+	ORDER BY id DESC LIMIT ?
+`, api.DescribeResourceJobFailed, limit).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -224,38 +237,38 @@ func (db Database) UpdateDescribeConnectionJobsTimedOut(describeIntervalHours in
 // UpdateResourceTypeDescribeConnectionJobsTimedOut updates the status of DescribeResourceJobs
 // that have timed out while in the status of 'CREATED' or 'QUEUED' for longer
 // than time interval for the specific resource type.
-func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType string, describeIntervalHours int64) error {
+func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType string, describeIntervalHours int64) (int, error) {
+	totalCount := 0
 	tx := db.orm.
 		Model(&DescribeConnectionJob{}).
 		Where("updated_at < NOW() - INTERVAL '20 minutes'").
 		Where("status IN ?", []string{string(api.DescribeResourceJobInProgress)}).
 		Where("resource_type = ?", resourceType).
-		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out"})
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobTimeout, FailureMessage: "Job timed out", ErrorCode: "JobTimeOut"})
 	if tx.Error != nil {
-		return tx.Error
+		return totalCount, tx.Error
 	}
-
 	tx = db.orm.
 		Model(&DescribeConnectionJob{}).
 		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
 		Where("status IN ?", []string{string(api.DescribeResourceJobQueued)}).
 		Where("resource_type = ?", resourceType).
-		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run"})
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Queued job didn't run", ErrorCode: "JobTimeOut"})
 	if tx.Error != nil {
-		return tx.Error
+		return totalCount, tx.Error
 	}
-
+	totalCount += int(tx.RowsAffected)
 	tx = db.orm.
 		Model(&DescribeConnectionJob{}).
 		Where(fmt.Sprintf("updated_at < NOW() - INTERVAL '%d hours'", describeIntervalHours)).
 		Where("status IN ?", []string{string(api.DescribeResourceJobCreated)}).
 		Where("resource_type = ?", resourceType).
-		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted"})
+		Updates(DescribeConnectionJob{Status: api.DescribeResourceJobFailed, FailureMessage: "Job is aborted", ErrorCode: "JobTimeOut"})
 	if tx.Error != nil {
-		return tx.Error
+		return totalCount, tx.Error
 	}
-
-	return nil
+	totalCount += int(tx.RowsAffected)
+	return totalCount, nil
 }
 
 // UpdateDescribeConnectionJobStatus updates the status of the DescribeResourceJob to the provided status.
@@ -1574,4 +1587,49 @@ func (db Database) ListFailedStacks() ([]Stack, error) {
 		return nil, tx.Error
 	}
 	return stacks, nil
+}
+
+func (db Database) CreateJobSequencer(job *JobSequencer) error {
+	tx := db.orm.
+		Model(&JobSequencer{}).
+		Create(job)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (db Database) ListWaitingJobSequencers() ([]JobSequencer, error) {
+	var jobs []JobSequencer
+	tx := db.orm.Model(&JobSequencer{}).
+		Where("status = ?", JobSequencerWaitingForDependencies).
+		Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return jobs, nil
+
+}
+
+func (db Database) UpdateJobSequencerFailed(id uint) error {
+	tx := db.orm.Model(&JobSequencer{}).
+		Where("id = ?", id).
+		Update("status", JobSequencerFailed)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+
+}
+
+func (db Database) UpdateJobSequencerFinished(id uint) error {
+	tx := db.orm.Model(&JobSequencer{}).
+		Where("id = ?", id).
+		Update("status", JobSequencerFinished)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+
 }

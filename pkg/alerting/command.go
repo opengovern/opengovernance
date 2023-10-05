@@ -17,6 +17,9 @@ var (
 	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
 	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
 
+	OnboardCliendBaseUrl    = os.Getenv("ONBOARD_BASE_URL")
+	ComplianceClientBaseUrl = os.Getenv("COMPLIANCE_BASE_URL")
+
 	HttpAddress = os.Getenv("HTTP_ADDRESS")
 )
 
@@ -41,13 +44,15 @@ func start(ctx context.Context) error {
 		PostgreSQLUser,
 		PostgreSQLPassword,
 		PostgreSQLSSLMode,
+		ComplianceClientBaseUrl,
+		OnboardCliendBaseUrl,
 		logger,
 	)
 	if err != nil {
 		return fmt.Errorf("init http handler: %w", err)
 	}
 
-	go handler.TriggerLoop()
+	go handler.TriggerRulesJobCycle()
 
 	return httpserver.RegisterAndStart(logger, HttpAddress, handler)
 }

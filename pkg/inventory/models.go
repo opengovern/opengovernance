@@ -1,6 +1,8 @@
 package inventory
 
 import (
+	"github.com/jackc/pgtype"
+	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/lib/pq"
 	"time"
 
@@ -64,6 +66,37 @@ func (r ResourceType) ToApi() api.ResourceType {
 }
 
 func (r ResourceType) GetTagsMap() map[string][]string {
+	if r.tagsMap == nil {
+		tagLikeArr := make([]model.TagLike, 0, len(r.Tags))
+		for _, tag := range r.Tags {
+			tagLikeArr = append(tagLikeArr, tag)
+		}
+		r.tagsMap = model.GetTagsMap(tagLikeArr)
+	}
+	return r.tagsMap
+}
+
+type ResourceCollectionTag struct {
+	model.Tag
+	ResourceCollectionID string `gorm:"primaryKey"`
+}
+
+type ResourceCollection struct {
+	ID          string `gorm:"primarykey"`
+	Name        string
+	FiltersJson pgtype.JSONB `gorm:"type:jsonb"`
+
+	Tags    []ResourceCollectionTag `gorm:"foreignKey:ResourceCollectionID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	tagsMap map[string][]string     `gorm:"-:all"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+
+	Filters []kaytu.ResourceCollectionFilter `gorm:"-:all"`
+}
+
+func (r ResourceCollection) GetTagsMap() map[string][]string {
 	if r.tagsMap == nil {
 		tagLikeArr := make([]model.TagLike, 0, len(r.Tags))
 		for _, tag := range r.Tags {

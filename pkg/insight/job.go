@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"strconv"
 	"strings"
 	"time"
@@ -25,7 +26,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"go.uber.org/zap"
 
@@ -48,17 +48,16 @@ var DoInsightJobsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 }, []string{"queryid", "status"})
 
 type Job struct {
-	JobID           uint
-	InsightID       uint
-	SourceID        string
-	ScheduleJobUUID string
-	AccountID       string
-	SourceType      source.Type
-	Internal        bool
-	Query           string
-	Description     string
-	ExecutedAt      int64
-	IsStack         bool
+	JobID       uint
+	InsightID   uint
+	SourceID    string
+	AccountID   string
+	SourceType  source.Type
+	Internal    bool
+	Query       string
+	Description string
+	ExecutedAt  int64
+	IsStack     bool
 }
 
 type JobResult struct {
@@ -67,7 +66,10 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(client kaytu.Client, steampipeOption *steampipe.Option, onboardClient client.OnboardServiceClient, producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket, topic string, logger *zap.Logger) (r JobResult) {
+func (j Job) Do(esConfig config.ElasticSearch, onboardClient client.OnboardServiceClient,
+	producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket,
+	currentWorkspaceID string,
+	topic string, logger *zap.Logger) (r JobResult) {
 	startTime := time.Now().Unix()
 	defer func() {
 		if err := recover(); err != nil {
@@ -127,15 +129,29 @@ func (j Job) Do(client kaytu.Client, steampipeOption *steampipe.Option, onboardC
 		}
 		connectionsMap[src.ID.String()] = src.ConnectionID
 	}
+
+	steampipeSourceId := "all"
 	if j.IsStack == true {
-		steampipeOption.Host = fmt.Sprintf("%s-steampipe-service.%s.svc.cluster.local", j.SourceID, CurrentWorkspaceID)
-	} else {
-		steampipeOption.Host = SteampipeHost
+		esConfig, err = steampipe.GetStackElasticConfig(currentWorkspaceID, j.SourceID)
+		if err != nil {
+			logger.Error("failed to get stack elastic config", zap.Error(err))
+			fail(fmt.Errorf("getting stack elastic config: %w", err))
+			return
+		}
+		steampipeSourceId = j.SourceID
 	}
-	steampipeConn, err := steampipe.NewSteampipeDatabase(*steampipeOption)
+
+	err = steampipe.PopulateSteampipeConfig(esConfig, j.SourceType, steampipeSourceId, nil)
 	if err != nil {
-		logger.Error("failed to create steampipe connection", zap.Error(err))
-		fail(fmt.Errorf("failed to create steampipe connection: %w", err))
+		logger.Error("failed to populate steampipe config", zap.Error(err))
+		fail(fmt.Errorf("populating steampipe config: %w", err))
+		return
+	}
+
+	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
+	if err != nil {
+		logger.Error("failed to start steampipe service", zap.Error(err))
+		fail(fmt.Errorf("starting steampipe service: %w", err))
 		return
 	}
 	fmt.Println("Initialized steampipe database: ", *steampipeConn)

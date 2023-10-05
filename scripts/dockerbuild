@@ -73,3 +73,8 @@ if [[ $SERVICES == *"redoc"* ]]; then
     docker build -f  docker/RedocDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/redoc:"$TAG"
     docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/redoc:"$TAG"
 fi
+
+if [[ $SERVICES == *"alerting-service"* ]]; then
+    docker build -f  docker/AlertingServiceDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/alerting-service:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/alerting-service:"$TAG"
+fi

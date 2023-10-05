@@ -1,7 +1,19 @@
-FROM docker.io/golang:alpine as build
-RUN apk --no-cache add ca-certificates
+ARG PLUGIN_REGISTRY
+FROM ${PLUGIN_REGISTRY}/steampipe-plugin-aws:0.0.1 as aws
+FROM ${PLUGIN_REGISTRY}/steampipe-plugin-azure:0.0.1 as azure
+FROM ${PLUGIN_REGISTRY}/steampipe-plugin-azuread:0.0.1 as azuread
+FROM ${PLUGIN_REGISTRY}/steampipe-plugin-kaytu:0.0.1 as kaytu
 
-FROM scratch
-COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+FROM ghcr.io/turbot/steampipe:0.20.9
+
+COPY --from=aws /steampipe-plugin-aws.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/aws@latest/steampipe-plugin-aws.plugin
+COPY --from=azure /steampipe-plugin-azure.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azure@latest/steampipe-plugin-azure.plugin
+COPY --from=azuread /steampipe-plugin-azuread.plugin /home/steampipe/.steampipe/plugins/hub.steampipe.io/plugins/turbot/azuread@latest/steampipe-plugin-azuread.plugin
+COPY --from=kaytu /steampipe-plugin-kaytu.plugin /home/steampipe/.steampipe/plugins/local/kaytu/kaytu.plugin
+
+USER root
+RUN chown -R steampipe /home/steampipe/.steampipe/plugins/*
+USER steampipe
+
 COPY ./build/analytics-worker /
 CMD [ "/analytics-worker" ]

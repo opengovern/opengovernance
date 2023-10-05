@@ -7,6 +7,7 @@ import (
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/labstack/echo/v4"
+	"net/http"
 	"strconv"
 )
 
@@ -17,6 +18,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
 	ruleGroup.DELETE("/delete/:ruleId", httpserver.AuthorizeHandler(h.DeleteRule, authapi.EditorRole))
 	ruleGroup.GET("/update", httpserver.AuthorizeHandler(h.UpdateRule, authapi.EditorRole))
+	ruleGroup.PUT("/:ruleId/trigger", httpserver.AuthorizeHandler(h.TriggerRuleAPI, authapi.EditorRole))
 
 	actionGroup := v1.Group("/action")
 	actionGroup.GET("/list", httpserver.AuthorizeHandler(h.ListActions, authapi.ViewerRole))
@@ -37,6 +39,34 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	return nil
 }
 
+// TriggerRuleAPI godoc
+//
+//	@Summary		Trigger one rule
+//	@Description	Trigger one rule manually
+//	@Security		BearerToken
+//	@Tags			alerting
+//	@Produce		json
+//	@Param			ruleId	path		string	true	"RuleID"
+//	@Success		200		{object}
+//	@Router			/alerting/api/v1/rule/{ruleId}/trigger [get]
+func (h *HttpHandler) TriggerRuleAPI(ctx echo.Context) error {
+	ruleIdStr := ctx.Param("ruleId")
+	ruleId, err := strconv.ParseUint(ruleIdStr, 10, 32)
+	if err != nil {
+		return err
+	}
+
+	rule, err := h.db.GetRule(uint(ruleId))
+	if err != nil {
+		return err
+	}
+	err = h.TriggerRule(rule)
+	if err != nil {
+		return err
+	}
+	return ctx.NoContent(http.StatusOK)
+}
+
 // ListRules godoc
 //
 //	@Summary		List rules
@@ -45,7 +75,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Tags			alerting
 //	@Produce		json
 //	@Success		200	{object}	[]api.ApiRule
-//	@Router			/alerting/api/rule/list [get]
+//	@Router			/alerting/api/v1/rule/list [get]
 func (h *HttpHandler) ListRules(ctx echo.Context) error {
 	rules, err := h.db.ListRules()
 	if err != nil {
@@ -93,7 +123,7 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 //	@Tags			alerting
 //	@Param			request	body		api.ApiRule	true	"Request Body"
 //	@Success		200		{object}	string
-//	@Router			/alerting/api/rule/create [post]
+//	@Router			/alerting/api/v1/rule/create [post]
 func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 	var req api.ApiRule
 	if err := bindValidate(ctx, &req); err != nil {
@@ -136,7 +166,7 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 //	@Tags			alerting
 //	@Param			ruleID	path		string	true	"Rule ID"
 //	@Success		200		{object}	string
-//	@Router			/alerting/api/rule/Delete/{ruleId} [delete]
+//	@Router			/alerting/api/v1/rule/Delete/{ruleId} [delete]
 func (h *HttpHandler) DeleteRule(ctx echo.Context) error {
 	idS := ctx.Param("ruleId")
 	if idS == "" {
@@ -162,7 +192,7 @@ func (h *HttpHandler) DeleteRule(ctx echo.Context) error {
 //	@Tags			alerting
 //	@Param			request	body		api.UpdateRuleRequest	true	"Request Body"
 //	@Success		200		{object}	string
-//	@Router			/alerting/api/rule/update [get]
+//	@Router			/alerting/api/v1/rule/update [get]
 func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 	var req api.UpdateRuleRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -203,7 +233,7 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 //	@Tags			alerting
 //	@Produce		json
 //	@Success		200	{object}	[]api.ApiAction
-//	@Router			/alerting/api/action/list [get]
+//	@Router			/alerting/api/v1/action/list [get]
 func (h *HttpHandler) ListActions(ctx echo.Context) error {
 	actions, err := h.db.ListAction()
 	if err != nil {
@@ -239,7 +269,7 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 //	@Tags			alerting
 //	@Param			request	body		api.ApiAction	true	"Request Body"
 //	@Success		200		{object}	string
-//	@Router			/alerting/api/action/create [post]
+//	@Router			/alerting/api/v1/action/create [post]
 func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 	var req api.ApiAction
 	err := bindValidate(ctx, &req)
@@ -274,7 +304,7 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 //	@Tags			alerting
 //	@Param			actionID	path		string	true	"ActionID"
 //	@Success		200			{object}	string
-//	@Router			/alerting/api/action/delete/{actionId} [delete]
+//	@Router			/alerting/api/v1/action/delete/{actionId} [delete]
 func (h *HttpHandler) DeleteAction(ctx echo.Context) error {
 	idS := ctx.Param("actionId")
 	if idS == "" {
@@ -301,7 +331,7 @@ func (h *HttpHandler) DeleteAction(ctx echo.Context) error {
 //	@Tags			alerting
 //	@Param			request	body		api.UpdateActionRequest	true	"Request Body"
 //	@Success		200		{object}	string
-//	@Router			/alerting/api/action/update [get]
+//	@Router			/alerting/api/v1/action/update [get]
 func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
 	var req api.UpdateActionRequest
 	if err := bindValidate(ctx, &req); err != nil {

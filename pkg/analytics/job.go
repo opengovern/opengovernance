@@ -148,7 +148,7 @@ func (j *Job) Run(
 			}
 
 			days := 7
-			if time.Now().Day() == 6 {
+			if time.Now().Day() == 6 || time.Now().Day() == 4 {
 				days = 31
 			}
 
@@ -428,6 +428,7 @@ func (j *Job) DoSpendMetric(
 				PeriodStart:     startTime.UnixMilli(),
 				PeriodEnd:       endTime.UnixMilli(),
 				IsJobSuccessful: isJobSuccessful,
+				EvaluatedAt:     time.Now().UnixMilli(),
 			}
 			connectionResultMap[conn.ID.String()] = vn
 		}
@@ -449,6 +450,7 @@ func (j *Job) DoSpendMetric(
 				PeriodEnd:                  endTime.UnixMilli(),
 				TotalConnections:           connectorCount[string(conn.Connector)],
 				TotalSuccessfulConnections: connectorSuccessCount[string(conn.Connector)],
+				EvaluatedAt:                time.Now().UnixMilli(),
 			}
 			providerResultMap[conn.Connector.String()] = vn
 		}

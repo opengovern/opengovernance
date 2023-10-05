@@ -6,13 +6,13 @@ import (
 	"fmt"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/config"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-	config2 "github.com/kaytu-io/kaytu-util/pkg/config"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -25,12 +25,13 @@ var (
 )
 
 type WorkerConfig struct {
-	RabbitMQ   config.RabbitMQ
-	Kafka      config.Kafka
-	PostgreSQL config.Postgres
-	Steampipe  config.Postgres
-	Onboard    config.KaytuService
-	Scheduler  config.KaytuService
+	RabbitMQ      config.RabbitMQ
+	Kafka         config.Kafka
+	PostgreSQL    config.Postgres
+	ElasticSearch config.ElasticSearch
+	Steampipe     config.Postgres
+	Onboard       config.KaytuService
+	Scheduler     config.KaytuService
 }
 
 func WorkerCommand() *cobra.Command {
@@ -38,7 +39,7 @@ func WorkerCommand() *cobra.Command {
 		id  string
 		cnf WorkerConfig
 	)
-	config2.ReadFromEnv(&cnf, nil)
+	config.ReadFromEnv(&cnf, nil)
 
 	cmd := &cobra.Command{
 		PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -86,7 +87,7 @@ type Worker struct {
 	db              db.Database
 	steampipeDB     *steampipe.Database
 	onboardClient   onboardClient.OnboardServiceClient
-	schedulerClient client.SchedulerServiceClient
+	schedulerClient describeClient.SchedulerServiceClient
 	kfkProducer     *confluent_kafka.Producer
 }
 
@@ -129,13 +130,23 @@ func InitializeWorker(
 	}
 	fmt.Println("Initialized postgres database: ", conf.PostgreSQL.DB)
 
-	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
-		Host: conf.Steampipe.Host,
-		Port: conf.Steampipe.Port,
-		User: conf.Steampipe.Username,
-		Pass: conf.Steampipe.Password,
-		Db:   conf.Steampipe.DB,
-	})
+	err = steampipe.PopulateSteampipeConfig(conf.ElasticSearch, source.CloudAWS, "all", nil)
+	if err != nil {
+		logger.Error("failed to populate steampipe config for aws plugin", zap.Error(err))
+		return nil, err
+	}
+	err = steampipe.PopulateSteampipeConfig(conf.ElasticSearch, source.CloudAzure, "all", nil)
+	if err != nil {
+		logger.Error("failed to populate steampipe config for azure plugin", zap.Error(err))
+		return nil, err
+	}
+	err = steampipe.PopulateKaytuPluginSteampipeConfig(conf.ElasticSearch, conf.Steampipe, nil)
+	if err != nil {
+		logger.Error("failed to populate steampipe config for kaytu plugin", zap.Error(err))
+		return nil, err
+	}
+
+	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +195,7 @@ func InitializeWorker(
 	w.logger = logger
 
 	w.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL, nil)
-	w.schedulerClient = client.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
+	w.schedulerClient = describeClient.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
 	return w, nil
 }
 

@@ -35,6 +35,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	openai "github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -83,6 +84,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings := v1.Group("/findings")
 	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
+
+	ai := v1.Group("/ai")
+	ai.POST("/policy/:policyID/remediation", httpserver.AuthorizeHandler(h.GetPolicyRemediation, authApi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i any) error {
@@ -193,7 +197,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	res, err := es.FindingsQuery(
 		h.client, req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
 		benchmarkIDs, req.Filters.PolicyID, req.Filters.Severity,
-		sorts, lastIdx, req.Page.Size)
+		sorts, req.Filters.ActiveOnly, lastIdx, req.Page.Size)
 	if err != nil {
 		return err
 	}
@@ -313,6 +317,47 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetPolicyRemediation godoc
+//
+//	@Summary	Get policy remediation using AI
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		policyID	path		string	true	"PolicyID"
+//	@Success	200			{object}	api.BenchmarkRemediation
+//	@Router		/compliance/api/v1/ai/policy/{policyID}/remediation [post]
+func (h *HttpHandler) GetPolicyRemediation(ctx echo.Context) error {
+	policyID := ctx.Param("policyID")
+
+	policy, err := h.db.GetPolicy(policyID)
+	if err != nil {
+		return err
+	}
+
+	req := openai.ChatCompletionRequest{
+		Model: openai.GPT3Dot5Turbo,
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: "You will be provided with a problem on AWS, and your task is to create a numbered list of how to fix it using AWS console.",
+			},
+		},
+	}
+
+	req.Messages = append(req.Messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleUser,
+		Content: policy.Title,
+	})
+
+	resp, err := h.openAIClient.CreateChatCompletion(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, api.BenchmarkRemediation{Remediation: resp.Choices[0].Message.Content})
 }
 
 // ListBenchmarksSummary godoc
@@ -724,13 +769,20 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 		return err
 	}
 
-	response := make([]api.BenchmarkTrendDatapoint, 0, datapointCount)
+	var response []api.BenchmarkTrendDatapoint
 	for timeKey, datapoint := range evaluationAcrossTime[benchmarkID] {
-		response = append(response, api.BenchmarkTrendDatapoint{
-			Timestamp: timeKey,
-			Result:    datapoint.ComplianceResultSummary,
-			Checks:    datapoint.SeverityResult,
-		})
+		totalResultCount := datapoint.ComplianceResultSummary.OkCount + datapoint.ComplianceResultSummary.ErrorCount +
+			datapoint.ComplianceResultSummary.AlarmCount + datapoint.ComplianceResultSummary.InfoCount + datapoint.ComplianceResultSummary.SkipCount
+		totalChecksCount := datapoint.SeverityResult.CriticalCount + datapoint.SeverityResult.LowCount +
+			datapoint.SeverityResult.HighCount + datapoint.SeverityResult.MediumCount + datapoint.SeverityResult.UnknownCount +
+			datapoint.SeverityResult.PassedCount
+		if (totalResultCount + totalChecksCount) > 0 {
+			response = append(response, api.BenchmarkTrendDatapoint{
+				Timestamp: timeKey,
+				Result:    datapoint.ComplianceResultSummary,
+				Checks:    datapoint.SeverityResult,
+			})
+		}
 	}
 
 	sort.Slice(response, func(i, j int) bool {
@@ -881,7 +933,7 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 		return err
 	}
 
-	var dbAssignments [][]db.BenchmarkAssignment
+	var dbAssignments []db.BenchmarkAssignment
 	outputS2, span2 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkAssignmentsBySourceId(loop)", trace.WithSpanKind(trace.SpanKindServer))
 	span2.SetName("new_GetBenchmarkAssignmentsBySourceId(loop)")
 
@@ -900,7 +952,7 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 			ctx.Logger().Errorf("find benchmark assignments by source %s: %v", connectionId, err)
 			return err
 		}
-		dbAssignments = append(dbAssignments, dbAssignmentsCG)
+		dbAssignments = append(dbAssignments, dbAssignmentsCG...)
 
 		span1.AddEvent("information", trace.WithAttributes(
 			attribute.String("connection ID", connectionId),
@@ -909,18 +961,36 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 	}
 	span2.End()
 
-	var assignments []api.BenchmarkAssignment
-	for _, assignmentsArray := range dbAssignments {
-		for _, assignment := range assignmentsArray {
-			assignments = append(assignments, api.BenchmarkAssignment{
-				BenchmarkId:  assignment.BenchmarkId,
-				ConnectionId: assignment.ConnectionId,
-				AssignedAt:   assignment.AssignedAt,
-			})
+	benchmarks, err := h.db.ListBenchmarks()
+	if err != nil {
+		return err
+	}
+
+	srcs, err := h.onboardClient.ListSources(&httpclient.Context{UserRole: authApi.InternalRole}, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, benchmark := range benchmarks {
+		if benchmark.AutoAssign {
+			for _, src := range srcs {
+				exists := false
+				for _, assignment := range dbAssignments {
+					if assignment.ConnectionId == src.ID.String() && assignment.BenchmarkId == benchmark.ID {
+						exists = true
+					}
+				}
+				if !exists {
+					dbAssignments = append(dbAssignments, db.BenchmarkAssignment{
+						BenchmarkId:  benchmark.ID,
+						ConnectionId: src.ID.String(),
+					})
+				}
+			}
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, assignments)
+	return ctx.JSON(http.StatusOK, dbAssignments)
 }
 
 // ListAssignmentsByBenchmark godoc
@@ -1004,7 +1074,7 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 
 	for _, assignment := range dbAssignments {
 		for idx, r := range resp {
-			if r.ConnectionID == assignment.ConnectionId {
+			if r.ConnectionID == assignment.ConnectionId || benchmark.AutoAssign {
 				r.Status = true
 				resp[idx] = r
 			}

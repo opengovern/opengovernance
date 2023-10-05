@@ -3,9 +3,8 @@ package insight
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"strings"
-
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
@@ -15,45 +14,50 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/prometheus/client_golang/prometheus/push"
 	"go.uber.org/zap"
 )
 
 type Worker struct {
-	id              string
-	jobQueue        queue.Interface
-	jobResultQueue  queue.Interface
-	kfkProducer     *confluent_kafka.Producer
-	kfkTopic        string
-	s3Bucket        string
-	logger          *zap.Logger
-	steampipeOption *steampipe.Option
-	es              kaytu.Client
-	pusher          *push.Pusher
-	onboardClient   client.OnboardServiceClient
-	uploader        *s3manager.Uploader
+	id string
+
+	config WorkerConfig
+
+	jobQueue       queue.Interface
+	jobResultQueue queue.Interface
+
+	logger *zap.Logger
+
+	kfkProducer   *confluent_kafka.Producer
+	onboardClient client.OnboardServiceClient
+	pusher        *push.Pusher
+
+	s3Bucket string
+	uploader *s3manager.Uploader
+}
+
+type WorkerConfig struct {
+	RabbitMQ              config.RabbitMQ
+	ElasticSearch         config.ElasticSearch
+	Kafka                 config.Kafka
+	Onboard               config.KaytuService
+	PrometheusPushAddress string
 }
 
 func InitializeWorker(
 	id string,
-	rabbitMQUsername string, rabbitMQPassword string, rabbitMQHost string, rabbitMQPort int,
+	workerConfig WorkerConfig,
 	insightJobQueue string, insightJobResultQueue string,
-	kafkaBrokers []string, kafkaTopic string,
 	logger *zap.Logger,
-	prometheusPushAddress string,
-	steampipeHost string, steampipePort string, steampipeDb string, steampipeUsername string, steampipePassword string,
-	elasticSearchAddress string, elasticSearchUsername string, elasticSearchPassword string,
-	onboardBaseURL string,
 	s3Endpoint, s3AccessKey, s3AccessSecret, s3Region, s3Bucket string,
 ) (w *Worker, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
-	} else if kafkaTopic == "" {
+	} else if workerConfig.Kafka.Topic == "" {
 		return nil, fmt.Errorf("'kfkTopic' must be set to a non empty string")
 	}
 
-	w = &Worker{id: id, kfkTopic: kafkaTopic}
+	w = &Worker{id: id, config: workerConfig}
 	defer func() {
 		if err != nil && w != nil {
 			w.Stop()
@@ -61,10 +65,10 @@ func InitializeWorker(
 	}()
 
 	qCfg := queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
+	qCfg.Server.Username = workerConfig.RabbitMQ.Username
+	qCfg.Server.Password = workerConfig.RabbitMQ.Password
+	qCfg.Server.Host = workerConfig.RabbitMQ.Service
+	qCfg.Server.Port = 5672
 	qCfg.Queue.Name = insightJobQueue
 	qCfg.Queue.Durable = true
 	qCfg.Consumer.ID = w.id
@@ -76,10 +80,10 @@ func InitializeWorker(
 	w.jobQueue = insightQueue
 
 	qCfg = queue.Config{}
-	qCfg.Server.Username = rabbitMQUsername
-	qCfg.Server.Password = rabbitMQPassword
-	qCfg.Server.Host = rabbitMQHost
-	qCfg.Server.Port = rabbitMQPort
+	qCfg.Server.Username = workerConfig.RabbitMQ.Username
+	qCfg.Server.Password = workerConfig.RabbitMQ.Password
+	qCfg.Server.Host = workerConfig.RabbitMQ.Service
+	qCfg.Server.Port = 5672
 	qCfg.Queue.Name = insightJobResultQueue
 	qCfg.Queue.Durable = true
 	qCfg.Producer.ID = w.id
@@ -90,7 +94,7 @@ func InitializeWorker(
 
 	w.jobResultQueue = insightResultsQueue
 
-	producer, err := newKafkaProducer(kafkaBrokers)
+	producer, err := newKafkaProducer(strings.Split(workerConfig.Kafka.Addresses, ","))
 	if err != nil {
 		return nil, err
 	}
@@ -99,32 +103,11 @@ func InitializeWorker(
 
 	w.logger = logger
 
-	// setup steampipe connection
-	steampipeOption := steampipe.Option{
-		Host: steampipeHost,
-		Port: steampipePort,
-		User: steampipeUsername,
-		Pass: steampipePassword,
-		Db:   steampipeDb,
-	}
-	w.steampipeOption = &steampipeOption
-
-	w.pusher = push.New(prometheusPushAddress, "insight-worker")
+	w.pusher = push.New(workerConfig.PrometheusPushAddress, "insight-worker")
 	w.pusher.Collector(DoInsightJobsCount).
 		Collector(DoInsightJobsDuration)
 
-	defaultAccountID := "default"
-	w.es, err = kaytu.NewClient(kaytu.ClientConfig{
-		Addresses: []string{elasticSearchAddress},
-		Username:  &elasticSearchUsername,
-		Password:  &elasticSearchPassword,
-		AccountID: &defaultAccountID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	w.onboardClient = client.NewOnboardServiceClient(onboardBaseURL, nil)
+	w.onboardClient = client.NewOnboardServiceClient(workerConfig.Onboard.BaseURL, nil)
 
 	if s3Region == "" {
 		s3Region = "us-west-2"
@@ -156,37 +139,37 @@ func (w *Worker) Run() error {
 	if err != nil {
 		return err
 	}
-
-	w.logger.Info("Waiting indefinitly for messages. To exit press CTRL+C")
-	for msg := range msgs {
-		var job Job
-		if err := json.Unmarshal(msg.Body, &job); err != nil {
-			w.logger.Error("Failed to unmarshal task", zap.Error(err))
-			err = msg.Nack(false, false)
-			if err != nil {
-				w.logger.Error("Failed nacking message", zap.Error(err))
-			}
-			continue
+	msg := <-msgs
+	var job Job
+	if err = json.Unmarshal(msg.Body, &job); err != nil {
+		w.logger.Error("Failed to unmarshal task", zap.Error(err))
+		err2 := msg.Nack(false, false)
+		if err2 != nil {
+			w.logger.Error("Failed nacking message", zap.Error(err2))
 		}
-		w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
-		result := job.Do(w.es, w.steampipeOption, w.onboardClient, w.kfkProducer, w.uploader, w.s3Bucket, w.kfkTopic, w.logger)
-		w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)))
-		err := w.jobResultQueue.Publish(result)
-		if err != nil {
-			w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
-		}
-
-		if err := msg.Ack(false); err != nil {
-			w.logger.Error("Failed acking message", zap.Error(err))
-		}
-
-		err = w.pusher.Push()
-		if err != nil {
-			w.logger.Error("Failed to push metrics", zap.Error(err))
-		}
+		return err
+	}
+	w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
+	result := job.Do(w.config.ElasticSearch, w.onboardClient,
+		w.kfkProducer,
+		w.uploader, w.s3Bucket, CurrentWorkspaceID,
+		w.config.Kafka.Topic, w.logger)
+	w.logger.Info("Publishing job result", zap.Int("jobID", int(job.JobID)))
+	err = w.jobResultQueue.Publish(result)
+	if err != nil {
+		w.logger.Error("Failed to send results to queue: %s", zap.Error(err))
 	}
 
-	return fmt.Errorf("descibe jobs channel is closed")
+	if err := msg.Ack(false); err != nil {
+		w.logger.Error("Failed acking message", zap.Error(err))
+	}
+
+	err = w.pusher.Push()
+	if err != nil {
+		w.logger.Error("Failed to push metrics", zap.Error(err))
+	}
+
+	return nil
 }
 
 func (w *Worker) Stop() {
