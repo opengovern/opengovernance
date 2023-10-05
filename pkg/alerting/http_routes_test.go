@@ -36,18 +36,6 @@ func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
 		tb.Errorf("new logger : %v", err)
 	}
 
-	handler, err := InitializeHttpHandler("127.0.0.1", "5432", "test-database", "user_1", "qwertyPostgres", "disable", logger)
-	if err != nil {
-		tb.Errorf("error connecting to postgres , err : %v", err)
-	}
-	handler.db.orm.Exec("DELETE FROM rules")
-	handler.db.orm.Exec("DELETE FROM actions")
-
-	e, tp := httpserver.Register(logger, handler)
-
-	go e.Start("localhost:8081")
-	time.Sleep(500 * time.Millisecond)
-
 	mux := http.NewServeMux()
 	s := http.Server{Addr: "localhost:8082", Handler: mux}
 	mux.HandleFunc("/call", func(writer http.ResponseWriter, request *http.Request) {
@@ -69,8 +57,18 @@ func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
 		}
 	}))
 
-	com = client.NewComplianceClient(server.URL)
-	onboard = onboardClient.NewOnboardServiceClient(server.URL, nil)
+	handler, err := InitializeHttpHandler("127.0.0.1", "5432", "test-database",
+		"user_1", "qwertyPostgres", "disable", server.URL, server.URL, logger)
+	if err != nil {
+		tb.Errorf("error connecting to postgres , err : %v", err)
+	}
+	handler.db.orm.Exec("DELETE FROM rules")
+	handler.db.orm.Exec("DELETE FROM actions")
+
+	e, tp := httpserver.Register(logger, handler)
+
+	go e.Start("localhost:8081")
+	time.Sleep(500 * time.Millisecond)
 
 	// Return a function to teardown the test
 	return func(tb testing.TB) {
@@ -132,17 +130,18 @@ func doSimpleJSONRequest(method string, path string, request, response interface
 }
 
 func addRule(t *testing.T) uint {
-	operatorInfo := api.OperatorInformation{Operator: "<", Value: 1000}
+	operatorInfo := api.OperatorInformation{OperatorType: "<", Value: 1000}
 	operator := api.OperatorStruct{
 		OperatorInfo: &operatorInfo,
-		ConditionStr: nil,
+		Condition:    nil,
 	}
 
 	benchmarkId := "CIS v1.4.0"
+	connectionId := "testConnectionID"
 	req := api.ApiRule{
 		ID:        12,
 		EventType: api.EventType{BenchmarkId: &benchmarkId},
-		Scope:     api.Scope{ConnectionId: "testConnectionID"},
+		Scope:     api.Scope{ConnectionId: &connectionId},
 		Operator:  operator,
 		ActionID:  123123,
 	}
@@ -201,18 +200,19 @@ func TestCreateRule(t *testing.T) {
 	teardownSuite, h := setupSuite(t)
 	defer teardownSuite(t)
 
-	operatorInfo := api.OperatorInformation{Operator: "<", Value: 100}
+	operatorInfo := api.OperatorInformation{OperatorType: "<", Value: 100}
 	operator := api.OperatorStruct{
 		OperatorInfo: &operatorInfo,
-		ConditionStr: nil,
+		Condition:    nil,
 	}
 
 	var id uint = 123
 	var insightId int64 = 123123
+	connectionId := "testConnectionId"
 	req := api.ApiRule{
 		ID:        id,
 		EventType: api.EventType{InsightId: &insightId},
-		Scope:     api.Scope{ConnectionId: "testConnectionId"},
+		Scope:     api.Scope{ConnectionId: &connectionId},
 		Operator:  operator,
 		ActionID:  1231,
 	}
@@ -234,10 +234,10 @@ func TestUpdateRule(t *testing.T) {
 	defer teardownSuite(t)
 	id := addRule(t)
 
-	operatorInfo := api.OperatorInformation{Operator: "<", Value: 110}
+	operatorInfo := api.OperatorInformation{OperatorType: "<", Value: 110}
 	operator := api.OperatorStruct{
 		OperatorInfo: &operatorInfo,
-		ConditionStr: nil,
+		Condition:    nil,
 	}
 
 	req := api.ApiRule{
@@ -388,8 +388,8 @@ func TestCalculationOperationsWithAnd(t *testing.T) {
 	var conditionStruct api.ConditionStruct
 	var operator []api.OperatorStruct
 
-	OperatorInfo := api.OperatorInformation{Operator: ">", Value: 100}
-	operatorInformation2 := api.OperatorInformation{Operator: "<", Value: 230}
+	OperatorInfo := api.OperatorInformation{OperatorType: ">", Value: 100}
+	operatorInformation2 := api.OperatorInformation{OperatorType: "<", Value: 230}
 
 	operator = append(operator, api.OperatorStruct{
 		OperatorInfo: &OperatorInfo,
@@ -399,8 +399,8 @@ func TestCalculationOperationsWithAnd(t *testing.T) {
 	})
 
 	conditionStruct.ConditionType = "AND"
-	conditionStruct.OperatorStr = operator
-	stat, err := calculationOperations(api.OperatorStruct{ConditionStr: &conditionStruct}, 200)
+	conditionStruct.Operator = operator
+	stat, err := calculationOperations(api.OperatorStruct{Condition: &conditionStruct}, 200)
 	if err != nil {
 		t.Errorf("Error calculationOperations: %v ", err)
 	}
@@ -415,24 +415,24 @@ func TestCalculationOperationsInCombination(t *testing.T) {
 
 	var newCondition api.ConditionStruct
 	newCondition.ConditionType = "AND"
-	number1 := api.OperatorInformation{Operator: ">", Value: 700}
-	number2 := api.OperatorInformation{Operator: ">", Value: 750}
-	newCondition.OperatorStr = append(newCondition.OperatorStr, api.OperatorStruct{
+	number1 := api.OperatorInformation{OperatorType: ">", Value: 700}
+	number2 := api.OperatorInformation{OperatorType: ">", Value: 750}
+	newCondition.Operator = append(newCondition.Operator, api.OperatorStruct{
 		OperatorInfo: &number2,
 	})
-	newCondition.OperatorStr = append(newCondition.OperatorStr, api.OperatorStruct{
+	newCondition.Operator = append(newCondition.Operator, api.OperatorStruct{
 		OperatorInfo: &number1,
 	})
 
-	OperatorInfo := api.OperatorInformation{Operator: "<", Value: 600}
-	conditionStruct.OperatorStr = append(conditionStruct.OperatorStr, api.OperatorStruct{
+	OperatorInfo := api.OperatorInformation{OperatorType: "<", Value: 600}
+	conditionStruct.Operator = append(conditionStruct.Operator, api.OperatorStruct{
 		OperatorInfo: &OperatorInfo,
 	})
-	conditionStruct.OperatorStr = append(conditionStruct.OperatorStr, api.OperatorStruct{
-		ConditionStr: &newCondition,
+	conditionStruct.Operator = append(conditionStruct.Operator, api.OperatorStruct{
+		Condition: &newCondition,
 	})
 
-	stat, err := calculationOperations(api.OperatorStruct{OperatorInfo: nil, ConditionStr: &conditionStruct}, 1000)
+	stat, err := calculationOperations(api.OperatorStruct{OperatorInfo: nil, Condition: &conditionStruct}, 1000)
 	if err != nil {
 		t.Errorf("Error calculationOperations: %v ", err)
 	}
@@ -479,20 +479,20 @@ func TestTrigger(t *testing.T) {
 	teardownSuite, h := setupSuite(t)
 	defer teardownSuite(t)
 
-	operatorInfo := api.OperatorInformation{Operator: ">", Value: 100}
+	operatorInfo := api.OperatorInformation{OperatorType: ">", Value: 100}
 	operator := api.OperatorStruct{
 		OperatorInfo: &operatorInfo,
-		ConditionStr: nil,
+		Condition:    nil,
 	}
 
 	var id uint = 123
 	//var insightId int64 = 123123
 	var benchmarkId string = "testBenchmarkId"
-
+	connectionId := "testConnectionId"
 	req := api.ApiRule{
 		ID:        id,
 		EventType: api.EventType{BenchmarkId: &benchmarkId},
-		Scope:     api.Scope{ConnectionId: "testConnectionId"},
+		Scope:     api.Scope{ConnectionId: &connectionId},
 		Operator:  operator,
 		ActionID:  1231,
 	}

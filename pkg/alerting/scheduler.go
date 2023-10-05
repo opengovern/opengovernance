@@ -10,21 +10,22 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 	"net/http"
 	"strconv"
 	"time"
 )
 
-func (h HttpHandler) TriggerLoop() {
+func (h *HttpHandler) TriggerRulesJobCycle() {
 	timer := time.NewTicker(30 * time.Minute)
 	defer timer.Stop()
 
 	for ; ; <-timer.C {
-		_ = h.Trigger
+		_ = h.TriggerRulesList
 	}
 }
 
-func (h HttpHandler) Trigger() error {
+func (h *HttpHandler) TriggerRulesList() error {
 	rules, err := h.db.ListRules()
 	if err != nil {
 		fmt.Printf("Error in giving list rules error equal to : %v", err)
@@ -32,54 +33,63 @@ func (h HttpHandler) Trigger() error {
 	}
 
 	for _, rule := range rules {
-		var scope api.Scope
-		err := json.Unmarshal(rule.Scope, &scope)
+		err := h.TriggerRule(rule)
 		if err != nil {
-			fmt.Printf("Error in unmarshaling scope , error  equal to : %v", err)
+			h.logger.Error("Rule trigger has been failed",
+				zap.String("rule id", fmt.Sprintf("%v", rule.ID)),
+				zap.Error(err))
+		}
+	}
+	return nil
+}
+
+func (h *HttpHandler) TriggerRule(rule Rule) error {
+	var scope api.Scope
+	err := json.Unmarshal(rule.Scope, &scope)
+	if err != nil {
+		return err
+	}
+
+	var eventType api.EventType
+	err = json.Unmarshal(rule.EventType, &eventType)
+	if err != nil {
+		return err
+	}
+
+	var operator api.OperatorStruct
+	err = json.Unmarshal(rule.Operator, &operator)
+	if err != nil {
+		return err
+	}
+
+	if eventType.InsightId != nil {
+		statInsight, err := h.triggerInsight(operator, eventType, scope)
+		if err != nil {
 			return err
 		}
-
-		var eventType api.EventType
-		err = json.Unmarshal(rule.EventType, &eventType)
-		if err != nil {
-			fmt.Printf("Error in unmarshaling event type , error equal to : %v ", err)
-			return err
-		}
-
-		var operator api.OperatorStruct
-		err = json.Unmarshal(rule.Operator, &operator)
-		if err != nil {
-			fmt.Printf("Error in unmarshaling operator , error equal to : %v ", err)
-			return err
-		}
-
-		if eventType.InsightId != nil {
-			statInsight, err := triggerInsight(h, operator, eventType, scope)
+		if statInsight {
+			err = h.sendAlert(rule)
+			h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.ID)),
+				zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
 			if err != nil {
-				fmt.Printf("Error in trigger insight : %v", err)
+				return err
 			}
-			if statInsight {
-				err = sendAlert(h, rule)
-				if err != nil {
-					fmt.Printf("Error in send alert for insigh , err : %v ", err)
-					return err
-				}
-			}
-		} else if eventType.BenchmarkId != nil {
-			statCompliance, err := triggerCompliance(h, operator, scope, eventType)
-			if err != nil {
-				fmt.Printf("Error in trigger compliance : %v ", err)
-			}
-			if statCompliance {
-				err = sendAlert(h, rule)
-				if err != nil {
-					fmt.Printf("Error in send alert for compliance , err : %v ", err)
-					return err
-				}
-			}
-		} else {
-			fmt.Printf("Error: insighId or complianceId not entered ")
 		}
+	} else if eventType.BenchmarkId != nil {
+		statCompliance, err := h.triggerCompliance(operator, scope, eventType)
+		if err != nil {
+			fmt.Printf("Error in trigger compliance : %v ", err)
+		}
+		if statCompliance {
+			err = h.sendAlert(rule)
+			h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.ID)),
+				zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		return fmt.Errorf("Error: insighId or complianceId not entered ")
 	}
 	return nil
 }
@@ -121,7 +131,7 @@ func getConnectionIdFilter(h HttpHandler, connectionIds []string, connectionGrou
 	return connectionIds, nil
 }
 
-func sendAlert(h HttpHandler, rule Rule) error {
+func (h HttpHandler) sendAlert(rule Rule) error {
 	action, err := h.db.GetAction(rule.ActionID)
 	if err != nil {
 		return fmt.Errorf("error getting action , error equal to : %v", err)
@@ -152,12 +162,12 @@ func sendAlert(h HttpHandler, rule Rule) error {
 	return nil
 }
 
-func triggerInsight(h HttpHandler, operator api.OperatorStruct, eventType api.EventType, scope api.Scope) (bool, error) {
+func (h HttpHandler) triggerInsight(operator api.OperatorStruct, eventType api.EventType, scope api.Scope) (bool, error) {
 	diff := 24 * time.Hour
 	oneDayAgo := time.Now().Add(-diff)
 	timeNow := time.Now()
 	insightID := strconv.Itoa(int(*eventType.InsightId))
-	connectionIds, err := getConnectionIdFilter(h, []string{scope.ConnectionId}, []string{scope.ConnectionGroup})
+	connectionIds, err := getConnectionIdFilter(h, []string{*scope.ConnectionId}, []string{*scope.ConnectionGroup})
 	if err != nil {
 		return false, err
 	}
@@ -180,13 +190,13 @@ func triggerInsight(h HttpHandler, operator api.OperatorStruct, eventType api.Ev
 	return true, nil
 }
 
-func triggerCompliance(h HttpHandler, operator api.OperatorStruct, scope api.Scope, eventType api.EventType) (bool, error) {
-	connectionIds, err := getConnectionIdFilter(h, []string{scope.ConnectionId}, []string{scope.ConnectionGroup})
+func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Scope, eventType api.EventType) (bool, error) {
+	connectionIds, err := getConnectionIdFilter(h, []string{*scope.ConnectionId}, []string{*scope.ConnectionGroup})
 	if err != nil {
 		return false, err
 	}
 	reqCompliance := apiCompliance.GetFindingsRequest{
-		Filters: apiCompliance.FindingFilters{ConnectionID: connectionIds, BenchmarkID: []string{*eventType.BenchmarkId}, Connector: []source.Type{scope.ConnectorName}},
+		Filters: apiCompliance.FindingFilters{ConnectionID: connectionIds, BenchmarkID: []string{*eventType.BenchmarkId}, Connector: []source.Type{*scope.ConnectorName}},
 		Page:    apiCompliance.Page{No: 1, Size: 1},
 	}
 	compliance, err := h.complianceClient.GetFindings(&httpclient.Context{UserRole: authApi.InternalRole}, reqCompliance)
@@ -206,10 +216,10 @@ func triggerCompliance(h HttpHandler, operator api.OperatorStruct, scope api.Sco
 
 func calculationOperations(operator api.OperatorStruct, totalValue int64) (bool, error) {
 	if oneCondition := operator.OperatorInfo; oneCondition != nil {
-		stat := compareValue(oneCondition.Operator, oneCondition.Value, totalValue)
+		stat := compareValue(oneCondition.OperatorType, oneCondition.Value, totalValue)
 		return stat, nil
 
-	} else if operator.ConditionStr != nil {
+	} else if operator.Condition != nil {
 		stat, err := calculationConditionStr(operator, totalValue)
 		if err != nil {
 			return false, err
@@ -220,7 +230,7 @@ func calculationOperations(operator api.OperatorStruct, totalValue int64) (bool,
 }
 
 func calculationConditionStr(operator api.OperatorStruct, totalValue int64) (bool, error) {
-	conditionType := operator.ConditionStr.ConditionType
+	conditionType := operator.Condition.ConditionType
 
 	if conditionType == "AND" {
 		stat, err := calculationConditionStrAND(operator, totalValue)
@@ -242,12 +252,12 @@ func calculationConditionStr(operator api.OperatorStruct, totalValue int64) (boo
 
 func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (bool, error) {
 	// AND condition
-	numberOperatorStr := len(operator.ConditionStr.OperatorStr)
+	numberOperatorStr := len(operator.Condition.Operator)
 	for i := 0; i < numberOperatorStr; i++ {
-		newOperator := operator.ConditionStr.OperatorStr[i]
+		newOperator := operator.Condition.Operator[i]
 
 		if newOperator.OperatorInfo != nil {
-			stat := compareValue(newOperator.OperatorInfo.Operator, newOperator.OperatorInfo.Value, totalValue)
+			stat := compareValue(newOperator.OperatorInfo.OperatorType, newOperator.OperatorInfo.Value, totalValue)
 			if !stat {
 				return false, nil
 			} else {
@@ -257,13 +267,13 @@ func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (
 				continue
 			}
 
-		} else if newOperator.ConditionStr.ConditionType != "" {
-			newOperator2 := newOperator.ConditionStr
+		} else if newOperator.Condition.ConditionType != "" {
+			newOperator2 := newOperator.Condition
 			conditionType2 := newOperator2.ConditionType
-			numberOperatorStr2 := len(newOperator2.OperatorStr)
+			numberOperatorStr2 := len(newOperator2.Operator)
 
 			for j := 0; j < numberOperatorStr2; j++ {
-				stat, err := calculationOperations(newOperator2.OperatorStr[j], totalValue)
+				stat, err := calculationOperations(newOperator2.Operator[j], totalValue)
 				if err != nil {
 					return false, fmt.Errorf("error in calculationOperations : %v ", err)
 				}
@@ -307,13 +317,13 @@ func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (
 
 func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (bool, error) {
 	// OR condition
-	numberOperatorStr := len(operator.ConditionStr.OperatorStr)
+	numberOperatorStr := len(operator.Condition.Operator)
 
 	for i := 0; i < numberOperatorStr; i++ {
-		newOperator := operator.ConditionStr.OperatorStr[i]
+		newOperator := operator.Condition.Operator[i]
 
 		if newOperator.OperatorInfo != nil {
-			stat := compareValue(newOperator.OperatorInfo.Operator, newOperator.OperatorInfo.Value, totalValue)
+			stat := compareValue(newOperator.OperatorInfo.OperatorType, newOperator.OperatorInfo.Value, totalValue)
 			if stat {
 				return true, nil
 			} else {
@@ -323,13 +333,13 @@ func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (b
 				continue
 			}
 
-		} else if newOperator.ConditionStr.OperatorStr != nil {
-			newOperator2 := newOperator.ConditionStr
+		} else if newOperator.Condition.Operator != nil {
+			newOperator2 := newOperator.Condition
 			conditionType2 := newOperator2.ConditionType
-			numberConditionStr2 := len(newOperator2.OperatorStr)
+			numberConditionStr2 := len(newOperator2.ConditionType)
 
 			for j := 0; j < numberConditionStr2; j++ {
-				stat, err := calculationOperations(newOperator2.OperatorStr[j], totalValue)
+				stat, err := calculationOperations(newOperator2.Operator[j], totalValue)
 				if err != nil {
 					return false, fmt.Errorf("error in calculationOperations : %v ", err)
 				}
