@@ -63,6 +63,7 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 	}
 
 	if eventType.InsightId != nil {
+		h.logger.Info("triggering insight", zap.String("rule", fmt.Sprintf("%v", rule.ID)))
 		statInsight, err := h.triggerInsight(operator, eventType, scope)
 		if err != nil {
 			return err
@@ -76,6 +77,7 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 			}
 		}
 	} else if eventType.BenchmarkId != nil {
+		h.logger.Info("triggering compliance", zap.String("rule", fmt.Sprintf("%v", rule.ID)))
 		statCompliance, err := h.triggerCompliance(operator, scope, eventType)
 		if err != nil {
 			fmt.Printf("Error in trigger compliance : %v ", err)
@@ -108,7 +110,7 @@ func (h HttpHandler) getConnectionIdFilter(scope api.Scope) ([]string, error) {
 	}
 	check := make(map[string]bool)
 	var connectionIDSChecked []string
-	if scope.ConnectionGroup == nil {
+	if scope.ConnectionGroup != nil {
 		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, *scope.ConnectionGroup)
 		if err != nil {
 			return nil, err
@@ -201,10 +203,12 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 		Filters: filters,
 		Page:    apiCompliance.Page{No: 1, Size: 1},
 	}
+	h.logger.Info("sending finding request")
 	compliance, err := h.complianceClient.GetFindings(&httpclient.Context{UserRole: authApi.InternalRole}, reqCompliance)
 	if err != nil {
 		return false, fmt.Errorf("error getting compliance , err : %v ", err)
 	}
+	h.logger.Info("received findings")
 	stat, err := calculationOperations(operator, compliance.TotalCount)
 	if err != nil {
 		return false, err
@@ -212,6 +216,9 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 	h.logger.Info("Insight rule operation done",
 		zap.Bool("result", stat),
 		zap.Int64("totalCount", compliance.TotalCount))
+	fmt.Println("================================")
+	fmt.Println("total count:", compliance.TotalCount)
+	fmt.Println("================================")
 	return stat, nil
 }
 
