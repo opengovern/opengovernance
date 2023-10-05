@@ -52,7 +52,7 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("init http handler: %w", err)
 	}
 
-	go handler.TriggerLoop()
+	go handler.TriggerRulesJobCycle()
 
 	return httpserver.RegisterAndStart(logger, HttpAddress, handler)
 }
