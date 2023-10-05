@@ -72,6 +72,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.16.2
 )
 
+
 require (
 	cloud.google.com/go v0.110.0 // indirect
 	cloud.google.com/go/compute v1.19.1 // indirect
