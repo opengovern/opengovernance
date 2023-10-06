@@ -16,4 +16,6 @@ RUN chown -R steampipe /home/steampipe/.steampipe/plugins/*
 USER steampipe
 
 COPY ./build/analytics-worker /
+
+ENTRYPOINT [ "/analytics-worker" ]
 CMD [ "/analytics-worker" ]
