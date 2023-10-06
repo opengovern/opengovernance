@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	AnalyticsConnectionSummaryIndex = "analytics_connection_summary"
+	AnalyticsConnectionSummaryIndex                    = "analytics_connection_summary"
+	ResourceCollectionsAnalyticsConnectionSummaryIndex = "rc_analytics_connection_summary"
 )
 
 type ConnectionMetricTrendSummary struct {
@@ -22,6 +23,8 @@ type ConnectionMetricTrendSummary struct {
 	MetricName      string      `json:"metric_name"`
 	ResourceCount   int         `json:"resource_count"`
 	IsJobSuccessful bool        `json:"is_job_successful"`
+
+	ResourceCollection *string `json:"resource_collection"`
 }
 
 func (r ConnectionMetricTrendSummary) KeysAndIndex() ([]string, string) {
@@ -30,5 +33,10 @@ func (r ConnectionMetricTrendSummary) KeysAndIndex() ([]string, string) {
 		r.ConnectionID.String(),
 		r.MetricID,
 	}
-	return keys, AnalyticsConnectionSummaryIndex
+	idx := AnalyticsConnectionSummaryIndex
+	if r.ResourceCollection != nil {
+		keys = append(keys, *r.ResourceCollection)
+		idx = ResourceCollectionsAnalyticsConnectionSummaryIndex
+	}
+	return keys, idx
 }

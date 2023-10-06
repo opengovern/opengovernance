@@ -96,6 +96,16 @@ type ResourceCollection struct {
 	Filters []kaytu.ResourceCollectionFilter `gorm:"-:all"`
 }
 
+func (r ResourceCollection) ToApi() api.ResourceCollection {
+	apiResourceCollection := api.ResourceCollection{
+		ID:      r.ID,
+		Name:    r.Name,
+		Tags:    model.TrimPrivateTags(r.GetTagsMap()),
+		Filters: r.Filters,
+	}
+	return apiResourceCollection
+}
+
 func (r ResourceCollection) GetTagsMap() map[string][]string {
 	if r.tagsMap == nil {
 		tagLikeArr := make([]model.TagLike, 0, len(r.Tags))

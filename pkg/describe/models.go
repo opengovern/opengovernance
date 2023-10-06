@@ -115,8 +115,9 @@ type SummarizerJob struct {
 
 type AnalyticsJob struct {
 	gorm.Model
-	Status         analytics.JobStatus
-	FailureMessage string
+	ResourceCollectionId *string
+	Status               analytics.JobStatus
+	FailureMessage       string
 }
 
 type CheckupJob struct {
