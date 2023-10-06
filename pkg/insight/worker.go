@@ -3,6 +3,7 @@ package insight
 import (
 	"encoding/json"
 	"fmt"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"strings"
 
@@ -28,9 +29,10 @@ type Worker struct {
 
 	logger *zap.Logger
 
-	kfkProducer   *confluent_kafka.Producer
-	onboardClient client.OnboardServiceClient
-	pusher        *push.Pusher
+	kfkProducer     *confluent_kafka.Producer
+	onboardClient   client.OnboardServiceClient
+	inventoryClient inventoryClient.InventoryServiceClient
+	pusher          *push.Pusher
 
 	s3Bucket string
 	uploader *s3manager.Uploader
@@ -41,6 +43,7 @@ type WorkerConfig struct {
 	ElasticSearch         config.ElasticSearch
 	Kafka                 config.Kafka
 	Onboard               config.KaytuService
+	Inventory             config.KaytuService
 	PrometheusPushAddress string
 }
 
@@ -108,6 +111,7 @@ func InitializeWorker(
 		Collector(DoInsightJobsDuration)
 
 	w.onboardClient = client.NewOnboardServiceClient(workerConfig.Onboard.BaseURL, nil)
+	w.inventoryClient = inventoryClient.NewInventoryServiceClient(workerConfig.Inventory.BaseURL)
 
 	if s3Region == "" {
 		s3Region = "us-west-2"
@@ -150,7 +154,9 @@ func (w *Worker) Run() error {
 		return err
 	}
 	w.logger.Info("Processing job", zap.Int("jobID", int(job.JobID)))
-	result := job.Do(w.config.ElasticSearch, w.onboardClient,
+	result := job.Do(w.config.ElasticSearch,
+		w.onboardClient,
+		w.inventoryClient,
 		w.kfkProducer,
 		w.uploader, w.s3Bucket, CurrentWorkspaceID,
 		w.config.Kafka.Topic, w.logger)

@@ -1076,11 +1076,17 @@ func (db Database) FetchLastInsightJob() (*InsightJob, error) {
 	return &job, nil
 }
 
-func (db Database) GetLastInsightJob(insightID uint, sourceID string) (*InsightJob, error) {
+func (db Database) GetLastInsightJobForResourceCollection(insightID uint, sourceID string,
+	resourceCollectionId *string) (*InsightJob, error) {
 	var job InsightJob
 	tx := db.orm.Model(&InsightJob{}).
 		Where("source_id = ? AND insight_id = ?", sourceID, insightID).
-		Order("created_at DESC").First(&job)
+		Order("created_at DESC")
+	if resourceCollectionId == nil {
+		tx = tx.Where("resource_collection_id IS NULL").First(&job)
+	} else {
+		tx = tx.Where("resource_collection_id = ?", *resourceCollectionId).First(&job)
+	}
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

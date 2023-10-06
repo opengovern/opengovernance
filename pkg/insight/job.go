@@ -2,8 +2,10 @@ package insight
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"strconv"
 	"strings"
@@ -58,6 +60,8 @@ type Job struct {
 	Description string
 	ExecutedAt  int64
 	IsStack     bool
+
+	ResourceCollectionId *string
 }
 
 type JobResult struct {
@@ -66,7 +70,8 @@ type JobResult struct {
 	Error  string
 }
 
-func (j Job) Do(esConfig config.ElasticSearch, onboardClient client.OnboardServiceClient,
+func (j Job) Do(esConfig config.ElasticSearch,
+	onboardClient client.OnboardServiceClient, inventoryClient inventoryClient.InventoryServiceClient,
 	producer *confluent_kafka.Producer, uploader *s3manager.Uploader, bucket,
 	currentWorkspaceID string,
 	topic string, logger *zap.Logger) (r JobResult) {
@@ -141,7 +146,24 @@ func (j Job) Do(esConfig config.ElasticSearch, onboardClient client.OnboardServi
 		steampipeSourceId = j.SourceID
 	}
 
-	err = steampipe.PopulateSteampipeConfig(esConfig, j.SourceType, steampipeSourceId, nil)
+	var encodedResourceCollectionFilter *string
+	if j.ResourceCollectionId != nil {
+		rc, err := inventoryClient.GetResourceCollection(&httpclient.Context{UserRole: authApi.InternalRole},
+			*j.ResourceCollectionId)
+		if err != nil {
+			fail(err)
+			return
+		}
+		filtersJson, err := json.Marshal(rc.Filters)
+		if err != nil {
+			fail(err)
+			return
+		}
+		filtersEncoded := base64.StdEncoding.EncodeToString(filtersJson)
+		encodedResourceCollectionFilter = &filtersEncoded
+	}
+
+	err = steampipe.PopulateSteampipeConfig(esConfig, j.SourceType, steampipeSourceId, encodedResourceCollectionFilter)
 	if err != nil {
 		logger.Error("failed to populate steampipe config", zap.Error(err))
 		fail(fmt.Errorf("populating steampipe config: %w", err))
@@ -257,6 +279,7 @@ func (j Job) Do(esConfig config.ElasticSearch, onboardClient client.OnboardServi
 						IncludedConnections: connections,
 						PerConnectionCount:  perConnectionCountMap,
 						S3Location:          result.Location,
+						ResourceCollection:  j.ResourceCollectionId,
 					})
 				}
 

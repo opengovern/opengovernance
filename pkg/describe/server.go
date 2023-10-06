@@ -247,7 +247,7 @@ func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 		}
 
 		id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
-		err := h.Scheduler.runInsightJob(true, ins, id, id, ins.Connector)
+		err := h.Scheduler.runInsightJob(true, ins, id, id, ins.Connector, nil)
 		if err != nil {
 			return err
 		}
