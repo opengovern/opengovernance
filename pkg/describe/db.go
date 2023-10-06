@@ -273,16 +273,15 @@ func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType
 
 // UpdateDescribeConnectionJobStatus updates the status of the DescribeResourceJob to the provided status.
 // If the status if 'FAILED', msg could be used to indicate the failure reason
-func (db Database) UpdateDescribeConnectionJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount int64) error {
-	tx := db.orm.
-		Model(&DescribeConnectionJob{}).
-		Where("id = ?", id).
-		Updates(DescribeConnectionJob{Status: status, FailureMessage: msg, ErrorCode: errCode, DescribedResourceCount: resourceCount})
+func (db Database) UpdateDescribeConnectionJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount int64) (api.DescribeResourceJobStatus, error) {
+	var oldStatus api.DescribeResourceJobStatus
+	tx := db.orm.Raw("WITH u AS (SELECT * FROM describe_connection_jobs WHERE id = ?) UPDATE describe_connection_jobs SET status = ?, failure_message = ?, error_code = ?,  described_resource_count = ? WHERE id = ? RETURNING (SELECT status FROM u)",
+		id, status, msg, errCode, resourceCount, id).Scan(&oldStatus)
 	if tx.Error != nil {
-		return tx.Error
+		return oldStatus, tx.Error
 	}
 
-	return nil
+	return oldStatus, nil
 }
 
 func (db Database) UpdateDescribeConnectionJobToInProgress(id uint) error {
