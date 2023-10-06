@@ -1,16 +1,16 @@
 package cost_estimator
 
 import (
-	"bytes"
 	_ "context"
 	"encoding/json"
 	"fmt"
 	_ "fmt"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
-	elastic "github.com/elastic/go-elasticsearch/v7"
 	azure "github.com/kaytu-io/kaytu-azure-describer/azure/model"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
+	"time"
 )
 
 type ComputeVirtualMachine struct {
@@ -25,33 +25,117 @@ type ComputeVirtualMachine struct {
 	SourceID      string                                 `json:"source_id"`
 }
 
-func TestAddNewResource(t *testing.T) {
-	client, err := elastic.NewClient(elastic.Config{
-		Addresses: []string{"http://localhost:9200"},
-	})
+type ItemsStr struct {
+	CurrencyCode         string
+	TierMinimumUnits     float64
+	RetailPrice          float64
+	UnitPrice            float64
+	ArmRegionName        string
+	Location             string
+	EffectiveStartDate   string
+	MeterId              string
+	MeterName            string
+	ProductId            string
+	SkuId                string
+	ProductName          string
+	SkuName              string
+	ServiceName          string
+	ServiceId            string
+	ServiceFamily        string
+	UnitOfMeasure        string
+	Type                 string
+	IsPrimaryMeterRegion bool
+	ArmSkuName           string
+}
+type AzureCostStr struct {
+	BillingCurrency    string
+	CustomerEntityId   string
+	CustomerEntityType string
+	Items              []ItemsStr
+	NextPageLink       string
+	Count              int
+}
+
+//	the thinks that needs for giving from elastic search from each resource :{
+//			ostype : VirtualMachine.prapertic.StorageProfile.OSDisk.OSType
+//			location: VirtualMachine.Location
+//			VMSize : VirtualMachine.prapertic.HardwareProfile.vmsize
+//	}
+
+func TestAzureCostRequest(t *testing.T) {
+	serviceName := "Virtual Machines"
+	OSType := "Windows"
+	typeN := "Consumption"
+	armRegionName := "eastus"
+	serviceFamily := "Compute"
+	armSkuName := "Standard_E16ds_v5"
+	filter := fmt.Sprintf("serviceName eq '%v' and type eq '%v' and serviceFamily eq '%v' and armSkuName eq '%v' and armRegionName eq '%v' ", serviceName, typeN, serviceFamily, armSkuName, armRegionName)
+
+	url := "https://prices.azure.com/api/retail/prices"
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		t.Errorf("error in connecting to elastic : %v ", err)
+		t.Errorf("error : %v ", err)
 	}
 
-	var location string = "IN South"
-	body := ComputeVirtualMachine{
-		SourceType:  "Virtual Machines",
-		Description: azure.ComputeVirtualMachineDescription{VirtualMachine: armcompute.VirtualMachine{Location: &location}},
-	}
-	bodyM, err := json.Marshal(body)
+	q := req.URL.Query()
+	q.Add("$filter", filter)
+	req.URL.RawQuery = q.Encode()
+
+	client := http.Client{}
+	res, err := client.Do(req)
 	if err != nil {
-		t.Errorf("err : %v ", err)
+		t.Errorf("error in status code : %v ", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("error status equal to : %v ", res.StatusCode)
 	}
 
-	test := bytes.NewBuffer(bodyM)
-	response, err := client.Create("new-resource", "1", test)
+	responseBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		t.Errorf("err : %v ", err)
+		t.Errorf("error  : %v ", err)
 	}
 
-	if response.StatusCode != http.StatusOK {
-		t.Errorf("err : %v ", response.StatusCode)
+	var response AzureCostStr
+	err = json.Unmarshal(responseBody, &response)
+	if err != nil {
+		t.Errorf("error in unmarshalling the response : %v ", err)
 	}
-	fmt.Println(response.Body)
+	//fmt.Printf("items : %v ", response.Items)
+	item := giveProperCostTime(response.Items, t, OSType)
+	fmt.Printf("cost equal to : %v ", item.RetailPrice)
+}
 
+func giveProperCostTime(Items []ItemsStr, t *testing.T, OSType string) ItemsStr {
+	newTime := 1
+	var newItem ItemsStr
+	osTypeCheckWindows := true
+	if OSType == "Linux" {
+		osTypeCheckWindows = false
+	}
+
+	for i := 0; i < len(Items); i++ {
+		item := Items[i]
+
+		checkOsType := strings.Contains(item.ProductName, "Windows")
+		if osTypeCheckWindows {
+			if !checkOsType {
+				continue
+			}
+		} else {
+			if checkOsType {
+				continue
+			}
+		}
+
+		timeP, err := time.Parse(time.RFC3339, item.EffectiveStartDate)
+		if err != nil {
+			t.Errorf("error in parsing time : %v ", err)
+		}
+		if timeP.Year() > newTime {
+			newTime = timeP.Year()
+			newItem = Items[i]
+		}
+	}
+	return newItem
 }
