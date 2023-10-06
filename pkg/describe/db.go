@@ -1293,10 +1293,14 @@ func (db Database) FetchLastSummarizerJob(jobType summarizer.JobType) (*Summariz
 	return &job, nil
 }
 
-func (db Database) FetchLastAnalyticsJob() (*AnalyticsJob, error) {
+func (db Database) FetchLastAnalyticsJobForCollectionId(resourceCollectionId *string) (*AnalyticsJob, error) {
 	var job AnalyticsJob
-	tx := db.orm.Model(&AnalyticsJob{}).
-		Order("created_at DESC").First(&job)
+	tx := db.orm.Model(&AnalyticsJob{}).Order("created_at DESC")
+	if resourceCollectionId == nil {
+		tx = tx.Where("resource_collection_id IS NULL").First(&job)
+	} else {
+		tx = tx.Where("resource_collection_id = ?", resourceCollectionId).First(&job)
+	}
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

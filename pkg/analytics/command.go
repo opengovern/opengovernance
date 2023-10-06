@@ -7,13 +7,12 @@ import (
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
 	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"strings"
@@ -32,6 +31,7 @@ type WorkerConfig struct {
 	Steampipe     config.Postgres
 	Onboard       config.KaytuService
 	Scheduler     config.KaytuService
+	Inventory     config.KaytuService
 }
 
 func WorkerCommand() *cobra.Command {
@@ -85,9 +85,9 @@ type Worker struct {
 	config          WorkerConfig
 	logger          *zap.Logger
 	db              db.Database
-	steampipeDB     *steampipe.Database
 	onboardClient   onboardClient.OnboardServiceClient
 	schedulerClient describeClient.SchedulerServiceClient
+	inventoryClient inventoryClient.InventoryServiceClient
 	kfkProducer     *confluent_kafka.Producer
 }
 
@@ -129,29 +129,6 @@ func InitializeWorker(
 		return nil, err
 	}
 	fmt.Println("Initialized postgres database: ", conf.PostgreSQL.DB)
-
-	err = steampipe.PopulateSteampipeConfig(conf.ElasticSearch, source.CloudAWS, "all", nil)
-	if err != nil {
-		logger.Error("failed to populate steampipe config for aws plugin", zap.Error(err))
-		return nil, err
-	}
-	err = steampipe.PopulateSteampipeConfig(conf.ElasticSearch, source.CloudAzure, "all", nil)
-	if err != nil {
-		logger.Error("failed to populate steampipe config for azure plugin", zap.Error(err))
-		return nil, err
-	}
-	err = steampipe.PopulateKaytuPluginSteampipeConfig(conf.ElasticSearch, conf.Steampipe, nil)
-	if err != nil {
-		logger.Error("failed to populate steampipe config for kaytu plugin", zap.Error(err))
-		return nil, err
-	}
-
-	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
-	if err != nil {
-		return nil, err
-	}
-	w.steampipeDB = steampipeConn
-	fmt.Println("Connected to the steampipe database: ", conf.Steampipe.DB)
 
 	qCfg := queue.Config{}
 	qCfg.Server.Username = conf.RabbitMQ.Username
@@ -196,6 +173,7 @@ func InitializeWorker(
 
 	w.onboardClient = onboardClient.NewOnboardServiceClient(conf.Onboard.BaseURL, nil)
 	w.schedulerClient = describeClient.NewSchedulerServiceClient(conf.Scheduler.BaseURL)
+	w.inventoryClient = inventoryClient.NewInventoryServiceClient(conf.Inventory.BaseURL)
 	return w, nil
 }
 
@@ -232,7 +210,7 @@ func (w *Worker) Run() error {
 
 	w.logger.Info("Running the job", zap.Uint("jobID", job.JobID))
 
-	result := job.Do(w.db, w.steampipeDB, w.kfkProducer, w.config.Kafka.Topic, w.onboardClient, w.schedulerClient, w.logger)
+	result := job.Do(w.db, w.config, w.kfkProducer, w.config.Kafka.Topic, w.onboardClient, w.schedulerClient, w.inventoryClient, w.logger)
 
 	w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 

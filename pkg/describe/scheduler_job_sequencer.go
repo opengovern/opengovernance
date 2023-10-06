@@ -69,7 +69,7 @@ func (s *Scheduler) runNextJob(job JobSequencer) error {
 			return err
 		}
 	case string(JobSequencerJobTypeAnalytics):
-		err := s.scheduleAnalyticsJob()
+		err := s.scheduleAnalyticsJob(nil)
 		if err != nil {
 			return err
 		}

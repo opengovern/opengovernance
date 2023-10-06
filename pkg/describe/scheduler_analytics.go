@@ -19,14 +19,14 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		lastJob, err := s.db.FetchLastAnalyticsJob()
+		lastJob, err := s.db.FetchLastAnalyticsJobForCollectionId(nil)
 		if err != nil {
 			s.logger.Error("Failed to find the last job to check for AnalyticsJob", zap.Error(err))
 			AnalyticsJobsCount.WithLabelValues("failure").Inc()
 			continue
 		}
 		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.analyticsIntervalHours)*time.Hour).Before(time.Now()) {
-			err := s.scheduleAnalyticsJob()
+			err := s.scheduleAnalyticsJob(nil)
 			if err != nil {
 				s.logger.Error("failure on scheduleAnalyticsJob", zap.Error(err))
 			}
@@ -34,8 +34,8 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 	}
 }
 
-func (s *Scheduler) scheduleAnalyticsJob() error {
-	lastJob, err := s.db.FetchLastAnalyticsJob()
+func (s *Scheduler) scheduleAnalyticsJob(resourceCollectionId *string) error {
+	lastJob, err := s.db.FetchLastAnalyticsJobForCollectionId(resourceCollectionId)
 	if err != nil {
 		AnalyticsJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to get ongoing AnalyticsJob",
@@ -49,7 +49,7 @@ func (s *Scheduler) scheduleAnalyticsJob() error {
 		return fmt.Errorf("there is ongoing AnalyticsJob skipping this schedule")
 	}
 
-	job := newAnalyticsJob()
+	job := newAnalyticsJob(resourceCollectionId)
 
 	err = s.db.AddAnalyticsJob(&job)
 	if err != nil {
@@ -61,7 +61,7 @@ func (s *Scheduler) scheduleAnalyticsJob() error {
 		return err
 	}
 
-	err = enqueueAnalyticsJobs(s.db, s.analyticsJobQueue, job)
+	err = enqueueAnalyticsJobs(s.analyticsJobQueue, job)
 	if err != nil {
 		AnalyticsJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to enqueue AnalyticsJob",
@@ -83,9 +83,10 @@ func (s *Scheduler) scheduleAnalyticsJob() error {
 	return nil
 }
 
-func enqueueAnalyticsJobs(db Database, q queue.Interface, job AnalyticsJob) error {
+func enqueueAnalyticsJobs(q queue.Interface, job AnalyticsJob) error {
 	if err := q.Publish(analytics.Job{
-		JobID: job.ID,
+		JobID:                job.ID,
+		ResourceCollectionId: job.ResourceCollectionId,
 	}); err != nil {
 		return err
 	}
@@ -93,11 +94,12 @@ func enqueueAnalyticsJobs(db Database, q queue.Interface, job AnalyticsJob) erro
 	return nil
 }
 
-func newAnalyticsJob() AnalyticsJob {
+func newAnalyticsJob(resourceCollectionId *string) AnalyticsJob {
 	return AnalyticsJob{
-		Model:          gorm.Model{},
-		Status:         analytics.JobCreated,
-		FailureMessage: "",
+		Model:                gorm.Model{},
+		ResourceCollectionId: resourceCollectionId,
+		Status:               analytics.JobCreated,
+		FailureMessage:       "",
 	}
 }
 
@@ -140,7 +142,7 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 			} else {
 				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
 			}
-			
+
 			err := s.db.UpdateAnalyticsJob(result.JobID, result.Status, result.Error)
 			if err != nil {
 				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()

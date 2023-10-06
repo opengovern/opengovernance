@@ -335,7 +335,7 @@ func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
 }
 
 func (h HttpServer) TriggerAnalyticsJob(ctx echo.Context) error {
-	err := h.Scheduler.scheduleAnalyticsJob()
+	err := h.Scheduler.scheduleAnalyticsJob(nil)
 	if err != nil {
 		errMsg := fmt.Sprintf("error scheduling summarize job: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})

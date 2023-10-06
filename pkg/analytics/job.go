@@ -2,20 +2,24 @@ package analytics
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
-	api3 "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"reflect"
 	"strings"
 	"time"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	describeApi "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -32,7 +36,8 @@ const (
 )
 
 type Job struct {
-	JobID uint
+	JobID                uint
+	ResourceCollectionId *string
 }
 
 type JobResult struct {
@@ -43,11 +48,12 @@ type JobResult struct {
 
 func (j *Job) Do(
 	db db.Database,
-	steampipeDB *steampipe.Database,
+	conf WorkerConfig,
 	kfkProducer *confluent_kafka.Producer,
 	kfkTopic string,
 	onboardClient onboardClient.OnboardServiceClient,
-	schedulerClient client.SchedulerServiceClient,
+	schedulerClient describeClient.SchedulerServiceClient,
+	inventoryClient inventoryClient.InventoryServiceClient,
 	logger *zap.Logger,
 ) JobResult {
 	result := JobResult{
@@ -55,10 +61,52 @@ func (j *Job) Do(
 		Status: JobCompleted,
 		Error:  "",
 	}
-
-	if err := j.Run(db, steampipeDB, kfkProducer, kfkTopic, schedulerClient, onboardClient, logger); err != nil {
+	fail := func(err error) JobResult {
 		result.Error = err.Error()
 		result.Status = JobCompletedWithFailure
+		return result
+	}
+
+	var encodedResourceCollectionFilter *string
+	if j.ResourceCollectionId != nil {
+		rc, err := inventoryClient.GetResourceCollection(&httpclient.Context{UserRole: authApi.InternalRole},
+			*j.ResourceCollectionId)
+		if err != nil {
+			return fail(err)
+		}
+		filtersJson, err := json.Marshal(rc.Filters)
+		if err != nil {
+			return fail(err)
+		}
+		filtersEncoded := base64.StdEncoding.EncodeToString(filtersJson)
+		encodedResourceCollectionFilter = &filtersEncoded
+	}
+
+	err := steampipe.PopulateSteampipeConfig(conf.ElasticSearch, source.CloudAWS, "all", encodedResourceCollectionFilter)
+	if err != nil {
+		logger.Error("failed to populate steampipe config for aws plugin", zap.Error(err))
+		return fail(err)
+	}
+	err = steampipe.PopulateSteampipeConfig(conf.ElasticSearch, source.CloudAzure, "all", encodedResourceCollectionFilter)
+	if err != nil {
+		logger.Error("failed to populate steampipe config for azure plugin", zap.Error(err))
+		return fail(err)
+	}
+	err = steampipe.PopulateKaytuPluginSteampipeConfig(conf.ElasticSearch, conf.Steampipe, encodedResourceCollectionFilter)
+	if err != nil {
+		logger.Error("failed to populate steampipe config for kaytu plugin", zap.Error(err))
+		return fail(err)
+	}
+
+	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
+	if err != nil {
+		return fail(err)
+	}
+	fmt.Println("Connected to the steampipe database: ", conf.Steampipe.DB)
+	defer steampipeConn.Conn().Close()
+
+	if err := j.Run(db, steampipeConn, kfkProducer, kfkTopic, schedulerClient, onboardClient, logger); err != nil {
+		fail(err)
 	}
 	return result
 }
@@ -68,7 +116,7 @@ func (j *Job) Run(
 	steampipeDB *steampipe.Database,
 	kfkProducer *confluent_kafka.Producer,
 	kfkTopic string,
-	schedulerClient client.SchedulerServiceClient,
+	schedulerClient describeClient.SchedulerServiceClient,
 	onboardClient onboardClient.OnboardServiceClient,
 	logger *zap.Logger) error {
 	startTime := time.Now()
@@ -77,20 +125,20 @@ func (j *Job) Run(
 		return err
 	}
 
-	connectionCache := map[string]api.Connection{}
+	connectionCache := map[string]onboardApi.Connection{}
 
 	for _, metric := range metrics {
 		if metric.Type == db.MetricTypeAssets {
-			s := map[string]api3.DescribeStatus{}
+			s := map[string]describeApi.DescribeStatus{}
 			for _, resourceType := range metric.Tables {
-				status, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: api2.InternalRole}, resourceType)
+				status, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: authApi.InternalRole}, resourceType)
 				if err != nil {
 					return err
 				}
 
 				for _, st := range status {
 					if v, ok := s[st.ConnectionID]; ok {
-						if st.Status != api3.DescribeResourceJobSucceeded {
+						if st.Status != describeApi.DescribeResourceJobSucceeded {
 							v.Status = st.Status
 							s[st.ConnectionID] = v
 						}
@@ -100,7 +148,7 @@ func (j *Job) Run(
 				}
 			}
 
-			var status []api3.DescribeStatus
+			var status []describeApi.DescribeStatus
 			for _, v := range s {
 				status = append(status, v)
 			}
@@ -120,20 +168,20 @@ func (j *Job) Run(
 				return err
 			}
 		} else {
-			awsStatus, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: api2.InternalRole}, "AWS::CostExplorer::ByServiceDaily")
+			awsStatus, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: authApi.InternalRole}, "AWS::CostExplorer::ByServiceDaily")
 			if err != nil {
 				return err
 			}
 
-			azureStatus, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: api2.InternalRole}, "Microsoft.CostManagement/CostByResourceType")
+			azureStatus, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: authApi.InternalRole}, "Microsoft.CostManagement/CostByResourceType")
 			if err != nil {
 				return err
 			}
 
-			s := map[string]api3.DescribeStatus{}
+			s := map[string]describeApi.DescribeStatus{}
 			for _, st := range append(awsStatus, azureStatus...) {
 				if v, ok := s[st.ConnectionID]; ok {
-					if st.Status != api3.DescribeResourceJobSucceeded {
+					if st.Status != describeApi.DescribeResourceJobSucceeded {
 						v.Status = st.Status
 						s[st.ConnectionID] = v
 					}
@@ -142,7 +190,7 @@ func (j *Job) Run(
 				}
 			}
 
-			var status []api3.DescribeStatus
+			var status []describeApi.DescribeStatus
 			for _, v := range s {
 				status = append(status, v)
 			}
@@ -186,9 +234,9 @@ func (j *Job) DoAssetMetric(
 	onboardClient onboardClient.OnboardServiceClient,
 	logger *zap.Logger,
 	metric db.AnalyticMetric,
-	connectionCache map[string]api.Connection,
+	connectionCache map[string]onboardApi.Connection,
 	startTime time.Time,
-	status []api3.DescribeStatus,
+	status []describeApi.DescribeStatus,
 ) error {
 	connectionResultMap := map[string]resource.ConnectionMetricTrendSummary{}
 	providerResultMap := map[string]resource.ConnectorMetricTrendSummary{}
@@ -204,7 +252,7 @@ func (j *Job) DoAssetMetric(
 	connectorSuccessCount := map[string]int64{}
 	for _, st := range status {
 		connectorCount[st.Connector]++
-		if st.Status == api3.DescribeResourceJobSucceeded {
+		if st.Status == describeApi.DescribeResourceJobSucceeded {
 			connectorSuccessCount[st.Connector]++
 		}
 	}
@@ -227,11 +275,11 @@ func (j *Job) DoAssetMetric(
 			return fmt.Errorf("invalid format for count: [%s] %v", reflect.TypeOf(record[2]), record[2])
 		}
 
-		var conn *api.Connection
+		var conn *onboardApi.Connection
 		if cached, ok := connectionCache[sourceID]; ok {
 			conn = &cached
 		} else {
-			conn, err = onboardClient.GetSource(&httpclient.Context{UserRole: api2.AdminRole}, sourceID)
+			conn, err = onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, sourceID)
 			if err != nil {
 				if strings.Contains(err.Error(), "source not found") {
 					continue
@@ -248,7 +296,7 @@ func (j *Job) DoAssetMetric(
 		isJobSuccessful := true
 		for _, st := range status {
 			if st.ConnectionID == conn.ID.String() {
-				if st.Status == api3.DescribeResourceJobFailed || st.Status == api3.DescribeResourceJobTimeout {
+				if st.Status == describeApi.DescribeResourceJobFailed || st.Status == describeApi.DescribeResourceJobTimeout {
 					isJobSuccessful = false
 				}
 			}
@@ -340,10 +388,10 @@ func (j *Job) DoSpendMetric(
 	onboardClient onboardClient.OnboardServiceClient,
 	logger *zap.Logger,
 	metric db.AnalyticMetric,
-	connectionCache map[string]api.Connection,
+	connectionCache map[string]onboardApi.Connection,
 	startTime time.Time,
 	endTime time.Time,
-	status []api3.DescribeStatus,
+	status []describeApi.DescribeStatus,
 ) error {
 	connectionResultMap := map[string]spend.ConnectionMetricTrendSummary{}
 	providerResultMap := map[string]spend.ConnectorMetricTrendSummary{}
@@ -363,7 +411,7 @@ func (j *Job) DoSpendMetric(
 	connectorSuccessCount := map[string]int64{}
 	for _, st := range status {
 		connectorCount[st.Connector]++
-		if st.Status == api3.DescribeResourceJobSucceeded {
+		if st.Status == describeApi.DescribeResourceJobSucceeded {
 			connectorSuccessCount[st.Connector]++
 		}
 	}
@@ -382,11 +430,11 @@ func (j *Job) DoSpendMetric(
 			return fmt.Errorf("invalid format for sum: [%s] %v", reflect.TypeOf(record[1]), record[1])
 		}
 
-		var conn *api.Connection
+		var conn *onboardApi.Connection
 		if cached, ok := connectionCache[connectionID]; ok {
 			conn = &cached
 		} else {
-			conn, err = onboardClient.GetSource(&httpclient.Context{UserRole: api2.AdminRole}, connectionID)
+			conn, err = onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, connectionID)
 			if err != nil {
 				if strings.Contains(err.Error(), "source not found") {
 					continue
@@ -403,7 +451,7 @@ func (j *Job) DoSpendMetric(
 		isJobSuccessful := true
 		for _, st := range status {
 			if st.ConnectionID == conn.ID.String() {
-				if st.Status == api3.DescribeResourceJobFailed || st.Status == api3.DescribeResourceJobTimeout {
+				if st.Status == describeApi.DescribeResourceJobFailed || st.Status == describeApi.DescribeResourceJobTimeout {
 					isJobSuccessful = false
 				}
 			}
