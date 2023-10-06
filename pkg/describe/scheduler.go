@@ -551,9 +551,6 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		EnsureRunGoroutin(func() {
 			s.RunAnalyticsJobScheduler()
 		})
-		EnsureRunGoroutin(func() {
-			s.RunResourceCollectionsAnalyticsJobScheduler()
-		})
 
 		EnsureRunGoroutin(func() {
 			s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer()))
