@@ -304,7 +304,11 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 		sort.Slice(serviceCountList, func(i, j int) bool {
 			return serviceCountList[i].Count > serviceCountList[j].Count
 		})
-		response.Records = serviceCountList[:count]
+		if len(serviceCountList) > count {
+			response.Records = serviceCountList[:count]
+		} else {
+			response.Records = serviceCountList
+		}
 		response.TotalCount = len(serviceCountList)
 	default:
 		for _, item := range res.Aggregations.FieldFilter.Buckets {
