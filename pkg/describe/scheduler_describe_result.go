@@ -64,12 +64,8 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 
 			errStr := strings.ReplaceAll(result.Error, "\x00", "")
 			errCodeStr := strings.ReplaceAll(result.ErrorCode, "\x00", "")
-			if result.Status == api.DescribeResourceJobFailed {
-				ResourcesDescribedCount.WithLabelValues(strings.ToLower(result.DescribeJob.SourceType.String()), "failure").Inc()
-			} else if result.Status == api.DescribeResourceJobSucceeded {
-				ResourcesDescribedCount.WithLabelValues(strings.ToLower(result.DescribeJob.SourceType.String()), "successful").Inc()
-			}
-			if err := s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs))); err != nil {
+			oldStatus, err := s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)))
+			if err != nil {
 				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 				s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
 				err = msg.Nack(false, true)
@@ -78,7 +74,13 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				}
 				continue
 			}
-
+			if result.Status == api.DescribeResourceJobFailed {
+				if oldStatus != api.DescribeResourceJobFailed {
+					ResourcesDescribedCount.WithLabelValues(strings.ToLower(result.DescribeJob.SourceType.String()), "failure").Inc()
+				}
+			} else if result.Status == api.DescribeResourceJobSucceeded {
+				ResourcesDescribedCount.WithLabelValues(strings.ToLower(result.DescribeJob.SourceType.String()), "successful").Inc()
+			}
 			ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "successful").Inc()
 			if err := msg.Ack(false); err != nil {
 				s.logger.Error("failure while sending ack for message", zap.Error(err))
