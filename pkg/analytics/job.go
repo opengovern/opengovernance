@@ -128,7 +128,8 @@ func (j *Job) Run(
 	connectionCache := map[string]onboardApi.Connection{}
 
 	for _, metric := range metrics {
-		if metric.Type == db.MetricTypeAssets {
+		switch metric.Type {
+		case db.MetricTypeAssets:
 			s := map[string]describeApi.DescribeStatus{}
 			for _, resourceType := range metric.Tables {
 				status, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: authApi.InternalRole}, resourceType)
@@ -167,7 +168,11 @@ func (j *Job) Run(
 			if err != nil {
 				return err
 			}
-		} else {
+		case db.MetricTypeSpend:
+			// We do not support spend metrics for resource collections
+			if j.ResourceCollectionId != nil {
+				continue
+			}
 			awsStatus, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: authApi.InternalRole}, "AWS::CostExplorer::ByServiceDaily")
 			if err != nil {
 				return err
@@ -318,6 +323,8 @@ func (j *Job) DoAssetMetric(
 				MetricName:      metric.Name,
 				ResourceCount:   int(count),
 				IsJobSuccessful: isJobSuccessful,
+
+				ResourceCollection: j.ResourceCollectionId,
 			}
 			connectionResultMap[conn.ID.String()] = vn
 		}
@@ -337,6 +344,8 @@ func (j *Job) DoAssetMetric(
 				ResourceCount:              int(count),
 				TotalConnections:           connectorCount[string(conn.Connector)],
 				TotalSuccessfulConnections: connectorSuccessCount[string(conn.Connector)],
+
+				ResourceCollection: j.ResourceCollectionId,
 			}
 			providerResultMap[conn.Connector.String()] = vn
 		}
@@ -358,6 +367,8 @@ func (j *Job) DoAssetMetric(
 				MetricID:       metric.ID,
 				MetricName:     metric.Name,
 				ResourceCount:  int(count),
+
+				ResourceCollection: j.ResourceCollectionId,
 			}
 			regionResultMap[regionKey] = vn
 		}

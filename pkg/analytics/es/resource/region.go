@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	AnalyticsRegionSummaryIndex = "analytics_region_summary"
+	AnalyticsRegionSummaryIndex                    = "analytics_region_summary"
+	ResourceCollectionsAnalyticsRegionSummaryIndex = "rc_analytics_region_summary"
 )
 
 type RegionMetricTrendSummary struct {
@@ -22,6 +23,8 @@ type RegionMetricTrendSummary struct {
 	MetricID       string      `json:"metric_id"`
 	MetricName     string      `json:"metric_name"`
 	ResourceCount  int         `json:"resource_count"`
+
+	ResourceCollection *string `json:"resource_collection"`
 }
 
 func (r RegionMetricTrendSummary) KeysAndIndex() ([]string, string) {
@@ -31,5 +34,10 @@ func (r RegionMetricTrendSummary) KeysAndIndex() ([]string, string) {
 		r.MetricID,
 		strconv.FormatInt(r.EvaluatedAt, 10),
 	}
-	return keys, AnalyticsRegionSummaryIndex
+	idx := AnalyticsRegionSummaryIndex
+	if r.ResourceCollection != nil {
+		keys = append(keys, *r.ResourceCollection)
+		idx = ResourceCollectionsAnalyticsRegionSummaryIndex
+	}
+	return keys, idx
 }
