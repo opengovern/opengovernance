@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"encoding/json"
 	"time"
 
 	analyticsDb "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
@@ -179,6 +180,15 @@ func (db Database) ListResourceCollections() ([]ResourceCollection, error) {
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	for i := range resourceCollections {
+		if len(resourceCollections[i].FiltersJson.Bytes) > 0 {
+			err := json.Unmarshal(resourceCollections[i].FiltersJson.Bytes, &resourceCollections[i].Filters)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return resourceCollections, nil
 }
 
@@ -188,5 +198,13 @@ func (db Database) GetResourceCollection(collectionID string) (*ResourceCollecti
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+
+	if len(collection.FiltersJson.Bytes) > 0 {
+		err := json.Unmarshal(collection.FiltersJson.Bytes, &collection.Filters)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &collection, nil
 }
