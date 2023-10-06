@@ -99,7 +99,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, authApi.ViewerRole))
 
 	resourceCollection := v2.Group("/resource-collection")
-	resourceCollection.GET("/", httpserver.AuthorizeHandler(h.ListResourceCollections, authApi.ViewerRole))
+	resourceCollection.GET("", httpserver.AuthorizeHandler(h.ListResourceCollections, authApi.ViewerRole))
 	resourceCollection.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollection, authApi.ViewerRole))
 
 	//v1.GET("/migrate-analytics", httpserver.AuthorizeHandler(h.MigrateAnalytics, authApi.AdminRole))
