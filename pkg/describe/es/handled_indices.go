@@ -13,7 +13,7 @@ var azureHandledResourceTypes = []string{"Microsoft.Network/networkSecurityGroup
 	"Microsoft.DataFactory/factoriesDatasets", "Microsoft.Authorization/roleDefinitions", "Microsoft.Logic/workflows",
 	"Microsoft.Compute/virtualMachines", "Microsoft.DBforMySQL/servers", "Microsoft.DBforPostgreSQL/servers",
 	"Microsoft.Compute/virtualMachineScaleSets", "Microsoft.Sql/servers", "Microsoft.Web/plan",
-	"Microsoft.DataFactory/factoriesPipelines"}
+	"Microsoft.DataFactory/factoriesPipelines", "Microsoft.Compute/virtualMachineScaleSets/networkInterfaces"}
 
 func IsHandledAWSResourceType(resourceType string) bool {
 	for _, r := range awsHandledResourceTypes {
