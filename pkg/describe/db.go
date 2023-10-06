@@ -1083,9 +1083,9 @@ func (db Database) GetLastInsightJobForResourceCollection(insightID uint, source
 		Where("source_id = ? AND insight_id = ?", sourceID, insightID).
 		Order("created_at DESC")
 	if resourceCollectionId == nil {
-		tx = tx.Where("resource_collection_id IS NULL").First(&job)
+		tx = tx.Where("resource_collection IS NULL").First(&job)
 	} else {
-		tx = tx.Where("resource_collection_id = ?", *resourceCollectionId).First(&job)
+		tx = tx.Where("resource_collection = ?", *resourceCollectionId).First(&job)
 	}
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
