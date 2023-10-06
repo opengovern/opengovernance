@@ -22,6 +22,8 @@ type InventoryServiceClient interface {
 	GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, startTime, endTime *time.Time) (map[int][]insight.InsightResource, error)
 	ListConnectionsData(ctx *httpclient.Context, connectionIds []string, startTime, endTime *time.Time, needCost, needResourceCount bool) (map[string]api.ConnectionData, error)
 	ListResourceTypesMetadata(ctx *httpclient.Context, connectors []source.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error)
+	ListResourceCollections(ctx *httpclient.Context) ([]api.ResourceCollection, error)
+	GetResourceCollection(ctx *httpclient.Context, id string) (*api.ResourceCollection, error)
 }
 
 type inventoryClient struct {
@@ -291,4 +293,30 @@ func (s *inventoryClient) ListResourceTypesMetadata(ctx *httpclient.Context, con
 		return nil, err
 	}
 	return &response, nil
+}
+
+func (s *inventoryClient) GetResourceCollection(ctx *httpclient.Context, id string) (*api.ResourceCollection, error) {
+	url := fmt.Sprintf("%s/api/v2/resource-collection/%s", s.baseURL, id)
+
+	var response api.ResourceCollection
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return &response, nil
+}
+
+func (s *inventoryClient) ListResourceCollections(ctx *httpclient.Context) ([]api.ResourceCollection, error) {
+	url := fmt.Sprintf("%s/api/v2/resource-collection", s.baseURL)
+
+	var response []api.ResourceCollection
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return response, nil
 }

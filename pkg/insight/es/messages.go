@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	InsightsIndex       = "insights"
-	StacksInsightsIndex = "stacks-insights"
+	InsightsIndex                    = "insights"
+	ResourceCollectionsInsightsIndex = "rc_insights"
+	StacksInsightsIndex              = "stacks-insights"
 )
 
 type InsightResourceType string
@@ -55,6 +56,8 @@ type InsightResource struct {
 	PerConnectionCount map[string]int64 `json:"per_connection_count,omitempty"`
 
 	S3Location string `json:"s3_location"`
+
+	ResourceCollection *string `json:"resource_collection,omitempty"`
 }
 
 func (r InsightResource) KeysAndIndex() ([]string, string) {
@@ -64,17 +67,17 @@ func (r InsightResource) KeysAndIndex() ([]string, string) {
 		fmt.Sprintf("%s", r.SourceID),
 	}
 	if strings.HasSuffix(strings.ToLower(string(r.ResourceType)), "history") {
-		keys = []string{
-			string(r.ResourceType),
-			fmt.Sprintf("%d", r.InsightID),
-			fmt.Sprintf("%s", r.SourceID),
-			fmt.Sprintf("%d", r.JobID),
-		}
+		keys = append(keys, fmt.Sprintf("%d", r.JobID))
+	}
+	idx := InsightsIndex
+	if r.ResourceCollection != nil {
+		keys = append(keys, *r.ResourceCollection)
+		idx = ResourceCollectionsInsightsIndex
 	}
 
 	if strings.HasPrefix(r.SourceID, "stack-") {
-		return keys, StacksInsightsIndex
-	} else {
-		return keys, InsightsIndex
+		idx = StacksInsightsIndex
 	}
+
+	return keys, idx
 }

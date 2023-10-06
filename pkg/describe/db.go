@@ -273,16 +273,15 @@ func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType
 
 // UpdateDescribeConnectionJobStatus updates the status of the DescribeResourceJob to the provided status.
 // If the status if 'FAILED', msg could be used to indicate the failure reason
-func (db Database) UpdateDescribeConnectionJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount int64) error {
-	tx := db.orm.
-		Model(&DescribeConnectionJob{}).
-		Where("id = ?", id).
-		Updates(DescribeConnectionJob{Status: status, FailureMessage: msg, ErrorCode: errCode, DescribedResourceCount: resourceCount})
+func (db Database) UpdateDescribeConnectionJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount int64) (api.DescribeResourceJobStatus, error) {
+	var oldStatus api.DescribeResourceJobStatus
+	tx := db.orm.Raw("WITH u AS (SELECT * FROM describe_connection_jobs WHERE id = ?) UPDATE describe_connection_jobs SET status = ?, failure_message = ?, error_code = ?,  described_resource_count = ? WHERE id = ? RETURNING (SELECT status FROM u)",
+		id, status, msg, errCode, resourceCount, id).Scan(&oldStatus)
 	if tx.Error != nil {
-		return tx.Error
+		return oldStatus, tx.Error
 	}
 
-	return nil
+	return oldStatus, nil
 }
 
 func (db Database) UpdateDescribeConnectionJobToInProgress(id uint) error {
@@ -1077,11 +1076,17 @@ func (db Database) FetchLastInsightJob() (*InsightJob, error) {
 	return &job, nil
 }
 
-func (db Database) GetLastInsightJob(insightID uint, sourceID string) (*InsightJob, error) {
+func (db Database) GetLastInsightJobForResourceCollection(insightID uint, sourceID string,
+	resourceCollectionId *string) (*InsightJob, error) {
 	var job InsightJob
 	tx := db.orm.Model(&InsightJob{}).
 		Where("source_id = ? AND insight_id = ?", sourceID, insightID).
-		Order("created_at DESC").First(&job)
+		Order("created_at DESC")
+	if resourceCollectionId == nil {
+		tx = tx.Where("resource_collection IS NULL").First(&job)
+	} else {
+		tx = tx.Where("resource_collection = ?", *resourceCollectionId).First(&job)
+	}
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -1293,10 +1298,14 @@ func (db Database) FetchLastSummarizerJob(jobType summarizer.JobType) (*Summariz
 	return &job, nil
 }
 
-func (db Database) FetchLastAnalyticsJob() (*AnalyticsJob, error) {
+func (db Database) FetchLastAnalyticsJobForCollectionId(resourceCollectionId *string) (*AnalyticsJob, error) {
 	var job AnalyticsJob
-	tx := db.orm.Model(&AnalyticsJob{}).
-		Order("created_at DESC").First(&job)
+	tx := db.orm.Model(&AnalyticsJob{}).Order("created_at DESC")
+	if resourceCollectionId == nil {
+		tx = tx.Where("resource_collection_id IS NULL").First(&job)
+	} else {
+		tx = tx.Where("resource_collection_id = ?", resourceCollectionId).First(&job)
+	}
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

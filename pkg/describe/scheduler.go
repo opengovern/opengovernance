@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"net"
 	"strconv"
@@ -175,6 +176,7 @@ type Scheduler struct {
 	metadataClient      metadataClient.MetadataServiceClient
 	complianceClient    client.ComplianceServiceClient
 	onboardClient       onboardClient.OnboardServiceClient
+	inventoryClient     inventoryClient.InventoryServiceClient
 	authGrpcClient      envoyauth.AuthorizationClient
 	es                  kaytu.Client
 	rdb                 *redis.Client
@@ -422,6 +424,7 @@ func InitializeScheduler(
 	s.workspaceClient = workspaceClient.NewWorkspaceClient(WorkspaceBaseURL)
 	s.complianceClient = client.NewComplianceClient(ComplianceBaseURL)
 	s.onboardClient = onboardClient.NewOnboardServiceClient(OnboardBaseURL, nil)
+	s.inventoryClient = inventoryClient.NewInventoryServiceClient(InventoryBaseURL)
 	authGRPCConn, err := grpc.Dial(AuthGRPCURI, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})))
 	if err != nil {
 		return nil, err
@@ -548,6 +551,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		EnsureRunGoroutin(func() {
 			s.RunAnalyticsJobScheduler()
 		})
+
 		EnsureRunGoroutin(func() {
 			s.logger.Fatal("AnalyticsJobResult consumer exited", zap.Error(s.RunAnalyticsJobResultsConsumer()))
 		})

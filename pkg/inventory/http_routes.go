@@ -98,6 +98,10 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	metadata := v2.Group("/metadata")
 	metadata.GET("/resourcetype", httpserver.AuthorizeHandler(h.ListResourceTypeMetadata, authApi.ViewerRole))
 
+	resourceCollection := v2.Group("/resource-collection")
+	resourceCollection.GET("", httpserver.AuthorizeHandler(h.ListResourceCollections, authApi.ViewerRole))
+	resourceCollection.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollection, authApi.ViewerRole))
+
 	//v1.GET("/migrate-analytics", httpserver.AuthorizeHandler(h.MigrateAnalytics, authApi.AdminRole))
 	v1.GET("/migrate-spend", httpserver.AuthorizeHandler(h.MigrateSpend, authApi.AdminRole))
 }
@@ -2945,6 +2949,32 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, result)
+}
+
+func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
+	resourceCollections, err := h.db.ListResourceCollections()
+	if err != nil {
+		return err
+	}
+
+	res := make([]inventoryApi.ResourceCollection, 0, len(resourceCollections))
+	for _, collection := range resourceCollections {
+		res = append(res, collection.ToApi())
+	}
+
+	return ctx.JSON(http.StatusOK, res)
+}
+
+func (h *HttpHandler) GetResourceCollection(ctx echo.Context) error {
+	collectionID := ctx.Param("resourceCollectionId")
+	resourceCollection, err := h.db.GetResourceCollection(collectionID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return echo.NewHTTPError(http.StatusNotFound, "resource collection not found")
+		}
+		return err
+	}
+	return ctx.JSON(http.StatusOK, resourceCollection.ToApi())
 }
 
 func (h *HttpHandler) connectionsFilter(filter map[string]interface{}) ([]string, error) {
