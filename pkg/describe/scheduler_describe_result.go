@@ -74,6 +74,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				}
 				continue
 			}
+			s.logger.Info("increasing metric", zap.String("old status", string(oldStatus)))
 			if result.Status == api.DescribeResourceJobFailed {
 				if oldStatus != api.DescribeResourceJobFailed {
 					ResourcesDescribedCount.WithLabelValues(strings.ToLower(result.DescribeJob.SourceType.String()), "failure").Inc()
@@ -125,6 +126,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				count, err := s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
 				//s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
 				//DescribeResourceJobsCount.WithLabelValues("failure", "timedout_azure").Inc()
+				s.logger.Info("updated timeout describe jobs", zap.Int("count", count))
 				ResourcesDescribedCount.WithLabelValues("azure", "failure").Add(float64(count))
 				if err != nil {
 					s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
