@@ -116,7 +116,7 @@ func (h HttpHandler) getConnectionIdFilter(scope api.Scope) ([]string, error) {
 			return nil, err
 		}
 		if len(connectionGroupObj.ConnectionIds) == 0 {
-			return nil, err
+			return nil, nil
 		}
 
 		// Check for duplicate connection groups
@@ -191,25 +191,24 @@ func (h HttpHandler) triggerInsight(operator api.OperatorStruct, eventType api.E
 }
 
 func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Scope, eventType api.EventType) (bool, error) {
-	h.logger.Info("====1====")
 	connectionIds, err := h.getConnectionIdFilter(scope)
 	if err != nil {
+		h.logger.Error(err.Error())
 		return false, err
 	}
-	h.logger.Info("====2====")
 	filters := apiCompliance.FindingFilters{ConnectionID: connectionIds, BenchmarkID: []string{*eventType.BenchmarkId}}
-	h.logger.Info("====3====")
 	if scope.Connector != nil {
 		filters.Connector = []source.Type{*scope.Connector}
 	}
-	h.logger.Info("====4====")
 	reqCompliance := apiCompliance.GetFindingsRequest{
 		Filters: filters,
-		Page:    apiCompliance.Page{No: 1, Size: 1},
+		Page:    apiCompliance.Page{No: 100, Size: 100},
 	}
-	h.logger.Info("sending finding request")
-	compliance, err := h.complianceClient.GetFindings(&httpclient.Context{UserRole: authApi.InternalRole}, reqCompliance)
+	h.logger.Info("sending finding request",
+		zap.String("request", fmt.Sprintf("%v", reqCompliance)))
+	compliance, err := h.complianceClient.GetFindings(&httpclient.Context{UserRole: authApi.AdminRole}, reqCompliance)
 	if err != nil {
+		h.logger.Error(err.Error())
 		return false, fmt.Errorf("error getting compliance , err : %v ", err)
 	}
 	h.logger.Info("received findings")
