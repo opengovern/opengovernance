@@ -202,7 +202,9 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 	}
 	reqCompliance := apiCompliance.GetFindingsRequest{
 		Filters: filters,
-		Page:    apiCompliance.Page{No: 100, Size: 100},
+		Sorts: []apiCompliance.FindingSortItem{{Field: apiCompliance.FieldResourceID,
+			Direction: apiCompliance.DirectionAscending}},
+		Page: apiCompliance.Page{No: 100, Size: 100},
 	}
 	h.logger.Info("sending finding request",
 		zap.String("request", fmt.Sprintf("%v", reqCompliance)))
