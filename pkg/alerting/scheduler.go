@@ -87,6 +87,7 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 			h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.ID)),
 				zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
 			if err != nil {
+				h.logger.Error(err.Error())
 				return err
 			}
 		}
@@ -222,12 +223,9 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 	if err != nil {
 		return false, err
 	}
-	h.logger.Info("Insight rule operation done",
+	h.logger.Info("Compliance rule operation done",
 		zap.Bool("result", stat),
 		zap.Int64("totalCount", compliance.TotalCount))
-	fmt.Println("================================")
-	fmt.Println("total count:", compliance.TotalCount)
-	fmt.Println("================================")
 	return stat, nil
 }
 
