@@ -196,7 +196,11 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 		h.logger.Error(err.Error())
 		return false, err
 	}
-	filters := apiCompliance.FindingFilters{ConnectionID: connectionIds, BenchmarkID: []string{*eventType.BenchmarkId}}
+
+	filters := apiCompliance.FindingFilters{BenchmarkID: []string{*eventType.BenchmarkId}}
+	if len(connectionIds) > 0 {
+		filters.ConnectionID = connectionIds
+	}
 	if scope.Connector != nil {
 		filters.Connector = []source.Type{*scope.Connector}
 	}
