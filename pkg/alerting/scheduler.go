@@ -191,14 +191,18 @@ func (h HttpHandler) triggerInsight(operator api.OperatorStruct, eventType api.E
 }
 
 func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Scope, eventType api.EventType) (bool, error) {
+	h.logger.Info("====1====")
 	connectionIds, err := h.getConnectionIdFilter(scope)
 	if err != nil {
 		return false, err
 	}
+	h.logger.Info("====2====")
 	filters := apiCompliance.FindingFilters{ConnectionID: connectionIds, BenchmarkID: []string{*eventType.BenchmarkId}}
+	h.logger.Info("====3====")
 	if scope.Connector != nil {
 		filters.Connector = []source.Type{*scope.Connector}
 	}
+	h.logger.Info("====4====")
 	reqCompliance := apiCompliance.GetFindingsRequest{
 		Filters: filters,
 		Page:    apiCompliance.Page{No: 1, Size: 1},
