@@ -82,7 +82,7 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 		return err
 	}
 
-	var response []api.ApiRule
+	var response []api.Rule
 	for _, rule := range rules {
 
 		var eventType api.EventType
@@ -103,8 +103,8 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 			return err
 		}
 
-		response = append(response, api.ApiRule{
-			ID:        rule.ID,
+		response = append(response, api.Rule{
+			Id:        rule.Id,
 			EventType: eventType,
 			Scope:     scope,
 			Operator:  operator,
@@ -125,13 +125,13 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 //	@Success		200		{object}	string
 //	@Router			/alerting/api/v1/rule/create [post]
 func (h *HttpHandler) CreateRule(ctx echo.Context) error {
-	var req api.ApiRule
+	var req api.CreateRuleRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return err
 	}
 
-	EmptyFields := api.ApiRule{}
-	if req.ID == EmptyFields.ID || req.Scope == EmptyFields.Scope ||
+	EmptyFields := api.CreateRuleRequest{}
+	if req.Scope == EmptyFields.Scope ||
 		req.ActionID == EmptyFields.ActionID || req.Operator == EmptyFields.Operator || req.EventType == EmptyFields.EventType {
 		return errors.New("All the fields in struct must be set")
 	}
@@ -151,7 +151,7 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 		return err
 	}
 
-	if err := h.db.CreateRule(req.ID, event, scope, operator, req.ActionID); err != nil {
+	if err := h.db.CreateRule(event, scope, operator, req.ActionID); err != nil {
 		return err
 	}
 
@@ -198,7 +198,7 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 	if err := bindValidate(ctx, &req); err != nil {
 		return err
 	}
-	if req.ID == 0 {
+	if req.Id == 0 {
 		return errors.New("ruleId is required")
 	}
 
@@ -217,7 +217,7 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 		return err
 	}
 
-	err = h.db.UpdateRule(req.ID, &eventType, &scope, &operator, req.ActionID)
+	err = h.db.UpdateRule(req.Id, &eventType, &scope, &operator, req.ActionID)
 	if err != nil {
 		return err
 	}
@@ -240,7 +240,7 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 		return err
 	}
 
-	var response []api.ApiAction
+	var response []api.Action
 	for _, action := range actions {
 
 		var headers map[string]string
@@ -249,8 +249,8 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 			return err
 		}
 
-		response = append(response, api.ApiAction{
-			ID:      action.ID,
+		response = append(response, api.Action{
+			Id:      action.Id,
 			Method:  action.Method,
 			Url:     action.Url,
 			Headers: headers,
@@ -271,14 +271,14 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 //	@Success		200		{object}	string
 //	@Router			/alerting/api/v1/action/create [post]
 func (h *HttpHandler) CreateAction(ctx echo.Context) error {
-	var req api.ApiAction
+	var req api.CreateActionReq
 	err := bindValidate(ctx, &req)
 	if err != nil {
 		return err
 	}
 
-	testEmptyFields := api.ApiAction{}
-	if req.ID == testEmptyFields.ID || req.Url == testEmptyFields.Url || req.Body == testEmptyFields.Body ||
+	testEmptyFields := api.CreateActionReq{}
+	if req.Url == testEmptyFields.Url || req.Body == testEmptyFields.Body ||
 		req.Method == testEmptyFields.Method || req.Headers == nil {
 		return errors.New("All the fields in struct must be set")
 	}
@@ -288,7 +288,7 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 		return err
 	}
 
-	err = h.db.CreateAction(req.ID, req.Method, req.Url, headers, req.Body)
+	err = h.db.CreateAction(req.Method, req.Url, headers, req.Body)
 	if err != nil {
 		return err
 	}
@@ -337,13 +337,13 @@ func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
 	if err := bindValidate(ctx, &req); err != nil {
 		return err
 	}
-	if req.ID == 0 {
+	if req.Id == 0 {
 		return errors.New("actionId is required")
 	}
 
 	MarshalHeader, err := json.Marshal(req.Headers)
 
-	err = h.db.UpdateAction(req.ID, &MarshalHeader, req.Url, req.Body, req.Method)
+	err = h.db.UpdateAction(req.Id, &MarshalHeader, req.Url, req.Body, req.Method)
 	if err != nil {
 		return err
 	}

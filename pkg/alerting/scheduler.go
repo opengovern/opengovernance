@@ -36,7 +36,7 @@ func (h *HttpHandler) TriggerRulesList() error {
 		err := h.TriggerRule(rule)
 		if err != nil {
 			h.logger.Error("Rule trigger has been failed",
-				zap.String("rule id", fmt.Sprintf("%v", rule.ID)),
+				zap.String("rule id", fmt.Sprintf("%v", rule.Id)),
 				zap.Error(err))
 		}
 	}
@@ -63,28 +63,28 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 	}
 
 	if eventType.InsightId != nil {
-		h.logger.Info("triggering insight", zap.String("rule", fmt.Sprintf("%v", rule.ID)))
+		h.logger.Info("triggering insight", zap.String("rule", fmt.Sprintf("%v", rule.Id)))
 		statInsight, err := h.triggerInsight(operator, eventType, scope)
 		if err != nil {
 			return err
 		}
 		if statInsight {
 			err = h.sendAlert(rule)
-			h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.ID)),
+			h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.Id)),
 				zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
 			if err != nil {
 				return err
 			}
 		}
 	} else if eventType.BenchmarkId != nil {
-		h.logger.Info("triggering compliance", zap.String("rule", fmt.Sprintf("%v", rule.ID)))
+		h.logger.Info("triggering compliance", zap.String("rule", fmt.Sprintf("%v", rule.Id)))
 		statCompliance, err := h.triggerCompliance(operator, scope, eventType)
 		if err != nil {
 			fmt.Printf("Error in trigger compliance : %v ", err)
 		}
 		if statCompliance {
 			err = h.sendAlert(rule)
-			h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.ID)),
+			h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.Id)),
 				zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
 			if err != nil {
 				h.logger.Error(err.Error())
