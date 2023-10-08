@@ -180,7 +180,7 @@ func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient,
 			return err
 		}
 	} else {
-		if len(accountId) > 0 && accountId != "all" {
+		if len(j.ConnectionID) > 0 && j.ConnectionID != "all" {
 			src, err := onboardClient.GetSource(ctx, j.ConnectionID)
 			if err != nil {
 				return err
@@ -190,6 +190,9 @@ func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient,
 			if src.LifecycleState != onboardApi.ConnectionLifecycleStateOnboard {
 				return errors.New("connection not healthy")
 			}
+		} else {
+			accountId = "all"
+			connector = j.Connector
 		}
 		var err error
 		esk, err = kaytu.NewClient(kaytu.ClientConfig{
