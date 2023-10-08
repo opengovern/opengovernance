@@ -124,11 +124,14 @@ func DoRequest(method string, url string, headers map[string]string, payload []b
 		return statusCode, nil
 	}
 
-	uncompBody, err := gzip.NewReader(res.Body)
-	if err != nil {
-		return statusCode, fmt.Errorf("gzip new reader: %w", err)
+	body := res.Body
+	if res.Header.Get("Content-Encoding") == "gzip" {
+		body, err = gzip.NewReader(res.Body)
+		if err != nil {
+			return statusCode, fmt.Errorf("gzip new reader: %w", err)
+		}
+		defer body.Close()
 	}
-	defer uncompBody.Close()
 
-	return statusCode, json.NewDecoder(uncompBody).Decode(v)
+	return statusCode, json.NewDecoder(body).Decode(v)
 }
