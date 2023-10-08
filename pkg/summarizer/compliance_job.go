@@ -73,7 +73,7 @@ func (j SummarizeJob) DoComplianceSummarizer(client kaytu.Client, complianceClie
 	}
 	var searchAfter []any
 	for {
-		findings, err := es.FetchActiveFindings(client, searchAfter, es.EsFetchPageSize)
+		findings, err := es.FetchActiveFindings(client, j.ResourceCollectionId, searchAfter, es.EsFetchPageSize)
 		if err != nil {
 			fail(fmt.Errorf("Failed to fetch lookups: %v ", err))
 			break
