@@ -74,7 +74,7 @@ func (h *HttpHandler) TriggerRuleAPI(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Produce		json
-//	@Success		200	{object}	[]api.ApiRule
+//	@Success		200	{object}	[]api.Rule
 //	@Router			/alerting/api/v1/rule/list [get]
 func (h *HttpHandler) ListRules(ctx echo.Context) error {
 	rules, err := h.db.ListRules()
@@ -121,7 +121,7 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 //	@Description	create a rule by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			request	body		api.ApiRule	true	"Request Body"
+//	@Param			request	body		api.CreateRuleRequest	true	"Request Body"
 //	@Success		200		{object}	string
 //	@Router			/alerting/api/v1/rule/create [post]
 func (h *HttpHandler) CreateRule(ctx echo.Context) error {
@@ -232,7 +232,7 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Produce		json
-//	@Success		200	{object}	[]api.ApiAction
+//	@Success		200	{object}	[]api.Action
 //	@Router			/alerting/api/v1/action/list [get]
 func (h *HttpHandler) ListActions(ctx echo.Context) error {
 	actions, err := h.db.ListAction()
@@ -267,7 +267,7 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 //	@Description	create an action by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			request	body		api.ApiAction	true	"Request Body"
+//	@Param			request	body		api.CreateActionReq	true	"Request Body"
 //	@Success		200		{object}	string
 //	@Router			/alerting/api/v1/action/create [post]
 func (h *HttpHandler) CreateAction(ctx echo.Context) error {
