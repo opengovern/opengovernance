@@ -64,6 +64,14 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 
 			errStr := strings.ReplaceAll(result.Error, "\x00", "")
 			errCodeStr := strings.ReplaceAll(result.ErrorCode, "\x00", "")
+			if errCodeStr == "" {
+				if strings.Contains(errStr, "exceeded maximum number of attempts") {
+					errCodeStr = "ThrottlingException"
+				} else if strings.Contains(errStr, "context deadline exceede") {
+					errCodeStr = "ContextDeadlineExceeded"
+				}
+
+			}
 			oldStatus, err := s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)))
 			if err != nil {
 				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
