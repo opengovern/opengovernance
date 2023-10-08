@@ -949,7 +949,10 @@ func (db Database) ListCompletedComplianceReportByDate(sourceID uuid.UUID, fromD
 	return jobs, nil
 }
 
-func (db Database) ListComplianceReportsWithFilter(timeAfter, timeBefore *time.Time, connectionID *string, connector *source.Type, benchmarkID *string) ([]ComplianceReportJob, error) {
+func (db Database) ListComplianceReportsWithFilter(
+	timeAfter, timeBefore *time.Time,
+	connectionID *string, connector *source.Type,
+	benchmarkID *string, resourceCollection **string) ([]ComplianceReportJob, error) {
 	var jobs []ComplianceReportJob
 	tx := db.orm
 	if timeAfter != nil {
@@ -966,6 +969,14 @@ func (db Database) ListComplianceReportsWithFilter(timeAfter, timeBefore *time.T
 	}
 	if benchmarkID != nil {
 		tx = tx.Where("benchmark_id = ?", benchmarkID)
+	}
+	if resourceCollection != nil {
+		rc := *resourceCollection
+		if rc != nil {
+			tx = tx.Where("resource_collection = ?", *rc)
+		} else {
+			tx = tx.Where("resource_collection IS NULL")
+		}
 	}
 	tx = tx.Find(&jobs)
 	if tx.Error != nil {
@@ -1284,11 +1295,16 @@ func (db Database) GetOngoingSummarizerJobsByType(jobType summarizer.JobType) ([
 	return jobs, nil
 }
 
-func (db Database) FetchLastSummarizerJob(jobType summarizer.JobType) (*SummarizerJob, error) {
+func (db Database) FetchLastSummarizerJob(jobType summarizer.JobType, resourceCollection *string) (*SummarizerJob, error) {
 	var job SummarizerJob
 	tx := db.orm.Model(&SummarizerJob{}).
 		Where("job_type = ?", jobType).
-		Order("created_at DESC").First(&job)
+		Order("created_at DESC")
+	if resourceCollection == nil {
+		tx = tx.Where("resource_collection IS NULL").First(&job)
+	} else {
+		tx = tx.Where("resource_collection = ?", *resourceCollection).First(&job)
+	}
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

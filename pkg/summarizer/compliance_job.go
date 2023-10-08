@@ -69,7 +69,7 @@ func (j SummarizeJob) DoComplianceSummarizer(client kaytu.Client, complianceClie
 
 	var msgs []kafka.Doc
 	builders := []compliancebuilder.Builder{
-		compliancebuilder.NewBenchmarkSummaryBuilder(logger, j.JobID, client, complianceClient),
+		compliancebuilder.NewBenchmarkSummaryBuilder(logger, j.JobID, client, complianceClient, j.ResourceCollectionId),
 	}
 	var searchAfter []any
 	for {

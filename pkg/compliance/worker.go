@@ -3,17 +3,16 @@ package compliance
 import (
 	"encoding/json"
 	"fmt"
-	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"strings"
 
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
+	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-
-	client2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	client3 "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
-
 	"github.com/prometheus/client_golang/prometheus/push"
 
 	"go.uber.org/zap"
@@ -28,9 +27,10 @@ type Worker struct {
 	kfkTopic         string
 	logger           *zap.Logger
 	pusher           *push.Pusher
-	onboardClient    client.OnboardServiceClient
-	complianceClient client2.ComplianceServiceClient
-	scheduleClient   client3.SchedulerServiceClient
+	onboardClient    onboardClient.OnboardServiceClient
+	complianceClient complianceClient.ComplianceServiceClient
+	scheduleClient   describeClient.SchedulerServiceClient
+	inventoryClient  inventoryClient.InventoryServiceClient
 	es               kaytu.Client
 }
 
@@ -90,8 +90,9 @@ func InitializeWorker(
 	w.config = config
 	w.logger = logger
 
-	w.onboardClient = client.NewOnboardServiceClient(config.Onboard.BaseURL, nil)
-	w.complianceClient = client2.NewComplianceClient(config.Compliance.BaseURL)
+	w.onboardClient = onboardClient.NewOnboardServiceClient(config.Onboard.BaseURL, nil)
+	w.complianceClient = complianceClient.NewComplianceClient(config.Compliance.BaseURL)
+	w.inventoryClient = inventoryClient.NewInventoryServiceClient(config.Inventory.BaseURL)
 	var schedulerBaseUrl string
 	if config.Scheduler.BaseURL == "" {
 		schedulerBaseUrl = strings.ReplaceAll(config.Compliance.BaseURL, "compliance-service", "describe-scheduler")
@@ -99,7 +100,7 @@ func InitializeWorker(
 	} else {
 		schedulerBaseUrl = config.Scheduler.BaseURL
 	}
-	w.scheduleClient = client3.NewSchedulerServiceClient(schedulerBaseUrl)
+	w.scheduleClient = describeClient.NewSchedulerServiceClient(schedulerBaseUrl)
 	w.pusher = push.New(prometheusPushAddress, "compliance-report")
 
 	defaultAccountID := "default"
@@ -149,7 +150,8 @@ func (w *Worker) Run() error {
 
 	w.logger.Info("Running the job", zap.Uint("jobID", job.JobID))
 
-	result := job.Do(w.complianceClient, w.onboardClient, w.scheduleClient, w.config.ElasticSearch, w.kfkProducer, w.kfkTopic, CurrentWorkspaceID, w.logger)
+	result := job.Do(w.complianceClient, w.onboardClient, w.scheduleClient, w.inventoryClient,
+		w.config.ElasticSearch, w.kfkProducer, w.kfkTopic, CurrentWorkspaceID, w.logger)
 
 	w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 

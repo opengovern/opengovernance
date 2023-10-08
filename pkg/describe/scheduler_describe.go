@@ -804,7 +804,7 @@ func (s *Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		if !connectorMatch { // pass if connector doesn't match
 			continue
 		}
-		crj := newComplianceReportJob(stack.StackID, stack.SourceType, benchmark.ID)
+		crj := newComplianceReportJob(stack.StackID, stack.SourceType, benchmark.ID, nil)
 		crj.IsStack = true
 
 		err = s.db.CreateComplianceReportJob(&crj)

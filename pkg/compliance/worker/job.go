@@ -2,8 +2,11 @@ package worker
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
+	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"time"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -36,6 +39,8 @@ type Job struct {
 	ConfigReg string
 	Connector source.Type
 	IsStack   bool
+
+	ResourceCollectionId *string
 }
 
 type JobResult struct {
@@ -49,6 +54,7 @@ func (j *Job) Do(
 	complianceClient complianceClient.ComplianceServiceClient,
 	onboardClient onboardClient.OnboardServiceClient,
 	scheduleClient describeClient.SchedulerServiceClient,
+	inventoryClient inventoryClient.InventoryServiceClient,
 	elasticSearchConfig config.ElasticSearch,
 	kfkProducer *confluent_kafka.Producer,
 	kfkTopic string,
@@ -62,7 +68,8 @@ func (j *Job) Do(
 		Error:           "",
 	}
 
-	if err := j.Run(complianceClient, onboardClient, scheduleClient, elasticSearchConfig, kfkProducer, kfkTopic, currentWorkspaceId, logger); err != nil {
+	if err := j.Run(complianceClient, onboardClient, scheduleClient, inventoryClient,
+		elasticSearchConfig, kfkProducer, kfkTopic, currentWorkspaceId, logger); err != nil {
 		result.Error = err.Error()
 		result.Status = complianceApi.ComplianceReportJobCompletedWithFailure
 	}
@@ -143,7 +150,10 @@ func (j *Job) RunBenchmark(logger *zap.Logger, esk kaytu.Client, benchmarkID str
 	return findings, nil
 }
 
-func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient, onboardClient onboardClient.OnboardServiceClient, schedulerClient describeClient.SchedulerServiceClient,
+func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient,
+	onboardClient onboardClient.OnboardServiceClient,
+	schedulerClient describeClient.SchedulerServiceClient,
+	inventoryClient inventoryClient.InventoryServiceClient,
 	elasticSearchConfig config.ElasticSearch, kfkProducer *confluent_kafka.Producer, kfkTopic string, currentWorkspaceId string, logger *zap.Logger) error {
 
 	ctx := &httpclient.Context{
@@ -194,7 +204,22 @@ func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient, onb
 
 	fmt.Println("+++++ New elasticSearch Client created")
 
-	err := steampipe.PopulateSteampipeConfig(elasticSearchConfig, j.Connector, accountId, nil)
+	var encodedResourceCollectionFilter *string
+	if j.ResourceCollectionId != nil {
+		rc, err := inventoryClient.GetResourceCollection(&httpclient.Context{UserRole: authApi.InternalRole},
+			*j.ResourceCollectionId)
+		if err != nil {
+			return err
+		}
+		filtersJson, err := json.Marshal(rc.Filters)
+		if err != nil {
+			return err
+		}
+		filtersEncoded := base64.StdEncoding.EncodeToString(filtersJson)
+		encodedResourceCollectionFilter = &filtersEncoded
+	}
+
+	err := steampipe.PopulateSteampipeConfig(elasticSearchConfig, j.Connector, accountId, encodedResourceCollectionFilter)
 	if err != nil {
 		logger.Error("failed to populate steampipe config", zap.Error(err))
 		return err
@@ -306,24 +331,25 @@ func (j *Job) ExtractFindings(client kaytu.Client, benchmark *complianceApi.Benc
 			severity = policy.Severity
 		}
 		findings = append(findings, types.Finding{
-			ID:               fmt.Sprintf("%s-%s-%d", resourceID, policy.ID, j.ScheduleJobID),
-			BenchmarkID:      benchmark.ID,
-			PolicyID:         policy.ID,
-			ConnectionID:     j.ConnectionID,
-			DescribedAt:      j.DescribedAt,
-			EvaluatedAt:      j.EvaluatedAt,
-			StateActive:      true,
-			Result:           status,
-			Severity:         severity,
-			Evaluator:        query.Engine,
-			Connector:        j.Connector,
-			ResourceID:       resourceID,
-			ResourceName:     resourceName,
-			ResourceLocation: resourceLocation,
-			ResourceType:     resourceType,
-			Reason:           reason,
-			ComplianceJobID:  j.JobID,
-			ScheduleJobID:    j.ScheduleJobID,
+			ID:                 fmt.Sprintf("%s-%s-%d", resourceID, policy.ID, j.ScheduleJobID),
+			BenchmarkID:        benchmark.ID,
+			PolicyID:           policy.ID,
+			ConnectionID:       j.ConnectionID,
+			DescribedAt:        j.DescribedAt,
+			EvaluatedAt:        j.EvaluatedAt,
+			StateActive:        true,
+			Result:             status,
+			Severity:           severity,
+			Evaluator:          query.Engine,
+			Connector:          j.Connector,
+			ResourceID:         resourceID,
+			ResourceName:       resourceName,
+			ResourceLocation:   resourceLocation,
+			ResourceType:       resourceType,
+			Reason:             reason,
+			ComplianceJobID:    j.JobID,
+			ScheduleJobID:      j.ScheduleJobID,
+			ResourceCollection: j.ResourceCollectionId,
 		})
 	}
 	return findings, nil

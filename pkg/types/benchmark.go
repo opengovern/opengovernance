@@ -33,19 +33,26 @@ type Finding struct {
 	Reason           string           `json:"reason" example:"The VM is not using managed disks"`                                                                      // Reason for the policy evaluation result
 	ComplianceJobID  uint             `json:"complianceJobID" example:"1"`                                                                                             // Compliance job ID
 	ScheduleJobID    uint             `json:"scheduleJobID" example:"1"`                                                                                               // Schedule job ID
+
+	ResourceCollection *string `json:"resourceCollection"` // Resource collection
 }
 
 func (r Finding) KeysAndIndex() ([]string, string) {
 	index := FindingsIndex
-	if strings.HasPrefix(r.ConnectionID, "stack-") {
-		index = StackFindingsIndex
-	}
-	return []string{
+	keys := []string{
 		r.ResourceID,
 		r.ConnectionID,
 		r.PolicyID,
 		strconv.FormatInt(r.DescribedAt, 10),
-	}, index
+	}
+	if r.ResourceCollection != nil {
+		keys = append(keys, *r.ResourceCollection)
+		index = ResourceCollectionsFindingsIndex
+	}
+	if strings.HasPrefix(r.ConnectionID, "stack-") {
+		index = StackFindingsIndex
+	}
+	return keys, index
 }
 
 type BenchmarkReportType string
@@ -56,13 +63,6 @@ const (
 	BenchmarksConnectorSummary        BenchmarkReportType = "BenchmarksConnectorSummary"
 	BenchmarksConnectorSummaryHistory BenchmarkReportType = "BenchmarksConnectorHistory"
 )
-
-type ResourceResult struct {
-	ResourceID   string           `json:"resource_id"`
-	ResourceName string           `json:"resource_name"`
-	ConnectionID string           `json:"connection_id"`
-	Result       ComplianceResult `json:"result"`
-}
 
 type PolicySummary struct {
 	PolicyID      string                  `json:"policy_id"`
@@ -85,6 +85,8 @@ type BenchmarkSummary struct {
 	ReportType BenchmarkReportType `json:"report_type"`
 
 	SummarizeJobId uint `json:"summarize_job_id"`
+
+	ResourceCollection *string `json:"resource_collection"`
 }
 
 func (r BenchmarkSummary) KeysAndIndex() ([]string, string) {
@@ -99,5 +101,10 @@ func (r BenchmarkSummary) KeysAndIndex() ([]string, string) {
 		r.ReportType == BenchmarksConnectorSummaryHistory {
 		keys = append(keys, fmt.Sprintf("%d", r.DescribedAt))
 	}
-	return keys, BenchmarkSummaryIndex
+	idx := BenchmarkSummaryIndex
+	if r.ResourceCollection != nil {
+		keys = append(keys, *r.ResourceCollection)
+		idx = ResourceCollectionsBenchmarkSummaryIndex
+	}
+	return keys, idx
 }

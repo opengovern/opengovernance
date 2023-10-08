@@ -30,6 +30,7 @@ type WorkerConfig struct {
 	ElasticSearch         config.ElasticSearch
 	Kafka                 config.Kafka
 	Compliance            config.KaytuService
+	Inventory             config.KaytuService
 	Onboard               config.KaytuService
 	Scheduler             config.KaytuService
 	PrometheusPushAddress string
