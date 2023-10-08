@@ -42,8 +42,9 @@ type Worker struct {
 }
 
 type SummarizeJob struct {
-	JobID   uint
-	JobType JobType
+	JobID                uint
+	JobType              JobType
+	ResourceCollectionId *string
 }
 
 type SummarizeJobResult struct {

@@ -46,6 +46,8 @@ type ComplianceReportJob struct {
 	Status          api2.ComplianceReportJobStatus `json:"Status" example:"InProgress"`
 	FailureMessage  string                         // Should be NULLSTRING
 	IsStack         bool                           `json:"IsStack" example:"false"`
+
+	ResourceCollection *string `json:"ResourceCollection"`
 }
 
 type JobSequencerStatus string
@@ -108,10 +110,11 @@ type InsightJob struct {
 
 type SummarizerJob struct {
 	gorm.Model
-	ScheduleJobID  *uint
-	Status         summarizerapi.SummarizerJobStatus
-	JobType        summarizer.JobType
-	FailureMessage string
+	ScheduleJobID      *uint
+	Status             summarizerapi.SummarizerJobStatus
+	JobType            summarizer.JobType
+	ResourceCollection *string
+	FailureMessage     string
 }
 
 type AnalyticsJob struct {

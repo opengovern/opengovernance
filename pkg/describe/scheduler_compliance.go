@@ -71,9 +71,11 @@ func (s *Scheduler) scheduleComplianceJob() error {
 		}
 
 		timeAfter := time.Now().Add(time.Duration(-s.complianceIntervalHours) * time.Hour)
+		var nullStringPointer *string = nil
 		for _, src := range sources {
 			connectionID := src.ID.String()
-			jobs, err := s.db.ListComplianceReportsWithFilter(&timeAfter, nil, &connectionID, nil, &benchmark.ID)
+			jobs, err := s.db.ListComplianceReportsWithFilter(
+				&timeAfter, nil, &connectionID, nil, &benchmark.ID, &nullStringPointer)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
 				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
@@ -85,7 +87,7 @@ func (s *Scheduler) scheduleComplianceJob() error {
 				continue
 			}
 
-			crj := newComplianceReportJob(src.ID.String(), src.Connector, benchmark.ID)
+			crj := newComplianceReportJob(src.ID.String(), src.Connector, benchmark.ID, nil)
 			err = s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
@@ -97,6 +99,51 @@ func (s *Scheduler) scheduleComplianceJob() error {
 			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, src, &crj)
 			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
 		}
+
+		rcSources, err := s.onboardClient.ListSources(clientCtx, benchmark.Connectors)
+		if err != nil {
+			ComplianceJobsCount.WithLabelValues("failure").Inc()
+			s.logger.Error("error while listing sources", zap.Error(err))
+			return fmt.Errorf("error while listing sources: %v", err)
+		}
+		resourceCollections, err := s.inventoryClient.ListResourceCollections(clientCtx)
+		if err != nil {
+			ComplianceJobsCount.WithLabelValues("failure").Inc()
+			s.logger.Error("error while listing resource collections", zap.Error(err))
+			return fmt.Errorf("error while listing resource collections: %v", err)
+		}
+
+		for _, rc := range resourceCollections {
+			rc := rc
+			rcIDPtr := &rc.ID
+			for _, src := range rcSources {
+				connectionID := src.ID.String()
+				jobs, err := s.db.ListComplianceReportsWithFilter(
+					&timeAfter, nil, &connectionID, nil, &benchmark.ID, &rcIDPtr)
+				if err != nil {
+					ComplianceJobsCount.WithLabelValues("failure").Inc()
+					ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
+					s.logger.Error("error while listing compliance jobs", zap.Error(err))
+					return fmt.Errorf("error while creating compliance job: %v", err)
+				}
+
+				if len(jobs) > 0 {
+					continue
+				}
+
+				crj := newComplianceReportJob(src.ID.String(), src.Connector, benchmark.ID, rcIDPtr)
+				err = s.db.CreateComplianceReportJob(&crj)
+				if err != nil {
+					ComplianceJobsCount.WithLabelValues("failure").Inc()
+					ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
+					s.logger.Error("error while creating compliance job", zap.Error(err))
+					return fmt.Errorf("error while creating compliance job: %v", err)
+				}
+
+				enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, src, &crj)
+				ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
+			}
+		}
 	}
 
 	ComplianceJobsCount.WithLabelValues("successful").Inc()
@@ -104,20 +151,22 @@ func (s *Scheduler) scheduleComplianceJob() error {
 
 }
 
-func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interface, a onboardApi.Connection, crj *ComplianceReportJob) {
+func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interface, a onboardApi.Connection,
+	crj *ComplianceReportJob) {
 	nextStatus := complianceapi.ComplianceReportJobInProgress
 	errMsg := ""
 
 	nowTime := time.Now().UnixMilli()
 	if err := q.Publish(complianceworker.Job{
-		JobID:        crj.ID,
-		DescribedAt:  nowTime,
-		EvaluatedAt:  nowTime,
-		ConnectionID: crj.SourceID,
-		BenchmarkID:  crj.BenchmarkID,
-		ConfigReg:    a.Credential.Config.(string),
-		Connector:    a.Connector,
-		IsStack:      crj.IsStack,
+		JobID:                crj.ID,
+		DescribedAt:          nowTime,
+		EvaluatedAt:          nowTime,
+		ConnectionID:         crj.SourceID,
+		BenchmarkID:          crj.BenchmarkID,
+		ConfigReg:            a.Credential.Config.(string),
+		Connector:            a.Connector,
+		IsStack:              crj.IsStack,
+		ResourceCollectionId: crj.ResourceCollection,
 	}); err != nil {
 		logger.Error("Failed to queue ComplianceReportJob",
 			zap.Uint("jobId", crj.ID),

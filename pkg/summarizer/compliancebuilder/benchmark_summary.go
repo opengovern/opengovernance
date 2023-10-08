@@ -27,17 +27,22 @@ type BenchmarkSummaryBuilder struct {
 	policySummaries    map[string]map[string]types.PolicySummary
 	benchmarkSummaries map[string]map[string]types.BenchmarkSummary
 	complianceClient   complianceClient.ComplianceServiceClient
+
+	ResourceCollectionId *string
 }
 
-func NewBenchmarkSummaryBuilder(logger *zap.Logger, jobId uint, client kaytu.Client, complianceClient complianceClient.ComplianceServiceClient) *BenchmarkSummaryBuilder {
+func NewBenchmarkSummaryBuilder(logger *zap.Logger, jobId uint,
+	client kaytu.Client, complianceClient complianceClient.ComplianceServiceClient,
+	resourceCollectionId *string) *BenchmarkSummaryBuilder {
 	return &BenchmarkSummaryBuilder{
-		jobID:              jobId,
-		logger:             logger,
-		client:             client,
-		complianceClient:   complianceClient,
-		policyMap:          make(map[string]complianceApi.Policy),
-		policySummaries:    make(map[string]map[string]types.PolicySummary),
-		benchmarkSummaries: make(map[string]map[string]types.BenchmarkSummary),
+		jobID:                jobId,
+		logger:               logger,
+		client:               client,
+		complianceClient:     complianceClient,
+		policyMap:            make(map[string]complianceApi.Policy),
+		policySummaries:      make(map[string]map[string]types.PolicySummary),
+		benchmarkSummaries:   make(map[string]map[string]types.BenchmarkSummary),
+		ResourceCollectionId: resourceCollectionId,
 	}
 }
 
@@ -210,16 +215,17 @@ func (b *BenchmarkSummaryBuilder) Build() []kafka.Doc {
 		}
 		for benchmarkId, benchmarkSummaryMap := range b.benchmarkSummaries {
 			benchmarkSummary := types.BenchmarkSummary{
-				BenchmarkID:    benchmarkId,
-				ConnectionID:   connector.String(),
-				ConnectorTypes: []source.Type{connector},
-				DescribedAt:    timeAt,
-				EvaluatedAt:    timeAt,
-				Policies:       nil,
-				TotalResult:    types.ComplianceResultSummary{},
-				TotalSeverity:  types.SeverityResult{},
-				ReportType:     types.BenchmarksConnectorSummary,
-				SummarizeJobId: b.jobID,
+				BenchmarkID:        benchmarkId,
+				ConnectionID:       connector.String(),
+				ConnectorTypes:     []source.Type{connector},
+				DescribedAt:        timeAt,
+				EvaluatedAt:        timeAt,
+				Policies:           nil,
+				TotalResult:        types.ComplianceResultSummary{},
+				TotalSeverity:      types.SeverityResult{},
+				ReportType:         types.BenchmarksConnectorSummary,
+				SummarizeJobId:     b.jobID,
+				ResourceCollection: b.ResourceCollectionId,
 			}
 			for _, benchmarkSummaryPerConnection := range benchmarkSummaryMap {
 				found := false
@@ -273,8 +279,22 @@ func (b *BenchmarkSummaryBuilder) Cleanup(summarizeJobID uint) error {
 			},
 		},
 	}
+
+	idx := types.BenchmarkSummaryIndex
+	if b.ResourceCollectionId != nil {
+		query["query"].(map[string]any)["bool"].(map[string]any)["filter"] = append(
+			query["query"].(map[string]any)["bool"].(map[string]any)["filter"].([]map[string]any),
+			map[string]any{
+				"term": map[string]any{
+					"resource_collection": *b.ResourceCollectionId,
+				},
+			},
+		)
+		idx = types.ResourceCollectionsFindingsIndex
+	}
+
 	esClient := b.client.ES()
-	resp, err := kaytu.DeleteByQuery(context.Background(), esClient, []string{types.BenchmarkSummaryIndex}, query,
+	resp, err := kaytu.DeleteByQuery(context.Background(), esClient, []string{idx}, query,
 		esClient.DeleteByQuery.WithRefresh(true),
 		esClient.DeleteByQuery.WithConflicts("proceed"),
 	)

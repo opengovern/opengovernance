@@ -301,7 +301,7 @@ func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
 
 	var dependencyIDs []int64
 	for _, src := range sources {
-		crj := newComplianceReportJob(src.ID.String(), src.Connector, benchmark.ID)
+		crj := newComplianceReportJob(src.ID.String(), src.Connector, benchmark.ID, nil)
 		err = h.DB.CreateComplianceReportJob(&crj)
 		if err != nil {
 			ComplianceSourceJobsCount.WithLabelValues("failure").Inc()

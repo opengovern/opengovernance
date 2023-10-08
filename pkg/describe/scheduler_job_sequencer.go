@@ -59,7 +59,7 @@ func (s *Scheduler) checkJobSequences() error {
 func (s *Scheduler) runNextJob(job JobSequencer) error {
 	switch job.NextJob {
 	case string(JobSequencerJobTypeBenchmarkSummarizer):
-		err := s.scheduleComplianceSummarizerJob()
+		err := s.scheduleComplianceSummarizerJob(nil)
 		if err != nil {
 			return err
 		}
