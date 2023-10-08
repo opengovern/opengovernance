@@ -37,7 +37,7 @@ import (
 
 const (
 	MaxQueued      = 5000
-	MaxIn10Minutes = 8500
+	MaxIn10Minutes = 5000
 )
 
 var (
