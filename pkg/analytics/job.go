@@ -201,8 +201,10 @@ func (j *Job) Run(
 			}
 
 			days := 7
-			if time.Now().Day() == 6 || time.Now().Day() == 4 {
-				days = 31
+			if time.Now().Day() == 6 /*|| time.Now().Day() == 7*/ || time.Now().Day() == 9 {
+				y, m, _ := time.Now().Date()
+				startDate := time.Date(y, m, 1, 0, 0, 0, 0, time.UTC).AddDate(0, -1, 0)
+				days = int(time.Now().Sub(startDate).Hours() / 24)
 			}
 
 			for i := days - 1; i >= 0; i-- {
