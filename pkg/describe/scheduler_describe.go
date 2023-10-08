@@ -811,14 +811,7 @@ func (s *Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		if err != nil {
 			return err
 		}
-		src := &apiOnboard.Connection{
-			ConnectionID: stack.AccountIDs[0],
-			Connector:    provider,
-			Credential: apiOnboard.Credential{
-				Config: "",
-			},
-		}
-		enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, *src, &crj)
+		enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, &crj)
 
 		evaluation := StackEvaluation{
 			EvaluatorID: benchmark.ID,
