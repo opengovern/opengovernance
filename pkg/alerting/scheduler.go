@@ -21,7 +21,8 @@ func (h *HttpHandler) TriggerRulesJobCycle() {
 	defer timer.Stop()
 
 	for ; ; <-timer.C {
-		_ = h.TriggerRulesList
+		err := h.TriggerRulesList()
+		h.logger.Error(err.Error())
 	}
 }
 
