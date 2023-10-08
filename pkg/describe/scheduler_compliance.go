@@ -110,7 +110,6 @@ func (s *Scheduler) scheduleComplianceJob() error {
 		for _, rc := range resourceCollections {
 			rc := rc
 			rcIDPtr := &rc.ID
-
 			connectionID := "all"
 			jobs, err := s.db.ListComplianceReportsWithFilter(
 				&timeAfter, nil, &connectionID, nil, &benchmark.ID, &rcIDPtr)

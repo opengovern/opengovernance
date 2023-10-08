@@ -37,10 +37,7 @@ func (db Database) Initialize() error {
 
 func (db Database) ListBenchmarks() ([]Benchmark, error) {
 	var s []Benchmark
-	tx := db.Orm.Model(&Benchmark{}).
-		Preload("Tags").
-		Preload("Children").
-		Preload("Policies").
+	tx := db.Orm.Model(&Benchmark{}).Preload(clause.Associations).
 		Find(&s)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -52,7 +49,7 @@ func (db Database) ListBenchmarks() ([]Benchmark, error) {
 // is it important to note that this function does not return the children of the root benchmarks neither the policies
 func (db Database) ListRootBenchmarks() ([]Benchmark, error) {
 	var benchmarks []Benchmark
-	err := db.Orm.Model(&Benchmark{}).Preload("Tags").
+	err := db.Orm.Model(&Benchmark{}).Preload(clause.Associations).
 		Where("NOT EXISTS (SELECT 1 FROM benchmark_children WHERE benchmark_children.child_id = benchmarks.id)").
 		Find(&benchmarks).Error
 	if err != nil {
@@ -64,10 +61,7 @@ func (db Database) ListRootBenchmarks() ([]Benchmark, error) {
 
 func (db Database) GetBenchmark(benchmarkId string) (*Benchmark, error) {
 	var s Benchmark
-	tx := db.Orm.Model(&Benchmark{}).
-		Preload("Tags").
-		Preload("Children").
-		Preload("Policies").
+	tx := db.Orm.Model(&Benchmark{}).Preload(clause.Associations).
 		Where("id = ?", benchmarkId).
 		First(&s)
 
