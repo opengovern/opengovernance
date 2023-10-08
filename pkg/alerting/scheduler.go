@@ -17,7 +17,7 @@ import (
 )
 
 func (h *HttpHandler) TriggerRulesJobCycle() {
-	timer := time.NewTicker(30 * time.Minute)
+	timer := time.NewTicker(10 * time.Minute)
 	defer timer.Stop()
 
 	for ; ; <-timer.C {
