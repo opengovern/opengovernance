@@ -245,27 +245,6 @@ func calculationOperations(operator api.OperatorStruct, totalValue int64) (bool,
 	return false, fmt.Errorf("error entering the operation")
 }
 
-func calculationConditionStr(operator api.OperatorStruct, totalValue int64) (bool, error) {
-	conditionType := operator.Condition.ConditionType
-
-	if conditionType == api.ConditionAnd {
-		stat, err := calculationConditionStrAND(operator, totalValue)
-		if err != nil {
-			return false, err
-		}
-		return stat, nil
-
-	} else if conditionType == api.ConditionOr {
-		stat, err := calculationConditionStrOr(operator, totalValue)
-		if err != nil {
-			return false, err
-		}
-		return stat, nil
-	}
-
-	return false, fmt.Errorf("please enter right condition")
-}
-
 func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (bool, error) {
 	// AND condition
 	numberOperatorStr := len(operator.Condition.Operator)
@@ -329,6 +308,27 @@ func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (
 		}
 	}
 	return false, fmt.Errorf("error")
+}
+
+func calculationConditionStr(operator api.OperatorStruct, totalValue int64) (bool, error) {
+	conditionType := operator.Condition.ConditionType
+
+	if conditionType == api.ConditionAnd {
+		stat, err := calculationConditionStrAND(operator, totalValue)
+		if err != nil {
+			return false, err
+		}
+		return stat, nil
+
+	} else if conditionType == api.ConditionOr {
+		stat, err := calculationConditionStrOr(operator, totalValue)
+		if err != nil {
+			return false, err
+		}
+		return stat, nil
+	}
+
+	return false, fmt.Errorf("please enter right condition")
 }
 
 func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (bool, error) {
