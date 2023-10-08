@@ -1,15 +1,12 @@
-package cost_estimator
+package cost_calculator
 
 import (
-	_ "context"
 	"encoding/json"
 	"fmt"
-	_ "fmt"
-
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
 	"io"
 	"net/http"
 	"strings"
-	"testing"
 	"time"
 )
 
@@ -44,28 +41,16 @@ type AzureCostStr struct {
 	Count              int
 }
 
-//	the thinks that needs for giving from elastic search from each resource :{
-//			ostype : VirtualMachine.prapertic.StorageProfile.OSDisk.OSType
-//			location: VirtualMachine.Location
-//			VMSize : VirtualMachine.prapertic.HardwareProfile.vmsize
-//	}
-
-func TestAzureCostRequest(t *testing.T) {
+func AzureCostEstimator(OSType *armcompute.OperatingSystemTypes, armRegionName *string, armSkuName *armcompute.VirtualMachineSizeTypes) (float64, error) {
 	serviceName := "Virtual Machines"
-	OSType := "Windows"
 	typeN := "Consumption"
-	armRegionName := "eastus"
 	serviceFamily := "Compute"
-	armSkuName := "Standard_E16ds_v5"
 
 	filter := fmt.Sprintf("serviceName eq '%v' and type eq '%v' and serviceFamily eq '%v' and armSkuName eq '%v' and armRegionName eq '%v' ", serviceName, typeN, serviceFamily, armSkuName, armRegionName)
-
-	url := "https://prices.azure.com/api/retail/prices"
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", "https://prices.azure.com/api/retail/prices", nil)
 	if err != nil {
-		t.Errorf("error : %v ", err)
+		return 0, fmt.Errorf("error in request to azure for giving the cost : %v ", err)
 	}
-
 	q := req.URL.Query()
 	q.Add("$filter", filter)
 	req.URL.RawQuery = q.Encode()
@@ -73,29 +58,34 @@ func TestAzureCostRequest(t *testing.T) {
 	client := http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		t.Errorf("error in status code : %v ", err)
+		return 0, fmt.Errorf("error in sending the request : %v ", err)
 	}
 	defer res.Body.Close()
+
 	if res.StatusCode != http.StatusOK {
-		t.Errorf("error status equal to : %v ", res.StatusCode)
+		return 0, fmt.Errorf("error status equal to : %v ", res.StatusCode)
 	}
 
 	responseBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		t.Errorf("error  : %v ", err)
+		return 0, fmt.Errorf("error in read the response : %v ", err)
 	}
 
 	var response AzureCostStr
 	err = json.Unmarshal(responseBody, &response)
 	if err != nil {
-		t.Errorf("error in unmarshalling the response : %v ", err)
+		return 0, fmt.Errorf("error in unmarshalling the response : %v ", err)
 	}
-	//fmt.Printf("items : %v ", response.Items)
-	item := giveProperCostTime(response.Items, t, OSType)
-	fmt.Printf("cost equal to : %v ", item.RetailPrice)
+	OSTypeS := string(*OSType)
+	item, err := giveProperCostTime(response.Items, OSTypeS)
+	if err != nil {
+		return 0, err
+	}
+
+	return item.RetailPrice, nil
 }
 
-func giveProperCostTime(Items []ItemsStr, t *testing.T, OSType string) ItemsStr {
+func giveProperCostTime(Items []ItemsStr, OSType string) (ItemsStr, error) {
 	newTime := 1
 	var newItem ItemsStr
 	osTypeCheckWindows := true
@@ -119,12 +109,14 @@ func giveProperCostTime(Items []ItemsStr, t *testing.T, OSType string) ItemsStr 
 
 		timeP, err := time.Parse(time.RFC3339, item.EffectiveStartDate)
 		if err != nil {
-			t.Errorf("error in parsing time : %v ", err)
+			return ItemsStr{}, fmt.Errorf("error in parsing time : %v ", err)
 		}
+
 		if timeP.Year() > newTime {
 			newTime = timeP.Year()
 			newItem = Items[i]
 		}
 	}
-	return newItem
+
+	return newItem, nil
 }
