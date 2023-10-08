@@ -123,7 +123,10 @@ func (s *Scheduler) scheduleComplianceJob() error {
 			if len(jobs) > 0 {
 				continue
 			}
-
+			if len(benchmark.Connectors) == 0 {
+				s.logger.Warn("no connectors found for benchmark - ignoring resource collection", zap.String("benchmark", benchmark.ID), zap.String("resource_collection", rc.ID))
+				continue
+			}
 			crj := newComplianceReportJob(connectionID, benchmark.Connectors[0], benchmark.ID, rcIDPtr)
 			err = s.db.CreateComplianceReportJob(&crj)
 			if err != nil {
