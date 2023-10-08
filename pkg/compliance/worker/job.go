@@ -180,16 +180,18 @@ func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient,
 			return err
 		}
 	} else {
-		src, err := onboardClient.GetSource(ctx, j.ConnectionID)
-		if err != nil {
-			return err
+		if len(accountId) > 0 && accountId != "all" {
+			src, err := onboardClient.GetSource(ctx, j.ConnectionID)
+			if err != nil {
+				return err
+			}
+			accountId = src.ConnectionID
+			connector = src.Connector
+			if src.LifecycleState != onboardApi.ConnectionLifecycleStateOnboard {
+				return errors.New("connection not healthy")
+			}
 		}
-		accountId = src.ConnectionID
-		connector = src.Connector
-		if src.LifecycleState != onboardApi.ConnectionLifecycleStateOnboard {
-			return errors.New("connection not healthy")
-		}
-
+		var err error
 		esk, err = kaytu.NewClient(kaytu.ClientConfig{
 			Addresses: []string{elasticSearchConfig.Address},
 			Username:  &elasticSearchConfig.Username,
