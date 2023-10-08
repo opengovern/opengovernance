@@ -2,6 +2,7 @@ package httpclient
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -72,11 +73,22 @@ func FromEchoContext(c echo.Context) *Context {
 }
 
 func DoRequest(method string, url string, headers map[string]string, payload []byte, v interface{}) (statusCode int, err error) {
-	req, err := http.NewRequest(method, url, bytes.NewReader(payload))
+	var buf bytes.Buffer
+	g := gzip.NewWriter(&buf)
+	if _, err = g.Write(payload); err != nil {
+		return statusCode, fmt.Errorf("gzip write: %w", err)
+	}
+	if err = g.Close(); err != nil {
+		return statusCode, fmt.Errorf("gzip close: %w", err)
+	}
+
+	req, err := http.NewRequest(method, url, &buf)
 	if err != nil {
 		return statusCode, fmt.Errorf("new request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
+	req.Header.Add("Accept-Encoding", "gzip")
 
 	for k, v := range headers {
 		req.Header.Add(k, v)
