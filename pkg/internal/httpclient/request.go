@@ -123,5 +123,12 @@ func DoRequest(method string, url string, headers map[string]string, payload []b
 	if v == nil {
 		return statusCode, nil
 	}
-	return statusCode, json.NewDecoder(res.Body).Decode(v)
+
+	uncompBody, err := gzip.NewReader(res.Body)
+	if err != nil {
+		return statusCode, fmt.Errorf("gzip new reader: %w", err)
+	}
+	defer uncompBody.Close()
+
+	return statusCode, json.NewDecoder(uncompBody).Decode(v)
 }

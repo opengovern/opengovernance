@@ -274,11 +274,13 @@ func InitializeScheduler(
 
 	s.describeJobResultQueue, err = initRabbitQueue(describeJobResultQueueName)
 	if err != nil {
+		s.logger.Error("failed to init rabbit queue", zap.Error(err), zap.String("queue_name", describeJobResultQueueName))
 		return nil, err
 	}
 
 	s.insightJobQueue, err = initRabbitQueue(insightJobQueueName)
 	if err != nil {
+		s.logger.Error("failed to init rabbit queue", zap.Error(err), zap.String("queue_name", insightJobQueueName))
 		return nil, err
 	}
 
