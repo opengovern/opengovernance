@@ -36,7 +36,6 @@ type Job struct {
 	ConnectionID string
 	BenchmarkID  string
 
-	ConfigReg string
 	Connector source.Type
 	IsStack   bool
 

@@ -307,7 +307,7 @@ func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
 			ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
 			return fmt.Errorf("error while creating compliance job: %v", err)
 		}
-		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, src, &crj)
+		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, &crj)
 		ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
 		dependencyIDs = append(dependencyIDs, int64(crj.ID))
 	}
