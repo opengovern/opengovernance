@@ -66,7 +66,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			errCodeStr := strings.ReplaceAll(result.ErrorCode, "\x00", "")
 			if errCodeStr == "" {
 				if strings.Contains(errStr, "exceeded maximum number of attempts") {
-					errCodeStr = "ThrottlingException"
+					errCodeStr = "TooManyRequestsException"
 				} else if strings.Contains(errStr, "context deadline exceede") {
 					errCodeStr = "ContextDeadlineExceeded"
 				}
