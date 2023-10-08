@@ -22,7 +22,9 @@ func (h *HttpHandler) TriggerRulesJobCycle() {
 
 	for ; ; <-timer.C {
 		err := h.TriggerRulesList()
-		h.logger.Error(err.Error())
+		if err != nil {
+			h.logger.Error(err.Error())
+		}
 	}
 }
 
