@@ -160,7 +160,7 @@ func (h HttpHandler) sendAlert(rule Rule) error {
 	if err != nil {
 		return fmt.Errorf("error getting action : %v", err.Error())
 	}
-	
+
 	req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer([]byte(action.Body)))
 	if err != nil {
 		return fmt.Errorf("error sending the request : %v", err.Error())

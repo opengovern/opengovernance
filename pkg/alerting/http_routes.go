@@ -19,7 +19,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
 	ruleGroup.DELETE("/delete/:ruleId", httpserver.AuthorizeHandler(h.DeleteRule, authapi.EditorRole))
 	ruleGroup.GET("/update", httpserver.AuthorizeHandler(h.UpdateRule, authapi.EditorRole))
-	ruleGroup.PUT("/:ruleId/trigger", httpserver.AuthorizeHandler(h.TriggerRuleAPI, authapi.EditorRole))
+	ruleGroup.GET("/:ruleId/trigger", httpserver.AuthorizeHandler(h.TriggerRuleAPI, authapi.EditorRole))
 
 	actionGroup := v1.Group("/action")
 	actionGroup.GET("/list", httpserver.AuthorizeHandler(h.ListActions, authapi.ViewerRole))
@@ -48,24 +48,24 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Tags			alerting
 //	@Produce		json
 //	@Param			ruleId	path		string	true	"RuleID"
-//	@Success		200		{object}
-//	@Router			/alerting/api/v1/rule/{ruleId}/trigger [put]
+//	@Success		200		{object}	string
+//	@Router			/alerting/api/v1/rule/{ruleId}/trigger [get]
 func (h *HttpHandler) TriggerRuleAPI(ctx echo.Context) error {
 	ruleIdStr := ctx.Param("ruleId")
 	ruleId, err := strconv.ParseUint(ruleIdStr, 10, 32)
 	if err != nil {
-		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("%v", err))
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error parsing the ruleId : %v ", err))
 	}
 
 	rule, err := h.db.GetRule(uint(ruleId))
 	if err != nil {
-		return ctx.String(http.StatusBadRequest, "Couldn't get rule")
+		return ctx.String(http.StatusBadRequest, fmt.Sprintf("Couldn't get rule , %v ", err))
 	}
 	err = h.TriggerRule(rule)
 	if err != nil {
-		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("%v", err))
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
-	return ctx.NoContent(http.StatusOK)
+	return ctx.JSON(http.StatusOK, "trigger executed successfully")
 }
 
 // ListRules godoc
@@ -80,7 +80,7 @@ func (h *HttpHandler) TriggerRuleAPI(ctx echo.Context) error {
 func (h *HttpHandler) ListRules(ctx echo.Context) error {
 	rules, err := h.db.ListRules()
 	if err != nil {
-		return err
+		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the list of the rules : %v ", err))
 	}
 
 	var response []api.Rule
@@ -89,19 +89,19 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 		var eventType api.EventType
 		err := json.Unmarshal(rule.EventType, &eventType)
 		if err != nil {
-			return err
+			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling eventType : %v ", err))
 		}
 
 		var scope api.Scope
 		err = json.Unmarshal(rule.Scope, &scope)
 		if err != nil {
-			return err
+			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling scope : %v ", err))
 		}
 
 		var operator api.OperatorStruct
 		err = json.Unmarshal(rule.Operator, &operator)
 		if err != nil {
-			return err
+			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling operator : %v ", err))
 		}
 
 		response = append(response, api.Rule{
@@ -128,7 +128,7 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 	var req api.CreateRuleRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return err
+		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the inputs : %v ", err))
 	}
 
 	EmptyFields := api.CreateRuleRequest{}
@@ -139,21 +139,21 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 
 	scope, err := json.Marshal(req.Scope)
 	if err != nil {
-		return err
+		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error marshalling scope : %v ", err))
 	}
 
 	event, err := json.Marshal(req.EventType)
 	if err != nil {
-		return err
+		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error marshalling eventType : %v ", err))
 	}
 
 	operator, err := json.Marshal(req.Operator)
 	if err != nil {
-		return err
+		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error marshalling operator : %v ", err))
 	}
 
 	if err := h.db.CreateRule(event, scope, operator, req.ActionID); err != nil {
-		return err
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error creating rule : %v ", err))
 	}
 
 	return ctx.JSON(200, "Rule successfully created")
@@ -165,7 +165,7 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 //	@Description	Deleting a single rule for the given rule id
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			ruleID	path		string	true	"Rule ID"
+//	@Param			ruleID	path		string	true	"RuleID"
 //	@Success		200		{object}	string
 //	@Router			/alerting/api/v1/rule/Delete/{ruleId} [delete]
 func (h *HttpHandler) DeleteRule(ctx echo.Context) error {
@@ -175,11 +175,11 @@ func (h *HttpHandler) DeleteRule(ctx echo.Context) error {
 	}
 	id, err := strconv.ParseUint(idS, 10, 64)
 	if err != nil {
-		return err
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error parsing the ruleId : %v", err))
 	}
 
 	if err = h.db.DeleteRule(uint(id)); err != nil {
-		return err
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error deleting the rule : %v ", err))
 	}
 
 	return ctx.JSON(200, "Rule successfully deleted")
@@ -197,30 +197,47 @@ func (h *HttpHandler) DeleteRule(ctx echo.Context) error {
 func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 	var req api.UpdateRuleRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return err
+		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the inputs : %v ", err))
 	}
 	if req.Id == 0 {
 		return errors.New("ruleId is required")
 	}
 
-	scope, err := json.Marshal(req.Scope)
-	if err != nil {
-		return err
+	var scope []byte
+	var eventType []byte
+	var operator []byte
+	var err error
+
+	if req.Scope != nil {
+		scope, err = json.Marshal(req.Scope)
+		if err != nil {
+			return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error marshalling the scope : %v ", err))
+		}
+	} else {
+		scope = nil
 	}
 
-	eventType, err := json.Marshal(req.EventType)
-	if err != nil {
-		return err
+	if req.EventType != nil {
+		eventType, err = json.Marshal(req.EventType)
+		if err != nil {
+			return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error marshalling the eventType : %v ", err))
+		}
+	} else {
+		eventType = nil
 	}
 
-	operator, err := json.Marshal(req.Operator)
-	if err != nil {
-		return err
+	if req.Operator != nil {
+		operator, err = json.Marshal(req.Operator)
+		if err != nil {
+			return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error marshalling the operator : %v ", err))
+		}
+	} else {
+		operator = nil
 	}
 
 	err = h.db.UpdateRule(req.Id, &eventType, &scope, &operator, req.ActionID)
 	if err != nil {
-		return err
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error updating the rule : %v ", err))
 	}
 
 	return ctx.JSON(200, "Rule successfully updated")
@@ -238,7 +255,7 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 func (h *HttpHandler) ListActions(ctx echo.Context) error {
 	actions, err := h.db.ListAction()
 	if err != nil {
-		return err
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error getting the actions : %v ", err))
 	}
 
 	var response []api.Action
@@ -247,7 +264,7 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 		var headers map[string]string
 		err = json.Unmarshal(action.Headers, &headers)
 		if err != nil {
-			return err
+			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling the action : %v ", err))
 		}
 
 		response = append(response, api.Action{
@@ -275,7 +292,7 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 	var req api.CreateActionReq
 	err := bindValidate(ctx, &req)
 	if err != nil {
-		return err
+		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the inputs : %v ", err))
 	}
 
 	testEmptyFields := api.CreateActionReq{}
@@ -286,12 +303,12 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 
 	headers, err := json.Marshal(req.Headers)
 	if err != nil {
-		return err
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error marshalling the headers : %v ", err))
 	}
 
 	err = h.db.CreateAction(req.Method, req.Url, headers, req.Body)
 	if err != nil {
-		return err
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error creating the action : %v ", err))
 	}
 
 	return ctx.JSON(200, "Action created successfully ")
@@ -313,12 +330,12 @@ func (h *HttpHandler) DeleteAction(ctx echo.Context) error {
 	}
 	id, err := strconv.ParseUint(idS, 10, 64)
 	if err != nil {
-		return err
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error parsing the actionId : %v", err))
 	}
 
 	err = h.db.DeleteAction(uint(id))
 	if err != nil {
-		return err
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error deleting the action : %v ", err))
 	}
 
 	return ctx.JSON(200, "Action deleted successfully")
@@ -336,17 +353,26 @@ func (h *HttpHandler) DeleteAction(ctx echo.Context) error {
 func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
 	var req api.UpdateActionRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return err
+		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the inputs : %v ", err))
 	}
 	if req.Id == 0 {
 		return errors.New("actionId is required")
 	}
 
-	MarshalHeader, err := json.Marshal(req.Headers)
+	var MarshalHeader []byte
+	var err error
+	if req.Headers != nil {
+		MarshalHeader, err = json.Marshal(req.Headers)
+		if err != nil {
+			return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error marshalling the headers : %v ", err))
+		}
+	} else {
+		MarshalHeader = nil
+	}
 
 	err = h.db.UpdateAction(req.Id, &MarshalHeader, req.Url, req.Body, req.Method)
 	if err != nil {
-		return err
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error updating the action : %v ", err))
 	}
 	return ctx.JSON(200, "Action updated successfully")
 }
