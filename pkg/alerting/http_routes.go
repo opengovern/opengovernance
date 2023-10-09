@@ -19,7 +19,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
 	ruleGroup.DELETE("/delete/:ruleId", httpserver.AuthorizeHandler(h.DeleteRule, authapi.EditorRole))
 	ruleGroup.GET("/update", httpserver.AuthorizeHandler(h.UpdateRule, authapi.EditorRole))
-	ruleGroup.PUT("/:ruleId/trigger", httpserver.AuthorizeHandler(h.TriggerRuleAPI, authapi.EditorRole))
+	ruleGroup.GET("/:ruleId/trigger", httpserver.AuthorizeHandler(h.TriggerRuleAPI, authapi.EditorRole))
 
 	actionGroup := v1.Group("/action")
 	actionGroup.GET("/list", httpserver.AuthorizeHandler(h.ListActions, authapi.ViewerRole))
@@ -54,12 +54,12 @@ func (h *HttpHandler) TriggerRuleAPI(ctx echo.Context) error {
 	ruleIdStr := ctx.Param("ruleId")
 	ruleId, err := strconv.ParseUint(ruleIdStr, 10, 32)
 	if err != nil {
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error parsing the ruleId : %v ", err))
 	}
 
 	rule, err := h.db.GetRule(uint(ruleId))
 	if err != nil {
-		return ctx.String(http.StatusBadRequest, err.Error())
+		return ctx.String(http.StatusBadRequest, fmt.Sprintf("Couldn't get rule , %v ", err))
 	}
 	err = h.TriggerRule(rule)
 	if err != nil {
