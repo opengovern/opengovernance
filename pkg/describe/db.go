@@ -1185,6 +1185,12 @@ func (db Database) UpdateCheckupJobStatus(job CheckupJob) error {
 }
 
 func (db Database) UpdateCheckupJob(jobID uint, status checkupapi.CheckupJobStatus, failedMessage string) error {
+	for i := 0; i < len(failedMessage); i++ {
+		if failedMessage[i] == 0 {
+			failedMessage = failedMessage[:i] + failedMessage[i+1:]
+		}
+	}
+
 	tx := db.orm.Model(&CheckupJob{}).
 		Where("id = ?", jobID).
 		Updates(CheckupJob{
