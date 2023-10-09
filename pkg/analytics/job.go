@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 
@@ -200,34 +201,18 @@ func (j *Job) Run(
 				status = append(status, v)
 			}
 
-			days := 7
-			if time.Now().Day() == 6 /*|| time.Now().Day() == 7*/ || time.Now().Day() == 9 {
-				y, m, _ := time.Now().Date()
-				startDate := time.Date(y, m, 1, 0, 0, 0, 0, time.UTC).AddDate(0, -1, 0)
-				days = int(time.Now().Sub(startDate).Hours() / 24)
-			}
-
-			for i := days - 1; i >= 0; i-- {
-				theDate := time.Now().UTC().AddDate(0, 0, -1*i)
-				year, month, day := theDate.Date()
-				start := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
-				end := time.Date(year, month, day, 23, 59, 59, 0, time.UTC)
-
-				err = j.DoSpendMetric(
-					steampipeDB,
-					kfkProducer,
-					kfkTopic,
-					onboardClient,
-					logger,
-					metric,
-					connectionCache,
-					start,
-					end,
-					status,
-				)
-				if err != nil {
-					return err
-				}
+			err = j.DoSpendMetric(
+				steampipeDB,
+				kfkProducer,
+				kfkTopic,
+				onboardClient,
+				logger,
+				metric,
+				connectionCache,
+				status,
+			)
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -402,17 +387,12 @@ func (j *Job) DoSpendMetric(
 	logger *zap.Logger,
 	metric db.AnalyticMetric,
 	connectionCache map[string]onboardApi.Connection,
-	startTime time.Time,
-	endTime time.Time,
 	status []describeApi.DescribeStatus,
 ) error {
 	connectionResultMap := map[string]spend.ConnectionMetricTrendSummary{}
 	providerResultMap := map[string]spend.ConnectorMetricTrendSummary{}
 
 	query := metric.Query
-	query = strings.ReplaceAll(query, "$date", startTime.Format("2006-01-02"))
-	query = strings.ReplaceAll(query, "$startTime", fmt.Sprintf("%d", startTime.Unix()))
-	query = strings.ReplaceAll(query, "$endTime", fmt.Sprintf("%d", endTime.Unix()))
 
 	fmt.Println("spend ==== " + query)
 	res, err := steampipeDB.QueryAll(context.TODO(), query)
@@ -430,7 +410,7 @@ func (j *Job) DoSpendMetric(
 	}
 
 	for _, record := range res.Data {
-		if len(record) != 2 {
+		if len(record) != 3 {
 			return fmt.Errorf("invalid query: %s", query)
 		}
 
@@ -438,9 +418,13 @@ func (j *Job) DoSpendMetric(
 		if !ok {
 			return fmt.Errorf("invalid format for connectionID: [%s] %v", reflect.TypeOf(record[0]), record[0])
 		}
-		sum, ok := record[1].(float64)
+		date, ok := record[1].(string)
 		if !ok {
-			return fmt.Errorf("invalid format for sum: [%s] %v", reflect.TypeOf(record[1]), record[1])
+			return fmt.Errorf("invalid format for date: [%s] %v", reflect.TypeOf(record[1]), record[1])
+		}
+		sum, ok := record[2].(float64)
+		if !ok {
+			return fmt.Errorf("invalid format for sum: [%s] %v", reflect.TypeOf(record[2]), record[2])
 		}
 
 		var conn *onboardApi.Connection
@@ -470,7 +454,20 @@ func (j *Job) DoSpendMetric(
 			}
 		}
 
-		dateTimestamp := startTime.Add(endTime.Sub(startTime) / 2)
+		if r, err := regexp.Compile("\\d+"); err == nil && r.MatchString(date) {
+			date = date[:4] + "-" + date[4:6] + "-" + date[6:]
+		}
+
+		dateTimestamp, err := time.Parse("2006-01-02", date)
+		if err != nil {
+			return fmt.Errorf("failed to parse date %s due to %v", date, err)
+		}
+
+		y, m, d := dateTimestamp.Date()
+		startTime := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+		endTime := time.Date(y, m, d, 23, 59, 59, 0, time.UTC)
+
+		//dateTimestamp := startTime.Add(endTime.Sub(startTime) / 2)
 		if v, ok := connectionResultMap[conn.ID.String()]; ok {
 			v.CostValue += sum
 			connectionResultMap[conn.ID.String()] = v
