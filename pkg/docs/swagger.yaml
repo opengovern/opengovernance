@@ -3,7 +3,7 @@ definitions:
     properties:
       message: {}
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiAction:
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Action:
     properties:
       body:
         type: string
@@ -18,47 +18,66 @@ definitions:
       url:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiRule:
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionStruct:
+    properties:
+      condition_type:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionType'
+      operator:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionType:
+    enum:
+    - AND
+    - OR
+    type: string
+    x-enum-varnames:
+    - ConditionAnd
+    - ConditionOr
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateActionReq:
+    properties:
+      body:
+        type: string
+      headers:
+        additionalProperties:
+          type: string
+        type: object
+      method:
+        type: string
+      url:
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateRuleRequest:
     properties:
       action_id:
         type: integer
       event_type:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType'
-      id:
-        type: integer
       operator:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct'
       scope:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope'
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionStruct:
-    properties:
-      conditionType:
-        type: string
-      operatorStr:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct'
-        type: array
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType:
     properties:
-      benchmarkId:
+      benchmark_id:
         type: string
-      insightId:
+      insight_id:
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorInformation:
     properties:
-      operator:
+      operator_type:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType'
       value:
         type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct:
     properties:
-      conditionStr:
+      condition:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionStruct'
-      operatorInfo:
+      operator_info:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorInformation'
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType:
@@ -71,19 +90,32 @@ definitions:
     - '!='
     type: string
     x-enum-varnames:
-    - Operator_GreaterThan
-    - Operator_LessThan
-    - Operator_LessThanOrEqual
-    - Operator_GreaterThanOrEqual
-    - Operator_Equal
-    - Operator_DoesNotEqual
+    - OperatorGreaterThan
+    - OperatorLessThan
+    - OperatorLessThanOrEqual
+    - OperatorGreaterThanOrEqual
+    - OperatorEqual
+    - OperatorDoesNotEqual
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Rule:
+    properties:
+      action_id:
+        type: integer
+      event_type:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType'
+      id:
+        type: integer
+      operator:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct'
+      scope:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope'
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope:
     properties:
-      connectionGroup:
+      connection_group:
         type: string
-      connectionId:
+      connection_id:
         type: string
-      connectorName:
+      connector:
         $ref: '#/definitions/source.Type'
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest:
@@ -2403,6 +2435,9 @@ definitions:
         description: Reason for the policy evaluation result
         example: The VM is not using managed disks
         type: string
+      resourceCollection:
+        description: Resource collection
+        type: string
       resourceID:
         description: Resource ID
         example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
@@ -2516,7 +2551,7 @@ paths:
       summary: Runs the query on KaytuGPT and returns the generated query
       tags:
       - resource
-  /alerting/api/action/create:
+  /alerting/api/v1/action/create:
     post:
       description: create an action by the specified input
       parameters:
@@ -2525,7 +2560,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiAction'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateActionReq'
       responses:
         "200":
           description: OK
@@ -2536,7 +2571,7 @@ paths:
       summary: Create action
       tags:
       - alerting
-  /alerting/api/action/delete/{actionId}:
+  /alerting/api/v1/action/delete/{actionId}:
     delete:
       description: Deleting a single action for the given action id
       parameters:
@@ -2555,7 +2590,7 @@ paths:
       summary: Delete action
       tags:
       - alerting
-  /alerting/api/action/list:
+  /alerting/api/v1/action/list:
     get:
       description: returns list of all actions
       produces:
@@ -2565,14 +2600,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiAction'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Action'
             type: array
       security:
       - BearerToken: []
       summary: List actions
       tags:
       - alerting
-  /alerting/api/action/update:
+  /alerting/api/v1/action/update:
     get:
       description: Retrieving an action by the specified input
       parameters:
@@ -2592,11 +2627,32 @@ paths:
       summary: Update action
       tags:
       - alerting
-  /alerting/api/rule/Delete/{ruleId}:
+  /alerting/api/v1/rule/{ruleId}/trigger:
+    get:
+      description: Trigger one rule manually
+      parameters:
+      - description: RuleID
+        in: path
+        name: ruleId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerToken: []
+      summary: Trigger one rule
+      tags:
+      - alerting
+  /alerting/api/v1/rule/Delete/{ruleId}:
     delete:
       description: Deleting a single rule for the given rule id
       parameters:
-      - description: Rule ID
+      - description: RuleID
         in: path
         name: ruleID
         required: true
@@ -2611,7 +2667,7 @@ paths:
       summary: Delete rule
       tags:
       - alerting
-  /alerting/api/rule/create:
+  /alerting/api/v1/rule/create:
     post:
       description: create a rule by the specified input
       parameters:
@@ -2620,7 +2676,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiRule'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateRuleRequest'
       responses:
         "200":
           description: OK
@@ -2631,7 +2687,7 @@ paths:
       summary: Create rule
       tags:
       - alerting
-  /alerting/api/rule/list:
+  /alerting/api/v1/rule/list:
     get:
       description: returns list of all rules
       produces:
@@ -2641,14 +2697,14 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ApiRule'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Rule'
             type: array
       security:
       - BearerToken: []
       summary: List rules
       tags:
       - alerting
-  /alerting/api/rule/update:
+  /alerting/api/v1/rule/update:
     get:
       description: Retrieving a rule by the specified input
       parameters:
