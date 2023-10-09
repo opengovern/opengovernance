@@ -58,11 +58,11 @@ func (h *HttpHandler) TriggerRuleAPI(ctx echo.Context) error {
 
 	rule, err := h.db.GetRule(uint(ruleId))
 	if err != nil {
-		return err
+		return ctx.String(http.StatusBadRequest, err.Error())
 	}
 	err = h.TriggerRule(rule)
 	if err != nil {
-		return err
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 	return ctx.NoContent(http.StatusOK)
 }

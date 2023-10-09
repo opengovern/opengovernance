@@ -24,7 +24,6 @@ func (h *HttpHandler) TriggerRulesJobCycle() {
 		err := h.TriggerRulesList()
 		if err != nil {
 			h.logger.Error(err.Error())
-			fmt.Println(err)
 		}
 	}
 }
@@ -32,8 +31,7 @@ func (h *HttpHandler) TriggerRulesJobCycle() {
 func (h *HttpHandler) TriggerRulesList() error {
 	rules, err := h.db.ListRules()
 	if err != nil {
-		fmt.Printf("Error in giving list rules error equal to : %v", err)
-		return err
+		return fmt.Errorf("Error in giving list rules error equal to : %v ", err)
 	}
 
 	for _, rule := range rules {
@@ -42,8 +40,6 @@ func (h *HttpHandler) TriggerRulesList() error {
 			h.logger.Error("Rule trigger has been failed",
 				zap.String("rule id", fmt.Sprintf("%v", rule.Id)),
 				zap.Error(err))
-			fmt.Println(err)
-			return err
 		}
 	}
 	return nil
