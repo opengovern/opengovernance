@@ -454,7 +454,7 @@ func (j *Job) DoSpendMetric(
 			}
 		}
 
-		if r, err := regexp.Compile("\\d+"); err == nil && r.MatchString(date) {
+		if r, err := regexp.Compile("^\\d+$"); err == nil && r.MatchString(date) {
 			date = date[:4] + "-" + date[4:6] + "-" + date[6:]
 		}
 
