@@ -21,22 +21,24 @@ func (h *HttpHandler) TriggerRulesJobCycle() error {
 	defer timer.Stop()
 
 	for ; ; <-timer.C {
-		_ = h.TriggerRulesList
+		err := h.TriggerRulesList()
+		if err != nil {
+			h.logger.Error(err.Error())
+		}
 	}
 }
 
 func (h *HttpHandler) TriggerRulesList() error {
 	rules, err := h.db.ListRules()
 	if err != nil {
-		fmt.Printf("Error in giving list rules error equal to : %v", err)
-		return err
+		return fmt.Errorf("Error giving list rules : %v ", err.Error())
 	}
 
 	for _, rule := range rules {
 		err := h.TriggerRule(rule)
 		if err != nil {
 			h.logger.Error("Rule trigger has been failed",
-				zap.String("rule id", fmt.Sprintf("%v", rule.ID)),
+				zap.String("rule id", fmt.Sprintf("%v", rule.Id)),
 				zap.Error(err))
 		}
 	}
@@ -47,51 +49,140 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 	var scope api.Scope
 	err := json.Unmarshal(rule.Scope, &scope)
 	if err != nil {
-		return err
+		return fmt.Errorf("error unmarshalling the scope : %v ", err.Error())
 	}
 
 	var eventType api.EventType
 	err = json.Unmarshal(rule.EventType, &eventType)
 	if err != nil {
-		return err
+		return fmt.Errorf("error unmarshalling the eventType : %v", err.Error())
 	}
 
 	var operator api.OperatorStruct
 	err = json.Unmarshal(rule.Operator, &operator)
 	if err != nil {
-		return err
+		return fmt.Errorf("error unmarshalling the operator : %v ", err.Error())
 	}
-
+	stat := false
 	if eventType.InsightId != nil {
-		h.logger.Info("triggering insight", zap.String("rule", fmt.Sprintf("%v", rule.ID)))
-		statInsight, err := h.triggerInsight(operator, eventType, scope)
+		h.logger.Info("triggering insight", zap.String("rule", fmt.Sprintf("%v", rule.Id)))
+		stat, err = h.triggerInsight(operator, eventType, scope)
 		if err != nil {
-			return err
-		}
-		if statInsight {
-			err = h.sendAlert(rule)
-			h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.ID)),
-				zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
-			if err != nil {
-				return err
-			}
+			return fmt.Errorf("error triggering the insight : %v ", err.Error())
 		}
 	} else if eventType.BenchmarkId != nil {
-		h.logger.Info("triggering compliance", zap.String("rule", fmt.Sprintf("%v", rule.ID)))
-		statCompliance, err := h.triggerCompliance(operator, scope, eventType)
+		h.logger.Info("triggering compliance", zap.String("rule", fmt.Sprintf("%v", rule.Id)))
+		stat, err = h.triggerCompliance(operator, scope, eventType)
 		if err != nil {
-			fmt.Printf("Error in trigger compliance : %v ", err)
-		}
-		if statCompliance {
-			err = h.sendAlert(rule)
-			h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.ID)),
-				zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
-			if err != nil {
-				return err
-			}
+			return fmt.Errorf("Error in trigger compliance : %v ", err.Error())
 		}
 	} else {
 		return fmt.Errorf("Error: insighId or complianceId not entered ")
+	}
+	if stat {
+		err = h.sendAlert(rule)
+		h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.Id)),
+			zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
+		if err != nil {
+			return fmt.Errorf("Error sending alert : %v ", err.Error())
+		}
+	}
+	return nil
+}
+
+func (h HttpHandler) triggerInsight(operator api.OperatorStruct, eventType api.EventType, scope api.Scope) (bool, error) {
+	diff := 24 * time.Hour
+	oneDayAgo := time.Now().Add(-diff)
+	timeNow := time.Now()
+	insightID := strconv.Itoa(int(*eventType.InsightId))
+	connectionIds, err := h.getConnectionIdFilter(scope)
+	if err != nil {
+		return false, fmt.Errorf("error getting connectionId : %v ", err.Error())
+	}
+
+	insight, _ := h.complianceClient.GetInsight(&httpclient.Context{UserRole: authApi.InternalRole}, insightID, connectionIds, &oneDayAgo, &timeNow)
+	if err != nil {
+		return false, fmt.Errorf("error getting Insight : %v", err.Error())
+	}
+	if insight.TotalResultValue == nil {
+		return false, nil
+	}
+
+	stat, err := calculationOperations(operator, *insight.TotalResultValue)
+	if err != nil {
+		return false, fmt.Errorf("error calculating operator : %v", err.Error())
+	}
+	h.logger.Info("Insight rule operation done",
+		zap.Bool("result", stat),
+		zap.Int64("totalCount", *insight.TotalResultValue))
+	return stat, nil
+}
+
+func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Scope, eventType api.EventType) (bool, error) {
+	connectionIds, err := h.getConnectionIdFilter(scope)
+	if err != nil {
+		return false, fmt.Errorf("error getting connectionId : %v ", err.Error())
+	}
+
+	filters := apiCompliance.FindingFilters{BenchmarkID: []string{*eventType.BenchmarkId}}
+	if len(connectionIds) > 0 {
+		filters.ConnectionID = connectionIds
+	}
+	if scope.Connector != nil {
+		filters.Connector = []source.Type{*scope.Connector}
+	}
+	reqCompliance := apiCompliance.GetFindingsRequest{
+		Filters: filters,
+		Sorts: []apiCompliance.FindingSortItem{{Field: apiCompliance.FieldResourceID,
+			Direction: apiCompliance.DirectionAscending}},
+		Page: apiCompliance.Page{No: 100, Size: 100},
+	}
+	h.logger.Info("sending finding request",
+		zap.String("request", fmt.Sprintf("%v", reqCompliance)))
+	compliance, err := h.complianceClient.GetFindings(&httpclient.Context{UserRole: authApi.AdminRole}, reqCompliance)
+	if err != nil {
+		return false, fmt.Errorf("error getting finding : %v ", err.Error())
+	}
+	h.logger.Info("received findings")
+	stat, err := calculationOperations(operator, compliance.TotalCount)
+	if err != nil {
+		return false, fmt.Errorf("error in rule operations : %v ", err.Error())
+	}
+
+	h.logger.Info("Compliance rule operation done",
+		zap.Bool("result", stat),
+		zap.Int64("totalCount", compliance.TotalCount))
+	return stat, nil
+}
+
+func (h HttpHandler) sendAlert(rule Rule) error {
+	action, err := h.db.GetAction(rule.ActionID)
+	if err != nil {
+		return fmt.Errorf("error getting action : %v", err.Error())
+	}
+
+	req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer([]byte(action.Body)))
+	if err != nil {
+		return fmt.Errorf("error sending the request : %v", err.Error())
+	}
+
+	var headers map[string]string
+	err = json.Unmarshal(action.Headers, &headers)
+	if err != nil {
+		return fmt.Errorf("error unmarshalling the headers : %v ", err.Error())
+	}
+	for k, v := range headers {
+		req.Header.Add(k, v)
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("error sending the alert request : %v ", err.Error())
+	}
+
+	err = res.Body.Close()
+	if err != nil {
+		return fmt.Errorf("error closing the response body : %v ", err.Error())
 	}
 	return nil
 }
@@ -113,10 +204,10 @@ func (h HttpHandler) getConnectionIdFilter(scope api.Scope) ([]string, error) {
 	if scope.ConnectionGroup != nil {
 		connectionGroupObj, err := h.onboardClient.GetConnectionGroup(&httpclient.Context{UserRole: authApi.KaytuAdminRole}, *scope.ConnectionGroup)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error getting connectionId : %v ", err.Error())
 		}
 		if len(connectionGroupObj.ConnectionIds) == 0 {
-			return nil, err
+			return nil, nil
 		}
 
 		// Check for duplicate connection groups
@@ -131,131 +222,18 @@ func (h HttpHandler) getConnectionIdFilter(scope api.Scope) ([]string, error) {
 	return connectionIDSChecked, nil
 }
 
-func (h HttpHandler) sendAlert(rule Rule) error {
-	action, err := h.db.GetAction(rule.ActionID)
-	if err != nil {
-		return fmt.Errorf("error getting action , error equal to : %v", err)
-	}
-	req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer([]byte(action.Body)))
-	if err != nil {
-		return fmt.Errorf("error sending the request , error equal to : %v", err)
-	}
-
-	var headers map[string]string
-	err = json.Unmarshal(action.Headers, &headers)
-	if err != nil {
-		return fmt.Errorf("error unmarshalling the headers  , error : %v", err)
-	}
-	for k, v := range headers {
-		req.Header.Add(k, v)
-	}
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	err = res.Body.Close()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (h HttpHandler) triggerInsight(operator api.OperatorStruct, eventType api.EventType, scope api.Scope) (bool, error) {
-	diff := 24 * time.Hour
-	oneDayAgo := time.Now().Add(-diff)
-	timeNow := time.Now()
-	insightID := strconv.Itoa(int(*eventType.InsightId))
-	connectionIds, err := h.getConnectionIdFilter(scope)
-	if err != nil {
-		return false, err
-	}
-
-	insight, _ := h.complianceClient.GetInsight(&httpclient.Context{UserRole: authApi.InternalRole}, insightID, connectionIds, &oneDayAgo, &timeNow)
-	if err != nil {
-		return false, fmt.Errorf("error in getting GetInsight , error  equal to : %v", err)
-	}
-	if insight.TotalResultValue == nil {
-		return false, nil
-	}
-
-	stat, err := calculationOperations(operator, *insight.TotalResultValue)
-	if err != nil {
-		return false, err
-	}
-	h.logger.Info("Insight rule operation done",
-		zap.Bool("result", stat),
-		zap.Int64("totalCount", *insight.TotalResultValue))
-	return stat, nil
-}
-
-func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Scope, eventType api.EventType) (bool, error) {
-	connectionIds, err := h.getConnectionIdFilter(scope)
-	if err != nil {
-		return false, err
-	}
-	filters := apiCompliance.FindingFilters{ConnectionID: connectionIds, BenchmarkID: []string{*eventType.BenchmarkId}}
-	if scope.Connector != nil {
-		filters.Connector = []source.Type{*scope.Connector}
-	}
-	reqCompliance := apiCompliance.GetFindingsRequest{
-		Filters: filters,
-		Page:    apiCompliance.Page{No: 1, Size: 1},
-	}
-	h.logger.Info("sending finding request")
-	compliance, err := h.complianceClient.GetFindings(&httpclient.Context{UserRole: authApi.InternalRole}, reqCompliance)
-	if err != nil {
-		return false, fmt.Errorf("error getting compliance , err : %v ", err)
-	}
-	h.logger.Info("received findings")
-	stat, err := calculationOperations(operator, compliance.TotalCount)
-	if err != nil {
-		return false, err
-	}
-	h.logger.Info("Insight rule operation done",
-		zap.Bool("result", stat),
-		zap.Int64("totalCount", compliance.TotalCount))
-	fmt.Println("================================")
-	fmt.Println("total count:", compliance.TotalCount)
-	fmt.Println("================================")
-	return stat, nil
-}
-
 func calculationOperations(operator api.OperatorStruct, totalValue int64) (bool, error) {
 	if oneCondition := operator.OperatorInfo; oneCondition != nil {
 		stat := compareValue(oneCondition.OperatorType, oneCondition.Value, totalValue)
 		return stat, nil
-
 	} else if operator.Condition != nil {
 		stat, err := calculationConditionStr(operator, totalValue)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("error in calculation operator : %v ", err.Error())
 		}
 		return stat, nil
 	}
 	return false, fmt.Errorf("error entering the operation")
-}
-
-func calculationConditionStr(operator api.OperatorStruct, totalValue int64) (bool, error) {
-	conditionType := operator.Condition.ConditionType
-
-	if conditionType == api.ConditionAnd {
-		stat, err := calculationConditionStrAND(operator, totalValue)
-		if err != nil {
-			return false, err
-		}
-		return stat, nil
-
-	} else if conditionType == api.ConditionOr {
-		stat, err := calculationConditionStrOr(operator, totalValue)
-		if err != nil {
-			return false, err
-		}
-		return stat, nil
-	}
-
-	return false, fmt.Errorf("please enter right condition")
 }
 
 func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (bool, error) {
@@ -283,7 +261,7 @@ func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (
 			for j := 0; j < numberOperatorStr2; j++ {
 				stat, err := calculationOperations(newOperator2.Operator[j], totalValue)
 				if err != nil {
-					return false, fmt.Errorf("error in calculationOperations : %v ", err)
+					return false, fmt.Errorf("error in calculationOperations : %v ", err.Error())
 				}
 
 				if conditionType2 == api.ConditionAnd {
@@ -321,6 +299,27 @@ func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (
 		}
 	}
 	return false, fmt.Errorf("error")
+}
+
+func calculationConditionStr(operator api.OperatorStruct, totalValue int64) (bool, error) {
+	conditionType := operator.Condition.ConditionType
+
+	if conditionType == api.ConditionAnd {
+		stat, err := calculationConditionStrAND(operator, totalValue)
+		if err != nil {
+			return false, err
+		}
+		return stat, nil
+
+	} else if conditionType == api.ConditionOr {
+		stat, err := calculationConditionStrOr(operator, totalValue)
+		if err != nil {
+			return false, err
+		}
+		return stat, nil
+	}
+
+	return false, fmt.Errorf("please enter right condition")
 }
 
 func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (bool, error) {

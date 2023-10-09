@@ -46,8 +46,15 @@ type ConditionStruct struct {
 	Operator      []OperatorStruct `json:"operator"`
 }
 
-type ApiRule struct {
-	ID        uint           `json:"id"`
+type Rule struct {
+	Id        uint           `json:"id"`
+	EventType EventType      `json:"event_type"`
+	Scope     Scope          `json:"scope"`
+	Operator  OperatorStruct `json:"operator"`
+	ActionID  uint           `json:"action_id"`
+}
+
+type CreateRuleRequest struct {
 	EventType EventType      `json:"event_type"`
 	Scope     Scope          `json:"scope"`
 	Operator  OperatorStruct `json:"operator"`
@@ -55,7 +62,7 @@ type ApiRule struct {
 }
 
 type UpdateRuleRequest struct {
-	ID        uint            `json:"id"`
+	Id        uint            `json:"id"`
 	EventType *EventType      `json:"event_type"`
 	Scope     *Scope          `json:"scope"`
 	Operator  *OperatorStruct `json:"operator"`

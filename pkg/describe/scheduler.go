@@ -167,7 +167,6 @@ type Scheduler struct {
 	complianceTimeoutHours     int64
 	insightIntervalHours       int64
 	checkupIntervalHours       int64
-	summarizerIntervalHours    int64
 	mustSummarizeIntervalHours int64
 	analyticsIntervalHours     int64
 
@@ -275,11 +274,13 @@ func InitializeScheduler(
 
 	s.describeJobResultQueue, err = initRabbitQueue(describeJobResultQueueName)
 	if err != nil {
+		s.logger.Error("failed to init rabbit queue", zap.Error(err), zap.String("queue_name", describeJobResultQueueName))
 		return nil, err
 	}
 
 	s.insightJobQueue, err = initRabbitQueue(insightJobQueueName)
 	if err != nil {
+		s.logger.Error("failed to init rabbit queue", zap.Error(err), zap.String("queue_name", insightJobQueueName))
 		return nil, err
 	}
 
@@ -505,18 +506,6 @@ func (s *Scheduler) Run(ctx context.Context) error {
 			s.logger.Info("set insight interval", zap.Int64("interval", s.insightIntervalHours))
 		} else {
 			s.logger.Error("failed to set insight interval due to invalid type", zap.String("type", string(insightJobIntM.GetType())))
-		}
-	}
-
-	summarizerJobIntM, err := s.metadataClient.GetConfigMetadata(httpctx, models.MetadataKeyMetricsJobInterval)
-	if err != nil {
-		s.logger.Error("failed to set describe interval due to error", zap.Error(err))
-	} else {
-		if v, ok := summarizerJobIntM.GetValue().(int); ok {
-			s.summarizerIntervalHours = int64(v * int(time.Minute) / int(time.Hour))
-			s.logger.Info("set summarizer interval", zap.Int64("interval", s.summarizerIntervalHours))
-		} else {
-			s.logger.Error("failed to set summarizer interval due to invalid type", zap.String("type", string(summarizerJobIntM.GetType())))
 		}
 	}
 
@@ -1010,16 +999,17 @@ func (s *Scheduler) Stop() {
 	}
 }
 
-func newComplianceReportJob(connectionID string, connector source.Type, benchmarkID string) ComplianceReportJob {
+func newComplianceReportJob(connectionID string, connector source.Type, benchmarkID string, resourceCollection *string) ComplianceReportJob {
 	return ComplianceReportJob{
-		Model:           gorm.Model{},
-		SourceID:        connectionID,
-		SourceType:      connector,
-		BenchmarkID:     benchmarkID,
-		ReportCreatedAt: 0,
-		Status:          complianceapi.ComplianceReportJobCreated,
-		FailureMessage:  "",
-		IsStack:         false,
+		Model:              gorm.Model{},
+		SourceID:           connectionID,
+		SourceType:         connector,
+		BenchmarkID:        benchmarkID,
+		ReportCreatedAt:    0,
+		Status:             complianceapi.ComplianceReportJobCreated,
+		FailureMessage:     "",
+		IsStack:            false,
+		ResourceCollection: resourceCollection,
 	}
 }
 
@@ -1103,8 +1093,18 @@ func newSummarizerJob(jobType summarizer.JobType) SummarizerJob {
 	}
 }
 
-func (s *Scheduler) scheduleComplianceSummarizerJob() error {
-	job := newSummarizerJob(summarizer.JobType_ComplianceSummarizer)
+func newComplianceSummarizerJob(resourceCollection *string) SummarizerJob {
+	return SummarizerJob{
+		Model:              gorm.Model{},
+		Status:             summarizerapi.SummarizerJobInProgress,
+		JobType:            summarizer.JobType_ComplianceSummarizer,
+		ResourceCollection: resourceCollection,
+		FailureMessage:     "",
+	}
+}
+
+func (s *Scheduler) scheduleComplianceSummarizerJob(resourceCollection *string) error {
+	job := newComplianceSummarizerJob(resourceCollection)
 	err := s.db.AddSummarizerJob(&job)
 	if err != nil {
 		SummarizerJobsCount.WithLabelValues("failure").Inc()
@@ -1138,8 +1138,9 @@ func (s *Scheduler) scheduleComplianceSummarizerJob() error {
 
 func enqueueComplianceSummarizerJobs(q queue.Interface, job SummarizerJob) error {
 	if err := q.Publish(summarizer.SummarizeJob{
-		JobID:   job.ID,
-		JobType: summarizer.JobType_ComplianceSummarizer,
+		JobID:                job.ID,
+		JobType:              summarizer.JobType_ComplianceSummarizer,
+		ResourceCollectionId: job.ResourceCollection,
 	}); err != nil {
 		return err
 	}

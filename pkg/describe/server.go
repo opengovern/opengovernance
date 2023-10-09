@@ -301,13 +301,13 @@ func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
 
 	var dependencyIDs []int64
 	for _, src := range sources {
-		crj := newComplianceReportJob(src.ID.String(), src.Connector, benchmark.ID)
+		crj := newComplianceReportJob(src.ID.String(), src.Connector, benchmark.ID, nil)
 		err = h.DB.CreateComplianceReportJob(&crj)
 		if err != nil {
 			ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
 			return fmt.Errorf("error while creating compliance job: %v", err)
 		}
-		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, src, &crj)
+		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, &crj)
 		ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
 		dependencyIDs = append(dependencyIDs, int64(crj.ID))
 	}

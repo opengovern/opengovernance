@@ -1,7 +1,14 @@
 package api
 
-type ApiAction struct {
-	ID      uint              `json:"id"`
+type CreateActionReq struct {
+	Method  string            `json:"method"`
+	Url     string            `json:"url"`
+	Headers map[string]string `json:"headers"`
+	Body    string            `json:"body"`
+}
+
+type Action struct {
+	Id      uint              `json:"id"`
 	Method  string            `json:"method"`
 	Url     string            `json:"url"`
 	Headers map[string]string `json:"headers"`
@@ -9,7 +16,7 @@ type ApiAction struct {
 }
 
 type UpdateActionRequest struct {
-	ID      uint              `json:"id"`
+	Id      uint              `json:"id"`
 	Method  *string           `json:"method"`
 	Url     *string           `json:"url"`
 	Headers map[string]string `json:"headers"`

@@ -30,6 +30,10 @@ func Register(logger *zap.Logger, routes Routes) (*echo.Echo, *sdktrace.TracerPr
 
 	e.Use(middleware.Recover())
 	e.Use(echozap.ZapLogger(logger))
+	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
+		Skipper: nil,
+		Level:   5,
+	}))
 
 	metrics.AddEchoMiddleware(e)
 

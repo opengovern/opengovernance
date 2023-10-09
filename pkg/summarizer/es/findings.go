@@ -23,15 +23,24 @@ type FetchActiveFindingsResponse struct {
 	} `json:"hits"`
 }
 
-func FetchActiveFindings(client kaytu.Client, searchAfter []any, size int) (FetchActiveFindingsResponse, error) {
+func FetchActiveFindings(client kaytu.Client, resourceCollection *string, searchAfter []any, size int) (FetchActiveFindingsResponse, error) {
 	res := make(map[string]any)
+	filters := []any{
+		map[string]any{
+			"term": map[string]string{"stateActive": "true"},
+		},
+	}
+	idx := types.FindingsIndex
+	if resourceCollection != nil {
+		filters = append(filters, map[string]any{
+			"term": map[string]string{"resourceCollection": *resourceCollection},
+		})
+		idx = types.ResourceCollectionsFindingsIndex
+	}
+
 	res["query"] = map[string]any{
 		"bool": map[string]any{
-			"filter": []any{
-				map[string]any{
-					"term": map[string]string{"stateActive": "true"},
-				},
-			},
+			"filter": filters,
 		},
 	}
 
@@ -51,7 +60,7 @@ func FetchActiveFindings(client kaytu.Client, searchAfter []any, size int) (Fetc
 	}
 
 	var response FetchActiveFindingsResponse
-	err = client.Search(context.Background(), types.FindingsIndex, string(b), &response)
+	err = client.Search(context.Background(), idx, string(b), &response)
 	if err != nil {
 		return FetchActiveFindingsResponse{}, err
 	}

@@ -37,7 +37,7 @@ import (
 
 const (
 	MaxQueued      = 5000
-	MaxIn10Minutes = 8500
+	MaxIn10Minutes = 5000
 )
 
 var (
@@ -804,21 +804,14 @@ func (s *Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		if !connectorMatch { // pass if connector doesn't match
 			continue
 		}
-		crj := newComplianceReportJob(stack.StackID, stack.SourceType, benchmark.ID)
+		crj := newComplianceReportJob(stack.StackID, stack.SourceType, benchmark.ID, nil)
 		crj.IsStack = true
 
 		err = s.db.CreateComplianceReportJob(&crj)
 		if err != nil {
 			return err
 		}
-		src := &apiOnboard.Connection{
-			ConnectionID: stack.AccountIDs[0],
-			Connector:    provider,
-			Credential: apiOnboard.Credential{
-				Config: "",
-			},
-		}
-		enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, *src, &crj)
+		enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, &crj)
 
 		evaluation := StackEvaluation{
 			EvaluatorID: benchmark.ID,

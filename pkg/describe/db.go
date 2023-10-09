@@ -949,7 +949,10 @@ func (db Database) ListCompletedComplianceReportByDate(sourceID uuid.UUID, fromD
 	return jobs, nil
 }
 
-func (db Database) ListComplianceReportsWithFilter(timeAfter, timeBefore *time.Time, connectionID *string, connector *source.Type, benchmarkID *string) ([]ComplianceReportJob, error) {
+func (db Database) ListComplianceReportsWithFilter(
+	timeAfter, timeBefore *time.Time,
+	connectionID *string, connector *source.Type,
+	benchmarkID *string, resourceCollection **string) ([]ComplianceReportJob, error) {
 	var jobs []ComplianceReportJob
 	tx := db.orm
 	if timeAfter != nil {
@@ -966,6 +969,14 @@ func (db Database) ListComplianceReportsWithFilter(timeAfter, timeBefore *time.T
 	}
 	if benchmarkID != nil {
 		tx = tx.Where("benchmark_id = ?", benchmarkID)
+	}
+	if resourceCollection != nil {
+		rc := *resourceCollection
+		if rc != nil {
+			tx = tx.Where("resource_collection = ?", *rc)
+		} else {
+			tx = tx.Where("resource_collection IS NULL")
+		}
 	}
 	tx = tx.Find(&jobs)
 	if tx.Error != nil {
@@ -1174,6 +1185,12 @@ func (db Database) UpdateCheckupJobStatus(job CheckupJob) error {
 }
 
 func (db Database) UpdateCheckupJob(jobID uint, status checkupapi.CheckupJobStatus, failedMessage string) error {
+	for i := 0; i < len(failedMessage); i++ {
+		if failedMessage[i] == 0 {
+			failedMessage = failedMessage[:i] + failedMessage[i+1:]
+		}
+	}
+
 	tx := db.orm.Model(&CheckupJob{}).
 		Where("id = ?", jobID).
 		Updates(CheckupJob{
@@ -1284,11 +1301,16 @@ func (db Database) GetOngoingSummarizerJobsByType(jobType summarizer.JobType) ([
 	return jobs, nil
 }
 
-func (db Database) FetchLastSummarizerJob(jobType summarizer.JobType) (*SummarizerJob, error) {
+func (db Database) FetchLastSummarizerJob(jobType summarizer.JobType, resourceCollection *string) (*SummarizerJob, error) {
 	var job SummarizerJob
 	tx := db.orm.Model(&SummarizerJob{}).
 		Where("job_type = ?", jobType).
-		Order("created_at DESC").First(&job)
+		Order("created_at DESC")
+	if resourceCollection == nil {
+		tx = tx.Where("resource_collection IS NULL").First(&job)
+	} else {
+		tx = tx.Where("resource_collection = ?", *resourceCollection).First(&job)
+	}
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

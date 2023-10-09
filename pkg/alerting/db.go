@@ -43,9 +43,8 @@ func (db Database) GetRule(id uint) (Rule, error) {
 	return rule, nil
 }
 
-func (db Database) CreateRule(id uint, eventType []byte, scope []byte, operator []byte, actionID uint) error {
+func (db Database) CreateRule(eventType []byte, scope []byte, operator []byte, actionID uint) error {
 	rule := Rule{
-		ID:        id,
 		EventType: eventType,
 		Scope:     scope,
 		Operator:  operator,
@@ -96,9 +95,8 @@ func (db Database) GetAction(id uint) (Action, error) {
 	return action, nil
 }
 
-func (db Database) CreateAction(id uint, method string, url string, headers []byte, body string) error {
+func (db Database) CreateAction(method string, url string, headers []byte, body string) error {
 	action := Action{
-		ID:      id,
 		Method:  method,
 		Url:     url,
 		Headers: headers,

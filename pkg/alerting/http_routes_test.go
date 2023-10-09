@@ -138,8 +138,8 @@ func addRule(t *testing.T) uint {
 
 	benchmarkId := "CIS v1.4.0"
 	connectionId := "testConnectionID"
-	req := api.ApiRule{
-		ID:        12,
+	req := api.Rule{
+		Id:        12,
 		EventType: api.EventType{BenchmarkId: &benchmarkId},
 		Scope:     api.Scope{ConnectionId: &connectionId},
 		Operator:  operator,
@@ -150,33 +150,33 @@ func addRule(t *testing.T) uint {
 	return 12
 }
 
-func getRule(h *HttpHandler, id uint) (api.ApiRule, error) {
+func getRule(h *HttpHandler, id uint) (api.Rule, error) {
 	var rule Rule
 	err := h.db.orm.Model(&Rule{}).Where("id = ? ", id).Find(&rule).Error
 	if err != nil {
-		return api.ApiRule{}, err
+		return api.Rule{}, err
 	}
 
 	var eventType api.EventType
 	err = json.Unmarshal(rule.EventType, &eventType)
 	if err != nil {
-		return api.ApiRule{}, fmt.Errorf("error unmarshalling the eventType , error : %v", err)
+		return api.Rule{}, fmt.Errorf("error unmarshalling the eventType , error : %v", err)
 	}
 
 	var scope api.Scope
 	err = json.Unmarshal(rule.Scope, &scope)
 	if err != nil {
-		return api.ApiRule{}, fmt.Errorf("error unmarshalling the scope , error : %v", err)
+		return api.Rule{}, fmt.Errorf("error unmarshalling the scope , error : %v", err)
 	}
 
 	var operator api.OperatorStruct
 	err = json.Unmarshal(rule.Operator, &operator)
 	if err != nil {
-		return api.ApiRule{}, fmt.Errorf("error unmarshalling the operator , error : %v", err)
+		return api.Rule{}, fmt.Errorf("error unmarshalling the operator , error : %v", err)
 	}
 
-	response := api.ApiRule{
-		ID:        rule.ID,
+	response := api.Rule{
+		Id:        rule.Id,
 		EventType: eventType,
 		Scope:     scope,
 		Operator:  operator,
@@ -209,8 +209,8 @@ func TestCreateRule(t *testing.T) {
 	var id uint = 123
 	var insightId int64 = 123123
 	connectionId := "testConnectionId"
-	req := api.ApiRule{
-		ID:        id,
+	req := api.Rule{
+		Id:        id,
 		EventType: api.EventType{InsightId: &insightId},
 		Scope:     api.Scope{ConnectionId: &connectionId},
 		Operator:  operator,
@@ -240,14 +240,14 @@ func TestUpdateRule(t *testing.T) {
 		Condition:    nil,
 	}
 
-	req := api.ApiRule{
-		ID:       id,
+	req := api.Rule{
+		Id:       id,
 		Operator: operator,
 		ActionID: 34567,
 	}
 
 	reqUpdate := api.UpdateRuleRequest{
-		ID:       id,
+		Id:       id,
 		Operator: &req.Operator,
 		ActionID: &req.ActionID,
 	}
@@ -277,8 +277,8 @@ func TestDeleteRule(t *testing.T) {
 // -------------------------------------------------- action test --------------------------------------------------
 
 func addAction(t *testing.T) uint {
-	req := api.ApiAction{
-		ID:      12,
+	req := api.Action{
+		Id:      12,
 		Method:  "GET",
 		Url:     "https://kaytu.dev/",
 		Headers: map[string]string{"insight": "teatInsight"},
@@ -290,21 +290,21 @@ func addAction(t *testing.T) uint {
 	return 12
 }
 
-func getAction(h *HttpHandler, id uint) (api.ApiAction, error) {
+func getAction(h *HttpHandler, id uint) (api.Action, error) {
 	var action Action
 	err := h.db.orm.Model(&Action{}).Where("id = ?", id).Find(&action).Error
 	if err != nil {
-		return api.ApiAction{}, err
+		return api.Action{}, err
 	}
 
 	var header map[string]string
 	err = json.Unmarshal(action.Headers, &header)
 	if err != nil {
-		return api.ApiAction{}, fmt.Errorf("error unmarshalling the header , error : %v ", err)
+		return api.Action{}, fmt.Errorf("error unmarshalling the header , error : %v ", err)
 	}
 
-	response := api.ApiAction{
-		ID:      action.ID,
+	response := api.Action{
+		Id:      action.Id,
 		Method:  action.Method,
 		Url:     action.Url,
 		Headers: header,
@@ -317,7 +317,7 @@ func TestListAction(t *testing.T) {
 	teardownSuite, _ := setupSuite(t)
 	defer teardownSuite(t)
 
-	var actions []api.ApiAction
+	var actions []api.Action
 	_, err := doSimpleJSONRequest("GET", "/api/v1/action/list", nil, &actions)
 	require.NoError(t, err)
 	require.Empty(t, actions)
@@ -327,8 +327,8 @@ func TestCreateAction(t *testing.T) {
 	teardownSuite, h := setupSuite(t)
 	defer teardownSuite(t)
 	var id uint = 12
-	action := api.ApiAction{
-		ID:      id,
+	action := api.Action{
+		Id:      id,
 		Method:  "GET",
 		Url:     "https://kaytu.dev/company",
 		Headers: map[string]string{"insightId": "123123"},
@@ -351,8 +351,8 @@ func TestUpdateAction(t *testing.T) {
 	defer teardownSuite(t)
 
 	id := addAction(t)
-	req := api.ApiAction{
-		ID:      id,
+	req := api.Action{
+		Id:      id,
 		Method:  "POST",
 		Headers: map[string]string{"insightId": "newTestInsight"},
 		Url:     "https://kaytu.dev/use-cases",
@@ -489,8 +489,8 @@ func TestTrigger(t *testing.T) {
 	//var insightId int64 = 123123
 	var benchmarkId string = "testBenchmarkId"
 	connectionId := "testConnectionId"
-	req := api.ApiRule{
-		ID:        id,
+	req := api.Rule{
+		Id:        id,
 		EventType: api.EventType{BenchmarkId: &benchmarkId},
 		Scope:     api.Scope{ConnectionId: &connectionId},
 		Operator:  operator,
@@ -501,8 +501,8 @@ func TestTrigger(t *testing.T) {
 
 	// create Action:
 	var idAction uint = 1231
-	action := api.ApiAction{
-		ID:      idAction,
+	action := api.Action{
+		Id:      idAction,
 		Method:  "GET",
 		Url:     "http://localhost:8082/call",
 		Headers: map[string]string{"insightId": "123123"},

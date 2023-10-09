@@ -3,6 +3,8 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
+	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer"
@@ -19,27 +21,47 @@ func (s *Scheduler) RunMustSummerizeJobScheduler() {
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		lastJob, err := s.db.FetchLastSummarizerJob(summarizer.JobType_ResourceMustSummarizer)
-		if err != nil {
-			s.logger.Error("Failed to find the last job to check for MustSummerizeJob", zap.Error(err))
-			continue
-		}
-		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.mustSummarizeIntervalHours)*time.Hour).Before(time.Now()) {
-			err := s.scheduleMustSummarizerJob()
-			if err != nil {
-				s.logger.Error("failure on scheduleMustSummarizerJob", zap.Error(err))
-			}
-		}
+		//lastJob, err := s.db.FetchLastSummarizerJob(summarizer.JobType_ResourceMustSummarizer, nil)
+		//if err != nil {
+		//	s.logger.Error("Failed to find the last job to check for MustSummerizeJob", zap.Error(err))
+		//	continue
+		//}
+		//if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.mustSummarizeIntervalHours)*time.Hour).Before(time.Now()) {
+		//	err := s.scheduleMustSummarizerJob()
+		//	if err != nil {
+		//		s.logger.Error("failure on scheduleMustSummarizerJob", zap.Error(err))
+		//	}
+		//}
 
-		lastJob, err = s.db.FetchLastSummarizerJob(summarizer.JobType_ComplianceSummarizer)
+		lastJob, err := s.db.FetchLastSummarizerJob(summarizer.JobType_ComplianceSummarizer, nil)
 		if err != nil {
 			s.logger.Error("Failed to find the last job to check for ComplianceSummarizerJob", zap.Error(err))
 			continue
 		}
 		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.mustSummarizeIntervalHours)*time.Hour).Before(time.Now()) {
-			err := s.scheduleComplianceSummarizerJob()
+			err := s.scheduleComplianceSummarizerJob(nil)
 			if err != nil {
 				s.logger.Error("failure on scheduleComplianceSummarizerJob", zap.Error(err))
+			}
+		}
+
+		resourceCollections, err := s.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: authApi.InternalRole})
+		if err != nil {
+			s.logger.Error("Failed to list resource collections", zap.Error(err))
+			continue
+		}
+		for _, resourceCollection := range resourceCollections {
+			resourceCollection := resourceCollection
+			lastJob, err := s.db.FetchLastSummarizerJob(summarizer.JobType_ComplianceSummarizer, &resourceCollection.ID)
+			if err != nil {
+				s.logger.Error("Failed to find the last job to check for ComplianceSummarizerJob", zap.Error(err))
+				continue
+			}
+			if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.mustSummarizeIntervalHours)*time.Hour).Before(time.Now()) {
+				err := s.scheduleComplianceSummarizerJob(&resourceCollection.ID)
+				if err != nil {
+					s.logger.Error("failure on scheduleComplianceSummarizerJob", zap.Error(err))
+				}
 			}
 		}
 	}
@@ -162,7 +184,7 @@ func (s *Scheduler) RunSummarizerJobResultsConsumer() error {
 				s.logger.Error("Failed acking message", zap.Error(err))
 			}
 		case <-t.C:
-			err := s.db.UpdateSummarizerJobsTimedOut(s.summarizerIntervalHours)
+			err := s.db.UpdateSummarizerJobsTimedOut(s.mustSummarizeIntervalHours)
 			if err != nil {
 				s.logger.Error("Failed to update timed out SummarizerJob", zap.Error(err))
 			}

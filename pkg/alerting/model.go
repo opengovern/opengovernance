@@ -5,7 +5,7 @@ import (
 )
 
 type Rule struct {
-	ID        uint `gorm:"primaryKey"`
+	Id        uint `json:"id" sql:"AUTO_INCREMENT" gorm:"primary_key"`
 	EventType datatypes.JSON
 	Scope     datatypes.JSON
 	Operator  datatypes.JSON
@@ -13,7 +13,7 @@ type Rule struct {
 }
 
 type Action struct {
-	ID      uint `gorm:"primaryKey"`
+	Id      uint `json:"id" sql:"AUTO_INCREMENT" gorm:"primary_key"`
 	Method  string
 	Url     string
 	Headers datatypes.JSON

@@ -69,11 +69,11 @@ func (j SummarizeJob) DoComplianceSummarizer(client kaytu.Client, complianceClie
 
 	var msgs []kafka.Doc
 	builders := []compliancebuilder.Builder{
-		compliancebuilder.NewBenchmarkSummaryBuilder(logger, j.JobID, client, complianceClient),
+		compliancebuilder.NewBenchmarkSummaryBuilder(logger, j.JobID, client, complianceClient, j.ResourceCollectionId),
 	}
 	var searchAfter []any
 	for {
-		findings, err := es.FetchActiveFindings(client, searchAfter, es.EsFetchPageSize)
+		findings, err := es.FetchActiveFindings(client, j.ResourceCollectionId, searchAfter, es.EsFetchPageSize)
 		if err != nil {
 			fail(fmt.Errorf("Failed to fetch lookups: %v ", err))
 			break
