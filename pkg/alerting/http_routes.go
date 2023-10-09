@@ -48,7 +48,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 //	@Produce		json
 //	@Param			ruleId	path		string	true	"RuleID"
 //	@Success		200		{object}
-//	@Router			/alerting/api/v1/rule/{ruleId}/trigger [get]
+//	@Router			/alerting/api/v1/rule/{ruleId}/trigger [put]
 func (h *HttpHandler) TriggerRuleAPI(ctx echo.Context) error {
 	ruleIdStr := ctx.Param("ruleId")
 	ruleId, err := strconv.ParseUint(ruleIdStr, 10, 32)
@@ -58,7 +58,7 @@ func (h *HttpHandler) TriggerRuleAPI(ctx echo.Context) error {
 
 	rule, err := h.db.GetRule(uint(ruleId))
 	if err != nil {
-		return err
+		return ctx.String(http.StatusBadRequest, "Couldn't get rule")
 	}
 	err = h.TriggerRule(rule)
 	if err != nil {
