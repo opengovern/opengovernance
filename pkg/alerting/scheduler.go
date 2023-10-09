@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func (h *HttpHandler) TriggerRulesJobCycle() {
+func (h *HttpHandler) TriggerRulesJobCycle() error {
 	timer := time.NewTicker(30 * time.Minute)
 	defer timer.Stop()
 

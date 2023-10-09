@@ -7,13 +7,8 @@ import (
 )
 
 func GetAzureResource(h *HttpHandler, resourceId string) (azureCompute.ComputeVirtualMachine, error) {
-	query := map[string]interface{}{
-		"query": map[string]interface{}{
-			"querytype": map[string]interface{}{
-				"ResourceJobID": resourceId,
-			},
-		},
-	}
+	query := map[string]interface{}{}
+	query["resource_job_id"] = resourceId
 
 	queryJ, err := json.Marshal(query)
 	if err != nil {

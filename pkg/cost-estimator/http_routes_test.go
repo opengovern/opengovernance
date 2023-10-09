@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	_ "fmt"
+	"github.com/elastic/go-elasticsearch/v7"
 
 	"io"
 	"net/http"
@@ -44,7 +45,7 @@ type AzureCostStr struct {
 	Count              int
 }
 
-//	the thinks that needs for giving from elastic search from each resource :{
+//	Things that need to be got from search elastics with the resourceId :{
 //			ostype : VirtualMachine.prapertic.StorageProfile.OSDisk.OSType
 //			location: VirtualMachine.Location
 //			VMSize : VirtualMachine.prapertic.HardwareProfile.vmsize
@@ -127,4 +128,11 @@ func giveProperCostTime(Items []ItemsStr, t *testing.T, OSType string) ItemsStr 
 		}
 	}
 	return newItem
+}
+
+func TestCallElastic() {
+	es, err := elasticsearch.NewDefaultClient()
+	if err != nil {
+		
+	}
 }
