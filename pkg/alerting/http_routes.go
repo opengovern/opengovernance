@@ -2,6 +2,7 @@ package alerting
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/go-errors/errors"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -53,16 +54,16 @@ func (h *HttpHandler) TriggerRuleAPI(ctx echo.Context) error {
 	ruleIdStr := ctx.Param("ruleId")
 	ruleId, err := strconv.ParseUint(ruleIdStr, 10, 32)
 	if err != nil {
-		return err
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("%v", err))
 	}
 
 	rule, err := h.db.GetRule(uint(ruleId))
 	if err != nil {
-		return ctx.String(http.StatusBadRequest, err.Error())
+		return ctx.String(http.StatusBadRequest, fmt.Sprintf("%v", err))
 	}
 	err = h.TriggerRule(rule)
 	if err != nil {
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("%v", err))
 	}
 	return ctx.NoContent(http.StatusOK)
 }
