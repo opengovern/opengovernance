@@ -42,6 +42,8 @@ func (h *HttpHandler) TriggerRulesList() error {
 			h.logger.Error("Rule trigger has been failed",
 				zap.String("rule id", fmt.Sprintf("%v", rule.Id)),
 				zap.Error(err))
+			fmt.Println(err)
+			return err
 		}
 	}
 	return nil
