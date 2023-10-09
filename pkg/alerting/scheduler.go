@@ -24,6 +24,7 @@ func (h *HttpHandler) TriggerRulesJobCycle() {
 		err := h.TriggerRulesList()
 		if err != nil {
 			h.logger.Error(err.Error())
+			fmt.Println(err)
 		}
 	}
 }
