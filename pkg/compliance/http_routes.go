@@ -84,6 +84,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings := v1.Group("/findings")
 	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
+	findings.GET("/:benchmarkId/:field/count", httpserver.AuthorizeHandler(h.GetFindingsFieldCountByPolicies, authApi.ViewerRole))
 
 	ai := v1.Group("/ai")
 	ai.POST("/policy/:policyID/remediation", httpserver.AuthorizeHandler(h.GetPolicyRemediation, authApi.ViewerRole))
@@ -318,6 +319,76 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 			})
 		}
 		response.TotalCount = res.Aggregations.BucketCount.Value
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetFindingsFieldCountByPolicies godoc
+//
+//	@Summary		Get findings field count by policies
+//	@Description	Retrieving the number of findings field count by policies.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			benchmarkId		path		string							true	"BenchmarkID"
+//	@Param			field			path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service)
+//	@Param			connectionId	query		[]string						false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string						false	"Connection groups to filter by "
+//	@Param			connector		query		[]source.Type					false	"Connector type to filter by"
+//	@Param			severities		query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by"
+//	@Success		200				{object}	api.GetTopFieldResponse
+//	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/count [get]
+func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmarkId")
+	field := ctx.Param("field")
+	var esField string
+	if field == "resource" {
+		esField = "resourceID"
+	} else {
+		esField = field
+	}
+
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
+
+	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	severities := kaytuTypes.ParseFindingSeverities(ctx.QueryParams()["severities"])
+	//tracer :
+	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetBenchmarkTreeIDs")
+
+	benchmarkIDs, err := h.GetBenchmarkTreeIDs(ctx.Request().Context(), benchmarkID)
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark id", benchmarkID),
+	))
+	span1.End()
+
+	var response api.GetFieldCountResponse
+	res, err := es.FindingsFieldCountByPolicy(
+		h.logger, h.client, esField,
+		connectors, nil, connectionIDs,
+		benchmarkIDs, nil, severities)
+	if err != nil {
+		return err
+	}
+	for _, b := range res.Aggregations.PolicyCount.Buckets {
+		var fieldCounts []api.TopFieldRecord
+		for _, bucketField := range b.Results.Buckets {
+			fieldCounts = append(fieldCounts, api.TopFieldRecord{Value: bucketField.Key, Count: bucketField.FieldCount.Value})
+		}
+		response.Policies = append(response.Policies, struct {
+			PolicyName  string               `json:"policyName"`
+			FieldCounts []api.TopFieldRecord `json:"fieldCounts"`
+		}{PolicyName: b.Key, FieldCounts: fieldCounts})
 	}
 
 	return ctx.JSON(http.StatusOK, response)
