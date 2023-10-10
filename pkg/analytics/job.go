@@ -470,10 +470,10 @@ func (j *Job) DoSpendMetric(
 		startTime := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 		endTime := time.Date(y, m, d, 23, 59, 59, 0, time.UTC)
 
-		//dateTimestamp := startTime.Add(endTime.Sub(startTime) / 2)
-		if v, ok := connectionResultMap[conn.ID.String()]; ok {
+		connKey := conn.ID.String() + dateTimestamp.Format("2006-01-02")
+		if v, ok := connectionResultMap[connKey]; ok {
 			v.CostValue += sum
-			connectionResultMap[conn.ID.String()] = v
+			connectionResultMap[connKey] = v
 			if metric.ID == "spend_aws_marketplace" {
 				fmt.Println("++++", sum, v.CostValue)
 			}
@@ -494,15 +494,16 @@ func (j *Job) DoSpendMetric(
 				IsJobSuccessful: isJobSuccessful,
 				EvaluatedAt:     time.Now().UnixMilli(),
 			}
-			connectionResultMap[conn.ID.String()] = vn
+			connectionResultMap[connKey] = vn
 			if metric.ID == "spend_aws_marketplace" {
 				fmt.Println("++++", sum, v.CostValue)
 			}
 		}
 
-		if v, ok := providerResultMap[conn.Connector.String()]; ok {
+		providerKey := conn.Connector.String() + dateTimestamp.Format("2006-01-02")
+		if v, ok := providerResultMap[providerKey]; ok {
 			v.CostValue += sum
-			providerResultMap[conn.Connector.String()] = v
+			providerResultMap[providerKey] = v
 		} else {
 			vn := spend.ConnectorMetricTrendSummary{
 				Connector:                  conn.Connector,
@@ -519,7 +520,7 @@ func (j *Job) DoSpendMetric(
 				TotalSuccessfulConnections: connectorSuccessCount[string(conn.Connector)],
 				EvaluatedAt:                time.Now().UnixMilli(),
 			}
-			providerResultMap[conn.Connector.String()] = vn
+			providerResultMap[providerKey] = vn
 		}
 	}
 
