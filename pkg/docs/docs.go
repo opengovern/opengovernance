@@ -107,8 +107,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ActionID",
-                        "name": "actionID",
+                        "description": "actionId",
+                        "name": "actionId",
                         "in": "path",
                         "required": true
                     }
@@ -184,37 +184,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/alerting/api/v1/rule/Delete/{ruleId}": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Deleting a single rule for the given rule id",
-                "tags": [
-                    "alerting"
-                ],
-                "summary": "Delete rule",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "RuleID",
-                        "name": "ruleID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/alerting/api/v1/rule/create": {
             "post": {
                 "security": [
@@ -236,6 +205,37 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateRuleRequest"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/alerting/api/v1/rule/delete/{ruleId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Deleting a single rule for the given rule id",
+                "tags": [
+                    "alerting"
+                ],
+                "summary": "Delete rule",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ruleId",
+                        "name": "ruleId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {

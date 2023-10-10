@@ -2575,9 +2575,9 @@ paths:
     delete:
       description: Deleting a single action for the given action id
       parameters:
-      - description: ActionID
+      - description: actionId
         in: path
-        name: actionID
+        name: actionId
         required: true
         type: string
       responses:
@@ -2648,25 +2648,6 @@ paths:
       summary: Trigger one rule
       tags:
       - alerting
-  /alerting/api/v1/rule/Delete/{ruleId}:
-    delete:
-      description: Deleting a single rule for the given rule id
-      parameters:
-      - description: RuleID
-        in: path
-        name: ruleID
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      security:
-      - BearerToken: []
-      summary: Delete rule
-      tags:
-      - alerting
   /alerting/api/v1/rule/create:
     post:
       description: create a rule by the specified input
@@ -2685,6 +2666,25 @@ paths:
       security:
       - BearerToken: []
       summary: Create rule
+      tags:
+      - alerting
+  /alerting/api/v1/rule/delete/{ruleId}:
+    delete:
+      description: Deleting a single rule for the given rule id
+      parameters:
+      - description: ruleId
+        in: path
+        name: ruleId
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerToken: []
+      summary: Delete rule
       tags:
       - alerting
   /alerting/api/v1/rule/list:
