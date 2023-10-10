@@ -516,6 +516,10 @@ func (j *Job) DoSpendMetric(
 
 	var msgs []kafka.Doc
 	for _, item := range connectionResultMap {
+		if item.MetricID == "spend_aws_marketplace" {
+			b, _ := json.Marshal(item)
+			fmt.Println(string(b))
+		}
 		msgs = append(msgs, item)
 	}
 	for _, item := range providerResultMap {
