@@ -426,6 +426,9 @@ func (j *Job) DoSpendMetric(
 		if !ok {
 			return fmt.Errorf("invalid format for sum: [%s] %v", reflect.TypeOf(record[2]), record[2])
 		}
+		if metric.ID == "spend_aws_marketplace" {
+			fmt.Println("++++", record, sum)
+		}
 
 		var conn *onboardApi.Connection
 		if cached, ok := connectionCache[connectionID]; ok {
@@ -471,6 +474,9 @@ func (j *Job) DoSpendMetric(
 		if v, ok := connectionResultMap[conn.ID.String()]; ok {
 			v.CostValue += sum
 			connectionResultMap[conn.ID.String()] = v
+			if metric.ID == "spend_aws_marketplace" {
+				fmt.Println("++++", sum, v.CostValue)
+			}
 		} else {
 			vn := spend.ConnectionMetricTrendSummary{
 				ConnectionID:    conn.ID,
@@ -489,6 +495,9 @@ func (j *Job) DoSpendMetric(
 				EvaluatedAt:     time.Now().UnixMilli(),
 			}
 			connectionResultMap[conn.ID.String()] = vn
+			if metric.ID == "spend_aws_marketplace" {
+				fmt.Println("++++", sum, v.CostValue)
+			}
 		}
 
 		if v, ok := providerResultMap[conn.Connector.String()]; ok {
@@ -518,7 +527,7 @@ func (j *Job) DoSpendMetric(
 	for _, item := range connectionResultMap {
 		if item.MetricID == "spend_aws_marketplace" {
 			b, _ := json.Marshal(item)
-			fmt.Println(string(b))
+			fmt.Println("++++", string(b))
 		}
 		msgs = append(msgs, item)
 	}
