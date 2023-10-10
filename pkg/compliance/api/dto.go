@@ -116,6 +116,13 @@ type GetTopFieldResponse struct {
 	Records    []TopFieldRecord `json:"records"`
 }
 
+type GetFieldCountResponse struct {
+	Policies []struct {
+		PolicyName  string           `json:"policyName"`
+		FieldCounts []TopFieldRecord `json:"fieldCounts"`
+	} `json:"policies"`
+}
+
 type GetFindingsResponse struct {
 	Findings   []types.Finding `json:"findings"`
 	TotalCount int64           `json:"totalCount" example:"100"`
