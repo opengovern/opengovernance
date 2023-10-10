@@ -165,9 +165,9 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 //	@Description	Deleting a single rule for the given rule id
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			ruleID	path		string	true	"RuleID"
+//	@Param			ruleId	path		string	true	"ruleId"
 //	@Success		200		{object}	string
-//	@Router			/alerting/api/v1/rule/Delete/{ruleId} [delete]
+//	@Router			/alerting/api/v1/rule/delete/{ruleId} [delete]
 func (h *HttpHandler) DeleteRule(ctx echo.Context) error {
 	idS := ctx.Param("ruleId")
 	if idS == "" {
@@ -320,7 +320,7 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 //	@Description	Deleting a single action for the given action id
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			actionID	path		string	true	"ActionID"
+//	@Param			actionId	path		string	true	"actionId"
 //	@Success		200			{object}	string
 //	@Router			/alerting/api/v1/action/delete/{actionId} [delete]
 func (h *HttpHandler) DeleteAction(ctx echo.Context) error {
