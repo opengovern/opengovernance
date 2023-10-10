@@ -323,23 +323,23 @@ func FindingsFieldCountByPolicy(logger *zap.Logger, client kaytu.Client,
 	root["size"] = 0
 
 	root["aggs"] = map[string]any{
-		"aggs": map[string]any{
-			"results": map[string]any{
-				"aggs": map[string]any{
-					"field_count": map[string]any{
-						"cardinality": map[string]any{
-							"field": field,
-						},
-					},
-				},
-				"terms": map[string]any{
-					"field": "result",
-				},
-			},
-		},
 		"policy_count": map[string]any{
 			"terms": map[string]any{
 				"field": "policyID",
+			},
+			"aggs": map[string]any{
+				"results": map[string]any{
+					"terms": map[string]any{
+						"field": "result",
+					},
+					"aggs": map[string]any{
+						"field_count": map[string]any{
+							"cardinality": map[string]any{
+								"field": field,
+							},
+						},
+					},
+				},
 			},
 		},
 	}
