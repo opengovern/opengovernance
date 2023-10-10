@@ -84,6 +84,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings := v1.Group("/findings")
 	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
+	findings.GET("/:benchmarkId/:field/count", httpserver.AuthorizeHandler(h.GetFindingsFieldCountByPolicies, authApi.ViewerRole))
 
 	ai := v1.Group("/ai")
 	ai.POST("/policy/:policyID/remediation", httpserver.AuthorizeHandler(h.GetPolicyRemediation, authApi.ViewerRole))
