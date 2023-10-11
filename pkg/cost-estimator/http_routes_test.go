@@ -1,12 +1,16 @@
 package cost_estimator
 
 import (
+	"bytes"
 	_ "context"
 	"encoding/json"
 	"fmt"
 	_ "fmt"
-	"github.com/elastic/go-elasticsearch/v7"
-
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4"
+	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/kaytu-io/kaytu-azure-describer/azure/model"
+	azureCompute "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
 	"io"
 	"net/http"
 	"strings"
@@ -44,12 +48,6 @@ type AzureCostStr struct {
 	NextPageLink       string
 	Count              int
 }
-
-//	Things that need to be got from search elastics with the resourceId :{
-//			ostype : VirtualMachine.prapertic.StorageProfile.OSDisk.OSType
-//			location: VirtualMachine.Location
-//			VMSize : VirtualMachine.prapertic.HardwareProfile.vmsize
-//	}
 
 func TestAzureCostRequest(t *testing.T) {
 	serviceName := "Virtual Machines"
@@ -130,9 +128,108 @@ func giveProperCostTime(Items []ItemsStr, t *testing.T, OSType string) ItemsStr 
 	return newItem
 }
 
-func TestCallElastic() {
-	es, err := elasticsearch.NewDefaultClient()
-	if err != nil {
-		
+//	Things that need to be got from search elastics with the resourceId :{
+//			ostype : VirtualMachine.prapertic.StorageProfile.OSDisk.OSType
+//			location: VirtualMachine.Location
+//			VMSize : VirtualMachine.prapertic.HardwareProfile.vmsize
+//	}
+
+func TestCreateAzureElastic(t *testing.T) {
+	esCnfig := elasticsearch.Config{Addresses: []string{
+		"http://localhost:9200",
+	},
 	}
+
+	es, err := elasticsearch.NewClient(esCnfig)
+	if err != nil {
+		t.Errorf("error creating the client : %v ", err)
+	}
+
+	var reqEm azureCompute.ComputeVirtualMachine
+	requestM, _ := json.Marshal(reqEm)
+	req := bytes.NewBuffer(requestM)
+
+	res, err := es.Create("azure", "2", req)
+	if err != nil {
+		t.Errorf("error in create the elastic search : %v ", err)
+	}
+	defer res.Body.Close()
+
+	fmt.Println(res.String())
+}
+
+func TestSetAzureElastic(t *testing.T) {
+	esCnfig := elasticsearchv7.Config{Addresses: []string{
+		"http://localhost:9200",
+	},
+	}
+
+	es, err := elasticsearchv7.NewClient(esCnfig)
+	if err != nil {
+		t.Errorf("error creating the client : %v ", err)
+	}
+	location := "eastus"
+	vmSize := armcompute.VirtualMachineSizeTypesStandardDS2V2
+	osType := armcompute.OperatingSystemTypeLinux
+	virtualMachine := armcompute.VirtualMachine{
+		Properties: &armcompute.VirtualMachineProperties{
+			StorageProfile:  &armcompute.StorageProfile{OSDisk: &armcompute.OSDisk{OSType: (*armcompute.OperatingSystemTypes)(&osType)}},
+			HardwareProfile: &armcompute.HardwareProfile{VMSize: &vmSize},
+		},
+		Location: &location,
+	}
+	var request = azureCompute.ComputeVirtualMachine{
+		ResourceJobID: 1231,
+		Description:   model.ComputeVirtualMachineDescription{VirtualMachine: virtualMachine},
+	}
+
+	requestM, _ := json.Marshal(request)
+	bf := bytes.NewBuffer(requestM)
+
+	res, err := es.Index("aws", bf)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	defer res.Body.Close()
+
+	fmt.Println(res.String())
+}
+
+func TestGetAzureElastic(t *testing.T) {
+	esCnfig := elasticsearch.Config{Addresses: []string{
+		"http://localhost:9200",
+	},
+	}
+
+	es, err := elasticsearch.NewClient(esCnfig)
+	if err != nil {
+		t.Errorf("error creating the client : %v ", err)
+	}
+
+	res, err := es.Get("azure", "2")
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	defer res.Body.Close()
+	fmt.Println(res.String())
+	//var mapResp map[string]interface{}
+	//if err := json.NewDecoder(res.Body).Decode(&mapResp); err != nil {
+	//	t.Errorf(err.Error())
+	//}
+	//
+	//fmt.Printf("mapResp TYPE: %v \n", reflect.TypeOf(mapResp))
+	//for _, hit := range mapResp["hits"].(map[string]interface{})["hits"].([]interface{}) {
+	//	// Parse the attributes/fields of the document
+	//	doc := hit.(map[string]interface{})
+	//
+	//	// The "_source" data is another map interface nested inside of doc
+	//	source := doc["_source"]
+	//	fmt.Println("doc _source:", reflect.TypeOf(source))
+	//
+	//	// Get the document's _id and print it out along with _source data
+	//	docID := doc["_id"]
+	//	fmt.Println("docID:", docID)
+	//	fmt.Println("_source:", source)
+	//} // end of response iteration
 }

@@ -35,7 +35,7 @@ func InitializeHttpHandler(
 		return nil, err
 	}
 
-	h.awsClient = kaytuAws.client{
+	h.awsClient = kaytuAws.Client{
 		Client: h.client,
 	}
 	h.azureClient = kaytuAzure.Client{
