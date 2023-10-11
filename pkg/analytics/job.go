@@ -105,6 +105,7 @@ func (j *Job) Do(
 	}
 	fmt.Println("Connected to the steampipe database: ", conf.Steampipe.DB)
 	defer steampipeConn.Conn().Close()
+	defer steampipe.StopSteampipeService(logger)
 
 	if err := j.Run(db, steampipeConn, kfkProducer, kfkTopic, schedulerClient, onboardClient, logger); err != nil {
 		fail(err)
