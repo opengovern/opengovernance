@@ -33,6 +33,11 @@ func Register(logger *zap.Logger, routes Routes) (*echo.Echo, *sdktrace.TracerPr
 	e.Use(echozap.ZapLogger(logger))
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
 		Skipper: func(c echo.Context) bool {
+			// skip metric endpoints
+			if strings.HasPrefix(c.Path(), "/metrics") {
+				return true
+			}
+			// skip if client does not accept gzip
 			acceptEncodingHeader := c.Request().Header.Values(echo.HeaderAcceptEncoding)
 			for _, value := range acceptEncodingHeader {
 				if strings.TrimSpace(value) == "gzip" {
