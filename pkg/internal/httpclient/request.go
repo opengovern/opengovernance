@@ -86,9 +86,9 @@ func DoRequest(method string, url string, headers map[string]string, payload []b
 	if err != nil {
 		return statusCode, fmt.Errorf("new request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Content-Encoding", "gzip")
-	req.Header.Add("Accept-Encoding", "gzip")
+	req.Header.Set(echo.HeaderContentType, "application/json")
+	req.Header.Set(echo.HeaderContentEncoding, "gzip")
+	req.Header.Add(echo.HeaderAcceptEncoding, "gzip")
 
 	for k, v := range headers {
 		req.Header.Add(k, v)
