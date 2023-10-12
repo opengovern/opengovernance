@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
+	"go.opentelemetry.io/otel"
 	"net/http"
 	"strings"
 	"time"
@@ -340,7 +342,8 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 
 func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.DeliverResultRequest) (*golang.ResponseOK, error) {
 	ResultsDeliveredCount.WithLabelValues(req.DescribeJob.SourceType).Inc()
-
+	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
 	err := s.describeJobResultQueue.Publish(DescribeJobResult{
 		JobID:       uint(req.JobId),
 		ParentJobID: uint(req.ParentJobId),
