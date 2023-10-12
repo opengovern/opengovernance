@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"context"
+	"fmt"
 	"github.com/brpaz/echozap"
 	"github.com/kaytu-io/kaytu-util/pkg/metrics"
 	"github.com/labstack/echo/v4"
@@ -12,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"os"
+	"strconv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -20,6 +22,7 @@ import (
 
 var agentHost = os.Getenv("JAEGER_AGENT_HOST")
 var serviceName = os.Getenv("JAEGER_SERVICE_NAME")
+var sampleRate = os.Getenv("JAEGER_SAMPLE_RATE")
 
 type Routes interface {
 	Register(router *echo.Echo)
@@ -103,8 +106,18 @@ func initTracer() (*sdktrace.TracerProvider, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sampleRateFloat := 1.0
+	if sampleRate != "" {
+		sampleRateFloat, err = strconv.ParseFloat(sampleRate, 64)
+		if err != nil {
+			fmt.Println("Error parsing sample rate for Jaeger. Using default value of 1.0", err)
+			sampleRateFloat = 1
+		}
+	}
+
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(sampleRateFloat)),
 		sdktrace.WithBatcher(exporter),
 	)
 	otel.SetTracerProvider(tp)
