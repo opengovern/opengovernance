@@ -73,12 +73,7 @@ func FromEchoContext(c echo.Context) *Context {
 }
 
 func DoRequest(method string, url string, headers map[string]string, payload []byte, v interface{}) (statusCode int, err error) {
-	var requestBody *bytes.Reader
-	if payload != nil {
-		requestBody = bytes.NewReader(payload)
-	}
-
-	req, err := http.NewRequest(method, url, requestBody)
+	req, err := http.NewRequest(method, url, bytes.NewReader(payload))
 	if err != nil {
 		return statusCode, fmt.Errorf("new request: %w", err)
 	}
