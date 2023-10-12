@@ -73,16 +73,12 @@ func FromEchoContext(c echo.Context) *Context {
 }
 
 func DoRequest(method string, url string, headers map[string]string, payload []byte, v interface{}) (statusCode int, err error) {
-	var buf bytes.Buffer
-	g := gzip.NewWriter(&buf)
-	if _, err = g.Write(payload); err != nil {
-		return statusCode, fmt.Errorf("gzip write: %w", err)
-	}
-	if err = g.Close(); err != nil {
-		return statusCode, fmt.Errorf("gzip close: %w", err)
+	var requestBody *bytes.Reader
+	if payload != nil {
+		requestBody = bytes.NewReader(payload)
 	}
 
-	req, err := http.NewRequest(method, url, &buf)
+	req, err := http.NewRequest(method, url, requestBody)
 	if err != nil {
 		return statusCode, fmt.Errorf("new request: %w", err)
 	}
