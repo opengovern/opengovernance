@@ -176,6 +176,8 @@ func (j Job) Do(esConfig config.ElasticSearch,
 		fail(fmt.Errorf("starting steampipe service: %w", err))
 		return
 	}
+	defer steampipeConn.Conn().Close()
+	defer steampipe.StopSteampipeService(logger)
 	fmt.Println("Initialized steampipe database: ", *steampipeConn)
 
 	logger.Info("running insight query", zap.Uint("insightId", j.InsightID), zap.String("connectionId", j.SourceID), zap.String("query", j.Query))

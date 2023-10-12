@@ -58,19 +58,19 @@ func (db Database) DeleteRule(ruleId uint) error {
 }
 
 func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, operator *[]byte, actionID *uint) error {
-	inputs := make(map[string]interface{})
+	inputs := Rule{}
 
 	if eventType != nil {
-		inputs["event_type"] = *eventType
+		inputs.EventType = *eventType
 	}
 	if scope != nil {
-		inputs["scope"] = *scope
+		inputs.Scope = *scope
 	}
 	if operator != nil {
-		inputs["operator"] = *operator
+		inputs.Operator = *operator
 	}
 	if actionID != nil {
-		inputs["action_id"] = *actionID
+		inputs.ActionID = *actionID
 	}
 
 	return db.orm.Model(&Rule{}).Where("id = ?", id).Updates(inputs).Error
@@ -110,19 +110,19 @@ func (db Database) DeleteAction(actionId uint) error {
 }
 
 func (db Database) UpdateAction(id uint, headers *[]byte, url *string, body *string, method *string) error {
-	inputs := make(map[string]interface{})
+	inputs := Action{}
 
 	if headers != nil {
-		inputs["headers"] = *headers
+		inputs.Headers = *headers
 	}
 	if body != nil {
-		inputs["body"] = *body
+		inputs.Body = *body
 	}
 	if url != nil {
-		inputs["url"] = *url
+		inputs.Url = *url
 	}
 	if method != nil {
-		inputs["method"] = *method
+		inputs.Method = *method
 	}
 
 	return db.orm.Model(&Action{}).Where("id = ?", id).Updates(inputs).Error

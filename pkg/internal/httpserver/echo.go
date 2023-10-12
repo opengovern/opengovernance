@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"os"
+	"strings"
 
 	"go.uber.org/zap"
 	"gopkg.in/go-playground/validator.v9"
@@ -31,8 +32,21 @@ func Register(logger *zap.Logger, routes Routes) (*echo.Echo, *sdktrace.TracerPr
 	e.Use(middleware.Recover())
 	e.Use(echozap.ZapLogger(logger))
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
-		Skipper: nil,
-		Level:   5,
+		Skipper: func(c echo.Context) bool {
+			// skip metric endpoints
+			if strings.HasPrefix(c.Path(), "/metrics") {
+				return true
+			}
+			// skip if client does not accept gzip
+			acceptEncodingHeader := c.Request().Header.Values(echo.HeaderAcceptEncoding)
+			for _, value := range acceptEncodingHeader {
+				if strings.TrimSpace(value) == "gzip" {
+					return false
+				}
+			}
+			return true
+		},
+		Level: 5,
 	}))
 
 	metrics.AddEchoMiddleware(e)

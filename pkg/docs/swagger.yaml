@@ -2575,9 +2575,9 @@ paths:
     delete:
       description: Deleting a single action for the given action id
       parameters:
-      - description: ActionID
+      - description: actionId
         in: path
-        name: actionID
+        name: actionId
         required: true
         type: string
       responses:
@@ -2648,25 +2648,6 @@ paths:
       summary: Trigger one rule
       tags:
       - alerting
-  /alerting/api/v1/rule/Delete/{ruleId}:
-    delete:
-      description: Deleting a single rule for the given rule id
-      parameters:
-      - description: RuleID
-        in: path
-        name: ruleID
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      security:
-      - BearerToken: []
-      summary: Delete rule
-      tags:
-      - alerting
   /alerting/api/v1/rule/create:
     post:
       description: create a rule by the specified input
@@ -2685,6 +2666,25 @@ paths:
       security:
       - BearerToken: []
       summary: Create rule
+      tags:
+      - alerting
+  /alerting/api/v1/rule/delete/{ruleId}:
+    delete:
+      description: Deleting a single rule for the given rule id
+      parameters:
+      - description: ruleId
+        in: path
+        name: ruleId
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerToken: []
+      summary: Delete rule
       tags:
       - alerting
   /alerting/api/v1/rule/list:
@@ -3249,6 +3249,77 @@ paths:
       security:
       - BearerToken: []
       summary: Get findings
+      tags:
+      - compliance
+  /compliance/api/v1/findings/{benchmarkId}/{field}/count:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving the number of findings field count by policies.
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmarkId
+        required: true
+        type: string
+      - description: Field
+        enum:
+        - resourceType
+        - connectionID
+        - resourceID
+        - service
+        in: path
+        name: field
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: 'Connection groups to filter by '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      - collectionFormat: csv
+        description: Severities to filter by
+        in: query
+        items:
+          enum:
+          - none
+          - low
+          - medium
+          - high
+          - critical
+          type: string
+        name: severities
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
+      security:
+      - BearerToken: []
+      summary: Get findings field count by policies
       tags:
       - compliance
   /compliance/api/v1/findings/{benchmarkId}/{field}/top/{count}:
