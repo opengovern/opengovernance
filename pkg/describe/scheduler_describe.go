@@ -297,13 +297,13 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 }
 
 func (s *Scheduler) RunDescribeResourceJobs(ctx context.Context) {
-	t := time.NewTicker(time.Second * 1)
+	t := time.NewTicker(time.Minute * 1)
 	defer t.Stop()
 	for ; ; <-t.C {
 		if err := s.RunDescribeResourceJobCycle(ctx); err != nil {
-			t.Reset(time.Second * 5)
+			t.Reset(time.Minute * 2)
 		} else {
-			t.Reset(time.Second * 1)
+			t.Reset(time.Minute * 1)
 		}
 	}
 }
