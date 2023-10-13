@@ -34,6 +34,7 @@ func (s *Scheduler) UpdateDescribedResourceCount() {
 			zap.String("connector", "AWS"),
 			zap.String("status", "failed"),
 			zap.Error(err))
+		return
 	}
 	ResourcesDescribedCount.WithLabelValues("aws", "failure").Set(float64(*AwsFailedCount))
 	AzureFailedCount, err := s.db.CountFailedJobs(8, "Azure")
@@ -42,6 +43,7 @@ func (s *Scheduler) UpdateDescribedResourceCount() {
 			zap.String("connector", "Azure"),
 			zap.String("status", "failed"),
 			zap.Error(err))
+		return
 	}
 	ResourcesDescribedCount.WithLabelValues("azure", "failure").Set(float64(*AzureFailedCount))
 	AwsSucceededCount, err := s.db.CountSucceededJobs(8, "AWS")
@@ -50,6 +52,7 @@ func (s *Scheduler) UpdateDescribedResourceCount() {
 			zap.String("connector", "AWS"),
 			zap.String("status", "successful"),
 			zap.Error(err))
+		return
 	}
 	ResourcesDescribedCount.WithLabelValues("aws", "successful").Set(float64(*AwsSucceededCount))
 	AzureSucceededCount, err := s.db.CountSucceededJobs(8, "Azure")
@@ -58,6 +61,7 @@ func (s *Scheduler) UpdateDescribedResourceCount() {
 			zap.String("connector", "Azure"),
 			zap.String("status", "successful"),
 			zap.Error(err))
+		return
 	}
 	ResourcesDescribedCount.WithLabelValues("azure", "successful").Set(float64(*AzureSucceededCount))
 }

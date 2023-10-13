@@ -353,7 +353,7 @@ func (db Database) CountFailedJobs(interval int, connector string) (*int64, erro
 	tx := db.orm.Model(&DescribeConnectionJob{}).
 		Where("connector = ?", connector).
 		Where("created_at > now() - interval '? hour'", interval).
-		Where("status = 'FAILED").
+		Where("status = 'FAILED'").
 		Count(&count)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -366,7 +366,7 @@ func (db Database) CountSucceededJobs(interval int, connector string) (*int64, e
 	tx := db.orm.Model(&DescribeConnectionJob{}).
 		Where("connector = ?", connector).
 		Where("created_at > now() - interval '? hour'", interval).
-		Where("status = 'SUCCEEDED").
+		Where("status = 'SUCCEEDED'").
 		Count(&count)
 	if tx.Error != nil {
 		return nil, tx.Error
