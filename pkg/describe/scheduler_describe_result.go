@@ -15,34 +15,51 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *Scheduler) UpdateDescribedResourceCount() error {
-	s.logger.Info("Updating DescribedResourceCount")
+func (s *Scheduler) UpdateDescribedResourceCountScheduler() error {
+	s.logger.Info("DescribedResourceCount update scheduler started")
 
 	t := time.NewTicker(1 * time.Minute)
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		AwsFailedCount, err := s.db.CountFailedJobs(8, "AWS")
-		if err != nil {
-			return err
-		}
-		ResourcesDescribedCount.WithLabelValues("aws", "failure").Set(float64(*AwsFailedCount))
-		AzureFailedCount, err := s.db.CountFailedJobs(8, "Azure")
-		if err != nil {
-			return err
-		}
-		ResourcesDescribedCount.WithLabelValues("azure", "failure").Set(float64(*AzureFailedCount))
-		AwsSucceededCount, err := s.db.CountSucceededJobs(8, "AWS")
-		if err != nil {
-			return err
-		}
-		ResourcesDescribedCount.WithLabelValues("aws", "successful").Set(float64(*AwsSucceededCount))
-		AzureSucceededCount, err := s.db.CountSucceededJobs(8, "Azure")
-		if err != nil {
-			return err
-		}
-		ResourcesDescribedCount.WithLabelValues("azure", "successful").Set(float64(*AzureSucceededCount))
+		s.UpdateDescribedResourceCount()
 	}
+}
+
+func (s *Scheduler) UpdateDescribedResourceCount() {
+	s.logger.Info("Updating DescribedResourceCount")
+	AwsFailedCount, err := s.db.CountFailedJobs(8, "AWS")
+	if err != nil {
+		s.logger.Error("Failed to count described resources",
+			zap.String("connector", "AWS"),
+			zap.String("status", "failed"),
+			zap.Error(err))
+	}
+	ResourcesDescribedCount.WithLabelValues("aws", "failure").Set(float64(*AwsFailedCount))
+	AzureFailedCount, err := s.db.CountFailedJobs(8, "Azure")
+	if err != nil {
+		s.logger.Error("Failed to count described resources",
+			zap.String("connector", "Azure"),
+			zap.String("status", "failed"),
+			zap.Error(err))
+	}
+	ResourcesDescribedCount.WithLabelValues("azure", "failure").Set(float64(*AzureFailedCount))
+	AwsSucceededCount, err := s.db.CountSucceededJobs(8, "AWS")
+	if err != nil {
+		s.logger.Error("Failed to count described resources",
+			zap.String("connector", "AWS"),
+			zap.String("status", "successful"),
+			zap.Error(err))
+	}
+	ResourcesDescribedCount.WithLabelValues("aws", "successful").Set(float64(*AwsSucceededCount))
+	AzureSucceededCount, err := s.db.CountSucceededJobs(8, "Azure")
+	if err != nil {
+		s.logger.Error("Failed to count described resources",
+			zap.String("connector", "Azure"),
+			zap.String("status", "successful"),
+			zap.Error(err))
+	}
+	ResourcesDescribedCount.WithLabelValues("azure", "successful").Set(float64(*AzureSucceededCount))
 }
 
 func (s *Scheduler) RunDescribeJobResultsConsumer() error {

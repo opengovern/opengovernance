@@ -593,7 +593,7 @@ func (s *Scheduler) Run(ctx context.Context) error {
 			s.RunScheduledJobCleanup()
 		})
 		EnsureRunGoroutin(func() {
-			s.UpdateDescribedResourceCount()
+			s.UpdateDescribedResourceCountScheduler()
 		})
 	case OperationModeReceiver:
 		EnsureRunGoroutin(func() {
