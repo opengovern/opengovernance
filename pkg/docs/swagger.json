@@ -1159,6 +1159,108 @@
                 }
             }
         },
+        "/compliance/api/v1/findings/{benchmarkId}/{field}/count": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Retrieving the number of findings field count by policies.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get findings field count by policies",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "BenchmarkID",
+                        "name": "benchmarkId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "resourceType",
+                            "connectionID",
+                            "resourceID",
+                            "service"
+                        ],
+                        "type": "string",
+                        "description": "Field",
+                        "name": "field",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection IDs to filter by",
+                        "name": "connectionId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connection groups to filter by ",
+                        "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "",
+                                "AWS",
+                                "Azure"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Connector type to filter by",
+                        "name": "connector",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "none",
+                                "low",
+                                "medium",
+                                "high",
+                                "critical"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Severities to filter by",
+                        "name": "severities",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count}": {
             "get": {
                 "security": [

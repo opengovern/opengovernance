@@ -2200,7 +2200,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 func (h HttpHandler) GetSources(ctx echo.Context) error {
 	var req api.GetSourcesRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetSources", trace.WithSpanKind(trace.SpanKindServer))

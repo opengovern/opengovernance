@@ -160,6 +160,8 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 			1000)
 		if err != nil {
 			CleanupJobCount.WithLabelValues("failure").Inc()
+			s.logger.Error("CleanJob failed",
+				zap.Error(err))
 			return err
 		}
 
@@ -202,6 +204,8 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				msgs = append(msgs, msg)
 				if err != nil {
 					CleanupJobCount.WithLabelValues("failure").Inc()
+					s.logger.Error("CleanJob failed",
+						zap.Error(err))
 					return err
 				}
 			}

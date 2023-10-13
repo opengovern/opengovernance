@@ -79,6 +79,10 @@ type BenchmarkSummary struct {
 	EvaluatedAt    int64           `json:"evaluated_at"`
 	Policies       []PolicySummary `json:"policies"`
 
+	FailedResources map[string]struct{}
+	AllResources    map[string]struct{}
+	Resources       ComplianceResultShortSummary
+
 	TotalResult   ComplianceResultSummary `json:"total_result"`
 	TotalSeverity SeverityResult          `json:"total_severity"`
 

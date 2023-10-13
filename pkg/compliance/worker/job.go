@@ -234,6 +234,8 @@ func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient,
 		logger.Error("failed to start steampipe service", zap.Error(err))
 		return err
 	}
+	defer steampipeConn.Conn().Close()
+	defer steampipe.StopSteampipeService(logger)
 
 	findings, err := j.RunBenchmark(logger, esk, j.BenchmarkID, complianceClient, steampipeConn, connector)
 	if err != nil {
