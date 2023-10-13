@@ -9,12 +9,41 @@ import (
 	"time"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"go.uber.org/zap"
 )
+
+func (s *Scheduler) UpdateDescribedResourceCount() error {
+	s.logger.Info("Updating DescribedResourceCount")
+
+	t := time.NewTicker(1 * time.Minute)
+	defer t.Stop()
+
+	for ; ; <-t.C {
+		AwsFailedCount, err := s.db.CountFailedJobs(8, "AWS")
+		if err != nil {
+			return err
+		}
+		ResourcesDescribedCount.WithLabelValues("aws", "failure").Set(float64(*AwsFailedCount))
+		AzureFailedCount, err := s.db.CountFailedJobs(8, "Azure")
+		if err != nil {
+			return err
+		}
+		ResourcesDescribedCount.WithLabelValues("azure", "failure").Set(float64(*AzureFailedCount))
+		AwsSucceededCount, err := s.db.CountSucceededJobs(8, "AWS")
+		if err != nil {
+			return err
+		}
+		ResourcesDescribedCount.WithLabelValues("aws", "successful").Set(float64(*AwsSucceededCount))
+		AzureSucceededCount, err := s.db.CountSucceededJobs(8, "Azure")
+		if err != nil {
+			return err
+		}
+		ResourcesDescribedCount.WithLabelValues("azure", "successful").Set(float64(*AzureSucceededCount))
+	}
+}
 
 func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the JobResults queue")
@@ -72,7 +101,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				}
 
 			}
-			oldStatus, err := s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)))
+			_, err = s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)))
 			if err != nil {
 				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 				s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
@@ -81,13 +110,6 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 					s.logger.Error("failure while sending nack for message", zap.Error(err))
 				}
 				continue
-			}
-			if result.Status == api.DescribeResourceJobFailed {
-				if oldStatus != api.DescribeResourceJobFailed {
-					ResourcesDescribedCount.WithLabelValues(strings.ToLower(result.DescribeJob.SourceType.String()), "failure").Inc()
-				}
-			} else if result.Status == api.DescribeResourceJobSucceeded {
-				ResourcesDescribedCount.WithLabelValues(strings.ToLower(result.DescribeJob.SourceType.String()), "successful").Inc()
 			}
 			ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "successful").Inc()
 			if err := msg.Ack(false); err != nil {
@@ -108,10 +130,9 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				} else {
 					interval = s.fullDiscoveryIntervalHours
 				}
-				count, err := s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
+				_, err = s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
 				//s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
 				//DescribeResourceJobsCount.WithLabelValues("failure", "timedout_aws").Inc()
-				ResourcesDescribedCount.WithLabelValues("aws", "failure").Add(float64(count))
 				if err != nil {
 					s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
 				}
@@ -130,10 +151,9 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				} else {
 					interval = s.fullDiscoveryIntervalHours
 				}
-				count, err := s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
+				_, err = s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
 				//s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
 				//DescribeResourceJobsCount.WithLabelValues("failure", "timedout_azure").Inc()
-				ResourcesDescribedCount.WithLabelValues("azure", "failure").Add(float64(count))
 				if err != nil {
 					s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
 				}
