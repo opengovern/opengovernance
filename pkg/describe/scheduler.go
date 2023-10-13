@@ -347,6 +347,12 @@ func InitializeScheduler(
 		DB:      postgresDb,
 		SSLMode: postgresSSLMode,
 	}
+
+	if s.OperationMode == OperationModeScheduler {
+		cfg.Connection.MaxOpen = 50
+		cfg.Connection.MaxIdle = 20
+	}
+
 	orm, err := postgres.NewClient(&cfg, s.logger)
 	if err != nil {
 		return nil, fmt.Errorf("new postgres client: %w", err)
