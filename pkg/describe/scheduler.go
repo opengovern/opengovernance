@@ -594,6 +594,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		})
 	case OperationModeReceiver:
 		EnsureRunGoroutin(func() {
+			s.UpdateDescribedResourceCount()
+		})
+		EnsureRunGoroutin(func() {
 			s.logger.Fatal("DescribeJobResults consumer exited", zap.Error(s.RunDescribeJobResultsConsumer()))
 		})
 		s.logger.Info("starting receiver")
