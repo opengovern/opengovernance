@@ -373,10 +373,17 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 	defer span.End()
 
 	err := s.describeJobResultQueue.Publish(result)
+	if err != nil {
+		s.logger.Error("Failed to publish into rabbitMQ",
+			zap.Uint("jobID", result.JobID),
+			zap.Error(err),
+		)
+		return nil, err
+	}
 
 	s.logger.Debug("Publish finished",
 		zap.Uint("jobID", result.JobID),
 		zap.String("status", string(result.Status)),
 	)
-	return &golang.ResponseOK{}, err
+	return &golang.ResponseOK{}, nil
 }

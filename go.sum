@@ -2292,8 +2292,6 @@ github.com/kaytu-io/kaytu-aws-describer v0.13.9 h1:11diABKFspPTrBBhspSKlTMh7Q5TM
 github.com/kaytu-io/kaytu-aws-describer v0.13.9/go.mod h1:03nhKdcxnZy3kCb+k4M4RW9AFQBOK7uqkG2OEp5mnGA=
 github.com/kaytu-io/kaytu-azure-describer v0.9.10 h1:CC78GPDb0A5DBWakxZGkDnIMJ6C8WPTAs79V0tXAh/8=
 github.com/kaytu-io/kaytu-azure-describer v0.9.10/go.mod h1:2dEXN4ZoUwETw+fezEkUfXmu+oRUjbGyNpXsiNGvHrQ=
-github.com/kaytu-io/kaytu-util v0.0.0-20231013090949-bc8c4bb0a8b0 h1:+xvyKLtsCB0peqSqDLwHHk83nEZHzNYD0HccylXjQmU=
-github.com/kaytu-io/kaytu-util v0.0.0-20231013090949-bc8c4bb0a8b0/go.mod h1:YWpy6618I3nKg1BU653fyJlhvZxlDiww0kT9Cnp4hpk=
 github.com/kaytu-io/kaytu-util v0.0.0-20231013215144-6a4dff4c9e6d h1:vd28FdHfopx0laA2CrlxEEvd/quLEUap8fpqFMJNZww=
 github.com/kaytu-io/kaytu-util v0.0.0-20231013215144-6a4dff4c9e6d/go.mod h1:piF79F4EajeTzJwJyEbO9jVG3WIdqJCwSyNYc65RGFk=
 github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9 h1:cuwf0h1VmlT/C1hL3FewDUFaeqpegGUvKGezO50nel4=
@@ -2753,6 +2751,8 @@ github.com/prometheus/procfs v0.9.0/go.mod h1:+pB4zwohETzFnmlpe6yd2lSc+0/46IYZRB
 github.com/prometheus/procfs v0.10.1 h1:kYK1Va/YMlutzCGazswoHKo//tZVlFpKYh+PymziUAg=
 github.com/prometheus/procfs v0.10.1/go.mod h1:nwNm2aOCAYw8uTR/9bWRREkZFxAUcWzPHWJq+XBB/FM=
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
+github.com/rabbitmq/amqp091-go v1.9.0 h1:qrQtyzB4H8BQgEuJwhmVQqVHB9O4+MNDJCCAcpc3Aoo=
+github.com/rabbitmq/amqp091-go v1.9.0/go.mod h1:+jPrT9iY2eLjRaMSRHUhc3z14E/l85kv/f+6luSD3pc=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/rivo/uniseg v0.2.0 h1:S1pD9weZBuJdFmowNwbpi7BJ8TNftyUImj/0WQi72jY=
