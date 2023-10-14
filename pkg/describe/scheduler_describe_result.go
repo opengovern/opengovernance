@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strings"
 	"time"
 
@@ -28,7 +30,7 @@ func (s *Scheduler) UpdateDescribedResourceCountScheduler() error {
 
 func (s *Scheduler) UpdateDescribedResourceCount() {
 	s.logger.Info("Updating DescribedResourceCount")
-	AwsFailedCount, err := s.db.CountFailedJobs(8, "AWS")
+	AwsFailedCount, err := s.db.CountJobsWithStatus(8, source.CloudAWS, api.DescribeResourceJobFailed)
 	if err != nil {
 		s.logger.Error("Failed to count described resources",
 			zap.String("connector", "AWS"),
@@ -37,7 +39,7 @@ func (s *Scheduler) UpdateDescribedResourceCount() {
 		return
 	}
 	ResourcesDescribedCount.WithLabelValues("aws", "failure").Set(float64(*AwsFailedCount))
-	AzureFailedCount, err := s.db.CountFailedJobs(8, "Azure")
+	AzureFailedCount, err := s.db.CountJobsWithStatus(8, source.CloudAzure, api.DescribeResourceJobFailed)
 	if err != nil {
 		s.logger.Error("Failed to count described resources",
 			zap.String("connector", "Azure"),
@@ -46,7 +48,7 @@ func (s *Scheduler) UpdateDescribedResourceCount() {
 		return
 	}
 	ResourcesDescribedCount.WithLabelValues("azure", "failure").Set(float64(*AzureFailedCount))
-	AwsSucceededCount, err := s.db.CountSucceededJobs(8, "AWS")
+	AwsSucceededCount, err := s.db.CountJobsWithStatus(8, source.CloudAWS, api.DescribeResourceJobSucceeded)
 	if err != nil {
 		s.logger.Error("Failed to count described resources",
 			zap.String("connector", "AWS"),
@@ -55,7 +57,7 @@ func (s *Scheduler) UpdateDescribedResourceCount() {
 		return
 	}
 	ResourcesDescribedCount.WithLabelValues("aws", "successful").Set(float64(*AwsSucceededCount))
-	AzureSucceededCount, err := s.db.CountSucceededJobs(8, "Azure")
+	AzureSucceededCount, err := s.db.CountJobsWithStatus(8, source.CloudAzure, api.DescribeResourceJobSucceeded)
 	if err != nil {
 		s.logger.Error("Failed to count described resources",
 			zap.String("connector", "Azure"),

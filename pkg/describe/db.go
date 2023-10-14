@@ -348,22 +348,10 @@ where
 	return job, nil
 }
 
-func (db Database) CountFailedJobs(interval int, connector string) (*int64, error) {
+func (db Database) CountJobsWithStatus(interval int, connector string, status api.DescribeResourceJobStatus) (*int64, error) {
 	var count int64
-	tx := db.orm.Model(&DescribeConnectionJob{}).
-		Where("connector = ? and created_at > now() - interval '? hour' and status = 'FAILED'", connector, interval).
-		Count(&count)
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-	return &count, nil
-}
-
-func (db Database) CountSucceededJobs(interval int, connector string) (*int64, error) {
-	var count int64
-	tx := db.orm.Model(&DescribeConnectionJob{}).
-		Where("connector = ? and created_at > now() - interval '? hour' and status = 'SUCCEEDED'", connector, interval).
-		Count(&count)
+	query := fmt.Sprintf("SELECT count(*) FROM describe_connection_jobs WHERE (connector = '%s' and created_at > now() - interval '%d hour' and status = '%s') AND deleted_at IS NULL", connector, interval, status)
+	tx := db.orm.Raw(query).Find(&count)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
