@@ -381,7 +381,7 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 		return nil, err
 	}
 
-	s.logger.Debug("Publish finished",
+	s.logger.Info("Publish finished",
 		zap.Uint("jobID", result.JobID),
 		zap.String("status", string(result.Status)),
 	)
