@@ -18,14 +18,14 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	ruleGroup.GET("/list", httpserver.AuthorizeHandler(h.ListRules, authapi.ViewerRole))
 	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
 	ruleGroup.DELETE("/delete/:ruleId", httpserver.AuthorizeHandler(h.DeleteRule, authapi.EditorRole))
-	ruleGroup.GET("/update", httpserver.AuthorizeHandler(h.UpdateRule, authapi.EditorRole))
+	ruleGroup.PUT("/update", httpserver.AuthorizeHandler(h.UpdateRule, authapi.EditorRole))
 	ruleGroup.GET("/:ruleId/trigger", httpserver.AuthorizeHandler(h.TriggerRuleAPI, authapi.EditorRole))
 
 	actionGroup := v1.Group("/action")
 	actionGroup.GET("/list", httpserver.AuthorizeHandler(h.ListActions, authapi.ViewerRole))
 	actionGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateAction, authapi.EditorRole))
 	actionGroup.DELETE("/delete/:actionId", httpserver.AuthorizeHandler(h.DeleteAction, authapi.EditorRole))
-	actionGroup.GET("/update", httpserver.AuthorizeHandler(h.UpdateAction, authapi.EditorRole))
+	actionGroup.PUT("/update", httpserver.AuthorizeHandler(h.UpdateAction, authapi.EditorRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -193,7 +193,7 @@ func (h *HttpHandler) DeleteRule(ctx echo.Context) error {
 //	@Tags			alerting
 //	@Param			request	body		api.UpdateRuleRequest	true	"Request Body"
 //	@Success		200		{object}	string
-//	@Router			/alerting/api/v1/rule/update [get]
+//	@Router			/alerting/api/v1/rule/update [put]
 func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 	var req api.UpdateRuleRequest
 	if err := bindValidate(ctx, &req); err != nil {
@@ -349,7 +349,7 @@ func (h *HttpHandler) DeleteAction(ctx echo.Context) error {
 //	@Tags			alerting
 //	@Param			request	body		api.UpdateActionRequest	true	"Request Body"
 //	@Success		200		{object}	string
-//	@Router			/alerting/api/v1/action/update [get]
+//	@Router			/alerting/api/v1/action/update [put]
 func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
 	var req api.UpdateActionRequest
 	if err := bindValidate(ctx, &req); err != nil {
