@@ -152,7 +152,7 @@ const docTemplate = `{
             }
         },
         "/alerting/api/v1/action/update": {
-            "get": {
+            "put": {
                 "security": [
                     {
                         "BearerToken": []
@@ -277,7 +277,7 @@ const docTemplate = `{
             }
         },
         "/alerting/api/v1/rule/update": {
-            "get": {
+            "put": {
                 "security": [
                     {
                         "BearerToken": []

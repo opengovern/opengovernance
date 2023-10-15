@@ -2608,7 +2608,7 @@ paths:
       tags:
       - alerting
   /alerting/api/v1/action/update:
-    get:
+    put:
       description: Retrieving an action by the specified input
       parameters:
       - description: Request Body
@@ -2705,7 +2705,7 @@ paths:
       tags:
       - alerting
   /alerting/api/v1/rule/update:
-    get:
+    put:
       description: Retrieving a rule by the specified input
       parameters:
       - description: Request Body
