@@ -349,7 +349,7 @@ where
 	return job, nil
 }
 
-func (db Database) CountJobsWithStatus(interval int, connector string, status api.DescribeResourceJobStatus) (*int64, error) {
+func (db Database) CountJobsWithStatus(interval int, connector source.Type, status api.DescribeResourceJobStatus) (*int64, error) {
 	var count int64
 	query := fmt.Sprintf("SELECT count(*) FROM describe_connection_jobs WHERE (connector = '%s' and created_at > now() - interval '%d hour' and status = '%s') AND deleted_at IS NULL", connector, interval, status)
 	tx := db.orm.Raw(query).Find(&count)
