@@ -947,6 +947,8 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree:
     properties:
+      accounts:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
       id:
         description: Policy ID
         example: azure_cis_v140_7_5
@@ -955,6 +957,8 @@ definitions:
         description: Last checked
         example: 0
         type: integer
+      resources:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
       severity:
         allOf:
         - $ref: '#/definitions/types.FindingSeverity'
@@ -2398,6 +2402,13 @@ definitions:
     - ComplianceResultINFO
     - ComplianceResultSKIP
     - ComplianceResultERROR
+  types.ComplianceResultShortSummary:
+    properties:
+      failed:
+        type: integer
+      passed:
+        type: integer
+    type: object
   types.ComplianceResultSummary:
     properties:
       alarmCount:
@@ -3440,6 +3451,54 @@ paths:
       security:
       - BearerToken: []
       summary: Get top field by finding count
+      tags:
+      - compliance
+  /compliance/api/v1/findings/{benchmarkId}/accounts:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving the number of findings field count by policies.
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmarkId
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: 'Connection groups to filter by '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
+      security:
+      - BearerToken: []
+      summary: Get findings field count by policies
       tags:
       - compliance
   /compliance/api/v1/insight:

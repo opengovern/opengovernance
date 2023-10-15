@@ -405,10 +405,10 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId		path		string							true	"BenchmarkID"
-//	@Param			connectionId	query		[]string						false	"Connection IDs to filter by"
-//	@Param			connectionGroup	query		[]string						false	"Connection groups to filter by "
-//	@Param			connector		query		[]source.Type					false	"Connector type to filter by"
+//	@Param			benchmarkId		path		string			true	"BenchmarkID"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Success		200				{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/accounts [get]
 func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
@@ -497,10 +497,10 @@ func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId		path		string							true	"BenchmarkID"
-//	@Param			connectionId	query		[]string						false	"Connection IDs to filter by"
-//	@Param			connectionGroup	query		[]string						false	"Connection groups to filter by "
-//	@Param			connector		query		[]source.Type					false	"Connector type to filter by"
+//	@Param			benchmarkId		path		string			true	"BenchmarkID"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
 //	@Success		200				{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/services [get]
 func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
@@ -969,6 +969,15 @@ func GetBenchmarkTree(ctx context.Context, db db.Database, client kaytu.Client, 
 		}
 
 		for _, bs := range res {
+			pt.Resources.Failed += bs.Resources.Failed
+			pt.Resources.Passed += bs.Resources.Passed
+
+			if bs.Resources.Failed == 0 {
+				pt.Accounts.Passed++
+			} else if bs.Resources.Failed > 0 {
+				pt.Accounts.Failed++
+			}
+
 			for _, ps := range bs.Policies {
 				if ps.PolicyID == policy.ID {
 					pt.LastChecked = bs.EvaluatedAt
