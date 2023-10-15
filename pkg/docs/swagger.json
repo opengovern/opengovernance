@@ -146,7 +146,7 @@
                 }
             }
         },
-        "/alerting/api/v1/action/update": {
+        "/alerting/api/v1/action/update/{actionId}": {
             "put": {
                 "security": [
                     {
@@ -160,10 +160,16 @@
                 "summary": "Update action",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "actionId",
+                        "name": "actionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "description": "Request Body",
                         "name": "request",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest"
                         }
@@ -271,7 +277,7 @@
                 }
             }
         },
-        "/alerting/api/v1/rule/update": {
+        "/alerting/api/v1/rule/update/{ruleId}": {
             "put": {
                 "security": [
                     {
@@ -285,10 +291,16 @@
                 "summary": "Update rule",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "ruleId",
+                        "name": "ruleId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "description": "Request Body",
                         "name": "request",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateRuleRequest"
                         }
@@ -5365,9 +5377,6 @@
                         "type": "string"
                     }
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "method": {
                     "type": "string"
                 },
@@ -5384,9 +5393,6 @@
                 },
                 "event_type": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "operator": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct"

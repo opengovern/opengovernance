@@ -16,7 +16,6 @@ type Action struct {
 }
 
 type UpdateActionRequest struct {
-	Id      uint              `json:"id"`
 	Method  *string           `json:"method"`
 	Url     *string           `json:"url"`
 	Headers map[string]string `json:"headers"`
