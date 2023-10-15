@@ -85,6 +85,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/count", httpserver.AuthorizeHandler(h.GetFindingsFieldCountByPolicies, authApi.ViewerRole))
+	findings.GET("/:benchmarkId/accounts", httpserver.AuthorizeHandler(h.GetAccountsFindingsBySeverity, authApi.ViewerRole))
+	//findings.GET("/:benchmarkId/services", httpserver.AuthorizeHandler())
 
 	ai := v1.Group("/ai")
 	ai.POST("/policy/:policyID/remediation", httpserver.AuthorizeHandler(h.GetPolicyRemediation, authApi.ViewerRole))
@@ -392,6 +394,98 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetAccountsFindingsBySeverity godoc
+//
+//	@Summary		Get findings field count by policies
+//	@Description	Retrieving the number of findings field count by policies.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			benchmarkId		path		string							true	"BenchmarkID"
+//	@Param			connectionId	query		[]string						false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string						false	"Connection groups to filter by "
+//	@Param			connector		query		[]source.Type					false	"Connector type to filter by"
+//	@Success		200				{object}	api.GetTopFieldResponse
+//	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/count [get]
+func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmarkId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
+
+	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	//tracer :
+	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetBenchmarkTreeIDs")
+
+	benchmarkIDs, err := h.GetBenchmarkTreeIDs(ctx.Request().Context(), benchmarkID)
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark id", benchmarkID),
+	))
+	span1.End()
+	var result api.GetAccountsFindingsBySeverityResponse
+	res, err := es.AccountsFindingsBySeverity(h.logger, h.client, connectors, connectionIDs, benchmarkIDs)
+	if err != nil {
+		return err
+	}
+
+	for _, acc := range res.Aggregations.Accounts.Buckets {
+		connection, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), acc.Key)
+		if err != nil {
+			return err
+		}
+		okCount := 0
+		for _, r := range acc.Result.Buckets {
+			if r.Key == "ok" {
+				okCount = r.DocCount
+			}
+		}
+		critical := 0
+		high := 0
+		low := 0
+		medium := 0
+		for _, r := range acc.Severity.Buckets {
+			switch r.Key {
+			case "critical":
+				critical = r.DocCount
+			case "high":
+				high = r.DocCount
+			case "medium":
+				medium = r.DocCount
+			case "low":
+				low = r.DocCount
+			}
+		}
+		account := api.AccountsFindingsBySeverity{
+			AccountName:   connection.ConnectionName,
+			AccountId:     connection.ConnectionID,
+			SecurityScore: float64(okCount) / float64(acc.DocCount),
+			SeveritiesCount: struct {
+				Critical int `json:"critical"`
+				High     int `json:"high"`
+				Low      int `json:"low"`
+				Medium   int `json:"medium"`
+			}{
+				Critical: critical,
+				High:     high,
+				Low:      low,
+				Medium:   medium,
+			},
+			LastCheckTime: time.Unix(acc.LastEvaluation.Value, 0),
+		}
+		result.Accounts = append(result.Accounts, account)
+	}
+
+	return nil
 }
 
 // GetPolicyRemediation godoc
