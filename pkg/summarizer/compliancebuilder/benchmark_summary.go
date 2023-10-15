@@ -238,11 +238,11 @@ func (b *BenchmarkSummaryBuilder) Build() []kafka.Doc {
 	}
 	for _, benchmarkSummaryMap := range b.benchmarkSummaries {
 		for _, benchmarkSummary := range benchmarkSummaryMap {
-			benchmarkSummary.FailedResources = nil
-			benchmarkSummary.AllResources = nil
-
 			benchmarkSummary.Resources.Failed = len(benchmarkSummary.FailedResources)
 			benchmarkSummary.Resources.Passed = len(benchmarkSummary.AllResources) - benchmarkSummary.Resources.Failed
+
+			benchmarkSummary.FailedResources = nil
+			benchmarkSummary.AllResources = nil
 
 			docs = append(docs, benchmarkSummary)
 			historySummary := benchmarkSummary
@@ -296,11 +296,11 @@ func (b *BenchmarkSummaryBuilder) Build() []kafka.Doc {
 				benchmarkSummary.Policies = append(benchmarkSummary.Policies, benchmarkSummaryPerConnection.Policies...)
 			}
 
-			benchmarkSummary.FailedResources = nil
-			benchmarkSummary.AllResources = nil
-
 			benchmarkSummary.Resources.Failed = len(benchmarkSummary.FailedResources)
 			benchmarkSummary.Resources.Passed = len(benchmarkSummary.AllResources) - benchmarkSummary.Resources.Failed
+
+			benchmarkSummary.FailedResources = nil
+			benchmarkSummary.AllResources = nil
 
 			docs = append(docs, benchmarkSummary)
 			historySummary := benchmarkSummary
