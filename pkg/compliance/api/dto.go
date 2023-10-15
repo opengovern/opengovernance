@@ -135,6 +135,39 @@ type GetFieldCountResponse struct {
 	} `json:"policies"`
 }
 
+type AccountsFindingsBySeverity struct {
+	AccountName     string  `json:"accountName"`
+	AccountId       string  `json:"accountId"`
+	SecurityScore   float64 `json:"securityScore"`
+	SeveritiesCount struct {
+		Critical int `json:"critical"`
+		High     int `json:"high"`
+		Low      int `json:"low"`
+		Medium   int `json:"medium"`
+	}
+	LastCheckTime time.Time `json:"lastCheckTime"`
+}
+
+type GetAccountsFindingsBySeverityResponse struct {
+	Accounts []AccountsFindingsBySeverity `json:"accounts"`
+}
+
+type ServiceFindingsBySeverity struct {
+	ServiceName     string  `json:"serviceName"`
+	ServiceLabel    string  `json:"serviceLabel"`
+	SecurityScore   float64 `json:"securityScore"`
+	SeveritiesCount struct {
+		Critical int `json:"critical"`
+		High     int `json:"high"`
+		Low      int `json:"low"`
+		Medium   int `json:"medium"`
+	}
+}
+
+type GetServicesFindingsBySeverityResponse struct {
+	Services []ServiceFindingsBySeverity `json:"services"`
+}
+
 type GetFindingsResponse struct {
 	Findings   []types.Finding `json:"findings"`
 	TotalCount int64           `json:"totalCount" example:"100"`

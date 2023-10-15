@@ -21,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
 	api "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
@@ -85,6 +86,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/count", httpserver.AuthorizeHandler(h.GetFindingsFieldCountByPolicies, authApi.ViewerRole))
+	findings.GET("/:benchmarkId/accounts", httpserver.AuthorizeHandler(h.GetAccountsFindingsBySeverity, authApi.ViewerRole))
+	findings.GET("/:benchmarkId/services", httpserver.AuthorizeHandler(h.GetServicesFindingsBySeverity, authApi.ViewerRole))
 
 	ai := v1.Group("/ai")
 	ai.POST("/policy/:policyID/remediation", httpserver.AuthorizeHandler(h.GetPolicyRemediation, authApi.ViewerRole))
@@ -389,6 +392,249 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 			PolicyName  string               `json:"policyName"`
 			FieldCounts []api.TopFieldRecord `json:"fieldCounts"`
 		}{PolicyName: b.Key, FieldCounts: fieldCounts})
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetAccountsFindingsBySeverity godoc
+//
+//	@Summary		Get findings field count by policies
+//	@Description	Retrieving the number of findings field count by policies.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			benchmarkId		path		string							true	"BenchmarkID"
+//	@Param			connectionId	query		[]string						false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string						false	"Connection groups to filter by "
+//	@Param			connector		query		[]source.Type					false	"Connector type to filter by"
+//	@Success		200				{object}	api.GetTopFieldResponse
+//	@Router			/compliance/api/v1/findings/{benchmarkId}/accounts [get]
+func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmarkId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
+
+	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	//tracer :
+	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetBenchmarkTreeIDs")
+
+	benchmarkIDs, err := h.GetBenchmarkTreeIDs(ctx.Request().Context(), benchmarkID)
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark id", benchmarkID),
+	))
+	span1.End()
+	var response api.GetAccountsFindingsBySeverityResponse
+	res, err := es.AccountsFindingsBySeverity(h.logger, h.client, connectors, connectionIDs, benchmarkIDs)
+	if err != nil {
+		return err
+	}
+
+	for _, acc := range res.Aggregations.Accounts.Buckets {
+		connection, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), acc.Key)
+		if err != nil {
+			return err
+		}
+		okCount := 0
+		for _, r := range acc.Result.Buckets {
+			if r.Key == "ok" {
+				okCount = r.DocCount
+			}
+		}
+		critical := 0
+		high := 0
+		low := 0
+		medium := 0
+		for _, r := range acc.Severity.Buckets {
+			switch r.Key {
+			case "critical":
+				critical = r.DocCount
+			case "high":
+				high = r.DocCount
+			case "medium":
+				medium = r.DocCount
+			case "low":
+				low = r.DocCount
+			}
+		}
+		account := api.AccountsFindingsBySeverity{
+			AccountName:   connection.ConnectionName,
+			AccountId:     connection.ConnectionID,
+			SecurityScore: float64(okCount) / float64(acc.DocCount),
+			SeveritiesCount: struct {
+				Critical int `json:"critical"`
+				High     int `json:"high"`
+				Low      int `json:"low"`
+				Medium   int `json:"medium"`
+			}{
+				Critical: critical,
+				High:     high,
+				Low:      low,
+				Medium:   medium,
+			},
+			LastCheckTime: time.Unix(acc.LastEvaluation.Value, 0),
+		}
+		response.Accounts = append(response.Accounts, account)
+	}
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetServicesFindingsBySeverity godoc
+//
+//	@Summary		Get findings field count by policies
+//	@Description	Retrieving the number of findings field count by policies.
+//	@Security		BearerToken
+//	@Tags			compliance
+//	@Accept			json
+//	@Produce		json
+//	@Param			benchmarkId		path		string							true	"BenchmarkID"
+//	@Param			connectionId	query		[]string						false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string						false	"Connection groups to filter by "
+//	@Param			connector		query		[]source.Type					false	"Connector type to filter by"
+//	@Success		200				{object}	api.GetTopFieldResponse
+//	@Router			/compliance/api/v1/findings/{benchmarkId}/accounts [get]
+func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmarkId")
+	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
+	if err != nil {
+		return err
+	}
+
+	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	//tracer :
+	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
+	span1.SetName("new_GetBenchmarkTreeIDs")
+
+	benchmarkIDs, err := h.GetBenchmarkTreeIDs(ctx.Request().Context(), benchmarkID)
+	if err != nil {
+		span1.RecordError(err)
+		span1.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark id", benchmarkID),
+	))
+	span1.End()
+	var response api.GetServicesFindingsBySeverityResponse
+	res, err := es.ResourceTypesFindingsBySeverity(h.logger, h.client, connectors, connectionIDs, benchmarkIDs)
+	if err != nil {
+		return err
+	}
+
+	services := make(map[string]struct {
+		ok              int
+		total           int
+		SeveritiesCount struct {
+			Critical int `json:"critical"`
+			High     int `json:"high"`
+			Low      int `json:"low"`
+			Medium   int `json:"medium"`
+		}
+	}, 0)
+
+	for _, resourceType := range res.Aggregations.ResourceTypes.Buckets {
+		serviceName := cloudservice.ServiceNameByResourceType(resourceType.Key)
+		okCount := 0
+		for _, r := range resourceType.Result.Buckets {
+			if r.Key == "ok" {
+				okCount = r.DocCount
+			}
+		}
+		critical := 0
+		high := 0
+		low := 0
+		medium := 0
+		for _, r := range resourceType.Severity.Buckets {
+			switch r.Key {
+			case "critical":
+				critical = r.DocCount
+			case "high":
+				high = r.DocCount
+			case "medium":
+				medium = r.DocCount
+			case "low":
+				low = r.DocCount
+			}
+		}
+		if _, ok := services[serviceName]; !ok {
+			services[serviceName] = struct {
+				ok              int
+				total           int
+				SeveritiesCount struct {
+					Critical int `json:"critical"`
+					High     int `json:"high"`
+					Low      int `json:"low"`
+					Medium   int `json:"medium"`
+				}
+			}{
+				ok:    0,
+				total: 0,
+				SeveritiesCount: struct {
+					Critical int `json:"critical"`
+					High     int `json:"high"`
+					Low      int `json:"low"`
+					Medium   int `json:"medium"`
+				}{
+					Critical: 0,
+					High:     0,
+					Low:      0,
+					Medium:   0,
+				},
+			}
+		}
+		services[serviceName] = struct {
+			ok              int
+			total           int
+			SeveritiesCount struct {
+				Critical int `json:"critical"`
+				High     int `json:"high"`
+				Low      int `json:"low"`
+				Medium   int `json:"medium"`
+			}
+		}{
+			ok:    services[serviceName].ok + okCount,
+			total: services[serviceName].total + resourceType.DocCount,
+			SeveritiesCount: struct {
+				Critical int `json:"critical"`
+				High     int `json:"high"`
+				Low      int `json:"low"`
+				Medium   int `json:"medium"`
+			}{
+				Critical: services[serviceName].SeveritiesCount.Critical + critical,
+				High:     services[serviceName].SeveritiesCount.High + high,
+				Low:      services[serviceName].SeveritiesCount.Low + low,
+				Medium:   services[serviceName].SeveritiesCount.Medium + medium,
+			},
+		}
+	}
+
+	for serviceName, service := range services {
+		response.Services = append(response.Services, api.ServiceFindingsBySeverity{
+			ServiceName:   serviceName,
+			ServiceLabel:  serviceName,
+			SecurityScore: float64(service.ok) / float64(service.total),
+			SeveritiesCount: struct {
+				Critical int `json:"critical"`
+				High     int `json:"high"`
+				Low      int `json:"low"`
+				Medium   int `json:"medium"`
+			}{
+				Critical: service.SeveritiesCount.Critical,
+				High:     service.SeveritiesCount.High,
+				Low:      service.SeveritiesCount.Low,
+				Medium:   service.SeveritiesCount.Medium,
+			},
+		})
 	}
 
 	return ctx.JSON(http.StatusOK, response)
