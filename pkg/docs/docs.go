@@ -731,10 +731,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedSource"
-                            }
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedEntities"
                         }
                     }
                 }
@@ -782,8 +779,18 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
-                        "description": "Connection group ",
+                        "description": "Connection group",
                         "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Resource collection",
+                        "name": "resourceCollection",
                         "in": "query"
                     }
                 ],
@@ -842,6 +849,16 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Connection Group ",
                         "name": "connectionGroup",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Resource Collection",
+                        "name": "resourceCollection",
                         "in": "query"
                     }
                 ],
@@ -5856,7 +5873,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedSource": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedConnection": {
             "type": "object",
             "properties": {
                 "connectionID": {
@@ -5889,6 +5906,41 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedEntities": {
+            "type": "object",
+            "properties": {
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedConnection"
+                    }
+                },
+                "resourceCollections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedResourceCollection"
+                    }
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedResourceCollection": {
+            "type": "object",
+            "properties": {
+                "resourceCollectionID": {
+                    "description": "Resource Collection ID",
+                    "type": "string"
+                },
+                "resourceCollectionName": {
+                    "description": "Resource Collection Name",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Status",
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment": {
             "type": "object",
             "properties": {
@@ -5901,10 +5953,15 @@ const docTemplate = `{
                     "type": "string",
                     "example": "azure_cis_v140"
                 },
-                "sourceId": {
+                "connectionId": {
                     "description": "Connection ID",
                     "type": "string",
                     "example": "8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"
+                },
+                "resourceCollectionId": {
+                    "description": "Resource Collection ID",
+                    "type": "string",
+                    "example": "example-rc"
                 }
             }
         },

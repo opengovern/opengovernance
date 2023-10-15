@@ -465,7 +465,7 @@ definitions:
         example: John Doe
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedSource:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedConnection:
     properties:
       connectionID:
         description: Connection ID
@@ -488,6 +488,30 @@ definitions:
         example: true
         type: boolean
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedEntities:
+    properties:
+      connections:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedConnection'
+        type: array
+      resourceCollections:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedResourceCollection'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedResourceCollection:
+    properties:
+      resourceCollectionID:
+        description: Resource Collection ID
+        type: string
+      resourceCollectionName:
+        description: Resource Collection Name
+        type: string
+      status:
+        description: Status
+        example: true
+        type: boolean
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment:
     properties:
       assignedAt:
@@ -497,9 +521,13 @@ definitions:
         description: Benchmark ID
         example: azure_cis_v140
         type: string
-      sourceId:
+      connectionId:
         description: Connection ID
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      resourceCollectionId:
+        description: Resource Collection ID
+        example: example-rc
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary:
@@ -2972,6 +3000,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - collectionFormat: csv
+        description: Resource Collection
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
       produces:
       - application/json
       responses:
@@ -3000,11 +3035,18 @@ paths:
         name: connectionId
         type: array
       - collectionFormat: csv
-        description: 'Connection group '
+        description: Connection group
         in: query
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       produces:
       - application/json
@@ -3037,9 +3079,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedSource'
-            type: array
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedEntities'
       security:
       - BearerToken: []
       summary: Get benchmark assigned sources

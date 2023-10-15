@@ -185,9 +185,11 @@ func (db Database) AddBenchmarkAssignment(assignment *BenchmarkAssignment) error
 	return nil
 }
 
-func (db Database) GetBenchmarkAssignmentsBySourceId(connectionId string) ([]BenchmarkAssignment, error) {
+func (db Database) GetBenchmarkAssignmentsByConnectionId(connectionId string) ([]BenchmarkAssignment, error) {
 	var s []BenchmarkAssignment
-	tx := db.Orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{ConnectionId: connectionId}).Scan(&s)
+	tx := db.Orm.Model(&BenchmarkAssignment{}).
+		Where(BenchmarkAssignment{ConnectionId: &connectionId}).
+		Where("resource_collection IS NULL").Scan(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -221,9 +223,13 @@ func (db Database) ListBenchmarkAssignments() ([]BenchmarkAssignment, error) {
 	return s, nil
 }
 
-func (db Database) GetBenchmarkAssignmentByIds(connectionId string, benchmarkId string) (*BenchmarkAssignment, error) {
+func (db Database) GetBenchmarkAssignmentByIds(benchmarkId string, connectionId, resourceCollectionId *string) (*BenchmarkAssignment, error) {
 	var s BenchmarkAssignment
-	tx := db.Orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{BenchmarkId: benchmarkId, ConnectionId: connectionId}).Scan(&s)
+	tx := db.Orm.Model(&BenchmarkAssignment{}).Where(BenchmarkAssignment{
+		BenchmarkId:        benchmarkId,
+		ConnectionId:       connectionId,
+		ResourceCollection: resourceCollectionId,
+	}).Scan(&s)
 
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -232,8 +238,12 @@ func (db Database) GetBenchmarkAssignmentByIds(connectionId string, benchmarkId 
 	return &s, nil
 }
 
-func (db Database) DeleteBenchmarkAssignmentByIds(connectionId string, benchmarkId string) error {
-	tx := db.Orm.Unscoped().Where(BenchmarkAssignment{BenchmarkId: benchmarkId, ConnectionId: connectionId}).Delete(&BenchmarkAssignment{})
+func (db Database) DeleteBenchmarkAssignmentByIds(benchmarkId string, connectionId, resourceCollectionId *string) error {
+	tx := db.Orm.Unscoped().Where(BenchmarkAssignment{
+		BenchmarkId:        benchmarkId,
+		ConnectionId:       connectionId,
+		ResourceCollection: resourceCollectionId,
+	}).Delete(&BenchmarkAssignment{})
 
 	if tx.Error != nil {
 		return tx.Error
