@@ -21,7 +21,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go/aws"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/cloudservice"
 	api "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
@@ -531,19 +530,7 @@ func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
 		return err
 	}
 
-	services := make(map[string]struct {
-		ok              int
-		total           int
-		SeveritiesCount struct {
-			Critical int `json:"critical"`
-			High     int `json:"high"`
-			Low      int `json:"low"`
-			Medium   int `json:"medium"`
-		}
-	}, 0)
-
 	for _, resourceType := range res.Aggregations.ResourceTypes.Buckets {
-		serviceName := cloudservice.ServiceNameByResourceType(resourceType.Key)
 		okCount := 0
 		for _, r := range resourceType.Result.Buckets {
 			if r.Key == "ok" {
@@ -566,75 +553,23 @@ func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
 				low = r.DocCount
 			}
 		}
-		if _, ok := services[serviceName]; !ok {
-			services[serviceName] = struct {
-				ok              int
-				total           int
-				SeveritiesCount struct {
-					Critical int `json:"critical"`
-					High     int `json:"high"`
-					Low      int `json:"low"`
-					Medium   int `json:"medium"`
-				}
-			}{
-				ok:    0,
-				total: 0,
-				SeveritiesCount: struct {
-					Critical int `json:"critical"`
-					High     int `json:"high"`
-					Low      int `json:"low"`
-					Medium   int `json:"medium"`
-				}{
-					Critical: 0,
-					High:     0,
-					Low:      0,
-					Medium:   0,
-				},
-			}
-		}
-		services[serviceName] = struct {
-			ok              int
-			total           int
-			SeveritiesCount struct {
-				Critical int `json:"critical"`
-				High     int `json:"high"`
-				Low      int `json:"low"`
-				Medium   int `json:"medium"`
-			}
-		}{
-			ok:    services[serviceName].ok + okCount,
-			total: services[serviceName].total + resourceType.DocCount,
+		service := api.ServiceFindingsBySeverity{
+			ServiceName:   resourceType.Key,
+			ServiceLabel:  resourceType.Key,
+			SecurityScore: float64(okCount) / float64(resourceType.DocCount),
 			SeveritiesCount: struct {
 				Critical int `json:"critical"`
 				High     int `json:"high"`
 				Low      int `json:"low"`
 				Medium   int `json:"medium"`
 			}{
-				Critical: services[serviceName].SeveritiesCount.Critical + critical,
-				High:     services[serviceName].SeveritiesCount.High + high,
-				Low:      services[serviceName].SeveritiesCount.Low + low,
-				Medium:   services[serviceName].SeveritiesCount.Medium + medium,
+				Critical: critical,
+				High:     high,
+				Low:      low,
+				Medium:   medium,
 			},
 		}
-	}
-
-	for serviceName, service := range services {
-		response.Services = append(response.Services, api.ServiceFindingsBySeverity{
-			ServiceName:   serviceName,
-			ServiceLabel:  serviceName,
-			SecurityScore: float64(service.ok) / float64(service.total),
-			SeveritiesCount: struct {
-				Critical int `json:"critical"`
-				High     int `json:"high"`
-				Low      int `json:"low"`
-				Medium   int `json:"medium"`
-			}{
-				Critical: service.SeveritiesCount.Critical,
-				High:     service.SeveritiesCount.High,
-				Low:      service.SeveritiesCount.Low,
-				Medium:   service.SeveritiesCount.Medium,
-			},
-		})
+		response.Services = append(response.Services, service)
 	}
 
 	return ctx.JSON(http.StatusOK, response)
