@@ -553,7 +553,7 @@ func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
 				low = r.DocCount
 			}
 		}
-		account := api.ServiceFindingsBySeverity{
+		service := api.ServiceFindingsBySeverity{
 			ServiceName:   resourceType.Key,
 			ServiceLabel:  resourceType.Key,
 			SecurityScore: float64(okCount) / float64(resourceType.DocCount),
@@ -569,7 +569,7 @@ func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
 				Medium:   medium,
 			},
 		}
-		response.Services = append(response.Services, account)
+		response.Services = append(response.Services, service)
 	}
 
 	return ctx.JSON(http.StatusOK, response)
