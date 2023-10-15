@@ -342,9 +342,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 
 func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.DeliverResultRequest) (*golang.ResponseOK, error) {
 	ResultsDeliveredCount.WithLabelValues(req.DescribeJob.SourceType).Inc()
-	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
-	defer span.End()
-	err := s.describeJobResultQueue.Publish(DescribeJobResult{
+	result := DescribeJobResult{
 		JobID:       uint(req.JobId),
 		ParentJobID: uint(req.ParentJobId),
 		Status:      api.DescribeResourceJobStatus(req.Status),
@@ -364,6 +362,28 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 			RetryCounter:  uint(req.DescribeJob.RetryCounter),
 		},
 		DescribedResourceIDs: req.DescribedResourceIds,
-	})
-	return &golang.ResponseOK{}, err
+	}
+
+	s.logger.Info("Result delivered",
+		zap.Uint("jobID", result.JobID),
+		zap.String("status", string(result.Status)),
+	)
+
+	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
+
+	err := s.describeJobResultQueue.Publish(result)
+	if err != nil {
+		s.logger.Error("Failed to publish into rabbitMQ",
+			zap.Uint("jobID", result.JobID),
+			zap.Error(err),
+		)
+		return nil, err
+	}
+
+	s.logger.Info("Publish finished",
+		zap.Uint("jobID", result.JobID),
+		zap.String("status", string(result.Status)),
+	)
+	return &golang.ResponseOK{}, nil
 }

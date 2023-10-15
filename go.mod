@@ -35,7 +35,7 @@ require (
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/kaytu-io/kaytu-aws-describer v0.13.9
 	github.com/kaytu-io/kaytu-azure-describer v0.9.10
-	github.com/kaytu-io/kaytu-util v0.0.0-20231013090949-bc8c4bb0a8b0
+	github.com/kaytu-io/kaytu-util v0.0.0-20231014160036-3b260bc58a75
 	github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/labstack/gommon v0.4.0
@@ -473,6 +473,7 @@ require (
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
+	github.com/rabbitmq/amqp091-go v1.9.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.12.0+incompatible // indirect
