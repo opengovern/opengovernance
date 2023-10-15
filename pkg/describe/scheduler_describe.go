@@ -188,6 +188,9 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 	failedsSpan.End()
 
 	dcs = append(dcs, fdcs...)
+	rand.Shuffle(len(dcs), func(i, j int) {
+		dcs[i], dcs[j] = dcs[j], dcs[i]
+	})
 
 	rtCount := map[string]int{}
 	for i := 0; i < len(dcs); i++ {

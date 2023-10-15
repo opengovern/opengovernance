@@ -182,7 +182,8 @@ FROM
 	describe_connection_jobs dr
 WHERE
 	status = ? AND
-	created_at > now() - interval '3 day' AND 
+	created_at > now() - interval '3 day' AND
+    updated_at < now() - interval '5 minutes' AND
 	NOT(error_code IN ('InvalidApiVersionParameter', 'AuthorizationFailed', 'AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND
 	(retry_count < 5 OR retry_count IS NULL)
 	ORDER BY id DESC LIMIT ?
