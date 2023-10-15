@@ -480,7 +480,7 @@ func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 				Low:      low,
 				Medium:   medium,
 			},
-			LastCheckTime: time.Unix(int64(acc.LastEvaluation.Value), 0),
+			LastCheckTime: time.UnixMilli(int64(acc.LastEvaluation.Value)),
 		}
 		response.Accounts = append(response.Accounts, account)
 	}
