@@ -247,11 +247,11 @@ func TestUpdateRule(t *testing.T) {
 	}
 
 	reqUpdate := api.UpdateRuleRequest{
-		Id:       id,
 		Operator: &req.Operator,
 		ActionID: &req.ActionID,
 	}
-	_, err := doSimpleJSONRequest("GET", "/api/v1/rule/update", reqUpdate, nil)
+	idString := strconv.FormatUint(uint64(id), 10)
+	_, err := doSimpleJSONRequest("GET", "/api/v1/rule/update/"+idString, reqUpdate, nil)
 	require.NoError(t, err, "error updating rule")
 
 	ruleNew, err := getRule(h, id)
@@ -351,14 +351,15 @@ func TestUpdateAction(t *testing.T) {
 	defer teardownSuite(t)
 
 	id := addAction(t)
-	req := api.Action{
-		Id:      id,
-		Method:  "POST",
+	newMethod := "POST"
+	newUrl := "https://kaytu.dev/use-cases"
+	req := api.UpdateActionRequest{
+		Method:  &newMethod,
 		Headers: map[string]string{"insightId": "newTestInsight"},
-		Url:     "https://kaytu.dev/use-cases",
+		Url:     &newUrl,
 	}
-
-	_, err := doSimpleJSONRequest("GET", "/api/v1/action/update", req, nil)
+	idString := strconv.FormatUint(uint64(id), 10)
+	_, err := doSimpleJSONRequest("GET", "/api/v1/action/update/"+idString, req, nil)
 	require.NoError(t, err, "error updating action")
 
 	actionG, err := getAction(h, id)

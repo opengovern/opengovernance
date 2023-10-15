@@ -126,8 +126,6 @@ definitions:
         additionalProperties:
           type: string
         type: object
-      id:
-        type: integer
       method:
         type: string
       url:
@@ -139,8 +137,6 @@ definitions:
         type: integer
       event_type:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType'
-      id:
-        type: integer
       operator:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct'
       scope:
@@ -2607,14 +2603,18 @@ paths:
       summary: List actions
       tags:
       - alerting
-  /alerting/api/v1/action/update:
+  /alerting/api/v1/action/update/{actionId}:
     put:
       description: Retrieving an action by the specified input
       parameters:
+      - description: actionId
+        in: path
+        name: actionId
+        required: true
+        type: string
       - description: Request Body
         in: body
         name: request
-        required: true
         schema:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest'
       responses:
@@ -2704,14 +2704,18 @@ paths:
       summary: List rules
       tags:
       - alerting
-  /alerting/api/v1/rule/update:
+  /alerting/api/v1/rule/update/{ruleId}:
     put:
       description: Retrieving a rule by the specified input
       parameters:
+      - description: ruleId
+        in: path
+        name: ruleId
+        required: true
+        type: string
       - description: Request Body
         in: body
         name: request
-        required: true
         schema:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateRuleRequest'
       responses:
