@@ -22,9 +22,10 @@ import (
 
 type BenchmarkAssignment struct {
 	gorm.Model
-	BenchmarkId  string `gorm:"index:idx_benchmark_source"`
-	ConnectionId string `gorm:"index:idx_benchmark_source"`
-	AssignedAt   time.Time
+	BenchmarkId        string  `gorm:"index:idx_benchmark_source; index:idx_benchmark_rc; not null"`
+	ConnectionId       *string `gorm:"index:idx_benchmark_source"`
+	ResourceCollection *string `gorm:"index:idx_benchmark_rc"`
+	AssignedAt         time.Time
 }
 
 type Benchmark struct {
