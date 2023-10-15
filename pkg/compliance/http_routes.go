@@ -405,6 +405,7 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmarkId		path		string			true	"BenchmarkID"
+//	@Param			count			query		int				false	"Number of outputs"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
 //	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
@@ -415,6 +416,17 @@ func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
+	}
+
+	var count int64
+	countStr := ctx.QueryParam("count")
+	if countStr != "" {
+		count, err = strconv.ParseInt(countStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	} else {
+		count = 10000
 	}
 
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
@@ -433,7 +445,7 @@ func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 	))
 	span1.End()
 	var response api.GetAccountsFindingsBySeverityResponse
-	res, err := es.AccountsFindingsBySeverity(h.logger, h.client, connectors, connectionIDs, benchmarkIDs)
+	res, err := es.AccountsFindingsBySeverity(h.logger, h.client, connectors, connectionIDs, benchmarkIDs, count)
 	if err != nil {
 		return err
 	}
@@ -497,6 +509,7 @@ func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			benchmarkId		path		string			true	"BenchmarkID"
+//	@Param			count			query		int				false	"Number of outputs"
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
 //	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
@@ -507,6 +520,17 @@ func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
+	}
+
+	var count int64
+	countStr := ctx.QueryParam("count")
+	if countStr != "" {
+		count, err = strconv.ParseInt(countStr, 10, 64)
+		if err != nil {
+			return err
+		}
+	} else {
+		count = 10000
 	}
 
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
@@ -525,7 +549,7 @@ func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
 	))
 	span1.End()
 	var response api.GetServicesFindingsBySeverityResponse
-	res, err := es.ResourceTypesFindingsBySeverity(h.logger, h.client, connectors, connectionIDs, benchmarkIDs)
+	res, err := es.ResourceTypesFindingsBySeverity(h.logger, h.client, connectors, connectionIDs, benchmarkIDs, count)
 	if err != nil {
 		return err
 	}

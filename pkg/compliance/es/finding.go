@@ -350,7 +350,8 @@ func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 }
 
 func AccountsFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
-	connectors []source.Type, connectionIDs []string, benchmarkID []string) (*AccountsFindingsBySeverityResponse, error) {
+	connectors []source.Type, connectionIDs []string, benchmarkID []string,
+	size int64) (*AccountsFindingsBySeverityResponse, error) {
 	terms := make(map[string]any)
 	if len(benchmarkID) > 0 {
 		terms["benchmarkID"] = benchmarkID
@@ -369,6 +370,7 @@ func AccountsFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
 		"accounts": map[string]any{
 			"terms": map[string]any{
 				"field": "connectionID",
+				"size":  size,
 			},
 			"aggs": map[string]any{
 				"severity": map[string]any{
@@ -421,7 +423,8 @@ func AccountsFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
 }
 
 func ResourceTypesFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
-	connectors []source.Type, connectionIDs []string, benchmarkID []string) (*ResourceTypesFindingsBySeverityResponse, error) {
+	connectors []source.Type, connectionIDs []string, benchmarkID []string,
+	size int64) (*ResourceTypesFindingsBySeverityResponse, error) {
 	terms := make(map[string]any)
 	if len(benchmarkID) > 0 {
 		terms["benchmarkID"] = benchmarkID
@@ -440,6 +443,7 @@ func ResourceTypesFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
 		"resource_types": map[string]any{
 			"terms": map[string]any{
 				"field": "resourceType",
+				"size":  size,
 			},
 			"aggs": map[string]any{
 				"severity": map[string]any{
