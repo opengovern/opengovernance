@@ -18,14 +18,14 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	ruleGroup.GET("/list", httpserver.AuthorizeHandler(h.ListRules, authapi.ViewerRole))
 	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
 	ruleGroup.DELETE("/delete/:ruleId", httpserver.AuthorizeHandler(h.DeleteRule, authapi.EditorRole))
-	ruleGroup.PUT("/update", httpserver.AuthorizeHandler(h.UpdateRule, authapi.EditorRole))
+	ruleGroup.PUT("/update/:ruleId", httpserver.AuthorizeHandler(h.UpdateRule, authapi.EditorRole))
 	ruleGroup.GET("/:ruleId/trigger", httpserver.AuthorizeHandler(h.TriggerRuleAPI, authapi.EditorRole))
 
 	actionGroup := v1.Group("/action")
 	actionGroup.GET("/list", httpserver.AuthorizeHandler(h.ListActions, authapi.ViewerRole))
 	actionGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateAction, authapi.EditorRole))
 	actionGroup.DELETE("/delete/:actionId", httpserver.AuthorizeHandler(h.DeleteAction, authapi.EditorRole))
-	actionGroup.PUT("/update", httpserver.AuthorizeHandler(h.UpdateAction, authapi.EditorRole))
+	actionGroup.PUT("/update/:actionId", httpserver.AuthorizeHandler(h.UpdateAction, authapi.EditorRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -191,22 +191,28 @@ func (h *HttpHandler) DeleteRule(ctx echo.Context) error {
 //	@Description	Retrieving a rule by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			request	body		api.UpdateRuleRequest	true	"Request Body"
+//	@Param			ruleId	path		string					true	"ruleId"
+//	@Param			request	body		api.UpdateRuleRequest	false	"Request Body"
 //	@Success		200		{object}	string
-//	@Router			/alerting/api/v1/rule/update [put]
+//	@Router			/alerting/api/v1/rule/update/{ruleId} [put]
 func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
+	idString := ctx.Param("ruleId")
+	if idString == "" {
+		return errors.New("ruleId is required")
+	}
+	id, err := strconv.ParseUint(idString, 10, 64)
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error parsing the ruleId : %v", err))
+	}
+
 	var req api.UpdateRuleRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the inputs : %v ", err))
-	}
-	if req.Id == 0 {
-		return errors.New("ruleId is required")
 	}
 
 	var scope []byte
 	var eventType []byte
 	var operator []byte
-	var err error
 
 	if req.Scope != nil {
 		scope, err = json.Marshal(req.Scope)
@@ -235,7 +241,7 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 		operator = nil
 	}
 
-	err = h.db.UpdateRule(req.Id, &eventType, &scope, &operator, req.ActionID)
+	err = h.db.UpdateRule(uint(id), &eventType, &scope, &operator, req.ActionID)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error updating the rule : %v ", err))
 	}
@@ -347,20 +353,26 @@ func (h *HttpHandler) DeleteAction(ctx echo.Context) error {
 //	@Description	Retrieving an action by the specified input
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			request	body		api.UpdateActionRequest	true	"Request Body"
-//	@Success		200		{object}	string
-//	@Router			/alerting/api/v1/action/update [put]
+//	@Param			actionId	path		string					true	"actionId"
+//	@Param			request		body		api.UpdateActionRequest	false	"Request Body"
+//	@Success		200			{object}	string
+//	@Router			/alerting/api/v1/action/update/{actionId} [put]
 func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
+	idString := ctx.Param("actionId")
+	if idString == "" {
+		return errors.New("actionId is required")
+	}
+	id, err := strconv.ParseUint(idString, 10, 64)
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error parsing the actionId : %v", err))
+	}
+
 	var req api.UpdateActionRequest
 	if err := bindValidate(ctx, &req); err != nil {
 		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the inputs : %v ", err))
 	}
-	if req.Id == 0 {
-		return errors.New("actionId is required")
-	}
 
 	var MarshalHeader []byte
-	var err error
 	if req.Headers != nil {
 		MarshalHeader, err = json.Marshal(req.Headers)
 		if err != nil {
@@ -370,7 +382,7 @@ func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
 		MarshalHeader = nil
 	}
 
-	err = h.db.UpdateAction(req.Id, &MarshalHeader, req.Url, req.Body, req.Method)
+	err = h.db.UpdateAction(uint(id), &MarshalHeader, req.Url, req.Body, req.Method)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error updating the action : %v ", err))
 	}

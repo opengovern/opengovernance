@@ -8,17 +8,29 @@ import (
 )
 
 type BenchmarkAssignment struct {
-	BenchmarkId  string    `json:"benchmarkId" example:"azure_cis_v140"`                    // Benchmark ID
-	ConnectionId string    `json:"sourceId" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
-	AssignedAt   time.Time `json:"assignedAt"`                                              // Unix timestamp
+	BenchmarkId          string    `json:"benchmarkId" example:"azure_cis_v140"`                        // Benchmark ID
+	ConnectionId         *string   `json:"connectionId" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
+	ResourceCollectionId *string   `json:"resourceCollectionId" example:"example-rc"`                   // Resource Collection ID
+	AssignedAt           time.Time `json:"assignedAt"`                                                  // Unix timestamp
 }
 
-type BenchmarkAssignedSource struct {
+type BenchmarkAssignedConnection struct {
 	ConnectionID           string      `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
 	ProviderConnectionID   string      `json:"providerConnectionID" example:"1283192749"`                   // Provider Connection ID
 	ProviderConnectionName string      `json:"providerConnectionName"`                                      // Provider Connection Name
 	Connector              source.Type `json:"connector" example:"Azure"`                                   // Clout Provider
 	Status                 bool        `json:"status" example:"true"`                                       // Status
+}
+
+type BenchmarkAssignedResourceCollection struct {
+	ResourceCollectionID   string `json:"resourceCollectionID"`   // Resource Collection ID
+	ResourceCollectionName string `json:"resourceCollectionName"` // Resource Collection Name
+	Status                 bool   `json:"status" example:"true"`  // Status
+}
+
+type BenchmarkAssignedEntities struct {
+	Connections         []BenchmarkAssignedConnection         `json:"connections"`
+	ResourceCollections []BenchmarkAssignedResourceCollection `json:"resourceCollections"`
 }
 
 type FindingFilters struct {
@@ -199,11 +211,13 @@ type BenchmarkResultTrend struct {
 }
 
 type PolicyTree struct {
-	ID          string                `json:"id" example:"azure_cis_v140_7_5"`                                                            // Policy ID
-	Title       string                `json:"title" example:"7.5 Ensure that the latest OS Patches for all Virtual Machines are applied"` // Policy title
-	Severity    types.FindingSeverity `json:"severity" example:"low"`                                                                     // Severity
-	Status      types.PolicyStatus    `json:"status" example:"passed"`                                                                    // Status
-	LastChecked int64                 `json:"lastChecked" example:"0"`                                                                    // Last checked
+	ID          string                             `json:"id" example:"azure_cis_v140_7_5"`                                                            // Policy ID
+	Title       string                             `json:"title" example:"7.5 Ensure that the latest OS Patches for all Virtual Machines are applied"` // Policy title
+	Severity    types.FindingSeverity              `json:"severity" example:"low"`                                                                     // Severity
+	Status      types.PolicyStatus                 `json:"status" example:"passed"`                                                                    // Status
+	LastChecked int64                              `json:"lastChecked" example:"0"`                                                                    // Last checked
+	Resources   types.ComplianceResultShortSummary `json:"resources"`
+	Accounts    types.ComplianceResultShortSummary `json:"accounts"`
 }
 
 type BenchmarkTree struct {

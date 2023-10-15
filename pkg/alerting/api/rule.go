@@ -62,7 +62,6 @@ type CreateRuleRequest struct {
 }
 
 type UpdateRuleRequest struct {
-	Id        uint            `json:"id"`
 	EventType *EventType      `json:"event_type"`
 	Scope     *Scope          `json:"scope"`
 	Operator  *OperatorStruct `json:"operator"`

@@ -126,8 +126,6 @@ definitions:
         additionalProperties:
           type: string
         type: object
-      id:
-        type: integer
       method:
         type: string
       url:
@@ -139,8 +137,6 @@ definitions:
         type: integer
       event_type:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType'
-      id:
-        type: integer
       operator:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct'
       scope:
@@ -465,7 +461,7 @@ definitions:
         example: John Doe
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedSource:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedConnection:
     properties:
       connectionID:
         description: Connection ID
@@ -488,6 +484,30 @@ definitions:
         example: true
         type: boolean
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedEntities:
+    properties:
+      connections:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedConnection'
+        type: array
+      resourceCollections:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedResourceCollection'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedResourceCollection:
+    properties:
+      resourceCollectionID:
+        description: Resource Collection ID
+        type: string
+      resourceCollectionName:
+        description: Resource Collection Name
+        type: string
+      status:
+        description: Status
+        example: true
+        type: boolean
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment:
     properties:
       assignedAt:
@@ -497,9 +517,13 @@ definitions:
         description: Benchmark ID
         example: azure_cis_v140
         type: string
-      sourceId:
+      connectionId:
         description: Connection ID
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      resourceCollectionId:
+        description: Resource Collection ID
+        example: example-rc
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary:
@@ -923,6 +947,8 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree:
     properties:
+      accounts:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
       id:
         description: Policy ID
         example: azure_cis_v140_7_5
@@ -931,6 +957,8 @@ definitions:
         description: Last checked
         example: 0
         type: integer
+      resources:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
       severity:
         allOf:
         - $ref: '#/definitions/types.FindingSeverity'
@@ -2374,6 +2402,13 @@ definitions:
     - ComplianceResultINFO
     - ComplianceResultSKIP
     - ComplianceResultERROR
+  types.ComplianceResultShortSummary:
+    properties:
+      failed:
+        type: integer
+      passed:
+        type: integer
+    type: object
   types.ComplianceResultSummary:
     properties:
       alarmCount:
@@ -2607,14 +2642,18 @@ paths:
       summary: List actions
       tags:
       - alerting
-  /alerting/api/v1/action/update:
+  /alerting/api/v1/action/update/{actionId}:
     put:
       description: Retrieving an action by the specified input
       parameters:
+      - description: actionId
+        in: path
+        name: actionId
+        required: true
+        type: string
       - description: Request Body
         in: body
         name: request
-        required: true
         schema:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest'
       responses:
@@ -2704,14 +2743,18 @@ paths:
       summary: List rules
       tags:
       - alerting
-  /alerting/api/v1/rule/update:
+  /alerting/api/v1/rule/update/{ruleId}:
     put:
       description: Retrieving a rule by the specified input
       parameters:
+      - description: ruleId
+        in: path
+        name: ruleId
+        required: true
+        type: string
       - description: Request Body
         in: body
         name: request
-        required: true
         schema:
           $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateRuleRequest'
       responses:
@@ -2972,6 +3015,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - collectionFormat: csv
+        description: Resource Collection
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
       produces:
       - application/json
       responses:
@@ -3000,11 +3050,18 @@ paths:
         name: connectionId
         type: array
       - collectionFormat: csv
-        description: 'Connection group '
+        description: Connection group
         in: query
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       produces:
       - application/json
@@ -3037,9 +3094,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedSource'
-            type: array
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedEntities'
       security:
       - BearerToken: []
       summary: Get benchmark assigned sources
@@ -3396,6 +3451,54 @@ paths:
       security:
       - BearerToken: []
       summary: Get top field by finding count
+      tags:
+      - compliance
+  /compliance/api/v1/findings/{benchmarkId}/accounts:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving the number of findings field count by policies.
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmarkId
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: 'Connection groups to filter by '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
+      security:
+      - BearerToken: []
+      summary: Get findings field count by policies
       tags:
       - compliance
   /compliance/api/v1/insight:

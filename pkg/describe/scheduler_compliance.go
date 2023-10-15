@@ -42,8 +42,8 @@ func (s *Scheduler) scheduleComplianceJob() error {
 	}
 
 	for _, benchmark := range benchmarks {
-
-		var sources []onboardApi.Connection
+		var connections []onboardApi.Connection
+		var resourceCollections []string
 		assignments, err := s.complianceClient.ListAssignmentsByBenchmark(clientCtx, benchmark.ID)
 		if err != nil {
 			ComplianceJobsCount.WithLabelValues("failure").Inc()
@@ -51,28 +51,35 @@ func (s *Scheduler) scheduleComplianceJob() error {
 			return fmt.Errorf("error while listing assignments: %v", err)
 		}
 
-		for _, assignment := range assignments {
+		for _, assignment := range assignments.Connections {
 			if !assignment.Status {
 				continue
 			}
 
-			src, err := s.onboardClient.GetSource(clientCtx, assignment.ConnectionID)
+			connection, err := s.onboardClient.GetSource(clientCtx, assignment.ConnectionID)
 			if err != nil {
 				ComplianceJobsCount.WithLabelValues("failure").Inc()
 				s.logger.Error("error while get source", zap.Error(err))
 				return fmt.Errorf("error while get source: %v", err)
 			}
 
-			if !src.IsEnabled() {
+			if !connection.IsEnabled() {
 				continue
 			}
 
-			sources = append(sources, *src)
+			connections = append(connections, *connection)
+		}
+
+		for _, assignment := range assignments.ResourceCollections {
+			if !assignment.Status {
+				continue
+			}
+			resourceCollections = append(resourceCollections, assignment.ResourceCollectionID)
 		}
 
 		timeAfter := time.Now().Add(time.Duration(-s.complianceIntervalHours) * time.Hour)
 		var nullStringPointer *string = nil
-		for _, src := range sources {
+		for _, src := range connections {
 			connectionID := src.ID.String()
 			jobs, err := s.db.ListComplianceReportsWithFilter(
 				&timeAfter, nil, &connectionID, nil, &benchmark.ID, &nullStringPointer)
@@ -100,16 +107,9 @@ func (s *Scheduler) scheduleComplianceJob() error {
 			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
 		}
 
-		resourceCollections, err := s.inventoryClient.ListResourceCollections(clientCtx)
-		if err != nil {
-			ComplianceJobsCount.WithLabelValues("failure").Inc()
-			s.logger.Error("error while listing resource collections", zap.Error(err))
-			return fmt.Errorf("error while listing resource collections: %v", err)
-		}
-
 		for _, rc := range resourceCollections {
 			rc := rc
-			rcIDPtr := &rc.ID
+			rcIDPtr := &rc
 			connectionID := "all"
 			jobs, err := s.db.ListComplianceReportsWithFilter(
 				&timeAfter, nil, &connectionID, nil, &benchmark.ID, &rcIDPtr)
@@ -124,7 +124,7 @@ func (s *Scheduler) scheduleComplianceJob() error {
 				continue
 			}
 			if len(benchmark.Connectors) == 0 {
-				s.logger.Warn("no connectors found for benchmark - ignoring resource collection", zap.String("benchmark", benchmark.ID), zap.String("resource_collection", rc.ID))
+				s.logger.Warn("no connectors found for benchmark - ignoring resource collection", zap.String("benchmark", benchmark.ID), zap.String("resource_collection", rc))
 				continue
 			}
 			crj := newComplianceReportJob(connectionID, benchmark.Connectors[0], benchmark.ID, rcIDPtr)
@@ -143,7 +143,6 @@ func (s *Scheduler) scheduleComplianceJob() error {
 
 	ComplianceJobsCount.WithLabelValues("successful").Inc()
 	return nil
-
 }
 
 func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interface, crj *ComplianceReportJob) {
