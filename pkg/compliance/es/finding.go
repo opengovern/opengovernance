@@ -211,7 +211,7 @@ type AccountsFindingsBySeverityResponse struct {
 					} `json:"buckets"`
 				} `json:"severity"`
 				LastEvaluation struct {
-					Value int64 `json:"value"`
+					Value float64 `json:"value"`
 				} `json:"last_evaluation"`
 			} `json:"buckets"`
 		} `json:"accounts"`

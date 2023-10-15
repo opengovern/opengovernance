@@ -481,7 +481,7 @@ func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 				Low:      low,
 				Medium:   medium,
 			},
-			LastCheckTime: time.Unix(acc.LastEvaluation.Value, 0),
+			LastCheckTime: time.Unix(int64(acc.LastEvaluation.Value), 0),
 		}
 		response.Accounts = append(response.Accounts, account)
 	}
@@ -502,7 +502,7 @@ func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 //	@Param			connectionGroup	query		[]string						false	"Connection groups to filter by "
 //	@Param			connector		query		[]source.Type					false	"Connector type to filter by"
 //	@Success		200				{object}	api.GetTopFieldResponse
-//	@Router			/compliance/api/v1/findings/{benchmarkId}/accounts [get]
+//	@Router			/compliance/api/v1/findings/{benchmarkId}/services [get]
 func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
