@@ -3499,7 +3499,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieving the number of findings field count by policies.
+      description: Retrieving list of accounts with their security score and severities
+        findings count
       parameters:
       - description: BenchmarkID
         in: path
@@ -3525,13 +3526,6 @@ paths:
         name: connectionGroup
         type: array
       - collectionFormat: csv
-        description: Resource collection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: resourceCollection
-        type: array
-      - collectionFormat: csv
         description: Connector type to filter by
         in: query
         items:
@@ -3551,14 +3545,15 @@ paths:
             $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
       security:
       - BearerToken: []
-      summary: Get findings field count by policies
+      summary: Get accounts findings summaries
       tags:
       - compliance
   /compliance/api/v1/findings/{benchmarkId}/services:
     get:
       consumes:
       - application/json
-      description: Retrieving the number of findings field count by policies.
+      description: Retrieving list of services with their security score and severities
+        findings count
       parameters:
       - description: BenchmarkID
         in: path
@@ -3584,13 +3579,6 @@ paths:
         name: connectionGroup
         type: array
       - collectionFormat: csv
-        description: Resource collection IDs to filter by
-        in: query
-        items:
-          type: string
-        name: resourceCollection
-        type: array
-      - collectionFormat: csv
         description: Connector type to filter by
         in: query
         items:
@@ -3610,7 +3598,7 @@ paths:
             $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
       security:
       - BearerToken: []
-      summary: Get findings field count by policies
+      summary: Get services findings summary
       tags:
       - compliance
   /compliance/api/v1/insight:

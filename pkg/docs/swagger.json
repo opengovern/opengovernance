@@ -1225,7 +1225,7 @@
                         "BearerToken": []
                     }
                 ],
-                "description": "Retrieving the number of findings field count by policies.",
+                "description": "Retrieving list of accounts with their security score and severities findings count",
                 "consumes": [
                     "application/json"
                 ],
@@ -1235,7 +1235,7 @@
                 "tags": [
                     "compliance"
                 ],
-                "summary": "Get findings field count by policies",
+                "summary": "Get accounts findings summaries",
                 "parameters": [
                     {
                         "type": "string",
@@ -1268,16 +1268,6 @@
                         "collectionFormat": "csv",
                         "description": "Connection groups to filter by ",
                         "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Resource collection IDs to filter by",
-                        "name": "resourceCollection",
                         "in": "query"
                     },
                     {
@@ -1313,7 +1303,7 @@
                         "BearerToken": []
                     }
                 ],
-                "description": "Retrieving the number of findings field count by policies.",
+                "description": "Retrieving list of services with their security score and severities findings count",
                 "consumes": [
                     "application/json"
                 ],
@@ -1323,7 +1313,7 @@
                 "tags": [
                     "compliance"
                 ],
-                "summary": "Get findings field count by policies",
+                "summary": "Get services findings summary",
                 "parameters": [
                     {
                         "type": "string",
@@ -1356,16 +1346,6 @@
                         "collectionFormat": "csv",
                         "description": "Connection groups to filter by ",
                         "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Resource collection IDs to filter by",
-                        "name": "resourceCollection",
                         "in": "query"
                     },
                     {

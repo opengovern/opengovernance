@@ -405,12 +405,12 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId			path		string			true	"BenchmarkID"
-//	@Param			count				query		int				false	"Number of outputs"
-//	@Param			connectionId		query		[]string		false	"Connection IDs to filter by"
-//	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
-//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
-//	@Success		200					{object}	api.GetTopFieldResponse
+//	@Param			benchmarkId		path		string			true	"BenchmarkID"
+//	@Param			count			query		int				false	"Number of outputs"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Success		200				{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/accounts [get]
 func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
@@ -509,12 +509,12 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId			path		string			true	"BenchmarkID"
-//	@Param			count				query		int				false	"Number of outputs"
-//	@Param			connectionId		query		[]string		false	"Connection IDs to filter by"
-//	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
-//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
-//	@Success		200					{object}	api.GetTopFieldResponse
+//	@Param			benchmarkId		path		string			true	"BenchmarkID"
+//	@Param			count			query		int				false	"Number of outputs"
+//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
+//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Success		200				{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/services [get]
 func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
