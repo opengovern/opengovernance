@@ -362,8 +362,8 @@ func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 	return &resp, err
 }
 
-func AccountsFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
-	connectors []source.Type, connectionIDs []string, resourceCollections []string,
+func AccountsFindingsSummary(logger *zap.Logger, client kaytu.Client,
+	connectors []source.Type, connectionIDs []string,
 	benchmarkID []string, size int64) (*AccountsFindingsBySeverityResponse, error) {
 	idx := types.FindingsIndex
 	terms := make(map[string]any)
@@ -375,10 +375,6 @@ func AccountsFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
 	}
 	if len(connectors) > 0 {
 		terms["connector"] = connectors
-	}
-	if len(resourceCollections) > 0 {
-		idx = types.ResourceCollectionsFindingsIndex
-		terms["resourceCollection"] = resourceCollections
 	}
 
 	root := map[string]any{}
@@ -440,8 +436,8 @@ func AccountsFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
 	return &resp, err
 }
 
-func ResourceTypesFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
-	connectors []source.Type, connectionIDs []string, resourceCollections []string,
+func ResourceTypesFindingsSummary(logger *zap.Logger, client kaytu.Client,
+	connectors []source.Type, connectionIDs []string,
 	benchmarkID []string, size int64) (*ResourceTypesFindingsBySeverityResponse, error) {
 	idx := types.FindingsIndex
 	terms := make(map[string]any)
@@ -453,10 +449,6 @@ func ResourceTypesFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
 	}
 	if len(connectors) > 0 {
 		terms["connector"] = connectors
-	}
-	if len(resourceCollections) > 0 {
-		idx = types.ResourceCollectionsFindingsIndex
-		terms["resourceCollection"] = resourceCollections
 	}
 
 	root := map[string]any{}
