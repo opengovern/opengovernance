@@ -648,6 +648,13 @@ definitions:
         items:
           type: string
         type: array
+      resourceCollection:
+        description: Resource Collection ID
+        example:
+        - example-rc
+        items:
+          type: string
+        type: array
       resourceID:
         description: Resource unique identifier
         example:
@@ -3127,6 +3134,13 @@ paths:
         name: connectionGroup
         type: array
       - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
+      - collectionFormat: csv
         description: Connector type to filter by
         in: query
         items:
@@ -3202,6 +3216,13 @@ paths:
         name: connectionGroup
         type: array
       - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
+      - collectionFormat: csv
         description: Connector type to filter by
         in: query
         items:
@@ -3254,6 +3275,13 @@ paths:
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       - collectionFormat: csv
         description: Connector type to filter by
@@ -3342,6 +3370,13 @@ paths:
         name: connectionGroup
         type: array
       - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
+      - collectionFormat: csv
         description: Connector type to filter by
         in: query
         items:
@@ -3418,6 +3453,13 @@ paths:
         name: connectionGroup
         type: array
       - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
+      - collectionFormat: csv
         description: Connector type to filter by
         in: query
         items:
@@ -3464,6 +3506,10 @@ paths:
         name: benchmarkId
         required: true
         type: string
+      - description: Number of outputs
+        in: query
+        name: count
+        type: integer
       - collectionFormat: csv
         description: Connection IDs to filter by
         in: query
@@ -3477,6 +3523,72 @@ paths:
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
+      security:
+      - BearerToken: []
+      summary: Get findings field count by policies
+      tags:
+      - compliance
+  /compliance/api/v1/findings/{benchmarkId}/services:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving the number of findings field count by policies.
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmarkId
+        required: true
+        type: string
+      - description: Number of outputs
+        in: query
+        name: count
+        type: integer
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: 'Connection groups to filter by '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       - collectionFormat: csv
         description: Connector type to filter by
@@ -3539,6 +3651,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
       - description: unix seconds for the start time of the trend
         in: query
         name: startTime
@@ -3586,6 +3705,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
       - description: unix seconds for the start time of the trend
         in: query
         name: startTime
@@ -3630,6 +3756,13 @@ paths:
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       - description: unix seconds for the start time of the trend
         in: query
@@ -3697,6 +3830,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
       - description: unix seconds for the start time of the trend
         in: query
         name: startTime
@@ -3744,6 +3884,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
       - description: unix seconds for the start time of the trend
         in: query
         name: startTime
@@ -3788,6 +3935,13 @@ paths:
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       - description: unix seconds for the start time of the trend
         in: query
@@ -4016,6 +4170,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
       - description: timestamp for resource count in epoch seconds
         in: query
         name: endTime
@@ -4081,6 +4242,13 @@ paths:
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       - collectionFormat: csv
         description: Metric IDs
@@ -4608,6 +4776,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
       - description: Minimum number of resources/spend with this tag value, default
           1
         in: query
@@ -4696,6 +4871,13 @@ paths:
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       - description: timestamp for start in epoch seconds
         in: query

@@ -41,9 +41,10 @@ type FetchBenchmarkSummariesByConnectionIDAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchBenchmarkSummariesByConnectionIDAtTime(
-	logger *zap.Logger, client kaytu.Client,
-	benchmarkIDs []string, connectors []source.Type, connectionIDs []string, timeAt time.Time) (map[string]ComplianceEvaluationResult, error) {
+func FetchBenchmarkSummariesByConnectionIDAtTime(logger *zap.Logger, client kaytu.Client,
+	benchmarkIDs []string, connectors []source.Type, connectionIDs []string, resourceCollections []string,
+	timeAt time.Time) (map[string]ComplianceEvaluationResult, error) {
+	idx := types.BenchmarkSummaryIndex
 	request := make(map[string]any)
 	filters := make([]any, 0)
 	filters = append(filters, map[string]any{
@@ -80,6 +81,14 @@ func FetchBenchmarkSummariesByConnectionIDAtTime(
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{
 				"connection_id": connectionIDs,
+			},
+		})
+	}
+	if len(resourceCollections) > 0 {
+		idx = types.ResourceCollectionsBenchmarkSummaryIndex
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{
+				"resource_collection": resourceCollections,
 			},
 		})
 	}
@@ -131,10 +140,10 @@ func FetchBenchmarkSummariesByConnectionIDAtTime(
 		return nil, err
 	}
 
-	logger.Info("FetchBenchmarkSummariesByConnectionIDAtTime", zap.String("query", string(query)), zap.String("index", types.BenchmarkSummaryIndex))
+	logger.Info("FetchBenchmarkSummariesByConnectionIDAtTime", zap.String("query", string(query)), zap.String("index", idx))
 
 	var response FetchBenchmarkSummariesByConnectionIDAtTimeResponse
-	err = client.Search(context.Background(), types.BenchmarkSummaryIndex, string(query), &response)
+	err = client.Search(context.Background(), idx, string(query), &response)
 	if err != nil {
 		return nil, err
 	}
@@ -179,9 +188,8 @@ type FetchBenchmarkSummariesByConnectorAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchBenchmarkSummariesByConnectorAtTime(
-	logger *zap.Logger, client kaytu.Client,
-	benchmarkIDs []string, connectors []source.Type, timeAt time.Time) (map[string]ComplianceEvaluationResult, error) {
+func FetchBenchmarkSummariesByConnectorAtTime(logger *zap.Logger, client kaytu.Client, benchmarkIDs []string, connectors []source.Type, resourceCollections []string, timeAt time.Time) (map[string]ComplianceEvaluationResult, error) {
+	idx := types.BenchmarkSummaryIndex
 	request := make(map[string]any)
 	filters := make([]any, 0)
 	filters = append(filters, map[string]any{
@@ -211,6 +219,14 @@ func FetchBenchmarkSummariesByConnectorAtTime(
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{
 				"connector_types": connectorsStr,
+			},
+		})
+	}
+	if len(resourceCollections) > 0 {
+		idx = types.ResourceCollectionsBenchmarkSummaryIndex
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{
+				"resource_collection": resourceCollections,
 			},
 		})
 	}
@@ -262,10 +278,10 @@ func FetchBenchmarkSummariesByConnectorAtTime(
 		return nil, err
 	}
 
-	logger.Info("FetchBenchmarkSummariesByConnectionIDAtTime", zap.String("query", string(query)), zap.String("index", types.BenchmarkSummaryIndex))
+	logger.Info("FetchBenchmarkSummariesByConnectionIDAtTime", zap.String("query", string(query)), zap.String("index", idx))
 
 	var response FetchBenchmarkSummariesByConnectorAtTimeResponse
-	err = client.Search(context.Background(), types.BenchmarkSummaryIndex, string(query), &response)
+	err = client.Search(context.Background(), idx, string(query), &response)
 	if err != nil {
 		return nil, err
 	}
@@ -288,13 +304,15 @@ func FetchBenchmarkSummariesByConnectorAtTime(
 	return benchmarkSummaries, nil
 }
 
-func FetchBenchmarkSummariesAtTime(
-	logger *zap.Logger, client kaytu.Client,
-	benchmarkIDs []string, connectors []source.Type, connectionIDs []string, timeAt time.Time) (map[string]ComplianceEvaluationResult, error) {
+func FetchBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
+	benchmarkIDs []string,
+	connectors []source.Type, connectionIDs []string, resourceCollections []string,
+	timeAt time.Time) (map[string]ComplianceEvaluationResult, error) {
 	if len(connectionIDs) > 0 {
-		return FetchBenchmarkSummariesByConnectionIDAtTime(logger, client, benchmarkIDs, connectors, connectionIDs, timeAt)
+		return FetchBenchmarkSummariesByConnectionIDAtTime(logger, client,
+			benchmarkIDs, connectors, connectionIDs, resourceCollections, timeAt)
 	}
-	return FetchBenchmarkSummariesByConnectorAtTime(logger, client, benchmarkIDs, connectors, timeAt)
+	return FetchBenchmarkSummariesByConnectorAtTime(logger, client, benchmarkIDs, connectors, resourceCollections, timeAt)
 }
 
 type FetchBenchmarkSummaryTrendByConnectionIDResponse struct {
@@ -325,9 +343,8 @@ type FetchBenchmarkSummaryTrendByConnectionIDResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchBenchmarkSummaryTrendByConnectionID(
-	logger *zap.Logger, client kaytu.Client,
-	benchmarkID []string, connectors []source.Type, connectionID []string, from, to time.Time, datapointCount int) (map[string]map[int]ComplianceEvaluationResult, error) {
+func FetchBenchmarkSummaryTrendByConnectionID(logger *zap.Logger, client kaytu.Client, benchmarkID []string, connectors []source.Type, connectionID, resourceCollections []string, from, to time.Time, datapointCount int) (map[string]map[int]ComplianceEvaluationResult, error) {
+	idx := types.BenchmarkSummaryIndex
 	request := make(map[string]any)
 	filters := make([]any, 0)
 	filters = append(filters, map[string]any{
@@ -365,6 +382,14 @@ func FetchBenchmarkSummaryTrendByConnectionID(
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{
 				"connection_id": connectionID,
+			},
+		})
+	}
+	if len(resourceCollections) > 0 {
+		idx = types.ResourceCollectionsBenchmarkSummaryIndex
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{
+				"resource_collection": resourceCollections,
 			},
 		})
 	}
@@ -433,10 +458,10 @@ func FetchBenchmarkSummaryTrendByConnectionID(
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("FetchBenchmarkSummaryTrendByConnectionID", zap.String("query", string(query)), zap.String("index", types.BenchmarkSummaryIndex))
+	logger.Info("FetchBenchmarkSummaryTrendByConnectionID", zap.String("query", string(query)), zap.String("index", idx))
 
 	var response FetchBenchmarkSummaryTrendByConnectionIDResponse
-	if err := client.Search(context.Background(), types.BenchmarkSummaryIndex, string(query), &response); err != nil {
+	if err := client.Search(context.Background(), idx, string(query), &response); err != nil {
 		return nil, err
 	}
 
@@ -494,9 +519,8 @@ type FetchBenchmarkSummaryTrendByConnectorResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchBenchmarkSummaryTrendByConnector(
-	logger *zap.Logger, client kaytu.Client,
-	benchmarkID []string, connectors []source.Type, from, to time.Time, datapointCount int) (map[string]map[int]ComplianceEvaluationResult, error) {
+func FetchBenchmarkSummaryTrendByConnector(logger *zap.Logger, client kaytu.Client, benchmarkID []string, connectors []source.Type, resourceCollections []string, from, to time.Time, datapointCount int) (map[string]map[int]ComplianceEvaluationResult, error) {
+	idx := types.BenchmarkSummaryIndex
 	request := make(map[string]any)
 	filters := make([]any, 0)
 	filters = append(filters, map[string]any{
@@ -527,6 +551,14 @@ func FetchBenchmarkSummaryTrendByConnector(
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{
 				"connector_types": connectorsStr,
+			},
+		})
+	}
+	if len(resourceCollections) > 0 {
+		idx = types.ResourceCollectionsBenchmarkSummaryIndex
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{
+				"resource_collection": resourceCollections,
 			},
 		})
 	}
@@ -595,10 +627,10 @@ func FetchBenchmarkSummaryTrendByConnector(
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("FetchBenchmarkSummaryTrendByConnectionID", zap.String("query", string(query)), zap.String("index", types.BenchmarkSummaryIndex))
+	logger.Info("FetchBenchmarkSummaryTrendByConnectionID", zap.String("query", string(query)), zap.String("index", idx))
 
 	var response FetchBenchmarkSummaryTrendByConnectorResponse
-	if err := client.Search(context.Background(), types.BenchmarkSummaryIndex, string(query), &response); err != nil {
+	if err := client.Search(context.Background(), idx, string(query), &response); err != nil {
 		return nil, err
 	}
 
@@ -628,13 +660,16 @@ func FetchBenchmarkSummaryTrendByConnector(
 	return result, nil
 }
 
-func FetchBenchmarkSummaryTrend(
-	logger *zap.Logger, client kaytu.Client,
-	benchmarkID []string, connectors []source.Type, connectionID []string, from, to time.Time, datapointCount int) (map[string]map[int]ComplianceEvaluationResult, error) {
+func FetchBenchmarkSummaryTrend(logger *zap.Logger, client kaytu.Client,
+	benchmarkID []string,
+	connectors []source.Type, connectionID, resourceCollections []string,
+	from, to time.Time, datapointCount int) (map[string]map[int]ComplianceEvaluationResult, error) {
 	if len(connectionID) > 0 {
-		return FetchBenchmarkSummaryTrendByConnectionID(logger, client, benchmarkID, connectors, connectionID, from, to, datapointCount)
+		return FetchBenchmarkSummaryTrendByConnectionID(logger, client,
+			benchmarkID, connectors, connectionID, resourceCollections, from, to, datapointCount)
 	}
-	return FetchBenchmarkSummaryTrendByConnector(logger, client, benchmarkID, connectors, from, to, datapointCount)
+	return FetchBenchmarkSummaryTrendByConnector(logger, client,
+		benchmarkID, connectors, resourceCollections, from, to, datapointCount)
 }
 
 type BenchmarkSummaryQueryResponse struct {

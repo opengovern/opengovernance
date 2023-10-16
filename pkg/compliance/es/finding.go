@@ -67,13 +67,15 @@ func FindingsQuery(client kaytu.Client,
 	resourceIDs []string,
 	provider []source.Type,
 	connectionID []string,
+	resourceCollections []string,
 	benchmarkID []string,
 	policyID []string,
 	severity []string,
 	sort []map[string]any,
 	activeOnly bool,
-	from, size int) (*FindingsQueryResponse, error) {
-
+	from int,
+	size int) (*FindingsQueryResponse, error) {
+	idx := types.FindingsIndex
 	res := make(map[string]any)
 	var filters []any
 
@@ -113,6 +115,13 @@ func FindingsQuery(client kaytu.Client,
 		})
 	}
 
+	if len(resourceCollections) > 0 {
+		idx = types.ResourceCollectionsFindingsIndex
+		filters = append(filters, map[string]any{
+			"terms": map[string]any{"resourceCollection": resourceCollections},
+		})
+	}
+
 	if activeOnly {
 		filters = append(filters, map[string]any{
 			"terms": map[string]any{"stateActive": []string{"true"}},
@@ -144,10 +153,9 @@ func FindingsQuery(client kaytu.Client,
 
 	var resp FindingsQueryResponse
 	if isStack {
-		err = client.SearchWithTrackTotalHits(context.Background(), types.StackFindingsIndex, string(b), nil, &resp, true)
-	} else {
-		err = client.SearchWithTrackTotalHits(context.Background(), types.FindingsIndex, string(b), nil, &resp, true)
+		idx = types.StackFindingsIndex
 	}
+	err = client.SearchWithTrackTotalHits(context.Background(), idx, string(b), nil, &resp, true)
 	return &resp, err
 }
 
@@ -272,10 +280,10 @@ type FindingsFieldCountByPolicyResponse struct {
 }
 
 func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
-	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string,
+	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, resourceCollections []string,
 	benchmarkID []string, policyID []string, severity []types.FindingSeverity, size int) (*FindingsTopFieldResponse, error) {
 	terms := make(map[string]any)
-
+	idx := types.FindingsIndex
 	if len(benchmarkID) > 0 {
 		terms["benchmarkID"] = benchmarkID
 	}
@@ -298,6 +306,11 @@ func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 
 	if len(connectors) > 0 {
 		terms["connector"] = connectors
+	}
+
+	if len(resourceCollections) > 0 {
+		idx = types.ResourceCollectionsFindingsIndex
+		terms["resourceCollection"] = resourceCollections
 	}
 
 	terms["stateActive"] = []bool{true}
@@ -343,15 +356,16 @@ func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 		return nil, err
 	}
 
-	logger.Info("FindingsTopFieldQuery", zap.String("query", string(queryBytes)), zap.String("index", types.FindingsIndex))
+	logger.Info("FindingsTopFieldQuery", zap.String("query", string(queryBytes)), zap.String("index", idx))
 	var resp FindingsTopFieldResponse
-	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
+	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
 	return &resp, err
 }
 
 func AccountsFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
-	connectors []source.Type, connectionIDs []string, benchmarkID []string,
-	size int64) (*AccountsFindingsBySeverityResponse, error) {
+	connectors []source.Type, connectionIDs []string, resourceCollections []string,
+	benchmarkID []string, size int64) (*AccountsFindingsBySeverityResponse, error) {
+	idx := types.FindingsIndex
 	terms := make(map[string]any)
 	if len(benchmarkID) > 0 {
 		terms["benchmarkID"] = benchmarkID
@@ -361,6 +375,10 @@ func AccountsFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
 	}
 	if len(connectors) > 0 {
 		terms["connector"] = connectors
+	}
+	if len(resourceCollections) > 0 {
+		idx = types.ResourceCollectionsFindingsIndex
+		terms["resourceCollection"] = resourceCollections
 	}
 
 	root := map[string]any{}
@@ -416,15 +434,16 @@ func AccountsFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
 		return nil, err
 	}
 
-	logger.Info("AccountsFindingsBySeverity", zap.String("query", string(queryBytes)), zap.String("index", types.FindingsIndex))
+	logger.Info("AccountsFindingsBySeverity", zap.String("query", string(queryBytes)), zap.String("index", idx))
 	var resp AccountsFindingsBySeverityResponse
-	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
+	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
 	return &resp, err
 }
 
 func ResourceTypesFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
-	connectors []source.Type, connectionIDs []string, benchmarkID []string,
-	size int64) (*ResourceTypesFindingsBySeverityResponse, error) {
+	connectors []source.Type, connectionIDs []string, resourceCollections []string,
+	benchmarkID []string, size int64) (*ResourceTypesFindingsBySeverityResponse, error) {
+	idx := types.FindingsIndex
 	terms := make(map[string]any)
 	if len(benchmarkID) > 0 {
 		terms["benchmarkID"] = benchmarkID
@@ -434,6 +453,10 @@ func ResourceTypesFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
 	}
 	if len(connectors) > 0 {
 		terms["connector"] = connectors
+	}
+	if len(resourceCollections) > 0 {
+		idx = types.ResourceCollectionsFindingsIndex
+		terms["resourceCollection"] = resourceCollections
 	}
 
 	root := map[string]any{}
@@ -484,17 +507,16 @@ func ResourceTypesFindingsBySeverity(logger *zap.Logger, client kaytu.Client,
 		return nil, err
 	}
 
-	logger.Info("ResourceTypesFindingsBySeverity", zap.String("query", string(queryBytes)), zap.String("index", types.FindingsIndex))
+	logger.Info("ResourceTypesFindingsBySeverity", zap.String("query", string(queryBytes)), zap.String("index", idx))
 	var resp ResourceTypesFindingsBySeverityResponse
-	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
+	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
 	return &resp, err
 }
 
 func FindingsFieldCountByPolicy(logger *zap.Logger, client kaytu.Client,
-	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string,
-	benchmarkID []string, policyID []string, severity []types.FindingSeverity) (*FindingsFieldCountByPolicyResponse, error) {
+	field string, connectors []source.Type, resourceTypeID []string, connectionIDs []string, resourceCollections []string, benchmarkID []string, policyID []string, severity []types.FindingSeverity) (*FindingsFieldCountByPolicyResponse, error) {
 	terms := make(map[string]any)
-
+	idx := types.FindingsIndex
 	if len(benchmarkID) > 0 {
 		terms["benchmarkID"] = benchmarkID
 	}
@@ -517,6 +539,11 @@ func FindingsFieldCountByPolicy(logger *zap.Logger, client kaytu.Client,
 
 	if len(connectors) > 0 {
 		terms["connector"] = connectors
+	}
+
+	if len(resourceCollections) > 0 {
+		idx = types.ResourceCollectionsFindingsIndex
+		terms["resourceCollection"] = resourceCollections
 	}
 
 	terms["stateActive"] = []bool{true}
@@ -570,9 +597,9 @@ func FindingsFieldCountByPolicy(logger *zap.Logger, client kaytu.Client,
 		return nil, err
 	}
 
-	logger.Info("FindingsFieldCountByPolicy", zap.String("query", string(queryBytes)), zap.String("index", types.FindingsIndex))
+	logger.Info("FindingsFieldCountByPolicy", zap.String("query", string(queryBytes)), zap.String("index", idx))
 	var resp FindingsFieldCountByPolicyResponse
-	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
+	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
 	return &resp, err
 }
 

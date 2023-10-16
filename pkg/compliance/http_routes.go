@@ -49,9 +49,11 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 
 	benchmarks := v1.Group("/benchmarks")
+
 	benchmarks.GET("", httpserver.AuthorizeHandler(h.ListBenchmarks, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id", httpserver.AuthorizeHandler(h.GetBenchmark, authApi.ViewerRole))
 	benchmarks.GET("/policies/:policy_id", httpserver.AuthorizeHandler(h.GetPolicy, authApi.ViewerRole))
+
 	benchmarks.GET("/summary", httpserver.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/trend", httpserver.AuthorizeHandler(h.GetBenchmarkTrend, authApi.ViewerRole))
@@ -197,10 +199,10 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	}
 	span1.End()
 
-	res, err := es.FindingsQuery(
-		h.client, req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
-		benchmarkIDs, req.Filters.PolicyID, req.Filters.Severity,
-		sorts, req.Filters.ActiveOnly, lastIdx, req.Page.Size)
+	res, err := es.FindingsQuery(h.client,
+		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
+		req.Filters.ResourceCollection, benchmarkIDs, req.Filters.PolicyID,
+		req.Filters.Severity, sorts, req.Filters.ActiveOnly, lastIdx, req.Page.Size)
 	if err != nil {
 		return err
 	}
@@ -220,14 +222,15 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId		path		string							true	"BenchmarkID"
-//	@Param			field			path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service)
-//	@Param			count			path		int								true	"Count"
-//	@Param			connectionId	query		[]string						false	"Connection IDs to filter by"
-//	@Param			connectionGroup	query		[]string						false	"Connection groups to filter by "
-//	@Param			connector		query		[]source.Type					false	"Connector type to filter by"
-//	@Param			severities		query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by"
-//	@Success		200				{object}	api.GetTopFieldResponse
+//	@Param			benchmarkId			path		string							true	"BenchmarkID"
+//	@Param			field				path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service)
+//	@Param			count				path		int								true	"Count"
+//	@Param			connectionId		query		[]string						false	"Connection IDs to filter by"
+//	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
+//	@Param			resourceCollection	query		[]string						false	"Resource collection IDs to filter by"
+//	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
+//	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by"
+//	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/top/{count} [get]
 func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
@@ -249,6 +252,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 	severities := kaytuTypes.ParseFindingSeverities(ctx.QueryParams()["severities"])
@@ -268,10 +272,7 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 	span1.End()
 
 	var response api.GetTopFieldResponse
-	res, err := es.FindingsTopFieldQuery(
-		h.logger, h.client, esField,
-		connectors, nil, connectionIDs,
-		benchmarkIDs, nil, severities, esCount)
+	res, err := es.FindingsTopFieldQuery(h.logger, h.client, esField, connectors, nil, connectionIDs, resourceCollections, benchmarkIDs, nil, severities, esCount)
 	if err != nil {
 		return err
 	}
@@ -334,13 +335,14 @@ func (h *HttpHandler) GetTopFieldByFindingCount(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId		path		string							true	"BenchmarkID"
-//	@Param			field			path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service)
-//	@Param			connectionId	query		[]string						false	"Connection IDs to filter by"
-//	@Param			connectionGroup	query		[]string						false	"Connection groups to filter by "
-//	@Param			connector		query		[]source.Type					false	"Connector type to filter by"
-//	@Param			severities		query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by"
-//	@Success		200				{object}	api.GetTopFieldResponse
+//	@Param			benchmarkId			path		string							true	"BenchmarkID"
+//	@Param			field				path		string							true	"Field"	Enums(resourceType,connectionID,resourceID,service)
+//	@Param			connectionId		query		[]string						false	"Connection IDs to filter by"
+//	@Param			connectionGroup		query		[]string						false	"Connection groups to filter by "
+//	@Param			resourceCollection	query		[]string						false	"Resource collection IDs to filter by"
+//	@Param			connector			query		[]source.Type					false	"Connector type to filter by"
+//	@Param			severities			query		[]kaytuTypes.FindingSeverity	false	"Severities to filter by"
+//	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/{field}/count [get]
 func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
@@ -356,6 +358,8 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
 	severities := kaytuTypes.ParseFindingSeverities(ctx.QueryParams()["severities"])
@@ -375,10 +379,7 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 	span1.End()
 
 	var response api.GetFieldCountResponse
-	res, err := es.FindingsFieldCountByPolicy(
-		h.logger, h.client, esField,
-		connectors, nil, connectionIDs,
-		benchmarkIDs, nil, severities)
+	res, err := es.FindingsFieldCountByPolicy(h.logger, h.client, esField, connectors, nil, connectionIDs, resourceCollections, benchmarkIDs, nil, severities)
 	if err != nil {
 		return err
 	}
@@ -404,12 +405,13 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId		path		string			true	"BenchmarkID"
-//	@Param			count			query		int				false	"Number of outputs"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Success		200				{object}	api.GetTopFieldResponse
+//	@Param			benchmarkId			path		string			true	"BenchmarkID"
+//	@Param			count				query		int				false	"Number of outputs"
+//	@Param			connectionId		query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
+//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
+//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
+//	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/accounts [get]
 func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
@@ -430,6 +432,7 @@ func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 	}
 
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	//tracer :
 	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmarkTreeIDs")
@@ -445,7 +448,7 @@ func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 	))
 	span1.End()
 	var response api.GetAccountsFindingsBySeverityResponse
-	res, err := es.AccountsFindingsBySeverity(h.logger, h.client, connectors, connectionIDs, benchmarkIDs, count)
+	res, err := es.AccountsFindingsBySeverity(h.logger, h.client, connectors, connectionIDs, resourceCollections, benchmarkIDs, count)
 	if err != nil {
 		return err
 	}
@@ -508,12 +511,13 @@ func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId		path		string			true	"BenchmarkID"
-//	@Param			count			query		int				false	"Number of outputs"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Success		200				{object}	api.GetTopFieldResponse
+//	@Param			benchmarkId			path		string			true	"BenchmarkID"
+//	@Param			count				query		int				false	"Number of outputs"
+//	@Param			connectionId		query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
+//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
+//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
+//	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/services [get]
 func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
@@ -534,6 +538,7 @@ func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
 	}
 
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	//tracer :
 	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmarkTreeIDs")
@@ -549,7 +554,7 @@ func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
 	))
 	span1.End()
 	var response api.GetServicesFindingsBySeverityResponse
-	res, err := es.ResourceTypesFindingsBySeverity(h.logger, h.client, connectors, connectionIDs, benchmarkIDs, count)
+	res, err := es.ResourceTypesFindingsBySeverity(h.logger, h.client, connectors, connectionIDs, resourceCollections, benchmarkIDs, count)
 	if err != nil {
 		return err
 	}
@@ -648,11 +653,12 @@ func (h *HttpHandler) GetPolicyRemediation(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			timeAt			query		int				false	"timestamp for values in epoch seconds"
-//	@Success		200				{object}	api.GetBenchmarksSummaryResponse
+//	@Param			connectionId		query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
+//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
+//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
+//	@Param			timeAt				query		int				false	"timestamp for values in epoch seconds"
+//	@Success		200					{object}	api.GetBenchmarksSummaryResponse
 //	@Router			/compliance/api/v1/benchmarks/summary [get]
 func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
@@ -664,6 +670,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 	}
 
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	timeAt := time.Now()
 	if timeAtStr := ctx.QueryParam("timeAt"); timeAtStr != "" {
 		timeAtInt, err := strconv.ParseInt(timeAtStr, 10, 64)
@@ -691,7 +698,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		benchmarkIDs = append(benchmarkIDs, b.ID)
 	}
 
-	summariesAtTime, err := es.FetchBenchmarkSummariesAtTime(h.logger, h.client, benchmarkIDs, connectors, connectionIDs, timeAt)
+	summariesAtTime, err := es.FetchBenchmarkSummariesAtTime(h.logger, h.client, benchmarkIDs, connectors, connectionIDs, resourceCollections, timeAt)
 	if err != nil {
 		h.logger.Error("failed to fetch benchmark summaries", zap.Error(err))
 		return err
@@ -745,12 +752,13 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id	path		string			true	"Benchmark ID"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			timeAt			query		int				false	"timestamp for values in epoch seconds"
-//	@Success		200				{object}	api.BenchmarkEvaluationSummary
+//	@Param			benchmark_id		path		string			true	"Benchmark ID"
+//	@Param			connectionId		query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
+//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
+//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
+//	@Param			timeAt				query		int				false	"timestamp for values in epoch seconds"
+//	@Success		200					{object}	api.BenchmarkEvaluationSummary
 //	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/summary [get]
 func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
@@ -762,6 +770,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	}
 
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	timeAt := time.Now()
 	if timeAtStr := ctx.QueryParam("timeAt"); timeAtStr != "" {
 		timeAtInt, err := strconv.ParseInt(timeAtStr, 10, 64)
@@ -806,7 +815,7 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
 	}
 
-	summariesAtTime, err := es.FetchBenchmarkSummariesAtTime(h.logger, h.client, []string{benchmarkID}, connectors, connectionIDs, timeAt)
+	summariesAtTime, err := es.FetchBenchmarkSummariesAtTime(h.logger, h.client, []string{benchmarkID}, connectors, connectionIDs, resourceCollections, timeAt)
 	if err != nil {
 		return err
 	}
@@ -975,13 +984,14 @@ func GetBenchmarkTree(ctx context.Context, db db.Database, client kaytu.Client, 
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmark_id	path		string			true	"Benchmark ID"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			startTime		query		int				false	"timestamp for start of the chart in epoch seconds"
-//	@Param			endTime			query		int				false	"timestamp for end of the chart in epoch seconds"
-//	@Success		200				{object}	[]api.BenchmarkTrendDatapoint
+//	@Param			benchmark_id		path		string			true	"Benchmark ID"
+//	@Param			connectionId		query		[]string		false	"Connection IDs to filter by"
+//	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
+//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
+//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
+//	@Param			startTime			query		int				false	"timestamp for start of the chart in epoch seconds"
+//	@Param			endTime				query		int				false	"timestamp for end of the chart in epoch seconds"
+//	@Success		200					{object}	[]api.BenchmarkTrendDatapoint
 //	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/trend [get]
 func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
@@ -992,6 +1002,7 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connection IDs")
 	}
 	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	endTime := time.Now()
 	if endTimeStr := ctx.QueryParam("timeAt"); endTimeStr != "" {
 		endTimeInt, err := strconv.ParseInt(endTimeStr, 10, 64)
@@ -1053,7 +1064,8 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 		datapointCount = 1
 	}
 
-	evaluationAcrossTime, err := es.FetchBenchmarkSummaryTrend(h.logger, h.client, []string{benchmarkID}, connectors, connectionIDs, startTime, endTime, datapointCount)
+	evaluationAcrossTime, err := es.FetchBenchmarkSummaryTrend(h.logger, h.client,
+		[]string{benchmarkID}, connectors, connectionIDs, resourceCollections, startTime, endTime, datapointCount)
 	if err != nil {
 		return err
 	}
@@ -1880,13 +1892,14 @@ func (h *HttpHandler) GetInsightMetadata(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
-//	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
-//	@Param			connector		query		[]source.Type	false	"filter insights by connector"
-//	@Param			connectionId	query		[]string		false	"filter the result by source id"
-//	@Param			connectionGroup	query		[]string		false	"filter the result by connection group "
-//	@Param			startTime		query		int				false	"unix seconds for the start time of the trend"
-//	@Param			endTime			query		int				false	"unix seconds for the end time of the trend"
-//	@Success		200				{object}	[]api.Insight
+//	@Param			tag					query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			connector			query		[]source.Type	false	"filter insights by connector"
+//	@Param			connectionId		query		[]string		false	"filter the result by source id"
+//	@Param			connectionGroup		query		[]string		false	"filter the result by connection group "
+//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
+//	@Param			startTime			query		int				false	"unix seconds for the start time of the trend"
+//	@Param			endTime				query		int				false	"unix seconds for the end time of the trend"
+//	@Success		200					{object}	[]api.Insight
 //	@Router			/compliance/api/v1/insight [get]
 func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
@@ -1895,6 +1908,7 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
@@ -1929,12 +1943,12 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 		insightIDsList = append(insightIDsList, insightRow.ID)
 	}
 
-	insightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), connectors, connectionIDs, insightIDsList, &endTime)
+	insightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), connectors, connectionIDs, resourceCollections, insightIDsList, &endTime)
 	if err != nil {
 		return err
 	}
 
-	oldInsightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), connectors, connectionIDs, insightIDsList, &startTime)
+	oldInsightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), connectors, connectionIDs, resourceCollections, insightIDsList, &startTime)
 	if err != nil {
 		h.logger.Warn("failed to get old insight results", zap.Error(err))
 		oldInsightIdToResults = make(map[uint][]insight.InsightResource)
@@ -1973,13 +1987,13 @@ func (h *HttpHandler) ListInsights(ctx echo.Context) error {
 	return ctx.JSON(200, result)
 }
 
-func (h *HttpHandler) getInsightApiRes(ctx echo.Context, insightRow *db.Insight, connectionIDs []string, startTime, endTime time.Time) (*api.Insight, error) {
-	insightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, &endTime)
+func (h *HttpHandler) getInsightApiRes(ctx echo.Context, insightRow *db.Insight, connectionIDs, resourceCollections []string, startTime, endTime time.Time) (*api.Insight, error) {
+	insightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, resourceCollections, insightRow.ID, &endTime)
 	if err != nil {
 		return nil, err
 	}
 
-	oldInsightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, &startTime)
+	oldInsightResults, err := h.inventoryClient.GetInsightResult(httpclient.FromEchoContext(ctx), connectionIDs, resourceCollections, insightRow.ID, &startTime)
 	if err != nil {
 		h.logger.Warn("failed to get old insight results", zap.Error(err))
 		oldInsightResults = make([]insight.InsightResource, 0)
@@ -2111,12 +2125,13 @@ func (h *HttpHandler) getInsightApiRes(ctx echo.Context, insightRow *db.Insight,
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
-//	@Param			insightId		path		string		true	"Insight ID"
-//	@Param			connectionId	query		[]string	false	"filter the result by source id"
-//	@param			connectionGroup	query		[]string	false	"filter the result by connection group"
-//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
-//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
-//	@Success		200				{object}	api.Insight
+//	@Param			insightId			path		string		true	"Insight ID"
+//	@Param			connectionId		query		[]string	false	"filter the result by source id"
+//	@param			connectionGroup		query		[]string	false	"filter the result by connection group"
+//	@Param			resourceCollection	query		[]string	false	"Resource collection IDs to filter by"
+//	@Param			startTime			query		int			false	"unix seconds for the start time of the trend"
+//	@Param			endTime				query		int			false	"unix seconds for the end time of the trend"
+//	@Success		200					{object}	api.Insight
 //	@Router			/compliance/api/v1/insight/{insightId} [get]
 func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
@@ -2127,6 +2142,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
@@ -2156,7 +2172,7 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	}
 	span1.End()
 
-	apiRes, err := h.getInsightApiRes(ctx, insightRow, connectionIDs, startTime, endTime)
+	apiRes, err := h.getInsightApiRes(ctx, insightRow, connectionIDs, resourceCollections, startTime, endTime)
 	if err != nil {
 		return err
 	}
@@ -2164,8 +2180,8 @@ func (h *HttpHandler) GetInsight(ctx echo.Context) error {
 	return ctx.JSON(200, apiRes)
 }
 
-func (h *HttpHandler) getInsightTrendApiRes(ctx echo.Context, insightRow *db.Insight, connectionIDs []string, startTime, endTime *time.Time, datapointCount *int) ([]api.InsightTrendDatapoint, error) {
-	timeAtToInsightResults, err := h.inventoryClient.GetInsightTrendResults(httpclient.FromEchoContext(ctx), connectionIDs, insightRow.ID, startTime, endTime)
+func (h *HttpHandler) getInsightTrendApiRes(ctx echo.Context, insightRow *db.Insight, connectionIDs, resourceCollections []string, startTime, endTime *time.Time, datapointCount *int) ([]api.InsightTrendDatapoint, error) {
+	timeAtToInsightResults, err := h.inventoryClient.GetInsightTrendResults(httpclient.FromEchoContext(ctx), connectionIDs, resourceCollections, insightRow.ID, startTime, endTime)
 	if err != nil {
 		return nil, err
 	}
@@ -2203,13 +2219,14 @@ func (h *HttpHandler) getInsightTrendApiRes(ctx echo.Context, insightRow *db.Ins
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
-//	@Param			insightId		path		string		true	"Insight ID"
-//	@Param			connectionId	query		[]string	false	"filter the result by source id"
-//	@param			connectionGroup	query		[]string	false	"filter the result by connection group"
-//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
-//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
-//	@Param			datapointCount	query		int			false	"number of datapoints to return"
-//	@Success		200				{object}	[]api.InsightTrendDatapoint
+//	@Param			insightId			path		string		true	"Insight ID"
+//	@Param			connectionId		query		[]string	false	"filter the result by source id"
+//	@param			connectionGroup		query		[]string	false	"filter the result by connection group"
+//	@Param			resourceCollection	query		[]string	false	"Resource collection IDs to filter by"
+//	@Param			startTime			query		int			false	"unix seconds for the start time of the trend"
+//	@Param			endTime				query		int			false	"unix seconds for the end time of the trend"
+//	@Param			datapointCount		query		int			false	"number of datapoints to return"
+//	@Success		200					{object}	[]api.InsightTrendDatapoint
 //	@Router			/compliance/api/v1/insight/{insightId}/trend [get]
 func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	insightId, err := strconv.ParseUint(ctx.Param("insightId"), 10, 64)
@@ -2220,6 +2237,7 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	var startTime *time.Time
 	if ctx.QueryParam("startTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
@@ -2262,7 +2280,7 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 	))
 	span1.End()
 
-	result, err := h.getInsightTrendApiRes(ctx, insightRow, connectionIDs, startTime, endTime, datapointCount)
+	result, err := h.getInsightTrendApiRes(ctx, insightRow, connectionIDs, resourceCollections, startTime, endTime, datapointCount)
 	if err != nil {
 		return err
 	}
@@ -2279,13 +2297,14 @@ func (h *HttpHandler) GetInsightTrend(ctx echo.Context) error {
 //	@Tags			insights
 //	@Accept			json
 //	@Produce		json
-//	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
-//	@Param			connector		query		[]source.Type	false	"filter insights by connector"
-//	@Param			connectionId	query		[]string		false	"filter the result by source id"
-//	@param			connectionGroup	query		[]string		false	"filter the result by connection group"
-//	@Param			startTime		query		int				false	"unix seconds for the start time of the trend"
-//	@Param			endTime			query		int				false	"unix seconds for the end time of the trend"
-//	@Success		200				{object}	[]api.InsightGroup
+//	@Param			tag					query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			connector			query		[]source.Type	false	"filter insights by connector"
+//	@Param			connectionId		query		[]string		false	"filter the result by source id"
+//	@param			connectionGroup		query		[]string		false	"filter the result by connection group"
+//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
+//	@Param			startTime			query		int				false	"unix seconds for the start time of the trend"
+//	@Param			endTime				query		int				false	"unix seconds for the end time of the trend"
+//	@Success		200					{object}	[]api.InsightGroup
 //	@Router			/compliance/api/v1/insight/group [get]
 func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 	tagMap := model.TagStringsToTagMap(httpserver.QueryArrayParam(ctx, "tag"))
@@ -2294,6 +2313,7 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
@@ -2339,12 +2359,12 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 		insightIDsList = append(insightIDsList, insightID)
 	}
 
-	insightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), nil, connectionIDs, insightIDsList, &endTime)
+	insightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), nil, connectionIDs, resourceCollections, insightIDsList, &endTime)
 	if err != nil {
 		return err
 	}
 
-	oldInsightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), nil, connectionIDs, insightIDsList, &startTime)
+	oldInsightIdToResults, err := h.inventoryClient.ListInsightResults(httpclient.FromEchoContext(ctx), nil, connectionIDs, resourceCollections, insightIDsList, &startTime)
 	if err != nil {
 		h.logger.Warn("failed to get old insight results", zap.Error(err))
 		oldInsightIdToResults = make(map[uint][]insight.InsightResource)
@@ -2406,12 +2426,13 @@ func (h *HttpHandler) ListInsightGroups(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
-//	@Param			insightGroupId	path		string		true	"Insight Group ID"
-//	@Param			connectionId	query		[]string	false	"filter the result by source id"
-//	@param			connectionGroup	query		[]string	false	"filter the result by connection group"
-//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
-//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
-//	@Success		200				{object}	api.InsightGroup
+//	@Param			insightGroupId		path		string		true	"Insight Group ID"
+//	@Param			connectionId		query		[]string	false	"filter the result by source id"
+//	@param			connectionGroup		query		[]string	false	"filter the result by connection group"
+//	@Param			resourceCollection	query		[]string	false	"Resource collection IDs to filter by"
+//	@Param			startTime			query		int			false	"unix seconds for the start time of the trend"
+//	@Param			endTime				query		int			false	"unix seconds for the end time of the trend"
+//	@Success		200					{object}	api.InsightGroup
 //	@Router			/compliance/api/v1/insight/group/{insightGroupId} [get]
 func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 	insightGroupId, err := strconv.ParseUint(ctx.Param("insightGroupId"), 10, 64)
@@ -2422,6 +2443,7 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	endTime := time.Now()
 	if ctx.QueryParam("endTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("endTime"), 10, 64)
@@ -2454,7 +2476,7 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 	apiRes.Insights = make([]api.Insight, 0, len(insightGroupRow.Insights))
 	for _, insightRow := range insightGroupRow.Insights {
 		localInsightRow := insightRow
-		insightApiRes, err := h.getInsightApiRes(ctx, &localInsightRow, connectionIDs, startTime, endTime)
+		insightApiRes, err := h.getInsightApiRes(ctx, &localInsightRow, connectionIDs, resourceCollections, startTime, endTime)
 		if err != nil {
 			h.logger.Error("failed to get insight api res", zap.Error(err),
 				zap.Uint("insight id", insightRow.ID), zap.Uint("insight group id", uint(insightGroupId)))
@@ -2483,13 +2505,14 @@ func (h *HttpHandler) GetInsightGroup(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			insights
 //	@Produce		json
-//	@Param			insightGroupId	path		string		true	"Insight Group ID"
-//	@Param			connectionId	query		[]string	false	"filter the result by source id"
-//	@param			connectionGroup	query		[]string	false	"filter the result by connection group"
-//	@Param			startTime		query		int			false	"unix seconds for the start time of the trend"
-//	@Param			endTime			query		int			false	"unix seconds for the end time of the trend"
-//	@Param			datapointCount	query		int			false	"number of datapoints to return"
-//	@Success		200				{object}	[]api.InsightTrendDatapoint
+//	@Param			insightGroupId		path		string		true	"Insight Group ID"
+//	@Param			connectionId		query		[]string	false	"filter the result by source id"
+//	@param			connectionGroup		query		[]string	false	"filter the result by connection group"
+//	@Param			resourceCollection	query		[]string	false	"Resource collection IDs to filter by"
+//	@Param			startTime			query		int			false	"unix seconds for the start time of the trend"
+//	@Param			endTime				query		int			false	"unix seconds for the end time of the trend"
+//	@Param			datapointCount		query		int			false	"number of datapoints to return"
+//	@Success		200					{object}	[]api.InsightTrendDatapoint
 //	@Router			/compliance/api/v1/insight/group/{insightGroupId}/trend [get]
 func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 	insightGroupId, err := strconv.ParseUint(ctx.Param("insightGroupId"), 10, 64)
@@ -2500,6 +2523,7 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	var startTime *time.Time
 	if ctx.QueryParam("startTime") != "" {
 		t, err := strconv.ParseInt(ctx.QueryParam("startTime"), 10, 64)
@@ -2542,7 +2566,7 @@ func (h *HttpHandler) GetInsightGroupTrend(ctx echo.Context) error {
 	dateToResultMap := make(map[int]api.InsightTrendDatapoint)
 	for _, insightRow := range insightGroupRow.Insights {
 		localInsightRow := insightRow
-		insightTrendApiRes, err := h.getInsightTrendApiRes(ctx, &localInsightRow, connectionIDs, startTime, endTime, datapointCount)
+		insightTrendApiRes, err := h.getInsightTrendApiRes(ctx, &localInsightRow, connectionIDs, resourceCollections, startTime, endTime, datapointCount)
 		if err != nil {
 			h.logger.Error("failed to get insight trend api res", zap.Error(err),
 				zap.Uint("insight id", insightRow.ID), zap.Uint("insight group id", uint(insightGroupId)))
