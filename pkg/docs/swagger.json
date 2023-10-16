@@ -5638,12 +5638,12 @@
         "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType": {
             "type": "string",
             "enum": [
-                "GreaterThan",
-                "LessThan",
-                "LessThanOrEqual",
-                "GreaterThanOrEqual",
-                "Equal",
-                "DoesNotEqual"
+                "\u003e",
+                "\u003c",
+                "\u003c=",
+                "\u003e=",
+                "=",
+                "!="
             ],
             "x-enum-varnames": [
                 "OperatorGreaterThan",

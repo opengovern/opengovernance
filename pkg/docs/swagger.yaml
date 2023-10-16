@@ -82,12 +82,12 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType:
     enum:
-    - GreaterThan
-    - LessThan
-    - LessThanOrEqual
-    - GreaterThanOrEqual
-    - Equal
-    - DoesNotEqual
+    - '>'
+    - <
+    - <=
+    - '>='
+    - =
+    - '!='
     type: string
     x-enum-varnames:
     - OperatorGreaterThan
