@@ -87,8 +87,8 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	findings.POST("", httpserver.AuthorizeHandler(h.GetFindings, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/top/:count", httpserver.AuthorizeHandler(h.GetTopFieldByFindingCount, authApi.ViewerRole))
 	findings.GET("/:benchmarkId/:field/count", httpserver.AuthorizeHandler(h.GetFindingsFieldCountByPolicies, authApi.ViewerRole))
-	findings.GET("/:benchmarkId/accounts", httpserver.AuthorizeHandler(h.GetAccountsFindingsBySeverity, authApi.ViewerRole))
-	findings.GET("/:benchmarkId/services", httpserver.AuthorizeHandler(h.GetServicesFindingsBySeverity, authApi.ViewerRole))
+	findings.GET("/:benchmarkId/accounts", httpserver.AuthorizeHandler(h.GetAccountsFindingsSummary, authApi.ViewerRole))
+	findings.GET("/:benchmarkId/services", httpserver.AuthorizeHandler(h.GetServicesFindingsSummary, authApi.ViewerRole))
 
 	ai := v1.Group("/ai")
 	ai.POST("/policy/:policyID/remediation", httpserver.AuthorizeHandler(h.GetPolicyRemediation, authApi.ViewerRole))
@@ -397,10 +397,10 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetAccountsFindingsBySeverity godoc
+// GetAccountsFindingsSummary godoc
 //
-//	@Summary		Get findings field count by policies
-//	@Description	Retrieving the number of findings field count by policies.
+//	@Summary		Get accounts findings summaries
+//	@Description	Retrieving list of accounts with their security score and severities findings count
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Accept			json
@@ -409,11 +409,10 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 //	@Param			count				query		int				false	"Number of outputs"
 //	@Param			connectionId		query		[]string		false	"Connection IDs to filter by"
 //	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
-//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
 //	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/accounts [get]
-func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
+func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
@@ -432,7 +431,6 @@ func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 	}
 
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	//tracer :
 	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmarkTreeIDs")
@@ -448,7 +446,7 @@ func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 	))
 	span1.End()
 	var response api.GetAccountsFindingsBySeverityResponse
-	res, err := es.AccountsFindingsBySeverity(h.logger, h.client, connectors, connectionIDs, resourceCollections, benchmarkIDs, count)
+	res, err := es.AccountsFindingsSummary(h.logger, h.client, connectors, connectionIDs, benchmarkIDs, count)
 	if err != nil {
 		return err
 	}
@@ -503,10 +501,10 @@ func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetServicesFindingsBySeverity godoc
+// GetServicesFindingsSummary godoc
 //
-//	@Summary		Get findings field count by policies
-//	@Description	Retrieving the number of findings field count by policies.
+//	@Summary		Get services findings summary
+//	@Description	Retrieving list of services with their security score and severities findings count
 //	@Security		BearerToken
 //	@Tags			compliance
 //	@Accept			json
@@ -515,11 +513,10 @@ func (h *HttpHandler) GetAccountsFindingsBySeverity(ctx echo.Context) error {
 //	@Param			count				query		int				false	"Number of outputs"
 //	@Param			connectionId		query		[]string		false	"Connection IDs to filter by"
 //	@Param			connectionGroup		query		[]string		false	"Connection groups to filter by "
-//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
 //	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
 //	@Success		200					{object}	api.GetTopFieldResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/services [get]
-func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
+func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
@@ -538,7 +535,6 @@ func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
 	}
 
 	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	//tracer :
 	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
 	span1.SetName("new_GetBenchmarkTreeIDs")
@@ -554,7 +550,7 @@ func (h *HttpHandler) GetServicesFindingsBySeverity(ctx echo.Context) error {
 	))
 	span1.End()
 	var response api.GetServicesFindingsBySeverityResponse
-	res, err := es.ResourceTypesFindingsBySeverity(h.logger, h.client, connectors, connectionIDs, resourceCollections, benchmarkIDs, count)
+	res, err := es.ResourceTypesFindingsSummary(h.logger, h.client, connectors, connectionIDs, benchmarkIDs, count)
 	if err != nil {
 		return err
 	}
