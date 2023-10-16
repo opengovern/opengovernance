@@ -627,7 +627,10 @@ func (h *HttpHandler) getConnectorTypesFromConnectionIDs(ctx echo.Context, conne
 	return connectorTypes, nil
 }
 
-func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context, metricIDs []string, metricType analyticsDB.MetricType, tagMap map[string][]string, connectorTypes []source.Type, connectionIDs []string, minCount int, timeAt time.Time) (int, []inventoryApi.Metric, error) {
+func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context,
+	metricIDs []string, metricType analyticsDB.MetricType, tagMap map[string][]string,
+	connectorTypes []source.Type, connectionIDs, resourceCollections []string,
+	minCount int, timeAt time.Time) (int, []inventoryApi.Metric, error) {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	// tracer :
 	_, span := tracer.Start(ctx, "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
@@ -648,9 +651,9 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context, metricIDs []stri
 
 	var metricIndexed map[string]int
 	if len(connectionIDs) > 0 {
-		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, timeAt, filteredMetricIDs, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, filteredMetricIDs, connectorTypes, connectionIDs, resourceCollections, timeAt, EsFetchPageSize)
 	} else {
-		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, timeAt, filteredMetricIDs, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, filteredMetricIDs, connectorTypes, resourceCollections, timeAt, EsFetchPageSize)
 	}
 	if err != nil {
 		return 0, nil, err
@@ -680,19 +683,20 @@ func (h *HttpHandler) ListAnalyticsMetrics(ctx context.Context, metricIDs []stri
 //	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
-//	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
-//	@Param			metricType		query		string			false	"Metric type, default: assets"	Enums(assets, spend)
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			metricIDs		query		[]string		false	"Metric IDs"
-//	@Param			endTime			query		int64			false	"timestamp for resource count in epoch seconds"
-//	@Param			startTime		query		int64			false	"timestamp for resource count change comparison in epoch seconds"
-//	@Param			minCount		query		int				false	"Minimum number of resources with this tag value, default 1"
-//	@Param			sortBy			query		string			false	"Sort by field - default is count"	Enums(name,count,growth,growth_rate)
-//	@Param			pageSize		query		int				false	"page size - default is 20"
-//	@Param			pageNumber		query		int				false	"page number - default is 1"
-//	@Success		200				{object}	inventoryApi.ListMetricsResponse
+//	@Param			tag					query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			metricType			query		string			false	"Metric type, default: assets"	Enums(assets, spend)
+//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId		query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup		query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
+//	@Param			metricIDs			query		[]string		false	"Metric IDs"
+//	@Param			endTime				query		int64			false	"timestamp for resource count in epoch seconds"
+//	@Param			startTime			query		int64			false	"timestamp for resource count change comparison in epoch seconds"
+//	@Param			minCount			query		int				false	"Minimum number of resources with this tag value, default 1"
+//	@Param			sortBy				query		string			false	"Sort by field - default is count"	Enums(name,count,growth,growth_rate)
+//	@Param			pageSize			query		int				false	"page size - default is 20"
+//	@Param			pageNumber			query		int				false	"page number - default is 1"
+//	@Success		200					{object}	inventoryApi.ListMetricsResponse
 //	@Router			/inventory/api/v2/analytics/metric [get]
 func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	var err error
@@ -709,6 +713,7 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 	if len(connectionIDs) > MaxConns {
 		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 	metricIDs := httpserver.QueryArrayParam(ctx, "metricIDs")
 
 	connectorTypes, err = h.getConnectorTypesFromConnectionIDs(ctx, connectorTypes, connectionIDs)
@@ -752,7 +757,8 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, "invalid sortBy value")
 	}
 
-	totalCount, apiMetrics, err := h.ListAnalyticsMetrics(ctx.Request().Context(), metricIDs, metricType, tagMap, connectorTypes, connectionIDs, minCount, endTime)
+	totalCount, apiMetrics, err := h.ListAnalyticsMetrics(ctx.Request().Context(),
+		metricIDs, metricType, tagMap, connectorTypes, connectionIDs, resourceCollections, minCount, endTime)
 	if err != nil {
 		return err
 	}
@@ -762,7 +768,8 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 		apiMetricsMap[apiMetric.ID] = apiMetric
 	}
 
-	totalOldCount, oldApiMetrics, err := h.ListAnalyticsMetrics(ctx.Request().Context(), metricIDs, metricType, tagMap, connectorTypes, connectionIDs, 0, startTime)
+	totalOldCount, oldApiMetrics, err := h.ListAnalyticsMetrics(ctx.Request().Context(),
+		metricIDs, metricType, tagMap, connectorTypes, connectionIDs, resourceCollections, 0, startTime)
 	if err != nil {
 		return err
 	}
@@ -865,14 +872,15 @@ func (h *HttpHandler) ListAnalyticsMetricsHandler(ctx echo.Context) error {
 //	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
-//	@Param			connector		query		[]string	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			minCount		query		int			false	"Minimum number of resources/spend with this tag value, default 1"
-//	@Param			startTime		query		int64		false	"Start time in unix timestamp format, default now - 1 month"
-//	@Param			endTime			query		int64		false	"End time in unix timestamp format, default now"
-//	@Param			metricType		query		string		false	"Metric type, default: assets"	Enums(assets, spend)
-//	@Success		200				{object}	map[string][]string
+//	@Param			connector			query		[]string	false	"Connector type to filter by"
+//	@Param			connectionId		query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup		query		[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			resourceCollection	query		[]string	false	"Resource collection IDs to filter by"
+//	@Param			minCount			query		int			false	"Minimum number of resources/spend with this tag value, default 1"
+//	@Param			startTime			query		int64		false	"Start time in unix timestamp format, default now - 1 month"
+//	@Param			endTime				query		int64		false	"End time in unix timestamp format, default now"
+//	@Param			metricType			query		string		false	"Metric type, default: assets"	Enums(assets, spend)
+//	@Success		200					{object}	map[string][]string
 //	@Router			/inventory/api/v2/analytics/tag [get]
 func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
@@ -906,6 +914,10 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 	if metricType == "" {
 		metricType = analyticsDB.MetricTypeAssets
 	}
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+	if len(resourceCollections) > 0 && metricType == analyticsDB.MetricTypeSpend {
+		return ctx.JSON(http.StatusBadRequest, "ResourceCollections are not supported for spend metrics")
+	}
 
 	aDB := analyticsDB.NewDatabase(h.db.orm)
 	fmt.Println("connectorTypes", connectorTypes)
@@ -927,9 +939,9 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 
 	if metricType == analyticsDB.MetricTypeAssets {
 		if len(connectionIDs) > 0 {
-			metricCount, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, endTime, nil, EsFetchPageSize)
+			metricCount, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, nil, connectorTypes, connectionIDs, resourceCollections, endTime, EsFetchPageSize)
 		} else {
-			metricCount, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, endTime, nil, EsFetchPageSize)
+			metricCount, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, nil, connectorTypes, resourceCollections, endTime, EsFetchPageSize)
 		}
 		if err != nil {
 			return err
@@ -990,16 +1002,17 @@ func (h *HttpHandler) ListAnalyticsTags(ctx echo.Context) error {
 //	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
-//	@Param			tag				query		[]string		false	"Key-Value tags in key=value format to filter by"
-//	@Param			metricType		query		string			false	"Metric type, default: assets"	Enums(assets, spend)
-//	@Param			ids				query		[]string		false	"Metric IDs to filter by"
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
-//	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
-//	@Param			datapointCount	query		string			false	"maximum number of datapoints to return, default is 30"
-//	@Success		200				{object}	[]inventoryApi.ResourceTypeTrendDatapoint
+//	@Param			tag					query		[]string		false	"Key-Value tags in key=value format to filter by"
+//	@Param			metricType			query		string			false	"Metric type, default: assets"	Enums(assets, spend)
+//	@Param			ids					query		[]string		false	"Metric IDs to filter by"
+//	@Param			connector			query		[]source.Type	false	"Connector type to filter by"
+//	@Param			connectionId		query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup		query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
+//	@Param			startTime			query		int64			false	"timestamp for start in epoch seconds"
+//	@Param			endTime				query		int64			false	"timestamp for end in epoch seconds"
+//	@Param			datapointCount		query		string			false	"maximum number of datapoints to return, default is 30"
+//	@Success		200					{object}	[]inventoryApi.ResourceTypeTrendDatapoint
 //	@Router			/inventory/api/v2/analytics/trend [get]
 func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
@@ -1017,6 +1030,8 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 	if len(connectionIDs) > MaxConns {
 		return echo.NewHTTPError(http.StatusBadRequest, "too many connections")
 	}
+
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 
 	endTimeStr := ctx.QueryParam("endTime")
 	endTime := time.Now()
@@ -1079,12 +1094,12 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		esDatapointCount = 1
 	}
 	if len(connectionIDs) != 0 {
-		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(h.client, connectionIDs, metricIDs, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(h.client, connectionIDs, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
 	} else {
-		timeToCountMap, err = es.FetchConnectorMetricTrendSummaryPage(h.client, connectorTypes, metricIDs, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectorMetricTrendSummaryPage(h.client, connectorTypes, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1115,15 +1130,16 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 //	@Tags			analytics
 //	@Accept			json
 //	@Produce		json
-//	@Param			key				path		string			true	"Tag key"
-//	@Param			metricType		query		string			false	"Metric type, default: assets"	Enums(assets, spend)
-//	@Param			top				query		int				true	"How many top values to return default is 5"
-//	@Param			connector		query		[]source.Type	false	"Connector types to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			endTime			query		int64			false	"timestamp for resource count in epoch seconds"
-//	@Param			startTime		query		int64			false	"timestamp for resource count change comparison in epoch seconds"
-//	@Success		200				{object}	inventoryApi.ListResourceTypeCompositionResponse
+//	@Param			key					path		string			true	"Tag key"
+//	@Param			metricType			query		string			false	"Metric type, default: assets"	Enums(assets, spend)
+//	@Param			top					query		int				true	"How many top values to return default is 5"
+//	@Param			connector			query		[]source.Type	false	"Connector types to filter by"
+//	@Param			connectionId		query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
+//	@Param			connectionGroup		query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
+//	@Param			resourceCollection	query		[]string		false	"Resource collection IDs to filter by"
+//	@Param			endTime				query		int64			false	"timestamp for resource count in epoch seconds"
+//	@Param			startTime			query		int64			false	"timestamp for resource count change comparison in epoch seconds"
+//	@Success		200					{object}	inventoryApi.ListResourceTypeCompositionResponse
 //	@Router			/inventory/api/v2/analytics/composition/{key} [get]
 func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 	aDB := analyticsDB.NewDatabase(h.db.orm)
@@ -1155,6 +1171,8 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 	if len(connectionIDs) > MaxConns {
 		return ctx.JSON(http.StatusBadRequest, "too many connections")
 	}
+
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 
 	endTime := time.Now()
 	if endTimeStr := ctx.QueryParam("endTime"); endTimeStr != "" {
@@ -1195,9 +1213,9 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 
 	var metricIndexed map[string]int
 	if len(connectionIDs) > 0 {
-		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, endTime, metricsIDs, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, metricsIDs, connectorTypes, connectionIDs, resourceCollections, endTime, EsFetchPageSize)
 	} else {
-		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, endTime, metricsIDs, EsFetchPageSize)
+		metricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, metricsIDs, connectorTypes, resourceCollections, endTime, EsFetchPageSize)
 	}
 	if err != nil {
 		return err
@@ -1205,9 +1223,9 @@ func (h *HttpHandler) ListAnalyticsComposition(ctx echo.Context) error {
 
 	var oldMetricIndexed map[string]int
 	if len(connectionIDs) > 0 {
-		oldMetricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, connectorTypes, connectionIDs, startTime, metricsIDs, EsFetchPageSize)
+		oldMetricIndexed, err = es.FetchConnectionAnalyticMetricCountAtTime(h.client, metricsIDs, connectorTypes, connectionIDs, resourceCollections, startTime, EsFetchPageSize)
 	} else {
-		oldMetricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, connectorTypes, startTime, metricsIDs, EsFetchPageSize)
+		oldMetricIndexed, err = es.FetchConnectorAnalyticMetricCountAtTime(h.client, metricsIDs, connectorTypes, resourceCollections, startTime, EsFetchPageSize)
 	}
 	if err != nil {
 		return err
@@ -2761,6 +2779,8 @@ func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 	}
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
 
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+
 	insightIdListStr := httpserver.QueryArrayParam(ctx, "insightId")
 	if len(insightIdListStr) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "insight id is required")
@@ -2776,15 +2796,15 @@ func (h *HttpHandler) ListInsightResults(ctx echo.Context) error {
 
 	var insightValues map[uint][]insight.InsightResource
 	if timeStr != "" {
-		insightValues, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), connectors, connectionIDs, insightIdList, true)
+		insightValues, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), connectors, connectionIDs, resourceCollections, insightIdList, true)
 	} else {
-		insightValues, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), connectors, connectionIDs, insightIdList, false)
+		insightValues, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), connectors, connectionIDs, resourceCollections, insightIdList, false)
 	}
 	if err != nil {
 		return err
 	}
 
-	firstAvailable, err := es.FetchInsightValueAfter(h.client, time.Unix(timeAt, 0), connectors, connectionIDs, insightIdList)
+	firstAvailable, err := es.FetchInsightValueAfter(h.client, time.Unix(timeAt, 0), connectors, connectionIDs, resourceCollections, insightIdList)
 	if err != nil {
 		return err
 	}
@@ -2817,17 +2837,19 @@ func (h *HttpHandler) GetInsightResult(ctx echo.Context) error {
 		connectionIDs = nil
 	}
 
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
+
 	var insightResults map[uint][]insight.InsightResource
 	if timeStr != "" {
-		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), nil, connectionIDs, []uint{uint(insightId)}, true)
+		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), nil, connectionIDs, resourceCollections, []uint{uint(insightId)}, true)
 	} else {
-		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), nil, connectionIDs, []uint{uint(insightId)}, false)
+		insightResults, err = es.FetchInsightValueAtTime(h.client, time.Unix(timeAt, 0), nil, connectionIDs, resourceCollections, []uint{uint(insightId)}, false)
 	}
 	if err != nil {
 		return err
 	}
 
-	firstAvailable, err := es.FetchInsightValueAfter(h.client, time.Unix(timeAt, 0), nil, connectionIDs, []uint{uint(insightId)})
+	firstAvailable, err := es.FetchInsightValueAfter(h.client, time.Unix(timeAt, 0), nil, connectionIDs, resourceCollections, []uint{uint(insightId)})
 	if err != nil {
 		return err
 	}
@@ -2871,9 +2893,10 @@ func (h *HttpHandler) GetInsightTrendResults(ctx echo.Context) error {
 	}
 
 	connectionIDs := httpserver.QueryArrayParam(ctx, "connectionId")
+	resourceCollections := httpserver.QueryArrayParam(ctx, "resourceCollection")
 
 	dataPointCount := int(endTime.Sub(startTime).Hours() / 24)
-	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(h.client, startTime, endTime, dataPointCount, nil, connectionIDs, []uint{uint(insightId)})
+	insightResults, err := es.FetchInsightAggregatedPerQueryValuesBetweenTimes(h.client, startTime, endTime, dataPointCount, nil, connectionIDs, resourceCollections, []uint{uint(insightId)})
 	if err != nil {
 		return err
 	}

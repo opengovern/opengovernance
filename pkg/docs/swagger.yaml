@@ -461,7 +461,7 @@ definitions:
         example: John Doe
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedSource:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedConnection:
     properties:
       connectionID:
         description: Connection ID
@@ -484,6 +484,30 @@ definitions:
         example: true
         type: boolean
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedEntities:
+    properties:
+      connections:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedConnection'
+        type: array
+      resourceCollections:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedResourceCollection'
+        type: array
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedResourceCollection:
+    properties:
+      resourceCollectionID:
+        description: Resource Collection ID
+        type: string
+      resourceCollectionName:
+        description: Resource Collection Name
+        type: string
+      status:
+        description: Status
+        example: true
+        type: boolean
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignment:
     properties:
       assignedAt:
@@ -493,9 +517,13 @@ definitions:
         description: Benchmark ID
         example: azure_cis_v140
         type: string
-      sourceId:
+      connectionId:
         description: Connection ID
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      resourceCollectionId:
+        description: Resource Collection ID
+        example: example-rc
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary:
@@ -617,6 +645,13 @@ definitions:
         description: Policy ID
         example:
         - azure_cis_v140_7_5
+        items:
+          type: string
+        type: array
+      resourceCollection:
+        description: Resource Collection ID
+        example:
+        - example-rc
         items:
           type: string
         type: array
@@ -919,6 +954,8 @@ definitions:
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree:
     properties:
+      accounts:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
       id:
         description: Policy ID
         example: azure_cis_v140_7_5
@@ -927,6 +964,8 @@ definitions:
         description: Last checked
         example: 0
         type: integer
+      resources:
+        $ref: '#/definitions/types.ComplianceResultShortSummary'
       severity:
         allOf:
         - $ref: '#/definitions/types.FindingSeverity'
@@ -2370,6 +2409,13 @@ definitions:
     - ComplianceResultINFO
     - ComplianceResultSKIP
     - ComplianceResultERROR
+  types.ComplianceResultShortSummary:
+    properties:
+      failed:
+        type: integer
+      passed:
+        type: integer
+    type: object
   types.ComplianceResultSummary:
     properties:
       alarmCount:
@@ -2976,6 +3022,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - collectionFormat: csv
+        description: Resource Collection
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
       produces:
       - application/json
       responses:
@@ -3004,11 +3057,18 @@ paths:
         name: connectionId
         type: array
       - collectionFormat: csv
-        description: 'Connection group '
+        description: Connection group
         in: query
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       produces:
       - application/json
@@ -3041,9 +3101,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedSource'
-            type: array
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedEntities'
       security:
       - BearerToken: []
       summary: Get benchmark assigned sources
@@ -3074,6 +3132,13 @@ paths:
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       - collectionFormat: csv
         description: Connector type to filter by
@@ -3151,6 +3216,13 @@ paths:
         name: connectionGroup
         type: array
       - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
+      - collectionFormat: csv
         description: Connector type to filter by
         in: query
         items:
@@ -3203,6 +3275,13 @@ paths:
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       - collectionFormat: csv
         description: Connector type to filter by
@@ -3291,6 +3370,13 @@ paths:
         name: connectionGroup
         type: array
       - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
+      - collectionFormat: csv
         description: Connector type to filter by
         in: query
         items:
@@ -3367,6 +3453,13 @@ paths:
         name: connectionGroup
         type: array
       - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
+      - collectionFormat: csv
         description: Connector type to filter by
         in: query
         items:
@@ -3400,6 +3493,112 @@ paths:
       security:
       - BearerToken: []
       summary: Get top field by finding count
+      tags:
+      - compliance
+  /compliance/api/v1/findings/{benchmarkId}/accounts:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving list of accounts with their security score and severities
+        findings count
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmarkId
+        required: true
+        type: string
+      - description: Number of outputs
+        in: query
+        name: count
+        type: integer
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: 'Connection groups to filter by '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
+      security:
+      - BearerToken: []
+      summary: Get accounts findings summaries
+      tags:
+      - compliance
+  /compliance/api/v1/findings/{benchmarkId}/services:
+    get:
+      consumes:
+      - application/json
+      description: Retrieving list of services with their security score and severities
+        findings count
+      parameters:
+      - description: BenchmarkID
+        in: path
+        name: benchmarkId
+        required: true
+        type: string
+      - description: Number of outputs
+        in: query
+        name: count
+        type: integer
+      - collectionFormat: csv
+        description: Connection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: connectionId
+        type: array
+      - collectionFormat: csv
+        description: 'Connection groups to filter by '
+        in: query
+        items:
+          type: string
+        name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Connector type to filter by
+        in: query
+        items:
+          enum:
+          - ""
+          - AWS
+          - Azure
+          type: string
+        name: connector
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
+      security:
+      - BearerToken: []
+      summary: Get services findings summary
       tags:
       - compliance
   /compliance/api/v1/insight:
@@ -3439,6 +3638,13 @@ paths:
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       - description: unix seconds for the start time of the trend
         in: query
@@ -3487,6 +3693,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
       - description: unix seconds for the start time of the trend
         in: query
         name: startTime
@@ -3531,6 +3744,13 @@ paths:
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       - description: unix seconds for the start time of the trend
         in: query
@@ -3598,6 +3818,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
       - description: unix seconds for the start time of the trend
         in: query
         name: startTime
@@ -3645,6 +3872,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
       - description: unix seconds for the start time of the trend
         in: query
         name: startTime
@@ -3689,6 +3923,13 @@ paths:
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       - description: unix seconds for the start time of the trend
         in: query
@@ -3917,6 +4158,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
       - description: timestamp for resource count in epoch seconds
         in: query
         name: endTime
@@ -3982,6 +4230,13 @@ paths:
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       - collectionFormat: csv
         description: Metric IDs
@@ -4509,6 +4764,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
+        type: array
       - description: Minimum number of resources/spend with this tag value, default
           1
         in: query
@@ -4597,6 +4859,13 @@ paths:
         items:
           type: string
         name: connectionGroup
+        type: array
+      - collectionFormat: csv
+        description: Resource collection IDs to filter by
+        in: query
+        items:
+          type: string
+        name: resourceCollection
         type: array
       - description: timestamp for start in epoch seconds
         in: query

@@ -8,12 +8,13 @@ import (
 )
 
 type BenchmarkAssignment struct {
-	BenchmarkId  string    `json:"benchmarkId" example:"azure_cis_v140"`                    // Benchmark ID
-	ConnectionId string    `json:"sourceId" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
-	AssignedAt   time.Time `json:"assignedAt"`                                              // Unix timestamp
+	BenchmarkId          string    `json:"benchmarkId" example:"azure_cis_v140"`                        // Benchmark ID
+	ConnectionId         *string   `json:"connectionId" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
+	ResourceCollectionId *string   `json:"resourceCollectionId" example:"example-rc"`                   // Resource Collection ID
+	AssignedAt           time.Time `json:"assignedAt"`                                                  // Unix timestamp
 }
 
-type BenchmarkAssignedSource struct {
+type BenchmarkAssignedConnection struct {
 	ConnectionID           string      `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
 	ProviderConnectionID   string      `json:"providerConnectionID" example:"1283192749"`                   // Provider Connection ID
 	ProviderConnectionName string      `json:"providerConnectionName"`                                      // Provider Connection Name
@@ -21,16 +22,28 @@ type BenchmarkAssignedSource struct {
 	Status                 bool        `json:"status" example:"true"`                                       // Status
 }
 
+type BenchmarkAssignedResourceCollection struct {
+	ResourceCollectionID   string `json:"resourceCollectionID"`   // Resource Collection ID
+	ResourceCollectionName string `json:"resourceCollectionName"` // Resource Collection Name
+	Status                 bool   `json:"status" example:"true"`  // Status
+}
+
+type BenchmarkAssignedEntities struct {
+	Connections         []BenchmarkAssignedConnection         `json:"connections"`
+	ResourceCollections []BenchmarkAssignedResourceCollection `json:"resourceCollections"`
+}
+
 type FindingFilters struct {
-	Connector      []source.Type            `json:"connector" example:"Azure"`                                                                                    // Clout Provider
-	ResourceID     []string                 `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"` // Resource unique identifier
-	ResourceTypeID []string                 `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`  // Resource type
-	ConnectionID   []string                 `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`                                                  // Connection ID
-	BenchmarkID    []string                 `json:"benchmarkID" example:"azure_cis_v140"`                                                                         // Benchmark ID
-	PolicyID       []string                 `json:"policyID" example:"azure_cis_v140_7_5"`                                                                        // Policy ID
-	Severity       []string                 `json:"severity" example:"low"`                                                                                       // Severity
-	Status         []types.ComplianceResult `json:"status" example:"alarm"`                                                                                       // Compliance result status
-	ActiveOnly     bool                     `json:"activeOnly"`
+	Connector          []source.Type            `json:"connector" example:"Azure"`                                                                                    // Clout Provider
+	ResourceID         []string                 `json:"resourceID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1"` // Resource unique identifier
+	ResourceTypeID     []string                 `json:"resourceTypeID" example:"/subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines"`  // Resource type
+	ConnectionID       []string                 `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`                                                  // Connection ID
+	ResourceCollection []string                 `json:"resourceCollection" example:"example-rc"`                                                                      // Resource Collection ID
+	BenchmarkID        []string                 `json:"benchmarkID" example:"azure_cis_v140"`                                                                         // Benchmark ID
+	PolicyID           []string                 `json:"policyID" example:"azure_cis_v140_7_5"`                                                                        // Policy ID
+	Severity           []string                 `json:"severity" example:"low"`                                                                                       // Severity
+	Status             []types.ComplianceResult `json:"status" example:"alarm"`                                                                                       // Compliance result status
+	ActiveOnly         bool                     `json:"activeOnly"`
 }
 
 type FindingResponseFilters struct {
@@ -123,6 +136,39 @@ type GetFieldCountResponse struct {
 	} `json:"policies"`
 }
 
+type AccountsFindingsBySeverity struct {
+	AccountName     string  `json:"accountName"`
+	AccountId       string  `json:"accountId"`
+	SecurityScore   float64 `json:"securityScore"`
+	SeveritiesCount struct {
+		Critical int `json:"critical"`
+		High     int `json:"high"`
+		Low      int `json:"low"`
+		Medium   int `json:"medium"`
+	}
+	LastCheckTime time.Time `json:"lastCheckTime"`
+}
+
+type GetAccountsFindingsBySeverityResponse struct {
+	Accounts []AccountsFindingsBySeverity `json:"accounts"`
+}
+
+type ServiceFindingsBySeverity struct {
+	ServiceName     string  `json:"serviceName"`
+	ServiceLabel    string  `json:"serviceLabel"`
+	SecurityScore   float64 `json:"securityScore"`
+	SeveritiesCount struct {
+		Critical int `json:"critical"`
+		High     int `json:"high"`
+		Low      int `json:"low"`
+		Medium   int `json:"medium"`
+	}
+}
+
+type GetServicesFindingsBySeverityResponse struct {
+	Services []ServiceFindingsBySeverity `json:"services"`
+}
+
 type GetFindingsResponse struct {
 	Findings   []types.Finding `json:"findings"`
 	TotalCount int64           `json:"totalCount" example:"100"`
@@ -166,11 +212,13 @@ type BenchmarkResultTrend struct {
 }
 
 type PolicyTree struct {
-	ID          string                `json:"id" example:"azure_cis_v140_7_5"`                                                            // Policy ID
-	Title       string                `json:"title" example:"7.5 Ensure that the latest OS Patches for all Virtual Machines are applied"` // Policy title
-	Severity    types.FindingSeverity `json:"severity" example:"low"`                                                                     // Severity
-	Status      types.PolicyStatus    `json:"status" example:"passed"`                                                                    // Status
-	LastChecked int64                 `json:"lastChecked" example:"0"`                                                                    // Last checked
+	ID          string                             `json:"id" example:"azure_cis_v140_7_5"`                                                            // Policy ID
+	Title       string                             `json:"title" example:"7.5 Ensure that the latest OS Patches for all Virtual Machines are applied"` // Policy title
+	Severity    types.FindingSeverity              `json:"severity" example:"low"`                                                                     // Severity
+	Status      types.PolicyStatus                 `json:"status" example:"passed"`                                                                    // Status
+	LastChecked int64                              `json:"lastChecked" example:"0"`                                                                    // Last checked
+	Resources   types.ComplianceResultShortSummary `json:"resources"`
+	Accounts    types.ComplianceResultShortSummary `json:"accounts"`
 }
 
 type BenchmarkTree struct {

@@ -62,7 +62,7 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.PUT("/describe/trigger/:connection_id", httpserver.AuthorizeHandler(h.TriggerPerConnectionDescribeJob, apiAuth.AdminRole))
 	v1.PUT("/describe/trigger", httpserver.AuthorizeHandler(h.TriggerDescribeJob, apiAuth.InternalRole))
 	v1.PUT("/insight/trigger/:insight_id", httpserver.AuthorizeHandler(h.TriggerInsightJob, apiAuth.AdminRole))
-	v1.PUT("/compliance/trigger/:benchmark_id", httpserver.AuthorizeHandler(h.TriggerComplianceJob, apiAuth.AdminRole))
+	v1.PUT("/compliance/trigger/:benchmark_id", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
 	v1.PUT("/analytics/trigger", httpserver.AuthorizeHandler(h.TriggerAnalyticsJob, apiAuth.InternalRole))
 	v1.PUT("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, apiAuth.InternalRole))
 	v1.GET("/describe/status/:resource_type", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
@@ -255,7 +255,7 @@ func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, "")
 }
 
-// TriggerComplianceJob godoc
+// TriggerConnectionsComplianceJob godoc
 //
 //	@Summary		Triggers compliance job
 //	@Description	Triggers a compliance job to run immediately for the given benchmark
@@ -265,7 +265,7 @@ func (h HttpServer) TriggerInsightJob(ctx echo.Context) error {
 //	@Success		200
 //	@Param			benchmark_id	path	string	true	"Benchmark ID"
 //	@Router			/schedule/api/v1/compliance/trigger/{benchmark_id} [put]
-func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
+func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 	clientCtx := &httpclient.Context{UserRole: apiAuth.InternalRole}
 	benchmarkID := ctx.Param("benchmark_id")
 	benchmark, err := h.Scheduler.complianceClient.GetBenchmark(clientCtx, benchmarkID)
@@ -277,31 +277,31 @@ func (h HttpServer) TriggerComplianceJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
 
-	var sources []onboardApi.Connection
+	var connections []onboardApi.Connection
 	assignments, err := h.Scheduler.complianceClient.ListAssignmentsByBenchmark(clientCtx, benchmark.ID)
 	if err != nil {
 		return fmt.Errorf("error while listing assignments: %v", err)
 	}
 
-	for _, ass := range assignments {
+	for _, ass := range assignments.Connections {
 		if !ass.Status {
 			continue
 		}
 
-		src, err := h.Scheduler.onboardClient.GetSource(clientCtx, ass.ConnectionID)
+		connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, ass.ConnectionID)
 		if err != nil {
 			return fmt.Errorf("error while get source: %v", err)
 		}
 
-		if !src.IsEnabled() {
+		if !connection.IsEnabled() {
 			continue
 		}
-		sources = append(sources, *src)
+		connections = append(connections, *connection)
 	}
 
 	var dependencyIDs []int64
-	for _, src := range sources {
-		crj := newComplianceReportJob(src.ID.String(), src.Connector, benchmark.ID, nil)
+	for _, connection := range connections {
+		crj := newComplianceReportJob(connection.ID.String(), connection.Connector, benchmark.ID, nil)
 		err = h.DB.CreateComplianceReportJob(&crj)
 		if err != nil {
 			ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
