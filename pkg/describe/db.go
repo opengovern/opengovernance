@@ -130,12 +130,8 @@ func (db Database) GetDescribeConnectionJobByID(id uint) (*DescribeConnectionJob
 	return &job, nil
 }
 
-func (db Database) QueueDescribeConnectionJob(txDb *gorm.DB, id uint) error {
-	orm := db.orm
-	if txDb != nil {
-		orm = txDb
-	}
-	tx := orm.Exec("update describe_connection_jobs set status = ?, queued_at = NOW(), retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
+func (db Database) QueueDescribeConnectionJob(id uint) error {
+	tx := db.orm.Exec("update describe_connection_jobs set status = ?, queued_at = NOW(), retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
 	if tx.Error != nil {
 		return tx.Error
 	}
