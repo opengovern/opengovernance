@@ -5643,12 +5643,12 @@ const docTemplate = `{
         "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType": {
             "type": "string",
             "enum": [
-                "\u003e",
-                "\u003c",
-                "\u003c=",
-                "\u003e=",
-                "=",
-                "!="
+                "GreaterThan",
+                "LessThan",
+                "LessThanOrEqual",
+                "GreaterThanOrEqual",
+                "Equal",
+                "DoesNotEqual"
             ],
             "x-enum-varnames": [
                 "OperatorGreaterThan",
