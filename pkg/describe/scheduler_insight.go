@@ -59,23 +59,23 @@ func (s *Scheduler) scheduleInsightJob(forceCreate bool) {
 		InsightJobsCount.WithLabelValues("successful").Inc()
 	}
 
-	resourceCollections, err := s.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: api2.InternalRole})
-	if err != nil {
-		s.logger.Error("Failed to list resource collections", zap.Error(err))
-		return
-	}
-	for _, resourceCollection := range resourceCollections {
-		for _, ins := range insights {
-			id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
-			err := s.runInsightJob(forceCreate, ins, id, id, ins.Connector, &resourceCollection.ID)
-			if err != nil {
-				s.logger.Error("Failed to run InsightJob for resourceCollection", zap.Error(err))
-				InsightJobsCount.WithLabelValues("failure").Inc()
-				continue
-			}
-			InsightJobsCount.WithLabelValues("successful").Inc()
-		}
-	}
+	//resourceCollections, err := s.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: api2.InternalRole})
+	//if err != nil {
+	//	s.logger.Error("Failed to list resource collections", zap.Error(err))
+	//	return
+	//}
+	//for _, resourceCollection := range resourceCollections {
+	//	for _, ins := range insights {
+	//		id := fmt.Sprintf("all:%s", strings.ToLower(string(ins.Connector)))
+	//		err := s.runInsightJob(forceCreate, ins, id, id, ins.Connector, &resourceCollection.ID)
+	//		if err != nil {
+	//			s.logger.Error("Failed to run InsightJob for resourceCollection", zap.Error(err))
+	//			InsightJobsCount.WithLabelValues("failure").Inc()
+	//			continue
+	//		}
+	//		InsightJobsCount.WithLabelValues("successful").Inc()
+	//	}
+	//}
 }
 
 func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceapi.Insight, srcID, accountID string, srcType source.Type, resourceCollectionId *string) error {

@@ -9,8 +9,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"io"
 	"math/rand"
 	"net/http"
@@ -514,54 +512,62 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc Descri
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	err = s.db.orm.Transaction(func(tx *gorm.DB) error {
-		// SELECT for update
-		tempDc := DescribeConnectionJob{}
-		err := tx.Model(&tempDc).Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", dc.ID).First(&tempDc).Error
-		if err != nil {
-			s.logger.Error("failed to SELECT FOR UPDATE", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
-			return fmt.Errorf("failed to SELECT FOR UPDATE due to %v", err)
-		}
-
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			s.logger.Error("failed to send orchestrators http request", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
-			return fmt.Errorf("failed to send orchestrators http request due to %v", err)
-		}
-
-		defer resp.Body.Close()
-		resBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			s.logger.Error("failed to read orchestrators http response", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
-			return fmt.Errorf("failed to read orchestrators http response due to %v", err)
-		}
-
-		if resp.StatusCode == http.StatusTooManyRequests {
-			s.logger.Error("failed to trigger cloud native worker due to too many requests", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
-			return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", resp.StatusCode, string(resBody))
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			s.logger.Error("failed to trigger cloud native worker", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
-			return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", resp.StatusCode, string(resBody))
-		}
-
-		s.logger.Info("successful job trigger",
+	if err := s.db.QueueDescribeConnectionJob(dc.ID); err != nil {
+		s.logger.Error("failed to QueueDescribeResourceJob",
 			zap.Uint("jobID", dc.ID),
 			zap.String("connectionID", dc.ConnectionID),
 			zap.String("resourceType", dc.ResourceType),
+			zap.Error(err),
 		)
-
-		if err := s.db.QueueDescribeConnectionJob(tx, dc.ID); err != nil {
-			s.logger.Error("failed to QueueDescribeResourceJob",
-				zap.Uint("jobID", dc.ID),
-				zap.String("connectionID", dc.ConnectionID),
-				zap.String("resourceType", dc.ResourceType),
-				zap.Error(err),
-			)
+	}
+	isFailed := false
+	defer func() {
+		if isFailed {
+			_, err := s.db.UpdateDescribeConnectionJobStatus(dc.ID, apiDescribe.DescribeResourceJobFailed, "Failed to invoke lambda", "Failed to invoke lambda", 0)
+			if err != nil {
+				s.logger.Error("failed to update describe resource job status",
+					zap.Uint("jobID", dc.ID),
+					zap.String("connectionID", dc.ConnectionID),
+					zap.String("resourceType", dc.ResourceType),
+					zap.Error(err),
+				)
+			}
 		}
-		return nil
-	})
+	}()
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		s.logger.Error("failed to send orchestrators http request", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
+		isFailed = true
+		return fmt.Errorf("failed to send orchestrators http request due to %v", err)
+	}
+
+	defer resp.Body.Close()
+	resBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		s.logger.Error("failed to read orchestrators http response", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
+		isFailed = true
+		return fmt.Errorf("failed to read orchestrators http response due to %v", err)
+	}
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		s.logger.Error("failed to trigger cloud native worker due to too many requests", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
+		isFailed = true
+		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", resp.StatusCode, string(resBody))
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		s.logger.Error("failed to trigger cloud native worker", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
+		isFailed = true
+		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", resp.StatusCode, string(resBody))
+	}
+
+	s.logger.Info("successful job trigger",
+		zap.Uint("jobID", dc.ID),
+		zap.String("connectionID", dc.ConnectionID),
+		zap.String("resourceType", dc.ResourceType),
+	)
+
 	if err != nil {
 		return err
 	}

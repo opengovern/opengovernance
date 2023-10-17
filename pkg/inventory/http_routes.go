@@ -2193,9 +2193,13 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 			} else {
 				src, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.InternalRole}, m.DimensionID)
 				if err != nil {
-					return err
+					if !strings.Contains(err.Error(), "source not found") {
+						return err
+					}
+					h.logger.Error("source not found", zap.String("connection_id", m.DimensionID))
+				} else {
+					accountID = demo.EncodeResponseData(ctx, src.ConnectionID)
 				}
-				accountID = demo.EncodeResponseData(ctx, src.ConnectionID)
 				connectionAccountIDMap[m.DimensionID] = accountID
 			}
 			dimensionName = demo.EncodeResponseData(ctx, dimensionName)
