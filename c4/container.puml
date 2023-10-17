@@ -1,0 +1,228 @@
+@startuml Kaytu_Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "User")
+Person(admin, "Admin")
+
+System_Ext(sendGrid, "SendGrid")
+System_Ext(auth0, "Auth0")
+System_Ext(awsS3, "AWS S3 Buckets")
+System_Ext(awsKMS, "AWS KMS")
+System_Ext(slack, "Slack")
+System_Ext(openAI, "OpenAI")
+System_Ext(github, "Github")
+System_Ext(awsSystem, "AWS", "")
+System_Ext(azureSystem, "Azure", "")
+
+System_Boundary(kaytuPlatform, "Kaytu Platform") {
+    Container(flux, "Flux", "", "Workspace management")
+    Container(certManager, "Cert manager", "Go", "Certificate management")
+    Container(contour, "Contour", "Go", "Load balancer")
+
+    Container(jaeger, "Jaeger", "Go", "Monitoring")
+    Rel(admin, jaeger, "View performance metrics")
+
+    Container(prometheus, "Prometheus", "Go", "Monitoring")
+    Container(alertManager, "Alert manager", "Go", "Alerting")
+    Rel(alertManager, prometheus, "")
+    Rel(alertManager, slack, "sends alerts to")
+
+    Container(loki, "Loki", "Go", "Log management")
+    Container(grafana, "Grafana", "Go", "Monitoring")
+    Rel(grafana, loki, "")
+    Rel(grafana, prometheus, "")
+    Rel(admin, grafana, "View logs & monitoring")
+
+    Container(sealedSecret, "SealedSecret", "Go", "Secret management")
+    Container(sentry, "Sentry", "Go", "Crashlytics")
+    Container(velero, "Velero", "Go", "Backup")
+
+    ContainerDb(platformPSql, "Database", "PostgreSQL", "Holds workspaces and authorization information")
+    ContainerDb(platformRedis, "Database", "Redis", "Cache")
+
+    Container(workspaceService, "Workspaces service", "Go", "Workspace management")
+    Rel(workspaceService, platformPSql, "")
+    Rel(workspaceService, platformRedis, "")
+    Rel(workspaceService, flux, "")
+
+    Container(authService, "Auth Microservice", "Go", "Handles authorization of users & API Key management")
+    Rel(authService, platformPSql, "")
+    Rel(authService, platformRedis, "")
+    Rel(authService, sendGrid, "sends email", "HTTPS")
+    Rel(authService, auth0, "gets auth info", "HTTPS")
+    Rel(authService, workspaceService, "gets workspace info", "HTTP")
+
+    Container(frontendService, "Frontend", "ReactJS", "Kaytu App")
+    Rel(user, frontendService, "Authentication and authorization\nWorkspace management\nUser management")
+    Rel(frontendService, sentry, "Sends crash info to")
+
+    Container(docsService, "Docs", "ReactJS", "Documentation of app")
+    Rel(user, docsService, "Reading product docs")
+
+    Container(redocService, "Redoc", "", "Documentation of APIs")
+    Rel(user, redocService, "Reading API docs")
+
+    Container(swaggerService, "Swagger", "", "Documentation of APIs")
+    Rel(user, swaggerService, "Reading API docs")
+
+    Container(websiteService, "Website", "ReactJS", "Kaytu Website")
+    Rel(user, websiteService, "View website")
+}
+
+System_Boundary(kaytuWorkspace, "Kaytu Workspace") {
+    ContainerDb(workspacePostgres, "Database", "PostgreSQL", "Holds workspaces and authorization information")
+    ContainerDb(elastic, "Database", "ElasticSearch", "Holds workspaces and authorization information")
+    ContainerDb(zookeeper, "Database", "Zookeeper", "Holds workspaces and authorization information")
+    ContainerDb(kafka, "Database", "Kafka", "Holds workspaces and authorization information")
+    Rel(kafka, zookeeper, "")
+
+    Container(kaytuResourcesKafkaConnect, "Kafka Connect (Kaytu resources)", "Java", "")
+    Rel(kafka, kaytuResourcesKafkaConnect, "")
+    Rel(kaytuResourcesKafkaConnect, elastic, "")
+
+    Container(cloudResourcesKafkaConnect, "Kafka Connect (Cloud resources)", "Java", "")
+    Rel(kafka, cloudResourcesKafkaConnect, "")
+    Rel(cloudResourcesKafkaConnect, elastic, "")
+
+    ContainerDb(rabbitMQ, "Database", "RabbitMQ", "Holds workspaces and authorization information")
+    ContainerDb(workspaceRedis, "Database", "Redis", "Cache")
+
+    Container(metadataService, "Metadata service", "Go", "")
+    Rel(metadataService, workspacePostgres, "")
+    Rel(metadataService, workspaceRedis, "")
+
+    Container(steampipeService, "Steampipe service", "Go", "")
+    Rel(steampipeService, elastic, "")
+
+    Container(onboardService, "Onboard service", "Go", "")
+    Rel(onboardService, rabbitMQ, "")
+    Rel(onboardService, workspacePostgres, "")
+    Rel(onboardService, steampipeService, "")
+    Rel(onboardService, awsSystem, "")
+    Rel(onboardService, awsKMS, "")
+    
+
+    Container(inventoryService, "Inventory service", "Go", "")
+    Rel(inventoryService, elastic, "")
+    Rel(inventoryService, workspacePostgres, "")
+    Rel(inventoryService, steampipeService, "")
+    Rel(inventoryService, kafka, "")
+    Rel(inventoryService, onboardService, "")
+    Rel(inventoryService, workspaceRedis, "")
+    Rel(inventoryService, awsS3, "")
+
+    Container(schedulerService, "Scheduler service", "Go", "")
+    Rel(schedulerService, rabbitMQ, "")
+    Rel(schedulerService, kafka, "")
+    Rel(schedulerService, workspacePostgres, "")
+    Rel(schedulerService, workspaceService, "")
+    Rel(schedulerService, metadataService, "")
+    Rel(schedulerService, inventoryService, "")
+    Rel(schedulerService, onboardService, "")
+    Rel(schedulerService, elastic, "")
+    Rel(schedulerService, workspaceRedis, "")
+    Rel(schedulerService, flux, "")
+    Rel(schedulerService, awsKMS, "")
+
+    Container(complianceService, "Compliance service", "Go", "")
+    Rel(complianceService, elastic, "")
+    Rel(complianceService, openAI, "")
+    Rel(complianceService, workspacePostgres, "")
+    Rel(complianceService, rabbitMQ, "")
+    Rel(complianceService, awsS3, "")
+    Rel(complianceService, schedulerService, "")
+    Rel(complianceService, onboardService, "")
+    Rel(complianceService, inventoryService, "")
+
+    Container(alertingService, "Alerting service", "Go", "")
+    Rel(alertingService, workspacePostgres, "")
+    Rel(alertingService, onboardService, "")
+    Rel(alertingService, complianceService, "")
+    
+    Container(analyticsWorkers, "Analytics workers", "Go", "")
+    Rel(analyticsWorkers, elastic, "")
+    Rel(analyticsWorkers, workspacePostgres, "")
+    Rel(rabbitMQ, analyticsWorkers, "")
+    Rel(analyticsWorkers, kafka, "")
+    Rel(analyticsWorkers, onboardService, "")
+    Rel(analyticsWorkers, schedulerService, "")
+    Rel(analyticsWorkers, inventoryService, "")
+
+    Container(checkupWorkers, "Checkup workers", "Go", "")
+    Rel(rabbitMQ, checkupWorkers, "")
+    Rel(checkupWorkers, onboardService, "")
+
+    Container(complianceWorkers, "Compliance workers", "Go", "")
+    Rel(rabbitMQ, complianceWorkers, "")
+    Rel(complianceWorkers, kafka, "")
+    Rel(complianceWorkers, elastic, "")
+    Rel(complianceWorkers, onboardService, "")
+    Rel(complianceWorkers, schedulerService, "")
+    Rel(complianceWorkers, complianceService, "")
+
+    Container(describeReceiverService, "Describe receiver service", "Go", "")
+    Rel(describeReceiverService, rabbitMQ, "")
+    Rel(describeReceiverService, kafka, "")
+    Rel(describeReceiverService, workspacePostgres, "")
+    Rel(describeReceiverService, elastic, "")
+    Rel(describeReceiverService, workspaceRedis, "")
+
+    Container(insightWorkers, "Insight workers", "Go", "")
+    Rel(rabbitMQ, insightWorkers, "")
+    Rel(insightWorkers, kafka, "")
+    Rel(insightWorkers, elastic, "")
+    Rel(insightWorkers, onboardService, "")
+    Rel(insightWorkers, inventoryService, "")
+    Rel(insightWorkers, awsS3, "")
+
+    Container(migratorWorkers, "Migrator workers", "Go", "")
+    Rel(migratorWorkers, elastic, "")
+    Rel(migratorWorkers, workspacePostgres, "")
+    Rel(migratorWorkers, github, "")
+
+    Container(reporterService, "Reporter service", "Go", "")
+    Rel(rabbitMQ, reporterService, "")
+    Rel(reporterService, steampipeService, "")
+    Rel(reporterService, workspacePostgres, "")
+    Rel(reporterService, onboardService, "")
+
+    Container(reporterWorkers, "Reporter workers", "Go", "")
+    Rel(rabbitMQ, reporterWorkers, "")
+    Rel(reporterWorkers, steampipeService, "")
+    Rel(reporterWorkers, workspacePostgres, "")
+    Rel(reporterWorkers, onboardService, "")
+
+    Container(summarizerWorkers, "Summarizer workers", "Go", "")
+    Rel(rabbitMQ, summarizerWorkers, "")
+    Rel(summarizerWorkers, elastic, "")
+    Rel(summarizerWorkers, kafka, "")
+    Rel(summarizerWorkers, workspacePostgres, "")
+    Rel(summarizerWorkers, complianceService, "")
+
+    Container(keda, "KEDA", "Go", "Workspace management")
+
+
+
+    Rel(schedulerService, complianceService, "")
+    Rel(inventoryService, schedulerService, "")
+    Rel(inventoryService, complianceService, "")
+    Rel(onboardService, inventoryService, "")
+    Rel(onboardService, schedulerService, "")
+}
+
+System_Boundary(kaytuDiscovery, "Kaytu Discovery") {
+    Container(azureDescriber, "Kaytu Azure Describer", "Go", "Fetches metadata of variant resource types from Azure")
+    Container(awsDescriber, "Kaytu AWS Describer", "Go", "Fetches metadata of variant resource types from AWS")
+
+    Rel(azureDescriber, describeReceiverService, "Sends resources to", "GRPC")
+    Rel(awsDescriber, describeReceiverService, "Sends resources to", "GRPC")
+}
+
+Rel(azureDescriber, azureSystem, "Gets resources from", "HTTPS")
+Rel(awsDescriber, awsSystem, "Gets resources from", "HTTPS")
+
+Rel(authService, metadataService, "Gets workspace limitations", "HTTP")
+Rel(workspaceService, onboardService, "")
+Rel(workspaceService, inventoryService, "")
+
+@enduml

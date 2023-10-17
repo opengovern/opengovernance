@@ -1,0 +1,24 @@
+@startuml Kaytu_Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "User")
+
+System_Ext(awsS3, "AWS S3 Buckets")
+
+System_Boundary(kaytuWorkspace, "Kaytu Workspace") {
+    ContainerDb(elastic, "Database", "ElasticSearch", "Holds workspaces and authorization information")
+    ContainerDb(kafka, "Database", "Kafka", "Holds workspaces and authorization information")
+    ContainerDb(rabbitMQ, "Database", "RabbitMQ", "Holds workspaces and authorization information")
+    Container(onboardService, "Onboard service", "Go", "")
+    Container(inventoryService, "Inventory service", "Go", "")
+
+    Container(insightWorkers, "Insight workers", "Go", "")
+    Rel(rabbitMQ, insightWorkers, "")
+    Rel(insightWorkers, kafka, "")
+    Rel(insightWorkers, elastic, "")
+    Rel(insightWorkers, onboardService, "")
+    Rel(insightWorkers, inventoryService, "")
+    Rel(insightWorkers, awsS3, "")
+}
+
+@enduml
