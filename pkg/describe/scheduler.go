@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/internal"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"net"
@@ -44,6 +45,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 )
 
 const (
@@ -195,6 +198,8 @@ type Scheduler struct {
 	DoDeleteOldResources bool
 	OperationMode        OperationMode
 	MaxConcurrentCall    int64
+
+	LambdaClient *lambda.Client
 }
 
 func initRabbitQueue(queueName string) (queue.Interface, error) {
@@ -245,6 +250,10 @@ func InitializeScheduler(
 	analyticsIntervalHours string,
 	kaytuHelmChartLocation string,
 	fluxSystemNamespace string,
+	awsAccessKey string,
+	awsSecretKey string,
+	awsSessionToken string,
+	awsAssumeRoleArn string,
 ) (s *Scheduler, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -264,6 +273,10 @@ func InitializeScheduler(
 			s.Stop()
 		}
 	}()
+
+	lambdaCfg, err := internal.GetConfig(context.Background(), awsAccessKey, awsSecretKey, awsSessionToken, awsAssumeRoleArn, nil)
+
+	s.LambdaClient = lambda.NewFromConfig(lambdaCfg)
 
 	s.logger, err = zap.NewProduction()
 	if err != nil {
