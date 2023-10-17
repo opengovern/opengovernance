@@ -274,7 +274,7 @@ func InitializeScheduler(
 		}
 	}()
 
-	lambdaCfg, err := internal.GetConfig(context.Background(), awsAccessKey, awsSecretKey, awsSessionToken, "", nil)
+	lambdaCfg, err := internal.GetConfig(context.Background(), awsAccessKey, awsSecretKey, awsSessionToken, awsAssumeRoleArn, nil)
 
 	s.LambdaClient = lambda.NewFromConfig(lambdaCfg)
 
