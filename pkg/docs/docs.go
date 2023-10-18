@@ -355,6 +355,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/alerting/api/v1/trigger/list": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "returns list of all the triggers",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "alerting"
+                ],
+                "summary": "List triggers",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Triggers"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/api/v1/key/create": {
             "post": {
                 "security": [
@@ -5690,6 +5718,26 @@ const docTemplate = `{
                 },
                 "connector": {
                     "$ref": "#/definitions/source.Type"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Triggers": {
+            "type": "object",
+            "properties": {
+                "event_type": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType"
+                },
+                "response_status": {
+                    "type": "integer"
+                },
+                "scope": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope"
+                },
+                "triggered_at": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "integer"
                 }
             }
         },

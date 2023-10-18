@@ -118,6 +118,19 @@ definitions:
       connector:
         $ref: '#/definitions/source.Type'
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Triggers:
+    properties:
+      event_type:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType'
+      response_status:
+        type: integer
+      scope:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope'
+      triggered_at:
+        type: string
+      value:
+        type: integer
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest:
     properties:
       body:
@@ -2772,6 +2785,23 @@ paths:
       security:
       - BearerToken: []
       summary: Update rule
+      tags:
+      - alerting
+  /alerting/api/v1/trigger/list:
+    get:
+      description: returns list of all the triggers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Triggers'
+            type: array
+      security:
+      - BearerToken: []
+      summary: List triggers
       tags:
       - alerting
   /auth/api/v1/key/{id}/delete:

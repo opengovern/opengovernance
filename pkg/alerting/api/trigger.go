@@ -6,7 +6,7 @@ import (
 
 type Triggers struct {
 	EventType      EventType `json:"event_type"`
-	Time           time.Time `json:"time"`
+	TriggeredAt    time.Time `json:"triggered_at"`
 	Scope          Scope     `json:"scope"`
 	Value          int64     `json:"value"`
 	ResponseStatus int       `json:"response_status"`

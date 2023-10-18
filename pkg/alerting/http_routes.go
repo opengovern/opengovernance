@@ -55,7 +55,7 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 func (h *HttpHandler) ListTriggers(ctx echo.Context) error {
 	listTriggers, err := h.db.ListTriggers()
 	if err != nil {
-		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error in getting the list of the triggers : %v ", err))
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error getting the list of the triggers : %v ", err))
 	}
 	var resListTrigger []api.Triggers
 	for _, trigger := range listTriggers {
@@ -74,7 +74,7 @@ func (h *HttpHandler) ListTriggers(ctx echo.Context) error {
 		complianceT := api.Triggers{
 			EventType:      eventType,
 			Scope:          scope,
-			Time:           trigger.Time,
+			TriggeredAt:    trigger.TriggeredAt,
 			Value:          trigger.Value,
 			ResponseStatus: trigger.ResponseStatus,
 		}

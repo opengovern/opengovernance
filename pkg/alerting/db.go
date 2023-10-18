@@ -17,6 +17,7 @@ func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
 		&Action{},
 		&Rule{},
+		&Triggers{},
 	)
 	if err != nil {
 		return err
@@ -29,7 +30,7 @@ func (db Database) CreateTrigger(Time time.Time, eventType []byte, scope []byte,
 	trigger := Triggers{
 		EventType:      eventType,
 		Scope:          scope,
-		Time:           Time,
+		TriggeredAt:    Time,
 		Value:          value,
 		ResponseStatus: responseStatus,
 	}

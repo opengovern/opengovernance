@@ -23,7 +23,7 @@ type Action struct {
 
 type Triggers struct {
 	EventType      datatypes.JSON
-	Time           time.Time
+	TriggeredAt    time.Time
 	Scope          datatypes.JSON
 	Value          int64
 	ResponseStatus int
