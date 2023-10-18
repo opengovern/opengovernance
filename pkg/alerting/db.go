@@ -2,6 +2,7 @@ package alerting
 
 import (
 	"gorm.io/gorm"
+	"time"
 )
 
 type Database struct {
@@ -22,6 +23,47 @@ func (db Database) Initialize() error {
 	}
 
 	return nil
+}
+
+func (db Database) CreateComplianceTrigger(hour time.Time, benchmarkId string, connectionId string, value int64, responseStatus int) error {
+	compliance := TriggerCompliance{
+		ComplianceId:   benchmarkId,
+		Hour:           hour,
+		ConnectionId:   connectionId,
+		Value:          value,
+		ResponseStatus: responseStatus,
+	}
+
+	return db.orm.Model(&TriggerCompliance{}).Create(&compliance).Error
+}
+
+func (db Database) CreateInsightTrigger(hour time.Time, insightId int64, connectionId string, value int64, responseStatus int) error {
+	insight := TriggerInsight{
+		InsightId:      insightId,
+		Hour:           hour,
+		ConnectionId:   connectionId,
+		Value:          value,
+		ResponseStatus: responseStatus,
+	}
+	return db.orm.Model(&TriggerInsight{}).Create(&insight).Error
+}
+
+func (db Database) ListInsightTriggers() ([]TriggerInsight, error) {
+	var listInsightTriggers []TriggerInsight
+	err := db.orm.Model(&TriggerInsight{}).Find(&listInsightTriggers).Error
+	if err != nil {
+		return nil, err
+	}
+	return listInsightTriggers, nil
+}
+
+func (db Database) ListComplianceTriggers() ([]TriggerCompliance, error) {
+	var listComplianceTriggers []TriggerCompliance
+	err := db.orm.Model(&TriggerCompliance{}).Find(&listComplianceTriggers).Error
+	if err != nil {
+		return nil, err
+	}
+	return listComplianceTriggers, nil
 }
 
 func (db Database) ListRules() ([]Rule, error) {

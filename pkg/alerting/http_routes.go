@@ -40,6 +40,65 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	return nil
 }
 
+// ListComplianceTriggers godoc
+//
+//	@Summary		List Compliance triggers
+//	@Description	returns list of all complianceIds that triggered
+//	@Security		BearerToken
+//	@Tags			alerting
+//	@Produce		json
+//	@Success		200	{object}	[]api.ComplianceTrigger
+//	@Router			/alerting/api/v1/trigger/compliance [get]
+func (h *HttpHandler) ListComplianceTriggers(ctx echo.Context) error {
+	listComplianceTriggers, err := h.db.ListComplianceTriggers()
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error in getting the list of the compliance triggers : %v ", err))
+	}
+	var resListComplianceTrigger []api.ComplianceTrigger
+	for _, ct := range listComplianceTriggers {
+
+		complianceT := api.ComplianceTrigger{
+			ConnectionId:   ct.ComplianceId,
+			Hour:           ct.Hour,
+			ComplianceId:   ct.ComplianceId,
+			Value:          ct.Value,
+			ResponseStatus: ct.ResponseStatus,
+		}
+		resListComplianceTrigger = append(resListComplianceTrigger, complianceT)
+
+	}
+	return ctx.JSON(http.StatusOK, resListComplianceTrigger)
+}
+
+// ListInsightTriggers godoc
+//
+//	@Summary		List Insight triggers
+//	@Description	returns list of all insightIds that triggered
+//	@Security		BearerToken
+//	@Tags			alerting
+//	@Produce		json
+//	@Success		200	{object}	[]api.InsightTrigger
+//	@Router			/alerting/api/v1/trigger/insight [get]
+func (h *HttpHandler) ListInsightTriggers(ctx echo.Context) error {
+	listInsightTriggers, err := h.db.ListInsightTriggers()
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error in getting the list of the insight triggers : %v ", err))
+	}
+
+	var resListInsightTriggers []api.InsightTrigger
+	for _, it := range listInsightTriggers {
+		insightTrigger := api.InsightTrigger{
+			InsightId:      it.InsightId,
+			Hour:           it.Hour,
+			ConnectionId:   it.ConnectionId,
+			Value:          it.Value,
+			ResponseStatus: it.ResponseStatus,
+		}
+		resListInsightTriggers = append(resListInsightTriggers, insightTrigger)
+	}
+	return ctx.JSON(http.StatusOK, resListInsightTriggers)
+}
+
 // TriggerRuleAPI godoc
 //
 //	@Summary		Trigger one rule
