@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/internal"
+	"github.com/aws/aws-sdk-go-v2/config"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"net"
@@ -250,10 +250,6 @@ func InitializeScheduler(
 	analyticsIntervalHours string,
 	kaytuHelmChartLocation string,
 	fluxSystemNamespace string,
-	awsAccessKey string,
-	awsSecretKey string,
-	awsSessionToken string,
-	awsAssumeRoleArn string,
 ) (s *Scheduler, err error) {
 	if id == "" {
 		return nil, fmt.Errorf("'id' must be set to a non empty string")
@@ -274,7 +270,8 @@ func InitializeScheduler(
 		}
 	}()
 
-	lambdaCfg, err := internal.GetConfig(context.Background(), awsAccessKey, awsSecretKey, awsSessionToken, awsAssumeRoleArn, nil)
+	lambdaCfg, err := config.LoadDefaultConfig(context.Background())
+	lambdaCfg.Region = KeyRegion
 
 	s.LambdaClient = lambda.NewFromConfig(lambdaCfg)
 

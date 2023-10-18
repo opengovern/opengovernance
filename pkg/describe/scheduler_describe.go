@@ -11,10 +11,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -36,6 +32,8 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/concurrency"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/vault"
+	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/api/meta"
 )
 
 const (
@@ -503,59 +501,62 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc Descri
 		return fmt.Errorf("failed to marshal cloud native req due to %v", err)
 	}
 
-	err = s.db.orm.Transaction(func(tx *gorm.DB) error {
-		// SELECT for update
-		tempDc := DescribeConnectionJob{}
-		err := tx.Model(&tempDc).Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", dc.ID).First(&tempDc).Error
-		if err != nil {
-			s.logger.Error("failed to SELECT FOR UPDATE", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
-			return fmt.Errorf("failed to SELECT FOR UPDATE due to %v", err)
-		}
+	invokeOutput, err := s.LambdaClient.Invoke(context.TODO(), &lambda.InvokeInput{
+		FunctionName:   awsSdk.String(fmt.Sprintf("kaytu-%s-describer", strings.ToLower(dc.Connector.String()))),
+		LogType:        types.LogTypeTail,
+		Payload:        lambdaRequest,
+		InvocationType: types.InvocationTypeEvent,
+	})
 
-		invokeOutput, err := s.LambdaClient.Invoke(context.TODO(), &lambda.InvokeInput{
-			FunctionName: awsSdk.String(fmt.Sprintf("kaytu-%s-describer", strings.ToLower(dc.Connector.String()))),
-			LogType:      types.LogTypeTail,
-			Payload:      lambdaRequest,
-		})
-		if err != nil {
-			s.logger.Error("failed to invoke lambda function", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
-			return fmt.Errorf("failed to invoke lambda function due to %v", err)
-		}
-
-		s.logger.Info("lambda function function error",
-			zap.String("resourceType", dc.ResourceType), zap.String("error", *invokeOutput.FunctionError))
-		s.logger.Info("lambda function log result",
-			zap.String("resourceType", dc.ResourceType), zap.String("log result", *invokeOutput.LogResult))
-		s.logger.Info("lambda function payload",
-			zap.String("resourceType", dc.ResourceType), zap.String("payload", fmt.Sprintf("%v", invokeOutput.Payload)))
-		resBody := invokeOutput.Payload
-
-		if invokeOutput.StatusCode == http.StatusTooManyRequests {
-			s.logger.Error("failed to trigger cloud native worker due to too many requests", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
-			return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
-		}
-
-		if invokeOutput.StatusCode != http.StatusOK {
-			s.logger.Error("failed to trigger cloud native worker", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
-			return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
-		}
-
-		s.logger.Info("successful job trigger",
+	if err := s.db.QueueDescribeConnectionJob(dc.ID); err != nil {
+		s.logger.Error("failed to QueueDescribeResourceJob",
 			zap.Uint("jobID", dc.ID),
 			zap.String("connectionID", dc.ConnectionID),
 			zap.String("resourceType", dc.ResourceType),
+			zap.Error(err),
 		)
-
-		if err := s.db.QueueDescribeConnectionJob(tx, dc.ID); err != nil {
-			s.logger.Error("failed to QueueDescribeResourceJob",
-				zap.Uint("jobID", dc.ID),
-				zap.String("connectionID", dc.ConnectionID),
-				zap.String("resourceType", dc.ResourceType),
-				zap.Error(err),
-			)
+	}
+	isFailed := false
+	defer func() {
+		if isFailed {
+			_, err := s.db.UpdateDescribeConnectionJobStatus(dc.ID, apiDescribe.DescribeResourceJobFailed, "Failed to invoke lambda", "Failed to invoke lambda", 0)
+			if err != nil {
+				s.logger.Error("failed to update describe resource job status",
+					zap.Uint("jobID", dc.ID),
+					zap.String("connectionID", dc.ConnectionID),
+					zap.String("resourceType", dc.ResourceType),
+					zap.Error(err),
+				)
+			}
 		}
-		return nil
-	})
+	}()
+
+	s.logger.Info("lambda function function error",
+		zap.String("resourceType", dc.ResourceType), zap.String("error", *invokeOutput.FunctionError))
+	s.logger.Info("lambda function log result",
+		zap.String("resourceType", dc.ResourceType), zap.String("log result", *invokeOutput.LogResult))
+	s.logger.Info("lambda function payload",
+		zap.String("resourceType", dc.ResourceType), zap.String("payload", fmt.Sprintf("%v", invokeOutput.Payload)))
+	resBody := invokeOutput.Payload
+
+	if invokeOutput.StatusCode == http.StatusTooManyRequests {
+		s.logger.Error("failed to trigger cloud native worker due to too many requests", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
+		isFailed = true
+		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
+	}
+
+	if invokeOutput.StatusCode != http.StatusOK {
+		s.logger.Error("failed to trigger cloud native worker", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
+		isFailed = true
+		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
+	}
+
+	s.logger.Info("successful job trigger",
+		zap.Uint("jobID", dc.ID),
+		zap.String("connectionID", dc.ConnectionID),
+		zap.String("resourceType", dc.ResourceType),
+	)
+
 	if err != nil {
 		return err
 	}

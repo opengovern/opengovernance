@@ -79,11 +79,6 @@ var (
 
 	KaytuHelmChartLocation = os.Getenv("KAYTU_STACK_HELM_CHART_LOCATION")
 	FluxSystemNamespace    = os.Getenv("FLUX_SYSTEM_NAMESPACE")
-
-	AwsAccessKey     = os.Getenv("AWS_ACCESS_KEY_ID")
-	AwsSecretKey     = os.Getenv("AWS_SECRET_ACCESS_KEY")
-	AwsSessionToken  = os.Getenv("AWS_SESSION_TOKEN")
-	AwsAssumeRoleArn = os.Getenv("AWS_ASSUME_ROLE_ARN")
 )
 
 func SchedulerCommand() *cobra.Command {
@@ -134,10 +129,6 @@ func SchedulerCommand() *cobra.Command {
 				AnalyticsIntervalHours,
 				KaytuHelmChartLocation,
 				FluxSystemNamespace,
-				AwsAccessKey,
-				AwsSecretKey,
-				AwsSessionToken,
-				AwsAssumeRoleArn,
 			)
 			if err != nil {
 				return err
