@@ -4,18 +4,10 @@ import (
 	"time"
 )
 
-type ComplianceTrigger struct {
-	ComplianceId   string    `json:"compliance_id"`
-	Hour           time.Time `json:"hour"`
-	ConnectionId   string    `json:"connection_id"`
-	Value          int64     `json:"value"`
-	ResponseStatus int       `json:"response_status"`
-}
-
-type InsightTrigger struct {
-	InsightId      int64     `json:"insight_id"`
-	Hour           time.Time `json:"hour"`
-	ConnectionId   string    `json:"connection_id"`
+type Triggers struct {
+	EventType      EventType `json:"event_type"`
+	Time           time.Time `json:"time"`
+	Scope          Scope     `json:"scope"`
 	Value          int64     `json:"value"`
 	ResponseStatus int       `json:"response_status"`
 }

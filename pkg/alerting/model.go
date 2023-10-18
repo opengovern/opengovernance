@@ -21,18 +21,10 @@ type Action struct {
 	Body    string
 }
 
-type TriggerCompliance struct {
-	ComplianceId   string `json:"compliance_id" gorm:"primary_key"`
-	Hour           time.Time
-	ConnectionId   string
-	Value          int64
-	ResponseStatus int
-}
-
-type TriggerInsight struct {
-	InsightId      int64 `json:"insight_id" gorm:"primary_key"`
-	Hour           time.Time
-	ConnectionId   string
+type Triggers struct {
+	EventType      datatypes.JSON
+	Time           time.Time
+	Scope          datatypes.JSON
 	Value          int64
 	ResponseStatus int
 }

@@ -163,18 +163,6 @@ func (h HttpHandler) sendAlert(rule Rule, TotalCount int64) error {
 		return fmt.Errorf("error getting action : %v", err.Error())
 	}
 
-	var eventType api.EventType
-	err = json.Unmarshal(rule.EventType, &eventType)
-	if err != nil {
-		return fmt.Errorf("error unmarshalling the eventType : %v", err.Error())
-	}
-
-	var scope api.Scope
-	err = json.Unmarshal(rule.Scope, &scope)
-	if err != nil {
-		return fmt.Errorf("error unmarshalling the scope : %v ", err.Error())
-	}
-
 	req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer([]byte(action.Body)))
 	if err != nil {
 		return fmt.Errorf("error sending the request : %v", err.Error())
@@ -194,21 +182,32 @@ func (h HttpHandler) sendAlert(rule Rule, TotalCount int64) error {
 		return fmt.Errorf("error sending the alert request : %v ", err.Error())
 	}
 
-	if eventType.BenchmarkId != nil {
-		err = h.db.CreateComplianceTrigger(time.Now(), *eventType.BenchmarkId, *scope.ConnectionId, TotalCount, res.StatusCode)
-		if err != nil {
-			return fmt.Errorf("error in create compliance trigger : %v ", err)
-		}
-	} else if eventType.InsightId != nil {
-		err = h.db.CreateInsightTrigger(time.Now(), *eventType.InsightId, *scope.ConnectionId, TotalCount, res.StatusCode)
-		if err != nil {
-			return fmt.Errorf("error in create compliance trigger : %v ", err)
-		}
+	err = h.addTriggerToDatabase(rule, TotalCount, res.StatusCode)
+	if err != nil {
+		return err
 	}
 
 	err = res.Body.Close()
 	if err != nil {
 		return fmt.Errorf("error closing the response body : %v ", err.Error())
+	}
+	return nil
+}
+
+func (h HttpHandler) addTriggerToDatabase(rule Rule, totalCount int64, responseStatusCode int) error {
+	eventTypeM, err := json.Marshal(rule.EventType)
+	if err != nil {
+		return fmt.Errorf("error in marshalling eventType : %v ", err)
+	}
+
+	scopeM, err := json.Marshal(rule.Scope)
+	if err != nil {
+		return fmt.Errorf("error in marshalling scope : %v ", err)
+	}
+
+	err = h.db.CreateTrigger(time.Now(), eventTypeM, scopeM, totalCount, responseStatusCode)
+	if err != nil {
+		return fmt.Errorf("error in add trigger to the database : %v ", err)
 	}
 	return nil
 }

@@ -14,6 +14,9 @@ import (
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
+	trigger := v1.Group("/trigger")
+	trigger.GET("/list", httpserver.AuthorizeHandler(h.ListTriggers, authapi.ViewerRole))
+
 	ruleGroup := v1.Group("/rule")
 	ruleGroup.GET("/list", httpserver.AuthorizeHandler(h.ListRules, authapi.ViewerRole))
 	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
@@ -40,63 +43,44 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	return nil
 }
 
-// ListComplianceTriggers godoc
+// ListTriggers godoc
 //
-//	@Summary		List Compliance triggers
-//	@Description	returns list of all complianceIds that triggered
+//	@Summary		List triggers
+//	@Description	returns list of all the triggers
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Produce		json
-//	@Success		200	{object}	[]api.ComplianceTrigger
-//	@Router			/alerting/api/v1/trigger/compliance [get]
-func (h *HttpHandler) ListComplianceTriggers(ctx echo.Context) error {
-	listComplianceTriggers, err := h.db.ListComplianceTriggers()
+//	@Success		200	{object}	[]api.Triggers
+//	@Router			/alerting/api/v1/trigger/list [get]
+func (h *HttpHandler) ListTriggers(ctx echo.Context) error {
+	listTriggers, err := h.db.ListTriggers()
 	if err != nil {
-		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error in getting the list of the compliance triggers : %v ", err))
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error in getting the list of the triggers : %v ", err))
 	}
-	var resListComplianceTrigger []api.ComplianceTrigger
-	for _, ct := range listComplianceTriggers {
-
-		complianceT := api.ComplianceTrigger{
-			ConnectionId:   ct.ComplianceId,
-			Hour:           ct.Hour,
-			ComplianceId:   ct.ComplianceId,
-			Value:          ct.Value,
-			ResponseStatus: ct.ResponseStatus,
+	var resListTrigger []api.Triggers
+	for _, trigger := range listTriggers {
+		var eventType api.EventType
+		err = json.Unmarshal(trigger.EventType, &eventType)
+		if err != nil {
+			return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error unmarshalling event type : %v ", err))
 		}
-		resListComplianceTrigger = append(resListComplianceTrigger, complianceT)
 
-	}
-	return ctx.JSON(http.StatusOK, resListComplianceTrigger)
-}
-
-// ListInsightTriggers godoc
-//
-//	@Summary		List Insight triggers
-//	@Description	returns list of all insightIds that triggered
-//	@Security		BearerToken
-//	@Tags			alerting
-//	@Produce		json
-//	@Success		200	{object}	[]api.InsightTrigger
-//	@Router			/alerting/api/v1/trigger/insight [get]
-func (h *HttpHandler) ListInsightTriggers(ctx echo.Context) error {
-	listInsightTriggers, err := h.db.ListInsightTriggers()
-	if err != nil {
-		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error in getting the list of the insight triggers : %v ", err))
-	}
-
-	var resListInsightTriggers []api.InsightTrigger
-	for _, it := range listInsightTriggers {
-		insightTrigger := api.InsightTrigger{
-			InsightId:      it.InsightId,
-			Hour:           it.Hour,
-			ConnectionId:   it.ConnectionId,
-			Value:          it.Value,
-			ResponseStatus: it.ResponseStatus,
+		var scope api.Scope
+		err = json.Unmarshal(trigger.Scope, &scope)
+		if err != nil {
+			return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error unmarshalling scope : %v ", err))
 		}
-		resListInsightTriggers = append(resListInsightTriggers, insightTrigger)
+
+		complianceT := api.Triggers{
+			EventType:      eventType,
+			Scope:          scope,
+			Time:           trigger.Time,
+			Value:          trigger.Value,
+			ResponseStatus: trigger.ResponseStatus,
+		}
+		resListTrigger = append(resListTrigger, complianceT)
 	}
-	return ctx.JSON(http.StatusOK, resListInsightTriggers)
+	return ctx.JSON(http.StatusOK, resListTrigger)
 }
 
 // TriggerRuleAPI godoc
