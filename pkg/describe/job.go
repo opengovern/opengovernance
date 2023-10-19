@@ -138,6 +138,10 @@ type DescribeJobResult struct {
 	ErrorCode            string
 }
 
+func (r DescribeJobResult) KeysAndIndex() ([]string, string) {
+	return []string{}, ""
+}
+
 // Do will perform the job which includes the following tasks:
 //
 //  1. Describing resources from the cloud providee based on the job definition.
