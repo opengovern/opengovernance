@@ -1,6 +1,7 @@
 package describe
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
@@ -71,10 +72,18 @@ func (s *Scheduler) UpdateDescribedResourceCount() {
 func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the JobResults queue")
 
-	msgs, err := s.describeJobResultQueue.Consume()
+	ctx := context.Background()
+	consumer, err := kafka.NewTopicConsumer(ctx, s.kafkaServers, "kaytu-describe-results-queue", "describe-receiver")
 	if err != nil {
 		return err
 	}
+
+	msgs := consumer.Consume(ctx)
+
+	//msgs, err := s.describeJobResultQueue.Consume()
+	//if err != nil {
+	//	return err
+	//}
 
 	t := time.NewTicker(JobTimeoutCheckInterval)
 	defer t.Stop()
@@ -86,11 +95,12 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				return fmt.Errorf("tasks channel is closed")
 			}
 			var result DescribeJobResult
-			if err := json.Unmarshal(msg.Body, &result); err != nil {
+			if err := json.Unmarshal(msg.Value, &result); err != nil {
 				ResultsProcessedCount.WithLabelValues("", "failure").Inc()
 
 				s.logger.Error("failed to consume message from describeJobResult", zap.Error(err))
-				err = msg.Nack(false, false)
+				//err = msg.Nack(false, false)
+				err := consumer.Commit(msg)
 				if err != nil {
 					s.logger.Error("failure while sending nack for message", zap.Error(err))
 				}
@@ -106,10 +116,22 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				if err := s.cleanupOldResources(result); err != nil {
 					ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 					s.logger.Error("failed to cleanupOldResources", zap.Error(err))
-					err = msg.Nack(false, true)
+					kmsg := kafka.Msg(string(msg.Key), msg.Value, "", "kaytu-describe-results-queue", confluent_kafka.PartitionAny)
+					_, err := kafka.SyncSend(s.logger, s.kafkaProducer, []*confluent_kafka.Message{kmsg}, nil)
 					if err != nil {
-						s.logger.Error("failure while sending nack for message", zap.Error(err))
+						s.logger.Error("failure while sending requeue", zap.Error(err))
+						continue
 					}
+
+					err = consumer.Commit(msg)
+					if err != nil {
+						s.logger.Error("failure while committing requeue", zap.Error(err))
+						continue
+					}
+					//err = msg.Nack(false, true)
+					//if err != nil {
+					//	s.logger.Error("failure while sending nack for message", zap.Error(err))
+					//}
 					continue
 				}
 			}
@@ -128,14 +150,26 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 			if err != nil {
 				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 				s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
-				err = msg.Nack(false, true)
+				kmsg := kafka.Msg(string(msg.Key), msg.Value, "", "kaytu-describe-results-queue", confluent_kafka.PartitionAny)
+				_, err := kafka.SyncSend(s.logger, s.kafkaProducer, []*confluent_kafka.Message{kmsg}, nil)
 				if err != nil {
-					s.logger.Error("failure while sending nack for message", zap.Error(err))
+					s.logger.Error("failure while sending requeue", zap.Error(err))
+					continue
 				}
+
+				err = consumer.Commit(msg)
+				if err != nil {
+					s.logger.Error("failure while committing requeue", zap.Error(err))
+					continue
+				}
+				//err = msg.Nack(false, true)
+				//if err != nil {
+				//	s.logger.Error("failure while sending nack for message", zap.Error(err))
+				//}
 				continue
 			}
 			ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "successful").Inc()
-			if err := msg.Ack(false); err != nil {
+			if err := consumer.Commit(msg); err != nil {
 				s.logger.Error("failure while sending ack for message", zap.Error(err))
 			}
 		case <-t.C:

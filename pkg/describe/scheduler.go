@@ -185,6 +185,7 @@ type Scheduler struct {
 	kafkaProducer       *confluent_kafka.Producer
 	kafkaResourcesTopic string
 	kafkaConsumer       *confluent_kafka.Consumer
+	kafkaServers        []string
 
 	describeEndpoint string
 	keyARN           string
@@ -387,6 +388,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 	s.kafkaProducer = kafkaProducer
+	s.kafkaServers = strings.Split(KafkaService, ",")
 
 	kafkaResourceSinkConsumer, err := newKafkaConsumer(strings.Split(KafkaService, ","), s.kafkaResourcesTopic)
 	if err != nil {

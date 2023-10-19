@@ -34,7 +34,6 @@ type GRPCDescribeServer struct {
 	producer                  *confluent_kafka.Producer
 	topic                     string
 	logger                    *zap.Logger
-	describeJobResultQueue    queue.Interface
 	DoProcessReceivedMessages bool
 	authGrpcClient            envoyauth.AuthorizationClient
 
@@ -47,7 +46,6 @@ func NewDescribeServer(db Database, rdb *redis.Client, producer *confluent_kafka
 		rdb:                       rdb,
 		producer:                  producer,
 		topic:                     topic,
-		describeJobResultQueue:    describeJobResultQueue,
 		logger:                    logger,
 		DoProcessReceivedMessages: true,
 		authGrpcClient:            authGrpcClient,
@@ -372,7 +370,11 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
-	err := s.describeJobResultQueue.Publish(result)
+	var docs []kafka.Doc
+	docs = append(docs, result)
+
+	err := kafka.DoSend(s.producer, "kaytu-describe-results-queue", -1, docs, s.logger, nil)
+	//err := s.describeJobResultQueue.Publish(result)
 	if err != nil {
 		s.logger.Error("Failed to publish into rabbitMQ",
 			zap.Uint("jobID", result.JobID),
