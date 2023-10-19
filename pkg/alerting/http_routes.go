@@ -131,7 +131,6 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the inputs : %v ", err))
 	}
 
-	fmt.Println("req:", req)
 	EmptyFields := api.CreateRuleRequest{}
 	if req.Scope == EmptyFields.Scope ||
 		req.ActionID == EmptyFields.ActionID || req.Operator == EmptyFields.Operator || req.EventType == EmptyFields.EventType {
@@ -301,6 +300,8 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 	if err != nil {
 		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the inputs : %v ", err))
 	}
+
+	fmt.Println("req", req)
 
 	testEmptyFields := api.CreateActionReq{}
 	if req.Url == testEmptyFields.Url || req.Body == testEmptyFields.Body ||
