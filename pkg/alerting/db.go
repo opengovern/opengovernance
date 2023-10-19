@@ -2,6 +2,7 @@ package alerting
 
 import (
 	"gorm.io/gorm"
+	"time"
 )
 
 type Database struct {
@@ -16,12 +17,33 @@ func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
 		&Action{},
 		&Rule{},
+		&Triggers{},
 	)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (db Database) CreateTrigger(Time time.Time, eventType []byte, scope []byte, value int64, responseStatus int) error {
+	trigger := Triggers{
+		EventType:      eventType,
+		Scope:          scope,
+		TriggeredAt:    Time,
+		Value:          value,
+		ResponseStatus: responseStatus,
+	}
+	return db.orm.Model(&Triggers{}).Create(&trigger).Error
+}
+
+func (db Database) ListTriggers() ([]Triggers, error) {
+	var listTriggers []Triggers
+	err := db.orm.Model(&Triggers{}).Find(&listTriggers).Error
+	if err != nil {
+		return nil, err
+	}
+	return listTriggers, nil
 }
 
 func (db Database) ListRules() ([]Rule, error) {

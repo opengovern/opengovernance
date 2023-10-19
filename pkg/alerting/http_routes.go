@@ -14,6 +14,9 @@ import (
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
+	trigger := v1.Group("/trigger")
+	trigger.GET("/list", httpserver.AuthorizeHandler(h.ListTriggers, authapi.ViewerRole))
+
 	ruleGroup := v1.Group("/rule")
 	ruleGroup.GET("/list", httpserver.AuthorizeHandler(h.ListRules, authapi.ViewerRole))
 	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
@@ -38,6 +41,46 @@ func bindValidate(ctx echo.Context, i interface{}) error {
 	}
 
 	return nil
+}
+
+// ListTriggers godoc
+//
+//	@Summary		List triggers
+//	@Description	returns list of all the triggers
+//	@Security		BearerToken
+//	@Tags			alerting
+//	@Produce		json
+//	@Success		200	{object}	[]api.Triggers
+//	@Router			/alerting/api/v1/trigger/list [get]
+func (h *HttpHandler) ListTriggers(ctx echo.Context) error {
+	listTriggers, err := h.db.ListTriggers()
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error getting the list of the triggers : %v ", err))
+	}
+	var resListTrigger []api.Triggers
+	for _, trigger := range listTriggers {
+		var eventType api.EventType
+		err = json.Unmarshal(trigger.EventType, &eventType)
+		if err != nil {
+			return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error unmarshalling event type : %v ", err))
+		}
+
+		var scope api.Scope
+		err = json.Unmarshal(trigger.Scope, &scope)
+		if err != nil {
+			return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error unmarshalling scope : %v ", err))
+		}
+
+		complianceT := api.Triggers{
+			EventType:      eventType,
+			Scope:          scope,
+			TriggeredAt:    trigger.TriggeredAt,
+			Value:          trigger.Value,
+			ResponseStatus: trigger.ResponseStatus,
+		}
+		resListTrigger = append(resListTrigger, complianceT)
+	}
+	return ctx.JSON(http.StatusOK, resListTrigger)
 }
 
 // TriggerRuleAPI godoc
