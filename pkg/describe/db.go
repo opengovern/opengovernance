@@ -142,7 +142,7 @@ func (db Database) ListRandomCreatedDescribeConnectionJobs(ctx context.Context, 
 
 	var job []DescribeConnectionJob
 
-	//runningJobs := []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress}
+	//runningJobs := []api.D.RawescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress}
 	tx := db.orm.Raw(`
 SELECT
 	*, random() as r
@@ -283,7 +283,7 @@ func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType
 // UpdateDescribeConnectionJobStatus updates the status of the DescribeResourceJob to the provided status.
 // If the status if 'FAILED', msg could be used to indicate the failure reason
 func (db Database) UpdateDescribeConnectionJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount int64) error {
-	tx := db.orm.Raw("UPDATE describe_connection_jobs SET status = ?, failure_message = ?, error_code = ?,  described_resource_count = ? WHERE id = ?",
+	tx := db.orm.Exec("UPDATE describe_connection_jobs SET status = ?, failure_message = ?, error_code = ?,  described_resource_count = ? WHERE id = ?",
 		status, msg, errCode, resourceCount, id)
 	if tx.Error != nil {
 		return tx.Error
