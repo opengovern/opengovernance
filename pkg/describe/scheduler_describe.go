@@ -1,15 +1,16 @@
 package describe
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	awsSdk "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
-	"io"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -500,18 +501,6 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc Descri
 		return fmt.Errorf("failed to marshal cloud native req due to %v", err)
 	}
 
-	httpClient := &http.Client{
-		Timeout: 1 * time.Minute,
-	}
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/kaytu-%s-describer", LambdaFuncsBaseURL, strings.ToLower(dc.Connector.String())), bytes.NewBuffer(lambdaRequest))
-	if err != nil {
-		s.logger.Error("failed to create http request", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
-		return fmt.Errorf("failed to create http request due to %v", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-
 	if err := s.db.QueueDescribeConnectionJob(dc.ID); err != nil {
 		s.logger.Error("failed to QueueDescribeResourceJob",
 			zap.Uint("jobID", dc.ID),
@@ -535,31 +524,42 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc Descri
 		}
 	}()
 
-	resp, err := httpClient.Do(req)
+	invokeOutput, err := s.LambdaClient.Invoke(context.TODO(), &lambda.InvokeInput{
+		FunctionName:   awsSdk.String(fmt.Sprintf("kaytu-%s-describer", strings.ToLower(dc.Connector.String()))),
+		LogType:        types.LogTypeTail,
+		Payload:        lambdaRequest,
+		InvocationType: types.InvocationTypeEvent,
+	})
+
 	if err != nil {
-		s.logger.Error("failed to send orchestrators http request", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
+		s.logger.Error("failed to invoke lambda function",
+			zap.Uint("jobID", dc.ID),
+			zap.String("connectionID", dc.ConnectionID),
+			zap.String("resourceType", dc.ResourceType),
+			zap.Error(err),
+		)
 		isFailed = true
-		return fmt.Errorf("failed to send orchestrators http request due to %v", err)
+		return fmt.Errorf("failed to invoke lambda function due to %v", err)
 	}
 
-	defer resp.Body.Close()
-	resBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		s.logger.Error("failed to read orchestrators http response", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
-		isFailed = true
-		return fmt.Errorf("failed to read orchestrators http response due to %v", err)
-	}
+	s.logger.Info("lambda function function error",
+		zap.String("resourceType", dc.ResourceType), zap.String("error", *invokeOutput.FunctionError))
+	s.logger.Info("lambda function log result",
+		zap.String("resourceType", dc.ResourceType), zap.String("log result", *invokeOutput.LogResult))
+	s.logger.Info("lambda function payload",
+		zap.String("resourceType", dc.ResourceType), zap.String("payload", fmt.Sprintf("%v", invokeOutput.Payload)))
+	resBody := invokeOutput.Payload
 
-	if resp.StatusCode == http.StatusTooManyRequests {
+	if invokeOutput.StatusCode == http.StatusTooManyRequests {
 		s.logger.Error("failed to trigger cloud native worker due to too many requests", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
 		isFailed = true
-		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", resp.StatusCode, string(resBody))
+		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if invokeOutput.StatusCode != http.StatusOK {
 		s.logger.Error("failed to trigger cloud native worker", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
 		isFailed = true
-		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", resp.StatusCode, string(resBody))
+		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
 	}
 
 	s.logger.Info("successful job trigger",
