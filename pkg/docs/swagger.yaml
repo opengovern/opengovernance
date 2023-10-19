@@ -54,6 +54,8 @@ definitions:
         type: integer
       event_type:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType'
+      metadata:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata'
       operator:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct'
       scope:
@@ -65,6 +67,17 @@ definitions:
         type: string
       insight_id:
         type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata:
+    properties:
+      description:
+        type: string
+      label:
+        items:
+          type: string
+        type: array
+      name:
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorInformation:
     properties:
@@ -104,6 +117,8 @@ definitions:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType'
       id:
         type: integer
+      metadata:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata'
       operator:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct'
       scope:
@@ -150,6 +165,8 @@ definitions:
         type: integer
       event_type:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.EventType'
+      metadata:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata'
       operator:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct'
       scope:
