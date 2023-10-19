@@ -1,0 +1,26 @@
+@startuml Kaytu_Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "User")
+
+System_Boundary(kaytuPlatform, "Kaytu Platform") {
+    Container(sentry, "Sentry", "Go", "Crashlytics")
+
+    Container(frontendService, "Frontend", "ReactJS", "Kaytu App")
+    Rel(user, frontendService, "Authentication and authorization\nWorkspace management\nUser management")
+    Rel(frontendService, sentry, "Sends crash info to")
+
+    Container(docsService, "Docs", "ReactJS", "Documentation of app")
+    Rel(user, docsService, "Reading product docs")
+
+    Container(redocService, "Redoc", "", "Documentation of APIs")
+    Rel(user, redocService, "Reading API docs")
+
+    Container(swaggerService, "Swagger", "", "Documentation of APIs")
+    Rel(user, swaggerService, "Reading API docs")
+
+    Container(websiteService, "Website", "ReactJS", "Kaytu Website")
+    Rel(user, websiteService, "View website")
+}
+
+@enduml

@@ -1,0 +1,26 @@
+@startuml Kaytu_Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "User")
+
+System_Boundary(kaytuPlatform, "Kaytu Platform") {
+    Container(flux, "Flux", "", "Workspace & deployment management")
+
+    ContainerDb(platformPSql, "Database", "PostgreSQL", "Holds workspaces information")
+    ContainerDb(platformRedis, "Database", "Redis", "Cache")
+
+    Container(workspaceService, "Workspaces service", "Go", "Workspace management")
+    Rel(workspaceService, platformPSql, "")
+    Rel(workspaceService, platformRedis, "")
+    Rel(workspaceService, flux, "Deployment of new workspaces")
+}
+
+System_Boundary(kaytuWorkspace, "Kaytu Workspace") {
+    Container(onboardService, "Onboard service", "Go", "")
+    Container(inventoryService, "Inventory service", "Go", "")
+}
+
+Rel(workspaceService, onboardService, "retrieve no of connections")
+Rel(workspaceService, inventoryService, "retrieve resource usage")
+Rel(user, workspaceService, "Uses APIs", "HTTPS")
+@enduml

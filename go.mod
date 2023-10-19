@@ -8,8 +8,10 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription v1.1.0
 	github.com/aws/aws-sdk-go v1.45.19
 	github.com/aws/aws-sdk-go-v2 v1.21.0
+	github.com/aws/aws-sdk-go-v2/config v1.18.42
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.40
 	github.com/aws/aws-sdk-go-v2/service/iam v1.22.5
+	github.com/aws/aws-sdk-go-v2/service/lambda v1.39.5
 	github.com/aws/aws-sdk-go-v2/service/organizations v1.20.6
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.40.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.22.0
@@ -33,8 +35,8 @@ require (
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
-	github.com/kaytu-io/kaytu-aws-describer v0.13.9
-	github.com/kaytu-io/kaytu-azure-describer v0.9.10
+	github.com/kaytu-io/kaytu-aws-describer v0.13.16
+	github.com/kaytu-io/kaytu-azure-describer v0.9.12
 	github.com/kaytu-io/kaytu-util v0.0.0-20231014160036-3b260bc58a75
 	github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9
 	github.com/labstack/echo/v4 v4.11.1
@@ -196,7 +198,6 @@ require (
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.13 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.18.42 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.11 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.41 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.35 // indirect
@@ -280,7 +281,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/kinesisanalyticsv2 v1.18.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kinesisvideo v1.18.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kms v1.24.5 // indirect
-	github.com/aws/aws-sdk-go-v2/service/lambda v1.39.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/lightsail v1.28.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/macie2 v1.29.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/mediastore v1.15.0 // indirect

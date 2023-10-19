@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/config"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"net"
@@ -44,6 +45,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 )
 
 const (
@@ -195,6 +198,8 @@ type Scheduler struct {
 	DoDeleteOldResources bool
 	OperationMode        OperationMode
 	MaxConcurrentCall    int64
+
+	LambdaClient *lambda.Client
 }
 
 func initRabbitQueue(queueName string) (queue.Interface, error) {
@@ -264,6 +269,11 @@ func InitializeScheduler(
 			s.Stop()
 		}
 	}()
+
+	lambdaCfg, err := config.LoadDefaultConfig(context.Background())
+	lambdaCfg.Region = KeyRegion
+
+	s.LambdaClient = lambda.NewFromConfig(lambdaCfg)
 
 	s.logger, err = zap.NewProduction()
 	if err != nil {

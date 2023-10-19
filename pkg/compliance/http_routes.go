@@ -410,7 +410,7 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
 //	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Success		200				{object}	api.GetTopFieldResponse
+//	@Success		200				{object}	api.GetAccountsFindingsSummaryResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/accounts [get]
 func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
@@ -445,7 +445,7 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 		attribute.String("benchmark id", benchmarkID),
 	))
 	span1.End()
-	var response api.GetAccountsFindingsBySeverityResponse
+	var response api.GetAccountsFindingsSummaryResponse
 	res, err := es.AccountsFindingsSummary(h.logger, h.client, connectors, connectionIDs, benchmarkIDs, count)
 	if err != nil {
 		return err
@@ -478,7 +478,7 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 				low = r.DocCount
 			}
 		}
-		account := api.AccountsFindingsBySeverity{
+		account := api.AccountsFindingsSummary{
 			AccountName:   connection.ConnectionName,
 			AccountId:     connection.ConnectionID,
 			SecurityScore: float64(okCount) / float64(acc.DocCount),
@@ -514,7 +514,7 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 //	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
 //	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
 //	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Success		200				{object}	api.GetTopFieldResponse
+//	@Success		200				{object}	api.GetServicesFindingsSummaryResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/services [get]
 func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmarkId")
@@ -549,7 +549,7 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 		attribute.String("benchmark id", benchmarkID),
 	))
 	span1.End()
-	var response api.GetServicesFindingsBySeverityResponse
+	var response api.GetServicesFindingsSummaryResponse
 	res, err := es.ResourceTypesFindingsSummary(h.logger, h.client, connectors, connectionIDs, benchmarkIDs, count)
 	if err != nil {
 		return err
@@ -578,7 +578,7 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 				low = r.DocCount
 			}
 		}
-		service := api.ServiceFindingsBySeverity{
+		service := api.ServiceFindingsSummary{
 			ServiceName:   resourceType.Key,
 			ServiceLabel:  resourceType.Key,
 			SecurityScore: float64(okCount) / float64(resourceType.DocCount),

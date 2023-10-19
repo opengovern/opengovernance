@@ -136,7 +136,7 @@ type GetFieldCountResponse struct {
 	} `json:"policies"`
 }
 
-type AccountsFindingsBySeverity struct {
+type AccountsFindingsSummary struct {
 	AccountName     string  `json:"accountName"`
 	AccountId       string  `json:"accountId"`
 	SecurityScore   float64 `json:"securityScore"`
@@ -145,15 +145,15 @@ type AccountsFindingsBySeverity struct {
 		High     int `json:"high"`
 		Low      int `json:"low"`
 		Medium   int `json:"medium"`
-	}
+	} `json:"severitiesCount"`
 	LastCheckTime time.Time `json:"lastCheckTime"`
 }
 
-type GetAccountsFindingsBySeverityResponse struct {
-	Accounts []AccountsFindingsBySeverity `json:"accounts"`
+type GetAccountsFindingsSummaryResponse struct {
+	Accounts []AccountsFindingsSummary `json:"accounts"`
 }
 
-type ServiceFindingsBySeverity struct {
+type ServiceFindingsSummary struct {
 	ServiceName     string  `json:"serviceName"`
 	ServiceLabel    string  `json:"serviceLabel"`
 	SecurityScore   float64 `json:"securityScore"`
@@ -162,11 +162,11 @@ type ServiceFindingsBySeverity struct {
 		High     int `json:"high"`
 		Low      int `json:"low"`
 		Medium   int `json:"medium"`
-	}
+	} `json:"severitiesCount"`
 }
 
-type GetServicesFindingsBySeverityResponse struct {
-	Services []ServiceFindingsBySeverity `json:"services"`
+type GetServicesFindingsSummaryResponse struct {
+	Services []ServiceFindingsSummary `json:"services"`
 }
 
 type GetFindingsResponse struct {

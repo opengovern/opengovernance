@@ -12,8 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
-
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	idocker "github.com/kaytu-io/kaytu-util/pkg/dockertest"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
@@ -268,88 +266,6 @@ func (s *HttpServerSuite) TestGetStack() {
 	}
 }
 
-func (s *HttpServerSuite) TestTriggerStackBenchmark() {
-	ids := s.TestCreateStack()
-	var benchmarkTestCase []struct {
-		request api.StackBenchmarkRequest
-		result  int
-	}
-	for _, id := range ids {
-		benchmarkTestCase = append(benchmarkTestCase, struct {
-			request api.StackBenchmarkRequest
-			result  int
-		}{
-			request: api.StackBenchmarkRequest{
-				StackID:    id,
-				Benchmarks: []string{"aws_foundational_security"},
-			},
-			result: http.StatusOK,
-		})
-	}
-	benchmarkTestCase = append(benchmarkTestCase, struct {
-		request api.StackBenchmarkRequest
-		result  int
-	}{
-		request: api.StackBenchmarkRequest{
-			StackID:    "not-a-stack",
-			Benchmarks: []string{},
-		},
-		result: http.StatusBadRequest,
-	})
-	for i, tc := range benchmarkTestCase {
-		s.T().Run(fmt.Sprintf("triggerBenchmark-%d", i), func(t *testing.T) {
-			requestBody, err := json.Marshal(tc.request)
-			if err != nil {
-				t.Fatalf("Marshal request: %v", err)
-			}
-			r := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(requestBody))
-			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			w := httptest.NewRecorder()
-
-			c := echo.New().NewContext(r, w)
-			c.SetPath("stacks/benchmark/trigger")
-
-			err = s.handler.TriggerStackBenchmark(c)
-			if tc.request.StackID == "not-a-stack" {
-				s.Equal(tc.result, err.(*echo.HTTPError).Code)
-			} else {
-				if err != nil {
-					t.Fatalf("Trigger benchmark: %v", err)
-				}
-				s.Equal(tc.result, w.Code)
-				stackRecord, err := s.handler.DB.GetStack(tc.request.StackID)
-				if err != nil {
-					t.Fatalf("Database error: %v", err)
-				}
-
-				var evaluations []api.StackEvaluation
-				for _, e := range stackRecord.Evaluations {
-					evaluations = append(evaluations, api.StackEvaluation{
-						EvaluatorID: e.EvaluatorID,
-						JobID:       e.JobID,
-						CreatedAt:   e.CreatedAt,
-						Status:      e.Status,
-					})
-				}
-
-				stack := api.Stack{
-					StackID:     stackRecord.StackID,
-					CreatedAt:   stackRecord.CreatedAt,
-					UpdatedAt:   stackRecord.UpdatedAt,
-					Resources:   []string(stackRecord.Resources),
-					Tags:        trimPrivateTags(stackRecord.GetTagsMap()),
-					Evaluations: evaluations,
-				}
-				fmt.Println(stack)
-				fmt.Println("=================")
-				fmt.Println("evaluations:", &stack.Evaluations)
-			}
-
-		})
-	}
-
-}
-
 func (s *HttpServerSuite) TestDeleteStack() {
 	ids := s.TestCreateStack()
 	var deleteStackTestCase []struct {
@@ -406,42 +322,6 @@ func (s *HttpServerSuite) TestDeleteStack() {
 				t.Fatalf("Database error: %v", err)
 			}
 			s.Equal(Stack{}, stack)
-		})
-	}
-}
-
-func (s *HttpServerSuite) TestTriggerEvaluation() {
-	connectionId := "d1f101e3-b5b9-4110-9220-ca9e7deb6e71"
-	benchmarkTestCase := []struct {
-		request api.TriggerBenchmarkEvaluationRequest
-	}{
-		{
-			request: api.TriggerBenchmarkEvaluationRequest{
-				BenchmarkID:  "aws_nist_800_53_rev_5",
-				ConnectionID: &connectionId,
-			},
-		},
-	}
-
-	for i, tc := range benchmarkTestCase {
-		s.T().Run(fmt.Sprintf("triggerBenchmark-%d", i), func(t *testing.T) {
-			requestBody, err := json.Marshal(tc.request)
-			if err != nil {
-				t.Fatalf("Marshal request: %v", err)
-			}
-			r := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(requestBody))
-			r.Header.Set("Content-Type", "application/json; charset=utf8")
-			w := httptest.NewRecorder()
-
-			c := echo.New().NewContext(r, w)
-			c.SetPath("/benchmark/evaluation/trigger")
-
-			err = s.handler.TriggerBenchmarkEvaluation(c)
-			var response []ComplianceReportJob
-			if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
-				t.Fatalf("json decode: %v", err)
-			}
-			fmt.Println(response)
 		})
 	}
 }
