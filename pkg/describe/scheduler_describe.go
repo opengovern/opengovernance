@@ -536,10 +536,15 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc Descri
 		return fmt.Errorf("failed to invoke lambda function due to %v", err)
 	}
 
-	s.logger.Info("lambda function function error",
-		zap.String("resourceType", dc.ResourceType), zap.String("error", *invokeOutput.FunctionError))
-	s.logger.Info("lambda function log result",
-		zap.String("resourceType", dc.ResourceType), zap.String("log result", *invokeOutput.LogResult))
+	if invokeOutput.FunctionError != nil {
+		s.logger.Info("lambda function function error",
+			zap.String("resourceType", dc.ResourceType), zap.String("error", *invokeOutput.FunctionError))
+	}
+	if invokeOutput.LogResult != nil {
+		s.logger.Info("lambda function log result",
+			zap.String("resourceType", dc.ResourceType), zap.String("log result", *invokeOutput.LogResult))
+	}
+
 	s.logger.Info("lambda function payload",
 		zap.String("resourceType", dc.ResourceType), zap.String("payload", fmt.Sprintf("%v", invokeOutput.Payload)))
 	resBody := invokeOutput.Payload
