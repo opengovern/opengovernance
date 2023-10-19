@@ -51,6 +51,7 @@ type Rule struct {
 	EventType EventType      `json:"event_type"`
 	Scope     Scope          `json:"scope"`
 	Operator  OperatorStruct `json:"operator"`
+	Metadata  Metadata       `json:"metadata"`
 	ActionID  uint           `json:"action_id"`
 }
 
@@ -58,6 +59,7 @@ type CreateRuleRequest struct {
 	EventType EventType      `json:"event_type"`
 	Scope     Scope          `json:"scope"`
 	Operator  OperatorStruct `json:"operator"`
+	Metadata  Metadata       `json:"metadata"`
 	ActionID  uint           `json:"action_id"`
 }
 
@@ -65,5 +67,12 @@ type UpdateRuleRequest struct {
 	EventType *EventType      `json:"event_type"`
 	Scope     *Scope          `json:"scope"`
 	Operator  *OperatorStruct `json:"operator"`
+	Metadata  *Metadata       `json:"metadata"`
 	ActionID  *uint           `json:"action_id"`
+}
+
+type Metadata struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Label       []string `json:"label"`
 }
