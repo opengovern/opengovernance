@@ -174,6 +174,7 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the inputs : %v ", err))
 	}
 
+	fmt.Println("req:", req)
 	EmptyFields := api.CreateRuleRequest{}
 	if req.Scope == EmptyFields.Scope ||
 		req.ActionID == EmptyFields.ActionID || req.Operator == EmptyFields.Operator || req.EventType == EmptyFields.EventType {
