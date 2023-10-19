@@ -501,13 +501,6 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc Descri
 		return fmt.Errorf("failed to marshal cloud native req due to %v", err)
 	}
 
-	invokeOutput, err := s.LambdaClient.Invoke(context.TODO(), &lambda.InvokeInput{
-		FunctionName:   awsSdk.String(fmt.Sprintf("kaytu-%s-describer", strings.ToLower(dc.Connector.String()))),
-		LogType:        types.LogTypeTail,
-		Payload:        lambdaRequest,
-		InvocationType: types.InvocationTypeEvent,
-	})
-
 	if err := s.db.QueueDescribeConnectionJob(dc.ID); err != nil {
 		s.logger.Error("failed to QueueDescribeResourceJob",
 			zap.Uint("jobID", dc.ID),
@@ -530,6 +523,24 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc Descri
 			}
 		}
 	}()
+
+	invokeOutput, err := s.LambdaClient.Invoke(context.TODO(), &lambda.InvokeInput{
+		FunctionName:   awsSdk.String(fmt.Sprintf("kaytu-%s-describer", strings.ToLower(dc.Connector.String()))),
+		LogType:        types.LogTypeTail,
+		Payload:        lambdaRequest,
+		InvocationType: types.InvocationTypeEvent,
+	})
+
+	if err != nil {
+		s.logger.Error("failed to invoke lambda function",
+			zap.Uint("jobID", dc.ID),
+			zap.String("connectionID", dc.ConnectionID),
+			zap.String("resourceType", dc.ResourceType),
+			zap.Error(err),
+		)
+		isFailed = true
+		return fmt.Errorf("failed to invoke lambda function due to %v", err)
+	}
 
 	s.logger.Info("lambda function function error",
 		zap.String("resourceType", dc.ResourceType), zap.String("error", *invokeOutput.FunctionError))
