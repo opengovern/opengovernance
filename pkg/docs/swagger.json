@@ -1318,7 +1318,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse"
                         }
                     }
                 }
@@ -1396,7 +1396,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse"
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetServicesFindingsSummaryResponse"
                         }
                     }
                 }
@@ -6228,6 +6228,40 @@
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.AccountsFindingsSummary": {
+            "type": "object",
+            "properties": {
+                "accountId": {
+                    "type": "string"
+                },
+                "accountName": {
+                    "type": "string"
+                },
+                "lastCheckTime": {
+                    "type": "string"
+                },
+                "securityScore": {
+                    "type": "number"
+                },
+                "severitiesCount": {
+                    "type": "object",
+                    "properties": {
+                        "critical": {
+                            "type": "integer"
+                        },
+                        "high": {
+                            "type": "integer"
+                        },
+                        "low": {
+                            "type": "integer"
+                        },
+                        "medium": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedConnection": {
             "type": "object",
             "properties": {
@@ -6591,6 +6625,17 @@
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "accounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.AccountsFindingsSummary"
+                    }
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarksSummaryResponse": {
             "type": "object",
             "properties": {
@@ -6640,6 +6685,17 @@
                 "totalCount": {
                     "type": "integer",
                     "example": 100
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetServicesFindingsSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ServiceFindingsSummary"
+                    }
                 }
             }
         },
@@ -7007,6 +7063,37 @@
                 "updatedAt": {
                     "type": "string",
                     "example": "2023-06-16T14:58:08.759554Z"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ServiceFindingsSummary": {
+            "type": "object",
+            "properties": {
+                "securityScore": {
+                    "type": "number"
+                },
+                "serviceLabel": {
+                    "type": "string"
+                },
+                "serviceName": {
+                    "type": "string"
+                },
+                "severitiesCount": {
+                    "type": "object",
+                    "properties": {
+                        "critical": {
+                            "type": "integer"
+                        },
+                        "high": {
+                            "type": "integer"
+                        },
+                        "low": {
+                            "type": "integer"
+                        },
+                        "medium": {
+                            "type": "integer"
+                        }
+                    }
                 }
             }
         },

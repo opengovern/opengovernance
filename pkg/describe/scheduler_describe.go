@@ -226,7 +226,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 	res := wp.Run()
 	for _, r := range res {
 		if r.Error != nil {
-			s.logger.Error("failure on calling cloudNative describer", zap.Error(err))
+			s.logger.Error("failure on calling cloudNative describer", zap.Error(r.Error))
 		}
 	}
 

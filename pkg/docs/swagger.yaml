@@ -474,6 +474,28 @@ definitions:
         example: John Doe
         type: string
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.AccountsFindingsSummary:
+    properties:
+      accountId:
+        type: string
+      accountName:
+        type: string
+      lastCheckTime:
+        type: string
+      securityScore:
+        type: number
+      severitiesCount:
+        properties:
+          critical:
+            type: integer
+          high:
+            type: integer
+          low:
+            type: integer
+          medium:
+            type: integer
+        type: object
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkAssignedConnection:
     properties:
       connectionID:
@@ -730,6 +752,13 @@ definitions:
         - policySeverity
         example: status
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse:
+    properties:
+      accounts:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.AccountsFindingsSummary'
+        type: array
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetBenchmarksSummaryResponse:
     properties:
       benchmarkSummary:
@@ -763,6 +792,13 @@ definitions:
       totalCount:
         example: 100
         type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetServicesFindingsSummaryResponse:
+    properties:
+      services:
+        items:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ServiceFindingsSummary'
+        type: array
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse:
     properties:
@@ -1026,6 +1062,26 @@ definitions:
       updatedAt:
         example: "2023-06-16T14:58:08.759554Z"
         type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.ServiceFindingsSummary:
+    properties:
+      securityScore:
+        type: number
+      serviceLabel:
+        type: string
+      serviceName:
+        type: string
+      severitiesCount:
+        properties:
+          critical:
+            type: integer
+          high:
+            type: integer
+          low:
+            type: integer
+          medium:
+            type: integer
+        type: object
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType:
     enum:
@@ -3572,7 +3628,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse'
       security:
       - BearerToken: []
       summary: Get accounts findings summaries
@@ -3625,7 +3681,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetTopFieldResponse'
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetServicesFindingsSummaryResponse'
       security:
       - BearerToken: []
       summary: Get services findings summary
