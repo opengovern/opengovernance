@@ -147,11 +147,18 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling operator : %v ", err))
 		}
 
+		var metadata api.Metadata
+		err = json.Unmarshal(rule.Metadata, &metadata)
+		if err != nil {
+			return ctx.String(http.StatusBadRequest, fmt.Sprintf("error unmarshalling metadata : %v ", err))
+		}
+
 		response = append(response, api.Rule{
 			Id:        rule.Id,
 			EventType: eventType,
 			Scope:     scope,
 			Operator:  operator,
+			Metadata:  metadata,
 			ActionID:  rule.ActionID,
 		})
 	}
@@ -195,7 +202,12 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error marshalling operator : %v ", err))
 	}
 
-	if err := h.db.CreateRule(event, scope, operator, req.ActionID); err != nil {
+	metadata, err := json.Marshal(req.Metadata)
+	if err != nil {
+		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error marshalling metadata : %v ", err))
+	}
+
+	if err := h.db.CreateRule(event, scope, operator, req.ActionID, metadata); err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error creating rule : %v ", err))
 	}
 
@@ -256,6 +268,7 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 	var scope []byte
 	var eventType []byte
 	var operator []byte
+	var metadata []byte
 
 	if req.Scope != nil {
 		scope, err = json.Marshal(req.Scope)
@@ -284,7 +297,16 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 		operator = nil
 	}
 
-	err = h.db.UpdateRule(uint(id), &eventType, &scope, &operator, req.ActionID)
+	if req.Metadata != nil {
+		metadata, err = json.Marshal(req.Metadata)
+		if err != nil {
+			return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error marshalling the metadata : %v ", err))
+		}
+	} else {
+		metadata = nil
+	}
+
+	err = h.db.UpdateRule(uint(id), &eventType, &scope, &metadata, &operator, req.ActionID)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error updating the rule : %v ", err))
 	}
