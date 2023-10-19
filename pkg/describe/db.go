@@ -38,17 +38,6 @@ func (db Database) Initialize() error {
 
 // =============================== DescribeConnectionJob ===============================
 
-func (db Database) CreateDescribeConnectionJob(job *DescribeConnectionJob) error {
-	tx := db.orm.
-		Model(&DescribeConnectionJob{}).
-		Create(job)
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	return nil
-}
-
 func (db Database) CountQueuedDescribeConnectionJobs() (int64, error) {
 	var count int64
 	tx := db.orm.Model(&DescribeConnectionJob{}).Where("status = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued).Count(&count)
