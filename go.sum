@@ -1604,8 +1604,12 @@ github.com/eapache/queue v1.1.0/go.mod h1:6eCeP0CKFpHLu8blIFXhExK/dRa7WDZfr6jVFP
 github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaBNrHW5M=
 github.com/eko/gocache/v3 v3.1.2 h1:tBAn5kBScEmRXWHJl0iJgJU7TsMeOjySwHDZ/92riqg=
 github.com/eko/gocache/v3 v3.1.2/go.mod h1:92prWCVTLxRkRlZuxDkLkwwUfitZ60zKNi6kn3qiDNU=
+github.com/elastic/elastic-transport-go/v8 v8.0.0-20230329154755-1a3c63de0db6 h1:1+44gxLdKRnR/Bx/iAtr+XqNcE4e0oODa63+FABNANI=
+github.com/elastic/elastic-transport-go/v8 v8.0.0-20230329154755-1a3c63de0db6/go.mod h1:87Tcz8IVNe6rVSLdBux1o/PEItLtyabHU3naC7IoqKI=
 github.com/elastic/go-elasticsearch/v7 v7.17.10 h1:TCQ8i4PmIJuBunvBS6bwT2ybzVFxxUhhltAs3Gyu1yo=
 github.com/elastic/go-elasticsearch/v7 v7.17.10/go.mod h1:OJ4wdbtDNk5g503kvlHLyErCgQwwzmDtaFC4XyOxXA4=
+github.com/elastic/go-elasticsearch/v8 v8.10.0 h1:ALg3DMxSrx07YmeMNcfPf7cFh1Ep2+Qa19EOXTbwr2k=
+github.com/elastic/go-elasticsearch/v8 v8.10.0/go.mod h1:NGmpvohKiRHXI0Sw4fuUGn6hYOmAXlyCphKpzVBiqDE=
 github.com/elazarl/goproxy v0.0.0-20170405201442-c4fc26588b6e/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
 github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
 github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
@@ -2292,8 +2296,6 @@ github.com/kaytu-io/kaytu-aws-describer v0.13.16 h1:eKEheXSCqx+eVlx7dhyM3+mcZR8h
 github.com/kaytu-io/kaytu-aws-describer v0.13.16/go.mod h1:5Vhxysj+gXLp2Ujj3SLhYWusE6dsldmyslazFGVRIbg=
 github.com/kaytu-io/kaytu-azure-describer v0.9.12 h1:OvIBIe17l8quS0qyVb7KqgjPiU49NN2U+5TtlbPsZBk=
 github.com/kaytu-io/kaytu-azure-describer v0.9.12/go.mod h1:2dEXN4ZoUwETw+fezEkUfXmu+oRUjbGyNpXsiNGvHrQ=
-github.com/kaytu-io/kaytu-util v0.0.0-20231019190901-06a093bc2d79 h1:sY3bv85U5D9M6ulNnMANf01BqqwONVwCM6Ul6W1zmXk=
-github.com/kaytu-io/kaytu-util v0.0.0-20231019190901-06a093bc2d79/go.mod h1:piF79F4EajeTzJwJyEbO9jVG3WIdqJCwSyNYc65RGFk=
 github.com/kaytu-io/kaytu-util v0.0.0-20231020064854-afb0e207f090 h1:kte2bCToOS2Q4CD9ryOBdXY6snJ76jORpls/FMYLtqw=
 github.com/kaytu-io/kaytu-util v0.0.0-20231020064854-afb0e207f090/go.mod h1:piF79F4EajeTzJwJyEbO9jVG3WIdqJCwSyNYc65RGFk=
 github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9 h1:cuwf0h1VmlT/C1hL3FewDUFaeqpegGUvKGezO50nel4=

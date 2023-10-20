@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	url2 "net/url"
 	"strconv"
 	"time"
 
@@ -31,6 +33,281 @@ type Context struct {
 	MaxUsers       int64
 	MaxConnections int64
 	MaxResources   int64
+}
+
+func (ctx *Context) Request() *http.Request {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) SetRequest(r *http.Request) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) SetResponse(r *echo.Response) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Response() *echo.Response {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) IsTLS() bool {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) IsWebSocket() bool {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Scheme() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) RealIP() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Path() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) SetPath(p string) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Param(name string) string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) ParamNames() []string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) SetParamNames(names ...string) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) ParamValues() []string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) SetParamValues(values ...string) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) QueryParam(name string) string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) QueryParams() url2.Values {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) QueryString() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) FormValue(name string) string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) FormParams() (url2.Values, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) FormFile(name string) (*multipart.FileHeader, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) MultipartForm() (*multipart.Form, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Cookie(name string) (*http.Cookie, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) SetCookie(cookie *http.Cookie) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Cookies() []*http.Cookie {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Get(key string) interface{} {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Set(key string, val interface{}) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Bind(i interface{}) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Validate(i interface{}) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Render(code int, name string, data interface{}) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) HTML(code int, html string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) HTMLBlob(code int, b []byte) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) String(code int, s string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) JSON(code int, i interface{}) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) JSONPretty(code int, i interface{}, indent string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) JSONBlob(code int, b []byte) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) JSONP(code int, callback string, i interface{}) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) JSONPBlob(code int, callback string, b []byte) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) XML(code int, i interface{}) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) XMLPretty(code int, i interface{}, indent string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) XMLBlob(code int, b []byte) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Blob(code int, contentType string, b []byte) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Stream(code int, contentType string, r io.Reader) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) File(file string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Attachment(file string, name string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Inline(file string, name string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) NoContent(code int) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Redirect(code int, url string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Error(err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Handler() echo.HandlerFunc {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) SetHandler(h echo.HandlerFunc) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Logger() echo.Logger {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) SetLogger(l echo.Logger) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Echo() *echo.Echo {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ctx *Context) Reset(r *http.Request, w http.ResponseWriter) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (ctx *Context) ToHeaders() map[string]string {

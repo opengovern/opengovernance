@@ -18,3 +18,4 @@ workspace-service
 gpt-service
 analytics-worker
 alerting-service
+cost-estimator-service
