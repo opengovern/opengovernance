@@ -21,6 +21,7 @@ func (h HttpHandler) Register(e *echo.Echo) {
 //	@Tags			cost-estimator
 //	@Produce		int
 //	@Param			resourceId	path		string	true	"ResourceID"
+//	@Param			resourceType	path		string	true	"ResourceType"
 //	@Success		200		{object}
 //	@Router			/cost_estimator/api/v1/cost/azure [get]
 func (h *HttpHandler) AzureCost(ctx echo.Context) error {
@@ -33,6 +34,36 @@ func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 	OSType := resource.Description.VirtualMachine.Properties.StorageProfile.OSDisk.OSType
 	location := resource.Description.VirtualMachine.Location
 	VMSize := resource.Description.VirtualMachine.Properties.HardwareProfile.VMSize
+	cost, err := cost_calculator.AzureCostEstimator(OSType, location, VMSize)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, cost)
+}
+
+// AwsCost godoc
+//
+//	@Summary		Get AWS cost
+//	@Description	Get AWS cost for each resource
+//	@Security		BearerToken
+//	@Tags			cost-estimator
+//	@Produce		int
+//	@Param			resourceId	path		string	true	"ResourceID"
+//	@Param			resourceType	path		string	true	"ResourceType"
+//	@Success		200		{object}
+//	@Router			/cost_estimator/api/v1/cost/aws [get]
+func (h *HttpHandler) AwsCost(ctx echo.Context) error {
+	resourceId := ctx.Param("resourceId")
+	resource, err := GetAWSResource(h, resourceId)
+	if err != nil {
+		return err
+	}
+
+	OSType := resource.Description.VirtualMachine.Properties.StorageProfile.OSDisk.OSType
+	location := resource.Description.VirtualMachine.Location
+	VMSize := resource.Description.VirtualMachine.Properties.HardwareProfile.VMSize
+	// TODO create another filer for calculating aws cost
 	cost, err := cost_calculator.AzureCostEstimator(OSType, location, VMSize)
 	if err != nil {
 		return err
