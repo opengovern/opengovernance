@@ -5,12 +5,12 @@ import "github.com/kaytu-io/kaytu-util/pkg/source"
 type OperatorType string
 
 const (
-	OperatorGreaterThan        OperatorType = ">"
-	OperatorLessThan           OperatorType = "<"
-	OperatorLessThanOrEqual    OperatorType = "<="
-	OperatorGreaterThanOrEqual OperatorType = ">="
-	OperatorEqual              OperatorType = "="
-	OperatorDoesNotEqual       OperatorType = "!="
+	OperatorGreaterThan        OperatorType = "GreaterThan"
+	OperatorLessThan           OperatorType = "LessThan"
+	OperatorLessThanOrEqual    OperatorType = "LessThanOrEqual"
+	OperatorGreaterThanOrEqual OperatorType = "GreaterThanOrEqual"
+	OperatorEqual              OperatorType = "Equal"
+	OperatorDoesNotEqual       OperatorType = "DoesNotEqual"
 )
 
 type ConditionType string
@@ -51,6 +51,7 @@ type Rule struct {
 	EventType EventType      `json:"event_type"`
 	Scope     Scope          `json:"scope"`
 	Operator  OperatorStruct `json:"operator"`
+	Metadata  Metadata       `json:"metadata"`
 	ActionID  uint           `json:"action_id"`
 }
 
@@ -58,13 +59,20 @@ type CreateRuleRequest struct {
 	EventType EventType      `json:"event_type"`
 	Scope     Scope          `json:"scope"`
 	Operator  OperatorStruct `json:"operator"`
+	Metadata  Metadata       `json:"metadata"`
 	ActionID  uint           `json:"action_id"`
 }
 
 type UpdateRuleRequest struct {
-	Id        uint            `json:"id"`
 	EventType *EventType      `json:"event_type"`
 	Scope     *Scope          `json:"scope"`
 	Operator  *OperatorStruct `json:"operator"`
+	Metadata  *Metadata       `json:"metadata"`
 	ActionID  *uint           `json:"action_id"`
+}
+
+type Metadata struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Label       []string `json:"label"`
 }

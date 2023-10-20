@@ -1,0 +1,70 @@
+@startuml Kaytu_Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "User")
+
+System_Ext(awsKMS, "AWS KMS")
+System_Ext(awsSystem, "AWS", "")
+System_Ext(azureSystem, "Azure", "")
+
+System_Boundary(kaytuPlatform, "Kaytu Platform") {
+    Container(flux, "Flux", "", "Workspace management")
+    Container(workspaceService, "Workspaces service", "Go", "Workspace management")
+}
+
+System_Boundary(kaytuWorkspace, "Kaytu Workspace") {
+    ContainerDb(workspacePostgres, "Database", "PostgreSQL", "Holds workspaces and authorization information")
+    ContainerDb(elastic, "Database", "ElasticSearch", "Holds workspaces and authorization information")
+    ContainerQueue(kafka, "Database", "Kafka", "Holds workspaces and authorization information")
+    ContainerQueue(rabbitMQ, "Database", "RabbitMQ", "Holds workspaces and authorization information")
+    ContainerDb(workspaceRedis, "Database", "Redis", "Cache")
+
+    Container(kaytuResourcesKafkaConnect, "Kafka Connect (Kaytu resources)", "Java", "")
+    Rel(kafka, kaytuResourcesKafkaConnect, "")
+    Rel(kaytuResourcesKafkaConnect, elastic, "")
+
+    Container(cloudResourcesKafkaConnect, "Kafka Connect (Cloud resources)", "Java", "")
+    Rel(kafka, cloudResourcesKafkaConnect, "")
+    Rel(cloudResourcesKafkaConnect, elastic, "")
+
+    Container(metadataService, "Metadata service", "Go", "")
+    Container(onboardService, "Onboard service", "Go", "")
+    Container(inventoryService, "Inventory service", "Go", "")
+
+    Container(schedulerService, "Scheduler service", "Go", "")
+    Rel(schedulerService, rabbitMQ, "")
+    Rel(schedulerService, kafka, "")
+    Rel(schedulerService, workspacePostgres, "")
+    Rel(schedulerService, workspaceService, "")
+    Rel(schedulerService, metadataService, "")
+    Rel(schedulerService, inventoryService, "")
+    Rel(schedulerService, onboardService, "")
+    Rel(schedulerService, elastic, "")
+    Rel(schedulerService, workspaceRedis, "")
+    Rel(schedulerService, flux, "")
+    Rel(schedulerService, awsKMS, "")
+
+    Container(complianceService, "Compliance service", "Go", "")
+
+    Container(describeReceiverService, "Describe receiver service", "Go", "")
+    Rel(describeReceiverService, rabbitMQ, "")
+    Rel(describeReceiverService, kafka, "")
+    Rel(describeReceiverService, workspacePostgres, "")
+    Rel(describeReceiverService, elastic, "")
+    Rel(describeReceiverService, workspaceRedis, "")
+
+    Rel(schedulerService, complianceService, "")
+}
+
+System_Boundary(kaytuDiscovery, "Kaytu Discovery") {
+    Container(azureDescriber, "Kaytu Azure Describer", "Go", "Fetches metadata of variant resource types from Azure")
+    Container(awsDescriber, "Kaytu AWS Describer", "Go", "Fetches metadata of variant resource types from AWS")
+
+    Rel(azureDescriber, describeReceiverService, "Sends resources to", "GRPC")
+    Rel(awsDescriber, describeReceiverService, "Sends resources to", "GRPC")
+}
+
+Rel(azureDescriber, azureSystem, "Gets resources from", "HTTPS")
+Rel(awsDescriber, awsSystem, "Gets resources from", "HTTPS")
+Rel(user, schedulerService, "Uses API", "HTTPS")
+@enduml

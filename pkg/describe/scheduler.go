@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/config"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"net"
@@ -44,6 +45,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 )
 
 const (
@@ -182,6 +185,7 @@ type Scheduler struct {
 	kafkaProducer       *confluent_kafka.Producer
 	kafkaResourcesTopic string
 	kafkaConsumer       *confluent_kafka.Consumer
+	kafkaServers        []string
 
 	describeEndpoint string
 	keyARN           string
@@ -195,6 +199,8 @@ type Scheduler struct {
 	DoDeleteOldResources bool
 	OperationMode        OperationMode
 	MaxConcurrentCall    int64
+
+	LambdaClient *lambda.Client
 }
 
 func initRabbitQueue(queueName string) (queue.Interface, error) {
@@ -264,6 +270,11 @@ func InitializeScheduler(
 			s.Stop()
 		}
 	}()
+
+	lambdaCfg, err := config.LoadDefaultConfig(context.Background())
+	lambdaCfg.Region = KeyRegion
+
+	s.LambdaClient = lambda.NewFromConfig(lambdaCfg)
 
 	s.logger, err = zap.NewProduction()
 	if err != nil {
@@ -347,6 +358,12 @@ func InitializeScheduler(
 		DB:      postgresDb,
 		SSLMode: postgresSSLMode,
 	}
+
+	if s.OperationMode == OperationModeScheduler {
+		cfg.Connection.MaxOpen = 50
+		cfg.Connection.MaxIdle = 20
+	}
+
 	orm, err := postgres.NewClient(&cfg, s.logger)
 	if err != nil {
 		return nil, fmt.Errorf("new postgres client: %w", err)
@@ -371,6 +388,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 	s.kafkaProducer = kafkaProducer
+	s.kafkaServers = strings.Split(KafkaService, ",")
 
 	kafkaResourceSinkConsumer, err := newKafkaConsumer(strings.Split(KafkaService, ","), s.kafkaResourcesTopic)
 	if err != nil {
@@ -585,6 +603,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 		})
 		EnsureRunGoroutin(func() {
 			s.RunScheduledJobCleanup()
+		})
+		EnsureRunGoroutin(func() {
+			s.UpdateDescribedResourceCountScheduler()
 		})
 	case OperationModeReceiver:
 		EnsureRunGoroutin(func() {

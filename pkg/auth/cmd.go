@@ -40,7 +40,6 @@ var (
 	auth0Domain         = os.Getenv("AUTH0_DOMAIN")
 	auth0ClientID       = os.Getenv("AUTH0_CLIENT_ID")
 	auth0ClientIDNative = os.Getenv("AUTH0_CLIENT_ID_NATIVE")
-	auth0ClientSecret   = os.Getenv("AUTH0_CLIENT_SECRET")
 
 	auth0ManageDomain       = os.Getenv("AUTH0_MANAGE_DOMAIN")
 	auth0ManageClientID     = os.Getenv("AUTH0_MANAGE_CLIENT_ID")
@@ -187,7 +186,7 @@ func start(ctx context.Context) error {
 		return fmt.Errorf("new postgres client: %w", err)
 	}
 
-	auth0Service := auth0.New(auth0ManageDomain, auth0ClientIDNative, auth0ClientID, auth0ManageClientID, auth0ManageClientSecret,
+	auth0Service := auth0.New(auth0ManageDomain, auth0ClientID, auth0ManageClientID, auth0ManageClientSecret,
 		auth0Connection, int(inviteTTL))
 
 	grpcServer := grpc.NewServer(grpc.Creds(creds))

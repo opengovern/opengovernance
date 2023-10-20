@@ -1,15 +1,16 @@
 package describe
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	awsSdk "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
-	"io"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -123,69 +124,9 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 		return err
 	}
 
-	ctx, failedsSpan := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, "GetFailedJobs")
-
-	fdcs, err := s.db.GetFailedDescribeConnectionJobs(ctx, 1000)
-	if err != nil {
-		s.logger.Error("failed to fetch failed describe resource jobs", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
-		DescribeResourceJobsCount.WithLabelValues("failure", "fetch_jobs").Inc()
-		return err
-	}
-	s.logger.Info(fmt.Sprintf("found %v failed jobs before filtering", len(fdcs)))
-	for i := 0; i < len(fdcs); i++ {
-		if fdcs[i].Connector == source.CloudAWS {
-			resourceType, err := aws.GetResourceType(fdcs[i].ResourceType)
-			if err != nil {
-				s.logger.Error("failed to get aws resource type", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
-				DescribeResourceJobsCount.WithLabelValues("failure", "aws_resource_type").Inc()
-				return err
-			}
-			if resourceType.FastDiscovery {
-				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-s.describeIntervalHours))) {
-					fdcs = append(fdcs[:i], fdcs[i+1:]...)
-					i--
-				}
-			} else if resourceType.CostDiscovery {
-				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-24))) {
-					fdcs = append(fdcs[:i], fdcs[i+1:]...)
-					i--
-				}
-			} else {
-				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-s.fullDiscoveryIntervalHours))) {
-					fdcs = append(fdcs[:i], fdcs[i+1:]...)
-					i--
-				}
-			}
-		} else if fdcs[i].Connector == source.CloudAzure {
-			resourceType, err := azure.GetResourceType(fdcs[i].ResourceType)
-			if err != nil {
-				s.logger.Error("failed to get azure resource type", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
-				DescribeResourceJobsCount.WithLabelValues("failure", "azure_resource_type").Inc()
-				return err
-			}
-			if resourceType.FastDiscovery {
-				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-s.describeIntervalHours))) {
-					fdcs = append(fdcs[:i], fdcs[i+1:]...)
-					i--
-				}
-			} else if resourceType.CostDiscovery {
-				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-24))) {
-					fdcs = append(fdcs[:i], fdcs[i+1:]...)
-					i--
-				}
-			} else {
-				if !fdcs[i].CreatedAt.After(time.Now().Add(time.Hour * time.Duration(-s.fullDiscoveryIntervalHours))) {
-					fdcs = append(fdcs[:i], fdcs[i+1:]...)
-					i--
-				}
-			}
-		}
-	}
-
-	s.logger.Info(fmt.Sprintf("retrying %v failed jobs", len(fdcs)))
-	failedsSpan.End()
-
-	dcs = append(dcs, fdcs...)
+	rand.Shuffle(len(dcs), func(i, j int) {
+		dcs[i], dcs[j] = dcs[j], dcs[i]
+	})
 
 	rtCount := map[string]int{}
 	for i := 0; i < len(dcs); i++ {
@@ -204,10 +145,6 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 			}
 		}
 		if rtCount[dc.ResourceType]+currentCount > maxCount {
-			if dc.ResourceType == "Microsoft.CostManagement/CostByResourceType" {
-				s.logger.Info("ignoring azure cost", zap.Int("currentCount", currentCount), zap.Int("rtCount", rtCount[dc.ResourceType]))
-			}
-
 			dcs = append(dcs[:i], dcs[i+1:]...)
 			i--
 		}
@@ -289,7 +226,7 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 	res := wp.Run()
 	for _, r := range res {
 		if r.Error != nil {
-			s.logger.Error("failure on calling cloudNative describer", zap.Error(err))
+			s.logger.Error("failure on calling cloudNative describer", zap.Error(r.Error))
 		}
 	}
 
@@ -297,13 +234,13 @@ func (s *Scheduler) RunDescribeResourceJobCycle(ctx context.Context) error {
 }
 
 func (s *Scheduler) RunDescribeResourceJobs(ctx context.Context) {
-	t := time.NewTicker(time.Second * 1)
+	t := time.NewTicker(time.Minute * 1)
 	defer t.Stop()
 	for ; ; <-t.C {
 		if err := s.RunDescribeResourceJobCycle(ctx); err != nil {
-			t.Reset(time.Second * 5)
+			t.Reset(time.Minute * 2)
 		} else {
-			t.Reset(time.Second * 1)
+			t.Reset(time.Minute * 1)
 		}
 	}
 }
@@ -340,7 +277,68 @@ func (s *Scheduler) scheduleDescribeJob() {
 		}
 	}
 
+	err = s.retryFailedJobs()
+	if err != nil {
+		s.logger.Error("failed to retry failed jobs", zap.String("spot", "retryFailedJobs"), zap.Error(err))
+		DescribeJobsCount.WithLabelValues("failure").Inc()
+		return
+	}
+
 	DescribeJobsCount.WithLabelValues("successful").Inc()
+}
+
+func (s *Scheduler) retryFailedJobs() error {
+	ctx := context.Background()
+	ctx, failedsSpan := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, "GetFailedJobs")
+
+	fdcs, err := s.db.GetFailedDescribeConnectionJobs(ctx)
+	if err != nil {
+		s.logger.Error("failed to fetch failed describe resource jobs", zap.String("spot", "GetFailedDescribeResourceJobs"), zap.Error(err))
+		return err
+	}
+	s.logger.Info(fmt.Sprintf("found %v failed jobs before filtering", len(fdcs)))
+	retryCount := 0
+
+	for _, failedJob := range fdcs {
+		var isFastDiscovery, isCostDiscovery bool
+
+		switch failedJob.Connector {
+		case source.CloudAWS:
+			resourceType, err := aws.GetResourceType(failedJob.ResourceType)
+			if err != nil {
+				return fmt.Errorf("failed to get aws resource type due to: %v", err)
+			}
+			isFastDiscovery, isCostDiscovery = resourceType.FastDiscovery, resourceType.CostDiscovery
+		case source.CloudAzure:
+			resourceType, err := azure.GetResourceType(failedJob.ResourceType)
+			if err != nil {
+				return fmt.Errorf("failed to get aws resource type due to: %v", err)
+			}
+			isFastDiscovery, isCostDiscovery = resourceType.FastDiscovery, resourceType.CostDiscovery
+		}
+
+		describeCycle := s.fullDiscoveryIntervalHours
+		if isFastDiscovery {
+			describeCycle = s.describeIntervalHours
+		} else if isCostDiscovery {
+			describeCycle = 24
+		}
+
+		if failedJob.CreatedAt.Before(time.Now().Add(time.Hour * time.Duration(-1*describeCycle))) {
+			continue
+		}
+
+		err = s.db.RetryDescribeConnectionJob(failedJob.ID)
+		if err != nil {
+			return err
+		}
+
+		retryCount++
+	}
+
+	s.logger.Info(fmt.Sprintf("retrying %v failed jobs", retryCount))
+	failedsSpan.End()
+	return nil
 }
 
 func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType string, scheduled bool, costFullDiscovery bool) (*DescribeConnectionJob, error) {
@@ -493,44 +491,9 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc Descri
 	}
 	lambdaRequest, err := json.Marshal(input)
 	if err != nil {
+		s.logger.Error("failed to marshal cloud native req", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType), zap.Error(err))
 		return fmt.Errorf("failed to marshal cloud native req due to %v", err)
 	}
-
-	httpClient := &http.Client{
-		Timeout: 1 * time.Minute,
-	}
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/kaytu-%s-describer", LambdaFuncsBaseURL, strings.ToLower(dc.Connector.String())), bytes.NewBuffer(lambdaRequest))
-	if err != nil {
-		return fmt.Errorf("failed to create http request due to %v", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to send orchestrators http request due to %v", err)
-	}
-
-	defer resp.Body.Close()
-	resBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read orchestrators http response due to %v", err)
-	}
-
-	if resp.StatusCode == http.StatusTooManyRequests {
-		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", resp.StatusCode, string(resBody))
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", resp.StatusCode, string(resBody))
-	}
-
-	s.logger.Info("successful job trigger",
-		zap.Uint("jobID", dc.ID),
-		zap.String("connectionID", dc.ConnectionID),
-		zap.String("resourceType", dc.ResourceType),
-	)
 
 	if err := s.db.QueueDescribeConnectionJob(dc.ID); err != nil {
 		s.logger.Error("failed to QueueDescribeResourceJob",
@@ -540,6 +503,74 @@ func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc Descri
 			zap.Error(err),
 		)
 	}
+	isFailed := false
+	defer func() {
+		if isFailed {
+			err := s.db.UpdateDescribeConnectionJobStatus(dc.ID, apiDescribe.DescribeResourceJobFailed, "Failed to invoke lambda", "Failed to invoke lambda", 0)
+			if err != nil {
+				s.logger.Error("failed to update describe resource job status",
+					zap.Uint("jobID", dc.ID),
+					zap.String("connectionID", dc.ConnectionID),
+					zap.String("resourceType", dc.ResourceType),
+					zap.Error(err),
+				)
+			}
+		}
+	}()
+
+	invokeOutput, err := s.LambdaClient.Invoke(context.TODO(), &lambda.InvokeInput{
+		FunctionName:   awsSdk.String(fmt.Sprintf("kaytu-%s-describer", strings.ToLower(dc.Connector.String()))),
+		LogType:        types.LogTypeTail,
+		Payload:        lambdaRequest,
+		InvocationType: types.InvocationTypeEvent,
+	})
+
+	if err != nil {
+		s.logger.Error("failed to invoke lambda function",
+			zap.Uint("jobID", dc.ID),
+			zap.String("connectionID", dc.ConnectionID),
+			zap.String("resourceType", dc.ResourceType),
+			zap.Error(err),
+		)
+		isFailed = true
+		return fmt.Errorf("failed to invoke lambda function due to %v", err)
+	}
+
+	if invokeOutput.FunctionError != nil {
+		s.logger.Info("lambda function function error",
+			zap.String("resourceType", dc.ResourceType), zap.String("error", *invokeOutput.FunctionError))
+	}
+	if invokeOutput.LogResult != nil {
+		s.logger.Info("lambda function log result",
+			zap.String("resourceType", dc.ResourceType), zap.String("log result", *invokeOutput.LogResult))
+	}
+
+	s.logger.Info("lambda function payload",
+		zap.String("resourceType", dc.ResourceType), zap.String("payload", fmt.Sprintf("%v", invokeOutput.Payload)))
+	resBody := invokeOutput.Payload
+
+	if invokeOutput.StatusCode == http.StatusTooManyRequests {
+		s.logger.Error("failed to trigger cloud native worker due to too many requests", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
+		isFailed = true
+		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
+	}
+
+	if invokeOutput.StatusCode != http.StatusAccepted {
+		s.logger.Error("failed to trigger cloud native worker", zap.Uint("jobID", dc.ID), zap.String("connectionID", dc.ConnectionID), zap.String("resourceType", dc.ResourceType))
+		isFailed = true
+		return fmt.Errorf("failed to trigger cloud native worker due to %d: %s", invokeOutput.StatusCode, string(resBody))
+	}
+
+	s.logger.Info("successful job trigger",
+		zap.Uint("jobID", dc.ID),
+		zap.String("connectionID", dc.ConnectionID),
+		zap.String("resourceType", dc.ResourceType),
+	)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

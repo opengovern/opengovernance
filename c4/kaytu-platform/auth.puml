@@ -1,0 +1,29 @@
+@startuml Kaytu_Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "User")
+
+System_Ext(sendGrid, "SendGrid")
+System_Ext(auth0, "Auth0")
+
+System_Boundary(kaytuPlatform, "Kaytu Platform") {
+    ContainerDb(platformPSql, "Database", "PostgreSQL", "Holds workspaces and authorization information")
+    ContainerDb(platformRedis, "Database", "Redis", "Cache")
+
+    Container(workspaceService, "Workspaces service", "Go", "Workspace management")
+
+    Container(authService, "Auth Microservice", "Go", "Handles authorization of users & API Key management")
+    Rel(authService, platformPSql, "")
+    Rel(authService, platformRedis, "")
+    Rel(authService, sendGrid, "sends email", "HTTPS")
+    Rel(authService, auth0, "gets auth info", "HTTPS")
+    Rel(authService, workspaceService, "gets workspace info", "HTTP")
+}
+
+System_Boundary(kaytuWorkspace, "Kaytu Workspace") {
+    Container(metadataService, "Metadata service", "Go", "")
+}
+
+Rel(authService, metadataService, "Gets workspace limitations", "HTTP")
+
+@enduml

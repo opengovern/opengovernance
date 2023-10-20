@@ -1,0 +1,23 @@
+@startuml Kaytu_Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "User")
+
+System_Boundary(kaytuWorkspace, "Kaytu Workspace") {
+    ContainerDb(elastic, "Database", "ElasticSearch", "Holds workspaces and authorization information")
+    ContainerDb(kafka, "Database", "Kafka", "Holds workspaces and authorization information")
+    ContainerDb(rabbitMQ, "Database", "RabbitMQ", "Holds workspaces and authorization information")
+    Container(onboardService, "Onboard service", "Go", "")
+    Container(schedulerService, "Scheduler service", "Go", "")
+    Container(complianceService, "Compliance service", "Go", "")
+
+    Container(complianceWorkers, "Compliance workers", "Go", "")
+    Rel(rabbitMQ, complianceWorkers, "")
+    Rel(complianceWorkers, kafka, "")
+    Rel(complianceWorkers, elastic, "")
+    Rel(complianceWorkers, onboardService, "")
+    Rel(complianceWorkers, schedulerService, "")
+    Rel(complianceWorkers, complianceService, "")
+}
+
+@enduml

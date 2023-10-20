@@ -1060,6 +1060,10 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 			accountsToOnboard = append(accountsToOnboard, account)
 		} else {
 			for _, conn := range existingConnections {
+				if conn.LifecycleState == ConnectionLifecycleStateArchived {
+					h.logger.Info("Archived Connection",
+						zap.String("accountID", conn.SourceId))
+				}
 				if conn.SourceId == account.AccountID {
 					name := account.AccountID
 					if account.AccountName != nil {
@@ -1078,8 +1082,10 @@ func (h HttpHandler) autoOnboardAWSAccounts(ctx context.Context, credential Cred
 					}
 					if account.Account.Status != awsOrgTypes.AccountStatusActive {
 						localConn.LifecycleState = ConnectionLifecycleStateArchived
+					} else if localConn.LifecycleState == ConnectionLifecycleStateArchived {
+						localConn.LifecycleState = ConnectionLifecycleStateDiscovered
 					}
-					if conn.Name != name || account.Account.Status != awsOrgTypes.AccountStatusActive {
+					if conn.Name != name || account.Account.Status != awsOrgTypes.AccountStatusActive || conn.LifecycleState != localConn.LifecycleState {
 						// tracer :
 						_, span2 := tracer.Start(outputS1, "new_UpdateSource", trace.WithSpanKind(trace.SpanKindServer))
 						span2.SetName("new_UpdateSource")
@@ -2200,7 +2206,7 @@ func (h HttpHandler) ListSources(ctx echo.Context) error {
 func (h HttpHandler) GetSources(ctx echo.Context) error {
 	var req api.GetSourcesRequest
 	if err := bindValidate(ctx, &req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	// trace :
 	_, span := tracer.Start(ctx.Request().Context(), "new_GetSources", trace.WithSpanKind(trace.SpanKindServer))

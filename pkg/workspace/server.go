@@ -259,9 +259,8 @@ func (s *Server) syncHTTPProxy(workspaces []*Workspace) error {
 			Conditions: []contourv1.MatchCondition{
 				{
 					Header: &contourv1.HeaderMatchCondition{
-						Name:    "workspace-name",
-						Present: true,
-						Exact:   w.Name,
+						Name:  "workspace-name",
+						Exact: w.Name,
 					},
 				},
 			},

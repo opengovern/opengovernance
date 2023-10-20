@@ -2,6 +2,7 @@ package alerting
 
 import (
 	"gorm.io/gorm"
+	"time"
 )
 
 type Database struct {
@@ -16,12 +17,33 @@ func (db Database) Initialize() error {
 	err := db.orm.AutoMigrate(
 		&Action{},
 		&Rule{},
+		&Triggers{},
 	)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (db Database) CreateTrigger(Time time.Time, eventType []byte, scope []byte, value int64, responseStatus int) error {
+	trigger := Triggers{
+		EventType:      eventType,
+		Scope:          scope,
+		TriggeredAt:    Time,
+		Value:          value,
+		ResponseStatus: responseStatus,
+	}
+	return db.orm.Model(&Triggers{}).Create(&trigger).Error
+}
+
+func (db Database) ListTriggers() ([]Triggers, error) {
+	var listTriggers []Triggers
+	err := db.orm.Model(&Triggers{}).Find(&listTriggers).Error
+	if err != nil {
+		return nil, err
+	}
+	return listTriggers, nil
 }
 
 func (db Database) ListRules() ([]Rule, error) {
@@ -43,12 +65,13 @@ func (db Database) GetRule(id uint) (Rule, error) {
 	return rule, nil
 }
 
-func (db Database) CreateRule(eventType []byte, scope []byte, operator []byte, actionID uint) error {
+func (db Database) CreateRule(eventType []byte, scope []byte, operator []byte, actionID uint, metadata []byte) error {
 	rule := Rule{
 		EventType: eventType,
 		Scope:     scope,
 		Operator:  operator,
 		ActionID:  actionID,
+		Metadata:  metadata,
 	}
 	return db.orm.Model(&Rule{}).Create(&rule).Error
 }
@@ -57,7 +80,7 @@ func (db Database) DeleteRule(ruleId uint) error {
 	return db.orm.Model(&Rule{}).Where("id = ?", ruleId).Delete(&Rule{}).Error
 }
 
-func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, operator *[]byte, actionID *uint) error {
+func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, metadata *[]byte, operator *[]byte, actionID *uint) error {
 	inputs := Rule{}
 
 	if eventType != nil {
@@ -71,6 +94,9 @@ func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, operato
 	}
 	if actionID != nil {
 		inputs.ActionID = *actionID
+	}
+	if metadata != nil {
+		inputs.Metadata = *metadata
 	}
 
 	return db.orm.Model(&Rule{}).Where("id = ?", id).Updates(inputs).Error

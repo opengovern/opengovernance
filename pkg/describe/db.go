@@ -38,17 +38,6 @@ func (db Database) Initialize() error {
 
 // =============================== DescribeConnectionJob ===============================
 
-func (db Database) CreateDescribeConnectionJob(job *DescribeConnectionJob) error {
-	tx := db.orm.
-		Model(&DescribeConnectionJob{}).
-		Create(job)
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	return nil
-}
-
 func (db Database) CountQueuedDescribeConnectionJobs() (int64, error) {
 	var count int64
 	tx := db.orm.Model(&DescribeConnectionJob{}).Where("status = ? AND created_at > now() - interval '1 day'", api.DescribeResourceJobQueued).Count(&count)
@@ -130,6 +119,14 @@ func (db Database) GetDescribeConnectionJobByID(id uint) (*DescribeConnectionJob
 	return &job, nil
 }
 
+func (db Database) RetryDescribeConnectionJob(id uint) error {
+	tx := db.orm.Exec("update describe_connection_jobs set status = ? where id = ?", api.DescribeResourceJobCreated, id)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
 func (db Database) QueueDescribeConnectionJob(id uint) error {
 	tx := db.orm.Exec("update describe_connection_jobs set status = ?, queued_at = NOW(), retry_count = retry_count + 1 where id = ?", api.DescribeResourceJobQueued, id)
 	if tx.Error != nil {
@@ -145,7 +142,7 @@ func (db Database) ListRandomCreatedDescribeConnectionJobs(ctx context.Context, 
 
 	var job []DescribeConnectionJob
 
-	//runningJobs := []api.DescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress}
+	//runningJobs := []api.D.RawescribeResourceJobStatus{api.DescribeResourceJobQueued, api.DescribeResourceJobInProgress}
 	tx := db.orm.Raw(`
 SELECT
 	*, random() as r
@@ -165,7 +162,7 @@ LIMIT ?
 	return job, nil
 }
 
-func (db Database) GetFailedDescribeConnectionJobs(ctx context.Context, limit int) ([]DescribeConnectionJob, error) {
+func (db Database) GetFailedDescribeConnectionJobs(ctx context.Context) ([]DescribeConnectionJob, error) {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
@@ -177,12 +174,13 @@ SELECT
 FROM
 	describe_connection_jobs dr
 WHERE
-	status = ? AND
-	created_at > now() - interval '3 day' AND 
+	(status = ? OR status = ?) AND
+	created_at > now() - interval '2 day' AND
+    updated_at < now() - interval '5 minutes' AND
 	NOT(error_code IN ('InvalidApiVersionParameter', 'AuthorizationFailed', 'AccessDeniedException', 'InvalidAuthenticationToken', 'AccessDenied', 'InsufficientPrivilegesException', '403', '404', '401', '400')) AND
 	(retry_count < 5 OR retry_count IS NULL)
-	ORDER BY id DESC LIMIT ?
-`, api.DescribeResourceJobFailed, limit).Find(&job)
+	ORDER BY id DESC
+`, api.DescribeResourceJobFailed, api.DescribeResourceJobTimeout).Find(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -190,6 +188,17 @@ WHERE
 		return nil, tx.Error
 	}
 	return job, nil
+}
+
+func (db Database) CreateDescribeConnectionJob(job *DescribeConnectionJob) error {
+	tx := db.orm.
+		Model(&DescribeConnectionJob{}).
+		Create(job)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
 }
 
 func (db Database) CleanupDescribeConnectionJobsOlderThan(t time.Time) error {
@@ -273,15 +282,14 @@ func (db Database) UpdateResourceTypeDescribeConnectionJobsTimedOut(resourceType
 
 // UpdateDescribeConnectionJobStatus updates the status of the DescribeResourceJob to the provided status.
 // If the status if 'FAILED', msg could be used to indicate the failure reason
-func (db Database) UpdateDescribeConnectionJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount int64) (api.DescribeResourceJobStatus, error) {
-	var oldStatus api.DescribeResourceJobStatus
-	tx := db.orm.Raw("WITH u AS (SELECT * FROM describe_connection_jobs WHERE id = ?) UPDATE describe_connection_jobs SET status = ?, failure_message = ?, error_code = ?,  described_resource_count = ? WHERE id = ? RETURNING (SELECT status FROM u)",
-		id, status, msg, errCode, resourceCount, id).Scan(&oldStatus)
+func (db Database) UpdateDescribeConnectionJobStatus(id uint, status api.DescribeResourceJobStatus, msg, errCode string, resourceCount int64) error {
+	tx := db.orm.Exec("UPDATE describe_connection_jobs SET status = ?, failure_message = ?, error_code = ?,  described_resource_count = ? WHERE id = ?",
+		status, msg, errCode, resourceCount, id)
 	if tx.Error != nil {
-		return oldStatus, tx.Error
+		return tx.Error
 	}
 
-	return oldStatus, nil
+	return nil
 }
 
 func (db Database) UpdateDescribeConnectionJobToInProgress(id uint) error {
@@ -342,6 +350,16 @@ where
 		return nil, tx.Error
 	}
 	return job, nil
+}
+
+func (db Database) CountJobsWithStatus(interval int, connector source.Type, status api.DescribeResourceJobStatus) (*int64, error) {
+	var count int64
+	query := fmt.Sprintf("SELECT count(*) FROM describe_connection_jobs WHERE (connector = '%s' and created_at > now() - interval '%d hour' and status = '%s') AND deleted_at IS NULL", connector, interval, status)
+	tx := db.orm.Raw(query).Find(&count)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &count, nil
 }
 
 func (db Database) ListAllPendingConnection() ([]string, error) {

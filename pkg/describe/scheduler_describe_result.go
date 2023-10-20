@@ -1,28 +1,89 @@
 package describe
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strings"
 	"time"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"go.uber.org/zap"
 )
 
+func (s *Scheduler) UpdateDescribedResourceCountScheduler() error {
+	s.logger.Info("DescribedResourceCount update scheduler started")
+
+	t := time.NewTicker(1 * time.Minute)
+	defer t.Stop()
+
+	for ; ; <-t.C {
+		s.UpdateDescribedResourceCount()
+	}
+}
+
+func (s *Scheduler) UpdateDescribedResourceCount() {
+	s.logger.Info("Updating DescribedResourceCount")
+	AwsFailedCount, err := s.db.CountJobsWithStatus(8, source.CloudAWS, api.DescribeResourceJobFailed)
+	if err != nil {
+		s.logger.Error("Failed to count described resources",
+			zap.String("connector", "AWS"),
+			zap.String("status", "failed"),
+			zap.Error(err))
+		return
+	}
+	ResourcesDescribedCount.WithLabelValues("aws", "failure").Set(float64(*AwsFailedCount))
+	AzureFailedCount, err := s.db.CountJobsWithStatus(8, source.CloudAzure, api.DescribeResourceJobFailed)
+	if err != nil {
+		s.logger.Error("Failed to count described resources",
+			zap.String("connector", "Azure"),
+			zap.String("status", "failed"),
+			zap.Error(err))
+		return
+	}
+	ResourcesDescribedCount.WithLabelValues("azure", "failure").Set(float64(*AzureFailedCount))
+	AwsSucceededCount, err := s.db.CountJobsWithStatus(8, source.CloudAWS, api.DescribeResourceJobSucceeded)
+	if err != nil {
+		s.logger.Error("Failed to count described resources",
+			zap.String("connector", "AWS"),
+			zap.String("status", "successful"),
+			zap.Error(err))
+		return
+	}
+	ResourcesDescribedCount.WithLabelValues("aws", "successful").Set(float64(*AwsSucceededCount))
+	AzureSucceededCount, err := s.db.CountJobsWithStatus(8, source.CloudAzure, api.DescribeResourceJobSucceeded)
+	if err != nil {
+		s.logger.Error("Failed to count described resources",
+			zap.String("connector", "Azure"),
+			zap.String("status", "successful"),
+			zap.Error(err))
+		return
+	}
+	ResourcesDescribedCount.WithLabelValues("azure", "successful").Set(float64(*AzureSucceededCount))
+}
+
 func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the JobResults queue")
 
-	msgs, err := s.describeJobResultQueue.Consume()
+	ctx := context.Background()
+	consumer, err := kafka.NewTopicConsumer(ctx, s.kafkaServers, "kaytu-describe-results-queue", "describe-receiver")
 	if err != nil {
 		return err
 	}
+
+	msgs := consumer.Consume(ctx)
+
+	//msgs, err := s.describeJobResultQueue.Consume()
+	//if err != nil {
+	//	return err
+	//}
 
 	t := time.NewTicker(JobTimeoutCheckInterval)
 	defer t.Stop()
@@ -34,11 +95,12 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				return fmt.Errorf("tasks channel is closed")
 			}
 			var result DescribeJobResult
-			if err := json.Unmarshal(msg.Body, &result); err != nil {
+			if err := json.Unmarshal(msg.Value, &result); err != nil {
 				ResultsProcessedCount.WithLabelValues("", "failure").Inc()
 
 				s.logger.Error("failed to consume message from describeJobResult", zap.Error(err))
-				err = msg.Nack(false, false)
+				//err = msg.Nack(false, false)
+				err := consumer.Commit(msg)
 				if err != nil {
 					s.logger.Error("failure while sending nack for message", zap.Error(err))
 				}
@@ -54,10 +116,22 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				if err := s.cleanupOldResources(result); err != nil {
 					ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 					s.logger.Error("failed to cleanupOldResources", zap.Error(err))
-					err = msg.Nack(false, true)
+					kmsg := kafka.Msg(string(msg.Key), msg.Value, "", "kaytu-describe-results-queue", confluent_kafka.PartitionAny)
+					_, err := kafka.SyncSend(s.logger, s.kafkaProducer, []*confluent_kafka.Message{kmsg}, nil)
 					if err != nil {
-						s.logger.Error("failure while sending nack for message", zap.Error(err))
+						s.logger.Error("failure while sending requeue", zap.Error(err))
+						continue
 					}
+
+					err = consumer.Commit(msg)
+					if err != nil {
+						s.logger.Error("failure while committing requeue", zap.Error(err))
+						continue
+					}
+					//err = msg.Nack(false, true)
+					//if err != nil {
+					//	s.logger.Error("failure while sending nack for message", zap.Error(err))
+					//}
 					continue
 				}
 			}
@@ -72,25 +146,31 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				}
 
 			}
-			oldStatus, err := s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)))
+			s.logger.Info("updating job status", zap.Uint("jobID", result.JobID), zap.String("status", string(result.Status)))
+			err = s.db.UpdateDescribeConnectionJobStatus(result.JobID, result.Status, errStr, errCodeStr, int64(len(result.DescribedResourceIDs)))
 			if err != nil {
 				ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "failure").Inc()
 				s.logger.Error("failed to UpdateDescribeResourceJobStatus", zap.Error(err))
-				err = msg.Nack(false, true)
+				kmsg := kafka.Msg(string(msg.Key), msg.Value, "", "kaytu-describe-results-queue", confluent_kafka.PartitionAny)
+				_, err := kafka.SyncSend(s.logger, s.kafkaProducer, []*confluent_kafka.Message{kmsg}, nil)
 				if err != nil {
-					s.logger.Error("failure while sending nack for message", zap.Error(err))
+					s.logger.Error("failure while sending requeue", zap.Error(err))
+					continue
 				}
+
+				err = consumer.Commit(msg)
+				if err != nil {
+					s.logger.Error("failure while committing requeue", zap.Error(err))
+					continue
+				}
+				//err = msg.Nack(false, true)
+				//if err != nil {
+				//	s.logger.Error("failure while sending nack for message", zap.Error(err))
+				//}
 				continue
 			}
-			if result.Status == api.DescribeResourceJobFailed {
-				if oldStatus != api.DescribeResourceJobFailed {
-					ResourcesDescribedCount.WithLabelValues(strings.ToLower(result.DescribeJob.SourceType.String()), "failure").Inc()
-				}
-			} else if result.Status == api.DescribeResourceJobSucceeded {
-				ResourcesDescribedCount.WithLabelValues(strings.ToLower(result.DescribeJob.SourceType.String()), "successful").Inc()
-			}
 			ResultsProcessedCount.WithLabelValues(string(result.DescribeJob.SourceType), "successful").Inc()
-			if err := msg.Ack(false); err != nil {
+			if err := consumer.Commit(msg); err != nil {
 				s.logger.Error("failure while sending ack for message", zap.Error(err))
 			}
 		case <-t.C:
@@ -108,10 +188,9 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				} else {
 					interval = s.fullDiscoveryIntervalHours
 				}
-				count, err := s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
+				_, err = s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
 				//s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
 				//DescribeResourceJobsCount.WithLabelValues("failure", "timedout_aws").Inc()
-				ResourcesDescribedCount.WithLabelValues("aws", "failure").Add(float64(count))
 				if err != nil {
 					s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
 				}
@@ -130,10 +209,9 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 				} else {
 					interval = s.fullDiscoveryIntervalHours
 				}
-				count, err := s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
+				_, err = s.db.UpdateResourceTypeDescribeConnectionJobsTimedOut(r, interval)
 				//s.logger.Warn(fmt.Sprintf("describe resource job timed out on %s:", r), zap.Error(err))
 				//DescribeResourceJobsCount.WithLabelValues("failure", "timedout_azure").Inc()
-				ResourcesDescribedCount.WithLabelValues("azure", "failure").Add(float64(count))
 				if err != nil {
 					s.logger.Error(fmt.Sprintf("failed to update timed out DescribeResourceJobs on %s:", r), zap.Error(err))
 				}
@@ -160,6 +238,8 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 			1000)
 		if err != nil {
 			CleanupJobCount.WithLabelValues("failure").Inc()
+			s.logger.Error("CleanJob failed",
+				zap.Error(err))
 			return err
 		}
 
@@ -202,6 +282,8 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				msgs = append(msgs, msg)
 				if err != nil {
 					CleanupJobCount.WithLabelValues("failure").Inc()
+					s.logger.Error("CleanJob failed",
+						zap.Error(err))
 					return err
 				}
 			}

@@ -17,9 +17,9 @@ import (
 
 type InventoryServiceClient interface {
 	CountResources(ctx *httpclient.Context) (int64, error)
-	ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error)
-	GetInsightResult(ctx *httpclient.Context, connectionIds []string, insightId uint, timeAt *time.Time) ([]insight.InsightResource, error)
-	GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, startTime, endTime *time.Time) (map[int][]insight.InsightResource, error)
+	ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, resourceCollections []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error)
+	GetInsightResult(ctx *httpclient.Context, connectionIds []string, resourceCollections []string, insightId uint, timeAt *time.Time) ([]insight.InsightResource, error)
+	GetInsightTrendResults(ctx *httpclient.Context, connectionIds, resourceCollections []string, insightId uint, startTime, endTime *time.Time) (map[int][]insight.InsightResource, error)
 	ListConnectionsData(ctx *httpclient.Context, connectionIds []string, startTime, endTime *time.Time, needCost, needResourceCount bool) (map[string]api.ConnectionData, error)
 	ListResourceTypesMetadata(ctx *httpclient.Context, connectors []source.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error)
 	ListResourceCollections(ctx *httpclient.Context) ([]api.ResourceCollection, error)
@@ -47,7 +47,7 @@ func (s *inventoryClient) CountResources(ctx *httpclient.Context) (int64, error)
 	return count, nil
 }
 
-func (s *inventoryClient) ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error) {
+func (s *inventoryClient) ListInsightResults(ctx *httpclient.Context, connectors []source.Type, connectionIds []string, resourceCollections []string, insightIds []uint, timeAt *time.Time) (map[uint][]insight.InsightResource, error) {
 	url := fmt.Sprintf("%s/api/v2/insights", s.baseURL)
 	firstParamAttached := false
 	if len(connectors) > 0 {
@@ -70,6 +70,17 @@ func (s *inventoryClient) ListInsightResults(ctx *httpclient.Context, connectors
 				url += "&"
 			}
 			url += fmt.Sprintf("connectionId=%s", connectionId)
+		}
+	}
+	if len(resourceCollections) > 0 {
+		for _, resourceCollection := range resourceCollections {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("resourceCollection=%s", resourceCollection)
 		}
 	}
 	if len(insightIds) > 0 {
@@ -100,7 +111,7 @@ func (s *inventoryClient) ListInsightResults(ctx *httpclient.Context, connectors
 	return response, nil
 }
 
-func (s *inventoryClient) GetInsightResult(ctx *httpclient.Context, connectionIds []string, insightId uint, timeAt *time.Time) ([]insight.InsightResource, error) {
+func (s *inventoryClient) GetInsightResult(ctx *httpclient.Context, connectionIds []string, resourceCollections []string, insightId uint, timeAt *time.Time) ([]insight.InsightResource, error) {
 	url := fmt.Sprintf("%s/api/v2/insights/%d", s.baseURL, insightId)
 	firstParamAttached := false
 	if len(connectionIds) > 0 {
@@ -112,6 +123,17 @@ func (s *inventoryClient) GetInsightResult(ctx *httpclient.Context, connectionId
 				url += "&"
 			}
 			url += fmt.Sprintf("connectionId=%s", connectionId)
+		}
+	}
+	if len(resourceCollections) > 0 {
+		for _, resourceCollection := range resourceCollections {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("resourceCollection=%s", resourceCollection)
 		}
 	}
 	if timeAt != nil {
@@ -134,7 +156,7 @@ func (s *inventoryClient) GetInsightResult(ctx *httpclient.Context, connectionId
 	return response, nil
 }
 
-func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connectionIds []string, insightId uint, startTime, endTime *time.Time) (map[int][]insight.InsightResource, error) {
+func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connectionIds, resourceCollections []string, insightId uint, startTime, endTime *time.Time) (map[int][]insight.InsightResource, error) {
 	url := fmt.Sprintf("%s/api/v2/insights/%d/trend", s.baseURL, insightId)
 	firstParamAttached := false
 	if len(connectionIds) > 0 {
@@ -146,6 +168,17 @@ func (s *inventoryClient) GetInsightTrendResults(ctx *httpclient.Context, connec
 				url += "&"
 			}
 			url += fmt.Sprintf("connectionId=%s", connectionId)
+		}
+	}
+	if len(resourceCollections) > 0 {
+		for _, resourceCollection := range resourceCollections {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("resourceCollection=%s", resourceCollection)
 		}
 	}
 	if startTime != nil {

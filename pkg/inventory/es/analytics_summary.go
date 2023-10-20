@@ -36,7 +36,9 @@ type FetchConnectionAnalyticMetricCountAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionAnalyticMetricCountAtTime(client kaytu.Client, connectors []source.Type, connectionIDs []string, t time.Time, metricIDs []string, size int) (map[string]int, error) {
+func FetchConnectionAnalyticMetricCountAtTime(client kaytu.Client, metricIDs []string,
+	connectors []source.Type, connectionIDs, resourceCollections []string, t time.Time, size int) (map[string]int, error) {
+	idx := resource.AnalyticsConnectionSummaryIndex
 	res := make(map[string]any)
 	var filters []any
 
@@ -48,6 +50,13 @@ func FetchConnectionAnalyticMetricCountAtTime(client kaytu.Client, connectors []
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"metric_id": metricIDs},
 		})
+	}
+
+	if len(resourceCollections) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"resource_collection": resourceCollections},
+		})
+		idx = resource.ResourceCollectionsAnalyticsConnectionSummaryIndex
 	}
 
 	if len(connectors) > 0 {
@@ -106,7 +115,7 @@ func FetchConnectionAnalyticMetricCountAtTime(client kaytu.Client, connectors []
 
 		fmt.Println("FetchConnectionAnalyticMetricCountAtTime = ", query)
 		var response FetchConnectionAnalyticMetricCountAtTimeResponse
-		err = client.Search(context.Background(), resource.AnalyticsConnectionSummaryIndex, query, &response)
+		err = client.Search(context.Background(), idx, query, &response)
 		if err != nil {
 			return nil, err
 		}
@@ -142,7 +151,9 @@ type FetchConnectorAnalyticMetricCountAtTimeResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client, connectors []source.Type, t time.Time, metricIDs []string, size int) (map[string]int, error) {
+func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client,
+	metricIDs []string, connectors []source.Type, resourceCollections []string, t time.Time, size int) (map[string]int, error) {
+	idx := resource.AnalyticsConnectorSummaryIndex
 	res := make(map[string]any)
 	var filters []any
 
@@ -159,6 +170,12 @@ func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client, connectors []s
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"connector": connectorStrings},
 		})
+	}
+	if len(resourceCollections) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"resource_collection": resourceCollections},
+		})
+		idx = resource.ResourceCollectionsAnalyticsConnectorSummaryIndex
 	}
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
@@ -209,7 +226,7 @@ func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client, connectors []s
 	query := string(b)
 
 	var response FetchConnectorAnalyticMetricCountAtTimeResponse
-	err = client.Search(context.Background(), resource.AnalyticsConnectorSummaryIndex, query, &response)
+	err = client.Search(context.Background(), idx, query, &response)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +265,8 @@ type ConnectionMetricTrendSummaryQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]DatapointWithFailures, error) {
+func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, metricIDs, resourceCollections []string, startTime, endTime time.Time, datapointCount, size int) (map[int]DatapointWithFailures, error) {
+	idx := resource.AnalyticsConnectionSummaryIndex
 	res := make(map[string]any)
 	var filters []any
 
@@ -263,6 +281,12 @@ func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, m
 			},
 		},
 	})
+	if len(resourceCollections) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"resource_collection": resourceCollections},
+		})
+		idx = resource.ResourceCollectionsAnalyticsConnectionSummaryIndex
+	}
 	res["size"] = 0
 	startTimeUnixMilli := startTime.UnixMilli()
 	endTimeUnixMilli := endTime.UnixMilli()
@@ -320,7 +344,7 @@ func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, m
 
 		fmt.Println("FetchConnectionMetricTrendSummaryPage = ", query)
 		var response ConnectionMetricTrendSummaryQueryResponse
-		err = client.Search(context.Background(), resource.AnalyticsConnectionSummaryIndex, query, &response)
+		err = client.Search(context.Background(), idx, query, &response)
 		if err != nil {
 			return nil, err
 		}
@@ -400,7 +424,8 @@ type DatapointWithFailures struct {
 	connectorTotal    map[string]int64
 }
 
-func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []source.Type, metricIDs []string, startTime, endTime time.Time, datapointCount int, size int) (map[int]DatapointWithFailures, error) {
+func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []source.Type, metricIDs []string, resourceCollections []string, startTime time.Time, endTime time.Time, datapointCount int, size int) (map[int]DatapointWithFailures, error) {
+	idx := resource.AnalyticsConnectorSummaryIndex
 	res := make(map[string]any)
 	var filters []any
 
@@ -416,6 +441,12 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 		filters = append(filters, map[string]any{
 			"terms": map[string][]string{"connector": connectorsStr},
 		})
+	}
+	if len(resourceCollections) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"resource_collection": resourceCollections},
+		})
+		idx = resource.ResourceCollectionsAnalyticsConnectorSummaryIndex
 	}
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
@@ -486,7 +517,7 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 	query := string(b)
 
 	var response ConnectorMetricTrendSummaryQueryResponse
-	err = client.Search(context.Background(), resource.AnalyticsConnectorSummaryIndex, query, &response)
+	err = client.Search(context.Background(), idx, query, &response)
 	if err != nil {
 		return nil, err
 	}

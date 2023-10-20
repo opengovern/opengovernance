@@ -2,6 +2,7 @@ package alerting
 
 import (
 	"gorm.io/datatypes"
+	"time"
 )
 
 type Rule struct {
@@ -9,6 +10,7 @@ type Rule struct {
 	EventType datatypes.JSON
 	Scope     datatypes.JSON
 	Operator  datatypes.JSON
+	Metadata  datatypes.JSON
 	ActionID  uint `gorm:"foreignKey:action_id"`
 }
 
@@ -18,4 +20,12 @@ type Action struct {
 	Url     string
 	Headers datatypes.JSON
 	Body    string
+}
+
+type Triggers struct {
+	EventType      datatypes.JSON
+	TriggeredAt    time.Time
+	Scope          datatypes.JSON
+	Value          int64
+	ResponseStatus int
 }

@@ -350,16 +350,7 @@ func FromEchoContext(c echo.Context) *Context {
 }
 
 func DoRequest(method string, url string, headers map[string]string, payload []byte, v interface{}) (statusCode int, err error) {
-	var buf bytes.Buffer
-	g := gzip.NewWriter(&buf)
-	if _, err = g.Write(payload); err != nil {
-		return statusCode, fmt.Errorf("gzip write: %w", err)
-	}
-	if err = g.Close(); err != nil {
-		return statusCode, fmt.Errorf("gzip close: %w", err)
-	}
-
-	req, err := http.NewRequest(method, url, &buf)
+	req, err := http.NewRequest(method, url, bytes.NewReader(payload))
 	if err != nil {
 		return statusCode, fmt.Errorf("new request: %w", err)
 	}
@@ -383,9 +374,19 @@ func DoRequest(method string, url string, headers map[string]string, payload []b
 		return statusCode, fmt.Errorf("do request: %w", err)
 	}
 	defer res.Body.Close()
+
+	body := res.Body
+	if res.Header.Get("Content-Encoding") == "gzip" {
+		body, err = gzip.NewReader(res.Body)
+		if err != nil {
+			return statusCode, fmt.Errorf("gzip new reader: %w", err)
+		}
+		defer body.Close()
+	}
+
 	statusCode = res.StatusCode
 	if res.StatusCode != http.StatusOK {
-		d, err := io.ReadAll(res.Body)
+		d, err := io.ReadAll(body)
 		if err != nil {
 			return statusCode, fmt.Errorf("read body: %w", err)
 		}
@@ -399,15 +400,6 @@ func DoRequest(method string, url string, headers map[string]string, payload []b
 	}
 	if v == nil {
 		return statusCode, nil
-	}
-
-	body := res.Body
-	if res.Header.Get("Content-Encoding") == "gzip" {
-		body, err = gzip.NewReader(res.Body)
-		if err != nil {
-			return statusCode, fmt.Errorf("gzip new reader: %w", err)
-		}
-		defer body.Close()
 	}
 
 	return statusCode, json.NewDecoder(body).Decode(v)

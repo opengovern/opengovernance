@@ -63,16 +63,18 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 	if err != nil {
 		return fmt.Errorf("error unmarshalling the operator : %v ", err.Error())
 	}
+
 	stat := false
+	var totalCount int64
 	if eventType.InsightId != nil {
 		h.logger.Info("triggering insight", zap.String("rule", fmt.Sprintf("%v", rule.Id)))
-		stat, err = h.triggerInsight(operator, eventType, scope)
+		stat, totalCount, err = h.triggerInsight(operator, eventType, scope)
 		if err != nil {
 			return fmt.Errorf("error triggering the insight : %v ", err.Error())
 		}
 	} else if eventType.BenchmarkId != nil {
 		h.logger.Info("triggering compliance", zap.String("rule", fmt.Sprintf("%v", rule.Id)))
-		stat, err = h.triggerCompliance(operator, scope, eventType)
+		stat, totalCount, err = h.triggerCompliance(operator, scope, eventType)
 		if err != nil {
 			return fmt.Errorf("Error in trigger compliance : %v ", err.Error())
 		}
@@ -80,7 +82,7 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 		return fmt.Errorf("Error: insighId or complianceId not entered ")
 	}
 	if stat {
-		err = h.sendAlert(rule)
+		err = h.sendAlert(rule, totalCount)
 		h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.Id)),
 			zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
 		if err != nil {
@@ -90,38 +92,38 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 	return nil
 }
 
-func (h HttpHandler) triggerInsight(operator api.OperatorStruct, eventType api.EventType, scope api.Scope) (bool, error) {
+func (h HttpHandler) triggerInsight(operator api.OperatorStruct, eventType api.EventType, scope api.Scope) (bool, int64, error) {
 	diff := 24 * time.Hour
 	oneDayAgo := time.Now().Add(-diff)
 	timeNow := time.Now()
 	insightID := strconv.Itoa(int(*eventType.InsightId))
 	connectionIds, err := h.getConnectionIdFilter(scope)
 	if err != nil {
-		return false, fmt.Errorf("error getting connectionId : %v ", err.Error())
+		return false, 0, fmt.Errorf("error getting connectionId : %v ", err.Error())
 	}
 
 	insight, _ := h.complianceClient.GetInsight(&httpclient.Context{UserRole: authApi.InternalRole}, insightID, connectionIds, &oneDayAgo, &timeNow)
 	if err != nil {
-		return false, fmt.Errorf("error getting Insight : %v", err.Error())
+		return false, 0, fmt.Errorf("error getting Insight : %v", err.Error())
 	}
 	if insight.TotalResultValue == nil {
-		return false, nil
+		return false, 0, nil
 	}
 
 	stat, err := calculationOperations(operator, *insight.TotalResultValue)
 	if err != nil {
-		return false, fmt.Errorf("error calculating operator : %v", err.Error())
+		return false, 0, fmt.Errorf("error calculating operator : %v", err.Error())
 	}
 	h.logger.Info("Insight rule operation done",
 		zap.Bool("result", stat),
 		zap.Int64("totalCount", *insight.TotalResultValue))
-	return stat, nil
+	return stat, *insight.TotalResultValue, nil
 }
 
-func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Scope, eventType api.EventType) (bool, error) {
+func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Scope, eventType api.EventType) (bool, int64, error) {
 	connectionIds, err := h.getConnectionIdFilter(scope)
 	if err != nil {
-		return false, fmt.Errorf("error getting connectionId : %v ", err.Error())
+		return false, 0, fmt.Errorf("error getting connectionId : %v ", err.Error())
 	}
 
 	filters := apiCompliance.FindingFilters{BenchmarkID: []string{*eventType.BenchmarkId}}
@@ -141,21 +143,21 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 		zap.String("request", fmt.Sprintf("%v", reqCompliance)))
 	compliance, err := h.complianceClient.GetFindings(&httpclient.Context{UserRole: authApi.AdminRole}, reqCompliance)
 	if err != nil {
-		return false, fmt.Errorf("error getting finding : %v ", err.Error())
+		return false, 0, fmt.Errorf("error getting finding : %v ", err.Error())
 	}
 	h.logger.Info("received findings")
 	stat, err := calculationOperations(operator, compliance.TotalCount)
 	if err != nil {
-		return false, fmt.Errorf("error in rule operations : %v ", err.Error())
+		return false, 0, fmt.Errorf("error in rule operations : %v ", err.Error())
 	}
 
 	h.logger.Info("Compliance rule operation done",
 		zap.Bool("result", stat),
 		zap.Int64("totalCount", compliance.TotalCount))
-	return stat, nil
+	return stat, compliance.TotalCount, nil
 }
 
-func (h HttpHandler) sendAlert(rule Rule) error {
+func (h HttpHandler) sendAlert(rule Rule, TotalCount int64) error {
 	action, err := h.db.GetAction(rule.ActionID)
 	if err != nil {
 		return fmt.Errorf("error getting action : %v", err.Error())
@@ -180,9 +182,32 @@ func (h HttpHandler) sendAlert(rule Rule) error {
 		return fmt.Errorf("error sending the alert request : %v ", err.Error())
 	}
 
+	err = h.addTriggerToDatabase(rule, TotalCount, res.StatusCode)
+	if err != nil {
+		return err
+	}
+
 	err = res.Body.Close()
 	if err != nil {
 		return fmt.Errorf("error closing the response body : %v ", err.Error())
+	}
+	return nil
+}
+
+func (h HttpHandler) addTriggerToDatabase(rule Rule, totalCount int64, responseStatusCode int) error {
+	eventTypeM, err := json.Marshal(rule.EventType)
+	if err != nil {
+		return fmt.Errorf("error in marshalling eventType : %v ", err)
+	}
+
+	scopeM, err := json.Marshal(rule.Scope)
+	if err != nil {
+		return fmt.Errorf("error in marshalling scope : %v ", err)
+	}
+
+	err = h.db.CreateTrigger(time.Now(), eventTypeM, scopeM, totalCount, responseStatusCode)
+	if err != nil {
+		return fmt.Errorf("error in add trigger to the database : %v ", err)
 	}
 	return nil
 }

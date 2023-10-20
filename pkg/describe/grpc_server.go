@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
+	"go.opentelemetry.io/otel"
 	"net/http"
 	"strings"
 	"time"
@@ -32,7 +34,6 @@ type GRPCDescribeServer struct {
 	producer                  *confluent_kafka.Producer
 	topic                     string
 	logger                    *zap.Logger
-	describeJobResultQueue    queue.Interface
 	DoProcessReceivedMessages bool
 	authGrpcClient            envoyauth.AuthorizationClient
 
@@ -45,7 +46,6 @@ func NewDescribeServer(db Database, rdb *redis.Client, producer *confluent_kafka
 		rdb:                       rdb,
 		producer:                  producer,
 		topic:                     topic,
-		describeJobResultQueue:    describeJobResultQueue,
 		logger:                    logger,
 		DoProcessReceivedMessages: true,
 		authGrpcClient:            authGrpcClient,
@@ -101,6 +101,7 @@ func (s *GRPCDescribeServer) grpcStreamAuthInterceptor(srv interface{}, ss grpc.
 }
 
 func (s *GRPCDescribeServer) SetInProgress(ctx context.Context, req *golang.SetInProgressRequest) (*golang.ResponseOK, error) {
+	s.logger.Info("changing job to in progress", zap.Uint("jobId", uint(req.JobId)))
 	err := s.db.UpdateDescribeConnectionJobToInProgress(uint(req.JobId)) //TODO this is called too much
 	if err != nil {
 		return nil, err
@@ -340,8 +341,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 
 func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.DeliverResultRequest) (*golang.ResponseOK, error) {
 	ResultsDeliveredCount.WithLabelValues(req.DescribeJob.SourceType).Inc()
-
-	err := s.describeJobResultQueue.Publish(DescribeJobResult{
+	result := DescribeJobResult{
 		JobID:       uint(req.JobId),
 		ParentJobID: uint(req.ParentJobId),
 		Status:      api.DescribeResourceJobStatus(req.Status),
@@ -361,6 +361,32 @@ func (s *GRPCDescribeServer) DeliverResult(ctx context.Context, req *golang.Deli
 			RetryCounter:  uint(req.DescribeJob.RetryCounter),
 		},
 		DescribedResourceIDs: req.DescribedResourceIds,
-	})
-	return &golang.ResponseOK{}, err
+	}
+
+	s.logger.Info("Result delivered",
+		zap.Uint("jobID", result.JobID),
+		zap.String("status", string(result.Status)),
+	)
+
+	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
+	defer span.End()
+
+	var docs []kafka.Doc
+	docs = append(docs, result)
+
+	err := kafka.DoSend(s.producer, "kaytu-describe-results-queue", -1, docs, s.logger, nil)
+	//err := s.describeJobResultQueue.Publish(result)
+	if err != nil {
+		s.logger.Error("Failed to publish into rabbitMQ",
+			zap.Uint("jobID", result.JobID),
+			zap.Error(err),
+		)
+		return nil, err
+	}
+
+	s.logger.Info("Publish finished",
+		zap.Uint("jobID", result.JobID),
+		zap.String("status", string(result.Status)),
+	)
+	return &golang.ResponseOK{}, nil
 }

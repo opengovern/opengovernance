@@ -37,9 +37,9 @@ jobs:
         id: set_latest_tag
         run: |
           if [[ -z "${{ steps.tag_version.outputs.new_tag }}" ]]; then
-            echo "latest_tag=${{ steps.tag_version.outputs.new_tag }}" >> "$GITHUB_OUTPUT"
-          else
             echo "latest_tag=${{ steps.tag_version.outputs.previous_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "latest_tag=${{ steps.tag_version.outputs.new_tag }}" >> "$GITHUB_OUTPUT"
           fi
   build:
     runs-on: ubuntu-latest

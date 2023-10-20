@@ -1,0 +1,32 @@
+@startuml Kaytu_Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+Person(user, "User")
+
+System_Ext(awsS3, "AWS S3 Buckets")
+
+System_Boundary(kaytuWorkspace, "Kaytu Workspace") {
+    ContainerDb(workspacePostgres, "Database", "PostgreSQL", "Holds metrics, finder queries, resource collections")
+    ContainerDb(elastic, "Database", "ElasticSearch", "Holds inventory data")
+
+    ContainerDb(workspaceRedis, "Database", "Redis", "Cache")
+
+    Container(steampipeService, "Steampipe service", "Go", "")
+    Rel(steampipeService, elastic, "")
+
+    Container(onboardService, "Onboard service", "Go", "")
+
+    Container(inventoryService, "Inventory service", "Go", "")
+    Rel(inventoryService, elastic, "")
+    Rel(inventoryService, workspacePostgres, "")
+    Rel(inventoryService, steampipeService, "runs queries on")
+    Rel(inventoryService, onboardService, "retrieves connection information from", "HTTP")
+    Rel(inventoryService, workspaceRedis, "caching")
+    Rel(inventoryService, awsS3, "retrieves insight details from")
+
+    Container(complianceService, "Compliance service", "Go", "")
+
+    Rel(inventoryService, complianceService, "retrieves insight metadata from", "HTTP")
+}
+Rel(user, inventoryService, "uses APIs", "HTTPS")
+
+@enduml

@@ -25,6 +25,7 @@ type BenchmarkSummaryBuilder struct {
 	policyMap map[string]complianceApi.Policy
 
 	policySummaries    map[string]map[string]types.PolicySummary
+	policyResources    map[string]map[string]types.ComplianceResultShortSummary
 	benchmarkSummaries map[string]map[string]types.BenchmarkSummary
 	complianceClient   complianceClient.ComplianceServiceClient
 
@@ -41,6 +42,7 @@ func NewBenchmarkSummaryBuilder(logger *zap.Logger, jobId uint,
 		complianceClient:     complianceClient,
 		policyMap:            make(map[string]complianceApi.Policy),
 		policySummaries:      make(map[string]map[string]types.PolicySummary),
+		policyResources:      make(map[string]map[string]types.ComplianceResultShortSummary),
 		benchmarkSummaries:   make(map[string]map[string]types.BenchmarkSummary),
 		ResourceCollectionId: resourceCollectionId,
 	}
@@ -69,6 +71,11 @@ func (b *BenchmarkSummaryBuilder) Process(resource types.Finding) {
 		}
 	}
 	policySummary := b.policySummaries[resource.PolicyID][resource.ConnectionID]
+	if b.policyResources[resource.PolicyID] == nil {
+		b.policyResources[resource.PolicyID] = make(map[string]types.ComplianceResultShortSummary)
+	}
+
+	failed := false
 	switch resource.Result {
 	case types.ComplianceResultOK:
 		policySummary.TotalResult.OkCount++
@@ -76,6 +83,7 @@ func (b *BenchmarkSummaryBuilder) Process(resource types.Finding) {
 	case types.ComplianceResultALARM:
 		policySummary.TotalResult.AlarmCount++
 		policySummary.TotalSeverity.IncreaseBySeverityByAmount(policy.Severity, 1)
+		failed = true
 	case types.ComplianceResultINFO:
 		policySummary.TotalResult.InfoCount++
 		policySummary.TotalSeverity.UnknownCount++
@@ -85,7 +93,17 @@ func (b *BenchmarkSummaryBuilder) Process(resource types.Finding) {
 	case types.ComplianceResultERROR:
 		policySummary.TotalResult.ErrorCount++
 		policySummary.TotalSeverity.IncreaseBySeverityByAmount(policy.Severity, 1)
+		failed = true
 	}
+
+	v := b.policyResources[resource.PolicyID][resource.ResourceID]
+	if failed {
+		v.Failed++
+	} else {
+		v.Passed++
+	}
+	b.policyResources[resource.PolicyID][resource.ResourceID] = v
+
 	b.policySummaries[resource.PolicyID][resource.ConnectionID] = policySummary
 }
 
@@ -108,19 +126,28 @@ func (b *BenchmarkSummaryBuilder) extractBenchmarkSummary(benchmarkId string) {
 		for connectionID, childBenchmarkSummary := range childBenchmarkSummaryMap {
 			if _, ok := b.benchmarkSummaries[benchmark.ID][connectionID]; !ok {
 				b.benchmarkSummaries[benchmark.ID][connectionID] = types.BenchmarkSummary{
-					BenchmarkID:    benchmark.ID,
-					ConnectionID:   connectionID,
-					DescribedAt:    timeAt,
-					EvaluatedAt:    timeAt,
-					TotalResult:    types.ComplianceResultSummary{},
-					ReportType:     types.BenchmarksSummary,
-					SummarizeJobId: b.jobID,
-					ConnectorTypes: nil,
-					Policies:       nil,
+					BenchmarkID:     benchmark.ID,
+					ConnectionID:    connectionID,
+					DescribedAt:     timeAt,
+					EvaluatedAt:     timeAt,
+					TotalResult:     types.ComplianceResultSummary{},
+					ReportType:      types.BenchmarksSummary,
+					SummarizeJobId:  b.jobID,
+					ConnectorTypes:  nil,
+					Policies:        nil,
+					FailedResources: map[string]struct{}{},
+					AllResources:    map[string]struct{}{},
 				}
 			}
 
 			benchmarkSummary := b.benchmarkSummaries[benchmark.ID][connectionID]
+
+			for resourceID := range childBenchmarkSummary.FailedResources {
+				benchmarkSummary.FailedResources[resourceID] = struct{}{}
+			}
+			for resourceID := range childBenchmarkSummary.AllResources {
+				benchmarkSummary.AllResources[resourceID] = struct{}{}
+			}
 
 			benchmarkSummary.TotalResult.AddComplianceResultSummary(childBenchmarkSummary.TotalResult)
 			benchmarkSummary.TotalSeverity.AddSeverityResult(childBenchmarkSummary.TotalSeverity)
@@ -146,15 +173,17 @@ func (b *BenchmarkSummaryBuilder) extractBenchmarkSummary(benchmarkId string) {
 		for connectionID, policySummary := range policySummaryMap {
 			if _, ok := b.benchmarkSummaries[benchmark.ID][connectionID]; !ok {
 				b.benchmarkSummaries[benchmark.ID][connectionID] = types.BenchmarkSummary{
-					BenchmarkID:    benchmark.ID,
-					ConnectionID:   connectionID,
-					DescribedAt:    timeAt,
-					EvaluatedAt:    timeAt,
-					TotalResult:    types.ComplianceResultSummary{},
-					ReportType:     types.BenchmarksSummary,
-					SummarizeJobId: b.jobID,
-					ConnectorTypes: nil,
-					Policies:       nil,
+					BenchmarkID:     benchmark.ID,
+					ConnectionID:    connectionID,
+					DescribedAt:     timeAt,
+					EvaluatedAt:     timeAt,
+					TotalResult:     types.ComplianceResultSummary{},
+					ReportType:      types.BenchmarksSummary,
+					SummarizeJobId:  b.jobID,
+					FailedResources: map[string]struct{}{},
+					AllResources:    map[string]struct{}{},
+					ConnectorTypes:  nil,
+					Policies:        nil,
 				}
 			}
 
@@ -165,6 +194,13 @@ func (b *BenchmarkSummaryBuilder) extractBenchmarkSummary(benchmarkId string) {
 			}
 
 			connectorTypeMap[connectionID][policySummary.ConnectorType] = true
+
+			for resourceID, summary := range b.policyResources[policySummary.PolicyID] {
+				if summary.Failed > 0 {
+					benchmarkSummary.FailedResources[resourceID] = struct{}{}
+				}
+				benchmarkSummary.AllResources[resourceID] = struct{}{}
+			}
 
 			benchmarkSummary.TotalResult.AddComplianceResultSummary(policySummary.TotalResult)
 			benchmarkSummary.TotalSeverity.AddSeverityResult(policySummary.TotalSeverity)
@@ -202,6 +238,12 @@ func (b *BenchmarkSummaryBuilder) Build() []kafka.Doc {
 	}
 	for _, benchmarkSummaryMap := range b.benchmarkSummaries {
 		for _, benchmarkSummary := range benchmarkSummaryMap {
+			benchmarkSummary.Resources.Failed = len(benchmarkSummary.FailedResources)
+			benchmarkSummary.Resources.Passed = len(benchmarkSummary.AllResources) - benchmarkSummary.Resources.Failed
+
+			benchmarkSummary.FailedResources = nil
+			benchmarkSummary.AllResources = nil
+
 			docs = append(docs, benchmarkSummary)
 			historySummary := benchmarkSummary
 			historySummary.ReportType = types.BenchmarksSummaryHistory
@@ -226,6 +268,8 @@ func (b *BenchmarkSummaryBuilder) Build() []kafka.Doc {
 				ReportType:         types.BenchmarksConnectorSummary,
 				SummarizeJobId:     b.jobID,
 				ResourceCollection: b.ResourceCollectionId,
+				FailedResources:    map[string]struct{}{},
+				AllResources:       map[string]struct{}{},
 			}
 			for _, benchmarkSummaryPerConnection := range benchmarkSummaryMap {
 				found := false
@@ -239,11 +283,24 @@ func (b *BenchmarkSummaryBuilder) Build() []kafka.Doc {
 					continue
 				}
 
+				for resourceID := range benchmarkSummaryPerConnection.FailedResources {
+					benchmarkSummary.FailedResources[resourceID] = struct{}{}
+				}
+				for resourceID := range benchmarkSummaryPerConnection.AllResources {
+					benchmarkSummary.AllResources[resourceID] = struct{}{}
+				}
+
 				benchmarkSummary.TotalResult.AddComplianceResultSummary(benchmarkSummaryPerConnection.TotalResult)
 				benchmarkSummary.TotalSeverity.AddSeverityResult(benchmarkSummaryPerConnection.TotalSeverity)
 
 				benchmarkSummary.Policies = append(benchmarkSummary.Policies, benchmarkSummaryPerConnection.Policies...)
 			}
+
+			benchmarkSummary.Resources.Failed = len(benchmarkSummary.FailedResources)
+			benchmarkSummary.Resources.Passed = len(benchmarkSummary.AllResources) - benchmarkSummary.Resources.Failed
+
+			benchmarkSummary.FailedResources = nil
+			benchmarkSummary.AllResources = nil
 
 			docs = append(docs, benchmarkSummary)
 			historySummary := benchmarkSummary
