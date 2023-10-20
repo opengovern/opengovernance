@@ -57,7 +57,7 @@ func (p ComputeVirtualMachinePaginator) NextPage(ctx context.Context) ([]kaytu.C
 	return values, nil
 }
 
-func (h HttpHandler) GetComputeVirtualMachineResource(ctx context.Context) (string, string, string, error) {
+func (h *HttpHandler) GetComputeVirtualMachineResource(ctx context.Context) (string, string, string, error) {
 	var arrayBoolFilter []essdk.BoolFilter
 	for k, v := range GetComputeVirtualMachineFiltering {
 		boolFilter := essdk.NewTermFilter(k, v)
@@ -151,7 +151,7 @@ func (p VirtualNetworkPaginator) NextPage(ctx context.Context) ([]kaytu.VirtualN
 	return values, nil
 }
 
-func (h HttpHandler) GetVirtualNetworkResource(ctx context.Context) (string, string, string, error) {
+func (h *HttpHandler) GetVirtualNetworkResource(ctx context.Context) (*kaytu.VirtualNetwork, error) {
 	var arrayBoolFilter []essdk.BoolFilter
 	for k, v := range GetComputeVirtualMachineFiltering {
 		boolFilter := essdk.NewTermFilter(k, v)
@@ -160,7 +160,7 @@ func (h HttpHandler) GetVirtualNetworkResource(ctx context.Context) (string, str
 
 	p, err := essdk.NewPaginator(h.client.ES(), "microsoft_network_virtualnetworks", arrayBoolFilter, nil)
 	if err != nil {
-		return "", "", "", err
+		return nil, err
 	}
 
 	paginator := VirtualNetworkPaginator{
@@ -170,11 +170,11 @@ func (h HttpHandler) GetVirtualNetworkResource(ctx context.Context) (string, str
 	for paginator.HasNext() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
-			return "", "", "", err
+			return nil, err
 		}
 		for _, v := range page {
-			return v, nil
+			return &v, nil
 		}
 	}
-	return "", "", "", nil
+	return nil, nil
 }

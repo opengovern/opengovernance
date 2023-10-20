@@ -5,58 +5,52 @@ import (
 	"encoding/json"
 	azureCompute "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
+	"go.uber.org/zap"
 )
 
-// TODO we don't need to this file it will be deleted
-
-func GetAzureResource(h *HttpHandler, resourceId string) (azureCompute.ComputeVirtualMachine, error) {
-	// TODO we should add resourceType as another filter parameter
-	query := map[string]interface{}{
-		"bool": map[string]interface{}{
-			"filter": map[string]interface{}{
-				"term": map[string]interface{}{
-					"ID": resourceId,
-				},
-			},
-		},
-	}
-
-	queryJ, err := json.Marshal(query)
+func (h *HttpHandler) GetComputeVirtualMachine(resourceId string) (*azureCompute.ComputeVirtualMachine, error) {
+	var resp azureCompute.ComputeVirtualMachine
+	err := h.GetResource("Microsoft.Compute/virtualMachines", resourceId, &resp)
 	if err != nil {
-		return azureCompute.ComputeVirtualMachine{}, err
+		return nil, err
 	}
-
-	var response azureCompute.ComputeVirtualMachine
-	err = h.client.Search(context.Background(), es.ResourceTypeToESIndex("Azure"), string(queryJ), response)
-	if err != nil {
-		return azureCompute.ComputeVirtualMachine{}, err
-	}
-
-	return response, nil
+	return &resp, nil
 }
 
-func GetAWSResource(h *HttpHandler, resourceId string) (azureCompute.ComputeVirtualMachine, error) {
-	// TODO we should add resourceType as another filter parameter
-	query := map[string]interface{}{
-		"bool": map[string]interface{}{
-			"filter": map[string]interface{}{
-				"term": map[string]interface{}{
-					"ID": resourceId,
+func (h *HttpHandler) GetResource(resourceType string, resourceId string, resp any) error {
+
+	index := es.ResourceTypeToESIndex(resourceType)
+
+	terms := make(map[string]any)
+	terms["id"] = resourceId
+
+	root := map[string]any{}
+
+	boolQuery := make(map[string]any)
+	if terms != nil && len(terms) > 0 {
+		var filters []map[string]any
+		for k, vs := range terms {
+			filters = append(filters, map[string]any{
+				"terms": map[string]any{
+					k: vs,
 				},
-			},
-		},
+			})
+		}
+
+		boolQuery["filter"] = filters
+	}
+	if len(boolQuery) > 0 {
+		root["query"] = map[string]any{
+			"bool": boolQuery,
+		}
 	}
 
-	queryJ, err := json.Marshal(query)
+	queryBytes, err := json.Marshal(root)
 	if err != nil {
-		return azureCompute.ComputeVirtualMachine{}, err
+		return err
 	}
 
-	var response azureCompute.ComputeVirtualMachine
-	err = h.client.Search(context.Background(), es.ResourceTypeToESIndex("AWS"), string(queryJ), response)
-	if err != nil {
-		return azureCompute.ComputeVirtualMachine{}, err
-	}
-
-	return response, nil
+	h.logger.Info("FindingsTopFieldQuery", zap.String("query", string(queryBytes)), zap.String("index", index))
+	err = h.client.Search(context.Background(), index, string(queryBytes), resp)
+	return err
 }

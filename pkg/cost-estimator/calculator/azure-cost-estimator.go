@@ -1,4 +1,4 @@
-package cost_calculator
+package calculator
 
 import (
 	"encoding/json"

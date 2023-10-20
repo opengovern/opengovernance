@@ -2,13 +2,12 @@ package cost_estimator
 
 import (
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	cost_calculator "github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/cost-calculator"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
 
-func (h HttpHandler) Register(e *echo.Echo) {
+func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
 	v1.GET("/cost/azure/:resourceId", httpserver.AuthorizeHandler(h.AzureCost, authapi.ViewerRole))
 }
@@ -26,15 +25,9 @@ func (h HttpHandler) Register(e *echo.Echo) {
 //	@Router			/cost_estimator/api/v1/cost/azure [get]
 func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
-	resource, err := GetAzureResource(h, resourceId)
-	if err != nil {
-		return err
-	}
+	resourceType := ctx.Param("resourceType")
 
-	OSType := resource.Description.VirtualMachine.Properties.StorageProfile.OSDisk.OSType
-	location := resource.Description.VirtualMachine.Location
-	VMSize := resource.Description.VirtualMachine.Properties.HardwareProfile.VMSize
-	cost, err := cost_calculator.AzureCostEstimator(OSType, location, VMSize)
+	cost, err := azureResourceTypes[resourceType](h, resourceId)
 	if err != nil {
 		return err
 	}
@@ -55,16 +48,9 @@ func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 //	@Router			/cost_estimator/api/v1/cost/aws [get]
 func (h *HttpHandler) AwsCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
-	resource, err := GetAWSResource(h, resourceId)
-	if err != nil {
-		return err
-	}
+	resourceType := ctx.Param("resourceType")
 
-	OSType := resource.Description.VirtualMachine.Properties.StorageProfile.OSDisk.OSType
-	location := resource.Description.VirtualMachine.Location
-	VMSize := resource.Description.VirtualMachine.Properties.HardwareProfile.VMSize
-	// TODO create another filer for calculating aws cost
-	cost, err := cost_calculator.AzureCostEstimator(OSType, location, VMSize)
+	cost, err := awsResourceTypes[resourceType](h, resourceId)
 	if err != nil {
 		return err
 	}
