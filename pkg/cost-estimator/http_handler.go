@@ -2,15 +2,14 @@ package cost_estimator
 
 import (
 	"fmt"
-	kaytuAws "github.com/kaytu-io/kaytu-aws-describer/pkg/kaytu-es-sdk"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"go.uber.org/zap"
 )
 
 type HttpHandler struct {
-	client      kaytu.Client
-	awsClient   kaytuAws.Client
+	client kaytu.Client
+	//awsClient   kaytuAws.Client
 	azureClient kaytuAzure.Client
 
 	logger *zap.Logger
@@ -35,9 +34,9 @@ func InitializeHttpHandler(
 		return nil, err
 	}
 
-	h.awsClient = kaytuAws.Client{
-		Client: h.client,
-	}
+	//h.awsClient = kaytuAws.Client{
+	//	Client: h.client,
+	//}
 	h.azureClient = kaytuAzure.Client{
 		Client: h.client,
 	}
