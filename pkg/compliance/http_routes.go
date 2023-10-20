@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
@@ -496,6 +497,12 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 			LastCheckTime: time.UnixMilli(int64(acc.LastEvaluation.Value)),
 		}
 		response.Accounts = append(response.Accounts, account)
+	}
+
+	for idx, conn := range response.Accounts {
+		conn.AccountId = demo.EncodeResponseData(ctx, conn.AccountId)
+		conn.AccountName = demo.EncodeResponseData(ctx, conn.AccountName)
+		response.Accounts[idx] = conn
 	}
 
 	return ctx.JSON(http.StatusOK, response)
@@ -1433,6 +1440,12 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	resp := api.BenchmarkAssignedEntities{
 		Connections:         assignedConnections,
 		ResourceCollections: assignedResourceCollections,
+	}
+
+	for idx, conn := range resp.Connections {
+		conn.ProviderConnectionID = demo.EncodeResponseData(ctx, conn.ProviderConnectionID)
+		conn.ProviderConnectionName = demo.EncodeResponseData(ctx, conn.ProviderConnectionName)
+		resp.Connections[idx] = conn
 	}
 
 	return ctx.JSON(http.StatusOK, resp)
