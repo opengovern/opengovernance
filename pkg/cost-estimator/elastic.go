@@ -17,6 +17,15 @@ func (h *HttpHandler) GetComputeVirtualMachine(resourceId string) (*azureCompute
 	return &resp, nil
 }
 
+func (h *HttpHandler) GetVirtualNetwork(resourceId string) (*azureCompute.VirtualNetwork, error) {
+	var resp azureCompute.VirtualNetwork
+	err := h.GetResource("Microsoft.Network/virtualNetworks", resourceId, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
 func (h *HttpHandler) GetResource(resourceType string, resourceId string, resp any) error {
 
 	index := es.ResourceTypeToESIndex(resourceType)
