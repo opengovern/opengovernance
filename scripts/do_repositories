@@ -11,3 +11,4 @@ summarizer-worker
 swagger-ui
 workspace-service
 alerting-service
+cost-estimator-service

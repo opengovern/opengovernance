@@ -78,3 +78,8 @@ if [[ $SERVICES == *"alerting-service"* ]]; then
     docker build -f  docker/AlertingServiceDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/alerting-service:"$TAG"
     docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/alerting-service:"$TAG"
 fi
+
+if [[ $SERVICES == *"cost-estimator-service"* ]]; then
+    docker build -f  docker/AlertingServiceDockerfile . -t 435670955331.dkr.ecr.us-east-2.amazonaws.com/cost-estimator-service:"$TAG"
+    docker push 435670955331.dkr.ecr.us-east-2.amazonaws.com/cost-estimator-service:"$TAG"
+fi
