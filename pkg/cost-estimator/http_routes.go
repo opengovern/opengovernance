@@ -9,7 +9,7 @@ import (
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
-	v1.GET("/cost/azure/:resourceId", httpserver.AuthorizeHandler(h.AzureCost, authapi.ViewerRole))
+	v1.GET("/cost/azure/:resourceId/:resourceType", httpserver.AuthorizeHandler(h.AzureCost, authapi.ViewerRole))
 }
 
 // AzureCost godoc
