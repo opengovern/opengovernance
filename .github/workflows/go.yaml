@@ -805,7 +805,7 @@ jobs:
       id-token: write
       contents: read
     environment: docker
-    if: needs.build.outputs.alerting-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: needs.build.outputs.cost-estimator-service == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
