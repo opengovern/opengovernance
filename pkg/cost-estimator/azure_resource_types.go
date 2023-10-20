@@ -11,7 +11,7 @@ func GetComputeVirtualMachineCost(h *HttpHandler, resourceId string) (cost float
 	OSType := resource.Description.VirtualMachine.Properties.StorageProfile.OSDisk.OSType
 	location := resource.Description.VirtualMachine.Location
 	VMSize := resource.Description.VirtualMachine.Properties.HardwareProfile.VMSize
-	cost, err = calculator.AzureCostEstimator(OSType, location, VMSize)
+	cost, err = calculator.VirtualMachineCostEstimator(OSType, location, VMSize)
 	if err != nil {
 		return 0, err
 	}
