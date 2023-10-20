@@ -59,7 +59,7 @@ func (h *HttpHandler) GetResource(resourceType string, resourceId string, resp a
 		return err
 	}
 
-	h.logger.Info("FindingsTopFieldQuery", zap.String("query", string(queryBytes)), zap.String("index", index))
+	h.logger.Info("GetResource", zap.String("query", string(queryBytes)), zap.String("index", index))
 	err = h.client.Search(context.Background(), index, string(queryBytes), resp)
 	return err
 }
