@@ -169,9 +169,16 @@ type GetServicesFindingsSummaryResponse struct {
 	Services []ServiceFindingsSummary `json:"services"`
 }
 
+type Finding struct {
+	types.Finding
+
+	ProviderConnectionID   string `json:"providerConnectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`   // Connection ID
+	ProviderConnectionName string `json:"providerConnectionName" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"` // Connection ID
+}
+
 type GetFindingsResponse struct {
-	Findings   []types.Finding `json:"findings"`
-	TotalCount int64           `json:"totalCount" example:"100"`
+	Findings   []Finding `json:"findings"`
+	TotalCount int64     `json:"totalCount" example:"100"`
 }
 
 type GetFindingsFiltersResponse struct {

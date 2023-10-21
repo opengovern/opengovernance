@@ -223,6 +223,19 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 	var searchAfter []any
 
+	isCostResourceType := false
+	if strings.ToLower(res.DescribeJob.ResourceType) == "microsoft.costmanagement/costbyresourcetype" ||
+		strings.ToLower(res.DescribeJob.ResourceType) == "aws::costexplorer::byservicedaily" {
+		isCostResourceType = true
+	}
+
+	var additionalFilters []map[string]any
+	if isCostResourceType {
+		additionalFilters = append(additionalFilters, map[string]any{
+			"range": map[string]any{"cost_date": map[string]any{"lt": time.Now().AddDate(0, -2, -1).UnixMilli()}},
+		})
+	}
+
 	deletedCount := 0
 	s.logger.Info("starting to delete old resources",
 		zap.Uint("jobId", res.JobID),
@@ -234,6 +247,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 			s.es,
 			res.DescribeJob.SourceID,
 			res.DescribeJob.ResourceType,
+			additionalFilters,
 			searchAfter,
 			1000)
 		if err != nil {
@@ -259,7 +273,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				}
 			}
 
-			if !exists {
+			if !exists || isCostResourceType {
 				OldResourcesDeletedCount.WithLabelValues(string(res.DescribeJob.SourceType)).Inc()
 				resource := es.Resource{
 					ID:           esResourceID,
