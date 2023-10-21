@@ -70,6 +70,9 @@ func (s *Scheduler) scheduleComplianceJob() error {
 			connections = append(connections, *connection)
 		}
 
+		if len(connections) > 0 {
+			s.logger.Info("benchmark has > 0 assignments", zap.String("benchmarkID", benchmark.ID), zap.Int("count", len(connections)))
+		}
 		for _, assignment := range assignments.ResourceCollections {
 			if !assignment.Status {
 				continue
