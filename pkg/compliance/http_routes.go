@@ -208,8 +208,25 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		return err
 	}
 
+	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	if err != nil {
+		return err
+	}
+
 	for _, h := range res.Hits.Hits {
-		response.Findings = append(response.Findings, h.Source)
+		finding := api.Finding{
+			Finding:                h.Source,
+			ProviderConnectionID:   "",
+			ProviderConnectionName: "",
+		}
+
+		for _, src := range allSources {
+			if src.ID.String() == finding.ConnectionID {
+				finding.ProviderConnectionID = demo.EncodeResponseData(ctx, src.ConnectionID)
+				finding.ProviderConnectionName = demo.EncodeResponseData(ctx, src.ConnectionName)
+			}
+		}
+		response.Findings = append(response.Findings, finding)
 	}
 	response.TotalCount = res.Hits.Total.Value
 	return ctx.JSON(http.StatusOK, response)

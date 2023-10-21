@@ -26,14 +26,14 @@ type ResourceIdentifierFetchHit struct {
 	Sort    []any          `json:"sort"`
 }
 
-func GetResourceIDsForAccountResourceTypeFromES(client kaytu.Client, sourceID, resourceType string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
+func GetResourceIDsForAccountResourceTypeFromES(client kaytu.Client, sourceID, resourceType string, additionalFilters []map[string]any, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
 	root := map[string]any{}
 	root["query"] = map[string]any{
 		"bool": map[string]any{
-			"filter": []map[string]any{
+			"filter": append([]map[string]any{
 				{"term": map[string]string{"source_id": sourceID}},
 				{"term": map[string]string{"resource_type": strings.ToLower(resourceType)}},
-			},
+			}, additionalFilters...),
 		},
 	}
 	if searchAfter != nil {
