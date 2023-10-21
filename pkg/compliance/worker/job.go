@@ -76,7 +76,7 @@ func (j *Job) Do(
 	return result
 }
 
-func (j *Job) RunBenchmark(logger *zap.Logger, esk kaytu.Client, benchmarkID string, complianceClient complianceClient.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]types.Finding, error) {
+func (j *Job) RunBenchmark(logger *zap.Logger, esk kaytu.Client, benchmarkID string, parentBenchmarks []string, complianceClient complianceClient.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]types.Finding, error) {
 	ctx := &httpclient.Context{
 		UserRole: authApi.AdminRole,
 	}
@@ -90,7 +90,7 @@ func (j *Job) RunBenchmark(logger *zap.Logger, esk kaytu.Client, benchmarkID str
 
 	var findings []types.Finding
 	for _, childBenchmarkID := range benchmark.Children {
-		f, err := j.RunBenchmark(logger, esk, childBenchmarkID, complianceClient, steampipeConn, connector)
+		f, err := j.RunBenchmark(logger, esk, childBenchmarkID, append(parentBenchmarks, benchmarkID), complianceClient, steampipeConn, connector)
 		if err != nil {
 			return nil, err
 		}
@@ -143,6 +143,10 @@ func (j *Job) RunBenchmark(logger *zap.Logger, esk kaytu.Client, benchmarkID str
 			f = findingsFiltered
 		}
 
+		for idx, finding := range f {
+			finding.ParentBenchmarks = append(parentBenchmarks, benchmarkID)
+			f[idx] = finding
+		}
 		findings = append(findings, f...)
 	}
 
@@ -237,7 +241,7 @@ func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient,
 	defer steampipeConn.Conn().Close()
 	defer steampipe.StopSteampipeService(logger)
 
-	findings, err := j.RunBenchmark(logger, esk, j.BenchmarkID, complianceClient, steampipeConn, connector)
+	findings, err := j.RunBenchmark(logger, esk, j.BenchmarkID, nil, complianceClient, steampipeConn, connector)
 	if err != nil {
 		return err
 	}

@@ -34,7 +34,8 @@ type Finding struct {
 	ComplianceJobID  uint             `json:"complianceJobID" example:"1"`                                                                                             // Compliance job ID
 	ScheduleJobID    uint             `json:"scheduleJobID" example:"1"`                                                                                               // Schedule job ID
 
-	ResourceCollection *string `json:"resourceCollection"` // Resource collection
+	ResourceCollection *string  `json:"resourceCollection"` // Resource collection
+	ParentBenchmarks   []string `json:"parentBenchmarks"`
 }
 
 func (r Finding) KeysAndIndex() ([]string, string) {
