@@ -499,7 +499,7 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 		account := api.AccountsFindingsSummary{
 			AccountName:   connection.ConnectionName,
 			AccountId:     connection.ConnectionID,
-			SecurityScore: float64(okCount) / float64(acc.DocCount),
+			SecurityScore: float64(okCount) / float64(acc.DocCount) * 100.0,
 			SeveritiesCount: struct {
 				Critical int `json:"critical"`
 				High     int `json:"high"`
@@ -605,7 +605,7 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 		service := api.ServiceFindingsSummary{
 			ServiceName:   resourceType.Key,
 			ServiceLabel:  resourceType.Key,
-			SecurityScore: float64(okCount) / float64(resourceType.DocCount),
+			SecurityScore: float64(okCount) / float64(resourceType.DocCount) * 100.0,
 			SeveritiesCount: struct {
 				Critical int `json:"critical"`
 				High     int `json:"high"`
