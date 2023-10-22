@@ -213,9 +213,15 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		return err
 	}
 
+	policies, err := h.db.ListPolicies()
+	if err != nil {
+		return err
+	}
+
 	for _, h := range res.Hits.Hits {
 		finding := api.Finding{
 			Finding:                h.Source,
+			PolicyTitle:            "",
 			ProviderConnectionID:   "",
 			ProviderConnectionName: "",
 		}
@@ -224,6 +230,13 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 			if src.ID.String() == finding.ConnectionID {
 				finding.ProviderConnectionID = demo.EncodeResponseData(ctx, src.ConnectionID)
 				finding.ProviderConnectionName = demo.EncodeResponseData(ctx, src.ConnectionName)
+				break
+			}
+		}
+
+		for _, policy := range policies {
+			if policy.ID == h.Source.PolicyID {
+				finding.PolicyTitle = policy.Title
 			}
 		}
 		response.Findings = append(response.Findings, finding)
