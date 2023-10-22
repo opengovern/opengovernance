@@ -37,9 +37,9 @@ require (
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
-	github.com/kaytu-io/kaytu-aws-describer v0.13.16
-	github.com/kaytu-io/kaytu-azure-describer v0.9.12
-	github.com/kaytu-io/kaytu-util v0.0.0-20231020064854-afb0e207f090
+	github.com/kaytu-io/kaytu-aws-describer v0.13.21
+	github.com/kaytu-io/kaytu-azure-describer v0.9.17
+	github.com/kaytu-io/kaytu-util v0.0.0-20231022130238-8481df7fe22a
 	github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/labstack/gommon v0.4.0
@@ -348,7 +348,6 @@ require (
 	github.com/cjlapao/common-go v0.0.25 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/cncf/xds/go v0.0.0-20230607035331-e9ce68804cb4 // indirect
-	github.com/containerd/containerd v1.6.8 // indirect
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
