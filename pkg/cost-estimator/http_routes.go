@@ -18,10 +18,10 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 //	@Description	Get Azure cost for each resource
 //	@Security		BearerToken
 //	@Tags			cost-estimator
-//	@Produce		int
-//	@Param			resourceId	path		string	true	"ResourceID"
+//	@Produce		json
+//	@Param			resourceId		path		string	true	"ResourceID"
 //	@Param			resourceType	path		string	true	"ResourceType"
-//	@Success		200		{object}
+//	@Success		200				{object}	int
 //	@Router			/cost_estimator/api/v1/cost/azure [get]
 func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
@@ -41,10 +41,10 @@ func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 //	@Description	Get AWS cost for each resource
 //	@Security		BearerToken
 //	@Tags			cost-estimator
-//	@Produce		int
-//	@Param			resourceId	path		string	true	"ResourceID"
+//	@Produce		json
+//	@Param			resourceId		path		string	true	"ResourceID"
 //	@Param			resourceType	path		string	true	"ResourceType"
-//	@Success		200		{object}
+//	@Success		200				{object}	int
 //	@Router			/cost_estimator/api/v1/cost/aws [get]
 func (h *HttpHandler) AwsCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")

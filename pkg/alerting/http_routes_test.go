@@ -57,8 +57,8 @@ func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
 		}
 	}))
 
-	handler, err := InitializeHttpHandler("127.0.0.1", "5432", "test-database",
-		"user_1", "qwertyPostgres", "disable", server.URL, server.URL, logger)
+	handler, err := InitializeHttpHandler("127.0.0.1", "5432", "postgres",
+		"postgres", "postgres", "disable", server.URL, server.URL, logger)
 	if err != nil {
 		tb.Errorf("error connecting to postgres , err : %v", err)
 	}
@@ -157,10 +157,12 @@ func getRule(h *HttpHandler, id uint) (api.Rule, error) {
 		return api.Rule{}, err
 	}
 
+	fmt.Println("================", rule)
+
 	var eventType api.EventType
 	err = json.Unmarshal(rule.EventType, &eventType)
 	if err != nil {
-		return api.Rule{}, fmt.Errorf("error unmarshalling the eventType , error : %v", err)
+		return api.Rule{}, fmt.Errorf("error unmarshalling the eventType, error : %v", err)
 	}
 
 	var scope api.Scope
@@ -216,7 +218,8 @@ func TestCreateRule(t *testing.T) {
 		Operator:  operator,
 		ActionID:  1231,
 	}
-	_, err := doSimpleJSONRequest("POST", "/api/v1/rule/create", req, nil)
+
+	_, err := doSimpleJSONRequest("POST", "/api/v1/rule/create", req, &id)
 	require.NoError(t, err, "error creating rule")
 
 	foundRule, err := getRule(h, id)
@@ -224,9 +227,90 @@ func TestCreateRule(t *testing.T) {
 
 	require.Equal(t, operator, foundRule.Operator)
 	require.Equal(t, 100, int(foundRule.Operator.OperatorInfo.Value))
-	require.Equal(t, "testConnectionId", foundRule.Scope.ConnectionId)
+	require.Equal(t, "testConnectionId", *foundRule.Scope.ConnectionId)
 	require.Equal(t, 123123, int(*foundRule.EventType.InsightId))
 	require.Equal(t, 1231, int(foundRule.ActionID))
+
+	operator = api.OperatorStruct{
+		Condition: &api.ConditionStruct{
+			ConditionType: "OR",
+			Operator: []api.OperatorStruct{
+				{
+					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
+				},
+				{
+					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
+				},
+			},
+		},
+	}
+	req.Operator = operator
+
+	_, err = doSimpleJSONRequest("POST", "/api/v1/rule/create", req, &id)
+	require.NoError(t, err, "error creating rule")
+
+	foundRule, err = getRule(h, id)
+	require.NoErrorf(t, err, "error getting the rule")
+
+	require.Equal(t, operator, foundRule.Operator)
+
+	id++
+	operator = api.OperatorStruct{
+		Condition: &api.ConditionStruct{
+			ConditionType: "AND",
+			Operator: []api.OperatorStruct{
+				{
+					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 50},
+				},
+				{
+					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 200},
+				},
+			},
+		},
+	}
+	req.Operator = operator
+
+	_, err = doSimpleJSONRequest("POST", "/api/v1/rule/create", req, &id)
+	require.NoError(t, err, "error creating rule")
+
+	foundRule, err = getRule(h, id)
+	require.NoErrorf(t, err, "error getting the rule")
+
+	require.Equal(t, operator, foundRule.Operator)
+
+	id++
+	operator = api.OperatorStruct{
+		Condition: &api.ConditionStruct{
+			ConditionType: "AND",
+			Operator: []api.OperatorStruct{
+				{
+					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 50},
+				},
+				{
+					Condition: &api.ConditionStruct{
+						ConditionType: "OR",
+						Operator: []api.OperatorStruct{
+							{
+								OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
+							},
+							{
+								OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	req.Operator = operator
+
+	_, err = doSimpleJSONRequest("POST", "/api/v1/rule/create", req, &id)
+	require.NoError(t, err, "error creating rule")
+
+	foundRule, err = getRule(h, id)
+	require.NoErrorf(t, err, "error getting the rule")
+
+	require.Equal(t, operator, foundRule.Operator)
 }
 
 func TestUpdateRule(t *testing.T) {

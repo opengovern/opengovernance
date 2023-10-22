@@ -65,7 +65,7 @@ func (db Database) GetRule(id uint) (Rule, error) {
 	return rule, nil
 }
 
-func (db Database) CreateRule(eventType []byte, scope []byte, operator []byte, actionID uint, metadata []byte) error {
+func (db Database) CreateRule(eventType []byte, scope []byte, operator []byte, actionID uint, metadata []byte) (uint, error) {
 	rule := Rule{
 		EventType: eventType,
 		Scope:     scope,
@@ -73,7 +73,8 @@ func (db Database) CreateRule(eventType []byte, scope []byte, operator []byte, a
 		ActionID:  actionID,
 		Metadata:  metadata,
 	}
-	return db.orm.Model(&Rule{}).Create(&rule).Error
+	err := db.orm.Model(&Rule{}).Create(&rule).Error
+	return rule.Id, err
 }
 
 func (db Database) DeleteRule(ruleId uint) error {
@@ -121,14 +122,15 @@ func (db Database) GetAction(id uint) (Action, error) {
 	return action, nil
 }
 
-func (db Database) CreateAction(method string, url string, headers []byte, body string) error {
+func (db Database) CreateAction(method string, url string, headers []byte, body string) (uint, error) {
 	action := Action{
 		Method:  method,
 		Url:     url,
 		Headers: headers,
 		Body:    body,
 	}
-	return db.orm.Model(&Action{}).Create(&action).Error
+	err := db.orm.Model(&Rule{}).Create(&action).Error
+	return action.Id, err
 }
 
 func (db Database) DeleteAction(actionId uint) error {

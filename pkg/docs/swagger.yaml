@@ -668,6 +668,99 @@ definitions:
     x-enum-varnames:
     - DirectionAscending
     - DirectionDescending
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding:
+    properties:
+      ID:
+        description: Finding ID
+        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1-azure_cis_v140_7_5
+        type: string
+      benchmarkID:
+        description: Benchmark ID
+        example: azure_cis_v140
+        type: string
+      complianceJobID:
+        description: Compliance job ID
+        example: 1
+        type: integer
+      connectionID:
+        description: Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      connector:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Cloud provider
+        example: Azure
+      describedAt:
+        description: Timestamp of the policy description
+        example: 1589395200
+        type: integer
+      evaluatedAt:
+        description: Timestamp of the policy evaluation
+        example: 1589395200
+        type: integer
+      evaluator:
+        description: Evaluator name
+        example: steampipe-v0.5
+        type: string
+      parentBenchmarks:
+        items:
+          type: string
+        type: array
+      policyID:
+        description: Policy ID
+        example: azure_cis_v140_7_5
+        type: string
+      providerConnectionID:
+        description: Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      providerConnectionName:
+        description: Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      reason:
+        description: Reason for the policy evaluation result
+        example: The VM is not using managed disks
+        type: string
+      resourceCollection:
+        description: Resource collection
+        type: string
+      resourceID:
+        description: Resource ID
+        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
+        type: string
+      resourceLocation:
+        description: Resource location
+        example: eastus
+        type: string
+      resourceName:
+        description: Resource name
+        example: vm-1
+        type: string
+      resourceType:
+        description: Resource type
+        example: Microsoft.Compute/virtualMachines
+        type: string
+      result:
+        allOf:
+        - $ref: '#/definitions/types.ComplianceResult'
+        description: Compliance result
+        example: alarm
+      scheduleJobID:
+        description: Schedule job ID
+        example: 1
+        type: integer
+      severity:
+        allOf:
+        - $ref: '#/definitions/types.FindingSeverity'
+        description: Compliance severity
+        example: low
+      stateActive:
+        description: Whether the policy is active or not
+        example: true
+        type: boolean
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters:
     properties:
       activeOnly:
@@ -804,7 +897,7 @@ definitions:
     properties:
       findings:
         items:
-          $ref: '#/definitions/types.Finding'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding'
         type: array
       totalCount:
         example: 100
@@ -2520,87 +2613,6 @@ definitions:
         example: 1
         type: integer
     type: object
-  types.Finding:
-    properties:
-      ID:
-        description: Finding ID
-        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1-azure_cis_v140_7_5
-        type: string
-      benchmarkID:
-        description: Benchmark ID
-        example: azure_cis_v140
-        type: string
-      complianceJobID:
-        description: Compliance job ID
-        example: 1
-        type: integer
-      connectionID:
-        description: Connection ID
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
-      connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        description: Cloud provider
-        example: Azure
-      describedAt:
-        description: Timestamp of the policy description
-        example: 1589395200
-        type: integer
-      evaluatedAt:
-        description: Timestamp of the policy evaluation
-        example: 1589395200
-        type: integer
-      evaluator:
-        description: Evaluator name
-        example: steampipe-v0.5
-        type: string
-      policyID:
-        description: Policy ID
-        example: azure_cis_v140_7_5
-        type: string
-      reason:
-        description: Reason for the policy evaluation result
-        example: The VM is not using managed disks
-        type: string
-      resourceCollection:
-        description: Resource collection
-        type: string
-      resourceID:
-        description: Resource ID
-        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
-        type: string
-      resourceLocation:
-        description: Resource location
-        example: eastus
-        type: string
-      resourceName:
-        description: Resource name
-        example: vm-1
-        type: string
-      resourceType:
-        description: Resource type
-        example: Microsoft.Compute/virtualMachines
-        type: string
-      result:
-        allOf:
-        - $ref: '#/definitions/types.ComplianceResult'
-        description: Compliance result
-        example: alarm
-      scheduleJobID:
-        description: Schedule job ID
-        example: 1
-        type: integer
-      severity:
-        allOf:
-        - $ref: '#/definitions/types.FindingSeverity'
-        description: Compliance severity
-        example: low
-      stateActive:
-        description: Whether the policy is active or not
-        example: true
-        type: boolean
-    type: object
   types.FindingSeverity:
     enum:
     - none
@@ -2693,7 +2705,7 @@ paths:
         "200":
           description: OK
           schema:
-            type: string
+            type: integer
       security:
       - BearerToken: []
       summary: Create action
@@ -2794,7 +2806,7 @@ paths:
         "200":
           description: OK
           schema:
-            type: string
+            type: integer
       security:
       - BearerToken: []
       summary: Create rule
@@ -4117,6 +4129,58 @@ paths:
       summary: Sync queries
       tags:
       - compliance
+  /cost_estimator/api/v1/cost/aws:
+    get:
+      description: Get AWS cost for each resource
+      parameters:
+      - description: ResourceID
+        in: path
+        name: resourceId
+        required: true
+        type: string
+      - description: ResourceType
+        in: path
+        name: resourceType
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      security:
+      - BearerToken: []
+      summary: Get AWS cost
+      tags:
+      - cost-estimator
+  /cost_estimator/api/v1/cost/azure:
+    get:
+      description: Get Azure cost for each resource
+      parameters:
+      - description: ResourceID
+        in: path
+        name: resourceId
+        required: true
+        type: string
+      - description: ResourceType
+        in: path
+        name: resourceType
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      security:
+      - BearerToken: []
+      summary: Get Azure cost
+      tags:
+      - cost-estimator
   /inventory/api/v1/query:
     get:
       description: Retrieving list of smart queries by specified filters
