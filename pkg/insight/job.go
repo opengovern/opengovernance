@@ -163,7 +163,7 @@ func (j Job) Do(esConfig config.ElasticSearch,
 		encodedResourceCollectionFilter = &filtersEncoded
 	}
 
-	err = steampipe.PopulateSteampipeConfig(esConfig, j.SourceType, steampipeSourceId, encodedResourceCollectionFilter)
+	err = steampipe.PopulateSteampipeConfig(esConfig, j.SourceType)
 	if err != nil {
 		logger.Error("failed to populate steampipe config", zap.Error(err))
 		fail(fmt.Errorf("populating steampipe config: %w", err))
@@ -178,7 +178,23 @@ func (j Job) Do(esConfig config.ElasticSearch,
 	}
 	defer steampipeConn.Conn().Close()
 	defer steampipe.StopSteampipeService(logger)
-	fmt.Println("Initialized steampipe database: ", *steampipeConn)
+	logger.Info("Initialized steampipe")
+
+	err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyAccountID, steampipeSourceId)
+	if err != nil {
+		logger.Error("failed to set steampipe context config for account id", zap.Error(err), zap.String("account_id", steampipeSourceId))
+		fail(err)
+		return
+	}
+	if encodedResourceCollectionFilter != nil {
+		err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyResourceCollectionFilters, *encodedResourceCollectionFilter)
+		if err != nil {
+			logger.Error("failed to set steampipe context config for resource collection filters", zap.Error(err), zap.String("resource_collection_filters", *encodedResourceCollectionFilter))
+			fail(err)
+			return
+		}
+	}
+	logger.Info("Set steampipe context config", zap.String("account_id", steampipeSourceId), zap.String("resource_collection_filters", *encodedResourceCollectionFilter))
 
 	logger.Info("running insight query", zap.Uint("insightId", j.InsightID), zap.String("connectionId", j.SourceID), zap.String("query", j.Query))
 

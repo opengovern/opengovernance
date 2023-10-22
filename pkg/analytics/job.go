@@ -83,17 +83,17 @@ func (j *Job) Do(
 		encodedResourceCollectionFilter = &filtersEncoded
 	}
 
-	err := steampipe.PopulateSteampipeConfig(conf.ElasticSearch, source.CloudAWS, "all", encodedResourceCollectionFilter)
+	err := steampipe.PopulateSteampipeConfig(conf.ElasticSearch, source.CloudAWS)
 	if err != nil {
 		logger.Error("failed to populate steampipe config for aws plugin", zap.Error(err))
 		return fail(err)
 	}
-	err = steampipe.PopulateSteampipeConfig(conf.ElasticSearch, source.CloudAzure, "all", encodedResourceCollectionFilter)
+	err = steampipe.PopulateSteampipeConfig(conf.ElasticSearch, source.CloudAzure)
 	if err != nil {
 		logger.Error("failed to populate steampipe config for azure plugin", zap.Error(err))
 		return fail(err)
 	}
-	err = steampipe.PopulateKaytuPluginSteampipeConfig(conf.ElasticSearch, conf.Steampipe, encodedResourceCollectionFilter)
+	err = steampipe.PopulateKaytuPluginSteampipeConfig(conf.ElasticSearch, conf.Steampipe)
 	if err != nil {
 		logger.Error("failed to populate steampipe config for kaytu plugin", zap.Error(err))
 		return fail(err)
@@ -103,9 +103,23 @@ func (j *Job) Do(
 	if err != nil {
 		return fail(err)
 	}
-	fmt.Println("Connected to the steampipe database: ", conf.Steampipe.DB)
+	logger.Info("Connected to the steampipe database")
 	defer steampipeConn.Conn().Close()
 	defer steampipe.StopSteampipeService(logger)
+
+	err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyAccountID, "all")
+	if err != nil {
+		logger.Error("failed to set steampipe context config for account id", zap.Error(err), zap.String("account_id", "all"))
+		return fail(err)
+	}
+	if encodedResourceCollectionFilter != nil {
+		err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyResourceCollectionFilters, *encodedResourceCollectionFilter)
+		if err != nil {
+			logger.Error("failed to set steampipe context config for resource collection filters", zap.Error(err), zap.String("resource_collection_filters", *encodedResourceCollectionFilter))
+			return fail(err)
+		}
+	}
+	logger.Info("Set steampipe context config", zap.String("account_id", "all"), zap.String("resource_collection_filters", *encodedResourceCollectionFilter))
 
 	if err := j.Run(db, steampipeConn, kfkProducer, kfkTopic, schedulerClient, onboardClient, logger); err != nil {
 		fail(err)

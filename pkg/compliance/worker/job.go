@@ -210,7 +210,7 @@ func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient,
 		}
 	}
 
-	fmt.Println("+++++ New elasticSearch Client created")
+	logger.Info("+++++ New elasticSearch Client created")
 
 	var encodedResourceCollectionFilter *string
 	if j.ResourceCollectionId != nil {
@@ -227,7 +227,7 @@ func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient,
 		encodedResourceCollectionFilter = &filtersEncoded
 	}
 
-	err := steampipe.PopulateSteampipeConfig(elasticSearchConfig, j.Connector, accountId, encodedResourceCollectionFilter)
+	err := steampipe.PopulateSteampipeConfig(elasticSearchConfig, j.Connector)
 	if err != nil {
 		logger.Error("failed to populate steampipe config", zap.Error(err))
 		return err
@@ -241,12 +241,26 @@ func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient,
 	defer steampipeConn.Conn().Close()
 	defer steampipe.StopSteampipeService(logger)
 
+	err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyAccountID, accountId)
+	if err != nil {
+		logger.Error("failed to set steampipe context config for account id", zap.Error(err), zap.String("account_id", accountId))
+		return err
+	}
+	if encodedResourceCollectionFilter != nil {
+		err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyResourceCollectionFilters, *encodedResourceCollectionFilter)
+		if err != nil {
+			logger.Error("failed to set steampipe context config for resource collection filters", zap.Error(err), zap.String("resource_collection_filters", *encodedResourceCollectionFilter))
+			return err
+		}
+	}
+	logger.Info("Set steampipe context config", zap.String("account_id", accountId), zap.String("resource_collection_filters", *encodedResourceCollectionFilter))
+
 	findings, err := j.RunBenchmark(logger, esk, j.BenchmarkID, nil, complianceClient, steampipeConn, connector)
 	if err != nil {
 		return err
 	}
 	steampipeConn.Conn().Close()
-	fmt.Println("++++++ findings len: ", len(findings))
+	logger.Info("++++++ findings ", zap.Int("len", len(findings)))
 	var docs []kafka.Doc
 	for _, finding := range findings {
 		docs = append(docs, finding)
