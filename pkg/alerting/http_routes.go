@@ -207,11 +207,12 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error marshalling metadata : %v ", err))
 	}
 
-	if err := h.db.CreateRule(event, scope, operator, req.ActionID, metadata); err != nil {
+	ruleID, err := h.db.CreateRule(event, scope, operator, req.ActionID, metadata)
+	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error creating rule : %v ", err))
 	}
 
-	return ctx.JSON(200, "Rule successfully created")
+	return ctx.JSON(200, ruleID)
 }
 
 // DeleteRule godoc
