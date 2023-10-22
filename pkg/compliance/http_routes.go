@@ -1337,6 +1337,10 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 	for _, benchmark := range benchmarks {
 		if benchmark.AutoAssign {
 			for _, src := range srcs {
+				if !src.IsEnabled() {
+					continue
+				}
+
 				exists := false
 				for _, assignment := range dbAssignments {
 					if assignment.ConnectionId != nil && *assignment.ConnectionId == src.ID.String() && assignment.BenchmarkId == benchmark.ID {
