@@ -24,13 +24,18 @@ func (db Database) Initialize() error {
 	return nil
 }
 
-func (db Database) CreateStoreCostTableJob() error {
-	job := StoreCostTableJob{}
-	return db.orm.Model(&StoreCostTableJob{}).Create(&job).Error
+func (db Database) CreateStoreCostTableJob(connector source.Type) (uint, error) {
+	job := StoreCostTableJob{Connector: connector, Status: StoreCostTableJobStatusProcessing}
+	err := db.orm.Model(&StoreCostTableJob{}).Create(&job).Error
+	if err != nil {
+		return 0, err
+	}
+	return job.Id, nil
 }
 
-func (db Database) UpdateStoreCostTableJob(id string, status StoreCostTableJobStatus) error {
-	return db.orm.Model(&StoreCostTableJob{}).Where("id = ?", id).Updates(StoreCostTableJob{Status: status}).Error
+func (db Database) UpdateStoreCostTableJob(id uint, status StoreCostTableJobStatus, errorMessage string, count int64) error {
+	return db.orm.Model(&StoreCostTableJob{}).Where("id = ?", id).
+		Updates(StoreCostTableJob{Status: status, ErrorMessage: errorMessage, Count: count}).Error
 }
 
 func (db Database) GetLastJob(connector source.Type) (StoreCostTableJob, error) {

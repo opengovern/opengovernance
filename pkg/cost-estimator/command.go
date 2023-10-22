@@ -10,6 +10,9 @@ import (
 )
 
 var (
+	KafkaService = os.Getenv("KAFKA_SERVICE")
+	KafkaTopic   = os.Getenv("KAFKA_TOPIC")
+
 	PostgreSQLHost     = os.Getenv("POSTGRESQL_HOST")
 	PostgreSQLPort     = os.Getenv("POSTGRESQL_PORT")
 	PostgreSQLDb       = os.Getenv("POSTGRESQL_DB")

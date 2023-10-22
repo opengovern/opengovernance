@@ -22,4 +22,5 @@ type StoreCostTableJob struct {
 	Connector    source.Type
 	ErrorMessage string
 	Status       StoreCostTableJobStatus
+	Count        int64
 }

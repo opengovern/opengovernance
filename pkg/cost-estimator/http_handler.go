@@ -2,18 +2,22 @@ package cost_estimator
 
 import (
 	"fmt"
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	kaytuAzure "github.com/kaytu-io/kaytu-azure-describer/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-engine/pkg/cost-estimator/db"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"go.uber.org/zap"
+	"strings"
 )
 
 type HttpHandler struct {
 	db     db.Database
 	client kaytu.Client
 	//awsClient   kaytuAws.Client
-	azureClient kaytuAzure.Client
+	azureClient   kaytuAzure.Client
+	kafkaProducer *confluent_kafka.Producer
+	kafkaTopic    string
 
 	logger *zap.Logger
 }
@@ -69,5 +73,23 @@ func InitializeHttpHandler(
 	h.db = db
 	h.logger.Info("Initialized postgres database")
 
+	kafkaProducer, err := newKafkaProducer(strings.Split(KafkaService, ","))
+	if err != nil {
+		return nil, err
+	}
+	h.kafkaProducer = kafkaProducer
+	h.kafkaTopic = KafkaTopic
+
 	return h, nil
+}
+
+func newKafkaProducer(brokers []string) (*confluent_kafka.Producer, error) {
+	return confluent_kafka.NewProducer(&confluent_kafka.ConfigMap{
+		"bootstrap.servers":            strings.Join(brokers, ","),
+		"linger.ms":                    100,
+		"compression.type":             "lz4",
+		"message.timeout.ms":           10000,
+		"queue.buffering.max.messages": 100000,
+		"message.max.bytes":            104857600,
+	})
 }
