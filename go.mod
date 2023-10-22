@@ -37,8 +37,8 @@ require (
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
-	github.com/kaytu-io/kaytu-aws-describer v0.13.21
-	github.com/kaytu-io/kaytu-azure-describer v0.9.17
+	github.com/kaytu-io/kaytu-aws-describer v0.13.24
+	github.com/kaytu-io/kaytu-azure-describer v0.9.21
 	github.com/kaytu-io/kaytu-util v0.0.0-20231022130238-8481df7fe22a
 	github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9
 	github.com/labstack/echo/v4 v4.11.1
@@ -466,7 +466,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect
 	github.com/pegasus-kv/thrift v0.13.0 // indirect
-	github.com/pganalyze/pg_query_go/v4 v4.2.1 // indirect
+	github.com/pganalyze/pg_query_go/v4 v4.2.3 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
