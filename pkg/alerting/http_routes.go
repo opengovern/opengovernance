@@ -173,7 +173,7 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Param			request	body		api.CreateRuleRequest	true	"Request Body"
-//	@Success		200		{object}	string
+//	@Success		200		{object}	uint
 //	@Router			/alerting/api/v1/rule/create [post]
 func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 	var req api.CreateRuleRequest
@@ -358,7 +358,7 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Param			request	body		api.CreateActionReq	true	"Request Body"
-//	@Success		200		{object}	string
+//	@Success		200		{object}	uint
 //	@Router			/alerting/api/v1/action/create [post]
 func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 	var req api.CreateActionReq
@@ -378,12 +378,12 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error marshalling the headers : %v ", err))
 	}
 
-	err = h.db.CreateAction(req.Method, req.Url, headers, req.Body)
+	id, err := h.db.CreateAction(req.Method, req.Url, headers, req.Body)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error creating the action : %v ", err))
 	}
 
-	return ctx.JSON(200, "Action created successfully ")
+	return ctx.JSON(200, id)
 }
 
 // DeleteAction godoc

@@ -122,14 +122,15 @@ func (db Database) GetAction(id uint) (Action, error) {
 	return action, nil
 }
 
-func (db Database) CreateAction(method string, url string, headers []byte, body string) error {
+func (db Database) CreateAction(method string, url string, headers []byte, body string) (uint, error) {
 	action := Action{
 		Method:  method,
 		Url:     url,
 		Headers: headers,
 		Body:    body,
 	}
-	return db.orm.Model(&Action{}).Create(&action).Error
+	err := db.orm.Model(&Rule{}).Create(&action).Error
+	return action.Id, err
 }
 
 func (db Database) DeleteAction(actionId uint) error {
