@@ -10,6 +10,13 @@ import (
 )
 
 var (
+	PostgreSQLHost     = os.Getenv("POSTGRESQL_HOST")
+	PostgreSQLPort     = os.Getenv("POSTGRESQL_PORT")
+	PostgreSQLDb       = os.Getenv("POSTGRESQL_DB")
+	PostgreSQLUser     = os.Getenv("POSTGRESQL_USERNAME")
+	PostgreSQLPassword = os.Getenv("POSTGRESQL_PASSWORD")
+	PostgreSQLSSLMode  = os.Getenv("POSTGRESQL_SSLMODE")
+
 	ElasticSearchAddress  = os.Getenv("ES_ADDRESS")
 	ElasticSearchUsername = os.Getenv("ES_USERNAME")
 	ElasticSearchPassword = os.Getenv("ES_PASSWORD")
@@ -32,6 +39,12 @@ func start(ctx context.Context) error {
 	}
 
 	handler, err := InitializeHttpHandler(
+		PostgreSQLHost,
+		PostgreSQLPort,
+		PostgreSQLDb,
+		PostgreSQLUser,
+		PostgreSQLPassword,
+		PostgreSQLSSLMode,
 		ElasticSearchAddress, ElasticSearchUsername, ElasticSearchPassword,
 		logger,
 	)

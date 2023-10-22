@@ -9,7 +9,7 @@ import (
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
-	v1.GET("/cost/azure/:resourceId", httpserver.AuthorizeHandler(h.AzureCost, authapi.ViewerRole))
+	v1.GET("/cost/azure", httpserver.AuthorizeHandler(h.AzureCost, authapi.ViewerRole))
 }
 
 // AzureCost godoc
@@ -19,10 +19,10 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 //	@Security		BearerToken
 //	@Tags			cost-estimator
 //	@Produce		int
-//	@Param			resourceId	path		string	true	"ResourceID"
-//	@Param			resourceType	path		string	true	"ResourceType"
+//	@Param			resourceId	query		string	true	"ResourceID"
+//	@Param			resourceType	query		string	true	"ResourceType"
 //	@Success		200		{object}
-//	@Router			/cost_estimator/api/v1/cost/azure [get]
+//	@Router			/cost-estimator/api/v1/cost/azure [get]
 func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
 	resourceType := ctx.Param("resourceType")
@@ -45,7 +45,7 @@ func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 //	@Param			resourceId	path		string	true	"ResourceID"
 //	@Param			resourceType	path		string	true	"ResourceType"
 //	@Success		200		{object}
-//	@Router			/cost_estimator/api/v1/cost/aws [get]
+//	@Router			/cost-estimator/api/v1/cost/aws [get]
 func (h *HttpHandler) AwsCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
 	resourceType := ctx.Param("resourceType")
