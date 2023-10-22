@@ -1412,6 +1412,9 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 		}
 
 		for _, connection := range connections {
+			if !connection.IsEnabled() {
+				continue
+			}
 			ba := api.BenchmarkAssignedConnection{
 				ConnectionID:           connection.ID.String(),
 				ProviderConnectionID:   connection.ConnectionID,
