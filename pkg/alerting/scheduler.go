@@ -64,16 +64,16 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 	}
 
 	stat := false
-	var securityScorePercentage int64
+	var averageSecurityScorePercentage int64
 	if eventType.InsightId != nil {
 		h.logger.Info("triggering insight", zap.String("rule", fmt.Sprintf("%v", rule.Id)))
-		stat, securityScorePercentage, err = h.triggerInsight(operator, eventType, scope)
+		stat, averageSecurityScorePercentage, err = h.triggerInsight(operator, eventType, scope)
 		if err != nil {
 			return fmt.Errorf("error triggering the insight : %v ", err.Error())
 		}
 	} else if eventType.BenchmarkId != nil {
 		h.logger.Info("triggering compliance", zap.String("rule", fmt.Sprintf("%v", rule.Id)))
-		stat, securityScorePercentage, err = h.triggerCompliance(operator, scope, eventType)
+		stat, averageSecurityScorePercentage, err = h.triggerCompliance(operator, scope, eventType)
 		if err != nil {
 			return fmt.Errorf("Error in trigger compliance : %v ", err.Error())
 		}
@@ -81,7 +81,7 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 		return fmt.Errorf("Error: insighId or complianceId not entered ")
 	}
 	if stat {
-		err = h.sendAlert(rule, securityScorePercentage)
+		err = h.sendAlert(rule, averageSecurityScorePercentage)
 		h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.Id)),
 			zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
 		if err != nil {
@@ -91,7 +91,7 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 	return nil
 }
 
-func (h HttpHandler) sendAlert(rule Rule, securityScorePercentage int64) error {
+func (h HttpHandler) sendAlert(rule Rule, averageSecurityScorePercentage int64) error {
 	action, err := h.db.GetAction(rule.ActionID)
 	if err != nil {
 		return fmt.Errorf("error getting action : %v", err.Error())
@@ -116,7 +116,7 @@ func (h HttpHandler) sendAlert(rule Rule, securityScorePercentage int64) error {
 		return fmt.Errorf("error sending the alert request : %v ", err.Error())
 	}
 
-	err = h.addTriggerToDatabase(rule, securityScorePercentage, res.StatusCode)
+	err = h.addTriggerToDatabase(rule, averageSecurityScorePercentage, res.StatusCode)
 	if err != nil {
 		return err
 	}
@@ -165,24 +165,31 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 	h.logger.Info("sending finding request",
 		zap.String("request", fmt.Sprintf("benchmarkId : %v , connectionId : %v , connection group : %v , connector : %v  ", eventType.BenchmarkId, connectionIds, scope.ConnectionGroup, scope.Connector)))
 
-	compliance, err := h.complianceClient.GetAccountsFindingsSummary(&httpclient.Context{UserRole: authApi.AdminRole}, *eventType.BenchmarkId, &connectionIds, &[]string{*scope.ConnectionGroup}, &[]source.Type{*scope.Connector})
+	compliance, err := h.complianceClient.GetAccountsFindingsSummary(&httpclient.Context{UserRole: authApi.AdminRole}, *eventType.BenchmarkId, connectionIds, []string{*scope.ConnectionGroup}, []source.Type{*scope.Connector})
 	if err != nil {
 		return false, 0, fmt.Errorf("error getting AccountsFindingsSummary : %v", err)
 	}
-	securityScore := compliance.Accounts[0].SecurityScore
+
+	var securityScore float64
+	for _, account := range compliance.Accounts {
+		securityScore += account.SecurityScore
+	}
+
 	h.logger.Info("received compliance account ")
-	stat, err := calculationOperations(operator, int64(securityScore*100))
+	averageSecurityScore := securityScore / float64(len(compliance.Accounts))
+
+	stat, err := calculationOperations(operator, int64(averageSecurityScore*100))
 	if err != nil {
 		return false, 0, fmt.Errorf("error in rule operations : %v ", err.Error())
 	}
-
 	h.logger.Info("Compliance rule operation done",
-		zap.Bool("result", stat),
-		zap.Int64("Security score percentage ", int64(securityScore*100)))
-	return stat, int64(securityScore * 100), nil
+		zap.Bool("Result", stat),
+		zap.Int64("Average security score percentage ", int64(averageSecurityScore*100)))
+
+	return stat, int64(averageSecurityScore * 100), nil
 }
 
-func (h HttpHandler) addTriggerToDatabase(rule Rule, securityScorePercentage int64, responseStatusCode int) error {
+func (h HttpHandler) addTriggerToDatabase(rule Rule, averageSecurityScorePercentage int64, responseStatusCode int) error {
 	eventTypeM, err := json.Marshal(rule.EventType)
 	if err != nil {
 		return fmt.Errorf("error in marshalling eventType : %v ", err)
@@ -193,7 +200,7 @@ func (h HttpHandler) addTriggerToDatabase(rule Rule, securityScorePercentage int
 		return fmt.Errorf("error in marshalling scope : %v ", err)
 	}
 
-	err = h.db.CreateTrigger(time.Now(), eventTypeM, scopeM, securityScorePercentage, responseStatusCode)
+	err = h.db.CreateTrigger(time.Now(), eventTypeM, scopeM, averageSecurityScorePercentage, responseStatusCode)
 	if err != nil {
 		return fmt.Errorf("error in add trigger to the database : %v ", err)
 	}
@@ -235,12 +242,12 @@ func (h HttpHandler) getConnectionIdFilter(scope api.Scope) ([]string, error) {
 	return connectionIDSChecked, nil
 }
 
-func calculationOperations(operator api.OperatorStruct, securityScorePercentage int64) (bool, error) {
+func calculationOperations(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
 	if oneCondition := operator.OperatorInfo; oneCondition != nil {
-		stat := compareValue(oneCondition.OperatorType, oneCondition.Value, securityScorePercentage)
+		stat := compareValue(oneCondition.OperatorType, oneCondition.Value, averageSecurityScorePercentage)
 		return stat, nil
 	} else if operator.Condition != nil {
-		stat, err := calculationConditionStr(operator, securityScorePercentage)
+		stat, err := calculationConditionStr(operator, averageSecurityScorePercentage)
 		if err != nil {
 			return false, fmt.Errorf("error in calculation operator : %v ", err.Error())
 		}
@@ -249,18 +256,18 @@ func calculationOperations(operator api.OperatorStruct, securityScorePercentage 
 	return false, fmt.Errorf("error entering the operation")
 }
 
-func calculationConditionStr(operator api.OperatorStruct, securityScorePercentage int64) (bool, error) {
+func calculationConditionStr(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
 	conditionType := operator.Condition.ConditionType
 
 	if conditionType == api.ConditionAnd {
-		stat, err := calculationConditionStrAND(operator, securityScorePercentage)
+		stat, err := calculationConditionStrAND(operator, averageSecurityScorePercentage)
 		if err != nil {
 			return false, err
 		}
 		return stat, nil
 
 	} else if conditionType == api.ConditionOr {
-		stat, err := calculationConditionStrOr(operator, securityScorePercentage)
+		stat, err := calculationConditionStrOr(operator, averageSecurityScorePercentage)
 		if err != nil {
 			return false, err
 		}
@@ -270,14 +277,14 @@ func calculationConditionStr(operator api.OperatorStruct, securityScorePercentag
 	return false, fmt.Errorf("please enter right condition")
 }
 
-func calculationConditionStrAND(operator api.OperatorStruct, securityScorePercentage int64) (bool, error) {
+func calculationConditionStrAND(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
 	// AND condition
 	numberOperatorStr := len(operator.Condition.Operator)
 	for i := 0; i < numberOperatorStr; i++ {
 		newOperator := operator.Condition.Operator[i]
 
 		if newOperator.OperatorInfo != nil {
-			stat := compareValue(newOperator.OperatorInfo.OperatorType, newOperator.OperatorInfo.Value, securityScorePercentage)
+			stat := compareValue(newOperator.OperatorInfo.OperatorType, newOperator.OperatorInfo.Value, averageSecurityScorePercentage)
 			if !stat {
 				return false, nil
 			} else {
@@ -293,7 +300,7 @@ func calculationConditionStrAND(operator api.OperatorStruct, securityScorePercen
 			numberOperatorStr2 := len(newOperator2.Operator)
 
 			for j := 0; j < numberOperatorStr2; j++ {
-				stat, err := calculationOperations(newOperator2.Operator[j], securityScorePercentage)
+				stat, err := calculationOperations(newOperator2.Operator[j], averageSecurityScorePercentage)
 				if err != nil {
 					return false, fmt.Errorf("error in calculationOperations : %v ", err.Error())
 				}
@@ -335,7 +342,7 @@ func calculationConditionStrAND(operator api.OperatorStruct, securityScorePercen
 	return false, fmt.Errorf("error")
 }
 
-func calculationConditionStrOr(operator api.OperatorStruct, securityScorePercentage int64) (bool, error) {
+func calculationConditionStrOr(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
 	// OR condition
 	numberOperatorStr := len(operator.Condition.Operator)
 
@@ -343,7 +350,7 @@ func calculationConditionStrOr(operator api.OperatorStruct, securityScorePercent
 		newOperator := operator.Condition.Operator[i]
 
 		if newOperator.OperatorInfo != nil {
-			stat := compareValue(newOperator.OperatorInfo.OperatorType, newOperator.OperatorInfo.Value, securityScorePercentage)
+			stat := compareValue(newOperator.OperatorInfo.OperatorType, newOperator.OperatorInfo.Value, averageSecurityScorePercentage)
 			if stat {
 				return true, nil
 			} else {
@@ -359,7 +366,7 @@ func calculationConditionStrOr(operator api.OperatorStruct, securityScorePercent
 			numberConditionStr2 := len(newOperator2.ConditionType)
 
 			for j := 0; j < numberConditionStr2; j++ {
-				stat, err := calculationOperations(newOperator2.Operator[j], securityScorePercentage)
+				stat, err := calculationOperations(newOperator2.Operator[j], averageSecurityScorePercentage)
 				if err != nil {
 					return false, fmt.Errorf("error in calculationOperations : %v ", err)
 				}
@@ -402,30 +409,30 @@ func calculationConditionStrOr(operator api.OperatorStruct, securityScorePercent
 	return false, fmt.Errorf("error")
 }
 
-func compareValue(operator api.OperatorType, value int64, securityScorePercentage int64) bool {
+func compareValue(operator api.OperatorType, value int64, averageSecurityScorePercentage int64) bool {
 	switch operator {
 	case api.OperatorGreaterThan:
-		if securityScorePercentage > value {
+		if averageSecurityScorePercentage > value {
 			return true
 		}
 	case api.OperatorLessThan:
-		if securityScorePercentage < value {
+		if averageSecurityScorePercentage < value {
 			return true
 		}
 	case api.OperatorGreaterThanOrEqual:
-		if securityScorePercentage >= value {
+		if averageSecurityScorePercentage >= value {
 			return true
 		}
 	case api.OperatorLessThanOrEqual:
-		if securityScorePercentage <= value {
+		if averageSecurityScorePercentage <= value {
 			return true
 		}
 	case api.OperatorEqual:
-		if securityScorePercentage == value {
+		if averageSecurityScorePercentage == value {
 			return true
 		}
 	case api.OperatorDoesNotEqual:
-		if securityScorePercentage != value {
+		if averageSecurityScorePercentage != value {
 			return true
 		}
 	default:

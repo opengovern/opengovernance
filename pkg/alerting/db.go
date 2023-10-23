@@ -129,7 +129,7 @@ func (db Database) CreateAction(method string, url string, headers []byte, body 
 		Headers: headers,
 		Body:    body,
 	}
-	err := db.orm.Model(&Rule{}).Create(&action).Error
+	err := db.orm.Model(&Action{}).Create(&action).Error
 	return action.Id, err
 }
 

@@ -22,7 +22,7 @@ type ComplianceServiceClient interface {
 	GetFindings(ctx *httpclient.Context, req compliance.GetFindingsRequest) (compliance.GetFindingsResponse, error)
 	GetInsight(ctx *httpclient.Context, insightId string, connectionId []string, startTime *time.Time, endTime *time.Time) (compliance.Insight, error)
 	ListBenchmarks(ctx *httpclient.Context) ([]compliance.Benchmark, error)
-	GetAccountsFindingsSummary(ctx *httpclient.Context, benchmarkId string, connectionId *[]string, connectionGroup *[]string, connector *[]source.Type) (compliance.GetAccountsFindingsSummaryResponse, error)
+	GetAccountsFindingsSummary(ctx *httpclient.Context, benchmarkId string, connectionId []string, connectionGroup []string, connector []source.Type) (compliance.GetAccountsFindingsSummaryResponse, error)
 }
 
 type complianceClient struct {
@@ -173,13 +173,13 @@ func (s *complianceClient) ListBenchmarks(ctx *httpclient.Context) ([]compliance
 	return benchmarks, nil
 }
 
-func (s *complianceClient) GetAccountsFindingsSummary(ctx *httpclient.Context, benchmarkId string, connectionId *[]string, connectionGroup *[]string, connector *[]source.Type) (compliance.GetAccountsFindingsSummaryResponse, error) {
+func (s *complianceClient) GetAccountsFindingsSummary(ctx *httpclient.Context, benchmarkId string, connectionId []string, connectionGroup []string, connector []source.Type) (compliance.GetAccountsFindingsSummaryResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/findings/%s/accounts", s.baseURL, benchmarkId)
 
 	var firstParamAttached bool
 	firstParamAttached = false
-	
-	if connectionId != nil {
+
+	if len(connectionId) > 0 {
 		if !firstParamAttached {
 			url += "?"
 			firstParamAttached = true
@@ -188,7 +188,7 @@ func (s *complianceClient) GetAccountsFindingsSummary(ctx *httpclient.Context, b
 		}
 		url += fmt.Sprintf("connectionId=%v", &connectionId)
 	}
-	if connectionGroup != nil {
+	if len(connectionGroup) > 0 {
 		if !firstParamAttached {
 			url += "?"
 			firstParamAttached = true
@@ -197,7 +197,7 @@ func (s *complianceClient) GetAccountsFindingsSummary(ctx *httpclient.Context, b
 		}
 		url += fmt.Sprintf("connectionGroup=%v", &connectionGroup)
 	}
-	if connector != nil {
+	if len(connector) > 0 {
 		if !firstParamAttached {
 			url += "?"
 			firstParamAttached = true

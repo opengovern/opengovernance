@@ -1,6 +1,7 @@
 package alerting
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/go-errors/errors"
@@ -14,9 +15,6 @@ import (
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
-	trigger := v1.Group("/trigger")
-	trigger.GET("/list", httpserver.AuthorizeHandler(h.ListTriggers, authapi.ViewerRole))
-
 	ruleGroup := v1.Group("/rule")
 	ruleGroup.GET("/list", httpserver.AuthorizeHandler(h.ListRules, authapi.ViewerRole))
 	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
@@ -29,6 +27,12 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	actionGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateAction, authapi.EditorRole))
 	actionGroup.DELETE("/delete/:actionId", httpserver.AuthorizeHandler(h.DeleteAction, authapi.EditorRole))
 	actionGroup.PUT("/update/:actionId", httpserver.AuthorizeHandler(h.UpdateAction, authapi.EditorRole))
+
+	trigger := v1.Group("/trigger")
+	trigger.GET("/list", httpserver.AuthorizeHandler(h.ListTriggers, authapi.ViewerRole))
+
+	alert := v1.Group("/alert")
+	alert.POST("/slack/", httpserver.AuthorizeHandler(h.SendAlertToSlack, authapi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -452,5 +456,60 @@ func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error updating the action : %v ", err))
 	}
+
 	return ctx.JSON(200, "Action updated successfully")
+}
+
+// SendAlertToSlack godoc
+//
+//	@Summary		Send Alert
+//	@Description	Send Alert to specific Slack URL
+//	@Security		BearerToken
+//	@Tags			alerting
+//	@Param			slackUrl	body		string				true	"Slack URl"
+//	@Param			channelName	body		string				true	"Channel Name"
+//	@Param			ruleId		body		int					true	"Rule ID "
+//	@Success		200			{object}	string
+//	@Router			/alerting/api/v1/alert/slack [post]
+func (h *HttpHandler) SendAlertToSlack(ctx echo.Context) error {
+	var inputs api.SlackInputs
+	if err := bindValidate(ctx, &inputs); err != nil {
+		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the channelName : %v ", err))
+	}
+
+	rule, err := h.db.GetRule(uint(inputs.RuleId))
+	if err != nil {
+		return fmt.Errorf("error getting rule : %v", err)
+	}
+	var metadata api.Metadata
+	err = json.Unmarshal(rule.Metadata, &metadata)
+	if err != nil {
+		return fmt.Errorf("error unmarshalling the metadata in rule : %v ", err)
+	}
+
+	reqStr := api.SlackResponse{
+		ChannelName: inputs.ChannelName,
+		Text:        fmt.Sprintf("%s rule successfully triggered", metadata.Name),
+	}
+
+	reqStrMarshalled, err := json.Marshal(&reqStr)
+	if err != nil {
+		return fmt.Errorf("error in marshalling the request : %v", err)
+	}
+
+	req, err := http.NewRequest("POST", inputs.SlackUrl, bytes.NewBuffer(reqStrMarshalled))
+	if err != nil {
+		return fmt.Errorf("error creating request for sending slack alert : %v ", err)
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("error sending the slack alert : %v ", err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("error status is not equal to 200 : %d ", res.StatusCode)
+	}
+
+	return ctx.String(http.StatusOK, "slack alert sent successfully")
 }
