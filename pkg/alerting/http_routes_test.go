@@ -57,8 +57,8 @@ func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
 		}
 	}))
 
-	handler, err := InitializeHttpHandler("127.0.0.1", "5432", "postgres",
-		"postgres", "postgres", "disable", server.URL, server.URL, logger)
+	handler, err := InitializeHttpHandler("127.0.0.1", "5432", "test-database",
+		"user_1", "qwertyPostgres", "disable", server.URL, server.URL, logger)
 	if err != nil {
 		tb.Errorf("error connecting to postgres , err : %v", err)
 	}
