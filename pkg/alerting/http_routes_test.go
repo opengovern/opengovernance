@@ -12,11 +12,13 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strconv"
 	"testing"
 	"time"
@@ -48,7 +50,7 @@ func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
 		switch request.URL.Path {
 		case "/api/v1/insight/123123":
 			mockGetInsightEndpoint(writer, request)
-		case "/api/v1/findings":
+		case "/api/v1/findings/CIS v1.4.0/accounts":
 			mockGetFindingsEndpoint(writer, request)
 		case "/api/v1/connection-groups/testConnectionId":
 			mockGetConnectionGroupEndpoint(writer, request)
@@ -108,6 +110,7 @@ func doSimpleJSONRequest(method string, path string, request, response interface
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add(httpserver.XKaytuUserRoleHeader, string(api2.AdminRole))
+
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error sending the request ,err : %v", err)
@@ -122,32 +125,51 @@ func doSimpleJSONRequest(method string, path string, request, response interface
 			return nil, err
 		}
 
-		if err := json.Unmarshal(b, response); err != nil {
-			return nil, fmt.Errorf("error unmarshalling the response ,err : %v", err)
+		if reflect.ValueOf(response).Kind() == reflect.String {
+			response = string(b)
+		} else {
+			if err := json.Unmarshal(b, response); err != nil {
+				return nil, fmt.Errorf("error unmarshalling the response ,err : %v", err)
+			}
 		}
 	}
 	return res, nil
 }
 
 func addRule(t *testing.T) uint {
-	operatorInfo := api.OperatorInformation{OperatorType: "<", Value: 1000}
 	operator := api.OperatorStruct{
-		OperatorInfo: &operatorInfo,
-		Condition:    nil,
+		Condition: &api.ConditionStruct{
+			ConditionType: "OR",
+			Operator: []api.OperatorStruct{
+				{
+					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
+				},
+				{
+					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
+				},
+			},
+		},
 	}
 
+	var id uint
 	benchmarkId := "CIS v1.4.0"
 	connectionId := "testConnectionID"
+	connector := source.CloudAWS
 	req := api.Rule{
-		Id:        12,
 		EventType: api.EventType{BenchmarkId: &benchmarkId},
-		Scope:     api.Scope{ConnectionId: &connectionId},
-		Operator:  operator,
-		ActionID:  123123,
+		Scope:     api.Scope{ConnectionId: &connectionId, Connector: &connector},
+		Metadata: api.Metadata{
+			Name:        "test metadata name ",
+			Description: "test metadata description",
+			Label:       []string{"test label"},
+		},
+		Operator: operator,
+		ActionID: 123123,
 	}
-	_, err := doSimpleJSONRequest("POST", "/api/v1/rule/create", req, nil)
+
+	_, err := doSimpleJSONRequest("POST", "/api/v1/rule/create", req, &id)
 	require.NoError(t, err, "error creating rule")
-	return 12
+	return id
 }
 
 func getRule(h *HttpHandler, id uint) (api.Rule, error) {
@@ -177,11 +199,18 @@ func getRule(h *HttpHandler, id uint) (api.Rule, error) {
 		return api.Rule{}, fmt.Errorf("error unmarshalling the operator , error : %v", err)
 	}
 
+	var metadata api.Metadata
+	err = json.Unmarshal(rule.Metadata, &metadata)
+	if err != nil {
+		return api.Rule{}, fmt.Errorf("error unmarshalling the metadata , error : %v", err)
+	}
+
 	response := api.Rule{
 		Id:        rule.Id,
 		EventType: eventType,
 		Scope:     scope,
 		Operator:  operator,
+		Metadata:  metadata,
 		ActionID:  rule.ActionID,
 	}
 	return response, nil
@@ -208,15 +237,21 @@ func TestCreateRule(t *testing.T) {
 		Condition:    nil,
 	}
 
-	var id uint = 123
+	var id uint
 	var insightId int64 = 123123
 	connectionId := "testConnectionId"
+	connector := source.CloudAWS
 	req := api.Rule{
 		Id:        id,
 		EventType: api.EventType{InsightId: &insightId},
-		Scope:     api.Scope{ConnectionId: &connectionId},
-		Operator:  operator,
-		ActionID:  1231,
+		Scope:     api.Scope{ConnectionId: &connectionId, Connector: &connector},
+		Metadata: api.Metadata{
+			Name:        "test metadata name",
+			Description: "test metadata description",
+			Label:       []string{"test label"},
+		},
+		Operator: operator,
+		ActionID: 1231,
 	}
 
 	_, err := doSimpleJSONRequest("POST", "/api/v1/rule/create", req, &id)
@@ -227,7 +262,13 @@ func TestCreateRule(t *testing.T) {
 
 	require.Equal(t, operator, foundRule.Operator)
 	require.Equal(t, 100, int(foundRule.Operator.OperatorInfo.Value))
+
+	require.Equal(t, "test metadata name", foundRule.Metadata.Name)
+	require.Equal(t, "test metadata description", foundRule.Metadata.Description)
+	require.Equal(t, []string{"test label"}, foundRule.Metadata.Label)
+
 	require.Equal(t, "testConnectionId", *foundRule.Scope.ConnectionId)
+	require.Equal(t, &connector, foundRule.Scope.Connector)
 	require.Equal(t, 123123, int(*foundRule.EventType.InsightId))
 	require.Equal(t, 1231, int(foundRule.ActionID))
 
@@ -254,7 +295,6 @@ func TestCreateRule(t *testing.T) {
 
 	require.Equal(t, operator, foundRule.Operator)
 
-	id++
 	operator = api.OperatorStruct{
 		Condition: &api.ConditionStruct{
 			ConditionType: "AND",
@@ -278,7 +318,6 @@ func TestCreateRule(t *testing.T) {
 
 	require.Equal(t, operator, foundRule.Operator)
 
-	id++
 	operator = api.OperatorStruct{
 		Condition: &api.ConditionStruct{
 			ConditionType: "AND",
@@ -318,10 +357,18 @@ func TestUpdateRule(t *testing.T) {
 	defer teardownSuite(t)
 	id := addRule(t)
 
-	operatorInfo := api.OperatorInformation{OperatorType: "<", Value: 110}
 	operator := api.OperatorStruct{
-		OperatorInfo: &operatorInfo,
-		Condition:    nil,
+		Condition: &api.ConditionStruct{
+			ConditionType: "OR",
+			Operator: []api.OperatorStruct{
+				{
+					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
+				},
+				{
+					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
+				},
+			},
+		},
 	}
 
 	req := api.Rule{
@@ -334,16 +381,16 @@ func TestUpdateRule(t *testing.T) {
 		Operator: &req.Operator,
 		ActionID: &req.ActionID,
 	}
+
 	idString := strconv.FormatUint(uint64(id), 10)
-	_, err := doSimpleJSONRequest("GET", "/api/v1/rule/update/"+idString, reqUpdate, nil)
+	_, err := doSimpleJSONRequest("PUT", "/api/v1/rule/update/"+idString, reqUpdate, nil)
 	require.NoError(t, err, "error updating rule")
 
 	ruleNew, err := getRule(h, id)
 	require.NoErrorf(t, err, "error getting the rule ")
 
-	require.Equal(t, 110, int(ruleNew.Operator.OperatorInfo.Value))
-	require.Equal(t, 34567, int(ruleNew.ActionID))
 	require.Equal(t, operator, ruleNew.Operator)
+	require.Equal(t, 34567, int(ruleNew.ActionID))
 }
 
 func TestDeleteRule(t *testing.T) {
@@ -355,23 +402,24 @@ func TestDeleteRule(t *testing.T) {
 	require.NoError(t, err, "error deleting rule")
 
 	_, err = getRule(h, id)
+	fmt.Println(err)
 	require.Error(t, err)
 }
 
 // -------------------------------------------------- action test --------------------------------------------------
 
 func addAction(t *testing.T) uint {
+	var id uint
 	req := api.Action{
-		Id:      12,
 		Method:  "GET",
 		Url:     "https://kaytu.dev/",
 		Headers: map[string]string{"insight": "teatInsight"},
 		Body:    "testBody",
 	}
 
-	_, err := doSimpleJSONRequest("POST", "/api/v1/action/create", req, nil)
+	_, err := doSimpleJSONRequest("POST", "/api/v1/action/create", req, &id)
 	require.NoError(t, err)
-	return 12
+	return id
 }
 
 func getAction(h *HttpHandler, id uint) (api.Action, error) {
@@ -410,7 +458,8 @@ func TestListAction(t *testing.T) {
 func TestCreateAction(t *testing.T) {
 	teardownSuite, h := setupSuite(t)
 	defer teardownSuite(t)
-	var id uint = 12
+
+	var id uint
 	action := api.Action{
 		Id:      id,
 		Method:  "GET",
@@ -418,7 +467,7 @@ func TestCreateAction(t *testing.T) {
 		Headers: map[string]string{"insightId": "123123"},
 		Body:    "testBody",
 	}
-	_, err := doSimpleJSONRequest("POST", "/api/v1/action/create", action, nil)
+	_, err := doSimpleJSONRequest("POST", "/api/v1/action/create", action, &id)
 	require.NoError(t, err)
 
 	foundAction, err := getAction(h, id)
@@ -437,21 +486,23 @@ func TestUpdateAction(t *testing.T) {
 	id := addAction(t)
 	newMethod := "POST"
 	newUrl := "https://kaytu.dev/use-cases"
+	header := map[string]string{"insight": "teatInsight22"}
 	req := api.UpdateActionRequest{
 		Method:  &newMethod,
-		Headers: map[string]string{"insightId": "newTestInsight"},
+		Headers: header,
 		Url:     &newUrl,
 	}
+
 	idString := strconv.FormatUint(uint64(id), 10)
-	_, err := doSimpleJSONRequest("GET", "/api/v1/action/update/"+idString, req, nil)
+	_, err := doSimpleJSONRequest("PUT", "/api/v1/action/update/"+idString, req, nil)
 	require.NoError(t, err, "error updating action")
 
-	actionG, err := getAction(h, id)
+	newAction, err := getAction(h, id)
 	require.NoErrorf(t, err, "error getting the action")
 
-	require.Equal(t, map[string]string{"insightId": "newTestInsight"}, actionG.Headers)
-	require.Equal(t, "POST", actionG.Method)
-	require.Equal(t, "https://kaytu.dev/use-cases", actionG.Url)
+	require.Equal(t, header, newAction.Headers)
+	require.Equal(t, "POST", newAction.Method)
+	require.Equal(t, "https://kaytu.dev/use-cases", newAction.Url)
 }
 
 func TestDeleteAction(t *testing.T) {

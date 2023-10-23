@@ -456,6 +456,7 @@ func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error updating the action : %v ", err))
 	}
+
 	return ctx.JSON(200, "Action updated successfully")
 }
 
