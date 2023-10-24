@@ -711,6 +711,8 @@ definitions:
         description: Policy ID
         example: azure_cis_v140_7_5
         type: string
+      policyTitle:
+        type: string
       providerConnectionID:
         description: Connection ID
         example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
@@ -2769,6 +2771,38 @@ paths:
       security:
       - BearerToken: []
       summary: Update action
+      tags:
+      - alerting
+  /alerting/api/v1/alert/slack:
+    post:
+      description: Send Alert to specific Slack URL
+      parameters:
+      - description: Slack URl
+        in: body
+        name: slackUrl
+        required: true
+        schema:
+          type: string
+      - description: Channel Name
+        in: body
+        name: channelName
+        required: true
+        schema:
+          type: string
+      - description: 'Rule ID '
+        in: body
+        name: ruleId
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerToken: []
+      summary: Send Alert
       tags:
       - alerting
   /alerting/api/v1/rule/{ruleId}/trigger:
