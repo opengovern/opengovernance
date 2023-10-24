@@ -246,7 +246,6 @@ func (j *Job) DoAssetMetric(
 ) error {
 	connectionResultMap := map[string]resource.ConnectionMetricTrendSummary{}
 	providerResultMap := map[string]resource.ConnectorMetricTrendSummary{}
-	regionResultMap := map[string]resource.RegionMetricTrendSummary{}
 
 	fmt.Println("assets ==== " + metric.Query)
 	res, err := steampipeDB.QueryAll(context.TODO(), metric.Query)
@@ -272,10 +271,7 @@ func (j *Job) DoAssetMetric(
 		if !ok {
 			return fmt.Errorf("invalid format for sourceID: [%s] %v", reflect.TypeOf(record[0]), record[0])
 		}
-		region, ok := record[1].(string)
-		if !ok {
-			return fmt.Errorf("invalid format for region: [%s] %v", reflect.TypeOf(record[1]), record[1])
-		}
+
 		count, ok := record[2].(int64)
 		if !ok {
 			return fmt.Errorf("invalid format for count: [%s] %v", reflect.TypeOf(record[2]), record[2])
@@ -350,29 +346,6 @@ func (j *Job) DoAssetMetric(
 			}
 			providerResultMap[conn.Connector.String()] = vn
 		}
-
-		regionKey := region + "-" + conn.ID.String()
-		if v, ok := regionResultMap[regionKey]; ok {
-			v.ResourceCount += int(count)
-			regionResultMap[regionKey] = v
-		} else {
-			vn := resource.RegionMetricTrendSummary{
-				Region:         region,
-				ConnectionID:   conn.ID,
-				ConnectionName: conn.ConnectionName,
-				Connector:      conn.Connector,
-				EvaluatedAt:    startTime.UnixMilli(),
-				Date:           startTime.Format("2006-01-02"),
-				Month:          startTime.Format("2006-01"),
-				Year:           startTime.Format("2006"),
-				MetricID:       metric.ID,
-				MetricName:     metric.Name,
-				ResourceCount:  int(count),
-
-				ResourceCollection: j.ResourceCollectionId,
-			}
-			regionResultMap[regionKey] = vn
-		}
 	}
 
 	var msgs []kafka.Doc
@@ -382,14 +355,11 @@ func (j *Job) DoAssetMetric(
 	for _, item := range providerResultMap {
 		msgs = append(msgs, item)
 	}
-	for _, item := range regionResultMap {
-		msgs = append(msgs, item)
-	}
 	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger, nil); err != nil {
 		return err
 	}
 
-	fmt.Printf("Write %d region docs, %d provider docs, %d connection docs\n", len(regionResultMap), len(providerResultMap), len(connectionResultMap))
+	fmt.Printf("Write %d region docs, %d provider docs, %d connection docs\n", len(providerResultMap), len(connectionResultMap))
 	return nil
 }
 
