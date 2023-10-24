@@ -466,9 +466,9 @@ func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
 //	@Description	Send Alert to specific Slack URL
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			slackUrl	body		string				true	"Slack URl"
-//	@Param			channelName	body		string				true	"Channel Name"
-//	@Param			ruleId		body		int					true	"Rule ID "
+//	@Param			slackUrl	body		string	true	"Slack URl"
+//	@Param			channelName	body		string	true	"Channel Name"
+//	@Param			ruleId		body		int		true	"Rule ID "
 //	@Success		200			{object}	string
 //	@Router			/alerting/api/v1/alert/slack [post]
 func (h *HttpHandler) SendAlertToSlack(ctx echo.Context) error {

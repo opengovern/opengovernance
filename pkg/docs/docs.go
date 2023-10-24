@@ -191,6 +191,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/alerting/api/v1/alert/slack": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Send Alert to specific Slack URL",
+                "tags": [
+                    "alerting"
+                ],
+                "summary": "Send Alert",
+                "parameters": [
+                    {
+                        "description": "Slack URl",
+                        "name": "slackUrl",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Channel Name",
+                        "name": "channelName",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Rule ID ",
+                        "name": "ruleId",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/alerting/api/v1/rule/create": {
             "post": {
                 "security": [
@@ -6653,6 +6704,9 @@ const docTemplate = `{
                     "description": "Policy ID",
                     "type": "string",
                     "example": "azure_cis_v140_7_5"
+                },
+                "policyTitle": {
+                    "type": "string"
                 },
                 "providerConnectionID": {
                     "description": "Connection ID",
