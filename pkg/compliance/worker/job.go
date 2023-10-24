@@ -178,7 +178,6 @@ func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient,
 			Addresses: []string{eskConfig.Address},
 			Username:  &eskConfig.Username,
 			Password:  &eskConfig.Password,
-			AccountID: &accountId,
 		})
 		if err != nil {
 			return err
@@ -203,7 +202,6 @@ func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient,
 			Addresses: []string{elasticSearchConfig.Address},
 			Username:  &elasticSearchConfig.Username,
 			Password:  &elasticSearchConfig.Password,
-			AccountID: &accountId,
 		})
 		if err != nil {
 			return err

@@ -103,12 +103,10 @@ func InitializeWorker(
 	w.scheduleClient = describeClient.NewSchedulerServiceClient(schedulerBaseUrl)
 	w.pusher = push.New(prometheusPushAddress, "compliance-report")
 
-	defaultAccountID := "default"
 	w.es, err = kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{config.ElasticSearch.Address},
 		Username:  &config.ElasticSearch.Username,
 		Password:  &config.ElasticSearch.Password,
-		AccountID: &defaultAccountID,
 	})
 	if err != nil {
 		return nil, err

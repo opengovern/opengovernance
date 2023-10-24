@@ -372,12 +372,10 @@ func InitializeScheduler(
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
 	s.db = Database{orm: orm}
 
-	defaultAccountID := "default"
 	s.es, err = kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{ElasticSearchAddress},
 		Username:  &ElasticSearchUsername,
 		Password:  &ElasticSearchPassword,
-		AccountID: &defaultAccountID,
 	})
 	if err != nil {
 		return nil, err
