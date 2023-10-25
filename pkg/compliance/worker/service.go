@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	kafka2 "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
@@ -89,12 +88,8 @@ func (w *Worker) Run() error {
 
 	for {
 		select {
-		case msg, ok := <-msgs:
+		case msg := <-msgs:
 			t.Reset(JobTimeoutCheckInterval)
-
-			if !ok {
-				return fmt.Errorf("tasks channel is closed")
-			}
 
 			commit, requeue, err := w.ProcessMessage(msg)
 			if err != nil {

@@ -145,11 +145,7 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 
 	for {
 		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				return fmt.Errorf("tasks channel is closed")
-			}
-
+		case msg := <-msgs:
 			var result complianceworker.JobResult
 			if err := json.Unmarshal(msg.Value, &result); err != nil {
 				s.logger.Error("Failed to unmarshal ComplianceReportJob results", zap.Error(err))
