@@ -142,10 +142,10 @@ func addRule(t *testing.T) uint {
 			ConditionType: "OR",
 			Operator: []api.OperatorStruct{
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
+					OperatorType: "<", Value: 100,
 				},
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
+					OperatorType: ">", Value: 200,
 				},
 			},
 		},
@@ -231,10 +231,9 @@ func TestCreateRule(t *testing.T) {
 	teardownSuite, h := setupSuite(t)
 	defer teardownSuite(t)
 
-	operatorInfo := api.OperatorInformation{OperatorType: "<", Value: 100}
 	operator := api.OperatorStruct{
-		OperatorInfo: &operatorInfo,
-		Condition:    nil,
+		OperatorType: "<", Value: 100,
+		Condition: nil,
 	}
 
 	var id uint
@@ -261,7 +260,7 @@ func TestCreateRule(t *testing.T) {
 	require.NoErrorf(t, err, "error getting the rule")
 
 	require.Equal(t, operator, foundRule.Operator)
-	require.Equal(t, 100, int(foundRule.Operator.OperatorInfo.Value))
+	require.Equal(t, 100, int(foundRule.Operator.Value))
 
 	require.Equal(t, "test metadata name", foundRule.Metadata.Name)
 	require.Equal(t, "test metadata description", foundRule.Metadata.Description)
@@ -277,33 +276,10 @@ func TestCreateRule(t *testing.T) {
 			ConditionType: "OR",
 			Operator: []api.OperatorStruct{
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
+					OperatorType: "<", Value: 100,
 				},
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
-				},
-			},
-		},
-	}
-	req.Operator = operator
-
-	_, err = doSimpleJSONRequest("POST", "/api/v1/rule/create", req, &id)
-	require.NoError(t, err, "error creating rule")
-
-	foundRule, err = getRule(h, id)
-	require.NoErrorf(t, err, "error getting the rule")
-
-	require.Equal(t, operator, foundRule.Operator)
-
-	operator = api.OperatorStruct{
-		Condition: &api.ConditionStruct{
-			ConditionType: "AND",
-			Operator: []api.OperatorStruct{
-				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 50},
-				},
-				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 200},
+					OperatorType: ">", Value: 200,
 				},
 			},
 		},
@@ -323,17 +299,40 @@ func TestCreateRule(t *testing.T) {
 			ConditionType: "AND",
 			Operator: []api.OperatorStruct{
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 50},
+					OperatorType: ">", Value: 50,
+				},
+				{
+					OperatorType: "<", Value: 200,
+				},
+			},
+		},
+	}
+	req.Operator = operator
+
+	_, err = doSimpleJSONRequest("POST", "/api/v1/rule/create", req, &id)
+	require.NoError(t, err, "error creating rule")
+
+	foundRule, err = getRule(h, id)
+	require.NoErrorf(t, err, "error getting the rule")
+
+	require.Equal(t, operator, foundRule.Operator)
+
+	operator = api.OperatorStruct{
+		Condition: &api.ConditionStruct{
+			ConditionType: "AND",
+			Operator: []api.OperatorStruct{
+				{
+					OperatorType: ">", Value: 50,
 				},
 				{
 					Condition: &api.ConditionStruct{
 						ConditionType: "OR",
 						Operator: []api.OperatorStruct{
 							{
-								OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
+								OperatorType: "<", Value: 100,
 							},
 							{
-								OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
+								OperatorType: ">", Value: 200,
 							},
 						},
 					},
@@ -362,10 +361,10 @@ func TestUpdateRule(t *testing.T) {
 			ConditionType: "OR",
 			Operator: []api.OperatorStruct{
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
+					OperatorType: "<", Value: 100,
 				},
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
+					OperatorType: ">", Value: 200,
 				},
 			},
 		},
@@ -524,14 +523,11 @@ func TestCalculationOperationsWithAnd(t *testing.T) {
 	var conditionStruct api.ConditionStruct
 	var operator []api.OperatorStruct
 
-	OperatorInfo := api.OperatorInformation{OperatorType: ">", Value: 100}
-	operatorInformation2 := api.OperatorInformation{OperatorType: "<", Value: 230}
-
 	operator = append(operator, api.OperatorStruct{
-		OperatorInfo: &OperatorInfo,
+		OperatorType: ">", Value: 100,
 	})
 	operator = append(operator, api.OperatorStruct{
-		OperatorInfo: &operatorInformation2,
+		OperatorType: "<", Value: 230,
 	})
 
 	conditionStruct.ConditionType = api.ConditionAnd
@@ -551,24 +547,21 @@ func TestCalculationOperationsInCombination(t *testing.T) {
 
 	var newCondition api.ConditionStruct
 	newCondition.ConditionType = api.ConditionAnd
-	number1 := api.OperatorInformation{OperatorType: ">", Value: 700}
-	number2 := api.OperatorInformation{OperatorType: ">", Value: 750}
 	newCondition.Operator = append(newCondition.Operator, api.OperatorStruct{
-		OperatorInfo: &number2,
+		OperatorType: ">", Value: 750,
 	})
 	newCondition.Operator = append(newCondition.Operator, api.OperatorStruct{
-		OperatorInfo: &number1,
+		OperatorType: ">", Value: 700,
 	})
 
-	OperatorInfo := api.OperatorInformation{OperatorType: "<", Value: 600}
 	conditionStruct.Operator = append(conditionStruct.Operator, api.OperatorStruct{
-		OperatorInfo: &OperatorInfo,
+		OperatorType: "<", Value: 600,
 	})
 	conditionStruct.Operator = append(conditionStruct.Operator, api.OperatorStruct{
 		Condition: &newCondition,
 	})
 
-	stat, err := calculationOperations(api.OperatorStruct{OperatorInfo: nil, Condition: &conditionStruct}, 1000)
+	stat, err := calculationOperations(api.OperatorStruct{Condition: &conditionStruct}, 1000)
 	if err != nil {
 		t.Errorf("Error calculationOperations: %v ", err)
 	}
@@ -615,9 +608,9 @@ func TestTrigger(t *testing.T) {
 	teardownSuite, h := setupSuite(t)
 	defer teardownSuite(t)
 
-	operatorInfo := api.OperatorInformation{OperatorType: ">", Value: 100}
 	operator := api.OperatorStruct{
-		OperatorInfo: &operatorInfo,
+		OperatorType: ">",
+		Value:        100,
 		Condition:    nil,
 	}
 

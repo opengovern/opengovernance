@@ -5800,25 +5800,17 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorInformation": {
-            "type": "object",
-            "properties": {
-                "operator_type": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType"
-                },
-                "value": {
-                    "type": "integer"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct": {
             "type": "object",
             "properties": {
                 "condition": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionStruct"
                 },
-                "operator_info": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorInformation"
+                "operator_type": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType"
+                },
+                "value": {
+                    "type": "integer"
                 }
             }
         },

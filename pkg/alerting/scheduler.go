@@ -243,8 +243,8 @@ func (h HttpHandler) getConnectionIdFilter(scope api.Scope) ([]string, error) {
 }
 
 func calculationOperations(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
-	if oneCondition := operator.OperatorInfo; oneCondition != nil {
-		stat := compareValue(oneCondition.OperatorType, oneCondition.Value, averageSecurityScorePercentage)
+	if operator.Condition == nil {
+		stat := compareValue(operator.OperatorType, operator.Value, averageSecurityScorePercentage)
 		return stat, nil
 	} else if operator.Condition != nil {
 		stat, err := calculationConditionStr(operator, averageSecurityScorePercentage)
@@ -283,8 +283,8 @@ func calculationConditionStrAND(operator api.OperatorStruct, averageSecurityScor
 	for i := 0; i < numberOperatorStr; i++ {
 		newOperator := operator.Condition.Operator[i]
 
-		if newOperator.OperatorInfo != nil {
-			stat := compareValue(newOperator.OperatorInfo.OperatorType, newOperator.OperatorInfo.Value, averageSecurityScorePercentage)
+		if newOperator.Condition == nil {
+			stat := compareValue(newOperator.OperatorType, newOperator.Value, averageSecurityScorePercentage)
 			if !stat {
 				return false, nil
 			} else {
@@ -349,8 +349,8 @@ func calculationConditionStrOr(operator api.OperatorStruct, averageSecurityScore
 	for i := 0; i < numberOperatorStr; i++ {
 		newOperator := operator.Condition.Operator[i]
 
-		if newOperator.OperatorInfo != nil {
-			stat := compareValue(newOperator.OperatorInfo.OperatorType, newOperator.OperatorInfo.Value, averageSecurityScorePercentage)
+		if newOperator.Condition == nil {
+			stat := compareValue(newOperator.OperatorType, newOperator.Value, averageSecurityScorePercentage)
 			if stat {
 				return true, nil
 			} else {

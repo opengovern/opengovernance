@@ -79,19 +79,14 @@ definitions:
       name:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorInformation:
-    properties:
-      operator_type:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType'
-      value:
-        type: integer
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct:
     properties:
       condition:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionStruct'
-      operator_info:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorInformation'
+      operator_type:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType'
+      value:
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType:
     enum:
