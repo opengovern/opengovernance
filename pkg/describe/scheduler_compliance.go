@@ -129,7 +129,7 @@ func (s *Scheduler) triggerComplianceReportJobs(benchmarkID string) (uint, error
 		return 0, err
 	}
 
-	_ = s.db.UpdateComplianceJob(job.ID, api.ComplianceReportJobInProgress, err.Error())
+	_ = s.db.UpdateComplianceJob(job.ID, api.ComplianceReportJobInProgress, "")
 	return job.ID, nil
 }
 
