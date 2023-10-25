@@ -46,8 +46,8 @@ func InitializeNewWorker(
 	config Config,
 	logger *zap.Logger,
 	prometheusPushAddress string,
-) (w *Worker, err error) {
-	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(w.logger)
+) (*Worker, error) {
+	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func InitializeNewWorker(
 		return nil, err
 	}
 
-	w = &Worker{
+	w := &Worker{
 		config:        config,
 		logger:        logger,
 		steampipeConn: steampipeConn,
