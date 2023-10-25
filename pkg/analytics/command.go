@@ -13,6 +13,8 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/postgres"
 	"github.com/kaytu-io/kaytu-util/pkg/queue"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
+	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"strings"
@@ -192,6 +194,30 @@ func (w *Worker) Run() error {
 		return err
 	}
 
+	err = steampipe.PopulateSteampipeConfig(w.config.ElasticSearch, source.CloudAWS)
+	if err != nil {
+		w.logger.Error("failed to populate steampipe config for aws plugin", zap.Error(err))
+		return err
+	}
+	err = steampipe.PopulateSteampipeConfig(w.config.ElasticSearch, source.CloudAzure)
+	if err != nil {
+		w.logger.Error("failed to populate steampipe config for azure plugin", zap.Error(err))
+		return err
+	}
+	err = steampipe.PopulateKaytuPluginSteampipeConfig(w.config.ElasticSearch, w.config.Steampipe)
+	if err != nil {
+		w.logger.Error("failed to populate steampipe config for kaytu plugin", zap.Error(err))
+		return err
+	}
+
+	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(w.logger)
+	if err != nil {
+		return err
+	}
+	w.logger.Info("Connected to the steampipe database")
+	defer steampipeConn.Conn().Close()
+	defer steampipe.StopSteampipeService(w.logger)
+
 	w.logger.Info("Reading message")
 	msg := <-msgs
 
@@ -210,7 +236,7 @@ func (w *Worker) Run() error {
 
 	w.logger.Info("Running the job", zap.Uint("jobID", job.JobID))
 
-	result := job.Do(w.db, w.config, w.kfkProducer, w.config.Kafka.Topic, w.onboardClient, w.schedulerClient, w.inventoryClient, w.logger)
+	result := job.Do(w.db, steampipeConn, w.kfkProducer, w.config.Kafka.Topic, w.onboardClient, w.schedulerClient, w.inventoryClient, w.logger)
 
 	w.logger.Info("Job finished", zap.Uint("jobID", job.JobID))
 

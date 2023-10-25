@@ -2979,7 +2979,9 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
-	resourceCollections, err := h.db.ListResourceCollections()
+	ids := httpserver.QueryArrayParam(ctx, "id")
+
+	resourceCollections, err := h.db.ListResourceCollections(ids)
 	if err != nil {
 		return err
 	}

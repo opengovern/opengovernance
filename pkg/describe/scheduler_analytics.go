@@ -109,8 +109,8 @@ func (s *Scheduler) scheduleAnalyticsJob(resourceCollectionId *string) error {
 
 func enqueueAnalyticsJobs(q queue.Interface, job model.AnalyticsJob) error {
 	if err := q.Publish(analytics.Job{
-		JobID:                job.ID,
-		ResourceCollectionId: job.ResourceCollectionId,
+		JobID:                 job.ID,
+		ResourceCollectionIDs: job.ResourceCollectionId,
 	}); err != nil {
 		return err
 	}
