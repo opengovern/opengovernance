@@ -1981,7 +1981,7 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 //	@Param			dimension		query		string		false	"Dimension of the table, default is metric"		Enums(connection, metric)
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			connectionGroup	query		[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			connector		query		string		false	"Connector"
+//	@Param			connector		query		[]string	false	"Connector"
 //	@Param			metricIds		query		[]string	false	"Metrics IDs"
 //
 //	@Success		200				{object}	[]inventoryApi.SpendTableRow
@@ -1999,7 +1999,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		metricIds = append(metricIds, m.ID)
 	}
 
-	connector, _ := source.ParseType(ctx.QueryParam("connector"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
@@ -2047,7 +2047,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		span.End()
 	}
 
-	mt, err := es.FetchSpendTableByDimension(h.client, dimension, connectionIDs, connector, metricIds, startTime, endTime)
+	mt, err := es.FetchSpendTableByDimension(h.client, dimension, connectionIDs, connectors, metricIds, startTime, endTime)
 	if err != nil {
 		return err
 	}
