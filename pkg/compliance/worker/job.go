@@ -4,7 +4,6 @@ import (
 	"context"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
@@ -40,7 +39,14 @@ func (j *Job) Run(jc JobConfig) error {
 	}
 
 	for _, connection := range assignment.Connections {
-		err := j.RunForConnection(connection, jc)
+		err := j.RunForConnection(connection.ConnectionID, jc)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, resourceCollection := range assignment.ResourceCollections {
+		err := j.RunForConnection(resourceCollection.ResourceCollectionID, jc) //TODO
 		if err != nil {
 			return err
 		}
@@ -48,8 +54,13 @@ func (j *Job) Run(jc JobConfig) error {
 	return nil
 }
 
-func (j *Job) RunForConnection(assignment api2.BenchmarkAssignedConnection, jc JobConfig) error {
-	plans, err := ListExecutionPlans(assignment.ConnectionID, nil, j.BenchmarkID, jc)
+func (j *Job) RunForConnection(connectionID string, jc JobConfig) error {
+	err := jc.steampipeConn.SetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID, connectionID)
+	if err != nil {
+		return err
+	}
+
+	plans, err := ListExecutionPlans(connectionID, nil, j.BenchmarkID, jc)
 	if err != nil {
 		return err
 	}
@@ -60,7 +71,7 @@ func (j *Job) RunForConnection(assignment api2.BenchmarkAssignedConnection, jc J
 			return err
 		}
 
-		findings, err := j.ExtractFindings(plan, assignment, res, jc)
+		findings, err := j.ExtractFindings(plan, connectionID, res, jc)
 		if err != nil {
 			return err
 		}

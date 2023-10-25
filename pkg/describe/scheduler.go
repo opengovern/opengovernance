@@ -26,19 +26,15 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/go-redis/redis/v8"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/checkup"
 	checkupapi "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	"gorm.io/gorm"
-
-	"github.com/go-redis/redis/v8"
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	workspaceClient "github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
 
-	complianceworker "github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
 	"go.uber.org/zap"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -134,10 +130,6 @@ type Scheduler struct {
 	// sourceQueue is used to consume source updates by the onboarding service.
 	sourceQueue queue.Interface
 
-	complianceReportJobQueue        queue.Interface
-	complianceReportJobResultQueue  queue.Interface
-	complianceReportCleanupJobQueue queue.Interface
-
 	// insightJobQueue is used to publish insight jobs to be performed by the workers.
 	insightJobQueue queue.Interface
 	// insightJobResultQueue is used to consume the insight job results returned by the workers.
@@ -221,9 +213,6 @@ func initRabbitQueue(queueName string) (queue.Interface, error) {
 func InitializeScheduler(
 	id string,
 	describeJobResultQueueName string,
-	complianceReportJobQueueName string,
-	complianceReportJobResultQueueName string,
-	complianceReportCleanupJobQueueName string,
 	insightJobQueueName string,
 	insightJobResultQueueName string,
 	checkupJobQueueName string,
@@ -328,22 +317,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	s.complianceReportCleanupJobQueue, err = initRabbitQueue(complianceReportCleanupJobQueueName)
-	if err != nil {
-		return nil, err
-	}
-
 	s.sourceQueue, err = initRabbitQueue(sourceQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.complianceReportJobQueue, err = initRabbitQueue(complianceReportJobQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.complianceReportJobResultQueue, err = initRabbitQueue(complianceReportJobResultQueueName)
 	if err != nil {
 		return nil, err
 	}
@@ -614,23 +588,10 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
 }
 
-func (s *Scheduler) RunComplianceReportCleanupJobScheduler() {
-	s.logger.Info("Running compliance report cleanup job scheduler")
-
-	t := time.NewTicker(JobSchedulingInterval)
-	defer t.Stop()
-
-	for range t.C {
-		s.cleanupComplianceReportJob()
-	}
-}
-
 func (s *Scheduler) RunDeletedSourceCleanup() {
 	for id := range s.deletedSources {
 		// cleanup describe job for deleted source
 		s.cleanupDescribeJobForDeletedSource(id)
-		// cleanup compliance report job for deleted source
-		s.cleanupComplianceReportJobForDeletedSource(id)
 	}
 }
 
@@ -663,51 +624,6 @@ func (s *Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
 		)
 		s.deletedSources <- sourceId
 	}
-}
-
-func (s *Scheduler) cleanupComplianceReportJobForDeletedSource(sourceId string) {
-	jobs, err := s.db.QueryComplianceJobs(sourceId)
-	if err != nil {
-		s.logger.Error("Failed to find all completed ComplianceReportJobs for source",
-			zap.String("sourceId", sourceId),
-			zap.Error(err),
-		)
-		return
-	}
-	s.handleComplianceReportJobs(jobs)
-}
-
-func (s *Scheduler) handleComplianceReportJobs(jobs []model.ComplianceJob) {
-	for _, job := range jobs {
-		if err := s.complianceReportCleanupJobQueue.Publish(complianceworker.ComplianceReportCleanupJob{
-			JobID: job.ID,
-		}); err != nil {
-			s.logger.Error("Failed to publish compliance report clean up job to queue for ComplianceReportJob",
-				zap.Uint("jobId", job.ID),
-				zap.Error(err),
-			)
-			return
-		}
-
-		if err := s.db.DeleteComplianceJob(job.ID); err != nil {
-			s.logger.Error("Failed to delete ComplianceReportJob",
-				zap.Uint("jobId", job.ID),
-				zap.Error(err),
-			)
-		}
-		s.logger.Info("Successfully deleted ComplianceReportJob", zap.Uint("jobId", job.ID))
-	}
-}
-
-func (s *Scheduler) cleanupComplianceReportJob() {
-	jobs, err := s.db.QueryOlderThanNRecentCompletedComplianceJobs(5)
-	if err != nil {
-		s.logger.Error("Failed to find older than 5 recent completed ComplianceReportJobs for each source",
-			zap.Error(err),
-		)
-		return
-	}
-	s.handleComplianceReportJobs(jobs)
 }
 
 // RunSourceEventsConsumer Consume events from the source queue. Based on the action of the event,
@@ -743,70 +659,9 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 	return fmt.Errorf("source events queue channel is closed")
 }
 
-// RunComplianceReportJobResultsConsumer consumes messages from the complianceReportJobResultQueue queue.
-// It will update the status of the jobs in the database based on the message.
-// It will also update the jobs status that are not completed in certain time to FAILED
-func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
-	s.logger.Info("Consuming messages from the ComplianceReportJobResultQueue queue")
-
-	msgs, err := s.complianceReportJobResultQueue.Consume()
-	if err != nil {
-		return err
-	}
-
-	t := time.NewTicker(JobTimeoutCheckInterval)
-	defer t.Stop()
-
-	for {
-		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				return fmt.Errorf("tasks channel is closed")
-			}
-
-			var result complianceworker.JobResult
-			if err := json.Unmarshal(msg.Body, &result); err != nil {
-				s.logger.Error("Failed to unmarshal ComplianceReportJob results", zap.Error(err))
-				err = msg.Nack(false, false)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
-				}
-				continue
-			}
-
-			s.logger.Info("Processing ReportJobResult for Job",
-				zap.Uint("jobId", result.Job.ID),
-				zap.String("status", string(result.Status)),
-			)
-			err := s.db.UpdateComplianceJob(result.Job.ID, result.Status, result.Error)
-			if err != nil {
-				s.logger.Error("Failed to update the status of ComplianceReportJob",
-					zap.Uint("jobId", result.Job.ID),
-					zap.Error(err))
-				err = msg.Nack(false, true)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
-				}
-				continue
-			}
-
-			if err := msg.Ack(false); err != nil {
-				s.logger.Error("Failed acking message", zap.Error(err))
-			}
-		case <-t.C:
-			err := s.db.UpdateComplianceJobsTimedOut(s.complianceTimeoutHours)
-			if err != nil {
-				s.logger.Error("Failed to update timed out ComplianceReportJob", zap.Error(err))
-			}
-		}
-	}
-}
-
 func (s *Scheduler) Stop() {
 	queues := []queue.Interface{
 		s.describeJobResultQueue,
-		s.complianceReportJobQueue,
-		s.complianceReportJobResultQueue,
 		s.sourceQueue,
 		s.insightJobQueue,
 		s.insightJobResultQueue,
@@ -816,17 +671,6 @@ func (s *Scheduler) Stop() {
 
 	for _, openQueues := range queues {
 		openQueues.Close()
-	}
-}
-
-func newComplianceReportJob(benchmarkID string, resourceCollection *string) model.ComplianceJob {
-	return model.ComplianceJob{
-		Model:              gorm.Model{},
-		BenchmarkID:        benchmarkID,
-		Status:             complianceapi.ComplianceReportJobCreated,
-		FailureMessage:     "",
-		IsStack:            false,
-		ResourceCollection: resourceCollection,
 	}
 }
 

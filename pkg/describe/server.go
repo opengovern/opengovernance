@@ -277,27 +277,10 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
 
-	var dependencyIDs []int64
-	crj := newComplianceReportJob(benchmark.ID, nil)
-	err = h.DB.CreateComplianceJob(&crj)
+	_, err = h.Scheduler.triggerComplianceReportJobs(benchmarkID)
 	if err != nil {
-		ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
 		return fmt.Errorf("error while creating compliance job: %v", err)
 	}
-	enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, &crj)
-	ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
-	dependencyIDs = append(dependencyIDs, int64(crj.ID))
-
-	err = h.DB.CreateJobSequencer(&model2.JobSequencer{
-		DependencyList:   dependencyIDs,
-		DependencySource: string(model2.JobSequencerJobTypeBenchmark),
-		NextJob:          string(model2.JobSequencerJobTypeBenchmarkSummarizer),
-		Status:           model2.JobSequencerWaitingForDependencies,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create job sequencer: %v", err)
-	}
-
 	return ctx.JSON(http.StatusOK, "")
 }
 

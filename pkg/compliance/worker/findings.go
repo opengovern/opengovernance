@@ -2,9 +2,9 @@ package worker
 
 import (
 	"fmt"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 )
 
@@ -49,7 +49,7 @@ func (j *Job) FilterFindings(plan ExecutionPlan, findings []types.Finding, jc Jo
 	return findings, nil
 }
 
-func (j *Job) ExtractFindings(plan ExecutionPlan, assignment api.BenchmarkAssignedConnection, res *steampipe.Result, jc JobConfig) ([]types.Finding, error) {
+func (j *Job) ExtractFindings(plan ExecutionPlan, connectionID string, res *steampipe.Result, jc JobConfig) ([]types.Finding, error) {
 	var findings []types.Finding
 	resourceType := ""
 	for _, record := range res.Data {
@@ -98,13 +98,13 @@ func (j *Job) ExtractFindings(plan ExecutionPlan, assignment api.BenchmarkAssign
 			ID:                 fmt.Sprintf("%s-%s", resourceID, plan.Policy.ID),
 			BenchmarkID:        j.BenchmarkID,
 			PolicyID:           plan.Policy.ID,
-			ConnectionID:       assignment.ConnectionID,
+			ConnectionID:       connectionID,
 			EvaluatedAt:        j.CreatedAt.UnixMilli(),
 			StateActive:        true,
 			Result:             status,
 			Severity:           severity,
 			Evaluator:          plan.Query.Engine,
-			Connector:          assignment.Connector,
+			Connector:          source.Type(plan.Query.Connector),
 			ResourceID:         resourceID,
 			ResourceName:       resourceName,
 			ResourceLocation:   resourceLocation,

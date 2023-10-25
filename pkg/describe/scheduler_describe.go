@@ -818,6 +818,10 @@ func (s *Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		UserRole: apiAuth.AdminRole,
 	}
 	benchmarks, err := s.complianceClient.ListBenchmarks(ctx)
+	if err != nil {
+		return err
+	}
+
 	var provider source.Type
 	for _, resource := range stack.Resources {
 		if strings.Contains(resource, "aws") {
@@ -836,20 +840,16 @@ func (s *Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		if !connectorMatch { // pass if connector doesn't match
 			continue
 		}
-		crj := newComplianceReportJob(benchmark.ID, nil)
-		crj.IsStack = true
-
-		err = s.db.CreateComplianceJob(&crj)
+		jobID, err := s.triggerComplianceReportJobs(benchmark.ID)
 		if err != nil {
 			return err
 		}
-		enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, &crj)
 
 		evaluation := model.StackEvaluation{
 			EvaluatorID: benchmark.ID,
 			Type:        api.EvaluationTypeBenchmark,
 			StackID:     stack.StackID,
-			JobID:       crj.ID,
+			JobID:       jobID,
 			Status:      api.StackEvaluationStatusInProgress,
 		}
 		err = s.db.AddEvaluation(&evaluation)
