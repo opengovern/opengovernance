@@ -9,19 +9,13 @@ import (
 )
 
 const (
-	DescribeResultsQueueName             = "describe-results-queue"
-	ComplianceReportJobsQueueName        = "compliance-report-jobs-queue"
-	ComplianceReportResultsQueueName     = "compliance-report-results-queue"
-	ComplianceReportCleanupJobsQueueName = "compliance-report-cleanup-jobs-queue"
-	InsightJobsQueueName                 = "insight-jobs-queue"
-	InsightResultsQueueName              = "insight-results-queue"
-	CheckupJobsQueueName                 = "checkup-jobs-queue"
-	CheckupResultsQueueName              = "checkup-results-queue"
-	SummarizerJobsQueueName              = "summarizer-jobs-queue"
-	SummarizerResultsQueueName           = "summarizer-results-queue"
-	AnalyticsJobsQueueName               = "analytics-jobs-queue"
-	AnalyticsResultsQueueName            = "analytics-results-queue"
-	SourceEventsQueueName                = "source-events-queue"
+	InsightJobsQueueName      = "insight-jobs-queue"
+	InsightResultsQueueName   = "insight-results-queue"
+	CheckupJobsQueueName      = "checkup-jobs-queue"
+	CheckupResultsQueueName   = "checkup-results-queue"
+	AnalyticsJobsQueueName    = "analytics-jobs-queue"
+	AnalyticsResultsQueueName = "analytics-results-queue"
+	SourceEventsQueueName     = "source-events-queue"
 )
 
 var (
@@ -100,16 +94,10 @@ func SchedulerCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := InitializeScheduler(
 				id,
-				DescribeResultsQueueName,
-				ComplianceReportJobsQueueName,
-				ComplianceReportResultsQueueName,
-				ComplianceReportCleanupJobsQueueName,
 				InsightJobsQueueName,
 				InsightResultsQueueName,
 				CheckupJobsQueueName,
 				CheckupResultsQueueName,
-				SummarizerJobsQueueName,
-				SummarizerResultsQueueName,
 				AnalyticsJobsQueueName,
 				AnalyticsResultsQueueName,
 				SourceEventsQueueName,

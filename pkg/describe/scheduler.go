@@ -75,13 +75,6 @@ var CheckupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help:      "Count of checkup jobs in scheduler service",
 }, []string{"status"})
 
-var SummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "kaytu",
-	Subsystem: "scheduler",
-	Name:      "schedule_summarizer_jobs_total",
-	Help:      "Count of summarizer jobs in scheduler service",
-}, []string{"status"})
-
 var AnalyticsJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "kaytu",
 	Subsystem: "scheduler",
@@ -99,11 +92,6 @@ var AnalyticsJobResultsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 var ComplianceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Name: "kaytu_scheduler_schedule_compliance_job_total",
 	Help: "Count of describe jobs in scheduler service",
-}, []string{"status"})
-
-var ComplianceSourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "kaytu_scheduler_schedule_compliance_source_job_total",
-	Help: "Count of describe source jobs in scheduler service",
 }, []string{"status"})
 
 var LargeDescribeResourceMessage = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -139,11 +127,6 @@ type Scheduler struct {
 	checkupJobQueue queue.Interface
 	// checkupJobResultQueue is used to consume the checkup job results returned by the workers.
 	checkupJobResultQueue queue.Interface
-
-	// summarizerJobQueue is used to publish summarizer jobs to be performed by the workers.
-	summarizerJobQueue queue.Interface
-	// summarizerJobResultQueue is used to consume the summarizer job results returned by the workers.
-	summarizerJobResultQueue queue.Interface
 
 	// analyticsJobQueue is used to publish analytics jobs to be performed by the workers.
 	analyticsJobQueue queue.Interface
@@ -212,13 +195,10 @@ func initRabbitQueue(queueName string) (queue.Interface, error) {
 
 func InitializeScheduler(
 	id string,
-	describeJobResultQueueName string,
 	insightJobQueueName string,
 	insightJobResultQueueName string,
 	checkupJobQueueName string,
 	checkupJobResultQueueName string,
-	summarizerJobQueueName string,
-	summarizerJobResultQueueName string,
 	analyticsJobQueueName string,
 	analyticsJobResultQueueName string,
 	sourceQueueName string,
@@ -270,12 +250,6 @@ func InitializeScheduler(
 
 	s.logger.Info("Initializing the scheduler")
 
-	s.describeJobResultQueue, err = initRabbitQueue(describeJobResultQueueName)
-	if err != nil {
-		s.logger.Error("failed to init rabbit queue", zap.Error(err), zap.String("queue_name", describeJobResultQueueName))
-		return nil, err
-	}
-
 	s.insightJobQueue, err = initRabbitQueue(insightJobQueueName)
 	if err != nil {
 		s.logger.Error("failed to init rabbit queue", zap.Error(err), zap.String("queue_name", insightJobQueueName))
@@ -293,16 +267,6 @@ func InitializeScheduler(
 	}
 
 	s.checkupJobResultQueue, err = initRabbitQueue(checkupJobResultQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.summarizerJobQueue, err = initRabbitQueue(summarizerJobQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.summarizerJobResultQueue, err = initRabbitQueue(summarizerJobResultQueueName)
 	if err != nil {
 		return nil, err
 	}
@@ -426,7 +390,7 @@ func InitializeScheduler(
 		DB:       0,  // use default DB
 	})
 
-	describeServer := NewDescribeServer(s.db, s.rdb, s.kafkaProducer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.authGrpcClient, s.logger)
+	describeServer := NewDescribeServer(s.db, s.rdb, s.kafkaProducer, s.kafkaResourcesTopic, s.authGrpcClient, s.logger)
 	s.grpcServer = grpc.NewServer(
 		grpc.MaxRecvMsgSize(128*1024*1024),
 		grpc.UnaryInterceptor(describeServer.grpcUnaryAuthInterceptor),
@@ -661,12 +625,9 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 
 func (s *Scheduler) Stop() {
 	queues := []queue.Interface{
-		s.describeJobResultQueue,
 		s.sourceQueue,
 		s.insightJobQueue,
 		s.insightJobResultQueue,
-		s.summarizerJobQueue,
-		s.summarizerJobResultQueue,
 	}
 
 	for _, openQueues := range queues {
