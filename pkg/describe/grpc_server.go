@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
 	"net/http"
@@ -29,7 +30,7 @@ import (
 )
 
 type GRPCDescribeServer struct {
-	db                        Database
+	db                        db.Database
 	rdb                       *redis.Client
 	producer                  *confluent_kafka.Producer
 	topic                     string
@@ -40,7 +41,7 @@ type GRPCDescribeServer struct {
 	golang.DescribeServiceServer
 }
 
-func NewDescribeServer(db Database, rdb *redis.Client, producer *confluent_kafka.Producer, topic string, describeJobResultQueue queue.Interface, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger) *GRPCDescribeServer {
+func NewDescribeServer(db db.Database, rdb *redis.Client, producer *confluent_kafka.Producer, topic string, describeJobResultQueue queue.Interface, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger) *GRPCDescribeServer {
 	return &GRPCDescribeServer{
 		db:                        db,
 		rdb:                       rdb,

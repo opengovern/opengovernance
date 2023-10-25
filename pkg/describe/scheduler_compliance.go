@@ -2,6 +2,8 @@ package describe
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -70,9 +72,6 @@ func (s *Scheduler) scheduleComplianceJob() error {
 			connections = append(connections, *connection)
 		}
 
-		if len(connections) > 0 {
-			s.logger.Info("benchmark has > 0 assignments", zap.String("benchmarkID", benchmark.ID), zap.Int("count", len(connections)))
-		}
 		for _, assignment := range assignments.ResourceCollections {
 			if !assignment.Status {
 				continue
@@ -80,86 +79,86 @@ func (s *Scheduler) scheduleComplianceJob() error {
 			resourceCollections = append(resourceCollections, assignment.ResourceCollectionID)
 		}
 
-		timeAfter := time.Now().Add(time.Duration(-s.complianceIntervalHours) * time.Hour)
-		var nullStringPointer *string = nil
-		for _, src := range connections {
-			connectionID := src.ID.String()
-			jobs, err := s.db.ListComplianceReportsWithFilter(
-				&timeAfter, nil, &connectionID, nil, &benchmark.ID, &nullStringPointer)
-			if err != nil {
-				ComplianceJobsCount.WithLabelValues("failure").Inc()
-				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("error while listing compliance jobs", zap.Error(err))
-				return fmt.Errorf("error while creating compliance job: %v", err)
-			}
-
-			if len(jobs) > 0 {
-				continue
-			}
-
-			crj := newComplianceReportJob(src.ID.String(), src.Connector, benchmark.ID, nil)
-			err = s.db.CreateComplianceReportJob(&crj)
-			if err != nil {
-				ComplianceJobsCount.WithLabelValues("failure").Inc()
-				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("error while creating compliance job", zap.Error(err))
-				return fmt.Errorf("error while creating compliance job: %v", err)
-			}
-
-			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, &crj)
-			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
+		if len(connections) == 0 && len(resourceCollections) == 0 {
+			continue
 		}
 
-		for _, rc := range resourceCollections {
-			rc := rc
-			rcIDPtr := &rc
-			connectionID := "all"
-			jobs, err := s.db.ListComplianceReportsWithFilter(
-				&timeAfter, nil, &connectionID, nil, &benchmark.ID, &rcIDPtr)
-			if err != nil {
-				ComplianceJobsCount.WithLabelValues("failure").Inc()
-				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("error while listing compliance jobs", zap.Error(err))
-				return fmt.Errorf("error while creating compliance job: %v", err)
-			}
-
-			if len(jobs) > 0 {
-				continue
-			}
-			if len(benchmark.Connectors) == 0 {
-				s.logger.Warn("no connectors found for benchmark - ignoring resource collection", zap.String("benchmark", benchmark.ID), zap.String("resource_collection", rc))
-				continue
-			}
-			crj := newComplianceReportJob(connectionID, benchmark.Connectors[0], benchmark.ID, rcIDPtr)
-			err = s.db.CreateComplianceReportJob(&crj)
-			if err != nil {
-				ComplianceJobsCount.WithLabelValues("failure").Inc()
-				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("error while creating compliance job", zap.Error(err))
-				return fmt.Errorf("error while creating compliance job: %v", err)
-			}
-
-			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, &crj)
-			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
-		}
+		//timeAfter := time.Now().Add(time.Duration(-s.complianceIntervalHours) * time.Hour)
+		//var nullStringPointer *string = nil
+		//for _, src := range connections {
+		//	connectionID := src.ID.String()
+		//	jobs, err := s.db.ListComplianceReportsWithFilter(
+		//		&timeAfter, nil, &connectionID, nil, &benchmark.ID, &nullStringPointer)
+		//	if err != nil {
+		//		ComplianceJobsCount.WithLabelValues("failure").Inc()
+		//		ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
+		//		s.logger.Error("error while listing compliance jobs", zap.Error(err))
+		//		return fmt.Errorf("error while creating compliance job: %v", err)
+		//	}
+		//
+		//	if len(jobs) > 0 {
+		//		continue
+		//	}
+		//
+		//	crj := newComplianceReportJob(src.ID.String(), src.Connector, benchmark.ID, nil)
+		//	err = s.db.CreateComplianceReportJob(&crj)
+		//	if err != nil {
+		//		ComplianceJobsCount.WithLabelValues("failure").Inc()
+		//		ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
+		//		s.logger.Error("error while creating compliance job", zap.Error(err))
+		//		return fmt.Errorf("error while creating compliance job: %v", err)
+		//	}
+		//
+		//	enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, &crj)
+		//	ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
+		//}
+		//
+		//for _, rc := range resourceCollections {
+		//	rc := rc
+		//	rcIDPtr := &rc
+		//	connectionID := "all"
+		//	jobs, err := s.db.ListComplianceReportsWithFilter(
+		//		&timeAfter, nil, &connectionID, nil, &benchmark.ID, &rcIDPtr)
+		//	if err != nil {
+		//		ComplianceJobsCount.WithLabelValues("failure").Inc()
+		//		ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
+		//		s.logger.Error("error while listing compliance jobs", zap.Error(err))
+		//		return fmt.Errorf("error while creating compliance job: %v", err)
+		//	}
+		//
+		//	if len(jobs) > 0 {
+		//		continue
+		//	}
+		//	if len(benchmark.Connectors) == 0 {
+		//		s.logger.Warn("no connectors found for benchmark - ignoring resource collection", zap.String("benchmark", benchmark.ID), zap.String("resource_collection", rc))
+		//		continue
+		//	}
+		//	crj := newComplianceReportJob(connectionID, benchmark.Connectors[0], benchmark.ID, rcIDPtr)
+		//	err = s.db.CreateComplianceReportJob(&crj)
+		//	if err != nil {
+		//		ComplianceJobsCount.WithLabelValues("failure").Inc()
+		//		ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
+		//		s.logger.Error("error while creating compliance job", zap.Error(err))
+		//		return fmt.Errorf("error while creating compliance job: %v", err)
+		//	}
+		//
+		//	enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, &crj)
+		//	ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
+		//}
 	}
 
 	ComplianceJobsCount.WithLabelValues("successful").Inc()
 	return nil
 }
 
-func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interface, crj *ComplianceReportJob) {
+func enqueueComplianceReportJobs(logger *zap.Logger, db db.Database, q queue.Interface, crj *model.ComplianceJob) {
 	nextStatus := complianceapi.ComplianceReportJobInProgress
 	errMsg := ""
 
-	nowTime := time.Now().UnixMilli()
 	if err := q.Publish(complianceworker.Job{
-		JobID:                crj.ID,
-		DescribedAt:          nowTime,
-		EvaluatedAt:          nowTime,
-		ConnectionID:         crj.SourceID,
+		ID:                   crj.ID,
+		CreatedAt:            crj.CreatedAt,
 		BenchmarkID:          crj.BenchmarkID,
-		Connector:            crj.SourceType,
 		IsStack:              crj.IsStack,
 		ResourceCollectionId: crj.ResourceCollection,
 	}); err != nil {
@@ -172,7 +171,7 @@ func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interf
 		errMsg = fmt.Sprintf("queue: %s", err.Error())
 	}
 
-	if err := db.UpdateComplianceReportJob(crj.ID, nextStatus, 0, errMsg); err != nil {
+	if err := db.UpdateComplianceJob(crj.ID, nextStatus, errMsg); err != nil {
 		logger.Error("Failed to update ComplianceReportJob",
 			zap.Uint("jobId", crj.ID),
 			zap.Error(err),

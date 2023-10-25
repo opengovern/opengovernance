@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
 	"os"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
@@ -25,21 +26,10 @@ const (
 	ResultsQueueName = "compliance-report-results-queue"
 )
 
-type WorkerConfig struct {
-	RabbitMQ              config.RabbitMQ
-	ElasticSearch         config.ElasticSearch
-	Kafka                 config.Kafka
-	Compliance            config.KaytuService
-	Inventory             config.KaytuService
-	Onboard               config.KaytuService
-	Scheduler             config.KaytuService
-	PrometheusPushAddress string
-}
-
 func WorkerCommand() *cobra.Command {
 	var (
 		id  string
-		cnf WorkerConfig
+		cnf worker.Config
 	)
 	config.ReadFromEnv(&cnf, nil)
 
@@ -59,11 +49,8 @@ func WorkerCommand() *cobra.Command {
 				return err
 			}
 
-			w, err := InitializeWorker(
-				id,
+			w, err := worker.InitializeNewWorker(
 				cnf,
-				JobsQueueName,
-				ResultsQueueName,
 				logger,
 				cnf.PrometheusPushAddress,
 			)

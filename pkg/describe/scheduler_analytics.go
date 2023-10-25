@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"time"
 
@@ -106,7 +107,7 @@ func (s *Scheduler) scheduleAnalyticsJob(resourceCollectionId *string) error {
 	return nil
 }
 
-func enqueueAnalyticsJobs(q queue.Interface, job AnalyticsJob) error {
+func enqueueAnalyticsJobs(q queue.Interface, job model.AnalyticsJob) error {
 	if err := q.Publish(analytics.Job{
 		JobID:                job.ID,
 		ResourceCollectionId: job.ResourceCollectionId,
@@ -117,8 +118,8 @@ func enqueueAnalyticsJobs(q queue.Interface, job AnalyticsJob) error {
 	return nil
 }
 
-func newAnalyticsJob(resourceCollectionId *string) AnalyticsJob {
-	return AnalyticsJob{
+func newAnalyticsJob(resourceCollectionId *string) model.AnalyticsJob {
+	return model.AnalyticsJob{
 		Model:                gorm.Model{},
 		ResourceCollectionId: resourceCollectionId,
 		Status:               analytics.JobCreated,
