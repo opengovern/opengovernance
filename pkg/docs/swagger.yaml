@@ -1555,16 +1555,6 @@ definitions:
         minimum: 0
         type: integer
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServicesCostTrendDatapoint:
-    properties:
-      costTrend:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostTrendDatapoint'
-        type: array
-      serviceName:
-        example: EC2-Service-Example
-        type: string
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Metric:
     properties:
       connectors:
@@ -4679,76 +4669,6 @@ paths:
       security:
       - BearerToken: []
       summary: List spend metrics
-      tags:
-      - analytics
-  /inventory/api/v2/analytics/spend/metrics/trend:
-    get:
-      consumes:
-      - application/json
-      description: Retrieving a list of costs over the course of the specified time
-        frame based on the given input filters. If startTime and endTime are empty,
-        the API returns the last month trend.
-      parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
-        type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by - mutually exclusive with connectionGroup
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - collectionFormat: csv
-        description: Connection group to filter by - mutually exclusive with connectionId
-        in: query
-        items:
-          type: string
-        name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Metrics IDs
-        in: query
-        items:
-          type: string
-        name: metricIds
-        type: array
-      - description: timestamp for start in epoch seconds
-        in: query
-        name: startTime
-        type: integer
-      - description: timestamp for end in epoch seconds
-        in: query
-        name: endTime
-        type: integer
-      - description: Granularity of the table, default is daily
-        enum:
-        - monthly
-        - daily
-        - yearly
-        in: query
-        name: granularity
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServicesCostTrendDatapoint'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Get Cost Trend
       tags:
       - analytics
   /inventory/api/v2/analytics/spend/table:

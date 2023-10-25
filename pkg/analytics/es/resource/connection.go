@@ -20,8 +20,8 @@ type PerConnectionMetricTrendSummary struct {
 }
 
 type ConnectionMetricTrendSummaryResult struct {
-	TotalResourceCount int                                        `json:"total_resource_count"`
-	Connections        map[string]PerConnectionMetricTrendSummary `json:"connections"`
+	TotalResourceCount int                               `json:"total_resource_count"`
+	Connections        []PerConnectionMetricTrendSummary `json:"connections"`
 }
 
 type ConnectionMetricTrendSummary struct {

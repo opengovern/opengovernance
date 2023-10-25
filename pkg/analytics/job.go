@@ -290,12 +290,20 @@ func (j *Job) DoSingleAssetMetric(logger *zap.Logger, steampipeDB *steampipe.Dat
 		}
 		totalCount += int(count)
 	}
+	perConnectionArray := make([]resource.PerConnectionMetricTrendSummary, 0, len(perConnection))
+	for _, v := range perConnection {
+		perConnectionArray = append(perConnectionArray, v)
+	}
+	perConnectorArray := make([]resource.PerConnectorMetricTrendSummary, 0, len(perConnector))
+	for _, v := range perConnector {
+		perConnectorArray = append(perConnectorArray, v)
+	}
 	return &resource.ConnectionMetricTrendSummaryResult{
 			TotalResourceCount: totalCount,
-			Connections:        perConnection,
+			Connections:        perConnectionArray,
 		}, &resource.ConnectorMetricTrendSummaryResult{
 			TotalResourceCount: totalCount,
-			Connectors:         perConnector,
+			Connectors:         perConnectorArray,
 		}, nil
 }
 
@@ -451,12 +459,12 @@ func (j *Job) DoSpendMetric(
 
 		if v, ok := connectionResultMap[date]; ok {
 			v.TotalCostValue += sum
-			if v2, ok2 := v.Connections[conn.ID.String()]; ok2 {
+			if v2, ok2 := v.ConnectionsMap[conn.ID.String()]; ok2 {
 				v2.CostValue += sum
 				v2.IsJobSuccessful = isJobSuccessful
-				v.Connections[conn.ID.String()] = v2
+				v.ConnectionsMap[conn.ID.String()] = v2
 			} else {
-				v.Connections[conn.ID.String()] = spend.PerConnectionMetricTrendSummary{
+				v.ConnectionsMap[conn.ID.String()] = spend.PerConnectionMetricTrendSummary{
 					DateEpoch:       dateTimestamp.UnixMilli(),
 					ConnectionID:    conn.ID.String(),
 					ConnectionName:  conn.ConnectionName,
@@ -478,7 +486,7 @@ func (j *Job) DoSpendMetric(
 				PeriodEnd:      endTime.UnixMilli(),
 				EvaluatedAt:    time.Now().UnixMilli(),
 				TotalCostValue: sum,
-				Connections: map[string]spend.PerConnectionMetricTrendSummary{
+				ConnectionsMap: map[string]spend.PerConnectionMetricTrendSummary{
 					conn.ID.String(): {
 						DateEpoch:       dateTimestamp.UnixMilli(),
 						ConnectionID:    conn.ID.String(),
@@ -494,13 +502,13 @@ func (j *Job) DoSpendMetric(
 
 		if v, ok := connectorResultMap[date]; ok {
 			v.TotalCostValue += sum
-			if v2, ok2 := v.Connectors[conn.Connector.String()]; ok2 {
+			if v2, ok2 := v.ConnectorsMap[conn.Connector.String()]; ok2 {
 				v2.CostValue += sum
 				v2.TotalConnections = connectorCount[string(conn.Connector)]
 				v2.TotalSuccessfulConnections = connectorSuccessCount[string(conn.Connector)]
-				v.Connectors[conn.Connector.String()] = v2
+				v.ConnectorsMap[conn.Connector.String()] = v2
 			} else {
-				v.Connectors[conn.Connector.String()] = spend.PerConnectorMetricTrendSummary{
+				v.ConnectorsMap[conn.Connector.String()] = spend.PerConnectorMetricTrendSummary{
 					DateEpoch:                  dateTimestamp.UnixMilli(),
 					Connector:                  conn.Connector,
 					CostValue:                  sum,
@@ -522,7 +530,7 @@ func (j *Job) DoSpendMetric(
 				EvaluatedAt: time.Now().UnixMilli(),
 
 				TotalCostValue: sum,
-				Connectors: map[string]spend.PerConnectorMetricTrendSummary{
+				ConnectorsMap: map[string]spend.PerConnectorMetricTrendSummary{
 					conn.Connector.String(): {
 						DateEpoch:                  dateTimestamp.UnixMilli(),
 						Connector:                  conn.Connector,
@@ -538,9 +546,15 @@ func (j *Job) DoSpendMetric(
 
 	var msgs []kafka.Doc
 	for _, item := range connectionResultMap {
+		for _, v := range item.ConnectionsMap {
+			item.Connections = append(item.Connections, v)
+		}
 		msgs = append(msgs, item)
 	}
 	for _, item := range connectorResultMap {
+		for _, v := range item.ConnectorsMap {
+			item.Connectors = append(item.Connectors, v)
+		}
 		msgs = append(msgs, item)
 	}
 	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger, nil); err != nil {

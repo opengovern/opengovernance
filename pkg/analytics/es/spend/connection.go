@@ -31,7 +31,8 @@ type ConnectionMetricTrendSummary struct {
 	PeriodStart int64  `json:"period_start"`
 	PeriodEnd   int64  `json:"period_end"`
 
-	Connections map[string]PerConnectionMetricTrendSummary `json:"connections"`
+	Connections    []PerConnectionMetricTrendSummary          `json:"connections"`
+	ConnectionsMap map[string]PerConnectionMetricTrendSummary `json:"-"`
 
 	// Deprecated
 	ConnectionID uuid.UUID `json:"connection_id"`

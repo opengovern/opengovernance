@@ -18,8 +18,8 @@ type PerConnectorMetricTrendSummary struct {
 }
 
 type ConnectorMetricTrendSummaryResult struct {
-	TotalResourceCount int                                       `json:"total_resource_count"`
-	Connectors         map[string]PerConnectorMetricTrendSummary `json:"connectors"`
+	TotalResourceCount int                              `json:"total_resource_count"`
+	Connectors         []PerConnectorMetricTrendSummary `json:"connectors"`
 }
 
 type ConnectorMetricTrendSummary struct {

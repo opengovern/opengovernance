@@ -29,7 +29,8 @@ type ConnectorMetricTrendSummary struct {
 	PeriodEnd   int64  `json:"period_end"`
 	EvaluatedAt int64  `json:"evaluated_at"`
 
-	Connectors map[string]PerConnectorMetricTrendSummary `json:"connectors"`
+	Connectors    []PerConnectorMetricTrendSummary          `json:"connectors"`
+	ConnectorsMap map[string]PerConnectorMetricTrendSummary `json:"-"`
 
 	// Deprecated
 	Connector source.Type `json:"connector"`

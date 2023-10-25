@@ -83,7 +83,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	analyticsSpend.GET("/metric", httpserver.AuthorizeHandler(h.ListAnalyticsSpendMetricsHandler, authApi.ViewerRole))
 	analyticsSpend.GET("/composition", httpserver.AuthorizeHandler(h.ListAnalyticsSpendComposition, authApi.ViewerRole))
 	analyticsSpend.GET("/trend", httpserver.AuthorizeHandler(h.GetAnalyticsSpendTrend, authApi.ViewerRole))
-	analyticsSpend.GET("/metrics/trend", httpserver.AuthorizeHandler(h.GetAnalyticsSpendMetricsTrend, authApi.ViewerRole))
 	analyticsSpend.GET("/table", httpserver.AuthorizeHandler(h.GetSpendTable, authApi.ViewerRole))
 
 	connectionsV2 := v2.Group("/connections")
@@ -1966,98 +1965,6 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 	})
 
 	return ctx.JSON(http.StatusOK, apiDatapoints)
-}
-
-// GetAnalyticsSpendMetricsTrend godoc
-//
-//	@Summary		Get Cost Trend
-//	@Description	Retrieving a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.
-//	@Security		BearerToken
-//	@Tags			analytics
-//	@Accept			json
-//	@Produce		json
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			metricIds		query		[]string		false	"Metrics IDs"
-//	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
-//	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
-//	@Param			granularity		query		string			false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
-//	@Success		200				{object}	[]inventoryApi.ListServicesCostTrendDatapoint
-//	@Router			/inventory/api/v2/analytics/spend/metrics/trend [get]
-func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
-	var err error
-	metricIds := httpserver.QueryArrayParam(ctx, "metricIds")
-	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-
-	aDB := analyticsDB.NewDatabase(h.db.orm)
-	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, connectorTypes, false)
-	if err != nil {
-		return err
-	}
-	metricIds = nil
-	for _, m := range metrics {
-		metricIds = append(metricIds, m.ID)
-	}
-
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
-	if err != nil {
-		return err
-	}
-
-	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	startTime, err := utils.TimeFromQueryParam(ctx, "startTime", endTime.AddDate(0, -1, 0))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	granularity := inventoryApi.SpendTableGranularity(ctx.QueryParam("granularity"))
-	if granularity == "" {
-		granularity = inventoryApi.SpendTableGranularityDaily
-	}
-	if granularity != inventoryApi.SpendTableGranularityDaily &&
-		granularity != inventoryApi.SpendTableGranularityMonthly &&
-		granularity != inventoryApi.SpendTableGranularityYearly {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
-	}
-
-	var mt []es.MetricTrend
-	if len(connectionIDs) > 0 {
-		mt, err = es.FetchConnectionSpendMetricTrend(h.client, granularity, metricIds, connectionIDs, connectorTypes, startTime, endTime)
-	} else {
-		mt, err = es.FetchConnectorSpendMetricTrend(h.client, granularity, metricIds, connectorTypes, startTime, endTime)
-	}
-	if err != nil {
-		return err
-	}
-
-	var response []inventoryApi.ListServicesCostTrendDatapoint
-	for _, m := range mt {
-		apiDatapoints := make([]inventoryApi.CostTrendDatapoint, 0, len(m.Trend))
-		for timeAt, costVal := range m.Trend {
-			format := "2006-01-02"
-			if granularity == inventoryApi.SpendTableGranularityMonthly {
-				format = "2006-01"
-			} else if granularity == inventoryApi.SpendTableGranularityYearly {
-				format = "2006"
-			}
-			dt, _ := time.Parse(format, timeAt)
-			apiDatapoints = append(apiDatapoints, inventoryApi.CostTrendDatapoint{Cost: costVal, Date: dt})
-		}
-		sort.Slice(apiDatapoints, func(i, j int) bool {
-			return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
-		})
-
-		response = append(response, inventoryApi.ListServicesCostTrendDatapoint{
-			ServiceName: m.MetricID,
-			CostTrend:   apiDatapoints,
-		})
-	}
-
-	return ctx.JSON(http.StatusOK, response)
 }
 
 // GetSpendTable godoc
