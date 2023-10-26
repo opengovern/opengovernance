@@ -112,12 +112,12 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 			benchmarkSummary.AddFinding(f)
 		}
 
-		if !j.IsStack {
-			findings, err = j.FilterFindings(plan, findings, jc)
-			if err != nil {
-				return err
-			}
-		}
+		//if !j.IsStack {
+		//	findings, err = j.FilterFindings(plan, findings, jc)
+		//	if err != nil {
+		//		return err
+		//	}
+		//}
 
 		for idx, finding := range findings {
 			finding.ParentBenchmarks = plan.ParentBenchmarkIDs
@@ -129,6 +129,12 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 			docs = append(docs, f)
 		}
 
+		jc.logger.Info("pushing findings into kafka",
+			zap.Int("count", len(docs)),
+			zap.String("connectionID", connectionID),
+			zap.String("benchmarkID", plan.Policy.ID),
+		)
+		
 		err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, docs, jc.logger, nil)
 		if err != nil {
 			return err
