@@ -3163,7 +3163,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "description": "Connector",
                         "name": "connector",
                         "in": "query"
@@ -6569,11 +6573,6 @@ const docTemplate = `{
                     ],
                     "example": "Azure"
                 },
-                "describedAt": {
-                    "description": "Timestamp of the policy description",
-                    "type": "integer",
-                    "example": 1589395200
-                },
                 "evaluatedAt": {
                     "description": "Timestamp of the policy evaluation",
                     "type": "integer",
@@ -6645,11 +6644,6 @@ const docTemplate = `{
                         }
                     ],
                     "example": "alarm"
-                },
-                "scheduleJobID": {
-                    "description": "Schedule job ID",
-                    "type": "integer",
-                    "example": 1
                 },
                 "severity": {
                     "description": "Compliance severity",

@@ -686,10 +686,6 @@ definitions:
         - $ref: '#/definitions/source.Type'
         description: Cloud provider
         example: Azure
-      describedAt:
-        description: Timestamp of the policy description
-        example: 1589395200
-        type: integer
       evaluatedAt:
         description: Timestamp of the policy evaluation
         example: 1589395200
@@ -744,10 +740,6 @@ definitions:
         - $ref: '#/definitions/types.ComplianceResult'
         description: Compliance result
         example: alarm
-      scheduleJobID:
-        description: Schedule job ID
-        example: 1
-        type: integer
       severity:
         allOf:
         - $ref: '#/definitions/types.FindingSeverity'
@@ -4714,10 +4706,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
-      - description: Connector
+      - collectionFormat: csv
+        description: Connector
         in: query
+        items:
+          type: string
         name: connector
-        type: string
+        type: array
       - collectionFormat: csv
         description: Metrics IDs
         in: query
