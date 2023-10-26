@@ -14,11 +14,10 @@ import (
 )
 
 type Job struct {
-	ID                   uint
-	CreatedAt            time.Time
-	ResourceCollectionId *string
-	BenchmarkID          string
-	IsStack              bool
+	ID          uint
+	CreatedAt   time.Time
+	BenchmarkID string
+	IsStack     bool
 }
 
 type JobConfig struct {
@@ -39,14 +38,14 @@ func (j *Job) Run(jc JobConfig) error {
 	}
 
 	for _, connection := range assignment.Connections {
-		err := j.RunForConnection(connection.ConnectionID, jc)
+		err := j.RunForConnection(connection.ConnectionID, nil, jc)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, resourceCollection := range assignment.ResourceCollections {
-		err := j.RunForConnection(resourceCollection.ResourceCollectionID, jc) //TODO
+		err := j.RunForConnection("all", &resourceCollection.ResourceCollectionID, jc) //TODO
 		if err != nil {
 			return err
 		}
@@ -54,7 +53,7 @@ func (j *Job) Run(jc JobConfig) error {
 	return nil
 }
 
-func (j *Job) RunForConnection(connectionID string, jc JobConfig) error {
+func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string, jc JobConfig) error {
 	err := jc.steampipeConn.SetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID, connectionID)
 	if err != nil {
 		return err
@@ -71,7 +70,7 @@ func (j *Job) RunForConnection(connectionID string, jc JobConfig) error {
 			return err
 		}
 
-		findings, err := j.ExtractFindings(plan, connectionID, res, jc)
+		findings, err := j.ExtractFindings(plan, connectionID, resourceCollectionID, res, jc)
 		if err != nil {
 			return err
 		}

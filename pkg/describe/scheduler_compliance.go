@@ -111,12 +111,18 @@ func newComplianceReportJob(benchmarkID string) model.ComplianceJob {
 }
 
 func (s *Scheduler) triggerComplianceReportJobs(benchmarkID string) (uint, error) {
-	job := newComplianceReportJob(benchmarkID)
-	err := s.db.CreateComplianceJob(&job)
+	jobModel := newComplianceReportJob(benchmarkID)
+	err := s.db.CreateComplianceJob(&jobModel)
 	if err != nil {
 		return 0, err
 	}
 
+	job := complianceworker.Job{
+		ID:          jobModel.ID,
+		CreatedAt:   jobModel.CreatedAt,
+		BenchmarkID: benchmarkID,
+		IsStack:     false,
+	}
 	jobJson, err := json.Marshal(job)
 	if err != nil {
 		_ = s.db.UpdateComplianceJob(job.ID, api.ComplianceReportJobCompletedWithFailure, err.Error())

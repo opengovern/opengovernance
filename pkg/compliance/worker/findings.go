@@ -49,7 +49,7 @@ func (j *Job) FilterFindings(plan ExecutionPlan, findings []types.Finding, jc Jo
 	return findings, nil
 }
 
-func (j *Job) ExtractFindings(plan ExecutionPlan, connectionID string, res *steampipe.Result, jc JobConfig) ([]types.Finding, error) {
+func (j *Job) ExtractFindings(plan ExecutionPlan, connectionID string, resourceCollection *string, res *steampipe.Result, jc JobConfig) ([]types.Finding, error) {
 	var findings []types.Finding
 	resourceType := ""
 	for _, record := range res.Data {
@@ -111,7 +111,7 @@ func (j *Job) ExtractFindings(plan ExecutionPlan, connectionID string, res *stea
 			ResourceType:       resourceType,
 			Reason:             reason,
 			ComplianceJobID:    j.ID,
-			ResourceCollection: j.ResourceCollectionId,
+			ResourceCollection: resourceCollection,
 		})
 	}
 	return findings, nil
