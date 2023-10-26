@@ -3,8 +3,10 @@ package alerting
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	jira "github.com/andygrunwald/go-jira"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	compliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
@@ -116,7 +118,8 @@ func doSimpleJSONRequest(method string, path string, request, response interface
 		return nil, fmt.Errorf("error sending the request ,err : %v", err)
 	}
 	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("invalid status code : %d", res.StatusCode)
+		body, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("invalid status code : %d, body : %v ", res.StatusCode, string(body))
 	}
 
 	if response != nil {
@@ -142,10 +145,10 @@ func addRule(t *testing.T) uint {
 			ConditionType: "OR",
 			Operator: []api.OperatorStruct{
 				{
-					OperatorType: "<", Value: 100,
+					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
 				},
 				{
-					OperatorType: ">", Value: 200,
+					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
 				},
 			},
 		},
@@ -231,9 +234,10 @@ func TestCreateRule(t *testing.T) {
 	teardownSuite, h := setupSuite(t)
 	defer teardownSuite(t)
 
+	operatorInfo := api.OperatorInformation{OperatorType: "<", Value: 100}
 	operator := api.OperatorStruct{
-		OperatorType: "<", Value: 100,
-		Condition: nil,
+		OperatorInfo: &operatorInfo,
+		Condition:    nil,
 	}
 
 	var id uint
@@ -260,7 +264,7 @@ func TestCreateRule(t *testing.T) {
 	require.NoErrorf(t, err, "error getting the rule")
 
 	require.Equal(t, operator, foundRule.Operator)
-	require.Equal(t, 100, int(foundRule.Operator.Value))
+	require.Equal(t, 100, int(foundRule.Operator.OperatorInfo.Value))
 
 	require.Equal(t, "test metadata name", foundRule.Metadata.Name)
 	require.Equal(t, "test metadata description", foundRule.Metadata.Description)
@@ -276,33 +280,10 @@ func TestCreateRule(t *testing.T) {
 			ConditionType: "OR",
 			Operator: []api.OperatorStruct{
 				{
-					OperatorType: "<", Value: 100,
+					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
 				},
 				{
-					OperatorType: ">", Value: 200,
-				},
-			},
-		},
-	}
-	req.Operator = operator
-
-	_, err = doSimpleJSONRequest("POST", "/api/v1/rule/create", req, &id)
-	require.NoError(t, err, "error creating rule")
-
-	foundRule, err = getRule(h, id)
-	require.NoErrorf(t, err, "error getting the rule")
-
-	require.Equal(t, operator, foundRule.Operator)
-
-	operator = api.OperatorStruct{
-		Condition: &api.ConditionStruct{
-			ConditionType: "AND",
-			Operator: []api.OperatorStruct{
-				{
-					OperatorType: ">", Value: 50,
-				},
-				{
-					OperatorType: "<", Value: 200,
+					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
 				},
 			},
 		},
@@ -322,17 +303,40 @@ func TestCreateRule(t *testing.T) {
 			ConditionType: "AND",
 			Operator: []api.OperatorStruct{
 				{
-					OperatorType: ">", Value: 50,
+					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 50},
+				},
+				{
+					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 200},
+				},
+			},
+		},
+	}
+	req.Operator = operator
+
+	_, err = doSimpleJSONRequest("POST", "/api/v1/rule/create", req, &id)
+	require.NoError(t, err, "error creating rule")
+
+	foundRule, err = getRule(h, id)
+	require.NoErrorf(t, err, "error getting the rule")
+
+	require.Equal(t, operator, foundRule.Operator)
+
+	operator = api.OperatorStruct{
+		Condition: &api.ConditionStruct{
+			ConditionType: "AND",
+			Operator: []api.OperatorStruct{
+				{
+					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 50},
 				},
 				{
 					Condition: &api.ConditionStruct{
 						ConditionType: "OR",
 						Operator: []api.OperatorStruct{
 							{
-								OperatorType: "<", Value: 100,
+								OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
 							},
 							{
-								OperatorType: ">", Value: 200,
+								OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
 							},
 						},
 					},
@@ -361,10 +365,10 @@ func TestUpdateRule(t *testing.T) {
 			ConditionType: "OR",
 			Operator: []api.OperatorStruct{
 				{
-					OperatorType: "<", Value: 100,
+					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
 				},
 				{
-					OperatorType: ">", Value: 200,
+					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
 				},
 			},
 		},
@@ -517,17 +521,102 @@ func TestDeleteAction(t *testing.T) {
 	require.Error(t, err)
 }
 
+// ------------------------------------------------ alert test -----------------------------------------------
+
+func TestJiraAlert(t *testing.T) {
+	teardownSuite, _ := setupSuite(t)
+	defer teardownSuite(t)
+
+	request := api.JiraInputs{
+		AtlassianDomain:   "kaytu.atlassian.net",
+		AtlassianApiToken: "ATATT3xFfGF0xJlv2DntqFPzNs0otNaiR-aLJBdjmPXoPeqHoZeeNOz4SGFRZpzB4I_Mq9qw4aZYXcvJwYW6HsYpoMSicsIUDOgFthfJ8WBs2VZ6AKtSaOpHJtrVvDJwroEf_UoScWtJ1rdg5MM5rkatdvkkUgpNTWVKYF2V3dAoottHT63ygzU=AB385E18",
+		Email:             "salehk@kaytu.io",
+		IssueTypeId:       "10004",
+		ProjectId:         "10007",
+	}
+	//
+	//res, err := doSimpleJSONRequest("POST", "/api/v1/alerting/sendAlert/jira", req, nil)
+	//if err != nil {
+	//	t.Errorf("error in send request :%v ", err)
+	//}
+	//
+	//body, err := io.ReadAll(res.Body)
+	//if err != nil {
+	//	t.Errorf("error read request body : %v ", err)
+	//}
+	//
+	//fmt.Println(string(body))
+
+	requestBody := jira.Issue{
+		Fields: &jira.IssueFields{
+			Type:    jira.IssueType{ID: request.IssueTypeId},
+			Project: jira.Project{ID: request.ProjectId},
+			Summary: "${rule} triggered successfully",
+			Duedate: jira.Date(time.Now()),
+		},
+	}
+
+	requestMarshalled, err := json.Marshal(requestBody)
+	if err != nil {
+		t.Errorf("error marshalling the request body : %v ", err)
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("https://%s/rest/api/3/issue", request.AtlassianDomain), bytes.NewBuffer(requestMarshalled))
+	if err != nil {
+		t.Errorf("error sending create issue request : %v ", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	auth := fmt.Sprintf("%s:%s", request.Email, request.AtlassianApiToken)
+	authEncoded := base64.StdEncoding.EncodeToString([]byte(auth))
+	req.Header.Set("Authorization", "Basic "+authEncoded)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Errorf("error sending the request : %v ", err)
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Errorf("error reading the response body : %v", err)
+	}
+
+	fmt.Println(string(body))
+}
+
+func TestSlackAlert(t *testing.T) {
+	req := api.SlackInputs{
+		SlackUrl:    "https://hooks.slack.com/services/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",
+		ChannelName: "alerting-dev",
+		RuleId:      2,
+	}
+
+	res, err := doSimpleJSONRequest("POST", "/api/v1/alerting/sendAlert/slack", req, nil)
+	if err != nil {
+		t.Errorf("error : %v ", err)
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Errorf("error : %v ", err)
+	}
+
+	fmt.Println(string(body))
+}
+
 // ------------------------------------------------ trigger test ----------------------------------------------
 
 func TestCalculationOperationsWithAnd(t *testing.T) {
 	var conditionStruct api.ConditionStruct
 	var operator []api.OperatorStruct
 
+	OperatorInfo := api.OperatorInformation{OperatorType: ">", Value: 100}
+	operatorInformation2 := api.OperatorInformation{OperatorType: "<", Value: 230}
+
 	operator = append(operator, api.OperatorStruct{
-		OperatorType: ">", Value: 100,
+		OperatorInfo: &OperatorInfo,
 	})
 	operator = append(operator, api.OperatorStruct{
-		OperatorType: "<", Value: 230,
+		OperatorInfo: &operatorInformation2,
 	})
 
 	conditionStruct.ConditionType = api.ConditionAnd
@@ -547,21 +636,24 @@ func TestCalculationOperationsInCombination(t *testing.T) {
 
 	var newCondition api.ConditionStruct
 	newCondition.ConditionType = api.ConditionAnd
+	number1 := api.OperatorInformation{OperatorType: ">", Value: 700}
+	number2 := api.OperatorInformation{OperatorType: ">", Value: 750}
 	newCondition.Operator = append(newCondition.Operator, api.OperatorStruct{
-		OperatorType: ">", Value: 750,
+		OperatorInfo: &number2,
 	})
 	newCondition.Operator = append(newCondition.Operator, api.OperatorStruct{
-		OperatorType: ">", Value: 700,
+		OperatorInfo: &number1,
 	})
 
+	OperatorInfo := api.OperatorInformation{OperatorType: "<", Value: 600}
 	conditionStruct.Operator = append(conditionStruct.Operator, api.OperatorStruct{
-		OperatorType: "<", Value: 600,
+		OperatorInfo: &OperatorInfo,
 	})
 	conditionStruct.Operator = append(conditionStruct.Operator, api.OperatorStruct{
 		Condition: &newCondition,
 	})
 
-	stat, err := calculationOperations(api.OperatorStruct{Condition: &conditionStruct}, 1000)
+	stat, err := calculationOperations(api.OperatorStruct{OperatorInfo: nil, Condition: &conditionStruct}, 1000)
 	if err != nil {
 		t.Errorf("Error calculationOperations: %v ", err)
 	}
@@ -608,9 +700,9 @@ func TestTrigger(t *testing.T) {
 	teardownSuite, h := setupSuite(t)
 	defer teardownSuite(t)
 
+	operatorInfo := api.OperatorInformation{OperatorType: ">", Value: 100}
 	operator := api.OperatorStruct{
-		OperatorType: ">",
-		Value:        100,
+		OperatorInfo: &operatorInfo,
 		Condition:    nil,
 	}
 
