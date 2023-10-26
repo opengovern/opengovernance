@@ -134,7 +134,7 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 			zap.String("connectionID", connectionID),
 			zap.String("benchmarkID", plan.Policy.ID),
 		)
-		
+
 		err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, docs, jc.logger, nil)
 		if err != nil {
 			return err
