@@ -2,10 +2,7 @@ package alerting
 
 import (
 	"bytes"
-<<<<<<< Updated upstream
-=======
 	"encoding/base64"
->>>>>>> Stashed changes
 	"encoding/json"
 	"fmt"
 	jira "github.com/andygrunwald/go-jira"
@@ -22,10 +19,6 @@ import (
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
 	ruleGroup := v1.Group("/rule")
 	ruleGroup.GET("/list", httpserver.AuthorizeHandler(h.ListRules, authapi.ViewerRole))
 	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
@@ -42,15 +35,9 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	trigger := v1.Group("/trigger")
 	trigger.GET("/list", httpserver.AuthorizeHandler(h.ListTriggers, authapi.ViewerRole))
 
-<<<<<<< Updated upstream
-	alert := v1.Group("/alert")
-	alert.POST("/slack/", httpserver.AuthorizeHandler(h.SendAlertToSlack, authapi.ViewerRole))
-=======
 	alert := v1.Group("/sendAlert")
 	alert.POST("/slack", httpserver.AuthorizeHandler(h.SendAlertToSlack, authapi.ViewerRole))
 	alert.POST("/jira", httpserver.AuthorizeHandler(h.SendAlertToJira, authapi.ViewerRole))
-
->>>>>>> Stashed changes
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -484,13 +471,7 @@ func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
 //	@Description	Send Alert to specific Slack URL
 //	@Security		BearerToken
 //	@Tags			alerting
-<<<<<<< Updated upstream
-//	@Param			slackUrl	body		string	true	"Slack URl"
-//	@Param			channelName	body		string	true	"Channel Name"
-//	@Param			ruleId		body		int		true	"Rule ID "
-=======
 //	@Param			request		body		api.SlackInputs	true	"Request Body"
->>>>>>> Stashed changes
 //	@Success		200			{object}	string
 //	@Router			/alerting/api/v1/alert/slack [post]
 func (h *HttpHandler) SendAlertToSlack(ctx echo.Context) error {
@@ -503,17 +484,14 @@ func (h *HttpHandler) SendAlertToSlack(ctx echo.Context) error {
 	if err != nil {
 		return fmt.Errorf("error getting rule : %v", err)
 	}
+
 	var metadata api.Metadata
 	err = json.Unmarshal(rule.Metadata, &metadata)
 	if err != nil {
 		return fmt.Errorf("error unmarshalling the metadata in rule : %v ", err)
 	}
 
-<<<<<<< Updated upstream
-	reqStr := api.SlackResponse{
-=======
 	reqStr := api.SlackRequest{
->>>>>>> Stashed changes
 		ChannelName: inputs.ChannelName,
 		Text:        fmt.Sprintf("%s rule successfully triggered", metadata.Name),
 	}
@@ -539,8 +517,6 @@ func (h *HttpHandler) SendAlertToSlack(ctx echo.Context) error {
 
 	return ctx.String(http.StatusOK, "slack alert sent successfully")
 }
-<<<<<<< Updated upstream
-=======
 
 // SendAlertToJira godoc
 //
@@ -592,4 +568,3 @@ func (h *HttpHandler) SendAlertToJira(ctx echo.Context) error {
 
 	return ctx.JSON(http.StatusOK, string(body))
 }
->>>>>>> Stashed changes
