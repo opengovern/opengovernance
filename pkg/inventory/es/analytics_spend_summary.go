@@ -773,7 +773,7 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.Dime
 		return nil, err
 	}
 
-	var result map[string]DimensionTrend
+	result := make(map[string]DimensionTrend)
 	fmt.Println(response)
 
 	for _, dateBucket := range response.Aggregations.DateGroup.Buckets {
