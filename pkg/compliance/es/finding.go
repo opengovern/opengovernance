@@ -15,7 +15,8 @@ import (
 )
 
 type FindingsQueryResponse struct {
-	Hits FindingsQueryHits `json:"hits"`
+	Hits  FindingsQueryHits `json:"hits"`
+	PitID string            `json:"pit_id"`
 }
 type FindingsQueryHits struct {
 	Total kaytu.SearchTotal  `json:"total"`
@@ -31,37 +32,54 @@ type FindingsQueryHit struct {
 	Sort    []any         `json:"sort"`
 }
 
-func GetActiveFindings(client kaytu.Client, policyID string, from, size int) (*FindingsQueryResponse, error) {
-	res := make(map[string]any)
-	var filters []any
+type FinderPaginator struct {
+	paginator *kaytu.BaseESPaginator
+}
 
-	filters = append(filters,
-		map[string]any{"term": map[string]any{"stateActive": true}},
-		map[string]any{"term": map[string]any{"policyID": policyID}},
-	)
-	res["size"] = size
-	res["from"] = from
-
-	res["sort"] = []map[string]any{
-		{
-			"_id": "desc",
-		},
+func NewFinderPaginator(client kaytu.Client, filters []kaytu.BoolFilter, limit *int64) (FinderPaginator, error) {
+	paginator, err := kaytu.NewPaginator(client.ES(), types.FindingsIndex, filters, limit)
+	if err != nil {
+		return FinderPaginator{}, err
 	}
 
-	res["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": filters,
-		},
+	p := FinderPaginator{
+		paginator: paginator,
 	}
-	b, err := json.Marshal(res)
+
+	return p, nil
+}
+
+func (p FinderPaginator) HasNext() bool {
+	return !p.paginator.Done()
+}
+
+func (p FinderPaginator) NextPage(ctx context.Context) ([]types.Finding, error) {
+	var response FindingsQueryResponse
+	err := p.paginator.Search(ctx, &response)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("GetActiveFindings query=", string(b))
-	var resp FindingsQueryResponse
-	err = client.SearchWithTrackTotalHits(context.Background(), types.FindingsIndex, string(b), nil, &resp, false)
-	return &resp, err
+	var values []types.Finding
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.UpdateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.UpdateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+func ListActiveFindings(client kaytu.Client, policyID string) (FinderPaginator, error) {
+	return NewFinderPaginator(client, []kaytu.BoolFilter{
+		kaytu.NewTermFilter("stateActive", "true"),
+		kaytu.NewTermFilter("policyID", policyID),
+	}, nil)
 }
 
 func FindingsQuery(client kaytu.Client,

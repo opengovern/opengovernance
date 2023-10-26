@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
@@ -12,43 +13,45 @@ func (j *Job) FilterFindings(plan ExecutionPlan, findings []types.Finding, jc Jo
 	// get all active findings from ES page by page
 	// go through the ones extracted and remove duplicates
 	// if a finding fetched from es is not duplicated disable it
-	from := 0
-	const esFetchSize = 1000
-	for {
-		resp, err := es.GetActiveFindings(jc.esClient, plan.Policy.ID, from, esFetchSize)
+
+	ctx := context.Background()
+	resp, err := es.ListActiveFindings(jc.esClient, plan.Policy.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	for resp.HasNext() {
+		page, err := resp.NextPage(ctx)
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("+++++++++ active old findings:", len(resp.Hits.Hits), plan.Policy.ID, from)
-		from += esFetchSize
 
-		if len(resp.Hits.Hits) == 0 {
-			break
-		}
+		fmt.Println("+++++++++ active old findings:", len(page), plan.Policy.ID)
 
-		for _, hit := range resp.Hits.Hits {
+		for _, hit := range page {
 			dup := false
 
 			for idx, finding := range findings {
-				if finding.ResourceID == hit.Source.ResourceID &&
-					finding.PolicyID == hit.Source.PolicyID &&
-					finding.ConnectionID == hit.Source.ConnectionID &&
-					finding.Result == hit.Source.Result {
+				if finding.ResourceID == hit.ResourceID &&
+					finding.PolicyID == hit.PolicyID &&
+					finding.ConnectionID == hit.ConnectionID &&
+					finding.Result == hit.Result {
 					dup = true
-					fmt.Println("+++++++++ removing dup:", finding.ID, hit.Source.ID)
+					fmt.Println("+++++++++ removing dup:", finding.ID, hit.ID)
 					findings = append(findings[:idx], findings[idx+1:]...)
 					break
 				}
 			}
 
 			if !dup {
-				f := hit.Source
+				f := hit
 				f.StateActive = false
 				fmt.Println("+++++++++ making this disabled:", f.ID)
 				findings = append(findings, f)
 			}
 		}
 	}
+
 	return findings, nil
 }
 
