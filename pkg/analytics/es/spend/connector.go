@@ -31,15 +31,6 @@ type ConnectorMetricTrendSummary struct {
 
 	Connectors    []PerConnectorMetricTrendSummary          `json:"connectors"`
 	ConnectorsMap map[string]PerConnectorMetricTrendSummary `json:"-"`
-
-	// Deprecated
-	Connector source.Type `json:"connector"`
-	// Deprecated
-	CostValue float64 `json:"cost_value"`
-	// Deprecated
-	TotalConnections int64 `json:"total_connections"`
-	// Deprecated
-	TotalSuccessfulConnections int64 `json:"total_successful_connections"`
 }
 
 func (r ConnectorMetricTrendSummary) KeysAndIndex() ([]string, string) {

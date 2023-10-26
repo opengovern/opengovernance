@@ -5,9 +5,16 @@ import (
 	"gorm.io/gorm"
 )
 
+type AnalyticsJobType string
+
+const (
+	AnalyticsJobTypeNormal             AnalyticsJobType = "normal"
+	AnalyticsJobTypeResourceCollection AnalyticsJobType = "resource_collection"
+)
+
 type AnalyticsJob struct {
 	gorm.Model
-	ResourceCollectionId *string
-	Status               analytics.JobStatus
-	FailureMessage       string
+	Type           AnalyticsJobType
+	Status         analytics.JobStatus
+	FailureMessage string
 }

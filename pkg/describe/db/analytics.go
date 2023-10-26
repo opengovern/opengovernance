@@ -8,14 +8,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func (db Database) FetchLastAnalyticsJobForCollectionId(resourceCollectionId *string) (*model.AnalyticsJob, error) {
+func (db Database) FetchLastAnalyticsJobForJobType(analyticsJobType model.AnalyticsJobType) (*model.AnalyticsJob, error) {
 	var job model.AnalyticsJob
-	tx := db.ORM.Model(&model.AnalyticsJob{}).Order("created_at DESC")
-	if resourceCollectionId == nil {
-		tx = tx.Where("resource_collection_id IS NULL").First(&job)
-	} else {
-		tx = tx.Where("resource_collection_id = ?", resourceCollectionId).First(&job)
-	}
+	tx := db.ORM.Model(&model.AnalyticsJob{}).Order("created_at DESC").Where("type = ?", analyticsJobType).First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil

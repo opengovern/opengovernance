@@ -3,7 +3,7 @@ package describe
 import (
 	"encoding/json"
 	"fmt"
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"time"
@@ -22,44 +22,37 @@ func (s *Scheduler) RunAnalyticsJobScheduler() {
 	defer t.Stop()
 
 	for ; ; <-t.C {
-		lastJob, err := s.db.FetchLastAnalyticsJobForCollectionId(nil)
+		lastJob, err := s.db.FetchLastAnalyticsJobForJobType(model.AnalyticsJobTypeNormal)
 		if err != nil {
 			s.logger.Error("Failed to find the last job to check for AnalyticsJob", zap.Error(err))
 			AnalyticsJobsCount.WithLabelValues("failure").Inc()
 			continue
 		}
 		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.analyticsIntervalHours)*time.Hour).Before(time.Now()) {
-			err := s.scheduleAnalyticsJob(nil)
+			err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal)
 			if err != nil {
 				s.logger.Error("failure on scheduleAnalyticsJob", zap.Error(err))
 			}
 		}
 
-		resourceCollections, err := s.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: authApi.InternalRole})
+		lastJob, err = s.db.FetchLastAnalyticsJobForJobType(model.AnalyticsJobTypeResourceCollection)
 		if err != nil {
-			s.logger.Error("Failed to list resource collections", zap.Error(err))
+			s.logger.Error("Failed to find the last job to check for AnalyticsJob on resourceCollection", zap.Error(err))
+			AnalyticsJobsCount.WithLabelValues("failure").Inc()
 			continue
 		}
-		for _, resourceCollection := range resourceCollections {
-			resourceCollection := resourceCollection
-			lastJob, err := s.db.FetchLastAnalyticsJobForCollectionId(&resourceCollection.ID)
+		if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.analyticsIntervalHours)*time.Hour).Before(time.Now()) {
+			err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeResourceCollection)
 			if err != nil {
-				s.logger.Error("Failed to find the last job to check for AnalyticsJob on resourceCollection", zap.Error(err), zap.String("resourceCollectionId", resourceCollection.ID))
-				AnalyticsJobsCount.WithLabelValues("failure").Inc()
-				continue
-			}
-			if lastJob == nil || lastJob.CreatedAt.Add(time.Duration(s.analyticsIntervalHours)*time.Hour).Before(time.Now()) {
-				err := s.scheduleAnalyticsJob(&resourceCollection.ID)
-				if err != nil {
-					s.logger.Error("failure on scheduleAnalyticsJob", zap.Error(err))
-				}
+				s.logger.Error("failure on scheduleAnalyticsJob", zap.Error(err))
 			}
 		}
+
 	}
 }
 
-func (s *Scheduler) scheduleAnalyticsJob(resourceCollectionId *string) error {
-	lastJob, err := s.db.FetchLastAnalyticsJobForCollectionId(resourceCollectionId)
+func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType) error {
+	lastJob, err := s.db.FetchLastAnalyticsJobForJobType(analyticsJobType)
 	if err != nil {
 		AnalyticsJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to get ongoing AnalyticsJob",
@@ -73,7 +66,7 @@ func (s *Scheduler) scheduleAnalyticsJob(resourceCollectionId *string) error {
 		return fmt.Errorf("there is ongoing AnalyticsJob skipping this schedule")
 	}
 
-	job := newAnalyticsJob(resourceCollectionId)
+	job := newAnalyticsJob(analyticsJobType)
 
 	err = s.db.AddAnalyticsJob(&job)
 	if err != nil {
@@ -85,7 +78,7 @@ func (s *Scheduler) scheduleAnalyticsJob(resourceCollectionId *string) error {
 		return err
 	}
 
-	err = enqueueAnalyticsJobs(s.analyticsJobQueue, job)
+	err = s.enqueueAnalyticsJobs(s.analyticsJobQueue, job)
 	if err != nil {
 		AnalyticsJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to enqueue AnalyticsJob",
@@ -107,10 +100,23 @@ func (s *Scheduler) scheduleAnalyticsJob(resourceCollectionId *string) error {
 	return nil
 }
 
-func enqueueAnalyticsJobs(q queue.Interface, job model.AnalyticsJob) error {
+func (s *Scheduler) enqueueAnalyticsJobs(q queue.Interface, job model.AnalyticsJob) error {
+	var resourceCollectionIds []string
+
+	if job.Type == model.AnalyticsJobTypeResourceCollection {
+		resourceCollections, err := s.inventoryClient.ListResourceCollections(&httpclient.Context{UserRole: api2.InternalRole})
+		if err != nil {
+			s.logger.Error("Failed to list resource collections", zap.Error(err))
+			return err
+		}
+		for _, resourceCollection := range resourceCollections {
+			resourceCollectionIds = append(resourceCollectionIds, resourceCollection.ID)
+		}
+	}
+
 	if err := q.Publish(analytics.Job{
 		JobID:                 job.ID,
-		ResourceCollectionIDs: job.ResourceCollectionId,
+		ResourceCollectionIDs: resourceCollectionIds,
 	}); err != nil {
 		return err
 	}
@@ -118,12 +124,12 @@ func enqueueAnalyticsJobs(q queue.Interface, job model.AnalyticsJob) error {
 	return nil
 }
 
-func newAnalyticsJob(resourceCollectionId *string) model.AnalyticsJob {
+func newAnalyticsJob(analyticsJobType model.AnalyticsJobType) model.AnalyticsJob {
 	return model.AnalyticsJob{
-		Model:                gorm.Model{},
-		ResourceCollectionId: resourceCollectionId,
-		Status:               analytics.JobCreated,
-		FailureMessage:       "",
+		Model:          gorm.Model{},
+		Type:           analyticsJobType,
+		Status:         analytics.JobCreated,
+		FailureMessage: "",
 	}
 }
 

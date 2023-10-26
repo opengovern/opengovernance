@@ -1,7 +1,6 @@
 package resource
 
 import (
-	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strconv"
 )
@@ -34,19 +33,6 @@ type ConnectionMetricTrendSummary struct {
 
 	Connections         *ConnectionMetricTrendSummaryResult           `json:"connections,omitempty"`
 	ResourceCollections map[string]ConnectionMetricTrendSummaryResult `json:"resource_collections,omitempty"`
-
-	// Deprecated
-	Connector source.Type `json:"connector"`
-	// Deprecated
-	ConnectionID uuid.UUID `json:"connection_id"`
-	// Deprecated
-	ConnectionName string `json:"connection_name"`
-	// Deprecated
-	ResourceCount int `json:"resource_count"`
-	// Deprecated
-	IsJobSuccessful bool `json:"is_job_successful"`
-	// Deprecated
-	ResourceCollection *string `json:"resource_collection"`
 }
 
 func (r ConnectionMetricTrendSummary) KeysAndIndex() ([]string, string) {

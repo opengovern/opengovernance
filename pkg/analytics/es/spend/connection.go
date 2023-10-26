@@ -1,7 +1,6 @@
 package spend
 
 import (
-	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
@@ -33,17 +32,6 @@ type ConnectionMetricTrendSummary struct {
 
 	Connections    []PerConnectionMetricTrendSummary          `json:"connections"`
 	ConnectionsMap map[string]PerConnectionMetricTrendSummary `json:"-"`
-
-	// Deprecated
-	ConnectionID uuid.UUID `json:"connection_id"`
-	// Deprecated
-	ConnectionName string `json:"connection_name"`
-	// Deprecated
-	Connector source.Type `json:"connector"`
-	// Deprecated
-	CostValue float64 `json:"cost_value"`
-	// Deprecated
-	IsJobSuccessful bool `json:"is_job_successful"`
 }
 
 func (r ConnectionMetricTrendSummary) KeysAndIndex() ([]string, string) {

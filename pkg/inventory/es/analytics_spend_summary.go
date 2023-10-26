@@ -321,7 +321,7 @@ func FetchConnectorDailySpendHistoryByMetric(client kaytu.Client, connectors []s
 	var hits []ConnectorDailySpendHistoryByMetric
 	for _, metricBucket := range response.Aggregations.MetricIDGroup.Buckets {
 		hit := ConnectorDailySpendHistoryByMetric{
-			Connector:     source.Nil,
+			Connector:     source.Nil.String(),
 			MetricID:      "",
 			MetricName:    "",
 			TotalCost:     0,
@@ -339,7 +339,7 @@ func FetchConnectorDailySpendHistoryByMetric(client kaytu.Client, connectors []s
 				if len(connectors) > 0 && !includeConnectorMap[connectorResult.Connector.String()] {
 					continue
 				}
-				if hit.Connector == source.Nil {
+				if hit.Connector == source.Nil.String() {
 					hit.Connector = connectorResult.Connector.String()
 				}
 				hit.TotalCost += connectorResult.CostValue

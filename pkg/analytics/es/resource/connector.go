@@ -32,17 +32,6 @@ type ConnectorMetricTrendSummary struct {
 
 	Connectors          *ConnectorMetricTrendSummaryResult           `json:"connectors,omitempty"`
 	ResourceCollections map[string]ConnectorMetricTrendSummaryResult `json:"resource_collections,omitempty"`
-
-	// Deprecated
-	Connector source.Type `json:"connector"`
-	// Deprecated
-	ResourceCount int `json:"resource_count"`
-	// Deprecated
-	TotalConnections int64 `json:"total_connections"`
-	// Deprecated
-	TotalSuccessfulConnections int64 `json:"total_successful_connections"`
-	// Deprecated
-	ResourceCollection *string `json:"resource_collection"`
 }
 
 func (r ConnectorMetricTrendSummary) KeysAndIndex() ([]string, string) {
