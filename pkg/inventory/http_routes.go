@@ -18,13 +18,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
-
-	"github.com/google/uuid"
 	awsSteampipe "github.com/kaytu-io/kaytu-aws-describer/pkg/steampipe"
 	azureSteampipe "github.com/kaytu-io/kaytu-azure-describer/pkg/steampipe"
 	analyticsDB "github.com/kaytu-io/kaytu-engine/pkg/analytics/db"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	insight "github.com/kaytu-io/kaytu-engine/pkg/insight/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -32,9 +28,7 @@ import (
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/inventory/internal"
-	es3 "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
-	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/model"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -83,12 +77,10 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	analyticsSpend.GET("/metric", httpserver.AuthorizeHandler(h.ListAnalyticsSpendMetricsHandler, authApi.ViewerRole))
 	analyticsSpend.GET("/composition", httpserver.AuthorizeHandler(h.ListAnalyticsSpendComposition, authApi.ViewerRole))
 	analyticsSpend.GET("/trend", httpserver.AuthorizeHandler(h.GetAnalyticsSpendTrend, authApi.ViewerRole))
-	analyticsSpend.GET("/metrics/trend", httpserver.AuthorizeHandler(h.GetAnalyticsSpendMetricsTrend, authApi.ViewerRole))
 	analyticsSpend.GET("/table", httpserver.AuthorizeHandler(h.GetSpendTable, authApi.ViewerRole))
 
 	connectionsV2 := v2.Group("/connections")
 	connectionsV2.GET("/data", httpserver.AuthorizeHandler(h.ListConnectionsData, authApi.ViewerRole))
-	connectionsV2.GET("/data/:connectionId", httpserver.AuthorizeHandler(h.GetConnectionData, authApi.ViewerRole))
 
 	insightsV2 := v2.Group("/insights")
 	insightsV2.GET("", httpserver.AuthorizeHandler(h.ListInsightResults, authApi.ViewerRole))
@@ -102,8 +94,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	resourceCollection.GET("", httpserver.AuthorizeHandler(h.ListResourceCollections, authApi.ViewerRole))
 	resourceCollection.GET("/:resourceCollectionId", httpserver.AuthorizeHandler(h.GetResourceCollection, authApi.ViewerRole))
 
-	//v1.GET("/migrate-analytics", httpserver.AuthorizeHandler(h.MigrateAnalytics, authApi.AdminRole))
-	v1.GET("/migrate-spend", httpserver.AuthorizeHandler(h.MigrateSpend, authApi.AdminRole))
 }
 
 var tracer = otel.Tracer("new_inventory")
@@ -144,224 +134,6 @@ func (h *HttpHandler) getConnectionIdFilterFromParams(ctx echo.Context) ([]strin
 	return connectionIds, nil
 }
 
-func (h *HttpHandler) MigrateAnalytics(ctx echo.Context) error {
-	for i := 0; i < 1000; i++ {
-		err := h.MigrateAnalyticsPart(i)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (h *HttpHandler) MigrateAnalyticsPart(summarizerJobID int) error {
-	aDB := analyticsDB.NewDatabase(h.db.orm)
-
-	connectionMap := map[string]resource.ConnectionMetricTrendSummary{}
-	connectorMap := map[string]resource.ConnectorMetricTrendSummary{}
-
-	resourceTypeMetricIDCache := map[string]analyticsDB.AnalyticMetric{}
-
-	cctx := context.Background()
-
-	pagination, err := es.NewConnectionResourceTypePaginator(
-		h.client,
-		[]kaytu.BoolFilter{
-			kaytu.NewTermFilter("report_type", string(es3.ResourceTypeTrendConnectionSummary)),
-			kaytu.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
-		},
-		nil,
-	)
-	if err != nil {
-		return err
-	}
-
-	var docs []kafka.Doc
-	for {
-		if !pagination.HasNext() {
-			fmt.Println("MigrateAnalytics = page done", summarizerJobID)
-			break
-		}
-
-		fmt.Println("MigrateAnalytics = ask page", summarizerJobID)
-		page, err := pagination.NextPage(cctx)
-		if err != nil {
-			return err
-		}
-		fmt.Println("MigrateAnalytics = next page", summarizerJobID)
-
-		for _, hit := range page {
-			connectionID, err := uuid.Parse(hit.SourceID)
-			if err != nil {
-				return err
-			}
-
-			conn, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, connectionID.String())
-			if err != nil {
-				return err
-			}
-
-			if conn == nil {
-				fmt.Println("failed to find source", connectionID)
-				continue
-			}
-
-			var metricItem analyticsDB.AnalyticMetric
-
-			if v, ok := resourceTypeMetricIDCache[hit.ResourceType]; ok {
-				metricItem = v
-			} else {
-				// tracer :
-				_, span1 := tracer.Start(cctx, "new_GetMetric", trace.WithSpanKind(trace.SpanKindServer))
-				span1.SetName("new_GetMetric")
-
-				metric, err := aDB.GetMetric(analyticsDB.MetricTypeAssets, hit.ResourceType)
-				if err != nil {
-					span1.RecordError(err)
-					span1.SetStatus(codes.Error, err.Error())
-
-					return err
-				}
-				span1.AddEvent("information", trace.WithAttributes(
-					attribute.String("metricID", metric.ID),
-				))
-				span1.End()
-				if metric == nil {
-					return fmt.Errorf("resource type %s not found", hit.ResourceType)
-				}
-
-				resourceTypeMetricIDCache[hit.ResourceType] = *metric
-				metricItem = *metric
-			}
-
-			if metricItem.ID == "" {
-				continue
-			}
-
-			connection := resource.ConnectionMetricTrendSummary{
-				ConnectionID:   connectionID,
-				ConnectionName: conn.ConnectionName,
-				Connector:      hit.SourceType,
-				EvaluatedAt:    hit.DescribedAt,
-				Date:           time.UnixMilli(hit.DescribedAt).Format("2006-01-02"),
-				Month:          time.UnixMilli(hit.DescribedAt).Format("2006-01"),
-				Year:           time.UnixMilli(hit.DescribedAt).Format("2006"),
-				MetricID:       metricItem.ID,
-				MetricName:     metricItem.Name,
-				ResourceCount:  hit.ResourceCount,
-			}
-			key := fmt.Sprintf("%s-%s-%d", connectionID.String(), metricItem.ID, hit.SummarizeJobID)
-			if v, ok := connectionMap[key]; ok {
-				v.ResourceCount += connection.ResourceCount
-				connectionMap[key] = v
-			} else {
-				connectionMap[key] = connection
-			}
-
-			connector := resource.ConnectorMetricTrendSummary{
-				Connector:     hit.SourceType,
-				EvaluatedAt:   hit.DescribedAt,
-				Date:          time.UnixMilli(hit.DescribedAt).Format("2006-01-02"),
-				Month:         time.UnixMilli(hit.DescribedAt).Format("2006-01"),
-				Year:          time.UnixMilli(hit.DescribedAt).Format("2006"),
-				MetricID:      metricItem.ID,
-				MetricName:    metricItem.Name,
-				ResourceCount: hit.ResourceCount,
-			}
-			key = fmt.Sprintf("%s-%s-%d", connector.Connector, metricItem.ID, hit.SummarizeJobID)
-			if v, ok := connectorMap[key]; ok {
-				v.ResourceCount += connector.ResourceCount
-				connectorMap[key] = v
-			} else {
-				connectorMap[key] = connector
-			}
-		}
-	}
-
-	for _, c := range connectionMap {
-		docs = append(docs, c)
-	}
-
-	for _, c := range connectorMap {
-		docs = append(docs, c)
-	}
-
-	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
-		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
-		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger, nil)
-		if err != nil {
-			h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()))
-			continue
-		}
-	}
-	return nil
-}
-
-func (h *HttpHandler) MigrateSpend(ctx echo.Context) error {
-	connectorMap := map[string]spend.ConnectorMetricTrendSummary{}
-
-	startJobId := 0
-	if jobIdStr := ctx.QueryParam("startJobId"); jobIdStr != "" {
-		jobId, err := strconv.ParseInt(jobIdStr, 10, 64)
-		if err != nil {
-			return err
-		}
-		startJobId = int(jobId)
-	}
-
-	maxJobID := startJobId + 1000
-	for i := startJobId; i < maxJobID; i++ {
-		cm, err := h.MigrateSpendPart(i, true)
-		if err != nil {
-			return err
-		}
-		if len(cm) > 0 {
-			maxJobID = i + 1000
-		}
-
-		for key, newValue := range cm {
-			if v, ok := connectorMap[key]; ok {
-				v.CostValue += newValue.CostValue
-				connectorMap[key] = v
-			} else {
-				connectorMap[key] = newValue
-			}
-		}
-
-		cm, err = h.MigrateSpendPart(i, false)
-		if err != nil {
-			return err
-		}
-		if len(cm) > 0 {
-			maxJobID = i + 1000
-		}
-
-		for key, newValue := range cm {
-			if v, ok := connectorMap[key]; ok {
-				v.CostValue += newValue.CostValue
-				connectorMap[key] = v
-			} else {
-				connectorMap[key] = newValue
-			}
-		}
-	}
-
-	var docs []kafka.Doc
-	for _, c := range connectorMap {
-		docs = append(docs, c)
-	}
-
-	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
-		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
-		err := kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger, nil)
-		if err != nil {
-			h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()))
-			continue
-		}
-	}
-	return nil
-}
-
 type ExistFilter struct {
 	field string
 }
@@ -379,217 +151,6 @@ func (t ExistFilter) MarshalJSON() ([]byte, error) {
 	})
 }
 func (t ExistFilter) IsBoolFilter() {}
-
-func (h *HttpHandler) MigrateSpendPart(summarizerJobID int, isAWS bool) (map[string]spend.ConnectorMetricTrendSummary, error) {
-	aDB := analyticsDB.NewDatabase(h.db.orm)
-	connectionMap := map[string]spend.ConnectionMetricTrendSummary{}
-	connectorMap := map[string]spend.ConnectorMetricTrendSummary{}
-
-	cctx := context.Background()
-	var boolFilters []kaytu.BoolFilter
-	if isAWS {
-		boolFilters = []kaytu.BoolFilter{
-			kaytu.NewTermFilter("report_type", string(es3.CostServiceSummaryDaily)),
-			kaytu.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
-			kaytu.NewTermFilter("source_type", "AWS"),
-			NewExistFilter("cost.Dimension1"),
-		}
-	} else {
-		boolFilters = []kaytu.BoolFilter{
-			kaytu.NewTermFilter("report_type", string(es3.CostServiceSummaryDaily)),
-			kaytu.NewTermFilter("summarize_job_id", fmt.Sprintf("%d", summarizerJobID)),
-			kaytu.NewTermFilter("source_type", "Azure"),
-			NewExistFilter("cost.ServiceName"),
-		}
-	}
-
-	pagination, err := es.NewConnectionCostPaginator(
-		h.client,
-		boolFilters,
-		nil,
-	)
-	if err != nil {
-		return nil, err
-	}
-	serviceNameMetricCache := map[string]analyticsDB.AnalyticMetric{}
-
-	var docs []kafka.Doc
-	for {
-		if !pagination.HasNext() {
-			fmt.Println("MigrateAnalytics = page done", summarizerJobID)
-			break
-		}
-
-		fmt.Println("MigrateAnalytics = ask page", summarizerJobID)
-		page, err := pagination.NextPage(cctx)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println("MigrateAnalytics = next page", summarizerJobID, len(page))
-
-		for _, hit := range page {
-			connectionID, err := uuid.Parse(hit.SourceID)
-			if err != nil {
-				return nil, err
-			}
-
-			var metricID, metricName string
-			if v, ok := serviceNameMetricCache[hit.ServiceName]; ok {
-				metricID = v.ID
-				metricName = v.Name
-			} else {
-				isMarketplace := false
-
-				costDescriptionJson, _ := json.Marshal(hit.Cost)
-				var costDescription map[string]any
-				_ = json.Unmarshal(costDescriptionJson, &costDescription)
-				if costDescription["Dimension2"] != nil {
-					switch costDescription["Dimension2"].(type) {
-					case string:
-						if costDescription["Dimension2"].(string) == "AWS Marketplace" {
-							isMarketplace = true
-						}
-					}
-				}
-				if costDescription["PublisherType"] != nil {
-					switch costDescription["PublisherType"].(type) {
-					case string:
-						if costDescription["PublisherType"].(string) == "Marketplace" {
-							isMarketplace = true
-						}
-					}
-				}
-
-				if isMarketplace {
-					table := "AWS Marketplace"
-					if !isAWS {
-						table = "Azure Marketplace"
-					}
-					// tracer :
-					_, span1 := tracer.Start(cctx, "new_GetMetric", trace.WithSpanKind(trace.SpanKindServer))
-					span1.SetName("new_GetMetric")
-					metric, err := aDB.GetMetric(analyticsDB.MetricTypeSpend, table)
-					if err != nil {
-						span1.RecordError(err)
-						span1.SetStatus(codes.Error, err.Error())
-						return nil, err
-					}
-					span1.AddEvent("information", trace.WithAttributes(
-						attribute.String("metricID", metric.ID),
-					))
-					span1.End()
-					if metric != nil {
-						serviceNameMetricCache[hit.ServiceName] = *metric
-						metricID = metric.ID
-						metricName = metric.Name
-					}
-				} else {
-					// tracer :
-					_, span2 := tracer.Start(cctx, "new_GetMetric", trace.WithSpanKind(trace.SpanKindServer))
-					span2.SetName("new_GetMetric")
-					metric, err := aDB.GetMetric(analyticsDB.MetricTypeSpend, hit.ServiceName)
-					if err != nil {
-						span2.RecordError(err)
-						span2.SetStatus(codes.Error, err.Error())
-						return nil, err
-					}
-					span2.AddEvent("information", trace.WithAttributes(
-						attribute.String("metricID", metric.ID),
-					))
-					span2.End()
-					if metric == nil {
-						return nil, fmt.Errorf("GetMetric, table %s not found", hit.ServiceName)
-					}
-					serviceNameMetricCache[hit.ServiceName] = *metric
-					metricID = metric.ID
-					metricName = metric.Name
-				}
-			}
-
-			if metricID == "" {
-				fmt.Println(hit.ServiceName, "doesnt have metricID")
-				continue
-			}
-
-			conn, err := h.onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, hit.SourceID)
-			if err != nil {
-				fmt.Println(err)
-				continue
-				//return err
-			}
-
-			dateTimestamp := (hit.PeriodStart + hit.PeriodEnd) / 2
-			dateStr := time.Unix(dateTimestamp, 0).Format("2006-01-02")
-			monthStr := time.Unix(dateTimestamp, 0).Format("2006-01")
-			yearStr := time.Unix(dateTimestamp, 0).Format("2006")
-			connection := spend.ConnectionMetricTrendSummary{
-				ConnectionID:    connectionID,
-				ConnectionName:  conn.ConnectionName,
-				Connector:       hit.Connector,
-				Date:            dateStr,
-				DateEpoch:       dateTimestamp * 1000,
-				Month:           monthStr,
-				Year:            yearStr,
-				MetricID:        metricID,
-				MetricName:      metricName,
-				CostValue:       hit.CostValue,
-				PeriodStart:     hit.PeriodStart * 1000,
-				PeriodEnd:       hit.PeriodEnd * 1000,
-				IsJobSuccessful: true,
-				EvaluatedAt:     time.Now().UnixMilli(),
-			}
-			key := fmt.Sprintf("%s-%s-%s", connectionID.String(), metricID, dateStr)
-			if v, ok := connectionMap[key]; ok {
-				v.CostValue += connection.CostValue
-				connectionMap[key] = v
-			} else {
-				connectionMap[key] = connection
-			}
-
-			connector := spend.ConnectorMetricTrendSummary{
-				Connector:                  hit.Connector,
-				Date:                       dateStr,
-				DateEpoch:                  dateTimestamp * 1000,
-				Month:                      monthStr,
-				Year:                       yearStr,
-				MetricID:                   metricID,
-				MetricName:                 metricName,
-				CostValue:                  hit.CostValue,
-				PeriodStart:                hit.PeriodStart * 1000,
-				PeriodEnd:                  hit.PeriodEnd * 1000,
-				TotalConnections:           0, //TODO
-				TotalSuccessfulConnections: 0, //TODO
-				EvaluatedAt:                time.Now().UnixMilli(),
-			}
-			key = fmt.Sprintf("%s-%s-%s", connector.Connector, metricID, dateStr)
-			if dateStr == "2023-07-05" && metricID == "spend_amazon_elastic_compute_cloud___compute" {
-				fmt.Println(key, connector.CostValue)
-			}
-
-			if v, ok := connectorMap[key]; ok {
-				v.CostValue += connector.CostValue
-				connectorMap[key] = v
-			} else {
-				connectorMap[key] = connector
-			}
-		}
-	}
-
-	for _, c := range connectionMap {
-		docs = append(docs, c)
-	}
-
-	for startPageIdx := 0; startPageIdx < len(docs); startPageIdx += KafkaPageSize {
-		docsToSend := docs[startPageIdx:min(startPageIdx+KafkaPageSize, len(docs))]
-		err = kafka.DoSend(h.kafkaProducer, "cloud-resources", -1, docsToSend, h.logger, nil)
-		if err != nil {
-			h.logger.Warn("failed to send to kafka", zap.Error(err), zap.Int("len", h.kafkaProducer.Len()))
-			continue
-		}
-	}
-
-	return connectorMap, nil
-}
 
 func bindValidate(ctx echo.Context, i interface{}) error {
 	if err := ctx.Bind(i); err != nil {
@@ -1094,7 +655,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		esDatapointCount = 1
 	}
 	if len(connectionIDs) != 0 {
-		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(h.client, connectionIDs, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(h.client, connectionIDs, connectorTypes, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1365,21 +926,21 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	granularity := inventoryApi.SpendTableGranularity(ctx.QueryParam("granularity"))
+	granularity := inventoryApi.TableGranularityType(ctx.QueryParam("granularity"))
 	if granularity == "" {
-		granularity = inventoryApi.SpendTableGranularityDaily
+		granularity = inventoryApi.TableGranularityTypeDaily
 	}
-	if granularity != inventoryApi.SpendTableGranularityDaily &&
-		granularity != inventoryApi.SpendTableGranularityMonthly &&
-		granularity != inventoryApi.SpendTableGranularityYearly {
+	if granularity != inventoryApi.TableGranularityTypeDaily &&
+		granularity != inventoryApi.TableGranularityTypeMonthly &&
+		granularity != inventoryApi.TableGranularityTypeYearly {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
 	}
-	dimension := inventoryApi.SpendDimension(ctx.QueryParam("dimension"))
+	dimension := inventoryApi.DimensionType(ctx.QueryParam("dimension"))
 	if dimension == "" {
-		dimension = inventoryApi.SpendDimensionMetric
+		dimension = inventoryApi.DimensionTypeMetric
 	}
-	if dimension != inventoryApi.SpendDimensionMetric &&
-		dimension != inventoryApi.SpendDimensionConnection {
+	if dimension != inventoryApi.DimensionTypeMetric &&
+		dimension != inventoryApi.DimensionTypeConnection {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid dimension")
 	}
 
@@ -1925,13 +1486,13 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	granularity := inventoryApi.SpendTableGranularity(ctx.QueryParam("granularity"))
+	granularity := inventoryApi.TableGranularityType(ctx.QueryParam("granularity"))
 	if granularity == "" {
-		granularity = inventoryApi.SpendTableGranularityDaily
+		granularity = inventoryApi.TableGranularityTypeDaily
 	}
-	if granularity != inventoryApi.SpendTableGranularityDaily &&
-		granularity != inventoryApi.SpendTableGranularityMonthly &&
-		granularity != inventoryApi.SpendTableGranularityYearly {
+	if granularity != inventoryApi.TableGranularityTypeDaily &&
+		granularity != inventoryApi.TableGranularityTypeMonthly &&
+		granularity != inventoryApi.TableGranularityTypeYearly {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
 	}
 
@@ -1948,9 +1509,9 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 	apiDatapoints := make([]inventoryApi.CostTrendDatapoint, 0, len(timepointToCost))
 	for timeAt, costVal := range timepointToCost {
 		format := "2006-01-02"
-		if granularity == inventoryApi.SpendTableGranularityMonthly {
+		if granularity == inventoryApi.TableGranularityTypeMonthly {
 			format = "2006-01"
-		} else if granularity == inventoryApi.SpendTableGranularityYearly {
+		} else if granularity == inventoryApi.TableGranularityTypeYearly {
 			format = "2006"
 		}
 		dt, _ := time.Parse(format, timeAt)
@@ -1968,98 +1529,6 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, apiDatapoints)
 }
 
-// GetAnalyticsSpendMetricsTrend godoc
-//
-//	@Summary		Get Cost Trend
-//	@Description	Retrieving a list of costs over the course of the specified time frame based on the given input filters. If startTime and endTime are empty, the API returns the last month trend.
-//	@Security		BearerToken
-//	@Tags			analytics
-//	@Accept			json
-//	@Produce		json
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
-//	@Param			connectionGroup	query		[]string		false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			metricIds		query		[]string		false	"Metrics IDs"
-//	@Param			startTime		query		int64			false	"timestamp for start in epoch seconds"
-//	@Param			endTime			query		int64			false	"timestamp for end in epoch seconds"
-//	@Param			granularity		query		string			false	"Granularity of the table, default is daily"	Enums(monthly, daily, yearly)
-//	@Success		200				{object}	[]inventoryApi.ListServicesCostTrendDatapoint
-//	@Router			/inventory/api/v2/analytics/spend/metrics/trend [get]
-func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
-	var err error
-	metricIds := httpserver.QueryArrayParam(ctx, "metricIds")
-	connectorTypes := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
-
-	aDB := analyticsDB.NewDatabase(h.db.orm)
-	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeSpend, metricIds, connectorTypes, false)
-	if err != nil {
-		return err
-	}
-	metricIds = nil
-	for _, m := range metrics {
-		metricIds = append(metricIds, m.ID)
-	}
-
-	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
-	if err != nil {
-		return err
-	}
-
-	endTime, err := utils.TimeFromQueryParam(ctx, "endTime", time.Now())
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	startTime, err := utils.TimeFromQueryParam(ctx, "startTime", endTime.AddDate(0, -1, 0))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	granularity := inventoryApi.SpendTableGranularity(ctx.QueryParam("granularity"))
-	if granularity == "" {
-		granularity = inventoryApi.SpendTableGranularityDaily
-	}
-	if granularity != inventoryApi.SpendTableGranularityDaily &&
-		granularity != inventoryApi.SpendTableGranularityMonthly &&
-		granularity != inventoryApi.SpendTableGranularityYearly {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
-	}
-
-	var mt []es.MetricTrend
-	if len(connectionIDs) > 0 {
-		mt, err = es.FetchConnectionSpendMetricTrend(h.client, granularity, metricIds, connectionIDs, connectorTypes, startTime, endTime)
-	} else {
-		mt, err = es.FetchConnectorSpendMetricTrend(h.client, granularity, metricIds, connectorTypes, startTime, endTime)
-	}
-	if err != nil {
-		return err
-	}
-
-	var response []inventoryApi.ListServicesCostTrendDatapoint
-	for _, m := range mt {
-		apiDatapoints := make([]inventoryApi.CostTrendDatapoint, 0, len(m.Trend))
-		for timeAt, costVal := range m.Trend {
-			format := "2006-01-02"
-			if granularity == inventoryApi.SpendTableGranularityMonthly {
-				format = "2006-01"
-			} else if granularity == inventoryApi.SpendTableGranularityYearly {
-				format = "2006"
-			}
-			dt, _ := time.Parse(format, timeAt)
-			apiDatapoints = append(apiDatapoints, inventoryApi.CostTrendDatapoint{Cost: costVal, Date: dt})
-		}
-		sort.Slice(apiDatapoints, func(i, j int) bool {
-			return apiDatapoints[i].Date.Before(apiDatapoints[j].Date)
-		})
-
-		response = append(response, inventoryApi.ListServicesCostTrendDatapoint{
-			ServiceName: m.MetricID,
-			CostTrend:   apiDatapoints,
-		})
-	}
-
-	return ctx.JSON(http.StatusOK, response)
-}
-
 // GetSpendTable godoc
 //
 //	@Summary		Get Spend Trend
@@ -2074,7 +1543,7 @@ func (h *HttpHandler) GetAnalyticsSpendMetricsTrend(ctx echo.Context) error {
 //	@Param			dimension		query		string		false	"Dimension of the table, default is metric"		Enums(connection, metric)
 //	@Param			connectionId	query		[]string	false	"Connection IDs to filter by - mutually exclusive with connectionGroup"
 //	@Param			connectionGroup	query		[]string	false	"Connection group to filter by - mutually exclusive with connectionId"
-//	@Param			connector		query		string		false	"Connector"
+//	@Param			connector		query		[]string	false	"Connector"
 //	@Param			metricIds		query		[]string	false	"Metrics IDs"
 //
 //	@Success		200				{object}	[]inventoryApi.SpendTableRow
@@ -2092,7 +1561,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		metricIds = append(metricIds, m.ID)
 	}
 
-	connector, _ := source.ParseType(ctx.QueryParam("connector"))
+	connectors := source.ParseTypes(httpserver.QueryArrayParam(ctx, "connector"))
 	connectionIDs, err := h.getConnectionIdFilterFromParams(ctx)
 	if err != nil {
 		return err
@@ -2105,28 +1574,28 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	granularity := inventoryApi.SpendTableGranularity(ctx.QueryParam("granularity"))
+	granularity := inventoryApi.TableGranularityType(ctx.QueryParam("granularity"))
 	if granularity == "" {
-		granularity = inventoryApi.SpendTableGranularityDaily
+		granularity = inventoryApi.TableGranularityTypeDaily
 	}
-	if granularity != inventoryApi.SpendTableGranularityDaily &&
-		granularity != inventoryApi.SpendTableGranularityMonthly &&
-		granularity != inventoryApi.SpendTableGranularityYearly {
+	if granularity != inventoryApi.TableGranularityTypeDaily &&
+		granularity != inventoryApi.TableGranularityTypeMonthly &&
+		granularity != inventoryApi.TableGranularityTypeYearly {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
 	}
-	dimension := inventoryApi.SpendDimension(ctx.QueryParam("dimension"))
+	dimension := inventoryApi.DimensionType(ctx.QueryParam("dimension"))
 	if dimension == "" {
-		dimension = inventoryApi.SpendDimensionMetric
+		dimension = inventoryApi.DimensionTypeMetric
 	}
-	if dimension != inventoryApi.SpendDimensionMetric &&
-		dimension != inventoryApi.SpendDimensionConnection {
+	if dimension != inventoryApi.DimensionTypeMetric &&
+		dimension != inventoryApi.DimensionTypeConnection {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid dimension")
 	}
 
 	connectionAccountIDMap := map[string]string{}
 	var metrics []analyticsDB.AnalyticMetric
 
-	if dimension == inventoryApi.SpendDimensionMetric {
+	if dimension == inventoryApi.DimensionTypeMetric {
 		// trace :
 		_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 		span.SetName("new_ListFilteredMetrics")
@@ -2140,7 +1609,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 		span.End()
 	}
 
-	mt, err := es.FetchSpendTableByDimension(h.client, dimension, connectionIDs, connector, metricIds, startTime, endTime)
+	mt, err := es.FetchSpendTableByDimension(h.client, dimension, connectionIDs, connectors, metricIds, startTime, endTime)
 	if err != nil {
 		return err
 	}
@@ -2172,7 +1641,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 
 		var category, accountID string
 		dimensionName := m.DimensionName
-		if dimension == inventoryApi.SpendDimensionMetric {
+		if dimension == inventoryApi.DimensionTypeMetric {
 			for _, metric := range metrics {
 				if m.DimensionID == metric.ID {
 					for _, tag := range metric.Tags {
@@ -2187,7 +1656,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 					break
 				}
 			}
-		} else if dimension == inventoryApi.SpendDimensionConnection {
+		} else if dimension == inventoryApi.DimensionTypeConnection {
 			if v, ok := connectionAccountIDMap[m.DimensionID]; ok {
 				accountID = demo.EncodeResponseData(ctx, v)
 			} else {
@@ -2435,103 +1904,6 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			}
 		}
 		fmt.Println("ListConnectionsData part4 ", time.Now().Sub(performanceStartTime).Milliseconds())
-	}
-
-	return ctx.JSON(http.StatusOK, res)
-}
-
-func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
-	aDB := analyticsDB.NewDatabase(h.db.orm)
-	connectionId := ctx.Param("connectionId")
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now()
-	if endTimeStr != "" {
-		endTimeUnix, err := strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid integer")
-		}
-		endTime = time.Unix(endTimeUnix, 0)
-	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := endTime.AddDate(0, 0, -7)
-	if startTimeStr != "" {
-		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid integer")
-		}
-		startTime = time.Unix(startTimeUnix, 0)
-	}
-
-	res := inventoryApi.ConnectionData{
-		ConnectionID: connectionId,
-	}
-
-	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets, nil, nil, false)
-	if err != nil {
-		return err
-	}
-	var metricIDs []string
-	for _, m := range metrics {
-		metricIDs = append(metricIDs, m.ID)
-	}
-
-	resourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, []string{connectionId}, metricIDs, endTime, EsFetchPageSize)
-	for esConnectionId, resourceCountAndEvaluated := range resourceCounts {
-		if esConnectionId != connectionId {
-			continue
-		}
-		localCount := resourceCountAndEvaluated
-		res.Count = utils.PAdd(res.Count, &localCount.ResourceCountsSum)
-		if res.LastInventory == nil || res.LastInventory.IsZero() || res.LastInventory.Before(time.UnixMilli(localCount.LatestEvaluatedAt)) {
-			res.LastInventory = utils.GetPointer(time.UnixMilli(localCount.LatestEvaluatedAt))
-		}
-	}
-
-	oldResourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, []string{connectionId}, metricIDs, startTime, EsFetchPageSize)
-	for esConnectionId, resourceCountAndEvaluated := range oldResourceCounts {
-		if esConnectionId != connectionId {
-			continue
-		}
-		localCount := resourceCountAndEvaluated
-		res.OldCount = utils.PAdd(res.OldCount, &localCount.ResourceCountsSum)
-		if res.LastInventory == nil || res.LastInventory.IsZero() || res.LastInventory.Before(time.UnixMilli(localCount.LatestEvaluatedAt)) {
-			res.LastInventory = utils.GetPointer(time.UnixMilli(localCount.LatestEvaluatedAt))
-		}
-	}
-
-	costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, nil, []string{connectionId}, endTime, startTime, EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	startTimeCosts, err := es.FetchDailyCostHistoryByAccountsAtTime(h.client, nil, []string{connectionId}, startTime)
-	if err != nil {
-		return err
-	}
-	endTimeCosts, err := es.FetchDailyCostHistoryByAccountsAtTime(h.client, nil, []string{connectionId}, endTime)
-	if err != nil {
-		return err
-	}
-
-	for costConnectionId, costValue := range costs {
-		if costConnectionId != connectionId {
-			continue
-		}
-		localValue := costValue
-		res.TotalCost = utils.PAdd(res.TotalCost, &localValue)
-	}
-	for costConnectionId, costValue := range startTimeCosts {
-		if costConnectionId != connectionId {
-			continue
-		}
-		localValue := costValue
-		res.DailyCostAtStartTime = utils.PAdd(res.DailyCostAtStartTime, &localValue)
-	}
-	for costConnectionId, costValue := range endTimeCosts {
-		if costConnectionId != connectionId {
-			continue
-		}
-		localValue := costValue
-		res.DailyCostAtEndTime = utils.PAdd(res.DailyCostAtEndTime, &localValue)
 	}
 
 	return ctx.JSON(http.StatusOK, res)
@@ -2979,7 +2351,9 @@ func (h *HttpHandler) ListResourceTypeMetadata(ctx echo.Context) error {
 }
 
 func (h *HttpHandler) ListResourceCollections(ctx echo.Context) error {
-	resourceCollections, err := h.db.ListResourceCollections()
+	ids := httpserver.QueryArrayParam(ctx, "id")
+
+	resourceCollections, err := h.db.ListResourceCollections(ids)
 	if err != nil {
 		return err
 	}
