@@ -2,19 +2,30 @@ package alerting
 
 import (
 	"bytes"
+<<<<<<< Updated upstream
+=======
+	"encoding/base64"
+>>>>>>> Stashed changes
 	"encoding/json"
 	"fmt"
+	jira "github.com/andygrunwald/go-jira"
 	"github.com/go-errors/errors"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/labstack/echo/v4"
+	"io"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 	ruleGroup := v1.Group("/rule")
 	ruleGroup.GET("/list", httpserver.AuthorizeHandler(h.ListRules, authapi.ViewerRole))
 	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
@@ -31,8 +42,15 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	trigger := v1.Group("/trigger")
 	trigger.GET("/list", httpserver.AuthorizeHandler(h.ListTriggers, authapi.ViewerRole))
 
+<<<<<<< Updated upstream
 	alert := v1.Group("/alert")
 	alert.POST("/slack/", httpserver.AuthorizeHandler(h.SendAlertToSlack, authapi.ViewerRole))
+=======
+	alert := v1.Group("/sendAlert")
+	alert.POST("/slack", httpserver.AuthorizeHandler(h.SendAlertToSlack, authapi.ViewerRole))
+	alert.POST("/jira", httpserver.AuthorizeHandler(h.SendAlertToJira, authapi.ViewerRole))
+
+>>>>>>> Stashed changes
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -466,9 +484,13 @@ func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
 //	@Description	Send Alert to specific Slack URL
 //	@Security		BearerToken
 //	@Tags			alerting
+<<<<<<< Updated upstream
 //	@Param			slackUrl	body		string	true	"Slack URl"
 //	@Param			channelName	body		string	true	"Channel Name"
 //	@Param			ruleId		body		int		true	"Rule ID "
+=======
+//	@Param			request		body		api.SlackInputs	true	"Request Body"
+>>>>>>> Stashed changes
 //	@Success		200			{object}	string
 //	@Router			/alerting/api/v1/alert/slack [post]
 func (h *HttpHandler) SendAlertToSlack(ctx echo.Context) error {
@@ -487,7 +509,11 @@ func (h *HttpHandler) SendAlertToSlack(ctx echo.Context) error {
 		return fmt.Errorf("error unmarshalling the metadata in rule : %v ", err)
 	}
 
+<<<<<<< Updated upstream
 	reqStr := api.SlackResponse{
+=======
+	reqStr := api.SlackRequest{
+>>>>>>> Stashed changes
 		ChannelName: inputs.ChannelName,
 		Text:        fmt.Sprintf("%s rule successfully triggered", metadata.Name),
 	}
@@ -513,3 +539,57 @@ func (h *HttpHandler) SendAlertToSlack(ctx echo.Context) error {
 
 	return ctx.String(http.StatusOK, "slack alert sent successfully")
 }
+<<<<<<< Updated upstream
+=======
+
+// SendAlertToJira godoc
+//
+//	@Summary		Send Alert
+//	@Description	Send Alert to specific Slack URL
+//	@Security		BearerToken
+//	@Tags			alerting
+//	@Param			request		body		api.JiraInputs	true	"Request Body"
+//	@Success		200			{object}	string
+//	@Router			/alerting/api/v1/alert/slack [post]
+func (h *HttpHandler) SendAlertToJira(ctx echo.Context) error {
+	var inputs api.JiraInputs
+	if err := bindValidate(ctx, &inputs); err != nil {
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("error getting the channelName : %v ", err))
+	}
+
+	requestBody := jira.Issue{
+		Fields: &jira.IssueFields{
+			Type:    jira.IssueType{ID: inputs.IssueTypeId},
+			Project: jira.Project{ID: inputs.ProjectId},
+			Summary: "${metadataName} rule triggered successfully",
+			Duedate: jira.Date(time.Now()),
+		},
+	}
+
+	requestMarshalled, err := json.Marshal(requestBody)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("error marshalling the request body : %v ", err))
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("https://%s/rest/api/3/issue", inputs.AtlassianDomain), bytes.NewBuffer(requestMarshalled))
+	if err != nil {
+		return fmt.Errorf("error sending create issue request : %v ", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	auth := fmt.Sprintf("%s:%s", inputs.Email, inputs.AtlassianApiToken)
+	authEncoded := base64.StdEncoding.EncodeToString([]byte(auth))
+	req.Header.Set("Authorization", "Basic "+authEncoded)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error sending the request : %v ", err))
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error reading the response body : %v", err))
+	}
+
+	return ctx.JSON(http.StatusOK, string(body))
+}
+>>>>>>> Stashed changes
