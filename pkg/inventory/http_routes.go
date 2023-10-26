@@ -87,7 +87,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 
 	connectionsV2 := v2.Group("/connections")
 	connectionsV2.GET("/data", httpserver.AuthorizeHandler(h.ListConnectionsData, authApi.ViewerRole))
-	connectionsV2.GET("/data/:connectionId", httpserver.AuthorizeHandler(h.GetConnectionData, authApi.ViewerRole))
 
 	insightsV2 := v2.Group("/insights")
 	insightsV2.GET("", httpserver.AuthorizeHandler(h.ListInsightResults, authApi.ViewerRole))
@@ -1093,7 +1092,7 @@ func (h *HttpHandler) ListAnalyticsMetricTrend(ctx echo.Context) error {
 		esDatapointCount = 1
 	}
 	if len(connectionIDs) != 0 {
-		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(h.client, connectionIDs, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
+		timeToCountMap, err = es.FetchConnectionMetricTrendSummaryPage(h.client, connectionIDs, connectorTypes, metricIDs, resourceCollections, startTime, endTime, esDatapointCount, EsFetchPageSize)
 		if err != nil {
 			return err
 		}
@@ -1364,21 +1363,21 @@ func (h *HttpHandler) GetAssetsTable(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	granularity := inventoryApi.SpendTableGranularity(ctx.QueryParam("granularity"))
+	granularity := inventoryApi.TableGranularityType(ctx.QueryParam("granularity"))
 	if granularity == "" {
-		granularity = inventoryApi.SpendTableGranularityDaily
+		granularity = inventoryApi.TableGranularityTypeDaily
 	}
-	if granularity != inventoryApi.SpendTableGranularityDaily &&
-		granularity != inventoryApi.SpendTableGranularityMonthly &&
-		granularity != inventoryApi.SpendTableGranularityYearly {
+	if granularity != inventoryApi.TableGranularityTypeDaily &&
+		granularity != inventoryApi.TableGranularityTypeMonthly &&
+		granularity != inventoryApi.TableGranularityTypeYearly {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
 	}
-	dimension := inventoryApi.SpendDimension(ctx.QueryParam("dimension"))
+	dimension := inventoryApi.DimensionType(ctx.QueryParam("dimension"))
 	if dimension == "" {
-		dimension = inventoryApi.SpendDimensionMetric
+		dimension = inventoryApi.DimensionTypeMetric
 	}
-	if dimension != inventoryApi.SpendDimensionMetric &&
-		dimension != inventoryApi.SpendDimensionConnection {
+	if dimension != inventoryApi.DimensionTypeMetric &&
+		dimension != inventoryApi.DimensionTypeConnection {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid dimension")
 	}
 
@@ -1924,13 +1923,13 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	granularity := inventoryApi.SpendTableGranularity(ctx.QueryParam("granularity"))
+	granularity := inventoryApi.TableGranularityType(ctx.QueryParam("granularity"))
 	if granularity == "" {
-		granularity = inventoryApi.SpendTableGranularityDaily
+		granularity = inventoryApi.TableGranularityTypeDaily
 	}
-	if granularity != inventoryApi.SpendTableGranularityDaily &&
-		granularity != inventoryApi.SpendTableGranularityMonthly &&
-		granularity != inventoryApi.SpendTableGranularityYearly {
+	if granularity != inventoryApi.TableGranularityTypeDaily &&
+		granularity != inventoryApi.TableGranularityTypeMonthly &&
+		granularity != inventoryApi.TableGranularityTypeYearly {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
 	}
 
@@ -1947,9 +1946,9 @@ func (h *HttpHandler) GetAnalyticsSpendTrend(ctx echo.Context) error {
 	apiDatapoints := make([]inventoryApi.CostTrendDatapoint, 0, len(timepointToCost))
 	for timeAt, costVal := range timepointToCost {
 		format := "2006-01-02"
-		if granularity == inventoryApi.SpendTableGranularityMonthly {
+		if granularity == inventoryApi.TableGranularityTypeMonthly {
 			format = "2006-01"
-		} else if granularity == inventoryApi.SpendTableGranularityYearly {
+		} else if granularity == inventoryApi.TableGranularityTypeYearly {
 			format = "2006"
 		}
 		dt, _ := time.Parse(format, timeAt)
@@ -2012,28 +2011,28 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	granularity := inventoryApi.SpendTableGranularity(ctx.QueryParam("granularity"))
+	granularity := inventoryApi.TableGranularityType(ctx.QueryParam("granularity"))
 	if granularity == "" {
-		granularity = inventoryApi.SpendTableGranularityDaily
+		granularity = inventoryApi.TableGranularityTypeDaily
 	}
-	if granularity != inventoryApi.SpendTableGranularityDaily &&
-		granularity != inventoryApi.SpendTableGranularityMonthly &&
-		granularity != inventoryApi.SpendTableGranularityYearly {
+	if granularity != inventoryApi.TableGranularityTypeDaily &&
+		granularity != inventoryApi.TableGranularityTypeMonthly &&
+		granularity != inventoryApi.TableGranularityTypeYearly {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid granularity")
 	}
-	dimension := inventoryApi.SpendDimension(ctx.QueryParam("dimension"))
+	dimension := inventoryApi.DimensionType(ctx.QueryParam("dimension"))
 	if dimension == "" {
-		dimension = inventoryApi.SpendDimensionMetric
+		dimension = inventoryApi.DimensionTypeMetric
 	}
-	if dimension != inventoryApi.SpendDimensionMetric &&
-		dimension != inventoryApi.SpendDimensionConnection {
+	if dimension != inventoryApi.DimensionTypeMetric &&
+		dimension != inventoryApi.DimensionTypeConnection {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid dimension")
 	}
 
 	connectionAccountIDMap := map[string]string{}
 	var metrics []analyticsDB.AnalyticMetric
 
-	if dimension == inventoryApi.SpendDimensionMetric {
+	if dimension == inventoryApi.DimensionTypeMetric {
 		// trace :
 		_, span := tracer.Start(ctx.Request().Context(), "new_ListFilteredMetrics", trace.WithSpanKind(trace.SpanKindServer))
 		span.SetName("new_ListFilteredMetrics")
@@ -2079,7 +2078,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 
 		var category, accountID string
 		dimensionName := m.DimensionName
-		if dimension == inventoryApi.SpendDimensionMetric {
+		if dimension == inventoryApi.DimensionTypeMetric {
 			for _, metric := range metrics {
 				if m.DimensionID == metric.ID {
 					for _, tag := range metric.Tags {
@@ -2094,7 +2093,7 @@ func (h *HttpHandler) GetSpendTable(ctx echo.Context) error {
 					break
 				}
 			}
-		} else if dimension == inventoryApi.SpendDimensionConnection {
+		} else if dimension == inventoryApi.DimensionTypeConnection {
 			if v, ok := connectionAccountIDMap[m.DimensionID]; ok {
 				accountID = demo.EncodeResponseData(ctx, v)
 			} else {
@@ -2342,103 +2341,6 @@ func (h *HttpHandler) ListConnectionsData(ctx echo.Context) error {
 			}
 		}
 		fmt.Println("ListConnectionsData part4 ", time.Now().Sub(performanceStartTime).Milliseconds())
-	}
-
-	return ctx.JSON(http.StatusOK, res)
-}
-
-func (h *HttpHandler) GetConnectionData(ctx echo.Context) error {
-	aDB := analyticsDB.NewDatabase(h.db.orm)
-	connectionId := ctx.Param("connectionId")
-	endTimeStr := ctx.QueryParam("endTime")
-	endTime := time.Now()
-	if endTimeStr != "" {
-		endTimeUnix, err := strconv.ParseInt(endTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "endTime is not a valid integer")
-		}
-		endTime = time.Unix(endTimeUnix, 0)
-	}
-	startTimeStr := ctx.QueryParam("startTime")
-	startTime := endTime.AddDate(0, 0, -7)
-	if startTimeStr != "" {
-		startTimeUnix, err := strconv.ParseInt(startTimeStr, 10, 64)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, "startTime is not a valid integer")
-		}
-		startTime = time.Unix(startTimeUnix, 0)
-	}
-
-	res := inventoryApi.ConnectionData{
-		ConnectionID: connectionId,
-	}
-
-	metrics, err := aDB.ListFilteredMetrics(nil, analyticsDB.MetricTypeAssets, nil, nil, false)
-	if err != nil {
-		return err
-	}
-	var metricIDs []string
-	for _, m := range metrics {
-		metricIDs = append(metricIDs, m.ID)
-	}
-
-	resourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, []string{connectionId}, metricIDs, endTime, EsFetchPageSize)
-	for esConnectionId, resourceCountAndEvaluated := range resourceCounts {
-		if esConnectionId != connectionId {
-			continue
-		}
-		localCount := resourceCountAndEvaluated
-		res.Count = utils.PAdd(res.Count, &localCount.ResourceCountsSum)
-		if res.LastInventory == nil || res.LastInventory.IsZero() || res.LastInventory.Before(time.UnixMilli(localCount.LatestEvaluatedAt)) {
-			res.LastInventory = utils.GetPointer(time.UnixMilli(localCount.LatestEvaluatedAt))
-		}
-	}
-
-	oldResourceCounts, err := es.FetchConnectionAnalyticsResourcesCountAtTime(h.client, nil, []string{connectionId}, metricIDs, startTime, EsFetchPageSize)
-	for esConnectionId, resourceCountAndEvaluated := range oldResourceCounts {
-		if esConnectionId != connectionId {
-			continue
-		}
-		localCount := resourceCountAndEvaluated
-		res.OldCount = utils.PAdd(res.OldCount, &localCount.ResourceCountsSum)
-		if res.LastInventory == nil || res.LastInventory.IsZero() || res.LastInventory.Before(time.UnixMilli(localCount.LatestEvaluatedAt)) {
-			res.LastInventory = utils.GetPointer(time.UnixMilli(localCount.LatestEvaluatedAt))
-		}
-	}
-
-	costs, err := es.FetchDailyCostHistoryByAccountsBetween(h.client, nil, []string{connectionId}, endTime, startTime, EsFetchPageSize)
-	if err != nil {
-		return err
-	}
-	startTimeCosts, err := es.FetchDailyCostHistoryByAccountsAtTime(h.client, nil, []string{connectionId}, startTime)
-	if err != nil {
-		return err
-	}
-	endTimeCosts, err := es.FetchDailyCostHistoryByAccountsAtTime(h.client, nil, []string{connectionId}, endTime)
-	if err != nil {
-		return err
-	}
-
-	for costConnectionId, costValue := range costs {
-		if costConnectionId != connectionId {
-			continue
-		}
-		localValue := costValue
-		res.TotalCost = utils.PAdd(res.TotalCost, &localValue)
-	}
-	for costConnectionId, costValue := range startTimeCosts {
-		if costConnectionId != connectionId {
-			continue
-		}
-		localValue := costValue
-		res.DailyCostAtStartTime = utils.PAdd(res.DailyCostAtStartTime, &localValue)
-	}
-	for costConnectionId, costValue := range endTimeCosts {
-		if costConnectionId != connectionId {
-			continue
-		}
-		localValue := costValue
-		res.DailyCostAtEndTime = utils.PAdd(res.DailyCostAtEndTime, &localValue)
 	}
 
 	return ctx.JSON(http.StatusOK, res)

@@ -52,19 +52,19 @@ type ListCostCompositionResponse struct {
 	Others         float64            `json:"others" example:"100" minimum:"0"`
 }
 
-type SpendTableGranularity string
+type TableGranularityType string
 
 const (
-	SpendTableGranularityDaily   SpendTableGranularity = "daily"
-	SpendTableGranularityMonthly SpendTableGranularity = "monthly"
-	SpendTableGranularityYearly  SpendTableGranularity = "yearly"
+	TableGranularityTypeDaily   TableGranularityType = "daily"
+	TableGranularityTypeMonthly TableGranularityType = "monthly"
+	TableGranularityTypeYearly  TableGranularityType = "yearly"
 )
 
-type SpendDimension string
+type DimensionType string
 
 const (
-	SpendDimensionMetric     SpendDimension = "metric"
-	SpendDimensionConnection SpendDimension = "connection"
+	DimensionTypeMetric     DimensionType = "metric"
+	DimensionTypeConnection DimensionType = "connection"
 )
 
 type SpendTableRow struct {

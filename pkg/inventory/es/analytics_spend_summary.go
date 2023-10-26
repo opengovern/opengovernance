@@ -374,7 +374,7 @@ type ConnectionSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.SpendTableGranularity, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
+func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.TableGranularityType, metricIds []string, connectionIDs []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -394,9 +394,9 @@ func FetchConnectionSpendTrend(client kaytu.Client, granularity inventoryApi.Spe
 	})
 
 	granularityField := "date"
-	if granularity == inventoryApi.SpendTableGranularityMonthly {
+	if granularity == inventoryApi.TableGranularityTypeMonthly {
 		granularityField = "month"
-	} else if granularity == inventoryApi.SpendTableGranularityYearly {
+	} else if granularity == inventoryApi.TableGranularityTypeYearly {
 		granularityField = "year"
 	}
 
@@ -483,7 +483,7 @@ type ConnectorSpendTrendQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.SpendTableGranularity, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
+func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.TableGranularityType, metricIds []string, connectors []source.Type, startTime, endTime time.Time) (map[string]DatapointWithFailures, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -502,9 +502,9 @@ func FetchConnectorSpendTrend(client kaytu.Client, granularity inventoryApi.Spen
 	})
 
 	granularityField := "date"
-	if granularity == inventoryApi.SpendTableGranularityMonthly {
+	if granularity == inventoryApi.TableGranularityTypeMonthly {
 		granularityField = "month"
-	} else if granularity == inventoryApi.SpendTableGranularityYearly {
+	} else if granularity == inventoryApi.TableGranularityTypeYearly {
 		granularityField = "year"
 	}
 
@@ -710,7 +710,7 @@ type SpendTableByDimensionQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.SpendDimension, connectionIds []string, connectors []source.Type, metricIds []string, startTime, endTime time.Time) ([]DimensionTrend, error) {
+func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.DimensionType, connectionIds []string, connectors []source.Type, metricIds []string, startTime, endTime time.Time) ([]DimensionTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 
@@ -787,9 +787,9 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.Spen
 				}
 				key := ""
 				switch dimension {
-				case inventoryApi.SpendDimensionConnection:
+				case inventoryApi.DimensionTypeConnection:
 					key = connectionResult.ConnectionID
-				case inventoryApi.SpendDimensionMetric:
+				case inventoryApi.DimensionTypeMetric:
 					key = hit.Source.MetricID
 				}
 				mt, ok := result[key]
@@ -800,9 +800,9 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.Spen
 						Trend:       make(map[string]float64),
 					}
 					switch dimension {
-					case inventoryApi.SpendDimensionConnection:
+					case inventoryApi.DimensionTypeConnection:
 						mt.DimensionName = connectionResult.ConnectionName
-					case inventoryApi.SpendDimensionMetric:
+					case inventoryApi.DimensionTypeMetric:
 						mt.DimensionName = hit.Source.MetricName
 					default:
 						return nil, errors.New("dimension is not supported")
