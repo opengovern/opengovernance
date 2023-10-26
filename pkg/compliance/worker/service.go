@@ -3,7 +3,9 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	kafka2 "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
@@ -119,6 +121,30 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) (commit bool, requeue bool,
 		return true, false, err
 	}
 
+	defer func() {
+		result := JobResult{
+			Job:    job,
+			Status: api.ComplianceReportJobCompleted,
+			Error:  "",
+		}
+
+		if err != nil {
+			result.Error = err.Error()
+			result.Status = api.ComplianceReportJobCompletedWithFailure
+		}
+
+		resultJson, err := json.Marshal(result)
+		if err != nil {
+			w.logger.Error("failed to create job result json", zap.Error(err))
+		}
+
+		resultMsg := kafka.Msg(fmt.Sprintf("job-result-%d", job.ID), resultJson, "", ResultQueue, kafka2.PartitionAny)
+		_, err = kafka.SyncSend(w.logger, w.kafkaProducer, []*kafka2.Message{resultMsg}, nil)
+		if err != nil {
+			w.logger.Error("failed to publish job result", zap.String("jobResult", string(resultJson)), zap.Error(err))
+		}
+	}()
+
 	w.logger.Info("running job", zap.String("job", string(msg.Value)))
 	err = job.Run(JobConfig{
 		config:           w.config,
@@ -138,7 +164,6 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) (commit bool, requeue bool,
 func (w *Worker) Stop() error {
 	w.steampipeConn.Conn().Close()
 	steampipe.StopSteampipeService(w.logger)
-
 	return nil
 }
 
