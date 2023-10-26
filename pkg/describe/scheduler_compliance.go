@@ -88,11 +88,6 @@ func (s *Scheduler) scheduleComplianceJob() error {
 		timeAt := time.Now().Add(time.Duration(-s.complianceIntervalHours) * time.Hour)
 		if complianceJob == nil ||
 			complianceJob.CreatedAt.Before(timeAt) {
-			s.logger.Info("triggering compliance job",
-				zap.Bool("is_null", complianceJob == nil),
-				zap.Time("created_at", complianceJob.CreatedAt),
-				zap.Time("timeAt", timeAt),
-			)
 			_, err := s.triggerComplianceReportJobs(benchmark.ID)
 			if err != nil {
 				return err
