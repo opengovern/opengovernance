@@ -93,7 +93,10 @@ func (w *Worker) Run() error {
 	w.logger.Info("starting to consume")
 	for {
 		select {
-		case msg := <-msgs:
+		case msg, ok := <-msgs:
+			if !ok {
+				return fmt.Errorf("tasks channel is closed")
+			}
 			w.logger.Info("received a job")
 			t.Reset(JobTimeoutCheckInterval)
 
