@@ -7,6 +7,7 @@ import (
 	kafka2 "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -168,6 +169,7 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) (commit bool, requeue bool,
 		config:           w.config,
 		logger:           w.logger,
 		complianceClient: complianceClient.NewComplianceClient(w.config.Compliance.BaseURL),
+		onboardClient:    client.NewOnboardServiceClient(w.config.Onboard.BaseURL, nil),
 		steampipeConn:    w.steampipeConn,
 		esClient:         w.esClient,
 		kafkaProducer:    w.kafkaProducer,

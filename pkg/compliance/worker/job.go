@@ -7,6 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	client2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -25,6 +26,7 @@ type JobConfig struct {
 	config           Config
 	logger           *zap.Logger
 	complianceClient client.ComplianceServiceClient
+	onboardClient    client2.OnboardServiceClient
 	steampipeConn    *steampipe.Database
 	esClient         kaytu.Client
 	kafkaProducer    *confluent_kafka.Producer
@@ -76,7 +78,12 @@ func (j *Job) Run(jc JobConfig) error {
 }
 
 func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string, benchmarkSummary *BenchmarkSummary, jc JobConfig) error {
-	err := jc.steampipeConn.SetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID, connectionID)
+	conn, err := jc.onboardClient.GetSource(&httpclient.Context{UserRole: api.InternalRole}, connectionID)
+	if err != nil {
+		return err
+	}
+
+	err = jc.steampipeConn.SetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID, conn.ConnectionID)
 	if err != nil {
 		return err
 	}
