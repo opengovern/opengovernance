@@ -98,6 +98,12 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 	}
 
 	for _, plan := range plans {
+		jc.logger.Info("running query",
+			zap.String("query", plan.Query.QueryToExecute),
+			zap.String("connectionID", connectionID),
+			zap.String("benchmarkID", plan.Policy.ID),
+		)
+
 		res, err := jc.steampipeConn.QueryAll(context.Background(), plan.Query.QueryToExecute)
 		if err != nil {
 			return err
