@@ -10,6 +10,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
 	"strings"
@@ -48,6 +49,15 @@ func InitializeNewWorker(
 	logger *zap.Logger,
 	prometheusPushAddress string,
 ) (*Worker, error) {
+	err := steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAWS)
+	if err != nil {
+		return nil, err
+	}
+	err = steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAzure)
+	if err != nil {
+		return nil, err
+	}
+
 	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
 	if err != nil {
 		return nil, err
