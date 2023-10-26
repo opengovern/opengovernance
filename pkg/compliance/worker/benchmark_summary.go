@@ -135,5 +135,7 @@ func (b *BenchmarkSummary) Summarize() {
 	for _, count := range b.BenchmarkResult.QueryResult {
 		total += count
 	}
-	b.BenchmarkResult.SecurityScore = float64(b.BenchmarkResult.QueryResult[types.ComplianceResultOK]) / float64(total)
+	if total > 0 {
+		b.BenchmarkResult.SecurityScore = float64(b.BenchmarkResult.QueryResult[types.ComplianceResultOK]) / float64(total)
+	}
 }

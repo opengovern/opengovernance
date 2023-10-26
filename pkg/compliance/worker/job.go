@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
@@ -61,6 +62,8 @@ func (j *Job) Run(jc JobConfig) error {
 	}
 
 	bs.Summarize()
+
+	jc.logger.Info(fmt.Sprintf("bs={%v}", bs))
 
 	var docs []kafka.Doc
 	docs = append(docs, bs)

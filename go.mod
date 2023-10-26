@@ -53,7 +53,6 @@ require (
 	github.com/sashabaranov/go-openai v1.15.4
 	github.com/sony/sonyflake v1.1.0
 	github.com/spf13/cobra v1.7.0
-	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/echo-swagger v1.3.0
 	github.com/swaggo/swag v1.16.1
@@ -488,7 +487,7 @@ require (
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stevenle/topsort v0.2.0 // indirect
-	github.com/stretchr/objx v0.5.0 // indirect
+	github.com/streadway/amqp v1.0.0 // indirect
 	github.com/swaggo/files v0.0.0-20210815190702-a29dd2bc99b2 // indirect
 	github.com/tkrajina/go-reflector v0.5.6 // indirect
 	github.com/tombuildsstuff/giovanni v0.18.0 // indirect
