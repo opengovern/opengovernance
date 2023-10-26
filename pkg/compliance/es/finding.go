@@ -58,6 +58,7 @@ func GetActiveFindings(client kaytu.Client, policyID string, from, size int) (*F
 		return nil, err
 	}
 
+	fmt.Println("GetActiveFindings query=", string(b))
 	var resp FindingsQueryResponse
 	err = client.SearchWithTrackTotalHits(context.Background(), types.FindingsIndex, string(b), nil, &resp, false)
 	return &resp, err
