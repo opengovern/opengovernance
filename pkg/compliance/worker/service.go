@@ -126,7 +126,8 @@ func (w *Worker) Run() error {
 				}
 			}
 		case _ = <-t.C:
-			return nil
+			w.logger.Info("still waiting for a job")
+			continue
 		}
 	}
 }
