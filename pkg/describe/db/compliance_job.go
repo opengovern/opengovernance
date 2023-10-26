@@ -70,7 +70,7 @@ func (db Database) CleanupComplianceJobsOlderThan(t time.Time) error {
 
 func (db Database) GetLastComplianceJob() (*model.ComplianceJob, error) {
 	var job model.ComplianceJob
-	tx := db.ORM.Model(&model.ComplianceJob{}).Order("created_at DESC")
+	tx := db.ORM.Model(&model.ComplianceJob{}).Order("created_at DESC").First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
