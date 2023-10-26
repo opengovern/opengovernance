@@ -37,23 +37,42 @@ func (j *Job) Run(jc JobConfig) error {
 		return err
 	}
 
+	bs := BenchmarkSummary{
+		BenchmarkID:     j.BenchmarkID,
+		JobID:           j.ID,
+		BenchmarkResult: Result{},
+		Connections:     map[string]Result{},
+		ResourceTypes:   map[string]Result{},
+		Policies:        map[string]PolicyResult{},
+	}
+	
 	for _, connection := range assignment.Connections {
-		err := j.RunForConnection(connection.ConnectionID, nil, jc)
+		err := j.RunForConnection(connection.ConnectionID, nil, &bs, jc)
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, resourceCollection := range assignment.ResourceCollections {
-		err := j.RunForConnection("all", &resourceCollection.ResourceCollectionID, jc) //TODO
+		err := j.RunForConnection("all", &resourceCollection.ResourceCollectionID, &bs, jc)
 		if err != nil {
 			return err
 		}
 	}
+
+	bs.Summarize()
+
+	var docs []kafka.Doc
+	docs = append(docs, bs)
+	err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, docs, jc.logger, nil)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string, jc JobConfig) error {
+func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string, benchmarkSummary *BenchmarkSummary, jc JobConfig) error {
 	err := jc.steampipeConn.SetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID, connectionID)
 	if err != nil {
 		return err
@@ -73,6 +92,10 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 		findings, err := j.ExtractFindings(plan, connectionID, resourceCollectionID, res, jc)
 		if err != nil {
 			return err
+		}
+
+		for _, f := range findings {
+			benchmarkSummary.AddFinding(f)
 		}
 
 		if !j.IsStack {
