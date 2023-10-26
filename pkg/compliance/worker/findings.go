@@ -115,6 +115,7 @@ func (j *Job) ExtractFindings(plan ExecutionPlan, connectionID string, resourceC
 			Reason:             reason,
 			ComplianceJobID:    j.ID,
 			ResourceCollection: resourceCollection,
+			ParentBenchmarks:   plan.ParentBenchmarkIDs,
 		})
 	}
 	return findings, nil
