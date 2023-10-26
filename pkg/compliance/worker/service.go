@@ -79,6 +79,8 @@ func InitializeNewWorker(
 }
 
 func (w *Worker) Run() error {
+	w.logger.Info("starting")
+
 	ctx := context.Background()
 	consumer, err := kafka.NewTopicConsumer(ctx, strings.Split(w.config.Kafka.Addresses, ","), JobQueue, ConsumerGroup)
 	if err != nil {
@@ -88,9 +90,11 @@ func (w *Worker) Run() error {
 	t := time.NewTicker(JobTimeoutCheckInterval)
 	defer t.Stop()
 
+	w.logger.Info("starting to consume")
 	for {
 		select {
 		case msg := <-msgs:
+			w.logger.Info("received a job")
 			t.Reset(JobTimeoutCheckInterval)
 
 			commit, requeue, err := w.ProcessMessage(msg)
