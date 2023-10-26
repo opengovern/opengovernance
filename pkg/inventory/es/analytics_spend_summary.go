@@ -736,17 +736,15 @@ func FetchSpendTableByDimension(client kaytu.Client, dimension inventoryApi.Dime
 		},
 	}
 	query["aggs"] = map[string]any{
-		"metric_group": map[string]any{
-			"date_group": map[string]any{
-				"terms": map[string]any{
-					"field": "date",
-					"size":  es.EsFetchPageSize,
-				},
-				"aggs": map[string]any{
-					"hit_select": map[string]any{
-						"top_hits": map[string]any{
-							"size": es.EsFetchPageSize,
-						},
+		"date_group": map[string]any{
+			"terms": map[string]any{
+				"field": "date",
+				"size":  es.EsFetchPageSize,
+			},
+			"aggs": map[string]any{
+				"hit_select": map[string]any{
+					"top_hits": map[string]any{
+						"size": es.EsFetchPageSize,
 					},
 				},
 			},
