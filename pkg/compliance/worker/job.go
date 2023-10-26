@@ -8,6 +8,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
@@ -41,12 +42,15 @@ func (j *Job) Run(jc JobConfig) error {
 	}
 
 	bs := BenchmarkSummary{
-		BenchmarkID:     j.BenchmarkID,
-		JobID:           j.ID,
-		BenchmarkResult: Result{},
-		Connections:     map[string]Result{},
-		ResourceTypes:   map[string]Result{},
-		Policies:        map[string]PolicyResult{},
+		BenchmarkID: j.BenchmarkID,
+		JobID:       j.ID,
+		BenchmarkResult: Result{
+			QueryResult:    map[types.ComplianceResult]int{},
+			SeverityResult: map[types.FindingSeverity]int{},
+		},
+		Connections:   map[string]Result{},
+		ResourceTypes: map[string]Result{},
+		Policies:      map[string]PolicyResult{},
 	}
 
 	for _, connection := range assignment.Connections {
