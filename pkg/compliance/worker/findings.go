@@ -30,7 +30,10 @@ func (j *Job) FilterFindings(plan ExecutionPlan, findings []types.Finding, jc Jo
 			dup := false
 
 			for idx, finding := range findings {
-				if finding.ResourceID == hit.Source.ResourceID && finding.PolicyID == hit.Source.PolicyID {
+				if finding.ResourceID == hit.Source.ResourceID &&
+					finding.PolicyID == hit.Source.PolicyID &&
+					finding.ConnectionID == hit.Source.ConnectionID &&
+					finding.Result == hit.Source.Result {
 					dup = true
 					fmt.Println("+++++++++ removing dup:", finding.ID, hit.Source.ID)
 					findings = append(findings[:idx], findings[idx+1:]...)

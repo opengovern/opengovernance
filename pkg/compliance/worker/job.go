@@ -45,7 +45,7 @@ func (j *Job) Run(jc JobConfig) error {
 		ResourceTypes:   map[string]Result{},
 		Policies:        map[string]PolicyResult{},
 	}
-	
+
 	for _, connection := range assignment.Connections {
 		err := j.RunForConnection(connection.ConnectionID, nil, &bs, jc)
 		if err != nil {
