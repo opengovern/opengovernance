@@ -19,7 +19,7 @@ func (j *Job) FilterFindings(plan ExecutionPlan, findings []types.Finding, jc Jo
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("+++++++++ active old findings:", len(resp.Hits.Hits))
+		fmt.Println("+++++++++ active old findings:", len(resp.Hits.Hits), plan.Policy.ID, from)
 		from += esFetchSize
 
 		if len(resp.Hits.Hits) == 0 {
