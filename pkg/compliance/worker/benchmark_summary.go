@@ -46,6 +46,16 @@ func (b BenchmarkSummary) KeysAndIndex() ([]string, string) {
 }
 
 func (b *BenchmarkSummary) AddFinding(f types.Finding) {
+	if f.Severity == "" {
+		f.Severity = types.FindingSeverityNone
+	}
+	if f.Result == "" {
+		f.Result = types.ComplianceResultERROR
+	}
+	if f.ResourceType == "" {
+		f.ResourceType = "-"
+	}
+
 	b.BenchmarkResult.SeverityResult[f.Severity]++
 	b.BenchmarkResult.QueryResult[f.Result]++
 
