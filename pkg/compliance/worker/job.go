@@ -118,12 +118,12 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 			benchmarkSummary.AddFinding(f)
 		}
 
-		//if !j.IsStack {
-		//	findings, err = j.FilterFindings(plan, findings, jc)
-		//	if err != nil {
-		//		return err
-		//	}
-		//}
+		if !j.IsStack {
+			findings, err = j.FilterFindings(plan, findings, jc)
+			if err != nil {
+				return err
+			}
+		}
 
 		for idx, finding := range findings {
 			finding.ParentBenchmarks = plan.ParentBenchmarkIDs
