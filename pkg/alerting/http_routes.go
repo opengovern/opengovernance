@@ -479,7 +479,7 @@ func (h *HttpHandler) CreateSlackAction(ctx echo.Context) error {
 
 	reqStr := api.SlackRequest{
 		ChannelName: inputs.ChannelName,
-		Text:        fmt.Sprintf("${metadataRule} rule successfully triggered"),
+		Text:        fmt.Sprintf("{{.Metadata.Name}} rule triggered successfully"),
 	}
 
 	reqStrMarshalled, err := json.Marshal(&reqStr)
@@ -505,7 +505,7 @@ func (h *HttpHandler) CreateSlackAction(ctx echo.Context) error {
 //	@Tags			alerting
 //	@Param			request	body		api.JiraInputs	true	"Request Body"
 //	@Success		200		{object}	api.JiraAndStackResponse
-//	@Router			/alerting/api/v1/action/slack [post]
+//	@Router			/alerting/api/v1/action/jira [post]
 func (h *HttpHandler) CreateJiraAction(ctx echo.Context) error {
 	var inputs api.JiraInputs
 	if err := bindValidate(ctx, &inputs); err != nil {
@@ -516,7 +516,7 @@ func (h *HttpHandler) CreateJiraAction(ctx echo.Context) error {
 		Fields: &jira.IssueFields{
 			Type:    jira.IssueType{ID: inputs.IssueTypeId},
 			Project: jira.Project{ID: inputs.ProjectId},
-			Summary: "${metadataRule} rule triggered successfully",
+			Summary: "{{.Metadata.Name}} rule triggered successfully",
 			Duedate: jira.Date(time.Now()),
 		},
 	}

@@ -11,7 +11,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"net/http"
+	"os"
 	"strconv"
+	"text/template"
 	"time"
 )
 
@@ -95,6 +97,16 @@ func (h HttpHandler) sendAlert(rule Rule, averageSecurityScorePercentage int64) 
 	action, err := h.db.GetAction(rule.ActionID)
 	if err != nil {
 		return fmt.Errorf("error getting action : %v", err.Error())
+	}
+
+	tmpl, err := template.New("Metadata.Name").Parse(action.Body)
+	if err != nil {
+		return fmt.Errorf("error create template : %v", err)
+	}
+
+	err = tmpl.Execute(os.Stdout, rule)
+	if err != nil {
+		return fmt.Errorf("error executing template : %v", err)
 	}
 
 	req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer([]byte(action.Body)))
