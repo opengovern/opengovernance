@@ -181,7 +181,6 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 	if err != nil {
 		return false, 0, fmt.Errorf("error getting connectionId : %v ", err.Error())
 	}
-	fmt.Println("test1")
 
 	h.logger.Info("sending finding request",
 		zap.String("request", fmt.Sprintf("benchmarkId : %v , connectionId : %v , connection group : %v , connector : %v  ", eventType.BenchmarkId, connectionIds, scope.ConnectionGroup, scope.Connector)))
@@ -192,7 +191,6 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 
 	var securityScore float64
 	for _, account := range compliance.Accounts {
-		fmt.Println("test1")
 		securityScore += account.SecurityScore
 	}
 
