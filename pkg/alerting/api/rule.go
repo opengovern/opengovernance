@@ -32,13 +32,10 @@ type Scope struct {
 }
 
 type OperatorStruct struct {
-	OperatorInfo *OperatorInformation `json:"operator_info,omitempty"`
-	Condition    *ConditionStruct     `json:"condition,omitempty"`
-}
-
-type OperatorInformation struct {
 	OperatorType OperatorType `json:"operator_type"`
 	Value        int64        `json:"value"`
+
+	Condition *ConditionStruct `json:"condition,omitempty"`
 }
 
 type ConditionStruct struct {
