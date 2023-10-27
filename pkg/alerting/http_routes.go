@@ -1,7 +1,6 @@
 package alerting
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/labstack/echo/v4"
-	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -19,6 +17,7 @@ import (
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
+
 	ruleGroup := v1.Group("/rule")
 	ruleGroup.GET("/list", httpserver.AuthorizeHandler(h.ListRules, authapi.ViewerRole))
 	ruleGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateRule, authapi.EditorRole))
@@ -29,15 +28,13 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	actionGroup := v1.Group("/action")
 	actionGroup.GET("/list", httpserver.AuthorizeHandler(h.ListActions, authapi.ViewerRole))
 	actionGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateAction, authapi.EditorRole))
+	actionGroup.POST("/jira", httpserver.AuthorizeHandler(h.CreateJiraAction, authapi.EditorRole))
+	actionGroup.POST("/slack", httpserver.AuthorizeHandler(h.CreateSlackAction, authapi.EditorRole))
 	actionGroup.DELETE("/delete/:actionId", httpserver.AuthorizeHandler(h.DeleteAction, authapi.EditorRole))
 	actionGroup.PUT("/update/:actionId", httpserver.AuthorizeHandler(h.UpdateAction, authapi.EditorRole))
 
 	trigger := v1.Group("/trigger")
 	trigger.GET("/list", httpserver.AuthorizeHandler(h.ListTriggers, authapi.ViewerRole))
-
-	alert := v1.Group("/sendAlert")
-	alert.POST("/slack", httpserver.AuthorizeHandler(h.SendAlertToSlack, authapi.ViewerRole))
-	alert.POST("/jira", httpserver.AuthorizeHandler(h.SendAlertToJira, authapi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -465,69 +462,51 @@ func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
 	return ctx.JSON(200, "Action updated successfully")
 }
 
-// SendAlertToSlack godoc
+// CreateSlackAction godoc
 //
-//	@Summary		Send Alert
-//	@Description	Send Alert to specific Slack URL
+//	@Summary		Create Slack Action
+//	@Description	Create action with slack url and body
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			request		body		api.SlackInputs	true	"Request Body"
-//	@Success		200			{object}	string
-//	@Router			/alerting/api/v1/alert/slack [post]
-func (h *HttpHandler) SendAlertToSlack(ctx echo.Context) error {
+//	@Param			request	body		api.SlackInputs	true	"Request Body"
+//	@Success		200		{object}	api.JiraAndStackResponse
+//	@Router			/alerting/api/v1/action/slack [post]
+func (h *HttpHandler) CreateSlackAction(ctx echo.Context) error {
 	var inputs api.SlackInputs
 	if err := bindValidate(ctx, &inputs); err != nil {
 		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the channelName : %v ", err))
 	}
 
-	rule, err := h.db.GetRule(uint(inputs.RuleId))
-	if err != nil {
-		return fmt.Errorf("error getting rule : %v", err)
-	}
-
-	var metadata api.Metadata
-	err = json.Unmarshal(rule.Metadata, &metadata)
-	if err != nil {
-		return fmt.Errorf("error unmarshalling the metadata in rule : %v ", err)
-	}
-
 	reqStr := api.SlackRequest{
 		ChannelName: inputs.ChannelName,
-		Text:        fmt.Sprintf("%s rule successfully triggered", metadata.Name),
+		Text:        fmt.Sprintf("${metadataRule} rule successfully triggered"),
 	}
 
 	reqStrMarshalled, err := json.Marshal(&reqStr)
 	if err != nil {
 		return fmt.Errorf("error in marshalling the request : %v", err)
 	}
-
-	req, err := http.NewRequest("POST", inputs.SlackUrl, bytes.NewBuffer(reqStrMarshalled))
+	id, err := h.db.CreateAction("POST", inputs.SlackUrl, nil, string(reqStrMarshalled))
 	if err != nil {
-		return fmt.Errorf("error creating request for sending slack alert : %v ", err)
+		return fmt.Errorf("error creating action : %v ", err)
 	}
 
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("error sending the slack alert : %v ", err)
+	res := api.JiraAndStackResponse{
+		ActionId: id,
 	}
-
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("error status is not equal to 200 : %d ", res.StatusCode)
-	}
-
-	return ctx.String(http.StatusOK, "slack alert sent successfully")
+	return ctx.JSON(http.StatusOK, res)
 }
 
-// SendAlertToJira godoc
+// CreateJiraAction godoc
 //
-//	@Summary		Send Alert
-//	@Description	Send Alert to specific Slack URL
+//	@Summary		Create Jira Action
+//	@Description	Create action with jira url and header and body
 //	@Security		BearerToken
 //	@Tags			alerting
-//	@Param			request		body		api.JiraInputs	true	"Request Body"
-//	@Success		200			{object}	string
-//	@Router			/alerting/api/v1/alert/slack [post]
-func (h *HttpHandler) SendAlertToJira(ctx echo.Context) error {
+//	@Param			request	body		api.JiraInputs	true	"Request Body"
+//	@Success		200		{object}	api.JiraAndStackResponse
+//	@Router			/alerting/api/v1/action/slack [post]
+func (h *HttpHandler) CreateJiraAction(ctx echo.Context) error {
 	var inputs api.JiraInputs
 	if err := bindValidate(ctx, &inputs); err != nil {
 		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("error getting the channelName : %v ", err))
@@ -537,9 +516,16 @@ func (h *HttpHandler) SendAlertToJira(ctx echo.Context) error {
 		Fields: &jira.IssueFields{
 			Type:    jira.IssueType{ID: inputs.IssueTypeId},
 			Project: jira.Project{ID: inputs.ProjectId},
-			Summary: "${metadataName} rule triggered successfully",
+			Summary: "${metadataRule} rule triggered successfully",
 			Duedate: jira.Date(time.Now()),
 		},
+	}
+
+	auth := fmt.Sprintf("%s:%s", inputs.Email, inputs.AtlassianApiToken)
+	authEncoded := base64.StdEncoding.EncodeToString([]byte(auth))
+	headers := map[string]string{
+		"Content-Type":  "application/json",
+		"Authorization": "Basic " + authEncoded,
 	}
 
 	requestMarshalled, err := json.Marshal(requestBody)
@@ -547,24 +533,18 @@ func (h *HttpHandler) SendAlertToJira(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("error marshalling the request body : %v ", err))
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("https://%s/rest/api/3/issue", inputs.AtlassianDomain), bytes.NewBuffer(requestMarshalled))
+	headerMarshalled, err := json.Marshal(headers)
 	if err != nil {
-		return fmt.Errorf("error sending create issue request : %v ", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	auth := fmt.Sprintf("%s:%s", inputs.Email, inputs.AtlassianApiToken)
-	authEncoded := base64.StdEncoding.EncodeToString([]byte(auth))
-	req.Header.Set("Authorization", "Basic "+authEncoded)
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error sending the request : %v ", err))
+		ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error marshalling the headers : %v ", err))
 	}
 
-	body, err := io.ReadAll(res.Body)
+	id, err := h.db.CreateAction("POST", fmt.Sprintf("https://%s/rest/api/3/issue", inputs.AtlassianDomain), headerMarshalled, string(requestMarshalled))
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error reading the response body : %v", err))
+		ctx.JSON(http.StatusBadRequest, fmt.Sprintf("error creating action : %v ", err))
 	}
 
-	return ctx.JSON(http.StatusOK, string(body))
+	res := api.JiraAndStackResponse{
+		ActionId: id,
+	}
+	return ctx.JSON(http.StatusOK, res)
 }

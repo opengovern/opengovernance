@@ -8,7 +8,6 @@ type SlackRequest struct {
 type SlackInputs struct {
 	SlackUrl    string `json:"slack_url"`
 	ChannelName string `json:"channel_name"`
-	RuleId      int    `json:"rule_id"`
 }
 
 type JiraInputs struct {
@@ -17,4 +16,8 @@ type JiraInputs struct {
 	Email             string `json:"email"`
 	IssueTypeId       string `json:"issue_type_id"`
 	ProjectId         string `json:"project_id"`
+}
+
+type JiraAndStackResponse struct {
+	ActionId uint `json:"action_id"`
 }
