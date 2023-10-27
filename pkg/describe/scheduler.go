@@ -633,6 +633,8 @@ func (s *Scheduler) Stop() {
 	for _, openQueues := range queues {
 		openQueues.Close()
 	}
+
+	s.analyticsJobResultQueue.Close()
 }
 
 func isPublishingBlocked(logger *zap.Logger, queue queue.Interface) bool {
