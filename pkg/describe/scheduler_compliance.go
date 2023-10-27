@@ -80,7 +80,7 @@ func (s *Scheduler) scheduleComplianceJob() error {
 			continue
 		}
 
-		complianceJob, err := s.db.GetLastComplianceJob()
+		complianceJob, err := s.db.GetLastComplianceJob(benchmark.ID)
 		if err != nil {
 			return err
 		}
