@@ -68,9 +68,9 @@ func (db Database) CleanupComplianceJobsOlderThan(t time.Time) error {
 	return nil
 }
 
-func (db Database) GetLastComplianceJob() (*model.ComplianceJob, error) {
+func (db Database) GetLastComplianceJob(benchmarkID string) (*model.ComplianceJob, error) {
 	var job model.ComplianceJob
-	tx := db.ORM.Model(&model.ComplianceJob{}).Order("created_at DESC").First(&job)
+	tx := db.ORM.Model(&model.ComplianceJob{}).Where("benchmark_id = ?", benchmarkID).Order("created_at DESC").First(&job)
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return nil, nil
