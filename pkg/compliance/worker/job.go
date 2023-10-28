@@ -45,8 +45,9 @@ func (j *Job) Run(jc JobConfig) error {
 	}
 
 	bs := BenchmarkSummary{
-		BenchmarkID: j.BenchmarkID,
-		JobID:       j.ID,
+		BenchmarkID:      j.BenchmarkID,
+		JobID:            j.ID,
+		EvaluatedAtEpoch: j.CreatedAt.Unix(),
 		BenchmarkResult: Result{
 			QueryResult:    map[types.ComplianceResult]int{},
 			SeverityResult: map[types.FindingSeverity]int{},

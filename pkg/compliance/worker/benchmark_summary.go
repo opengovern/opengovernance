@@ -31,8 +31,9 @@ type PolicyResult struct {
 }
 
 type BenchmarkSummary struct {
-	BenchmarkID string
-	JobID       uint
+	BenchmarkID      string
+	JobID            uint
+	EvaluatedAtEpoch int64
 
 	BenchmarkResult Result
 
