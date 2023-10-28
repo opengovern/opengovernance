@@ -37,9 +37,10 @@ type BenchmarkSummary struct {
 
 	BenchmarkResult Result
 
-	Connections   map[string]Result
-	ResourceTypes map[string]Result
-	Policies      map[string]PolicyResult
+	Connections         map[string]Result
+	ResourceCollections map[string]Result
+	ResourceTypes       map[string]Result
+	Policies            map[string]PolicyResult
 }
 
 func (b BenchmarkSummary) KeysAndIndex() ([]string, string) {
@@ -70,6 +71,19 @@ func (b *BenchmarkSummary) AddFinding(f types.Finding) {
 	connection.SeverityResult[f.Severity]++
 	connection.QueryResult[f.Result]++
 	b.Connections[f.ConnectionID] = connection
+
+	if f.ResourceCollection != nil {
+		rc, ok := b.ResourceCollections[*f.ResourceCollection]
+		if !ok {
+			rc = Result{
+				QueryResult:    map[types.ComplianceResult]int{},
+				SeverityResult: map[types.FindingSeverity]int{},
+			}
+		}
+		rc.SeverityResult[f.Severity]++
+		rc.QueryResult[f.Result]++
+		b.ResourceCollections[*f.ResourceCollection] = rc
+	}
 
 	resourceType, ok := b.ResourceTypes[f.ResourceType]
 	if !ok {
@@ -127,6 +141,19 @@ func (b *BenchmarkSummary) Summarize() {
 		}
 
 		b.Connections[connectionID] = summary
+	}
+
+	for resourceCollection, summary := range b.ResourceCollections {
+		total := 0
+		for _, count := range summary.QueryResult {
+			total += count
+		}
+
+		if total > 0 {
+			summary.SecurityScore = float64(summary.QueryResult[types.ComplianceResultOK]) / float64(total)
+		}
+
+		b.ResourceCollections[resourceCollection] = summary
 	}
 
 	for resourceType, summary := range b.ResourceTypes {

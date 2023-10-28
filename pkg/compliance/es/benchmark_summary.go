@@ -3,6 +3,7 @@ package es
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/worker/types"
 	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"math"
@@ -757,6 +758,12 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 	timeAt time.Time) (map[string]types2.BenchmarkSummary, error) {
 
 	idx := types2.BenchmarkSummaryIndex
+
+	includes := []string{"BenchmarkResult", "EvaluatedAtEpoch"}
+	for _, connectionID := range connectionIDs {
+		includes = append(includes, fmt.Sprintf("Connections.%s", connectionID))
+	}
+
 	request := map[string]any{
 		"aggs": map[string]any{
 			"summaries": map[string]any{
@@ -772,7 +779,7 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 								},
 							},
 							"_source": map[string]any{
-								"includes": []string{"BenchmarkResult", "EvaluatedAtEpoch"},
+								"includes": includes,
 							},
 							"size": 1,
 						},
@@ -798,13 +805,6 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 			},
 		})
 	}
-	//if len(connectionIDs) > 0 {
-	//	filters = append(filters, map[string]any{
-	//		"terms": map[string][]string{
-	//			"connection_id": connectionIDs,
-	//		},
-	//	})
-	//}
 	//if len(resourceCollections) > 0 {
 	//	idx = types.ResourceCollectionsBenchmarkSummaryIndex
 	//	filters = append(filters, map[string]any{
