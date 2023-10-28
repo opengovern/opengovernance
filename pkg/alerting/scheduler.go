@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
+	"text/template"
 	"time"
 )
 
@@ -39,6 +40,7 @@ func (h *HttpHandler) TriggerRulesList() error {
 			h.logger.Error("Rule trigger has been failed",
 				zap.String("rule id", fmt.Sprintf("%v", rule.Id)),
 				zap.Error(err))
+			return err
 		}
 	}
 	return nil
@@ -63,6 +65,12 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 		return fmt.Errorf("error unmarshalling the operator : %v ", err.Error())
 	}
 
+	var metadata api.Metadata
+	err = json.Unmarshal(rule.Metadata, &metadata)
+	if err != nil {
+		return fmt.Errorf("error unmarshalling the metadata : %v ", err.Error())
+	}
+
 	stat := false
 	var averageSecurityScorePercentage int64
 	if eventType.InsightId != nil {
@@ -81,7 +89,7 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 		return fmt.Errorf("Error: insighId or complianceId not entered ")
 	}
 	if stat {
-		err = h.sendAlert(rule, averageSecurityScorePercentage)
+		err = h.sendAlert(rule, metadata, averageSecurityScorePercentage)
 		h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.Id)),
 			zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
 		if err != nil {
@@ -91,11 +99,23 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 	return nil
 }
 
-func (h HttpHandler) sendAlert(rule Rule, averageSecurityScorePercentage int64) error {
+func (h HttpHandler) sendAlert(rule Rule, metadata api.Metadata, averageSecurityScorePercentage int64) error {
 	action, err := h.db.GetAction(rule.ActionID)
 	if err != nil {
 		return fmt.Errorf("error getting action : %v", err.Error())
 	}
+
+	tmpl, err := template.New("Metadata.Name").Parse(action.Body)
+	if err != nil {
+		return fmt.Errorf("error create template : %v", err)
+	}
+	var outputExecute bytes.Buffer
+	err = tmpl.Execute(&outputExecute, metadata)
+	if err != nil {
+		return fmt.Errorf("error executing template : %v ", err)
+	}
+
+	action.Body = outputExecute.String()
 
 	req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer([]byte(action.Body)))
 	if err != nil {
@@ -164,8 +184,7 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 
 	h.logger.Info("sending finding request",
 		zap.String("request", fmt.Sprintf("benchmarkId : %v , connectionId : %v , connection group : %v , connector : %v  ", eventType.BenchmarkId, connectionIds, scope.ConnectionGroup, scope.Connector)))
-
-	compliance, err := h.complianceClient.GetAccountsFindingsSummary(&httpclient.Context{UserRole: authApi.AdminRole}, *eventType.BenchmarkId, connectionIds, []string{*scope.ConnectionGroup}, []source.Type{*scope.Connector})
+	compliance, err := h.complianceClient.GetAccountsFindingsSummary(&httpclient.Context{UserRole: authApi.AdminRole}, *eventType.BenchmarkId, connectionIds, []source.Type{*scope.Connector})
 	if err != nil {
 		return false, 0, fmt.Errorf("error getting AccountsFindingsSummary : %v", err)
 	}

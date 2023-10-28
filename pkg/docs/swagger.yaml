@@ -68,6 +68,24 @@ definitions:
       insight_id:
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse:
+    properties:
+      action_id:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraInputs:
+    properties:
+      atlassian_api_token:
+        type: string
+      atlassian_domain:
+        type: string
+      email:
+        type: string
+      issue_type_id:
+        type: string
+      project_id:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata:
     properties:
       description:
@@ -127,6 +145,13 @@ definitions:
         type: string
       connector:
         $ref: '#/definitions/source.Type'
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.SlackInputs:
+    properties:
+      channel_name:
+        type: string
+      slack_url:
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Triggers:
     properties:
@@ -2709,6 +2734,26 @@ paths:
       summary: Delete action
       tags:
       - alerting
+  /alerting/api/v1/action/jira:
+    post:
+      description: Create action with jira url and header and body
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraInputs'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse'
+      security:
+      - BearerToken: []
+      summary: Create Jira Action
+      tags:
+      - alerting
   /alerting/api/v1/action/list:
     get:
       description: returns list of all actions
@@ -2724,6 +2769,26 @@ paths:
       security:
       - BearerToken: []
       summary: List actions
+      tags:
+      - alerting
+  /alerting/api/v1/action/slack:
+    post:
+      description: Create action with slack url and body
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.SlackInputs'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse'
+      security:
+      - BearerToken: []
+      summary: Create Slack Action
       tags:
       - alerting
   /alerting/api/v1/action/update/{actionId}:
@@ -2748,38 +2813,6 @@ paths:
       security:
       - BearerToken: []
       summary: Update action
-      tags:
-      - alerting
-  /alerting/api/v1/alert/slack:
-    post:
-      description: Send Alert to specific Slack URL
-      parameters:
-      - description: Slack URl
-        in: body
-        name: slackUrl
-        required: true
-        schema:
-          type: string
-      - description: Channel Name
-        in: body
-        name: channelName
-        required: true
-        schema:
-          type: string
-      - description: 'Rule ID '
-        in: body
-        name: ruleId
-        required: true
-        schema:
-          type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      security:
-      - BearerToken: []
-      summary: Send Alert
       tags:
       - alerting
   /alerting/api/v1/rule/{ruleId}/trigger:

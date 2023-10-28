@@ -123,6 +123,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/alerting/api/v1/action/jira": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Create action with jira url and header and body",
+                "tags": [
+                    "alerting"
+                ],
+                "summary": "Create Jira Action",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraInputs"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/alerting/api/v1/action/list": {
             "get": {
                 "security": [
@@ -146,6 +179,39 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Action"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/alerting/api/v1/action/slack": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "Create action with slack url and body",
+                "tags": [
+                    "alerting"
+                ],
+                "summary": "Create Slack Action",
+                "parameters": [
+                    {
+                        "description": "Request Body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.SlackInputs"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse"
                         }
                     }
                 }
@@ -177,57 +243,6 @@ const docTemplate = `{
                         "in": "body",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.UpdateActionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/alerting/api/v1/alert/slack": {
-            "post": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Send Alert to specific Slack URL",
-                "tags": [
-                    "alerting"
-                ],
-                "summary": "Send Alert",
-                "parameters": [
-                    {
-                        "description": "Slack URl",
-                        "name": "slackUrl",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "Channel Name",
-                        "name": "channelName",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "description": "Rule ID ",
-                        "name": "ruleId",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
                         }
                     }
                 ],
@@ -5685,6 +5700,34 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse": {
+            "type": "object",
+            "properties": {
+                "action_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraInputs": {
+            "type": "object",
+            "properties": {
+                "atlassian_api_token": {
+                    "type": "string"
+                },
+                "atlassian_domain": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "issue_type_id": {
+                    "type": "string"
+                },
+                "project_id": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata": {
             "type": "object",
             "properties": {
@@ -5769,6 +5812,17 @@ const docTemplate = `{
                 },
                 "connector": {
                     "$ref": "#/definitions/source.Type"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.SlackInputs": {
+            "type": "object",
+            "properties": {
+                "channel_name": {
+                    "type": "string"
+                },
+                "slack_url": {
+                    "type": "string"
                 }
             }
         },
