@@ -731,7 +731,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		benchmarkIDs = append(benchmarkIDs, b.ID)
 	}
 
-	summariesAtTime, err := es.FetchBenchmarkSummariesAtTime(h.logger, h.client, benchmarkIDs, connectors, connectionIDs, resourceCollections, timeAt)
+	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, timeAt)
 	if err != nil {
 		h.logger.Error("failed to fetch benchmark summaries", zap.Error(err))
 		return err
@@ -758,6 +758,12 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		}
 
 		summaryAtTime := summariesAtTime[b.ID]
+		csResult := kaytuTypes.ComplianceResultSummary{}
+		csResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
+
+		sResult := kaytuTypes.SeverityResult{}
+		sResult.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
+
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkEvaluationSummary{
 			ID:          b.ID,
 			Title:       b.Title,
@@ -765,13 +771,13 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			Connectors:  be.Connectors,
 			Tags:        be.Tags,
 			Enabled:     b.Enabled,
-			Result:      summaryAtTime.ComplianceResultSummary,
-			Checks:      summaryAtTime.SeverityResult,
-			EvaluatedAt: summaryAtTime.EvaluatedAt,
+			Result:      csResult,
+			Checks:      sResult,
+			EvaluatedAt: time.Unix(summaryAtTime.EvaluatedAtEpoch, 0),
 		})
 
-		response.TotalResult.AddComplianceResultSummary(summaryAtTime.ComplianceResultSummary)
-		response.TotalChecks.AddSeverityResult(summaryAtTime.SeverityResult)
+		response.TotalResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
+		response.TotalChecks.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
 	}
 	span3.End()
 	return ctx.JSON(http.StatusOK, response)
@@ -848,12 +854,18 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
 	}
 
-	summariesAtTime, err := es.FetchBenchmarkSummariesAtTime(h.logger, h.client, []string{benchmarkID}, connectors, connectionIDs, resourceCollections, timeAt)
+	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, timeAt)
 	if err != nil {
 		return err
 	}
 
 	summaryAtTime := summariesAtTime[benchmarkID]
+	csResult := kaytuTypes.ComplianceResultSummary{}
+	csResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
+
+	sResult := kaytuTypes.SeverityResult{}
+	sResult.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
+
 	response := api.BenchmarkEvaluationSummary{
 		ID:          benchmark.ID,
 		Title:       benchmark.Title,
@@ -861,10 +873,11 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		Connectors:  be.Connectors,
 		Tags:        be.Tags,
 		Enabled:     benchmark.Enabled,
-		Result:      summaryAtTime.ComplianceResultSummary,
-		Checks:      summaryAtTime.SeverityResult,
-		EvaluatedAt: summaryAtTime.EvaluatedAt,
+		Result:      csResult,
+		Checks:      sResult,
+		EvaluatedAt: time.Unix(summaryAtTime.EvaluatedAtEpoch, 0),
 	}
+
 	return ctx.JSON(http.StatusOK, response)
 }
 

@@ -3,6 +3,7 @@ package es
 import (
 	"context"
 	"encoding/json"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
 	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"math"
 	"time"
@@ -731,4 +732,112 @@ func ListBenchmarkSummaries(client kaytu.Client, benchmarkID *string) ([]types.B
 		hits = append(hits, hit.Source)
 	}
 	return hits, nil
+}
+
+type ListBenchmarkSummariesAtTimeResponse struct {
+	Aggregations struct {
+		Summaries struct {
+			Buckets []struct {
+				Key        string `json:"key"`
+				DocCount   int    `json:"doc_count"`
+				LastResult struct {
+					Hits struct {
+						Hits []struct {
+							Source worker.BenchmarkSummary `json:"_source"`
+						} `json:"hits"`
+					} `json:"hits"`
+				} `json:"last_result"`
+			} `json:"buckets"`
+		} `json:"summaries"`
+	} `json:"aggregations"`
+}
+
+func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
+	benchmarkIDs []string, connectionIDs []string, resourceCollections []string,
+	timeAt time.Time) (map[string]worker.BenchmarkSummary, error) {
+
+	idx := worker.BenchmarkSummaryIndex
+	request := map[string]any{
+		"aggs": map[string]any{
+			"summaries": map[string]any{
+				"terms": map[string]any{
+					"field": "BenchmarkID",
+				},
+				"aggs": map[string]any{
+					"last_result": map[string]any{
+						"top_hits": map[string]any{
+							"sort": []map[string]any{
+								{
+									"JobID": "desc",
+								},
+							},
+							"_source": map[string]any{
+								"includes": []string{"BenchmarkResult", "EvaluatedAtEpoch"},
+							},
+							"size": 1,
+						},
+					},
+				},
+			},
+		},
+		"size": 0,
+	}
+
+	filters := make([]any, 0)
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"EvaluatedAtEpoch": map[string]any{
+				"lte": timeAt.Unix(),
+			},
+		},
+	})
+	if len(benchmarkIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{
+				"BenchmarkID": benchmarkIDs,
+			},
+		})
+	}
+	//if len(connectionIDs) > 0 {
+	//	filters = append(filters, map[string]any{
+	//		"terms": map[string][]string{
+	//			"connection_id": connectionIDs,
+	//		},
+	//	})
+	//}
+	//if len(resourceCollections) > 0 {
+	//	idx = types.ResourceCollectionsBenchmarkSummaryIndex
+	//	filters = append(filters, map[string]any{
+	//		"terms": map[string][]string{
+	//			"resource_collection": resourceCollections,
+	//		},
+	//	})
+	//}
+
+	request["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+
+	query, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Info("FetchBenchmarkSummariesByConnectionIDAtTime", zap.String("query", string(query)), zap.String("index", idx))
+
+	var response ListBenchmarkSummariesAtTimeResponse
+	err = client.Search(context.Background(), idx, string(query), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	benchmarkSummaries := make(map[string]worker.BenchmarkSummary)
+	for _, summary := range response.Aggregations.Summaries.Buckets {
+		for _, hit := range summary.LastResult.Hits.Hits {
+			benchmarkSummaries[summary.Key] = hit.Source
+		}
+	}
+	return benchmarkSummaries, nil
 }
