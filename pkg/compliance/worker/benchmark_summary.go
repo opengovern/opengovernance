@@ -46,6 +46,16 @@ func (b BenchmarkSummary) KeysAndIndex() ([]string, string) {
 }
 
 func (b *BenchmarkSummary) AddFinding(f types.Finding) {
+	if f.Severity == "" {
+		f.Severity = types.FindingSeverityNone
+	}
+	if f.Result == "" {
+		f.Result = types.ComplianceResultERROR
+	}
+	if f.ResourceType == "" {
+		f.ResourceType = "-"
+	}
+
 	b.BenchmarkResult.SeverityResult[f.Severity]++
 	b.BenchmarkResult.QueryResult[f.Result]++
 
@@ -85,11 +95,11 @@ func (b *BenchmarkSummary) AddFinding(f types.Finding) {
 	if !f.Result.IsPassed() {
 		policy.Passed = false
 
-		//policy.failedResources[f.ResourceID] = struct{}{}
-		//policy.failedConnections[f.ConnectionID] = struct{}{}
+		policy.failedResources[f.ResourceID] = struct{}{}
+		policy.failedConnections[f.ConnectionID] = struct{}{}
 	}
-	//policy.allResources[f.ResourceID] = struct{}{}
-	//policy.allConnections[f.ConnectionID] = struct{}{}
+	policy.allResources[f.ResourceID] = struct{}{}
+	policy.allConnections[f.ConnectionID] = struct{}{}
 	b.Policies[f.PolicyID] = policy
 }
 

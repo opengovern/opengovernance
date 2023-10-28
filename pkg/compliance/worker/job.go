@@ -1,7 +1,9 @@
 package worker
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -13,6 +15,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.uber.org/zap"
+	"io"
 	"time"
 )
 
@@ -118,6 +121,11 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 			benchmarkSummary.AddFinding(f)
 		}
 
+		err = RemoveOldFindings(jc, plan.Policy.ID, connectionID, resourceCollectionID)
+		if err != nil {
+			return err
+		}
+
 		//if !j.IsStack {
 		//	findings, err = j.FilterFindings(plan, findings, jc)
 		//	if err != nil {
@@ -147,5 +155,77 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 		}
 	}
 
+	return nil
+}
+
+func RemoveOldFindings(jc JobConfig, policyID string, connectionID string, resourceCollectionID *string) error {
+	ctx := context.Background()
+	es := jc.esClient.ES()
+
+	index := []string{types.FindingsIndex}
+
+	var filters []map[string]any
+	filters = append(filters, map[string]any{
+		"term": map[string]any{
+			"policyID": policyID,
+		},
+	})
+	filters = append(filters, map[string]any{
+		"term": map[string]any{
+			"connectionID": connectionID,
+		},
+	})
+	if resourceCollectionID != nil {
+		filters = append(filters, map[string]any{
+			"term": map[string]any{
+				"resourceCollection": resourceCollectionID,
+			},
+		})
+	}
+
+	request := make(map[string]any)
+	request["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+
+	query, err := json.Marshal(request)
+	if err != nil {
+		return err
+	}
+
+	res, err := es.DeleteByQuery(
+		index,
+		bytes.NewReader(query),
+		es.DeleteByQuery.WithContext(ctx),
+	)
+	if err != nil {
+		return err
+	}
+
+	defer kaytu.CloseSafe(res)
+	if err != nil {
+		b, _ := io.ReadAll(res.Body)
+		fmt.Printf("failure while deleting es: %v\n%s\n", err, string(b))
+		return err
+	} else if err := kaytu.CheckError(res); err != nil {
+		if kaytu.IsIndexNotFoundErr(err) {
+			return nil
+		}
+		b, _ := io.ReadAll(res.Body)
+		fmt.Printf("failure while querying es: %v\n%s\n", err, string(b))
+		return err
+	}
+
+	b, err := io.ReadAll(res.Body)
+	if err != nil {
+		return fmt.Errorf("read response: %w", err)
+	}
+
+	jc.logger.Info("delete by query done", zap.String("response", string(b)))
+	//if err := json.Unmarshal(b, response); err != nil {
+	//	return fmt.Errorf("unmarshal response: %w", err)
+	//}
 	return nil
 }
