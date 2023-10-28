@@ -1,4 +1,4 @@
-package worker
+package types
 
 import (
 	"fmt"

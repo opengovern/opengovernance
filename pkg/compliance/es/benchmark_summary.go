@@ -3,7 +3,7 @@ package es
 import (
 	"context"
 	"encoding/json"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
+	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/worker/types"
 	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"math"
 	"time"
@@ -743,7 +743,7 @@ type ListBenchmarkSummariesAtTimeResponse struct {
 				LastResult struct {
 					Hits struct {
 						Hits []struct {
-							Source worker.BenchmarkSummary `json:"_source"`
+							Source types2.BenchmarkSummary `json:"_source"`
 						} `json:"hits"`
 					} `json:"hits"`
 				} `json:"last_result"`
@@ -754,9 +754,9 @@ type ListBenchmarkSummariesAtTimeResponse struct {
 
 func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 	benchmarkIDs []string, connectionIDs []string, resourceCollections []string,
-	timeAt time.Time) (map[string]worker.BenchmarkSummary, error) {
+	timeAt time.Time) (map[string]types2.BenchmarkSummary, error) {
 
-	idx := worker.BenchmarkSummaryIndex
+	idx := types2.BenchmarkSummaryIndex
 	request := map[string]any{
 		"aggs": map[string]any{
 			"summaries": map[string]any{
@@ -833,7 +833,7 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 		return nil, err
 	}
 
-	benchmarkSummaries := make(map[string]worker.BenchmarkSummary)
+	benchmarkSummaries := make(map[string]types2.BenchmarkSummary)
 	for _, summary := range response.Aggregations.Summaries.Buckets {
 		for _, hit := range summary.LastResult.Hits.Hits {
 			benchmarkSummaries[summary.Key] = hit.Source

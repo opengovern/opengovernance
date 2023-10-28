@@ -8,6 +8,7 @@ import (
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
+	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/worker/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	client2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
@@ -44,17 +45,17 @@ func (j *Job) Run(jc JobConfig) error {
 		return err
 	}
 
-	bs := BenchmarkSummary{
+	bs := types2.BenchmarkSummary{
 		BenchmarkID:      j.BenchmarkID,
 		JobID:            j.ID,
 		EvaluatedAtEpoch: j.CreatedAt.Unix(),
-		BenchmarkResult: Result{
+		BenchmarkResult: types2.Result{
 			QueryResult:    map[types.ComplianceResult]int{},
 			SeverityResult: map[types.FindingSeverity]int{},
 		},
-		Connections:   map[string]Result{},
-		ResourceTypes: map[string]Result{},
-		Policies:      map[string]PolicyResult{},
+		Connections:   map[string]types2.Result{},
+		ResourceTypes: map[string]types2.Result{},
+		Policies:      map[string]types2.PolicyResult{},
 	}
 
 	for _, connection := range assignment.Connections {
@@ -85,7 +86,7 @@ func (j *Job) Run(jc JobConfig) error {
 	return nil
 }
 
-func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string, benchmarkSummary *BenchmarkSummary, jc JobConfig) error {
+func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string, benchmarkSummary *types2.BenchmarkSummary, jc JobConfig) error {
 	conn, err := jc.onboardClient.GetSource(&httpclient.Context{UserRole: api.InternalRole}, connectionID)
 	if err != nil {
 		return err
