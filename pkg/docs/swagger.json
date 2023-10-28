@@ -6566,11 +6566,9 @@
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint": {
             "type": "object",
             "properties": {
-                "checks": {
-                    "$ref": "#/definitions/types.SeverityResult"
-                },
-                "result": {
-                    "$ref": "#/definitions/types.ComplianceResultSummary"
+                "securityScore": {
+                    "description": "Result    types.ComplianceResultSummary `json:\"result\"`\nChecks    types.SeverityResult          `json:\"checks\"`",
+                    "type": "number"
                 },
                 "timestamp": {
                     "description": "Time",
