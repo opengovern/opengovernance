@@ -3,17 +3,13 @@ package alerting
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	jira "github.com/andygrunwald/go-jira"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	compliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -29,9 +25,7 @@ import (
 var (
 	isCallAction bool
 
-	server  *httptest.Server
-	com     client.ComplianceServiceClient
-	onboard onboardClient.OnboardServiceClient
+	server *httptest.Server
 )
 
 func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
@@ -44,13 +38,20 @@ func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
 	s := http.Server{Addr: "localhost:8082", Handler: mux}
 	mux.HandleFunc("/call", func(writer http.ResponseWriter, request *http.Request) {
 		isCallAction = true
+
+		body, err := io.ReadAll(request.Body)
+		if err != nil {
+			fmt.Printf("error in read response call addres of http server  : %v ", err)
+		}
+		fmt.Printf("response Call : %v \n", string(body))
+
 	})
 	go s.ListenAndServe()
 
 	//mocking server
 	server = httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		switch request.URL.Path {
-		case "/api/v1/insight/123123":
+		case "/api/v1/insight/1231":
 			mockGetInsightEndpoint(writer, request)
 		case "/api/v1/findings/CIS v1.4.0/accounts":
 			mockGetFindingsEndpoint(writer, request)
@@ -89,8 +90,6 @@ func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
 		if err != nil {
 			tb.Errorf("error stopping the server ,err : %v ", err)
 		}
-
-		server.Close()
 	}, handler
 }
 
@@ -145,11 +144,9 @@ func addRule(t *testing.T) uint {
 			ConditionType: "OR",
 			Operator: []api.OperatorStruct{
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
-				},
+					OperatorType: "<", Value: 100},
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
-				},
+					OperatorType: ">", Value: 200},
 			},
 		},
 	}
@@ -234,10 +231,9 @@ func TestCreateRule(t *testing.T) {
 	teardownSuite, h := setupSuite(t)
 	defer teardownSuite(t)
 
-	operatorInfo := api.OperatorInformation{OperatorType: "<", Value: 100}
 	operator := api.OperatorStruct{
-		OperatorInfo: &operatorInfo,
-		Condition:    nil,
+		OperatorType: "<", Value: 100,
+		Condition: nil,
 	}
 
 	var id uint
@@ -264,8 +260,7 @@ func TestCreateRule(t *testing.T) {
 	require.NoErrorf(t, err, "error getting the rule")
 
 	require.Equal(t, operator, foundRule.Operator)
-	require.Equal(t, 100, int(foundRule.Operator.OperatorInfo.Value))
-
+	require.Equal(t, 100, int(foundRule.Operator.Value))
 	require.Equal(t, "test metadata name", foundRule.Metadata.Name)
 	require.Equal(t, "test metadata description", foundRule.Metadata.Description)
 	require.Equal(t, []string{"test label"}, foundRule.Metadata.Label)
@@ -280,11 +275,9 @@ func TestCreateRule(t *testing.T) {
 			ConditionType: "OR",
 			Operator: []api.OperatorStruct{
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
-				},
+					OperatorType: "<", Value: 100},
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
-				},
+					OperatorType: ">", Value: 200},
 			},
 		},
 	}
@@ -303,11 +296,9 @@ func TestCreateRule(t *testing.T) {
 			ConditionType: "AND",
 			Operator: []api.OperatorStruct{
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 50},
-				},
+					OperatorType: ">", Value: 50},
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 200},
-				},
+					OperatorType: "<", Value: 200},
 			},
 		},
 	}
@@ -326,17 +317,15 @@ func TestCreateRule(t *testing.T) {
 			ConditionType: "AND",
 			Operator: []api.OperatorStruct{
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 50},
-				},
+					OperatorType: ">", Value: 50},
 				{
 					Condition: &api.ConditionStruct{
 						ConditionType: "OR",
 						Operator: []api.OperatorStruct{
 							{
-								OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
-							},
+								OperatorType: "<", Value: 100},
 							{
-								OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
+								OperatorType: ">", Value: 200,
 							},
 						},
 					},
@@ -365,11 +354,9 @@ func TestUpdateRule(t *testing.T) {
 			ConditionType: "OR",
 			Operator: []api.OperatorStruct{
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: "<", Value: 100},
-				},
+					OperatorType: "<", Value: 100},
 				{
-					OperatorInfo: &api.OperatorInformation{OperatorType: ">", Value: 200},
-				},
+					OperatorType: ">", Value: 200},
 			},
 		},
 	}
@@ -405,7 +392,6 @@ func TestDeleteRule(t *testing.T) {
 	require.NoError(t, err, "error deleting rule")
 
 	_, err = getRule(h, id)
-	fmt.Println(err)
 	require.Error(t, err)
 }
 
@@ -521,102 +507,17 @@ func TestDeleteAction(t *testing.T) {
 	require.Error(t, err)
 }
 
-// ------------------------------------------------ alert test -----------------------------------------------
-
-func TestJiraAlert(t *testing.T) {
-	teardownSuite, _ := setupSuite(t)
-	defer teardownSuite(t)
-
-	request := api.JiraInputs{
-		AtlassianDomain:   "kaytu.atlassian.net",
-		AtlassianApiToken: "ATATT3xFfGF0xJlv2DntqFPzNs0otNaiR-aLJBdjmPXoPeqHoZeeNOz4SGFRZpzB4I_Mq9qw4aZYXcvJwYW6HsYpoMSicsIUDOgFthfJ8WBs2VZ6AKtSaOpHJtrVvDJwroEf_UoScWtJ1rdg5MM5rkatdvkkUgpNTWVKYF2V3dAoottHT63ygzU=AB385E18",
-		Email:             "salehk@kaytu.io",
-		IssueTypeId:       "10004",
-		ProjectId:         "10007",
-	}
-	//
-	//res, err := doSimpleJSONRequest("POST", "/api/v1/alerting/sendAlert/jira", req, nil)
-	//if err != nil {
-	//	t.Errorf("error in send request :%v ", err)
-	//}
-	//
-	//body, err := io.ReadAll(res.Body)
-	//if err != nil {
-	//	t.Errorf("error read request body : %v ", err)
-	//}
-	//
-	//fmt.Println(string(body))
-
-	requestBody := jira.Issue{
-		Fields: &jira.IssueFields{
-			Type:    jira.IssueType{ID: request.IssueTypeId},
-			Project: jira.Project{ID: request.ProjectId},
-			Summary: "${rule} triggered successfully",
-			Duedate: jira.Date(time.Now()),
-		},
-	}
-
-	requestMarshalled, err := json.Marshal(requestBody)
-	if err != nil {
-		t.Errorf("error marshalling the request body : %v ", err)
-	}
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("https://%s/rest/api/3/issue", request.AtlassianDomain), bytes.NewBuffer(requestMarshalled))
-	if err != nil {
-		t.Errorf("error sending create issue request : %v ", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	auth := fmt.Sprintf("%s:%s", request.Email, request.AtlassianApiToken)
-	authEncoded := base64.StdEncoding.EncodeToString([]byte(auth))
-	req.Header.Set("Authorization", "Basic "+authEncoded)
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Errorf("error sending the request : %v ", err)
-	}
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		t.Errorf("error reading the response body : %v", err)
-	}
-
-	fmt.Println(string(body))
-}
-
-func TestSlackAlert(t *testing.T) {
-	req := api.SlackInputs{
-		SlackUrl:    "https://hooks.slack.com/services/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",
-		ChannelName: "alerting-dev",
-		RuleId:      2,
-	}
-
-	res, err := doSimpleJSONRequest("POST", "/api/v1/alerting/sendAlert/slack", req, nil)
-	if err != nil {
-		t.Errorf("error : %v ", err)
-	}
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		t.Errorf("error : %v ", err)
-	}
-
-	fmt.Println(string(body))
-}
-
 // ------------------------------------------------ trigger test ----------------------------------------------
 
 func TestCalculationOperationsWithAnd(t *testing.T) {
 	var conditionStruct api.ConditionStruct
 	var operator []api.OperatorStruct
 
-	OperatorInfo := api.OperatorInformation{OperatorType: ">", Value: 100}
-	operatorInformation2 := api.OperatorInformation{OperatorType: "<", Value: 230}
-
 	operator = append(operator, api.OperatorStruct{
-		OperatorInfo: &OperatorInfo,
+		OperatorType: ">", Value: 100,
 	})
 	operator = append(operator, api.OperatorStruct{
-		OperatorInfo: &operatorInformation2,
+		OperatorType: "<", Value: 230,
 	})
 
 	conditionStruct.ConditionType = api.ConditionAnd
@@ -631,29 +532,30 @@ func TestCalculationOperationsWithAnd(t *testing.T) {
 }
 
 func TestCalculationOperationsInCombination(t *testing.T) {
-	var conditionStruct api.ConditionStruct
-	conditionStruct.ConditionType = api.ConditionOr
 
-	var newCondition api.ConditionStruct
-	newCondition.ConditionType = api.ConditionAnd
-	number1 := api.OperatorInformation{OperatorType: ">", Value: 700}
-	number2 := api.OperatorInformation{OperatorType: ">", Value: 750}
-	newCondition.Operator = append(newCondition.Operator, api.OperatorStruct{
-		OperatorInfo: &number2,
-	})
-	newCondition.Operator = append(newCondition.Operator, api.OperatorStruct{
-		OperatorInfo: &number1,
-	})
+	operator := api.OperatorStruct{
+		Condition: &api.ConditionStruct{
+			ConditionType: "AND",
+			Operator: []api.OperatorStruct{
+				{
+					OperatorType: "GreaterThan", Value: 50},
+				{
+					Condition: &api.ConditionStruct{
+						ConditionType: "OR",
+						Operator: []api.OperatorStruct{
+							{
+								OperatorType: "LessThan", Value: 100},
+							{
+								OperatorType: "GreaterThan", Value: 200,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 
-	OperatorInfo := api.OperatorInformation{OperatorType: "<", Value: 600}
-	conditionStruct.Operator = append(conditionStruct.Operator, api.OperatorStruct{
-		OperatorInfo: &OperatorInfo,
-	})
-	conditionStruct.Operator = append(conditionStruct.Operator, api.OperatorStruct{
-		Condition: &newCondition,
-	})
-
-	stat, err := calculationOperations(api.OperatorStruct{OperatorInfo: nil, Condition: &conditionStruct}, 1000)
+	stat, err := calculationOperations(operator, 1000)
 	if err != nil {
 		t.Errorf("Error calculationOperations: %v ", err)
 	}
@@ -672,10 +574,11 @@ func mockGetConnectionGroupEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func mockGetFindingsEndpoint(w http.ResponseWriter, r *http.Request) {
-	response := compliance.GetFindingsResponse{
-		Findings:   nil,
-		TotalCount: 2000,
-	}
+	var Accounts []compliance.AccountsFindingsSummary
+	Accounts = append(Accounts, compliance.AccountsFindingsSummary{SecurityScore: 5.5})
+	var response compliance.GetAccountsFindingsSummaryResponse
+	response.Accounts = Accounts
+
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
@@ -700,42 +603,45 @@ func TestTrigger(t *testing.T) {
 	teardownSuite, h := setupSuite(t)
 	defer teardownSuite(t)
 
-	operatorInfo := api.OperatorInformation{OperatorType: ">", Value: 100}
 	operator := api.OperatorStruct{
-		OperatorInfo: &operatorInfo,
+		OperatorType: "GreaterThan",
+		Value:        100,
 		Condition:    nil,
 	}
 
-	var id uint = 123
-	//var insightId int64 = 123123
-	var benchmarkId string = "testBenchmarkId"
-	connectionId := "testConnectionId"
-	req := api.Rule{
-		Id:        id,
-		EventType: api.EventType{BenchmarkId: &benchmarkId},
-		Scope:     api.Scope{ConnectionId: &connectionId},
-		Operator:  operator,
-		ActionID:  1231,
-	}
-	_, err := doSimpleJSONRequest("POST", "/api/v1/rule/create", req, nil)
-	require.NoError(t, err, "error creating rule")
-
+	var actionId uint
 	// create Action:
-	var idAction uint = 1231
 	action := api.Action{
-		Id:      idAction,
-		Method:  "GET",
+		Id:      actionId,
+		Method:  "POST",
 		Url:     "http://localhost:8082/call",
 		Headers: map[string]string{"insightId": "123123"},
-		Body:    "testBody",
+		Body:    "{{.Name}} rule triggered successfully",
 	}
-	_, err = doSimpleJSONRequest("POST", "/api/v1/action/create", action, nil)
+	_, err := doSimpleJSONRequest("POST", "/api/v1/action/create", action, &actionId)
 	require.NoError(t, err)
 
+	var ruleId uint
+	var benchmarkId string = "CIS v1.4.0"
+	connectionId := "testConnectionId"
+	connector := source.CloudAWS
+	req := api.Rule{
+		Id:        ruleId,
+		EventType: api.EventType{BenchmarkId: &benchmarkId},
+		Metadata:  api.Metadata{Name: "testMetadataName"},
+		Scope:     api.Scope{ConnectionId: &connectionId, Connector: &connector},
+		Operator:  operator,
+		ActionID:  actionId,
+	}
+
+	_, err = doSimpleJSONRequest("POST", "/api/v1/rule/create", req, &ruleId)
+	require.NoError(t, err, "error creating rule")
+
 	// trigger :
-	h.complianceClient = com
-	h.onboardClient = onboard
-	_ = h.TriggerRulesList()
+	err = h.TriggerRulesList()
+	if err != nil {
+		t.Errorf("%v", err)
+	}
 
 	if !isCallAction {
 		t.Errorf("isCall equal to : %v", isCallAction)
