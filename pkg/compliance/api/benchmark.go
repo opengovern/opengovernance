@@ -53,7 +53,8 @@ type Query struct {
 }
 
 type BenchmarkTrendDatapoint struct {
-	Timestamp int                           `json:"timestamp" example:"1686346668"` // Time
-	Result    types.ComplianceResultSummary `json:"result"`
-	Checks    types.SeverityResult          `json:"checks"`
+	Timestamp int `json:"timestamp" example:"1686346668"` // Time
+	//Result    types.ComplianceResultSummary `json:"result"`
+	//Checks    types.SeverityResult          `json:"checks"`
+	SecurityScore float64 `json:"securityScore"`
 }

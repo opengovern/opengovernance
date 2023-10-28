@@ -759,10 +759,27 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 
 		summaryAtTime := summariesAtTime[b.ID]
 		csResult := kaytuTypes.ComplianceResultSummary{}
-		csResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
-
 		sResult := kaytuTypes.SeverityResult{}
-		sResult.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
+		if len(connectionIDs) > 0 {
+			for _, connectionID := range connectionIDs {
+				csResult.AddResultMap(summaryAtTime.Connections[connectionID].QueryResult)
+				sResult.AddResultMap(summaryAtTime.Connections[connectionID].SeverityResult)
+				response.TotalResult.AddResultMap(summaryAtTime.Connections[connectionID].QueryResult)
+				response.TotalChecks.AddResultMap(summaryAtTime.Connections[connectionID].SeverityResult)
+			}
+		} else if len(resourceCollections) > 0 {
+			for _, resourceCollection := range resourceCollections {
+				csResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].QueryResult)
+				sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].SeverityResult)
+				response.TotalResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].QueryResult)
+				response.TotalChecks.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].SeverityResult)
+			}
+		} else {
+			csResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
+			sResult.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
+			response.TotalResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
+			response.TotalChecks.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
+		}
 
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkEvaluationSummary{
 			ID:          b.ID,
@@ -775,9 +792,6 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			Checks:      sResult,
 			EvaluatedAt: time.Unix(summaryAtTime.EvaluatedAtEpoch, 0),
 		})
-
-		response.TotalResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
-		response.TotalChecks.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
 	}
 	span3.End()
 	return ctx.JSON(http.StatusOK, response)
@@ -860,11 +874,23 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	}
 
 	summaryAtTime := summariesAtTime[benchmarkID]
-	csResult := kaytuTypes.ComplianceResultSummary{}
-	csResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
 
+	csResult := kaytuTypes.ComplianceResultSummary{}
 	sResult := kaytuTypes.SeverityResult{}
-	sResult.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
+	if len(connectionIDs) > 0 {
+		for _, connectionID := range connectionIDs {
+			csResult.AddResultMap(summaryAtTime.Connections[connectionID].QueryResult)
+			sResult.AddResultMap(summaryAtTime.Connections[connectionID].SeverityResult)
+		}
+	} else if len(resourceCollections) > 0 {
+		for _, resourceCollection := range resourceCollections {
+			csResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].QueryResult)
+			sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].SeverityResult)
+		}
+	} else {
+		csResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
+		sResult.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
+	}
 
 	response := api.BenchmarkEvaluationSummary{
 		ID:          benchmark.ID,
@@ -1111,25 +1137,24 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 	}
 
 	evaluationAcrossTime, err := es.FetchBenchmarkSummaryTrend(h.logger, h.client,
-		[]string{benchmarkID}, connectors, connectionIDs, resourceCollections, startTime, endTime, datapointCount)
+		[]string{benchmarkID}, connectionIDs, resourceCollections, startTime, endTime)
 	if err != nil {
 		return err
 	}
 
 	var response []api.BenchmarkTrendDatapoint
-	for timeKey, datapoint := range evaluationAcrossTime[benchmarkID] {
-		totalResultCount := datapoint.ComplianceResultSummary.OkCount + datapoint.ComplianceResultSummary.ErrorCount +
-			datapoint.ComplianceResultSummary.AlarmCount + datapoint.ComplianceResultSummary.InfoCount + datapoint.ComplianceResultSummary.SkipCount
-		totalChecksCount := datapoint.SeverityResult.CriticalCount + datapoint.SeverityResult.LowCount +
-			datapoint.SeverityResult.HighCount + datapoint.SeverityResult.MediumCount + datapoint.SeverityResult.UnknownCount +
-			datapoint.SeverityResult.PassedCount
-		if (totalResultCount + totalChecksCount) > 0 {
-			response = append(response, api.BenchmarkTrendDatapoint{
-				Timestamp: timeKey,
-				Result:    datapoint.ComplianceResultSummary,
-				Checks:    datapoint.SeverityResult,
-			})
-		}
+	for _, datapoint := range evaluationAcrossTime[benchmarkID] {
+		////totalResultCount := datapoint.ComplianceResultSummary.OkCount + datapoint.ComplianceResultSummary.ErrorCount +
+		////	datapoint.ComplianceResultSummary.AlarmCount + datapoint.ComplianceResultSummary.InfoCount + datapoint.ComplianceResultSummary.SkipCount
+		////totalChecksCount := datapoint.SeverityResult.CriticalCount + datapoint.SeverityResult.LowCount +
+		////	datapoint.SeverityResult.HighCount + datapoint.SeverityResult.MediumCount + datapoint.SeverityResult.UnknownCount +
+		////	datapoint.SeverityResult.PassedCount
+		//if (totalResultCount + totalChecksCount) > 0 {
+		response = append(response, api.BenchmarkTrendDatapoint{
+			Timestamp:     int(datapoint.DateEpoch),
+			SecurityScore: datapoint.Score,
+		})
+		//}
 	}
 
 	sort.Slice(response, func(i, j int) bool {
