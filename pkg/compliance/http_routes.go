@@ -446,6 +446,19 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 		return err
 	}
 
+	if len(connectionIDs) == 0 {
+		assignmentsByBenchmarkId, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(benchmarkID)
+		if err != nil {
+			return err
+		}
+
+		for _, assignment := range assignmentsByBenchmarkId {
+			if assignment.ConnectionId != nil {
+				connectionIDs = append(connectionIDs, *assignment.ConnectionId)
+			}
+		}
+	}
+
 	srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), connectionIDs)
 	if err != nil {
 		return err

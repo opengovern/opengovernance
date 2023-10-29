@@ -343,6 +343,22 @@ type ResourceTypesFindingsSummaryResponse struct {
 
 func ResourceTypesFindingsSummary(logger *zap.Logger, client kaytu.Client,
 	connectionIDs []string, benchmarkID string) (*ResourceTypesFindingsSummaryResponse, error) {
+	var filters []map[string]any
+
+	filters = append(filters, map[string]any{
+		"term": map[string]any{
+			"parentBenchmarks": benchmarkID,
+		},
+	})
+
+	if len(connectionIDs) != 0 {
+		filters = append(filters, map[string]any{
+			"term": map[string]any{
+				"connectionID": connectionIDs,
+			},
+		})
+	}
+
 	request := map[string]any{
 		"aggs": map[string]any{
 			"summaries": map[string]any{
@@ -360,18 +376,7 @@ func ResourceTypesFindingsSummary(logger *zap.Logger, client kaytu.Client,
 		},
 		"query": map[string]any{
 			"bool": map[string]any{
-				"filter": []map[string]any{
-					{
-						"term": map[string]any{
-							"parentBenchmarks": benchmarkID,
-						},
-					},
-					{
-						"terms": map[string]any{
-							"connectionID": connectionIDs,
-						},
-					},
-				},
+				"filter": filters,
 			},
 		},
 		"size": 0,
