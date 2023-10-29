@@ -1066,6 +1066,56 @@ definitions:
         example: 1000
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy:
+    properties:
+      connector:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
+      createdAt:
+        example: "2020-01-01T00:00:00Z"
+        type: string
+      description:
+        example: Enable multi-factor authentication for all user credentials who have
+          write access to Azure resources. These include roles like 'Service Co-Administrators',
+          'Subscription Owners', 'Contributors'.
+        type: string
+      documentURI:
+        example: benchmarks/azure_cis_v140_1_1.md
+        type: string
+      enabled:
+        example: true
+        type: boolean
+      id:
+        example: azure_cis_v140_1_1
+        type: string
+      managed:
+        example: true
+        type: boolean
+      manualVerification:
+        example: true
+        type: boolean
+      queryID:
+        example: azure_ad_manual_control
+        type: string
+      severity:
+        allOf:
+        - $ref: '#/definitions/types.FindingSeverity'
+        example: low
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      title:
+        example: 1.1 Ensure that multi-factor authentication status is enabled for
+          all privileged users
+        type: string
+      updatedAt:
+        example: "2020-01-01T00:00:00Z"
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree:
     properties:
       accounts:
@@ -3178,7 +3228,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy'
+            type: array
       security:
       - BearerToken: []
       summary: Get benchmark policies

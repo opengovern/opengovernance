@@ -961,7 +961,7 @@ func GetBenchmarkTree(ctx context.Context, db db.Database, client kaytu.Client, 
 //	@Accept		json
 //	@Produce	json
 //	@Param		benchmark_id	path		string	true	"Benchmark ID"
-//	@Success	200				{object}	api.BenchmarkTree
+//	@Success	200				{object}	[]api.Policy
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies [get]
 func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")

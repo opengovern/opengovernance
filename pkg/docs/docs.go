@@ -1087,7 +1087,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy"
+                            }
                         }
                     }
                 }
@@ -7126,6 +7129,76 @@ const docTemplate = `{
                     "description": "Resource Count",
                     "type": "integer",
                     "example": 1000
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy": {
+            "type": "object",
+            "properties": {
+                "connector": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
+                },
+                "createdAt": {
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Enable multi-factor authentication for all user credentials who have write access to Azure resources. These include roles like 'Service Co-Administrators', 'Subscription Owners', 'Contributors'."
+                },
+                "documentURI": {
+                    "type": "string",
+                    "example": "benchmarks/azure_cis_v140_1_1.md"
+                },
+                "enabled": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "id": {
+                    "type": "string",
+                    "example": "azure_cis_v140_1_1"
+                },
+                "managed": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "manualVerification": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "queryID": {
+                    "type": "string",
+                    "example": "azure_ad_manual_control"
+                },
+                "severity": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.FindingSeverity"
+                        }
+                    ],
+                    "example": "low"
+                },
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "title": {
+                    "type": "string",
+                    "example": "1.1 Ensure that multi-factor authentication status is enabled for all privileged users"
+                },
+                "updatedAt": {
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
                 }
             }
         },
