@@ -10,6 +10,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"strings"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
@@ -148,7 +149,19 @@ func newAnalyticsJob(analyticsJobType model.AnalyticsJobType) model.AnalyticsJob
 func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the analyticsJobResultQueue queue")
 
-	msgs := s.analyticsJobResultQueue.Consume(context.TODO(), s.logger)
+	consumer, err := kafka.NewTopicConsumer(
+		context.Background(),
+		strings.Split(KafkaService, ","),
+		analytics.JobResultQueueTopic,
+		consumerGroup,
+	)
+	if err != nil {
+		s.logger.Error("Failed to create kafka consumer", zap.Error(err))
+		return err
+	}
+	defer consumer.Close()
+
+	msgs := consumer.Consume(context.TODO(), s.logger)
 	t := time.NewTicker(JobTimeoutCheckInterval)
 	defer t.Stop()
 
@@ -163,7 +176,7 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 			if err := json.Unmarshal(msg.Value, &result); err != nil {
 				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
 				s.logger.Error("Failed to unmarshal analytics.JobResult results", zap.Error(err), zap.String("value", string(msg.Value)))
-				err = s.analyticsJobResultQueue.Commit(msg)
+				err = consumer.Commit(msg)
 				if err != nil {
 					s.logger.Error("Failed to commit message", zap.Error(err))
 				}
@@ -188,7 +201,7 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 					zap.Uint("jobId", result.JobID),
 					zap.Error(err))
 
-				if err := s.analyticsJobResultQueue.Commit(msg); err != nil {
+				if err := consumer.Commit(msg); err != nil {
 					AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
 					s.logger.Error("Failed to commit message", zap.Error(err))
 				}
@@ -204,7 +217,7 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 				continue
 			}
 
-			if err := s.analyticsJobResultQueue.Commit(msg); err != nil {
+			if err := consumer.Commit(msg); err != nil {
 				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
 				s.logger.Error("Failed to commit message", zap.Error(err))
 			}
