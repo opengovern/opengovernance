@@ -1044,7 +1044,7 @@ definitions:
         example: 1000
         type: integer
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy:
     properties:
       connector:
         allOf:
@@ -1064,10 +1064,6 @@ definitions:
       enabled:
         example: true
         type: boolean
-      failedConnectionCount:
-        type: integer
-      failedResourcesCount:
-        type: integer
       id:
         example: azure_cis_v140_1_1
         type: string
@@ -1076,8 +1072,6 @@ definitions:
         type: boolean
       manualVerification:
         example: true
-        type: boolean
-      passed:
         type: boolean
       queryID:
         example: azure_ad_manual_control
@@ -1096,13 +1090,24 @@ definitions:
         example: 1.1 Ensure that multi-factor authentication status is enabled for
           all privileged users
         type: string
+      updatedAt:
+        example: "2020-01-01T00:00:00Z"
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary:
+    properties:
+      failedConnectionCount:
+        type: integer
+      failedResourcesCount:
+        type: integer
+      passed:
+        type: boolean
+      policy:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy'
       totalConnectionCount:
         type: integer
       totalResourcesCount:
         type: integer
-      updatedAt:
-        example: "2020-01-01T00:00:00Z"
-        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query:
     properties:

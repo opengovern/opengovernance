@@ -7067,7 +7067,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy": {
             "type": "object",
             "properties": {
                 "connector": {
@@ -7094,12 +7094,6 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
-                "failedConnectionCount": {
-                    "type": "integer"
-                },
-                "failedResourcesCount": {
-                    "type": "integer"
-                },
                 "id": {
                     "type": "string",
                     "example": "azure_cis_v140_1_1"
@@ -7111,9 +7105,6 @@ const docTemplate = `{
                 "manualVerification": {
                     "type": "boolean",
                     "example": true
-                },
-                "passed": {
-                    "type": "boolean"
                 },
                 "queryID": {
                     "type": "string",
@@ -7140,15 +7131,32 @@ const docTemplate = `{
                     "type": "string",
                     "example": "1.1 Ensure that multi-factor authentication status is enabled for all privileged users"
                 },
+                "updatedAt": {
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary": {
+            "type": "object",
+            "properties": {
+                "failedConnectionCount": {
+                    "type": "integer"
+                },
+                "failedResourcesCount": {
+                    "type": "integer"
+                },
+                "passed": {
+                    "type": "boolean"
+                },
+                "policy": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy"
+                },
                 "totalConnectionCount": {
                     "type": "integer"
                 },
                 "totalResourcesCount": {
                     "type": "integer"
-                },
-                "updatedAt": {
-                    "type": "string",
-                    "example": "2020-01-01T00:00:00Z"
                 }
             }
         },

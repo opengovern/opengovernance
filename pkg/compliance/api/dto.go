@@ -1,7 +1,6 @@
 package api
 
 import (
-	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/worker/types"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
@@ -138,6 +137,11 @@ type BenchmarkEvaluationSummary struct {
 }
 
 type PolicySummary struct {
-	Policy
-	types2.PolicyResult
+	Policy Policy `json:"policy"`
+
+	Passed                bool `json:"passed"`
+	FailedResourcesCount  int  `json:"failedResourcesCount"`
+	TotalResourcesCount   int  `json:"totalResourcesCount"`
+	FailedConnectionCount int  `json:"failedConnectionCount"`
+	TotalConnectionCount  int  `json:"totalConnectionCount"`
 }

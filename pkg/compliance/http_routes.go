@@ -850,8 +850,12 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 	for _, policy := range policies {
 		result := policyResult[policy.ID]
 		policySummary = append(policySummary, api.PolicySummary{
-			Policy:       policy,
-			PolicyResult: result,
+			Policy:                policy,
+			Passed:                result.Passed,
+			FailedResourcesCount:  result.FailedResourcesCount,
+			TotalResourcesCount:   result.TotalResourcesCount,
+			FailedConnectionCount: result.FailedConnectionCount,
+			TotalConnectionCount:  result.TotalConnectionCount,
 		})
 	}
 
