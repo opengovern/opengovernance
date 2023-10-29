@@ -650,31 +650,9 @@ definitions:
       remediation:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree:
-    properties:
-      children:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
-        type: array
-      id:
-        description: Benchmark ID
-        example: azure_cis_v140
-        type: string
-      policies:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree'
-        type: array
-      title:
-        description: Benchmark title
-        example: CIS v1.4.0
-        type: string
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint:
     properties:
       securityScore:
-        description: |-
-          Result    types.ComplianceResultSummary `json:"result"`
-          Checks    types.SeverityResult          `json:"checks"`
         type: number
       timestamp:
         description: Time
@@ -1066,7 +1044,7 @@ definitions:
         example: 1000
         type: integer
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary:
     properties:
       connector:
         allOf:
@@ -1086,6 +1064,10 @@ definitions:
       enabled:
         example: true
         type: boolean
+      failedConnectionCount:
+        type: integer
+      failedResourcesCount:
+        type: integer
       id:
         example: azure_cis_v140_1_1
         type: string
@@ -1094,6 +1076,8 @@ definitions:
         type: boolean
       manualVerification:
         example: true
+        type: boolean
+      passed:
         type: boolean
       queryID:
         example: azure_ad_manual_control
@@ -1112,38 +1096,12 @@ definitions:
         example: 1.1 Ensure that multi-factor authentication status is enabled for
           all privileged users
         type: string
+      totalConnectionCount:
+        type: integer
+      totalResourcesCount:
+        type: integer
       updatedAt:
         example: "2020-01-01T00:00:00Z"
-        type: string
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree:
-    properties:
-      accounts:
-        $ref: '#/definitions/types.ComplianceResultShortSummary'
-      id:
-        description: Policy ID
-        example: azure_cis_v140_7_5
-        type: string
-      lastChecked:
-        description: Last checked
-        example: 0
-        type: integer
-      resources:
-        $ref: '#/definitions/types.ComplianceResultShortSummary'
-      severity:
-        allOf:
-        - $ref: '#/definitions/types.FindingSeverity'
-        description: Severity
-        example: low
-      status:
-        allOf:
-        - $ref: '#/definitions/types.PolicyStatus'
-        description: Status
-        example: passed
-      title:
-        description: Policy title
-        example: 7.5 Ensure that the latest OS Patches for all Virtual Machines are
-          applied
         type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query:
@@ -2536,13 +2494,6 @@ definitions:
     - ComplianceResultINFO
     - ComplianceResultSKIP
     - ComplianceResultERROR
-  types.ComplianceResultShortSummary:
-    properties:
-      failed:
-        type: integer
-      passed:
-        type: integer
-    type: object
   types.ComplianceResultSummary:
     properties:
       alarmCount:
@@ -2577,16 +2528,6 @@ definitions:
     - FindingSeverityMedium
     - FindingSeverityHigh
     - FindingSeverityCritical
-  types.PolicyStatus:
-    enum:
-    - passed
-    - failed
-    - unknown
-    type: string
-    x-enum-varnames:
-    - PolicyStatusPASSED
-    - PolicyStatusFAILED
-    - PolicyStatusUNKNOWN
   types.SeverityResult:
     properties:
       criticalCount:
@@ -3229,7 +3170,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy'
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary'
             type: array
       security:
       - BearerToken: []
@@ -3294,29 +3235,6 @@ paths:
       security:
       - BearerToken: []
       summary: Get benchmark summary
-      tags:
-      - compliance
-  /compliance/api/v1/benchmarks/{benchmark_id}/tree:
-    get:
-      consumes:
-      - application/json
-      description: Retrieving the benchmark tree, including all of its child benchmarks.
-      parameters:
-      - description: Benchmark ID
-        in: path
-        name: benchmark_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
-      security:
-      - BearerToken: []
-      summary: Get benchmark tree
       tags:
       - compliance
   /compliance/api/v1/benchmarks/{benchmark_id}/trend:

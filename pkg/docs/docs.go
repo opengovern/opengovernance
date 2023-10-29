@@ -1089,7 +1089,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy"
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary"
                             }
                         }
                     }
@@ -1179,43 +1179,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/{benchmark_id}/tree": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving the benchmark tree, including all of its child benchmarks.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Get benchmark tree",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Benchmark ID",
-                        "name": "benchmark_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree"
                         }
                     }
                 }
@@ -6541,38 +6504,10 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree": {
-            "type": "object",
-            "properties": {
-                "children": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree"
-                    }
-                },
-                "id": {
-                    "description": "Benchmark ID",
-                    "type": "string",
-                    "example": "azure_cis_v140"
-                },
-                "policies": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree"
-                    }
-                },
-                "title": {
-                    "description": "Benchmark title",
-                    "type": "string",
-                    "example": "CIS v1.4.0"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint": {
             "type": "object",
             "properties": {
                 "securityScore": {
-                    "description": "Result    types.ComplianceResultSummary ` + "`" + `json:\"result\"` + "`" + `\nChecks    types.SeverityResult          ` + "`" + `json:\"checks\"` + "`" + `",
                     "type": "number"
                 },
                 "timestamp": {
@@ -7132,7 +7067,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary": {
             "type": "object",
             "properties": {
                 "connector": {
@@ -7159,6 +7094,12 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
+                "failedConnectionCount": {
+                    "type": "integer"
+                },
+                "failedResourcesCount": {
+                    "type": "integer"
+                },
                 "id": {
                     "type": "string",
                     "example": "azure_cis_v140_1_1"
@@ -7170,6 +7111,9 @@ const docTemplate = `{
                 "manualVerification": {
                     "type": "boolean",
                     "example": true
+                },
+                "passed": {
+                    "type": "boolean"
                 },
                 "queryID": {
                     "type": "string",
@@ -7196,53 +7140,15 @@ const docTemplate = `{
                     "type": "string",
                     "example": "1.1 Ensure that multi-factor authentication status is enabled for all privileged users"
                 },
+                "totalConnectionCount": {
+                    "type": "integer"
+                },
+                "totalResourcesCount": {
+                    "type": "integer"
+                },
                 "updatedAt": {
                     "type": "string",
                     "example": "2020-01-01T00:00:00Z"
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree": {
-            "type": "object",
-            "properties": {
-                "accounts": {
-                    "$ref": "#/definitions/types.ComplianceResultShortSummary"
-                },
-                "id": {
-                    "description": "Policy ID",
-                    "type": "string",
-                    "example": "azure_cis_v140_7_5"
-                },
-                "lastChecked": {
-                    "description": "Last checked",
-                    "type": "integer",
-                    "example": 0
-                },
-                "resources": {
-                    "$ref": "#/definitions/types.ComplianceResultShortSummary"
-                },
-                "severity": {
-                    "description": "Severity",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.FindingSeverity"
-                        }
-                    ],
-                    "example": "low"
-                },
-                "status": {
-                    "description": "Status",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.PolicyStatus"
-                        }
-                    ],
-                    "example": "passed"
-                },
-                "title": {
-                    "description": "Policy title",
-                    "type": "string",
-                    "example": "7.5 Ensure that the latest OS Patches for all Virtual Machines are applied"
                 }
             }
         },
@@ -9194,17 +9100,6 @@ const docTemplate = `{
                 "ComplianceResultERROR"
             ]
         },
-        "types.ComplianceResultShortSummary": {
-            "type": "object",
-            "properties": {
-                "failed": {
-                    "type": "integer"
-                },
-                "passed": {
-                    "type": "integer"
-                }
-            }
-        },
         "types.ComplianceResultSummary": {
             "type": "object",
             "properties": {
@@ -9247,19 +9142,6 @@ const docTemplate = `{
                 "FindingSeverityMedium",
                 "FindingSeverityHigh",
                 "FindingSeverityCritical"
-            ]
-        },
-        "types.PolicyStatus": {
-            "type": "string",
-            "enum": [
-                "passed",
-                "failed",
-                "unknown"
-            ],
-            "x-enum-varnames": [
-                "PolicyStatusPASSED",
-                "PolicyStatusFAILED",
-                "PolicyStatusUNKNOWN"
             ]
         },
         "types.SeverityResult": {

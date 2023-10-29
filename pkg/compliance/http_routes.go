@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/demo"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -58,7 +57,6 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/summary", httpserver.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/trend", httpserver.AuthorizeHandler(h.GetBenchmarkTrend, authApi.ViewerRole))
-	benchmarks.GET("/:benchmark_id/tree", httpserver.AuthorizeHandler(h.GetBenchmarkTree, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/policies", httpserver.AuthorizeHandler(h.GetBenchmarkPolicies, authApi.ViewerRole))
 
 	queries := v1.Group("/queries")
@@ -825,147 +823,6 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetBenchmarkTree godoc
-//
-//	@Summary		Get benchmark tree
-//	@Description	Retrieving the benchmark tree, including all of its child benchmarks.
-//	@Security		BearerToken
-//	@Tags			compliance
-//	@Accept			json
-//	@Produce		json
-//	@Param			benchmark_id	path		string	true	"Benchmark ID"
-//	@Success		200				{object}	api.BenchmarkTree
-//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/tree [get]
-func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
-	var status []kaytuTypes.PolicyStatus
-	benchmarkID := ctx.Param("benchmark_id")
-	for k, va := range ctx.QueryParams() {
-		if k == "status" || k == "status[]" {
-			for _, v := range va {
-				status = append(status, kaytuTypes.PolicyStatus(v))
-			}
-		}
-	}
-	// tracer :
-	output1, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_GetBenchmark")
-
-	benchmark, err := h.db.GetBenchmark(benchmarkID)
-	if err != nil {
-		span1.RecordError(err)
-		span1.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	span1.AddEvent("information", trace.WithAttributes(
-		attribute.String("benchmark ID", benchmark.ID),
-	))
-	span1.End()
-
-	if benchmark == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
-	}
-	outputS2, span2 := tracer.Start(output1, "new_GetBenchmarkTree")
-
-	response, err := GetBenchmarkTree(outputS2, h.db, h.client, *benchmark, status)
-	if err != nil {
-		span2.RecordError(err)
-		span2.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	span2.End()
-	return ctx.JSON(http.StatusOK, response)
-}
-
-func GetBenchmarkTree(ctx context.Context, db db.Database, client kaytu.Client, b db.Benchmark, status []kaytuTypes.PolicyStatus) (api.BenchmarkTree, error) {
-	tree := api.BenchmarkTree{
-		ID:       b.ID,
-		Title:    b.Title,
-		Children: nil,
-		Policies: nil,
-	}
-	// tracer :
-	output1, span1 := tracer.Start(ctx, "new_GetBenchmark(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_GetBenchmark(loop)")
-
-	for _, child := range b.Children {
-		// tracer :
-		_, span2 := tracer.Start(output1, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
-		span2.SetName("new_GetBenchmark")
-
-		childObj, err := db.GetBenchmark(child.ID)
-		if err != nil {
-			span2.RecordError(err)
-			span2.SetStatus(codes.Error, err.Error())
-			return tree, err
-		}
-		span2.SetAttributes(
-			attribute.String("benchmark ID", childObj.ID),
-		)
-		span2.End()
-
-		childTree, err := GetBenchmarkTree(ctx, db, client, *childObj, status)
-		if err != nil {
-			return tree, err
-		}
-
-		tree.Children = append(tree.Children, childTree)
-	}
-	span1.End()
-
-	res, err := es.ListBenchmarkSummaries(client, &b.ID)
-	if err != nil {
-		return tree, err
-	}
-
-	for _, policy := range b.Policies {
-		pt := api.PolicyTree{
-			ID:          policy.ID,
-			Title:       policy.Title,
-			Severity:    policy.Severity,
-			Status:      kaytuTypes.PolicyStatusPASSED,
-			LastChecked: 0,
-		}
-
-		for _, bs := range res {
-			pt.Resources.Failed += bs.Resources.Failed
-			pt.Resources.Passed += bs.Resources.Passed
-
-			if bs.Resources.Failed == 0 {
-				pt.Accounts.Passed++
-			} else if bs.Resources.Failed > 0 {
-				pt.Accounts.Failed++
-			}
-
-			for _, ps := range bs.Policies {
-				if ps.PolicyID == policy.ID {
-					pt.LastChecked = bs.EvaluatedAt
-					pt.Status = kaytuTypes.PolicyStatusPASSED
-					if ps.TotalResult.AlarmCount > 0 || ps.TotalResult.ErrorCount > 0 {
-						pt.Status = kaytuTypes.PolicyStatusFAILED
-					} else if ps.TotalResult.InfoCount > 0 || ps.TotalResult.SkipCount > 0 {
-						pt.Status = kaytuTypes.PolicyStatusUNKNOWN
-					}
-				}
-			}
-		}
-		if len(status) > 0 {
-			contains := false
-			for _, s := range status {
-				if s == pt.Status {
-					contains = true
-				}
-			}
-
-			if !contains {
-				continue
-			}
-		}
-		tree.Policies = append(tree.Policies, pt)
-	}
-
-	return tree, nil
-}
-
 // GetBenchmarkPolicies godoc
 //
 //	@Summary	Get benchmark policies
@@ -974,7 +831,7 @@ func GetBenchmarkTree(ctx context.Context, db db.Database, client kaytu.Client, 
 //	@Accept		json
 //	@Produce	json
 //	@Param		benchmark_id	path		string	true	"Benchmark ID"
-//	@Success	200				{object}	[]api.Policy
+//	@Success	200				{object}	[]api.PolicySummary
 //	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies [get]
 func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
@@ -984,7 +841,21 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 		return err
 	}
 
-	return ctx.JSON(http.StatusOK, policies)
+	policyResult, _, err := es.BenchmarkPolicySummary(h.logger, h.client, benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	var policySummary []api.PolicySummary
+	for _, policy := range policies {
+		result := policyResult[policy.ID]
+		policySummary = append(policySummary, api.PolicySummary{
+			Policy:       policy,
+			PolicyResult: result,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, policySummary)
 }
 
 func (h *HttpHandler) getPolicies(benchmarkID string) ([]api.Policy, error) {

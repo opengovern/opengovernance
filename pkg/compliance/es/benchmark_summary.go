@@ -330,8 +330,8 @@ func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchma
 	return nil, 0, nil
 }
 
-func BenchmarkResourceTypeSummary(logger *zap.Logger, client kaytu.Client, benchmarkID string) (map[string]types2.Result, int64, error) {
-	includes := []string{"ResourceTypes", "EvaluatedAtEpoch"}
+func BenchmarkPolicySummary(logger *zap.Logger, client kaytu.Client, benchmarkID string) (map[string]types2.PolicyResult, int64, error) {
+	includes := []string{"Policies", "EvaluatedAtEpoch"}
 	request := map[string]any{
 		"aggs": map[string]any{
 			"last_result": map[string]any{
@@ -367,7 +367,7 @@ func BenchmarkResourceTypeSummary(logger *zap.Logger, client kaytu.Client, bench
 		return nil, -1, err
 	}
 
-	logger.Info("BenchmarkResourceTypeSummary", zap.String("query", string(queryBytes)))
+	logger.Info("BenchmarkPolicySummary", zap.String("query", string(queryBytes)))
 	var resp BenchmarkConnectionSummaryResponse
 	err = client.Search(context.Background(), types2.BenchmarkSummaryIndex, string(queryBytes), &resp)
 	if err != nil {
@@ -375,7 +375,7 @@ func BenchmarkResourceTypeSummary(logger *zap.Logger, client kaytu.Client, bench
 	}
 
 	for _, res := range resp.Aggregations.LastResult.Hits.Hits {
-		return res.Source.ResourceTypes, res.Source.EvaluatedAtEpoch, nil
+		return res.Source.Policies, res.Source.EvaluatedAtEpoch, nil
 	}
 	return nil, 0, nil
 }
