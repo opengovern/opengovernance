@@ -9,13 +9,11 @@ import (
 )
 
 const (
-	InsightJobsQueueName      = "insight-jobs-queue"
-	InsightResultsQueueName   = "insight-results-queue"
-	CheckupJobsQueueName      = "checkup-jobs-queue"
-	CheckupResultsQueueName   = "checkup-results-queue"
-	AnalyticsJobsQueueName    = "analytics-jobs-queue"
-	AnalyticsResultsQueueName = "analytics-results-queue"
-	SourceEventsQueueName     = "source-events-queue"
+	InsightJobsQueueName    = "insight-jobs-queue"
+	InsightResultsQueueName = "insight-results-queue"
+	CheckupJobsQueueName    = "checkup-jobs-queue"
+	CheckupResultsQueueName = "checkup-results-queue"
+	SourceEventsQueueName   = "source-events-queue"
 )
 
 var (
@@ -98,8 +96,6 @@ func SchedulerCommand() *cobra.Command {
 				InsightResultsQueueName,
 				CheckupJobsQueueName,
 				CheckupResultsQueueName,
-				AnalyticsJobsQueueName,
-				AnalyticsResultsQueueName,
 				SourceEventsQueueName,
 				PostgreSQLUser,
 				PostgreSQLPassword,

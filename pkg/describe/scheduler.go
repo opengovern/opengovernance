@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"net"
 	"strconv"
@@ -50,6 +52,8 @@ const (
 	JobTimeoutCheckInterval  = 1 * time.Minute
 	MaxJobInQueue            = 10000
 	ConcurrentDeletedSources = 1000
+
+	consumerGroup = "describe-scheduler"
 
 	RedisKeyWorkspaceResourceRemaining = "workspace_resource_remaining"
 )
@@ -128,10 +132,8 @@ type Scheduler struct {
 	// checkupJobResultQueue is used to consume the checkup job results returned by the workers.
 	checkupJobResultQueue queue.Interface
 
-	// analyticsJobQueue is used to publish analytics jobs to be performed by the workers.
-	analyticsJobQueue queue.Interface
 	// analyticsJobResultQueue is used to consume the analytics job results returned by the workers.
-	analyticsJobResultQueue queue.Interface
+	analyticsJobResultQueue *kafka.TopicConsumer
 
 	// watch the deleted source
 	deletedSources chan string
@@ -199,8 +201,6 @@ func InitializeScheduler(
 	insightJobResultQueueName string,
 	checkupJobQueueName string,
 	checkupJobResultQueueName string,
-	analyticsJobQueueName string,
-	analyticsJobResultQueueName string,
 	sourceQueueName string,
 	postgresUsername string,
 	postgresPassword string,
@@ -271,12 +271,12 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	s.analyticsJobQueue, err = initRabbitQueue(analyticsJobQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.analyticsJobResultQueue, err = initRabbitQueue(analyticsJobResultQueueName)
+	s.analyticsJobResultQueue, err = kafka.NewTopicConsumer(
+		context.Background(),
+		strings.Split(KafkaService, ","),
+		analytics.JobResultQueueTopic,
+		consumerGroup,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -633,6 +633,8 @@ func (s *Scheduler) Stop() {
 	for _, openQueues := range queues {
 		openQueues.Close()
 	}
+
+	s.analyticsJobResultQueue.Close()
 }
 
 func isPublishingBlocked(logger *zap.Logger, queue queue.Interface) bool {

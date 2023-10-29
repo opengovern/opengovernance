@@ -2313,8 +2313,10 @@ github.com/kaytu-io/kaytu-aws-describer v0.14.1 h1:HdO+jYZpyXuNJv1GD5mdY+yU7dfL0
 github.com/kaytu-io/kaytu-aws-describer v0.14.1/go.mod h1:4RjOzKtZvu8MBjB/zsMMmNYUfvoUaMGXwccVfGjYlgg=
 github.com/kaytu-io/kaytu-azure-describer v0.10.2 h1:iot8LxcaIcoVN+S2Qv7+i7L7lUyPWziTDIhscJosXKs=
 github.com/kaytu-io/kaytu-azure-describer v0.10.2/go.mod h1:Vh456iqTv10AIIHm6+smCmtDPETa2Oft+GNNOpdHhfc=
-github.com/kaytu-io/kaytu-util v0.0.0-20231026104131-e51021218603 h1:M5/qO6OtmPn8P4PMOagoJfaj8KGPPssCaVR/vqspLcU=
-github.com/kaytu-io/kaytu-util v0.0.0-20231026104131-e51021218603/go.mod h1:piF79F4EajeTzJwJyEbO9jVG3WIdqJCwSyNYc65RGFk=
+github.com/kaytu-io/kaytu-util v0.0.0-20231027173858-5de90be7648c h1:/UCHSquC/5i6uj7JCBMWhFKMQBzqfTKgDNQR2Xo3ILc=
+github.com/kaytu-io/kaytu-util v0.0.0-20231027173858-5de90be7648c/go.mod h1:piF79F4EajeTzJwJyEbO9jVG3WIdqJCwSyNYc65RGFk=
+github.com/kaytu-io/kaytu-util v0.0.0-20231027174036-9b024ae1333c h1:hNlBX69kWTXSasyDB0HIrrFYD8OZTyH5cJrtJ15UQIo=
+github.com/kaytu-io/kaytu-util v0.0.0-20231027174036-9b024ae1333c/go.mod h1:piF79F4EajeTzJwJyEbO9jVG3WIdqJCwSyNYc65RGFk=
 github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9 h1:cuwf0h1VmlT/C1hL3FewDUFaeqpegGUvKGezO50nel4=
 github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9/go.mod h1:EGCIxB3DvH/TAf9abPZH0JUFYdROVQguY8SQLMzsiS0=
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:CzGEWj7cYgsdH8dAjBGEr58BoE7ScuLd+fwFZ44+/x8=
