@@ -128,6 +128,8 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 			return err
 		}
 
+		//TODO-Saleh probably push result into s3 to keep historical data
+
 		//if !j.IsStack {
 		//	findings, err = j.FilterFindings(plan, findings, jc)
 		//	if err != nil {
@@ -222,14 +224,10 @@ func RemoveOldFindings(jc JobConfig, policyID string, connectionID string, resou
 		return err
 	}
 
-	b, err := io.ReadAll(res.Body)
+	_, err = io.ReadAll(res.Body)
 	if err != nil {
 		return fmt.Errorf("read response: %w", err)
 	}
 
-	jc.logger.Info("delete by query done", zap.String("response", string(b)))
-	//if err := json.Unmarshal(b, response); err != nil {
-	//	return fmt.Errorf("unmarshal response: %w", err)
-	//}
 	return nil
 }

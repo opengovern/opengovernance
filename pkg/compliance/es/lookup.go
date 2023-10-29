@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	EsFetchPageSize       = 10000
 	InventorySummaryIndex = "inventory_summary"
 )
 

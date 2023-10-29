@@ -95,9 +95,7 @@ type Page struct {
 }
 
 type GetFindingsRequest struct {
-	Filters FindingFilters    `json:"filters"`
-	Sorts   []FindingSortItem `json:"sorts"`
-	Page    Page              `json:"page" validate:"required"`
+	Filters FindingFilters `json:"filters"`
 }
 
 type TopField = string

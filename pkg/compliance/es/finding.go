@@ -4,10 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"go.uber.org/zap"
+	"strings"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
@@ -36,8 +35,8 @@ type FinderPaginator struct {
 	paginator *kaytu.BaseESPaginator
 }
 
-func NewFinderPaginator(client kaytu.Client, filters []kaytu.BoolFilter, limit *int64) (FinderPaginator, error) {
-	paginator, err := kaytu.NewPaginator(client.ES(), types.FindingsIndex, filters, limit)
+func NewFinderPaginator(client kaytu.Client, idx string, filters []kaytu.BoolFilter, limit *int64) (FinderPaginator, error) {
+	paginator, err := kaytu.NewPaginator(client.ES(), idx, filters, limit)
 	if err != nil {
 		return FinderPaginator{}, err
 	}
@@ -76,7 +75,7 @@ func (p FinderPaginator) NextPage(ctx context.Context) ([]types.Finding, error) 
 }
 
 func ListActiveFindings(client kaytu.Client, policyID string) (FinderPaginator, error) {
-	return NewFinderPaginator(client, []kaytu.BoolFilter{
+	return NewFinderPaginator(client, types.FindingsIndex, []kaytu.BoolFilter{
 		kaytu.NewTermFilter("stateActive", "true"),
 		kaytu.NewTermFilter("policyID", policyID),
 	}, nil)
@@ -90,77 +89,38 @@ func FindingsQuery(client kaytu.Client,
 	benchmarkID []string,
 	policyID []string,
 	severity []string,
-	sort []map[string]any,
-	activeOnly bool,
-	from int,
-	size int) (*FindingsQueryResponse, error) {
+	activeOnly bool) ([]types.Finding, error) {
 	idx := types.FindingsIndex
-	res := make(map[string]any)
-	var filters []any
 
+	var filters []kaytu.BoolFilter
 	if len(resourceIDs) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"resourceID": resourceIDs},
-		})
+		filters = append(filters, kaytu.NewTermsFilter("resourceID", resourceIDs))
 	}
-
 	if len(benchmarkID) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"benchmarkID": benchmarkID},
-		})
+		filters = append(filters, kaytu.NewTermsFilter("benchmarkID", benchmarkID))
 	}
-
 	if len(policyID) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"policyID": policyID},
-		})
+		filters = append(filters, kaytu.NewTermsFilter("policyID", policyID))
 	}
-
 	if len(severity) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string]any{"severity": severity},
-		})
+		filters = append(filters, kaytu.NewTermsFilter("severity", severity))
 	}
-
 	if len(connectionID) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string]any{"connectionID": connectionID},
-		})
+		filters = append(filters, kaytu.NewTermsFilter("connectionID", connectionID))
 	}
-
 	if len(provider) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string]any{"connector": provider},
-		})
+		var connectors []string
+		for _, p := range provider {
+			connectors = append(connectors, p.String())
+		}
+		filters = append(filters, kaytu.NewTermsFilter("connector", connectors))
 	}
-
 	if len(resourceCollections) > 0 {
 		idx = types.ResourceCollectionsFindingsIndex
-		filters = append(filters, map[string]any{
-			"terms": map[string]any{"resourceCollection": resourceCollections},
-		})
+		filters = append(filters, kaytu.NewTermsFilter("resourceCollection", resourceCollections))
 	}
-
 	if activeOnly {
-		filters = append(filters, map[string]any{
-			"terms": map[string]any{"stateActive": []string{"true"}},
-		})
-	}
-	res["size"] = size
-	res["from"] = from
-
-	if sort != nil && len(sort) > 0 {
-		res["sort"] = sort
-	}
-
-	res["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": filters,
-		},
-	}
-	b, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
+		filters = append(filters, kaytu.NewTermFilter("stateActive", "true"))
 	}
 
 	isStack := false
@@ -169,13 +129,25 @@ func FindingsQuery(client kaytu.Client,
 			isStack = true
 		}
 	}
-
-	var resp FindingsQueryResponse
 	if isStack {
 		idx = types.StackFindingsIndex
 	}
-	err = client.SearchWithTrackTotalHits(context.Background(), idx, string(b), nil, &resp, true)
-	return &resp, err
+	var findings []types.Finding
+	paginator, err := NewFinderPaginator(client, idx, filters, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := context.Background()
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		findings = append(findings, page...)
+	}
+	return findings, err
 }
 
 type FindingFiltersAggregationResponse struct {

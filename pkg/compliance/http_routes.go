@@ -166,16 +166,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	lastIdx := (req.Page.No - 1) * req.Page.Size
-
 	var response api.GetFindingsResponse
-	var sorts []map[string]any
-	for _, sortItem := range req.Sorts {
-		item := map[string]any{}
-		item[string(sortItem.Field)] = sortItem.Direction
-		sorts = append(sorts, item)
-	}
-
 	var benchmarkIDs []string
 	// tracer :
 	output1, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs(loop)", trace.WithSpanKind(trace.SpanKindServer))
@@ -203,7 +194,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	res, err := es.FindingsQuery(h.client,
 		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
 		req.Filters.ResourceCollection, benchmarkIDs, req.Filters.PolicyID,
-		req.Filters.Severity, sorts, req.Filters.ActiveOnly, lastIdx, req.Page.Size)
+		req.Filters.Severity, req.Filters.ActiveOnly)
 	if err != nil {
 		return err
 	}
@@ -218,9 +209,9 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		return err
 	}
 
-	for _, h := range res.Hits.Hits {
+	for _, h := range res {
 		finding := api.Finding{
-			Finding:                h.Source,
+			Finding:                h,
 			PolicyTitle:            "",
 			ProviderConnectionID:   "",
 			ProviderConnectionName: "",
@@ -235,13 +226,13 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		}
 
 		for _, policy := range policies {
-			if policy.ID == h.Source.PolicyID {
+			if policy.ID == h.PolicyID {
 				finding.PolicyTitle = policy.Title
 			}
 		}
 		response.Findings = append(response.Findings, finding)
 	}
-	response.TotalCount = res.Hits.Total.Value
+	response.TotalCount = int64(len(res))
 	return ctx.JSON(http.StatusOK, response)
 }
 

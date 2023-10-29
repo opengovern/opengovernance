@@ -15,15 +15,9 @@ import (
 )
 
 var (
-	S3AccessKey        = os.Getenv("S3_ACCESS_KEY")
-	S3AccessSecret     = os.Getenv("S3_ACCESS_SECRET")
-	S3Region           = os.Getenv("S3_REGION")
-	CurrentWorkspaceID = os.Getenv("CURRENT_NAMESPACE")
-)
-
-const (
-	JobsQueueName    = "compliance-report-jobs-queue"
-	ResultsQueueName = "compliance-report-results-queue"
+	S3AccessKey    = os.Getenv("S3_ACCESS_KEY")
+	S3AccessSecret = os.Getenv("S3_ACCESS_SECRET")
+	S3Region       = os.Getenv("S3_REGION")
 )
 
 func WorkerCommand() *cobra.Command {
