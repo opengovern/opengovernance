@@ -59,6 +59,10 @@ func (j *Job) Run(jc JobConfig) error {
 	}
 
 	for _, connection := range assignment.Connections {
+		if !connection.Status {
+			continue
+		}
+
 		err := j.RunForConnection(connection.ConnectionID, nil, &bs, jc)
 		if err != nil {
 			return err
@@ -66,6 +70,10 @@ func (j *Job) Run(jc JobConfig) error {
 	}
 
 	for _, resourceCollection := range assignment.ResourceCollections {
+		if !resourceCollection.Status {
+			continue
+		}
+
 		err := j.RunForConnection("all", &resourceCollection.ResourceCollectionID, &bs, jc)
 		if err != nil {
 			return err
