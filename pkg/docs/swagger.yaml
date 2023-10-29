@@ -681,14 +681,6 @@ definitions:
         example: 1686346668
         type: integer
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType:
-    enum:
-    - asc
-    - desc
-    type: string
-    x-enum-varnames:
-    - DirectionAscending
-    - DirectionDescending
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding:
     properties:
       ID:
@@ -844,39 +836,6 @@ definitions:
           $ref: '#/definitions/types.ComplianceResult'
         type: array
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem:
-    properties:
-      direction:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType'
-        description: Sort direction
-        enum:
-        - asc
-        - desc
-        example: asc
-      field:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType'
-        description: Field to sort by
-        enum:
-        - resourceID
-        - resourceName
-        - resourceType
-        - serviceName
-        - category
-        - resourceLocation
-        - status
-        - describedAt
-        - evaluatedAt
-        - sourceID
-        - connectionProviderID
-        - connectionProviderName
-        - sourceType
-        - benchmarkID
-        - policyID
-        - policySeverity
-        example: status
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse:
     properties:
       accounts:
@@ -899,14 +858,6 @@ definitions:
     properties:
       filters:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
-      page:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page'
-      sorts:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem'
-        type: array
-    required:
-    - page
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse:
     properties:
@@ -1115,17 +1066,6 @@ definitions:
         example: 1000
         type: integer
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page:
-    properties:
-      "no":
-        description: Number of pages
-        example: 5
-        type: integer
-      size:
-        description: Number of items per page
-        example: 100
-        type: integer
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree:
     properties:
       accounts:
@@ -1208,42 +1148,6 @@ definitions:
             type: integer
         type: object
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType:
-    enum:
-    - resourceID
-    - resourceName
-    - resourceType
-    - serviceName
-    - category
-    - resourceLocation
-    - status
-    - describedAt
-    - evaluatedAt
-    - sourceID
-    - connectionProviderID
-    - connectionProviderName
-    - sourceType
-    - benchmarkID
-    - policyID
-    - policySeverity
-    type: string
-    x-enum-varnames:
-    - FieldResourceID
-    - FieldResourceName
-    - FieldResourceType
-    - FieldServiceName
-    - FieldCategory
-    - FieldResourceLocation
-    - FieldStatus
-    - FieldDescribedAt
-    - FieldEvaluatedAt
-    - FieldSourceID
-    - FieldConnectionProviderID
-    - FieldConnectionProviderName
-    - FieldSourceType
-    - FieldBenchmarkID
-    - FieldPolicyID
-    - FieldPolicySeverity
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord:
     properties:
       count:
@@ -1268,17 +1172,6 @@ definitions:
         items:
           type: string
         type: array
-      page:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page'
-        description: Pages count to retrieve
-      sorts:
-        description: Sorts to apply
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem'
-        type: array
-    required:
-    - page
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack:
     properties:

@@ -636,8 +636,6 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 			BenchmarkID:  reqBody.BenchmarkIDs,
 			ResourceID:   []string(stackRecord.Resources),
 		},
-		Sorts: reqBody.Sorts,
-		Page:  reqBody.Page,
 	}
 
 	findings, err := h.Scheduler.complianceClient.GetFindings(httpclient.FromEchoContext(ctx), req)

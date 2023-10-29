@@ -6583,17 +6583,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType": {
-            "type": "string",
-            "enum": [
-                "asc",
-                "desc"
-            ],
-            "x-enum-varnames": [
-                "DirectionAscending",
-                "DirectionDescending"
-            ]
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding": {
             "type": "object",
             "properties": {
@@ -6812,51 +6801,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem": {
-            "type": "object",
-            "properties": {
-                "direction": {
-                    "description": "Sort direction",
-                    "enum": [
-                        "asc",
-                        "desc"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType"
-                        }
-                    ],
-                    "example": "asc"
-                },
-                "field": {
-                    "description": "Field to sort by",
-                    "enum": [
-                        "resourceID",
-                        "resourceName",
-                        "resourceType",
-                        "serviceName",
-                        "category",
-                        "resourceLocation",
-                        "status",
-                        "describedAt",
-                        "evaluatedAt",
-                        "sourceID",
-                        "connectionProviderID",
-                        "connectionProviderName",
-                        "sourceType",
-                        "benchmarkID",
-                        "policyID",
-                        "policySeverity"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType"
-                        }
-                    ],
-                    "example": "status"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse": {
             "type": "object",
             "properties": {
@@ -6887,21 +6831,9 @@ const docTemplate = `{
         },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequest": {
             "type": "object",
-            "required": [
-                "page"
-            ],
             "properties": {
                 "filters": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters"
-                },
-                "page": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page"
-                },
-                "sorts": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem"
-                    }
                 }
             }
         },
@@ -7201,21 +7133,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page": {
-            "type": "object",
-            "properties": {
-                "no": {
-                    "description": "Number of pages",
-                    "type": "integer",
-                    "example": 5
-                },
-                "size": {
-                    "description": "Number of items per page",
-                    "type": "integer",
-                    "example": 100
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree": {
             "type": "object",
             "properties": {
@@ -7329,45 +7246,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType": {
-            "type": "string",
-            "enum": [
-                "resourceID",
-                "resourceName",
-                "resourceType",
-                "serviceName",
-                "category",
-                "resourceLocation",
-                "status",
-                "describedAt",
-                "evaluatedAt",
-                "sourceID",
-                "connectionProviderID",
-                "connectionProviderName",
-                "sourceType",
-                "benchmarkID",
-                "policyID",
-                "policySeverity"
-            ],
-            "x-enum-varnames": [
-                "FieldResourceID",
-                "FieldResourceName",
-                "FieldResourceType",
-                "FieldServiceName",
-                "FieldCategory",
-                "FieldResourceLocation",
-                "FieldStatus",
-                "FieldDescribedAt",
-                "FieldEvaluatedAt",
-                "FieldSourceID",
-                "FieldConnectionProviderID",
-                "FieldConnectionProviderName",
-                "FieldSourceType",
-                "FieldBenchmarkID",
-                "FieldPolicyID",
-                "FieldPolicySeverity"
-            ]
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord": {
             "type": "object",
             "properties": {
@@ -7392,9 +7270,6 @@ const docTemplate = `{
         },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetStackFindings": {
             "type": "object",
-            "required": [
-                "page"
-            ],
             "properties": {
                 "benchmarkIds": {
                     "description": "Benchmark IDs to filter",
@@ -7405,21 +7280,6 @@ const docTemplate = `{
                     "example": [
                         "azure_cis_v140"
                     ]
-                },
-                "page": {
-                    "description": "Pages count to retrieve",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page"
-                        }
-                    ]
-                },
-                "sorts": {
-                    "description": "Sorts to apply",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem"
-                    }
                 }
             }
         },
