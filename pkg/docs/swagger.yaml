@@ -2514,6 +2514,7 @@ definitions:
   types.FindingSeverity:
     enum:
     - none
+    - passed
     - low
     - medium
     - high
@@ -2521,6 +2522,7 @@ definitions:
     type: string
     x-enum-varnames:
     - FindingSeverityNone
+    - FindingSeverityPassed
     - FindingSeverityLow
     - FindingSeverityMedium
     - FindingSeverityHigh
@@ -3446,6 +3448,7 @@ paths:
         items:
           enum:
           - none
+          - passed
           - low
           - medium
           - high
@@ -3529,6 +3532,7 @@ paths:
         items:
           enum:
           - none
+          - passed
           - low
           - medium
           - high
@@ -3560,10 +3564,6 @@ paths:
         name: benchmarkId
         required: true
         type: string
-      - description: Number of outputs
-        in: query
-        name: count
-        type: integer
       - collectionFormat: csv
         description: Connection IDs to filter by
         in: query
@@ -3577,17 +3577,6 @@ paths:
         items:
           type: string
         name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
         type: array
       produces:
       - application/json
@@ -3613,10 +3602,6 @@ paths:
         name: benchmarkId
         required: true
         type: string
-      - description: Number of outputs
-        in: query
-        name: count
-        type: integer
       - collectionFormat: csv
         description: Connection IDs to filter by
         in: query
@@ -3630,17 +3615,6 @@ paths:
         items:
           type: string
         name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
         type: array
       produces:
       - application/json

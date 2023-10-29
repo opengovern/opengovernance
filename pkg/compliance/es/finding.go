@@ -217,35 +217,6 @@ type AccountsFindingsBySeverityResponse struct {
 	} `json:"aggregations"`
 }
 
-type ResourceTypesFindingsBySeverityResponse struct {
-	Aggregations struct {
-		ResourceTypes struct {
-			DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
-			SumOtherDocCount        int `json:"sum_other_doc_count"`
-			Buckets                 []struct {
-				Key      string `json:"key"`
-				DocCount int    `json:"doc_count"`
-				Result   struct {
-					DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
-					SumOtherDocCount        int `json:"sum_other_doc_count"`
-					Buckets                 []struct {
-						Key      string `json:"key"`
-						DocCount int    `json:"doc_count"`
-					} `json:"buckets"`
-				} `json:"result"`
-				Severity struct {
-					DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
-					SumOtherDocCount        int `json:"sum_other_doc_count"`
-					Buckets                 []struct {
-						Key      string `json:"key"`
-						DocCount int    `json:"doc_count"`
-					} `json:"buckets"`
-				} `json:"severity"`
-			} `json:"buckets"`
-		} `json:"resource_types"`
-	} `json:"aggregations"`
-}
-
 type FindingsFieldCountByPolicyResponse struct {
 	Aggregations struct {
 		PolicyCount struct {
@@ -353,146 +324,67 @@ func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 	return &resp, err
 }
 
-func AccountsFindingsSummary(logger *zap.Logger, client kaytu.Client,
-	connectors []source.Type, connectionIDs []string,
-	benchmarkID []string, size int64) (*AccountsFindingsBySeverityResponse, error) {
-	idx := types.FindingsIndex
-	terms := make(map[string]any)
-	if len(benchmarkID) > 0 {
-		terms["benchmarkID"] = benchmarkID
-	}
-	if len(connectionIDs) > 0 {
-		terms["connectionID"] = connectionIDs
-	}
-	if len(connectors) > 0 {
-		terms["connector"] = connectors
-	}
-
-	root := map[string]any{}
-	root["size"] = 0
-
-	root["aggs"] = map[string]any{
-		"accounts": map[string]any{
-			"terms": map[string]any{
-				"field": "connectionID",
-				"size":  size,
-			},
-			"aggs": map[string]any{
-				"severity": map[string]any{
-					"terms": map[string]any{
-						"field": "severity",
-					},
-				},
-				"result": map[string]any{
-					"terms": map[string]any{
-						"field": "result",
-					},
-				},
-				"last_evaluation": map[string]any{
-					"max": map[string]any{
-						"field": "evaluatedAt",
-					},
-				},
-			},
-		},
-	}
-
-	boolQuery := make(map[string]any)
-	if terms != nil && len(terms) > 0 {
-		var filters []map[string]any
-		for k, vs := range terms {
-			filters = append(filters, map[string]any{
-				"terms": map[string]any{
-					k: vs,
-				},
-			})
-		}
-
-		boolQuery["filter"] = filters
-	}
-	if len(boolQuery) > 0 {
-		root["query"] = map[string]any{
-			"bool": boolQuery,
-		}
-	}
-
-	queryBytes, err := json.Marshal(root)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Info("AccountsFindingsBySeverity", zap.String("query", string(queryBytes)), zap.String("index", idx))
-	var resp AccountsFindingsBySeverityResponse
-	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
-	return &resp, err
+type ResourceTypesFindingsSummaryResponse struct {
+	Aggregations struct {
+		Summaries struct {
+			Buckets []struct {
+				Key      string `json:"key"`
+				DocCount int    `json:"doc_count"`
+				Severity struct {
+					Buckets []struct {
+						Key      string `json:"key"`
+						DocCount int    `json:"doc_count"`
+					} `json:"buckets"`
+				} `json:"severity"`
+			} `json:"buckets"`
+		} `json:"summaries"`
+	} `json:"aggregations"`
 }
 
 func ResourceTypesFindingsSummary(logger *zap.Logger, client kaytu.Client,
-	connectors []source.Type, connectionIDs []string,
-	benchmarkID []string, size int64) (*ResourceTypesFindingsBySeverityResponse, error) {
-	idx := types.FindingsIndex
-	terms := make(map[string]any)
-	if len(benchmarkID) > 0 {
-		terms["benchmarkID"] = benchmarkID
-	}
-	if len(connectionIDs) > 0 {
-		terms["connectionID"] = connectionIDs
-	}
-	if len(connectors) > 0 {
-		terms["connector"] = connectors
-	}
-
-	root := map[string]any{}
-	root["size"] = 0
-
-	root["aggs"] = map[string]any{
-		"resource_types": map[string]any{
-			"terms": map[string]any{
-				"field": "resourceType",
-				"size":  size,
-			},
-			"aggs": map[string]any{
-				"severity": map[string]any{
-					"terms": map[string]any{
-						"field": "severity",
-					},
+	connectionIDs []string, benchmarkID string) (*ResourceTypesFindingsSummaryResponse, error) {
+	request := map[string]any{
+		"aggs": map[string]any{
+			"summaries": map[string]any{
+				"terms": map[string]any{
+					"field": "resourceType",
 				},
-				"result": map[string]any{
-					"terms": map[string]any{
-						"field": "result",
+				"aggs": map[string]any{
+					"severity": map[string]any{
+						"terms": map[string]any{
+							"field": "severity",
+						},
 					},
 				},
 			},
 		},
-	}
-
-	boolQuery := make(map[string]any)
-	if terms != nil && len(terms) > 0 {
-		var filters []map[string]any
-		for k, vs := range terms {
-			filters = append(filters, map[string]any{
-				"terms": map[string]any{
-					k: vs,
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": []map[string]any{
+					{
+						"term": map[string]any{
+							"parentBenchmarks": benchmarkID,
+						},
+					},
+					{
+						"terms": map[string]any{
+							"connectionID": connectionIDs,
+						},
+					},
 				},
-			})
-		}
-
-		boolQuery["filter"] = filters
-	}
-	if len(boolQuery) > 0 {
-		root["query"] = map[string]any{
-			"bool": boolQuery,
-		}
+			},
+		},
+		"size": 0,
 	}
 
-	queryBytes, err := json.Marshal(root)
+	queryBytes, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Info("ResourceTypesFindingsBySeverity", zap.String("query", string(queryBytes)), zap.String("index", idx))
-	var resp ResourceTypesFindingsBySeverityResponse
-	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
+	logger.Info("ResourceTypesFindingsSummary", zap.String("query", string(queryBytes)))
+	var resp ResourceTypesFindingsSummaryResponse
+	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
 	return &resp, err
 }
 

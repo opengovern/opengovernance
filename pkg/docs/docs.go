@@ -1345,12 +1345,6 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "Number of outputs",
-                        "name": "count",
-                        "in": "query"
-                    },
-                    {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -1368,21 +1362,6 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Connection groups to filter by ",
                         "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
                         "in": "query"
                     }
                 ],
@@ -1423,12 +1402,6 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "Number of outputs",
-                        "name": "count",
-                        "in": "query"
-                    },
-                    {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -1446,21 +1419,6 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Connection groups to filter by ",
                         "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
                         "in": "query"
                     }
                 ],
@@ -1563,6 +1521,7 @@ const docTemplate = `{
                         "items": {
                             "enum": [
                                 "none",
+                                "passed",
                                 "low",
                                 "medium",
                                 "high",
@@ -1682,6 +1641,7 @@ const docTemplate = `{
                         "items": {
                             "enum": [
                                 "none",
+                                "passed",
                                 "low",
                                 "medium",
                                 "high",
@@ -9165,6 +9125,7 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "none",
+                "passed",
                 "low",
                 "medium",
                 "high",
@@ -9172,6 +9133,7 @@ const docTemplate = `{
             ],
             "x-enum-varnames": [
                 "FindingSeverityNone",
+                "FindingSeverityPassed",
                 "FindingSeverityLow",
                 "FindingSeverityMedium",
                 "FindingSeverityHigh",

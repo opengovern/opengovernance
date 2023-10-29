@@ -267,3 +267,115 @@ func ListBenchmarkSummariesAtTime(logger *zap.Logger, client kaytu.Client,
 	}
 	return benchmarkSummaries, nil
 }
+
+type BenchmarkConnectionSummaryResponse struct {
+	Aggregations struct {
+		LastResult struct {
+			Hits struct {
+				Hits []struct {
+					Source types2.BenchmarkSummary `json:"_source"`
+				} `json:"hits"`
+			} `json:"hits"`
+		} `json:"last_result"`
+	} `json:"aggregations"`
+}
+
+func BenchmarkConnectionSummary(logger *zap.Logger, client kaytu.Client, benchmarkID string) (map[string]types2.Result, int64, error) {
+	includes := []string{"Connections", "EvaluatedAtEpoch"}
+	request := map[string]any{
+		"aggs": map[string]any{
+			"last_result": map[string]any{
+				"top_hits": map[string]any{
+					"sort": []map[string]any{
+						{
+							"JobID": "desc",
+						},
+					},
+					"_source": map[string]any{
+						"includes": includes,
+					},
+					"size": 1,
+				},
+			},
+		},
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": []map[string]any{
+					{
+						"term": map[string]any{
+							"BenchmarkID": benchmarkID,
+						},
+					},
+				},
+			},
+		},
+		"size": 0,
+	}
+
+	queryBytes, err := json.Marshal(request)
+	if err != nil {
+		return nil, -1, err
+	}
+
+	logger.Info("BenchmarkConnectionSummary", zap.String("query", string(queryBytes)))
+	var resp BenchmarkConnectionSummaryResponse
+	err = client.Search(context.Background(), types2.BenchmarkSummaryIndex, string(queryBytes), &resp)
+	if err != nil {
+		return nil, -1, err
+	}
+
+	for _, res := range resp.Aggregations.LastResult.Hits.Hits {
+		return res.Source.Connections, res.Source.EvaluatedAtEpoch, nil
+	}
+	return nil, 0, nil
+}
+
+func BenchmarkResourceTypeSummary(logger *zap.Logger, client kaytu.Client, benchmarkID string) (map[string]types2.Result, int64, error) {
+	includes := []string{"ResourceTypes", "EvaluatedAtEpoch"}
+	request := map[string]any{
+		"aggs": map[string]any{
+			"last_result": map[string]any{
+				"top_hits": map[string]any{
+					"sort": []map[string]any{
+						{
+							"JobID": "desc",
+						},
+					},
+					"_source": map[string]any{
+						"includes": includes,
+					},
+					"size": 1,
+				},
+			},
+		},
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": []map[string]any{
+					{
+						"term": map[string]any{
+							"BenchmarkID": benchmarkID,
+						},
+					},
+				},
+			},
+		},
+		"size": 0,
+	}
+
+	queryBytes, err := json.Marshal(request)
+	if err != nil {
+		return nil, -1, err
+	}
+
+	logger.Info("BenchmarkResourceTypeSummary", zap.String("query", string(queryBytes)))
+	var resp BenchmarkConnectionSummaryResponse
+	err = client.Search(context.Background(), types2.BenchmarkSummaryIndex, string(queryBytes), &resp)
+	if err != nil {
+		return nil, -1, err
+	}
+
+	for _, res := range resp.Aggregations.LastResult.Hits.Hits {
+		return res.Source.ResourceTypes, res.Source.EvaluatedAtEpoch, nil
+	}
+	return nil, 0, nil
+}

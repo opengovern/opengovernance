@@ -1339,12 +1339,6 @@
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "Number of outputs",
-                        "name": "count",
-                        "in": "query"
-                    },
-                    {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -1362,21 +1356,6 @@
                         "collectionFormat": "csv",
                         "description": "Connection groups to filter by ",
                         "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
                         "in": "query"
                     }
                 ],
@@ -1417,12 +1396,6 @@
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "Number of outputs",
-                        "name": "count",
-                        "in": "query"
-                    },
-                    {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -1440,21 +1413,6 @@
                         "collectionFormat": "csv",
                         "description": "Connection groups to filter by ",
                         "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
                         "in": "query"
                     }
                 ],
@@ -1557,6 +1515,7 @@
                         "items": {
                             "enum": [
                                 "none",
+                                "passed",
                                 "low",
                                 "medium",
                                 "high",
@@ -1676,6 +1635,7 @@
                         "items": {
                             "enum": [
                                 "none",
+                                "passed",
                                 "low",
                                 "medium",
                                 "high",
@@ -9159,6 +9119,7 @@
             "type": "string",
             "enum": [
                 "none",
+                "passed",
                 "low",
                 "medium",
                 "high",
@@ -9166,6 +9127,7 @@
             ],
             "x-enum-varnames": [
                 "FindingSeverityNone",
+                "FindingSeverityPassed",
                 "FindingSeverityLow",
                 "FindingSeverityMedium",
                 "FindingSeverityHigh",
