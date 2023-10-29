@@ -197,6 +197,8 @@ func RemoveOldFindings(jc JobConfig, policyID string, connectionID string, resou
 		return err
 	}
 
+	jc.logger.Info("delete by query", zap.String("body", string(query)))
+
 	res, err := es.DeleteByQuery(
 		index,
 		bytes.NewReader(query),

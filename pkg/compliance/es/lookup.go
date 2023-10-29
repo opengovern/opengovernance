@@ -53,7 +53,7 @@ func FetchLookupsByResourceIDWildcard(client kaytu.Client, resourceID string) (L
 		return LookupQueryResponse{}, err
 	}
 
-	//fmt.Println("query=", string(b), "index=", InventorySummaryIndex)
+	fmt.Println("query=", string(b), "index=", InventorySummaryIndex)
 
 	var response LookupQueryResponse
 	err = client.Search(context.Background(), InventorySummaryIndex, string(b), &response)
@@ -82,7 +82,7 @@ func FetchLookupsByResourceIDWildcard(client kaytu.Client, resourceID string) (L
 	if err != nil {
 		return LookupQueryResponse{}, err
 	}
-	//fmt.Println("query=", string(b), "index=", InventorySummaryIndex)
+	fmt.Println("query=", string(b), "index=", InventorySummaryIndex)
 	response = LookupQueryResponse{}
 	err = client.Search(context.Background(), InventorySummaryIndex, string(b), &response)
 	if err != nil {
