@@ -841,7 +841,7 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 		return err
 	}
 
-	policyResult, _, err := es.BenchmarkPolicySummary(h.logger, h.client, benchmarkID)
+	policyResult, evaluatedAt, err := es.BenchmarkPolicySummary(h.logger, h.client, benchmarkID)
 	if err != nil {
 		return err
 	}
@@ -856,6 +856,7 @@ func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 			TotalResourcesCount:   result.TotalResourcesCount,
 			FailedConnectionCount: result.FailedConnectionCount,
 			TotalConnectionCount:  result.TotalConnectionCount,
+			EvaluatedAt:           evaluatedAt,
 		})
 	}
 

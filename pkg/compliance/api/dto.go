@@ -139,9 +139,10 @@ type BenchmarkEvaluationSummary struct {
 type PolicySummary struct {
 	Policy Policy `json:"policy"`
 
-	Passed                bool `json:"passed"`
-	FailedResourcesCount  int  `json:"failedResourcesCount"`
-	TotalResourcesCount   int  `json:"totalResourcesCount"`
-	FailedConnectionCount int  `json:"failedConnectionCount"`
-	TotalConnectionCount  int  `json:"totalConnectionCount"`
+	Passed                bool  `json:"passed"`
+	FailedResourcesCount  int   `json:"failedResourcesCount"`
+	TotalResourcesCount   int   `json:"totalResourcesCount"`
+	FailedConnectionCount int   `json:"failedConnectionCount"`
+	TotalConnectionCount  int   `json:"totalConnectionCount"`
+	EvaluatedAt           int64 `json:"evaluatedAt"`
 }
