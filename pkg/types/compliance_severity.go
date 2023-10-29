@@ -63,8 +63,8 @@ func (r *SeverityResult) AddSeverityResult(severity SeverityResult) {
 }
 
 func (r *SeverityResult) AddResultMap(severity map[FindingSeverity]int) {
-	r.UnknownCount += severity[FindingSeverityNone]
-	r.PassedCount += severity[FindingSeverityNone] //TODO-Saleh
+	//r.UnknownCount += severity[FindingSeverityNone]
+	r.PassedCount += severity[FindingSeverityNone]
 	r.LowCount += severity[FindingSeverityLow]
 	r.MediumCount += severity[FindingSeverityMedium]
 	r.HighCount += severity[FindingSeverityHigh]
