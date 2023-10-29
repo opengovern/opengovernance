@@ -754,22 +754,22 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		if len(connectionIDs) > 0 {
 			for _, connectionID := range connectionIDs {
 				csResult.AddResultMap(summaryAtTime.Connections[connectionID].QueryResult)
-				sResult.AddResultMap(summaryAtTime.Connections[connectionID].SeverityResult)
+				sResult.AddResultMap(summaryAtTime.Connections[connectionID])
 				response.TotalResult.AddResultMap(summaryAtTime.Connections[connectionID].QueryResult)
-				response.TotalChecks.AddResultMap(summaryAtTime.Connections[connectionID].SeverityResult)
+				response.TotalChecks.AddResultMap(summaryAtTime.Connections[connectionID])
 			}
 		} else if len(resourceCollections) > 0 {
 			for _, resourceCollection := range resourceCollections {
 				csResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].QueryResult)
-				sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].SeverityResult)
+				sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection])
 				response.TotalResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].QueryResult)
-				response.TotalChecks.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].SeverityResult)
+				response.TotalChecks.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection])
 			}
 		} else {
 			csResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
-			sResult.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
+			sResult.AddResultMap(summaryAtTime.BenchmarkResult)
 			response.TotalResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
-			response.TotalChecks.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
+			response.TotalChecks.AddResultMap(summaryAtTime.BenchmarkResult)
 		}
 
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkEvaluationSummary{
@@ -871,16 +871,16 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 	if len(connectionIDs) > 0 {
 		for _, connectionID := range connectionIDs {
 			csResult.AddResultMap(summaryAtTime.Connections[connectionID].QueryResult)
-			sResult.AddResultMap(summaryAtTime.Connections[connectionID].SeverityResult)
+			sResult.AddResultMap(summaryAtTime.Connections[connectionID])
 		}
 	} else if len(resourceCollections) > 0 {
 		for _, resourceCollection := range resourceCollections {
 			csResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].QueryResult)
-			sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].SeverityResult)
+			sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection])
 		}
 	} else {
 		csResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
-		sResult.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
+		sResult.AddResultMap(summaryAtTime.BenchmarkResult)
 	}
 
 	response := api.BenchmarkEvaluationSummary{
