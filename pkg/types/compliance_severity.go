@@ -1,7 +1,6 @@
 package types
 
 import (
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/worker/types"
 	"strings"
 )
 
@@ -64,13 +63,13 @@ func (r *SeverityResult) AddSeverityResult(severity SeverityResult) {
 	r.CriticalCount += severity.CriticalCount
 }
 
-func (r *SeverityResult) AddResultMap(result types.Result) {
-	r.UnknownCount += result.SeverityResult[FindingSeverityNone]
-	r.PassedCount += result.SeverityResult[FindingSeverityPassed]
-	r.LowCount += result.SeverityResult[FindingSeverityLow]
-	r.MediumCount += result.SeverityResult[FindingSeverityMedium]
-	r.HighCount += result.SeverityResult[FindingSeverityHigh]
-	r.CriticalCount += result.SeverityResult[FindingSeverityCritical]
+func (r *SeverityResult) AddResultMap(result map[FindingSeverity]int) {
+	r.UnknownCount += result[FindingSeverityNone]
+	r.PassedCount += result[FindingSeverityPassed]
+	r.LowCount += result[FindingSeverityLow]
+	r.MediumCount += result[FindingSeverityMedium]
+	r.HighCount += result[FindingSeverityHigh]
+	r.CriticalCount += result[FindingSeverityCritical]
 }
 
 func (r *SeverityResult) IncreaseBySeverity(severity FindingSeverity) {
