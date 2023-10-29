@@ -90,7 +90,7 @@ func FetchBenchmarkSummaryTrend(logger *zap.Logger, client kaytu.Client, benchma
 				return nil, fmt.Errorf("invalid length %d", len(v))
 			}
 			if k == "EvaluatedAtEpoch" {
-				date = v[0].(int64)
+				date = int64(v[0].(float64))
 			} else if strings.HasSuffix(k, "SecurityScore") {
 				sum += v[0].(float64)
 			} else if k == "BenchmarkID" {
