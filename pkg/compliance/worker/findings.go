@@ -98,6 +98,9 @@ func (j *Job) ExtractFindings(plan ExecutionPlan, connectionID string, resourceC
 		severity := types.FindingSeverityNone
 		if status == types.ComplianceResultALARM {
 			severity = plan.Policy.Severity
+			if severity == "" {
+				severity = types.FindingSeverityLow
+			}
 		}
 
 		findings = append(findings, types.Finding{
