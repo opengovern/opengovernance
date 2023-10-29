@@ -167,7 +167,7 @@ func (w *Worker) Run() error {
 
 	w.logger.Info("Starting analytics worker")
 
-	msgs := w.jobQueue.Consume(context.TODO())
+	msgs := w.jobQueue.Consume(context.TODO(), w.logger)
 
 	err := steampipe.PopulateSteampipeConfig(w.config.ElasticSearch, source.CloudAWS)
 	if err != nil {

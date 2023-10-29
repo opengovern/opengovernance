@@ -97,7 +97,7 @@ func (w *Worker) Run() error {
 	if err != nil {
 		return err
 	}
-	msgs := consumer.Consume(ctx)
+	msgs := consumer.Consume(ctx, w.logger)
 	t := time.NewTicker(JobTimeoutCheckInterval)
 	defer t.Stop()
 

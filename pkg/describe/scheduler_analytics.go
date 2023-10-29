@@ -148,7 +148,7 @@ func newAnalyticsJob(analyticsJobType model.AnalyticsJobType) model.AnalyticsJob
 func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the analyticsJobResultQueue queue")
 
-	msgs := s.analyticsJobResultQueue.Consume(context.TODO())
+	msgs := s.analyticsJobResultQueue.Consume(context.TODO(), s.logger)
 	t := time.NewTicker(JobTimeoutCheckInterval)
 	defer t.Stop()
 
