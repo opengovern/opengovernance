@@ -3162,6 +3162,28 @@ paths:
       summary: Get benchmark assigned sources
       tags:
       - benchmarks_assignment
+  /compliance/api/v1/benchmarks/{benchmark_id}/policies:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
+      security:
+      - BearerToken: []
+      summary: Get benchmark policies
+      tags:
+      - compliance
   /compliance/api/v1/benchmarks/{benchmark_id}/summary:
     get:
       consumes:

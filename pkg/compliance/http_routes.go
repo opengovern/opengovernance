@@ -953,6 +953,56 @@ func GetBenchmarkTree(ctx context.Context, db db.Database, client kaytu.Client, 
 	return tree, nil
 }
 
+// GetBenchmarkPolicies godoc
+//
+//	@Summary	Get benchmark policies
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		benchmark_id	path		string	true	"Benchmark ID"
+//	@Success	200				{object}	api.BenchmarkTree
+//	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies [get]
+func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
+	benchmarkID := ctx.Param("benchmark_id")
+
+	policies, err := h.getPolicies(benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, policies)
+}
+
+func (h *HttpHandler) getPolicies(benchmarkID string) ([]api.Policy, error) {
+	benchmark, err := h.db.GetBenchmark(benchmarkID)
+	if err != nil {
+		return nil, err
+	}
+
+	policiesMap := map[string]api.Policy{}
+	for _, child := range benchmark.Children {
+		childPolicies, err := h.getPolicies(child.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, ch := range childPolicies {
+			policiesMap[ch.ID] = ch
+		}
+	}
+
+	for _, policy := range benchmark.Policies {
+		policiesMap[policy.ID] = policy.ToApi()
+	}
+
+	var policies []api.Policy
+	for _, v := range policiesMap {
+		policies = append(policies, v)
+	}
+	return policies, nil
+}
+
 // GetBenchmarkTrend godoc
 //
 //	@Summary		Get benchmark trend
