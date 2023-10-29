@@ -153,7 +153,7 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 		context.Background(),
 		strings.Split(KafkaService, ","),
 		analytics.JobResultQueueTopic,
-		consumerGroup,
+		schedulerConsumerGroup,
 	)
 	if err != nil {
 		s.logger.Error("Failed to create kafka consumer", zap.Error(err))

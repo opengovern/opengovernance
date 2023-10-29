@@ -51,7 +51,7 @@ const (
 	MaxJobInQueue            = 10000
 	ConcurrentDeletedSources = 1000
 
-	consumerGroup = "describe-scheduler"
+	schedulerConsumerGroup = "describe-scheduler"
 
 	RedisKeyWorkspaceResourceRemaining = "workspace_resource_remaining"
 )
