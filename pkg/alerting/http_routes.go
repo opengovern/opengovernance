@@ -9,6 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/labstack/echo/v4"
+	"kaytu-engine/pkg/internal/httpserver"
 	"net/http"
 	"strconv"
 	"time"
@@ -312,7 +313,7 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 		metadata = nil
 	}
 
-	err = h.db.UpdateRule(uint(id), &eventType, &scope, &metadata, &operator, req.ActionID)
+	err = h.db.UpdateRule(uint(id), &eventType, &scope, &metadata, &operator, req.ActionID, "Not active")
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error updating the rule : %v ", err))
 	}

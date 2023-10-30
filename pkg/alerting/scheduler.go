@@ -93,19 +93,21 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 		return fmt.Errorf("Error: insighId or complianceId not entered ")
 	}
 
-	if stat == false && status == "Active" {
+	if stat == true && status == "Not active" {
 		err = h.sendAlert(rule, metadata, averageSecurityScorePercentage)
 		h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.Id)),
 			zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
 		if err != nil {
 			return fmt.Errorf("Error sending alert : %v ", err.Error())
 		}
-	} else if stat == true && status == "NoActive" {
-		err = h.sendAlert(rule, metadata, averageSecurityScorePercentage)
-		h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.Id)),
-			zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
+		err = h.db.UpdateRule(rule.Id, nil, nil, nil, nil, nil, "Active")
 		if err != nil {
-			return fmt.Errorf("Error sending alert : %v ", err.Error())
+			return fmt.Errorf("Error updating rule : %v ", err.Error())
+		}
+	} else if stat == false && status == "Active" {
+		err = h.db.UpdateRule(rule.Id, nil, nil, nil, nil, nil, "Not active")
+		if err != nil {
+			return fmt.Errorf("Error updating rule : %v ", err.Error())
 		}
 	}
 	return nil

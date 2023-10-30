@@ -72,7 +72,7 @@ func (db Database) CreateRule(eventType []byte, scope []byte, operator []byte, a
 		Operator:      operator,
 		ActionID:      actionID,
 		Metadata:      metadata,
-		TriggerStatus: "NotActive",
+		TriggerStatus: "Not active",
 	}
 	err := db.orm.Model(&Rule{}).Create(&rule).Error
 	return rule.Id, err
@@ -82,7 +82,7 @@ func (db Database) DeleteRule(ruleId uint) error {
 	return db.orm.Model(&Rule{}).Where("id = ?", ruleId).Delete(&Rule{}).Error
 }
 
-func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, metadata *[]byte, operator *[]byte, actionID *uint) error {
+func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, metadata *[]byte, operator *[]byte, actionID *uint, triggerStatus string) error {
 	inputs := Rule{}
 
 	if eventType != nil {
@@ -100,7 +100,7 @@ func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, metadat
 	if metadata != nil {
 		inputs.Metadata = *metadata
 	}
-	inputs.TriggerStatus = "NotActive"
+	inputs.TriggerStatus = "Not active"
 	return db.orm.Model(&Rule{}).Where("id = ?", id).Updates(inputs).Error
 }
 
