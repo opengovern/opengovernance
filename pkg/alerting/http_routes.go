@@ -8,8 +8,6 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"kaytu-engine/pkg/internal/httpserver"
-
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
