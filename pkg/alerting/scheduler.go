@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
+	_ "github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+	"kaytu-engine/pkg/internal/httpclient"
+
 	"net/http"
 	"strconv"
 	"text/template"
@@ -71,8 +73,10 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 		return fmt.Errorf("error unmarshalling the metadata : %v ", err.Error())
 	}
 
-	stat := false
 	var averageSecurityScorePercentage int64
+	status := rule.TriggerStatus
+	stat := false
+
 	if eventType.InsightId != nil {
 		h.logger.Info("triggering insight", zap.String("rule", fmt.Sprintf("%v", rule.Id)))
 		stat, averageSecurityScorePercentage, err = h.triggerInsight(operator, eventType, scope)
@@ -88,7 +92,15 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 	} else {
 		return fmt.Errorf("Error: insighId or complianceId not entered ")
 	}
-	if stat {
+
+	if stat == false && status == "Active" {
+		err = h.sendAlert(rule, metadata, averageSecurityScorePercentage)
+		h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.Id)),
+			zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
+		if err != nil {
+			return fmt.Errorf("Error sending alert : %v ", err.Error())
+		}
+	} else if stat == true && status == "NoActive" {
 		err = h.sendAlert(rule, metadata, averageSecurityScorePercentage)
 		h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.Id)),
 			zap.String("action", fmt.Sprintf("%v", rule.ActionID)))

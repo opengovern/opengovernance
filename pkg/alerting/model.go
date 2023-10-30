@@ -6,12 +6,13 @@ import (
 )
 
 type Rule struct {
-	Id        uint `json:"id" sql:"AUTO_INCREMENT" gorm:"primary_key"`
-	EventType datatypes.JSON
-	Scope     datatypes.JSON
-	Operator  datatypes.JSON
-	Metadata  datatypes.JSON
-	ActionID  uint `gorm:"foreignKey:action_id"`
+	Id            uint `json:"id" sql:"AUTO_INCREMENT" gorm:"primary_key"`
+	EventType     datatypes.JSON
+	Scope         datatypes.JSON
+	Operator      datatypes.JSON
+	Metadata      datatypes.JSON
+	TriggerStatus string
+	ActionID      uint `gorm:"foreignKey:action_id"`
 }
 
 type Action struct {

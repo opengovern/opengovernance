@@ -44,12 +44,13 @@ type ConditionStruct struct {
 }
 
 type Rule struct {
-	Id        uint           `json:"id"`
-	EventType EventType      `json:"event_type"`
-	Scope     Scope          `json:"scope"`
-	Operator  OperatorStruct `json:"operator"`
-	Metadata  Metadata       `json:"metadata"`
-	ActionID  uint           `json:"action_id"`
+	Id            uint           `json:"id"`
+	EventType     EventType      `json:"event_type"`
+	Scope         Scope          `json:"scope"`
+	Operator      OperatorStruct `json:"operator"`
+	Metadata      Metadata       `json:"metadata"`
+	TriggerStatus string         `json:"trigger_status"`
+	ActionID      uint           `json:"action_id"`
 }
 
 type CreateRuleRequest struct {

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"kaytu-engine/pkg/internal/httpserver"
 	"mime/multipart"
 	"net/http"
 	url2 "net/url"
@@ -15,8 +16,6 @@ import (
 
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/labstack/echo/v4"
-
-	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 )
 
 type EchoError struct {

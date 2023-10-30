@@ -67,11 +67,12 @@ func (db Database) GetRule(id uint) (Rule, error) {
 
 func (db Database) CreateRule(eventType []byte, scope []byte, operator []byte, actionID uint, metadata []byte) (uint, error) {
 	rule := Rule{
-		EventType: eventType,
-		Scope:     scope,
-		Operator:  operator,
-		ActionID:  actionID,
-		Metadata:  metadata,
+		EventType:     eventType,
+		Scope:         scope,
+		Operator:      operator,
+		ActionID:      actionID,
+		Metadata:      metadata,
+		TriggerStatus: "NotActive",
 	}
 	err := db.orm.Model(&Rule{}).Create(&rule).Error
 	return rule.Id, err
@@ -99,7 +100,7 @@ func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, metadat
 	if metadata != nil {
 		inputs.Metadata = *metadata
 	}
-
+	inputs.TriggerStatus = "NotActive"
 	return db.orm.Model(&Rule{}).Where("id = ?", id).Updates(inputs).Error
 }
 
