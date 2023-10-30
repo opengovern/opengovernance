@@ -146,7 +146,7 @@ func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
 	if err != nil {
 		return err
 	}
-	msgs := consumer.Consume(ctx)
+	msgs := consumer.Consume(ctx, s.logger)
 	t := time.NewTicker(JobTimeoutCheckInterval)
 	defer t.Stop()
 

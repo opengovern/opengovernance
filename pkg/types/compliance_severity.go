@@ -8,6 +8,7 @@ type FindingSeverity string
 
 const (
 	FindingSeverityNone     FindingSeverity = "none"
+	FindingSeverityPassed   FindingSeverity = "passed"
 	FindingSeverityLow      FindingSeverity = "low"
 	FindingSeverityMedium   FindingSeverity = "medium"
 	FindingSeverityHigh     FindingSeverity = "high"
@@ -62,13 +63,13 @@ func (r *SeverityResult) AddSeverityResult(severity SeverityResult) {
 	r.CriticalCount += severity.CriticalCount
 }
 
-func (r *SeverityResult) AddResultMap(severity map[FindingSeverity]int) {
-	r.UnknownCount += severity[FindingSeverityNone]
-	r.PassedCount += severity[FindingSeverityNone] //TODO-Saleh
-	r.LowCount += severity[FindingSeverityLow]
-	r.MediumCount += severity[FindingSeverityMedium]
-	r.HighCount += severity[FindingSeverityHigh]
-	r.CriticalCount += severity[FindingSeverityCritical]
+func (r *SeverityResult) AddResultMap(result map[FindingSeverity]int) {
+	r.UnknownCount += result[FindingSeverityNone]
+	r.PassedCount += result[FindingSeverityPassed]
+	r.LowCount += result[FindingSeverityLow]
+	r.MediumCount += result[FindingSeverityMedium]
+	r.HighCount += result[FindingSeverityHigh]
+	r.CriticalCount += result[FindingSeverityCritical]
 }
 
 func (r *SeverityResult) IncreaseBySeverity(severity FindingSeverity) {

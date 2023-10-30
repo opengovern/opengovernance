@@ -650,45 +650,15 @@ definitions:
       remediation:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree:
-    properties:
-      children:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
-        type: array
-      id:
-        description: Benchmark ID
-        example: azure_cis_v140
-        type: string
-      policies:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree'
-        type: array
-      title:
-        description: Benchmark title
-        example: CIS v1.4.0
-        type: string
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint:
     properties:
       securityScore:
-        description: |-
-          Result    types.ComplianceResultSummary `json:"result"`
-          Checks    types.SeverityResult          `json:"checks"`
         type: number
       timestamp:
         description: Time
         example: 1686346668
         type: integer
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType:
-    enum:
-    - asc
-    - desc
-    type: string
-    x-enum-varnames:
-    - DirectionAscending
-    - DirectionDescending
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding:
     properties:
       ID:
@@ -844,39 +814,6 @@ definitions:
           $ref: '#/definitions/types.ComplianceResult'
         type: array
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem:
-    properties:
-      direction:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType'
-        description: Sort direction
-        enum:
-        - asc
-        - desc
-        example: asc
-      field:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType'
-        description: Field to sort by
-        enum:
-        - resourceID
-        - resourceName
-        - resourceType
-        - serviceName
-        - category
-        - resourceLocation
-        - status
-        - describedAt
-        - evaluatedAt
-        - sourceID
-        - connectionProviderID
-        - connectionProviderName
-        - sourceType
-        - benchmarkID
-        - policyID
-        - policySeverity
-        example: status
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse:
     properties:
       accounts:
@@ -899,14 +836,6 @@ definitions:
     properties:
       filters:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
-      page:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page'
-      sorts:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem'
-        type: array
-    required:
-    - page
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse:
     properties:
@@ -1115,46 +1044,72 @@ definitions:
         example: 1000
         type: integer
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy:
     properties:
-      "no":
-        description: Number of pages
-        example: 5
-        type: integer
-      size:
-        description: Number of items per page
-        example: 100
-        type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree:
-    properties:
-      accounts:
-        $ref: '#/definitions/types.ComplianceResultShortSummary'
-      id:
-        description: Policy ID
-        example: azure_cis_v140_7_5
+      connector:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
+      createdAt:
+        example: "2020-01-01T00:00:00Z"
         type: string
-      lastChecked:
-        description: Last checked
-        example: 0
-        type: integer
-      resources:
-        $ref: '#/definitions/types.ComplianceResultShortSummary'
+      description:
+        example: Enable multi-factor authentication for all user credentials who have
+          write access to Azure resources. These include roles like 'Service Co-Administrators',
+          'Subscription Owners', 'Contributors'.
+        type: string
+      documentURI:
+        example: benchmarks/azure_cis_v140_1_1.md
+        type: string
+      enabled:
+        example: true
+        type: boolean
+      id:
+        example: azure_cis_v140_1_1
+        type: string
+      managed:
+        example: true
+        type: boolean
+      manualVerification:
+        example: true
+        type: boolean
+      queryID:
+        example: azure_ad_manual_control
+        type: string
       severity:
         allOf:
         - $ref: '#/definitions/types.FindingSeverity'
-        description: Severity
         example: low
-      status:
-        allOf:
-        - $ref: '#/definitions/types.PolicyStatus'
-        description: Status
-        example: passed
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
       title:
-        description: Policy title
-        example: 7.5 Ensure that the latest OS Patches for all Virtual Machines are
-          applied
+        example: 1.1 Ensure that multi-factor authentication status is enabled for
+          all privileged users
         type: string
+      updatedAt:
+        example: "2020-01-01T00:00:00Z"
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary:
+    properties:
+      evaluatedAt:
+        type: integer
+      failedConnectionCount:
+        type: integer
+      failedResourcesCount:
+        type: integer
+      passed:
+        type: boolean
+      policy:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy'
+      totalConnectionCount:
+        type: integer
+      totalResourcesCount:
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query:
     properties:
@@ -1208,42 +1163,6 @@ definitions:
             type: integer
         type: object
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType:
-    enum:
-    - resourceID
-    - resourceName
-    - resourceType
-    - serviceName
-    - category
-    - resourceLocation
-    - status
-    - describedAt
-    - evaluatedAt
-    - sourceID
-    - connectionProviderID
-    - connectionProviderName
-    - sourceType
-    - benchmarkID
-    - policyID
-    - policySeverity
-    type: string
-    x-enum-varnames:
-    - FieldResourceID
-    - FieldResourceName
-    - FieldResourceType
-    - FieldServiceName
-    - FieldCategory
-    - FieldResourceLocation
-    - FieldStatus
-    - FieldDescribedAt
-    - FieldEvaluatedAt
-    - FieldSourceID
-    - FieldConnectionProviderID
-    - FieldConnectionProviderName
-    - FieldSourceType
-    - FieldBenchmarkID
-    - FieldPolicyID
-    - FieldPolicySeverity
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord:
     properties:
       count:
@@ -1268,17 +1187,6 @@ definitions:
         items:
           type: string
         type: array
-      page:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page'
-        description: Pages count to retrieve
-      sorts:
-        description: Sorts to apply
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem'
-        type: array
-    required:
-    - page
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack:
     properties:
@@ -2593,13 +2501,6 @@ definitions:
     - ComplianceResultINFO
     - ComplianceResultSKIP
     - ComplianceResultERROR
-  types.ComplianceResultShortSummary:
-    properties:
-      failed:
-        type: integer
-      passed:
-        type: integer
-    type: object
   types.ComplianceResultSummary:
     properties:
       alarmCount:
@@ -2621,6 +2522,7 @@ definitions:
   types.FindingSeverity:
     enum:
     - none
+    - passed
     - low
     - medium
     - high
@@ -2628,20 +2530,11 @@ definitions:
     type: string
     x-enum-varnames:
     - FindingSeverityNone
+    - FindingSeverityPassed
     - FindingSeverityLow
     - FindingSeverityMedium
     - FindingSeverityHigh
     - FindingSeverityCritical
-  types.PolicyStatus:
-    enum:
-    - passed
-    - failed
-    - unknown
-    type: string
-    x-enum-varnames:
-    - PolicyStatusPASSED
-    - PolicyStatusFAILED
-    - PolicyStatusUNKNOWN
   types.SeverityResult:
     properties:
       criticalCount:
@@ -3267,6 +3160,30 @@ paths:
       summary: Get benchmark assigned sources
       tags:
       - benchmarks_assignment
+  /compliance/api/v1/benchmarks/{benchmark_id}/policies:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get benchmark policies
+      tags:
+      - compliance
   /compliance/api/v1/benchmarks/{benchmark_id}/summary:
     get:
       consumes:
@@ -3325,29 +3242,6 @@ paths:
       security:
       - BearerToken: []
       summary: Get benchmark summary
-      tags:
-      - compliance
-  /compliance/api/v1/benchmarks/{benchmark_id}/tree:
-    get:
-      consumes:
-      - application/json
-      description: Retrieving the benchmark tree, including all of its child benchmarks.
-      parameters:
-      - description: Benchmark ID
-        in: path
-        name: benchmark_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
-      security:
-      - BearerToken: []
-      summary: Get benchmark tree
       tags:
       - compliance
   /compliance/api/v1/benchmarks/{benchmark_id}/trend:
@@ -3553,6 +3447,7 @@ paths:
         items:
           enum:
           - none
+          - passed
           - low
           - medium
           - high
@@ -3636,6 +3531,7 @@ paths:
         items:
           enum:
           - none
+          - passed
           - low
           - medium
           - high
@@ -3667,10 +3563,6 @@ paths:
         name: benchmarkId
         required: true
         type: string
-      - description: Number of outputs
-        in: query
-        name: count
-        type: integer
       - collectionFormat: csv
         description: Connection IDs to filter by
         in: query
@@ -3684,17 +3576,6 @@ paths:
         items:
           type: string
         name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
         type: array
       produces:
       - application/json
@@ -3720,10 +3601,6 @@ paths:
         name: benchmarkId
         required: true
         type: string
-      - description: Number of outputs
-        in: query
-        name: count
-        type: integer
       - collectionFormat: csv
         description: Connection IDs to filter by
         in: query
@@ -3737,17 +3614,6 @@ paths:
         items:
           type: string
         name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
         type: array
       produces:
       - application/json

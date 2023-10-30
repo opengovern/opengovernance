@@ -137,7 +137,7 @@ func (b *BenchmarkSummary) Summarize() {
 		}
 
 		if total > 0 {
-			summary.SecurityScore = float64(summary.QueryResult[types.ComplianceResultOK]) / float64(total)
+			summary.SecurityScore = float64(summary.QueryResult[types.ComplianceResultOK]) / float64(total) * 100.0
 		}
 
 		b.Connections[connectionID] = summary
@@ -150,7 +150,7 @@ func (b *BenchmarkSummary) Summarize() {
 		}
 
 		if total > 0 {
-			summary.SecurityScore = float64(summary.QueryResult[types.ComplianceResultOK]) / float64(total)
+			summary.SecurityScore = float64(summary.QueryResult[types.ComplianceResultOK]) / float64(total) * 100.0
 		}
 
 		b.ResourceCollections[resourceCollection] = summary
@@ -163,7 +163,7 @@ func (b *BenchmarkSummary) Summarize() {
 		}
 
 		if total > 0 {
-			summary.SecurityScore = float64(summary.QueryResult[types.ComplianceResultOK]) / float64(total)
+			summary.SecurityScore = float64(summary.QueryResult[types.ComplianceResultOK]) / float64(total) * 100.0
 		}
 
 		b.ResourceTypes[resourceType] = summary
@@ -174,6 +174,6 @@ func (b *BenchmarkSummary) Summarize() {
 		total += count
 	}
 	if total > 0 {
-		b.BenchmarkResult.SecurityScore = float64(b.BenchmarkResult.QueryResult[types.ComplianceResultOK]) / float64(total)
+		b.BenchmarkResult.SecurityScore = float64(b.BenchmarkResult.QueryResult[types.ComplianceResultOK]) / float64(total) * 100.0
 	}
 }

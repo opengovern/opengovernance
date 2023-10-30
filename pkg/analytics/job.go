@@ -348,6 +348,11 @@ func (j *Job) DoAssetMetric(steampipeDB *steampipe.Database, encodedResourceColl
 			connectorMetricTrendSummary.ResourceCollections[encodedFilter] = *perConnector
 		}
 	} else {
+		err := steampipeDB.UnsetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyResourceCollectionFilters)
+		if err != nil {
+			logger.Error("failed to unset steampipe context config for resource collection filters", zap.Error(err))
+			return err
+		}
 		perConnection, perConnector, err := j.DoSingleAssetMetric(logger, steampipeDB, metric, connectionCache, status, onboardClient)
 		if err != nil {
 			logger.Error("failed to do single asset metric", zap.Error(err), zap.String("metric", metric.ID))

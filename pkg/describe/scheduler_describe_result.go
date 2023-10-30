@@ -78,7 +78,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 		return err
 	}
 
-	msgs := consumer.Consume(ctx)
+	msgs := consumer.Consume(ctx, s.logger)
 
 	//msgs, err := s.describeJobResultQueue.Consume()
 	//if err != nil {

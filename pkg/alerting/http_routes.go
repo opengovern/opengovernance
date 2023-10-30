@@ -188,8 +188,7 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 	}
 
 	EmptyFields := api.CreateRuleRequest{}
-	if req.Scope == EmptyFields.Scope ||
-		req.ActionID == EmptyFields.ActionID || req.Operator == EmptyFields.Operator || req.EventType == EmptyFields.EventType {
+	if req.ActionID == EmptyFields.ActionID || req.Operator == EmptyFields.Operator || req.EventType == EmptyFields.EventType {
 		return errors.New("All the fields in struct must be set")
 	}
 
@@ -374,8 +373,7 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 	}
 
 	testEmptyFields := api.CreateActionReq{}
-	if req.Url == testEmptyFields.Url || req.Body == testEmptyFields.Body ||
-		req.Method == testEmptyFields.Method || req.Headers == nil {
+	if req.Url == testEmptyFields.Url || req.Method == testEmptyFields.Method {
 		return errors.New("All the fields in struct must be set")
 	}
 

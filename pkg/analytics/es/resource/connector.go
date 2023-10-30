@@ -2,7 +2,6 @@ package resource
 
 import (
 	"github.com/kaytu-io/kaytu-util/pkg/source"
-	"strconv"
 )
 
 const (
@@ -36,8 +35,8 @@ type ConnectorMetricTrendSummary struct {
 
 func (r ConnectorMetricTrendSummary) KeysAndIndex() ([]string, string) {
 	keys := []string{
+		r.Date,
 		r.MetricID,
-		strconv.FormatInt(r.EvaluatedAt, 10),
 	}
 	idx := AnalyticsConnectorSummaryIndex
 	if r.ResourceCollections != nil {

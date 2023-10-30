@@ -1057,6 +1057,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/compliance/api/v1/benchmarks/{benchmark_id}/policies": {
+            "get": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "compliance"
+                ],
+                "summary": "Get benchmark policies",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Benchmark ID",
+                        "name": "benchmark_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/compliance/api/v1/benchmarks/{benchmark_id}/summary": {
             "get": {
                 "security": [
@@ -1140,43 +1179,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkEvaluationSummary"
-                        }
-                    }
-                }
-            }
-        },
-        "/compliance/api/v1/benchmarks/{benchmark_id}/tree": {
-            "get": {
-                "security": [
-                    {
-                        "BearerToken": []
-                    }
-                ],
-                "description": "Retrieving the benchmark tree, including all of its child benchmarks.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "compliance"
-                ],
-                "summary": "Get benchmark tree",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Benchmark ID",
-                        "name": "benchmark_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree"
                         }
                     }
                 }
@@ -1345,12 +1347,6 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "Number of outputs",
-                        "name": "count",
-                        "in": "query"
-                    },
-                    {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -1368,21 +1364,6 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Connection groups to filter by ",
                         "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
                         "in": "query"
                     }
                 ],
@@ -1423,12 +1404,6 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "description": "Number of outputs",
-                        "name": "count",
-                        "in": "query"
-                    },
-                    {
                         "type": "array",
                         "items": {
                             "type": "string"
@@ -1446,21 +1421,6 @@ const docTemplate = `{
                         "collectionFormat": "csv",
                         "description": "Connection groups to filter by ",
                         "name": "connectionGroup",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "enum": [
-                                "",
-                                "AWS",
-                                "Azure"
-                            ],
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "Connector type to filter by",
-                        "name": "connector",
                         "in": "query"
                     }
                 ],
@@ -1563,6 +1523,7 @@ const docTemplate = `{
                         "items": {
                             "enum": [
                                 "none",
+                                "passed",
                                 "low",
                                 "medium",
                                 "high",
@@ -1682,6 +1643,7 @@ const docTemplate = `{
                         "items": {
                             "enum": [
                                 "none",
+                                "passed",
                                 "low",
                                 "medium",
                                 "high",
@@ -6542,38 +6504,10 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree": {
-            "type": "object",
-            "properties": {
-                "children": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree"
-                    }
-                },
-                "id": {
-                    "description": "Benchmark ID",
-                    "type": "string",
-                    "example": "azure_cis_v140"
-                },
-                "policies": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree"
-                    }
-                },
-                "title": {
-                    "description": "Benchmark title",
-                    "type": "string",
-                    "example": "CIS v1.4.0"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint": {
             "type": "object",
             "properties": {
                 "securityScore": {
-                    "description": "Result    types.ComplianceResultSummary ` + "`" + `json:\"result\"` + "`" + `\nChecks    types.SeverityResult          ` + "`" + `json:\"checks\"` + "`" + `",
                     "type": "number"
                 },
                 "timestamp": {
@@ -6582,17 +6516,6 @@ const docTemplate = `{
                     "example": 1686346668
                 }
             }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType": {
-            "type": "string",
-            "enum": [
-                "asc",
-                "desc"
-            ],
-            "x-enum-varnames": [
-                "DirectionAscending",
-                "DirectionDescending"
-            ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding": {
             "type": "object",
@@ -6812,51 +6735,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem": {
-            "type": "object",
-            "properties": {
-                "direction": {
-                    "description": "Sort direction",
-                    "enum": [
-                        "asc",
-                        "desc"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType"
-                        }
-                    ],
-                    "example": "asc"
-                },
-                "field": {
-                    "description": "Field to sort by",
-                    "enum": [
-                        "resourceID",
-                        "resourceName",
-                        "resourceType",
-                        "serviceName",
-                        "category",
-                        "resourceLocation",
-                        "status",
-                        "describedAt",
-                        "evaluatedAt",
-                        "sourceID",
-                        "connectionProviderID",
-                        "connectionProviderName",
-                        "sourceType",
-                        "benchmarkID",
-                        "policyID",
-                        "policySeverity"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType"
-                        }
-                    ],
-                    "example": "status"
-                }
-            }
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse": {
             "type": "object",
             "properties": {
@@ -6887,21 +6765,9 @@ const docTemplate = `{
         },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsRequest": {
             "type": "object",
-            "required": [
-                "page"
-            ],
             "properties": {
                 "filters": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters"
-                },
-                "page": {
-                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page"
-                },
-                "sorts": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem"
-                    }
                 }
             }
         },
@@ -7201,42 +7067,50 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page": {
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy": {
             "type": "object",
             "properties": {
-                "no": {
-                    "description": "Number of pages",
-                    "type": "integer",
-                    "example": 5
+                "connector": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/source.Type"
+                        }
+                    ],
+                    "example": "Azure"
                 },
-                "size": {
-                    "description": "Number of items per page",
-                    "type": "integer",
-                    "example": 100
-                }
-            }
-        },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree": {
-            "type": "object",
-            "properties": {
-                "accounts": {
-                    "$ref": "#/definitions/types.ComplianceResultShortSummary"
+                "createdAt": {
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Enable multi-factor authentication for all user credentials who have write access to Azure resources. These include roles like 'Service Co-Administrators', 'Subscription Owners', 'Contributors'."
+                },
+                "documentURI": {
+                    "type": "string",
+                    "example": "benchmarks/azure_cis_v140_1_1.md"
+                },
+                "enabled": {
+                    "type": "boolean",
+                    "example": true
                 },
                 "id": {
-                    "description": "Policy ID",
                     "type": "string",
-                    "example": "azure_cis_v140_7_5"
+                    "example": "azure_cis_v140_1_1"
                 },
-                "lastChecked": {
-                    "description": "Last checked",
-                    "type": "integer",
-                    "example": 0
+                "managed": {
+                    "type": "boolean",
+                    "example": true
                 },
-                "resources": {
-                    "$ref": "#/definitions/types.ComplianceResultShortSummary"
+                "manualVerification": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "queryID": {
+                    "type": "string",
+                    "example": "azure_ad_manual_control"
                 },
                 "severity": {
-                    "description": "Severity",
                     "allOf": [
                         {
                             "$ref": "#/definitions/types.FindingSeverity"
@@ -7244,19 +7118,48 @@ const docTemplate = `{
                     ],
                     "example": "low"
                 },
-                "status": {
-                    "description": "Status",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/types.PolicyStatus"
+                "tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
                         }
-                    ],
-                    "example": "passed"
+                    }
                 },
                 "title": {
-                    "description": "Policy title",
                     "type": "string",
-                    "example": "7.5 Ensure that the latest OS Patches for all Virtual Machines are applied"
+                    "example": "1.1 Ensure that multi-factor authentication status is enabled for all privileged users"
+                },
+                "updatedAt": {
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
+                }
+            }
+        },
+        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary": {
+            "type": "object",
+            "properties": {
+                "evaluatedAt": {
+                    "type": "integer"
+                },
+                "failedConnectionCount": {
+                    "type": "integer"
+                },
+                "failedResourcesCount": {
+                    "type": "integer"
+                },
+                "passed": {
+                    "type": "boolean"
+                },
+                "policy": {
+                    "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy"
+                },
+                "totalConnectionCount": {
+                    "type": "integer"
+                },
+                "totalResourcesCount": {
+                    "type": "integer"
                 }
             }
         },
@@ -7329,45 +7232,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType": {
-            "type": "string",
-            "enum": [
-                "resourceID",
-                "resourceName",
-                "resourceType",
-                "serviceName",
-                "category",
-                "resourceLocation",
-                "status",
-                "describedAt",
-                "evaluatedAt",
-                "sourceID",
-                "connectionProviderID",
-                "connectionProviderName",
-                "sourceType",
-                "benchmarkID",
-                "policyID",
-                "policySeverity"
-            ],
-            "x-enum-varnames": [
-                "FieldResourceID",
-                "FieldResourceName",
-                "FieldResourceType",
-                "FieldServiceName",
-                "FieldCategory",
-                "FieldResourceLocation",
-                "FieldStatus",
-                "FieldDescribedAt",
-                "FieldEvaluatedAt",
-                "FieldSourceID",
-                "FieldConnectionProviderID",
-                "FieldConnectionProviderName",
-                "FieldSourceType",
-                "FieldBenchmarkID",
-                "FieldPolicyID",
-                "FieldPolicySeverity"
-            ]
-        },
         "github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord": {
             "type": "object",
             "properties": {
@@ -7392,9 +7256,6 @@ const docTemplate = `{
         },
         "github_com_kaytu-io_kaytu-engine_pkg_describe_api.GetStackFindings": {
             "type": "object",
-            "required": [
-                "page"
-            ],
             "properties": {
                 "benchmarkIds": {
                     "description": "Benchmark IDs to filter",
@@ -7405,21 +7266,6 @@ const docTemplate = `{
                     "example": [
                         "azure_cis_v140"
                     ]
-                },
-                "page": {
-                    "description": "Pages count to retrieve",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page"
-                        }
-                    ]
-                },
-                "sorts": {
-                    "description": "Sorts to apply",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem"
-                    }
                 }
             }
         },
@@ -9265,17 +9111,6 @@ const docTemplate = `{
                 "ComplianceResultERROR"
             ]
         },
-        "types.ComplianceResultShortSummary": {
-            "type": "object",
-            "properties": {
-                "failed": {
-                    "type": "integer"
-                },
-                "passed": {
-                    "type": "integer"
-                }
-            }
-        },
         "types.ComplianceResultSummary": {
             "type": "object",
             "properties": {
@@ -9305,6 +9140,7 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "none",
+                "passed",
                 "low",
                 "medium",
                 "high",
@@ -9312,23 +9148,11 @@ const docTemplate = `{
             ],
             "x-enum-varnames": [
                 "FindingSeverityNone",
+                "FindingSeverityPassed",
                 "FindingSeverityLow",
                 "FindingSeverityMedium",
                 "FindingSeverityHigh",
                 "FindingSeverityCritical"
-            ]
-        },
-        "types.PolicyStatus": {
-            "type": "string",
-            "enum": [
-                "passed",
-                "failed",
-                "unknown"
-            ],
-            "x-enum-varnames": [
-                "PolicyStatusPASSED",
-                "PolicyStatusFAILED",
-                "PolicyStatusUNKNOWN"
             ]
         },
         "types.SeverityResult": {

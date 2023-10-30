@@ -1,16 +1,20 @@
 package describe
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
+	"github.com/kaytu-io/kaytu-engine/pkg/utils"
+	"github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"strings"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
 
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -78,7 +82,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 		return err
 	}
 
-	err = s.enqueueAnalyticsJobs(s.analyticsJobQueue, job)
+	err = s.enqueueAnalyticsJobs(job)
 	if err != nil {
 		AnalyticsJobsCount.WithLabelValues("failure").Inc()
 		s.logger.Error("Failed to enqueue AnalyticsJob",
@@ -100,7 +104,7 @@ func (s *Scheduler) scheduleAnalyticsJob(analyticsJobType model.AnalyticsJobType
 	return nil
 }
 
-func (s *Scheduler) enqueueAnalyticsJobs(q queue.Interface, job model.AnalyticsJob) error {
+func (s *Scheduler) enqueueAnalyticsJobs(job model.AnalyticsJob) error {
 	var resourceCollectionIds []string
 
 	if job.Type == model.AnalyticsJobTypeResourceCollection {
@@ -114,10 +118,19 @@ func (s *Scheduler) enqueueAnalyticsJobs(q queue.Interface, job model.AnalyticsJ
 		}
 	}
 
-	if err := q.Publish(analytics.Job{
+	aJobJson, err := json.Marshal(analytics.Job{
 		JobID:                 job.ID,
 		ResourceCollectionIDs: resourceCollectionIds,
-	}); err != nil {
+	})
+	if err != nil {
+		s.logger.Error("Failed to marshal analytics.Job", zap.Error(err))
+		return err
+	}
+
+	if err := kafka.SyncSendWithRetry(s.logger, s.kafkaProducer, []*confluent_kafka.Message{{
+		TopicPartition: confluent_kafka.TopicPartition{Topic: utils.GetPointer(analytics.JobQueueTopic), Partition: confluent_kafka.PartitionAny},
+		Value:          aJobJson,
+	}}, nil, 5); err != nil {
 		return err
 	}
 
@@ -136,11 +149,19 @@ func newAnalyticsJob(analyticsJobType model.AnalyticsJobType) model.AnalyticsJob
 func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 	s.logger.Info("Consuming messages from the analyticsJobResultQueue queue")
 
-	msgs, err := s.analyticsJobResultQueue.Consume()
+	consumer, err := kafka.NewTopicConsumer(
+		context.Background(),
+		strings.Split(KafkaService, ","),
+		analytics.JobResultQueueTopic,
+		schedulerConsumerGroup,
+	)
 	if err != nil {
+		s.logger.Error("Failed to create kafka consumer", zap.Error(err))
 		return err
 	}
+	defer consumer.Close()
 
+	msgs := consumer.Consume(context.TODO(), s.logger)
 	t := time.NewTicker(JobTimeoutCheckInterval)
 	defer t.Stop()
 
@@ -152,12 +173,12 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 			}
 
 			var result analytics.JobResult
-			if err := json.Unmarshal(msg.Body, &result); err != nil {
+			if err := json.Unmarshal(msg.Value, &result); err != nil {
 				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("Failed to unmarshal analytics.JobResult results", zap.Error(err))
-				err = msg.Nack(false, false)
+				s.logger.Error("Failed to unmarshal analytics.JobResult results", zap.Error(err), zap.String("value", string(msg.Value)))
+				err = consumer.Commit(msg)
 				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
+					s.logger.Error("Failed to commit message", zap.Error(err))
 				}
 				continue
 			}
@@ -179,16 +200,26 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 				s.logger.Error("Failed to update the status of AnalyticsJob",
 					zap.Uint("jobId", result.JobID),
 					zap.Error(err))
-				err = msg.Nack(false, true)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
+
+				if err := consumer.Commit(msg); err != nil {
+					AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
+					s.logger.Error("Failed to commit message", zap.Error(err))
+				}
+
+				// requeue the message
+				if err2 := kafka.SyncSendWithRetry(s.logger, s.kafkaProducer, []*confluent_kafka.Message{{
+					TopicPartition: confluent_kafka.TopicPartition{Topic: utils.GetPointer(analytics.JobResultQueueTopic), Partition: confluent_kafka.PartitionAny},
+					Value:          msg.Value,
+				}}, nil, 5); err2 != nil {
+					s.logger.Error("Failed to requeue the message", zap.Error(err2))
+					return err
 				}
 				continue
 			}
 
-			if err := msg.Ack(false); err != nil {
+			if err := consumer.Commit(msg); err != nil {
 				AnalyticsJobResultsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("Failed acking message", zap.Error(err))
+				s.logger.Error("Failed to commit message", zap.Error(err))
 			}
 		case <-t.C:
 			err := s.db.UpdateAnalyticsJobsTimedOut(s.analyticsIntervalHours)

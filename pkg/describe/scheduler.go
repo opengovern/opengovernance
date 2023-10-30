@@ -51,6 +51,8 @@ const (
 	MaxJobInQueue            = 10000
 	ConcurrentDeletedSources = 1000
 
+	schedulerConsumerGroup = "describe-scheduler"
+
 	RedisKeyWorkspaceResourceRemaining = "workspace_resource_remaining"
 )
 
@@ -128,11 +130,6 @@ type Scheduler struct {
 	// checkupJobResultQueue is used to consume the checkup job results returned by the workers.
 	checkupJobResultQueue queue.Interface
 
-	// analyticsJobQueue is used to publish analytics jobs to be performed by the workers.
-	analyticsJobQueue queue.Interface
-	// analyticsJobResultQueue is used to consume the analytics job results returned by the workers.
-	analyticsJobResultQueue queue.Interface
-
 	// watch the deleted source
 	deletedSources chan string
 
@@ -199,8 +196,6 @@ func InitializeScheduler(
 	insightJobResultQueueName string,
 	checkupJobQueueName string,
 	checkupJobResultQueueName string,
-	analyticsJobQueueName string,
-	analyticsJobResultQueueName string,
 	sourceQueueName string,
 	postgresUsername string,
 	postgresPassword string,
@@ -267,16 +262,6 @@ func InitializeScheduler(
 	}
 
 	s.checkupJobResultQueue, err = initRabbitQueue(checkupJobResultQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.analyticsJobQueue, err = initRabbitQueue(analyticsJobQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.analyticsJobResultQueue, err = initRabbitQueue(analyticsJobResultQueueName)
 	if err != nil {
 		return nil, err
 	}
