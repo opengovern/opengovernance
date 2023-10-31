@@ -42,6 +42,7 @@ func (j *Job) Run(jc JobConfig) error {
 
 	assignment, err := jc.complianceClient.ListAssignmentsByBenchmark(hctx, j.BenchmarkID)
 	if err != nil {
+		jc.logger.Error("failed to list assignments by benchmark", zap.String("benchmarkID", j.BenchmarkID), zap.Error(err))
 		return err
 	}
 
@@ -65,6 +66,7 @@ func (j *Job) Run(jc JobConfig) error {
 
 		err := j.RunForConnection(connection.ConnectionID, nil, &bs, jc)
 		if err != nil {
+			jc.logger.Error("failed to run for connection", zap.String("connectionID", connection.ConnectionID), zap.Error(err))
 			return err
 		}
 	}
@@ -76,6 +78,7 @@ func (j *Job) Run(jc JobConfig) error {
 
 		err := j.RunForConnection("all", &resourceCollection.ResourceCollectionID, &bs, jc)
 		if err != nil {
+			jc.logger.Error("failed to run for resource collection", zap.String("resourceCollectionID", resourceCollection.ResourceCollectionID), zap.Error(err))
 			return err
 		}
 	}
@@ -84,9 +87,7 @@ func (j *Job) Run(jc JobConfig) error {
 
 	jc.logger.Info(fmt.Sprintf("bs={%v}", bs))
 
-	var docs []kafka.Doc
-	docs = append(docs, bs)
-	err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, docs, jc.logger, nil)
+	err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, []kafka.Doc{bs}, jc.logger, nil)
 	if err != nil {
 		return err
 	}
@@ -95,24 +96,32 @@ func (j *Job) Run(jc JobConfig) error {
 }
 
 func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string, benchmarkSummary *types2.BenchmarkSummary, jc JobConfig) error {
-	conn, err := jc.onboardClient.GetSource(&httpclient.Context{UserRole: api.InternalRole}, connectionID)
-	if err != nil {
-		return err
+	onboardConnectionId := connectionID
+	if connectionID != "all" {
+		conn, err := jc.onboardClient.GetSource(&httpclient.Context{UserRole: api.InternalRole}, connectionID)
+		if err != nil {
+			jc.logger.Error("failed to get source", zap.String("connectionID", connectionID), zap.Error(err))
+			return err
+		}
+		onboardConnectionId = conn.ConnectionID
 	}
 
-	err = jc.steampipeConn.SetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID, conn.ConnectionID)
+	err := jc.steampipeConn.SetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID, onboardConnectionId)
 	if err != nil {
+		jc.logger.Error("failed to set account id", zap.String("connectionID", connectionID), zap.Error(err))
 		return err
 	}
 	defer jc.steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID)
 	err = jc.steampipeConn.SetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyClientType, "compliance")
 	if err != nil {
+		jc.logger.Error("failed to set client type", zap.String("connectionID", connectionID), zap.Error(err))
 		return err
 	}
 	defer jc.steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyClientType)
 
 	plans, err := ListExecutionPlans(connectionID, nil, j.BenchmarkID, jc)
 	if err != nil {
+		jc.logger.Error("failed to list execution plans", zap.String("connectionID", connectionID), zap.Error(err))
 		return err
 	}
 
@@ -125,11 +134,13 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 
 		res, err := jc.steampipeConn.QueryAll(context.Background(), plan.Query.QueryToExecute)
 		if err != nil {
+			jc.logger.Error("failed to run query", zap.String("query", plan.Query.QueryToExecute), zap.Error(err))
 			return err
 		}
 
 		findings, err := j.ExtractFindings(plan, connectionID, resourceCollectionID, res, jc)
 		if err != nil {
+			jc.logger.Error("failed to extract findings", zap.String("query", plan.Query.QueryToExecute), zap.Error(err))
 			return err
 		}
 
@@ -139,6 +150,7 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 
 		err = RemoveOldFindings(jc, plan.Policy.ID, connectionID, resourceCollectionID)
 		if err != nil {
+			jc.logger.Error("failed to remove old findings", zap.String("query", plan.Query.QueryToExecute), zap.Error(err))
 			return err
 		}
 
@@ -169,6 +181,7 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 
 		err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, docs, jc.logger, nil)
 		if err != nil {
+			jc.logger.Error("failed to push findings into kafka", zap.String("connectionID", connectionID), zap.Error(err))
 			return err
 		}
 	}
