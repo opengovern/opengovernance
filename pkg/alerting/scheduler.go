@@ -198,7 +198,15 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 
 	h.logger.Info("sending finding request",
 		zap.String("request", fmt.Sprintf("benchmarkId : %v , connectionId : %v , connection group : %v , connector : %v  ", eventType.BenchmarkId, connectionIds, scope.ConnectionGroup, scope.Connector)))
-	compliance, err := h.complianceClient.GetAccountsFindingsSummary(&httpclient.Context{UserRole: authApi.AdminRole}, *eventType.BenchmarkId, connectionIds, []source.Type{*scope.Connector})
+
+	var connector []source.Type
+	if scope.Connector == nil {
+		connector = nil
+	} else {
+		connector = append(connector, *scope.Connector)
+	}
+
+	compliance, err := h.complianceClient.GetAccountsFindingsSummary(&httpclient.Context{UserRole: authApi.AdminRole}, *eventType.BenchmarkId, connectionIds, connector)
 	if err != nil {
 		return false, 0, fmt.Errorf("error getting AccountsFindingsSummary : %v", err)
 	}
