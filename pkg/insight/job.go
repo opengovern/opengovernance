@@ -186,6 +186,16 @@ func (j Job) Do(esConfig config.ElasticSearch,
 		fail(err)
 		return
 	}
+	defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID)
+
+	err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyClientType, "insight")
+	if err != nil {
+		logger.Error("failed to set steampipe context config for client type", zap.Error(err), zap.String("client_type", "insight"))
+		fail(err)
+		return
+	}
+	defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyClientType)
+
 	if encodedResourceCollectionFilter != nil {
 		err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyResourceCollectionFilters, *encodedResourceCollectionFilter)
 		if err != nil {
@@ -193,6 +203,7 @@ func (j Job) Do(esConfig config.ElasticSearch,
 			fail(err)
 			return
 		}
+		defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyResourceCollectionFilters)
 	}
 
 	logger.Info("running insight query", zap.Uint("insightId", j.InsightID), zap.String("connectionId", j.SourceID), zap.String("query", j.Query))

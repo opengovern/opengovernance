@@ -104,6 +104,12 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 	if err != nil {
 		return err
 	}
+	defer jc.steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID)
+	err = jc.steampipeConn.SetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyClientType, "compliance")
+	if err != nil {
+		return err
+	}
+	defer jc.steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyClientType)
 
 	plans, err := ListExecutionPlans(connectionID, nil, j.BenchmarkID, jc)
 	if err != nil {

@@ -88,6 +88,14 @@ func (j *Job) Do(
 		logger.Error("failed to set steampipe context config for account id", zap.Error(err), zap.String("account_id", "all"))
 		return fail(err)
 	}
+	defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID)
+
+	err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyClientType, "analytics")
+	if err != nil {
+		logger.Error("failed to set steampipe context config for client type", zap.Error(err), zap.String("client_type", "analytics"))
+		return fail(err)
+	}
+	defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyClientType)
 
 	if err := j.Run(db, encodedResourceCollectionFilters, steampipeConn, kfkProducer, kfkTopic, schedulerClient, onboardClient, logger); err != nil {
 		fail(err)
