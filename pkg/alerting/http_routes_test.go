@@ -8,12 +8,12 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	compliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	api3 "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"io"
-	"kaytu-engine/pkg/internal/httpserver"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -62,8 +62,8 @@ func setupSuite(tb testing.TB) (func(tb testing.TB), *HttpHandler) {
 		}
 	}))
 
-	handler, err := InitializeHttpHandler("127.0.0.1", "5432", "test-database",
-		"user_1", "qwertyPostgres", "disable", server.URL, server.URL, logger)
+	handler, err := InitializeHttpHandler("127.0.0.1", "5432", "postgres",
+		"testdatabase", "qwertyPostgres", "disable", server.URL, server.URL, logger)
 	if err != nil {
 		tb.Errorf("error connecting to postgres , err : %v", err)
 	}
@@ -623,13 +623,12 @@ func TestTrigger(t *testing.T) {
 
 	var ruleId uint
 	var benchmarkId string = "CIS v1.4.0"
-	connectionId := "testConnectionId"
-	connector := source.CloudAWS
+	//connectionId := "testConnectionId"
+	//connector := source.CloudAWS
 	req := api.Rule{
 		Id:        ruleId,
 		EventType: api.EventType{BenchmarkId: &benchmarkId},
 		Metadata:  api.Metadata{Name: "testMetadataName"},
-		Scope:     api.Scope{ConnectionId: &connectionId, Connector: &connector},
 		Operator:  operator,
 		ActionID:  actionId,
 	}
