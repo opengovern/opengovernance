@@ -46,6 +46,7 @@ type ConditionStruct struct {
 type TriggerStatus string
 
 const (
+	Nil                     = ""
 	TriggerStatus_Active    = "Active"
 	TriggerStatus_NotActive = "Not Active"
 )
