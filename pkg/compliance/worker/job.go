@@ -54,9 +54,10 @@ func (j *Job) Run(jc JobConfig) error {
 			QueryResult:    map[types.ComplianceResult]int{},
 			SeverityResult: map[types.FindingSeverity]int{},
 		},
-		Connections:   map[string]types2.Result{},
-		ResourceTypes: map[string]types2.Result{},
-		Policies:      map[string]types2.PolicyResult{},
+		Connections:         map[string]types2.Result{},
+		ResourceTypes:       map[string]types2.Result{},
+		ResourceCollections: map[string]types2.Result{},
+		Policies:            map[string]types2.PolicyResult{},
 	}
 
 	for _, connection := range assignment.Connections {
