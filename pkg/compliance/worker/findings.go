@@ -57,7 +57,7 @@ func (j *Job) FilterFindings(plan ExecutionPlan, findings []types.Finding, jc Jo
 
 func (j *Job) ExtractFindings(plan ExecutionPlan, connectionID string, resourceCollection *string, res *steampipe.Result, jc JobConfig) ([]types.Finding, error) {
 	var findings []types.Finding
-	resourceType := ""
+
 	for _, record := range res.Data {
 		if len(record) != len(res.Headers) {
 			return nil, fmt.Errorf("invalid record length, record=%d headers=%d", len(record), len(res.Headers))
@@ -67,19 +67,19 @@ func (j *Job) ExtractFindings(plan ExecutionPlan, connectionID string, resourceC
 			value := record[idx]
 			recordValue[header] = value
 		}
+		resourceType := ""
 
 		var resourceID, resourceName, resourceLocation, reason string
 		var status types.ComplianceResult
 		if v, ok := recordValue["resource"].(string); ok {
 			resourceID = v
-			if resourceType == "" {
-				lookupResource, err := es.FetchLookupsByResourceIDWildcard(jc.esClient, resourceID)
-				if err != nil {
-					return nil, err
-				}
-				if len(lookupResource.Hits.Hits) > 0 {
-					resourceType = lookupResource.Hits.Hits[0].Source.ResourceType
-				}
+			
+			lookupResource, err := es.FetchLookupsByResourceIDWildcard(jc.esClient, resourceID)
+			if err != nil {
+				return nil, err
+			}
+			if len(lookupResource.Hits.Hits) > 0 {
+				resourceType = lookupResource.Hits.Hits[0].Source.ResourceType
 			}
 		}
 		if v, ok := recordValue["name"].(string); ok {
