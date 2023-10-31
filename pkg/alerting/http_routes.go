@@ -312,7 +312,7 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 		metadata = nil
 	}
 
-	err = h.db.UpdateRule(uint(id), &eventType, &scope, &metadata, &operator, req.ActionID)
+	err = h.db.UpdateRule(uint(id), &eventType, &scope, &metadata, &operator, req.ActionID, api.TriggerStatus_NotActive)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error updating the rule : %v ", err))
 	}

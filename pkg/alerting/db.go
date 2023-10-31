@@ -1,6 +1,7 @@
 package alerting
 
 import (
+	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	"gorm.io/gorm"
 	"time"
 )
@@ -67,11 +68,12 @@ func (db Database) GetRule(id uint) (Rule, error) {
 
 func (db Database) CreateRule(eventType []byte, scope []byte, operator []byte, actionID uint, metadata []byte) (uint, error) {
 	rule := Rule{
-		EventType: eventType,
-		Scope:     scope,
-		Operator:  operator,
-		ActionID:  actionID,
-		Metadata:  metadata,
+		EventType:     eventType,
+		Scope:         scope,
+		Operator:      operator,
+		ActionID:      actionID,
+		Metadata:      metadata,
+		TriggerStatus: api.TriggerStatus_NotActive,
 	}
 	err := db.orm.Model(&Rule{}).Create(&rule).Error
 	return rule.Id, err
@@ -81,7 +83,7 @@ func (db Database) DeleteRule(ruleId uint) error {
 	return db.orm.Model(&Rule{}).Where("id = ?", ruleId).Delete(&Rule{}).Error
 }
 
-func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, metadata *[]byte, operator *[]byte, actionID *uint) error {
+func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, metadata *[]byte, operator *[]byte, actionID *uint, triggerStatus api.TriggerStatus) error {
 	inputs := Rule{}
 
 	if eventType != nil {
@@ -99,7 +101,7 @@ func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, metadat
 	if metadata != nil {
 		inputs.Metadata = *metadata
 	}
-
+	inputs.TriggerStatus = string(triggerStatus)
 	return db.orm.Model(&Rule{}).Where("id = ?", id).Updates(inputs).Error
 }
 

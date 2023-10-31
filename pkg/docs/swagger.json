@@ -5755,6 +5755,9 @@
                 },
                 "scope": {
                     "$ref": "#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope"
+                },
+                "trigger_status": {
+                    "type": "string"
                 }
             }
         },

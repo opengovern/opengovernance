@@ -191,7 +191,7 @@ func (s *complianceClient) GetAccountsFindingsSummary(ctx *httpclient.Context, b
 		}
 	}
 
-	if len(connector) > 0 {
+	if connector != nil {
 		if !firstParamAttached {
 			url += "?"
 			firstParamAttached = true
