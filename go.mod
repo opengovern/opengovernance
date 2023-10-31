@@ -1,4 +1,4 @@
-module kaytu-engine
+module github.com/kaytu-io/kaytu-engine
 
 go 1.21
 
@@ -40,7 +40,6 @@ require (
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/kaytu-io/kaytu-aws-describer v0.14.1
 	github.com/kaytu-io/kaytu-azure-describer v0.10.2
-	github.com/kaytu-io/kaytu-engine v0.140.16
 	github.com/kaytu-io/kaytu-util v0.0.0-20231029101136-7b049865c5de
 	github.com/kaytu-io/terraform-package v0.0.0-20230912091954-81f6c63aa5c9
 	github.com/labstack/echo/v4 v4.11.1
@@ -537,6 +536,7 @@ require (
 	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
+	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
@@ -557,3 +557,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace github.com/spf13/afero => github.com/spf13/afero v1.2.2

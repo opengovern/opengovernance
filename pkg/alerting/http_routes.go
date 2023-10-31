@@ -8,8 +8,8 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
 	"github.com/labstack/echo/v4"
-	"kaytu-engine/pkg/internal/httpserver"
 	"net/http"
 	"strconv"
 	"time"
@@ -312,7 +312,7 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 		metadata = nil
 	}
 
-	err = h.db.UpdateRule(uint(id), &eventType, &scope, &metadata, &operator, req.ActionID, "Not active")
+	err = h.db.UpdateRule(uint(id), &eventType, &scope, &metadata, &operator, req.ActionID, api.TriggerStatus_NotActive)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error updating the rule : %v ", err))
 	}
