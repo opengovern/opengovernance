@@ -189,9 +189,9 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 	}
 
 	EmptyFields := api.CreateRuleRequest{}
-	if req.ActionID == EmptyFields.ActionID || req.Operator == EmptyFields.Operator || req.EventType == EmptyFields.EventType || req.Metadata.Name == req.Metadata.Name {
-		return errors.New("All the fields in struct must be set")
-	}
+	//if req.ActionID == EmptyFields.ActionID || req.Operator == EmptyFields.Operator || req.EventType == EmptyFields.EventType || req.Metadata.Name == req.Metadata.Name {
+	//	return errors.New("All the fields in struct must be set")
+	//}
 
 	scope, err := json.Marshal(req.Scope)
 	if err != nil {
