@@ -58,21 +58,21 @@ func (b *BenchmarkSummary) AddFinding(f types.Finding) {
 		f.ResourceType = "-"
 	}
 
-	b.BenchmarkResult.SeverityResult[f.Severity]++
-	b.BenchmarkResult.QueryResult[f.Result]++
+	if f.ResourceCollection == nil {
+		b.BenchmarkResult.SeverityResult[f.Severity]++
+		b.BenchmarkResult.QueryResult[f.Result]++
 
-	connection, ok := b.Connections[f.ConnectionID]
-	if !ok {
-		connection = Result{
-			QueryResult:    map[types.ComplianceResult]int{},
-			SeverityResult: map[types.FindingSeverity]int{},
+		connection, ok := b.Connections[f.ConnectionID]
+		if !ok {
+			connection = Result{
+				QueryResult:    map[types.ComplianceResult]int{},
+				SeverityResult: map[types.FindingSeverity]int{},
+			}
 		}
-	}
-	connection.SeverityResult[f.Severity]++
-	connection.QueryResult[f.Result]++
-	b.Connections[f.ConnectionID] = connection
-
-	if f.ResourceCollection != nil {
+		connection.SeverityResult[f.Severity]++
+		connection.QueryResult[f.Result]++
+		b.Connections[f.ConnectionID] = connection
+	} else {
 		rc, ok := b.ResourceCollections[*f.ResourceCollection]
 		if !ok {
 			rc = Result{
