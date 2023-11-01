@@ -101,7 +101,11 @@ func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, metadat
 	if metadata != nil {
 		inputs.Metadata = *metadata
 	}
-	inputs.TriggerStatus = string(triggerStatus)
+	if triggerStatus == api.Nil {
+		inputs.TriggerStatus = api.TriggerStatus_NotActive
+	} else {
+		inputs.TriggerStatus = string(triggerStatus)
+	}
 	return db.orm.Model(&Rule{}).Where("id = ?", id).Updates(inputs).Error
 }
 

@@ -160,12 +160,13 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 		}
 
 		response = append(response, api.Rule{
-			Id:        rule.Id,
-			EventType: eventType,
-			Scope:     scope,
-			Operator:  operator,
-			Metadata:  metadata,
-			ActionID:  rule.ActionID,
+			Id:            rule.Id,
+			EventType:     eventType,
+			Scope:         scope,
+			Operator:      operator,
+			Metadata:      metadata,
+			TriggerStatus: api.TriggerStatus(rule.TriggerStatus),
+			ActionID:      rule.ActionID,
 		})
 	}
 

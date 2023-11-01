@@ -19,7 +19,7 @@ import (
 )
 
 func (h *HttpHandler) TriggerRulesJobCycle() error {
-	timer := time.NewTicker(30 * time.Minute)
+	timer := time.NewTicker(5 * time.Minute)
 	defer timer.Stop()
 
 	for ; ; <-timer.C {
@@ -108,6 +108,18 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 		err = h.db.UpdateRule(rule.Id, nil, nil, nil, nil, nil, api.TriggerStatus_NotActive)
 		if err != nil {
 			return fmt.Errorf("Error updating rule : %v ", err.Error())
+		}
+	} else if status == api.Nil {
+		if stat == true {
+			err = h.db.UpdateRule(rule.Id, nil, nil, nil, nil, nil, api.TriggerStatus_Active)
+			if err != nil {
+				return fmt.Errorf("Error updating rule : %v ", err.Error())
+			}
+		} else if stat == false {
+			err = h.db.UpdateRule(rule.Id, nil, nil, nil, nil, nil, api.TriggerStatus_NotActive)
+			if err != nil {
+				return fmt.Errorf("Error updating rule : %v ", err.Error())
+			}
 		}
 	}
 	return nil
@@ -285,6 +297,21 @@ func (h HttpHandler) getConnectionIdFilter(scope api.Scope) ([]string, error) {
 
 func calculationOperations(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
 	if operator.Condition == nil {
+		if operator.OperatorType == ">" {
+			operator.OperatorType = api.OperatorGreaterThan
+		} else if operator.OperatorType == "<" {
+			operator.OperatorType = api.OperatorLessThan
+		} else if operator.OperatorType == ">=" {
+			operator.OperatorType = api.OperatorGreaterThanOrEqual
+		} else if operator.OperatorType == "<=" {
+			operator.OperatorType = api.OperatorLessThanOrEqual
+		} else if operator.OperatorType == "=" {
+			operator.OperatorType = api.OperatorEqual
+		} else if operator.OperatorType == "!=" {
+			operator.OperatorType = api.OperatorDoesNotEqual
+		} else {
+			return false, fmt.Errorf("Error : Your operator sign is wrong , please enter the correct operator ")
+		}
 		stat := compareValue(operator.OperatorType, operator.Value, averageSecurityScorePercentage)
 		return stat, nil
 	} else if operator.Condition != nil {
@@ -325,6 +352,21 @@ func calculationConditionStrAND(operator api.OperatorStruct, averageSecurityScor
 		newOperator := operator.Condition.Operator[i]
 
 		if newOperator.Condition == nil {
+			if newOperator.OperatorType == ">" {
+				newOperator.OperatorType = api.OperatorGreaterThan
+			} else if newOperator.OperatorType == "<" {
+				newOperator.OperatorType = api.OperatorLessThan
+			} else if operator.OperatorType == ">=" {
+				newOperator.OperatorType = api.OperatorGreaterThanOrEqual
+			} else if operator.OperatorType == "<=" {
+				newOperator.OperatorType = api.OperatorLessThanOrEqual
+			} else if newOperator.OperatorType == "=" {
+				newOperator.OperatorType = api.OperatorEqual
+			} else if newOperator.OperatorType == "!=" {
+				newOperator.OperatorType = api.OperatorDoesNotEqual
+			} else {
+				return false, fmt.Errorf("Error : Your operator sign is wrong , please enter the correct operator ")
+			}
 			stat := compareValue(newOperator.OperatorType, newOperator.Value, averageSecurityScorePercentage)
 			if !stat {
 				return false, nil
@@ -391,6 +433,21 @@ func calculationConditionStrOr(operator api.OperatorStruct, averageSecurityScore
 		newOperator := operator.Condition.Operator[i]
 
 		if newOperator.Condition == nil {
+			if newOperator.OperatorType == ">" {
+				newOperator.OperatorType = api.OperatorGreaterThan
+			} else if newOperator.OperatorType == "<" {
+				newOperator.OperatorType = api.OperatorLessThan
+			} else if newOperator.OperatorType == ">=" {
+				newOperator.OperatorType = api.OperatorGreaterThanOrEqual
+			} else if newOperator.OperatorType == "<=" {
+				newOperator.OperatorType = api.OperatorLessThanOrEqual
+			} else if newOperator.OperatorType == "=" {
+				newOperator.OperatorType = api.OperatorEqual
+			} else if newOperator.OperatorType == "!=" {
+				newOperator.OperatorType = api.OperatorDoesNotEqual
+			} else {
+				return false, fmt.Errorf("Error : Your operator sign is wrong , please enter the correct operator ")
+			}
 			stat := compareValue(newOperator.OperatorType, newOperator.Value, averageSecurityScorePercentage)
 			if stat {
 				return true, nil
