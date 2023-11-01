@@ -1057,52 +1057,57 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark %s not found", benchmarkId))
 	}
 
-	connectorType := source.Nil
+	//connectorType := source.Nil
 	// trace :
-	outputS2, span2 := tracer.Start(outputS1, "new_GetQuery(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_GetQuery(loop)")
+	//outputS2, span2 := tracer.Start(outputS1, "new_GetQuery(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	//span2.SetName("new_GetQuery(loop)")
 
-	for _, policy := range benchmark.Policies {
-		if policy.QueryID == nil {
-			continue
-		}
-		//trace :
-		_, span3 := tracer.Start(outputS2, "new_GetQuery", trace.WithSpanKind(trace.SpanKindServer))
-		span3.SetName("new_GetQuery")
-
-		q, err := h.db.GetQuery(*policy.QueryID)
-		if err != nil {
-			span3.RecordError(err)
-			span3.SetStatus(codes.Error, err.Error())
-			return err
-		}
-		span3.SetAttributes(
-			attribute.String("query ID", q.ID),
-		)
-		span3.End()
-
-		if q == nil {
-			return fmt.Errorf("query %s not found", *policy.QueryID)
-		}
-
-		if t, _ := source.ParseType(q.Connector); t != source.Nil {
-			connectorType = t
-			break
-		}
+	ca := benchmark.ToApi()
+	err = benchmark.PopulateConnectors(context.Background(), h.db, &ca)
+	if err != nil {
+		return err
 	}
-	span2.End()
+	//
+	//for _, policy := range benchmark.Policies {
+	//	if policy.QueryID == nil {
+	//		continue
+	//	}
+	//	//trace :
+	//	_, span3 := tracer.Start(outputS2, "new_GetQuery", trace.WithSpanKind(trace.SpanKindServer))
+	//	span3.SetName("new_GetQuery")
+	//
+	//	q, err := h.db.GetQuery(*policy.QueryID)
+	//	if err != nil {
+	//		span3.RecordError(err)
+	//		span3.SetStatus(codes.Error, err.Error())
+	//		return err
+	//	}
+	//	span3.SetAttributes(
+	//		attribute.String("query ID", q.ID),
+	//	)
+	//	span3.End()
+	//
+	//	if q == nil {
+	//		return fmt.Errorf("query %s not found", *policy.QueryID)
+	//	}
+	//
+	//	if t, _ := source.ParseType(q.Connector); t != source.Nil {
+	//		connectorType = t
+	//		break
+	//	}
+	//}
+	//span2.End()
 
 	switch {
 	case len(connectionIDs) > 0:
 		connections := make([]onboardApi.Connection, 0)
 		if len(connectionIDs) == 1 && strings.ToLower(connectionIDs[0]) == "all" {
-			srcs, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+			srcs, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), ca.Connectors)
 			if err != nil {
 				return err
 			}
 			for _, src := range srcs {
-				if src.Connector == connectorType &&
-					(src.LifecycleState == onboardApi.ConnectionLifecycleStateOnboard || src.LifecycleState == onboardApi.ConnectionLifecycleStateInProgress) {
+				if src.IsEnabled() {
 					connections = append(connections, src)
 				}
 			}
