@@ -259,7 +259,7 @@ func RemoveOldFindings(jc JobConfig, jobID uint, benchmarkID string) error {
 	ctx := context.Background()
 	es := jc.esClient.ES()
 
-	index := []string{types.FindingsIndex}
+	index := []string{types.FindingsIndex, types.ResourceCollectionsFindingsIndex}
 
 	var filters []map[string]any
 	filters = append(filters, map[string]any{
