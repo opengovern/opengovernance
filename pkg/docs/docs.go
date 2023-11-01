@@ -5604,11 +5604,15 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "AND",
-                "OR"
+                "and",
+                "OR",
+                "or"
             ],
             "x-enum-varnames": [
                 "ConditionAnd",
-                "ConditionOr"
+                "ConditionAndLowerCase",
+                "ConditionOr",
+                "ConditionOrLowerCase"
             ]
         },
         "github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateActionReq": {

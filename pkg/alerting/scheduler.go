@@ -350,86 +350,6 @@ func calculationConditionStr(operator api.OperatorStruct, averageSecurityScorePe
 	return false, fmt.Errorf("please enter right condition type ")
 }
 
-func calculationConditionStrAND(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
-	// AND condition
-	numberOperatorStr := len(operator.Condition.Operator)
-	for i := 0; i < numberOperatorStr; i++ {
-		newOperator := operator.Condition.Operator[i]
-
-		if newOperator.Condition == nil {
-			if newOperator.OperatorType == ">" {
-				newOperator.OperatorType = api.OperatorGreaterThan
-			} else if newOperator.OperatorType == "<" {
-				newOperator.OperatorType = api.OperatorLessThan
-			} else if operator.OperatorType == ">=" {
-				newOperator.OperatorType = api.OperatorGreaterThanOrEqual
-			} else if operator.OperatorType == "<=" {
-				newOperator.OperatorType = api.OperatorLessThanOrEqual
-			} else if newOperator.OperatorType == "=" {
-				newOperator.OperatorType = api.OperatorEqual
-			} else if newOperator.OperatorType == "!=" {
-				newOperator.OperatorType = api.OperatorDoesNotEqual
-			} else {
-				return false, fmt.Errorf("Error : Your operator type is wrong , please enter the correct operator ")
-			}
-			stat := compareValue(newOperator.OperatorType, newOperator.Value, averageSecurityScorePercentage)
-			if !stat {
-				return false, nil
-			} else {
-				if i == numberOperatorStr-1 {
-					return true, nil
-				}
-				continue
-			}
-
-		} else if newOperator.Condition.ConditionType != "" {
-			newOperator2 := newOperator.Condition
-			conditionType2 := newOperator2.ConditionType
-			numberOperatorStr2 := len(newOperator2.Operator)
-
-			for j := 0; j < numberOperatorStr2; j++ {
-				stat, err := calculationOperations(newOperator2.Operator[j], averageSecurityScorePercentage)
-				if err != nil {
-					return false, fmt.Errorf("error in calculation operations : %v ", err.Error())
-				}
-
-				if conditionType2 == api.ConditionAnd || conditionType2 == api.ConditionAndLowerCase {
-					if !stat {
-						return false, nil
-					} else {
-						if j == numberOperatorStr2-1 {
-							if i == numberOperatorStr-1 {
-								return true, nil
-							}
-							break
-						}
-						continue
-					}
-				} else if conditionType2 == api.ConditionOr || conditionType2 == api.ConditionOrLowerCase {
-					if stat {
-						return true, nil
-					} else {
-						if j == numberOperatorStr2-1 {
-							if i == numberOperatorStr-1 {
-								return false, nil
-							}
-							break
-						}
-						continue
-					}
-				} else {
-					return false, fmt.Errorf("error: condition type is invalid")
-				}
-
-			}
-			continue
-		} else {
-			return false, fmt.Errorf("error : condition is is invalid")
-		}
-	}
-	return false, fmt.Errorf("error")
-}
-
 func calculationConditionStrOr(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
 	// OR condition
 	numberOperatorStr := len(operator.Condition.Operator)
@@ -508,6 +428,86 @@ func calculationConditionStrOr(operator api.OperatorStruct, averageSecurityScore
 			return false, fmt.Errorf("error : condition is invalid ")
 		}
 
+	}
+	return false, fmt.Errorf("error")
+}
+
+func calculationConditionStrAND(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
+	// AND condition
+	numberOperatorStr := len(operator.Condition.Operator)
+	for i := 0; i < numberOperatorStr; i++ {
+		newOperator := operator.Condition.Operator[i]
+
+		if newOperator.Condition == nil {
+			if newOperator.OperatorType == ">" {
+				newOperator.OperatorType = api.OperatorGreaterThan
+			} else if newOperator.OperatorType == "<" {
+				newOperator.OperatorType = api.OperatorLessThan
+			} else if operator.OperatorType == ">=" {
+				newOperator.OperatorType = api.OperatorGreaterThanOrEqual
+			} else if operator.OperatorType == "<=" {
+				newOperator.OperatorType = api.OperatorLessThanOrEqual
+			} else if newOperator.OperatorType == "=" {
+				newOperator.OperatorType = api.OperatorEqual
+			} else if newOperator.OperatorType == "!=" {
+				newOperator.OperatorType = api.OperatorDoesNotEqual
+			} else {
+				return false, fmt.Errorf("Error : Your operator type is wrong , please enter the correct operator ")
+			}
+			stat := compareValue(newOperator.OperatorType, newOperator.Value, averageSecurityScorePercentage)
+			if !stat {
+				return false, nil
+			} else {
+				if i == numberOperatorStr-1 {
+					return true, nil
+				}
+				continue
+			}
+
+		} else if newOperator.Condition.ConditionType != "" {
+			newOperator2 := newOperator.Condition
+			conditionType2 := newOperator2.ConditionType
+			numberOperatorStr2 := len(newOperator2.Operator)
+
+			for j := 0; j < numberOperatorStr2; j++ {
+				stat, err := calculationOperations(newOperator2.Operator[j], averageSecurityScorePercentage)
+				if err != nil {
+					return false, fmt.Errorf("error in calculation operations : %v ", err.Error())
+				}
+
+				if conditionType2 == api.ConditionAnd || conditionType2 == api.ConditionAndLowerCase {
+					if !stat {
+						return false, nil
+					} else {
+						if j == numberOperatorStr2-1 {
+							if i == numberOperatorStr-1 {
+								return true, nil
+							}
+							break
+						}
+						continue
+					}
+				} else if conditionType2 == api.ConditionOr || conditionType2 == api.ConditionOrLowerCase {
+					if stat {
+						return true, nil
+					} else {
+						if j == numberOperatorStr2-1 {
+							if i == numberOperatorStr-1 {
+								return false, nil
+							}
+							break
+						}
+						continue
+					}
+				} else {
+					return false, fmt.Errorf("error: condition type is invalid")
+				}
+
+			}
+			continue
+		} else {
+			return false, fmt.Errorf("error : condition is is invalid")
+		}
 	}
 	return false, fmt.Errorf("error")
 }

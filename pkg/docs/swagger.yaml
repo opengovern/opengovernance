@@ -30,11 +30,15 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionType:
     enum:
     - AND
+    - and
     - OR
+    - or
     type: string
     x-enum-varnames:
     - ConditionAnd
+    - ConditionAndLowerCase
     - ConditionOr
+    - ConditionOrLowerCase
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateActionReq:
     properties:
       body:
