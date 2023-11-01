@@ -109,10 +109,10 @@ func (j *Job) Run(jc JobConfig) error {
 	_, span4 := tracer.Start(ctx, "new_RemoveOldFindings")
 	span4.SetName("new_RemoveOldFindings")
 
-	err = RemoveOldFindings(jc, j.ID, j.BenchmarkID)
-	if err != nil {
-		return err
-	}
+	//err = RemoveOldFindings(jc, j.ID, j.BenchmarkID)
+	//if err != nil {
+	//	return err
+	//}
 
 	span4.End()
 	_, span5 := tracer.Start(ctx, "new_Summarize")
