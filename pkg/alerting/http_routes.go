@@ -478,7 +478,7 @@ func (h *HttpHandler) CreateSlackAction(ctx echo.Context) error {
 
 	reqStr := api.SlackRequest{
 		ChannelName: inputs.ChannelName,
-		Text:        fmt.Sprintf("{{.Metadata.Name}} rule triggered successfully"),
+		Text:        fmt.Sprintf("{{.Name}} rule triggered successfully"),
 	}
 
 	reqStrMarshalled, err := json.Marshal(&reqStr)
@@ -515,7 +515,7 @@ func (h *HttpHandler) CreateJiraAction(ctx echo.Context) error {
 		Fields: &jira.IssueFields{
 			Type:    jira.IssueType{ID: inputs.IssueTypeId},
 			Project: jira.Project{ID: inputs.ProjectId},
-			Summary: "{{.Metadata.Name}} rule triggered successfully",
+			Summary: "{{.Name}} rule triggered successfully",
 			Duedate: jira.Date(time.Now()),
 		},
 	}
