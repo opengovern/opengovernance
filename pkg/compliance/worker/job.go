@@ -239,6 +239,7 @@ func (j *Job) RunForConnection(ctx context.Context, connectionID string, resourc
 
 		jc.logger.Info("pushing findings into kafka",
 			zap.Int("count", len(docs)),
+			zap.Int("dataCount", len(res.Data)),
 			zap.String("connectionID", connectionID),
 			zap.String("benchmarkID", plan.Policy.ID),
 		)
