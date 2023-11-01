@@ -13,7 +13,13 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -45,6 +51,34 @@ type Worker struct {
 	kafkaProducer *kafka2.Producer
 }
 
+var agentHost = os.Getenv("JAEGER_AGENT_HOST")
+var serviceName = os.Getenv("JAEGER_SERVICE_NAME")
+var sampleRate = os.Getenv("JAEGER_SAMPLE_RATE")
+
+func initTracer() (*sdktrace.TracerProvider, error) {
+	exporter, err := jaeger.New(jaeger.WithAgentEndpoint(jaeger.WithAgentHost(agentHost)))
+	if err != nil {
+		return nil, err
+	}
+
+	sampleRateFloat := 1.0
+	if sampleRate != "" {
+		sampleRateFloat, err = strconv.ParseFloat(sampleRate, 64)
+		if err != nil {
+			fmt.Println("Error parsing sample rate for Jaeger. Using default value of 1.0", err)
+			sampleRateFloat = 1
+		}
+	}
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(sampleRateFloat)),
+		sdktrace.WithBatcher(exporter),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+	return tp, nil
+}
+
 func InitializeNewWorker(
 	config Config,
 	logger *zap.Logger,
@@ -74,6 +108,11 @@ func InitializeNewWorker(
 	}
 
 	producer, err := newKafkaProducer(strings.Split(config.Kafka.Addresses, ","))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = initTracer()
 	if err != nil {
 		return nil, err
 	}

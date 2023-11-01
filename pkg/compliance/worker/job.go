@@ -15,6 +15,9 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"io"
 	"time"
@@ -37,14 +40,25 @@ type JobConfig struct {
 	kafkaProducer    *confluent_kafka.Producer
 }
 
+var tracer = otel.Tracer("new_compliance_worker")
+
 func (j *Job) Run(jc JobConfig) error {
 	hctx := &httpclient.Context{UserRole: api.InternalRole}
+
+	ctx := context.Background()
+	_, span1 := tracer.Start(ctx, "new_JobRun")
+	span1.SetName("new_JobRun")
 
 	assignment, err := jc.complianceClient.ListAssignmentsByBenchmark(hctx, j.BenchmarkID)
 	if err != nil {
 		jc.logger.Error("failed to list assignments by benchmark", zap.String("benchmarkID", j.BenchmarkID), zap.Error(err))
 		return err
 	}
+
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark id", j.BenchmarkID),
+	))
+	span1.End()
 
 	bs := types2.BenchmarkSummary{
 		BenchmarkID:      j.BenchmarkID,
@@ -60,48 +74,71 @@ func (j *Job) Run(jc JobConfig) error {
 		Policies:            map[string]types2.PolicyResult{},
 	}
 
+	_, span2 := tracer.Start(ctx, "new_ConnectionsRun")
+	span2.SetName("new_ConnectionsRun")
+
 	for _, connection := range assignment.Connections {
 		if !connection.Status {
 			continue
 		}
 
-		err := j.RunForConnection(connection.ConnectionID, nil, &bs, jc)
+		err := j.RunForConnection(ctx, connection.ConnectionID, nil, &bs, jc)
 		if err != nil {
 			jc.logger.Error("failed to run for connection", zap.String("connectionID", connection.ConnectionID), zap.Error(err))
 			return err
 		}
 	}
 
+	span2.End()
+	_, span3 := tracer.Start(ctx, "new_ResourceCollections")
+	span3.SetName("new_ResourceCollections")
+
 	for _, resourceCollection := range assignment.ResourceCollections {
 		if !resourceCollection.Status {
 			continue
 		}
 
-		err := j.RunForConnection("all", &resourceCollection.ResourceCollectionID, &bs, jc)
+		err := j.RunForConnection(ctx, "all", &resourceCollection.ResourceCollectionID, &bs, jc)
 		if err != nil {
 			jc.logger.Error("failed to run for resource collection", zap.String("resourceCollectionID", resourceCollection.ResourceCollectionID), zap.Error(err))
 			return err
 		}
 	}
 
+	span3.End()
+	_, span4 := tracer.Start(ctx, "new_RemoveOldFindings")
+	span4.SetName("new_RemoveOldFindings")
+
 	err = RemoveOldFindings(jc, j.ID, j.BenchmarkID)
 	if err != nil {
 		return err
 	}
 
+	span4.End()
+	_, span5 := tracer.Start(ctx, "new_Summarize")
+	span5.SetName("new_Summarize")
+
 	bs.Summarize()
 
 	jc.logger.Info(fmt.Sprintf("bs={%v}", bs))
+
+	span5.End()
+	_, span6 := tracer.Start(ctx, "kafka_DoSend")
+	span6.SetName("kafka_DoSend")
 
 	err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, []kafka.Doc{bs}, jc.logger, nil)
 	if err != nil {
 		return err
 	}
 
+	span6.End()
 	return nil
 }
 
-func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string, benchmarkSummary *types2.BenchmarkSummary, jc JobConfig) error {
+func (j *Job) RunForConnection(ctx context.Context, connectionID string, resourceCollectionID *string, benchmarkSummary *types2.BenchmarkSummary, jc JobConfig) error {
+	_, span1 := tracer.Start(ctx, "job_GetSource")
+	span1.SetName("job_GetSource")
+
 	onboardConnectionId := connectionID
 	if connectionID != "all" {
 		conn, err := jc.onboardClient.GetSource(&httpclient.Context{UserRole: api.InternalRole}, connectionID)
@@ -112,24 +149,36 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 		onboardConnectionId = conn.ConnectionID
 	}
 
-	err := jc.steampipeConn.SetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID, onboardConnectionId)
+	span1.End()
+	_, span2 := tracer.Start(ctx, "job_ConfigureSteampipe")
+	span2.SetName("job_ConfigureSteampipe")
+
+	err := jc.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID, onboardConnectionId)
 	if err != nil {
 		jc.logger.Error("failed to set account id", zap.String("connectionID", connectionID), zap.Error(err))
 		return err
 	}
-	defer jc.steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID)
-	err = jc.steampipeConn.SetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyClientType, "compliance")
+	defer jc.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID)
+	err = jc.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType, "compliance")
 	if err != nil {
 		jc.logger.Error("failed to set client type", zap.String("connectionID", connectionID), zap.Error(err))
 		return err
 	}
-	defer jc.steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyClientType)
+	defer jc.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
+
+	span2.End()
+	_, span3 := tracer.Start(ctx, "job_ListPlans")
+	span3.SetName("job_ListPlans")
 
 	plans, err := ListExecutionPlans(connectionID, nil, j.BenchmarkID, jc)
 	if err != nil {
 		jc.logger.Error("failed to list execution plans", zap.String("connectionID", connectionID), zap.Error(err))
 		return err
 	}
+
+	span3.End()
+	_, span4 := tracer.Start(ctx, "job_ExecPlans")
+	span4.SetName("job_ExecPlans")
 
 	for _, plan := range plans {
 		jc.logger.Info("running query",
@@ -138,11 +187,18 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 			zap.String("benchmarkID", plan.Policy.ID),
 		)
 
-		res, err := jc.steampipeConn.QueryAll(context.Background(), plan.Query.QueryToExecute)
+		_, span5 := tracer.Start(ctx, "plan_Query")
+		span5.SetName("plan_Query")
+
+		res, err := jc.steampipeConn.QueryAll(ctx, plan.Query.QueryToExecute)
 		if err != nil {
 			jc.logger.Error("failed to run query", zap.String("query", plan.Query.QueryToExecute), zap.Error(err))
 			return err
 		}
+
+		span5.End()
+		_, span6 := tracer.Start(ctx, "plan_ExtractFindings")
+		span6.SetName("plan_ExtractFindings")
 
 		findings, err := j.ExtractFindings(plan, connectionID, resourceCollectionID, res, jc)
 		if err != nil {
@@ -150,10 +206,17 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 			return err
 		}
 
+		span6.End()
+		_, span7 := tracer.Start(ctx, "plan_AddSummary")
+		span7.SetName("plan_AddSummary")
+
 		for _, f := range findings {
 			benchmarkSummary.AddFinding(f)
 		}
 
+		span7.End()
+		_, span8 := tracer.Start(ctx, "plan_kafka_DoSend")
+		span8.SetName("plan_kafka_DoSend")
 
 		//TODO-Saleh probably push result into s3 to keep historical data
 
@@ -185,8 +248,10 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 			jc.logger.Error("failed to push findings into kafka", zap.String("connectionID", connectionID), zap.Error(err))
 			return err
 		}
+		span8.End()
 	}
 
+	span4.End()
 	return nil
 }
 
