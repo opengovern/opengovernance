@@ -84,6 +84,11 @@ func (j *Job) Run(jc JobConfig) error {
 		}
 	}
 
+	err = RemoveOldFindings(jc, j.ID, j.BenchmarkID)
+	if err != nil {
+		return err
+	}
+
 	bs.Summarize()
 
 	jc.logger.Info(fmt.Sprintf("bs={%v}", bs))
@@ -149,11 +154,6 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 			benchmarkSummary.AddFinding(f)
 		}
 
-		err = RemoveOldFindings(jc, plan.Policy.ID, connectionID, resourceCollectionID)
-		if err != nil {
-			jc.logger.Error("failed to remove old findings", zap.String("query", plan.Query.QueryToExecute), zap.Error(err))
-			return err
-		}
 
 		//TODO-Saleh probably push result into s3 to keep historical data
 
@@ -190,7 +190,7 @@ func (j *Job) RunForConnection(connectionID string, resourceCollectionID *string
 	return nil
 }
 
-func RemoveOldFindings(jc JobConfig, policyID string, connectionID string, resourceCollectionID *string) error {
+func RemoveOldFindings(jc JobConfig, jobID uint, benchmarkID string) error {
 	ctx := context.Background()
 	es := jc.esClient.ES()
 
@@ -198,22 +198,29 @@ func RemoveOldFindings(jc JobConfig, policyID string, connectionID string, resou
 
 	var filters []map[string]any
 	filters = append(filters, map[string]any{
-		"term": map[string]any{
-			"policyID": policyID,
-		},
-	})
-	filters = append(filters, map[string]any{
-		"term": map[string]any{
-			"connectionID": connectionID,
-		},
-	})
-	if resourceCollectionID != nil {
-		filters = append(filters, map[string]any{
-			"term": map[string]any{
-				"resourceCollection": resourceCollectionID,
+		"bool": map[string]any{
+			"should": []map[string]any{
+				{
+					"bool": map[string]any{
+						"must_not": map[string]any{
+							"term": map[string]any{
+								"complianceJobID": jobID,
+							},
+						},
+					},
+				},
+				{
+					"bool": map[string]any{
+						"must": map[string]any{
+							"term": map[string]any{
+								"parentBenchmarks": benchmarkID,
+							},
+						},
+					},
+				},
 			},
-		})
-	}
+		},
+	})
 
 	request := make(map[string]any)
 	request["query"] = map[string]any{
