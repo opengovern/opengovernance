@@ -188,7 +188,7 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the inputs : %v ", err))
 	}
 
-	EmptyFields := api.CreateRuleRequest{}
+	//EmptyFields := api.CreateRuleRequest{}
 	//if req.ActionID == EmptyFields.ActionID || req.Operator == EmptyFields.Operator || req.EventType == EmptyFields.EventType || req.Metadata.Name == req.Metadata.Name {
 	//	return errors.New("All the fields in struct must be set")
 	//}
