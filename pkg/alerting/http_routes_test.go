@@ -603,10 +603,20 @@ func TestTrigger(t *testing.T) {
 	teardownSuite, h := setupSuite(t)
 	defer teardownSuite(t)
 
-	operator := api.OperatorStruct{
-		OperatorType: "GreaterThan",
+	var operatorTest []api.OperatorStruct
+	operatorTest = append(operatorTest, api.OperatorStruct{
+		OperatorType: "<",
+		Value:        80,
+	})
+	operatorTest = append(operatorTest, api.OperatorStruct{
+		OperatorType: ">",
 		Value:        100,
-		Condition:    nil,
+	})
+	operator := api.OperatorStruct{
+		Condition: &api.ConditionStruct{
+			ConditionType: api.ConditionOr,
+			Operator:      operatorTest,
+		},
 	}
 
 	var actionId uint

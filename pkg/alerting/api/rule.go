@@ -16,8 +16,10 @@ const (
 type ConditionType string
 
 const (
-	ConditionAnd ConditionType = "AND"
-	ConditionOr  ConditionType = "OR"
+	ConditionAnd          ConditionType = "AND"
+	ConditionAndLowerCase ConditionType = "and"
+	ConditionOr           ConditionType = "OR"
+	ConditionOrLowerCase  ConditionType = "or"
 )
 
 type EventType struct {
