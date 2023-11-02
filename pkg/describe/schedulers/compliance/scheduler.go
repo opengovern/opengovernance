@@ -61,7 +61,7 @@ func (s *JobScheduler) runScheduler() error {
 		timeAt := time.Now().Add(time.Duration(-s.conf.ComplianceIntervalHours) * time.Hour)
 		if complianceJob == nil ||
 			complianceJob.CreatedAt.Before(timeAt) {
-			_, err := s.createComplianceReportJobs(benchmark.ID)
+			_, err := s.CreateComplianceReportJobs(benchmark.ID)
 			if err != nil {
 				return err
 			}

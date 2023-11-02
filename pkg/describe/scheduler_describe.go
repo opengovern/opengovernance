@@ -840,7 +840,7 @@ func (s *Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		if !connectorMatch { // pass if connector doesn't match
 			continue
 		}
-		jobID, err := s.triggerComplianceReportJobs(benchmark.ID)
+		jobID, err := s.complianceScheduler.CreateComplianceReportJobs(benchmark.ID)
 		if err != nil {
 			return err
 		}

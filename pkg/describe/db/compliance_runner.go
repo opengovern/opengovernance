@@ -31,6 +31,15 @@ func (db Database) FetchCreatedRunners() ([]model.ComplianceRunner, error) {
 	return jobs, nil
 }
 
+func (db Database) RetryFailedRunners() error {
+	tx := db.ORM.Exec("UPDATE compliance_runner SET retry_count = retry_count + 1, status = 'CREATED' WHERE status = 'FAILED' AND retry_count < 3 AND updated_at < NOW() - interval '5 minutes'")
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
 func (db Database) UpdateRunnerJob(
 	id uint, status runner.ComplianceRunnerStatus, failureMsg string) error {
 	tx := db.ORM.

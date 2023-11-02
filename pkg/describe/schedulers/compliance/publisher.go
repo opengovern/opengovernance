@@ -31,5 +31,10 @@ func (s *JobScheduler) runPublisher() error {
 		_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerInProgress, err.Error())
 	}
 
+	err = s.db.RetryFailedRunners()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

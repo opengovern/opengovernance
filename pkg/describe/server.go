@@ -277,7 +277,7 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
 
-	_, err = h.Scheduler.triggerComplianceReportJobs(benchmarkID)
+	_, err = h.Scheduler.complianceScheduler.CreateComplianceReportJobs(benchmarkID)
 	if err != nil {
 		return fmt.Errorf("error while creating compliance job: %v", err)
 	}

@@ -10,7 +10,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-engine/pkg/utils"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"strings"
 	"time"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics"
@@ -151,7 +150,7 @@ func (s *Scheduler) RunAnalyticsJobResultsConsumer() error {
 
 	consumer, err := kafka.NewTopicConsumer(
 		context.Background(),
-		strings.Split(KafkaService, ","),
+		s.kafkaServers,
 		analytics.JobResultQueueTopic,
 		schedulerConsumerGroup,
 	)
