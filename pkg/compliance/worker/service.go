@@ -11,7 +11,6 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -33,13 +32,11 @@ const (
 )
 
 type Config struct {
-	RabbitMQ              config.RabbitMQ
 	ElasticSearch         config.ElasticSearch
 	Kafka                 config.Kafka
 	Compliance            config.KaytuService
-	Inventory             config.KaytuService
 	Onboard               config.KaytuService
-	Scheduler             config.KaytuService
+	Steampipe             config.Postgres
 	PrometheusPushAddress string
 }
 
@@ -84,16 +81,26 @@ func InitializeNewWorker(
 	logger *zap.Logger,
 	prometheusPushAddress string,
 ) (*Worker, error) {
-	err := steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAWS)
-	if err != nil {
-		return nil, err
-	}
-	err = steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAzure)
-	if err != nil {
-		return nil, err
-	}
-
-	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
+	//err := steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAWS)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//err = steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAzure)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
+	//if err != nil {
+	//	return nil, err
+	//}
+	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
+		Host: config.Steampipe.Host,
+		Port: config.Steampipe.Port,
+		User: config.Steampipe.Username,
+		Pass: config.Steampipe.Password,
+		Db:   config.Steampipe.DB,
+	})
 	if err != nil {
 		return nil, err
 	}
