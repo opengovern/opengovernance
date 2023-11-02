@@ -6,6 +6,8 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	kafka2 "github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
@@ -64,5 +66,59 @@ func (s *JobScheduler) runPublisher() error {
 		return err
 	}
 
+	withRunner, err := s.db.ListComplianceRunnersWithStatus(model.ComplianceJobRunnersInProgress)
+	if err != nil {
+		return err
+	}
+
+	for _, job := range withRunner {
+		runnerJobs, err := s.db.ListRunnersWithID(job.RunnerIDs)
+		if err != nil {
+			return err
+		}
+
+		pending := false
+		for _, rj := range runnerJobs {
+			if rj.Status == runner.ComplianceRunnerCreated ||
+				rj.Status == runner.ComplianceRunnerInProgress ||
+				(rj.Status == runner.ComplianceRunnerFailed && rj.RetryCount < 3) {
+				pending = true
+				break
+			}
+		}
+
+		if !pending {
+			err = s.triggerSummarizer(job)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *JobScheduler) triggerSummarizer(job model.ComplianceJob) error {
+	// run summarizer
+	summarizerJob := summarizer.Job{
+		ID:          job.ID,
+		BenchmarkID: job.BenchmarkID,
+		CreatedAt:   job.CreatedAt,
+	}
+
+	jobJson, err := json.Marshal(summarizerJob)
+	if err != nil {
+		_ = s.db.UpdateComplianceJob(job.ID, model.ComplianceJobFailed, err.Error())
+		return err
+	}
+
+	msg := kafka2.Msg(fmt.Sprintf("job-%d", job.ID), jobJson, "", summarizer.JobQueue, kafka.PartitionAny)
+	_, err = kafka2.SyncSend(s.logger, s.kafkaProducer, []*kafka.Message{msg}, nil)
+	if err != nil {
+		_ = s.db.UpdateComplianceJob(job.ID, model.ComplianceJobFailed, err.Error())
+		return err
+	}
+
+	_ = s.db.UpdateComplianceJob(job.ID, model.ComplianceJobSummarizerInProgress, "")
 	return nil
 }

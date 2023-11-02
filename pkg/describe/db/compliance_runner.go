@@ -68,3 +68,13 @@ func (db Database) UpdateRunnerJobsTimedOut() error {
 
 	return nil
 }
+
+func (db Database) ListRunnersWithID(ids []int64) ([]model.ComplianceRunner, error) {
+	var jobs []model.ComplianceRunner
+	tx := db.ORM.Where("id IN ?", ids).Find(&jobs)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return jobs, nil
+}

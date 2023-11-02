@@ -2,7 +2,6 @@ package compliance
 
 import (
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/runner"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
@@ -129,7 +128,7 @@ func (s *JobScheduler) CreateComplianceReportJobs(benchmarkID string) (uint, err
 
 	job := model.ComplianceJob{
 		BenchmarkID: benchmarkID,
-		Status:      api.ComplianceReportJobCreated,
+		Status:      model.ComplianceJobCreated,
 		IsStack:     false,
 	}
 	for _, j := range allRunners {

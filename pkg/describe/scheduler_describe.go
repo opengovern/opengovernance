@@ -23,7 +23,6 @@ import (
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	apiAuth "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	apiCompliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	apiDescribe "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
@@ -914,9 +913,9 @@ func (s *Scheduler) updateStackJobs(stack apiDescribe.Stack) (bool, error) { // 
 			if err != nil {
 				return false, err
 			}
-			if job.Status == apiCompliance.ComplianceReportJobCompleted {
+			if job.Status == model.ComplianceJobSucceeded {
 				err = s.db.UpdateEvaluationStatus(evaluation.JobID, apiDescribe.StackEvaluationStatusCompleted)
-			} else if job.Status == apiCompliance.ComplianceReportJobCompletedWithFailure {
+			} else if job.Status == model.ComplianceJobFailed {
 				err = s.db.UpdateEvaluationStatus(evaluation.JobID, apiDescribe.StackEvaluationStatusFailed)
 			} else {
 				isAllDone = false
