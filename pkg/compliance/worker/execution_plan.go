@@ -62,5 +62,15 @@ func ListExecutionPlans(connectionID string, parentBenchmarkIDs []string, benchm
 		plans = append(plans, ep)
 	}
 
-	return plans, nil
+	var distinctPlans []ExecutionPlan
+	planDuplicates := map[string]interface{}{}
+	for _, plan := range plans {
+		if _, ok := planDuplicates[plan.Query.ID]; ok {
+			continue
+		}
+		planDuplicates[plan.Query.ID] = struct{}{}
+		distinctPlans = append(distinctPlans, plan)
+	}
+
+	return distinctPlans, nil
 }
