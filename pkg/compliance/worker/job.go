@@ -142,9 +142,6 @@ func (j *Job) Run(jc JobConfig) error {
 }
 
 func (j *Job) RunForConnection(ctx context.Context, connectionID string, resourceCollectionID *string, benchmarkSummary *types2.BenchmarkSummary, jc JobConfig) error {
-	_, span1 := tracer.Start(ctx, "job_GetSource")
-	span1.SetName("job_GetSource")
-
 	onboardConnectionId := connectionID
 	if connectionID != "all" {
 		conn, err := jc.onboardClient.GetSource(&httpclient.Context{UserRole: api.InternalRole}, connectionID)
@@ -154,10 +151,6 @@ func (j *Job) RunForConnection(ctx context.Context, connectionID string, resourc
 		}
 		onboardConnectionId = conn.ConnectionID
 	}
-
-	span1.End()
-	_, span2 := tracer.Start(ctx, "job_ConfigureSteampipe")
-	span2.SetName("job_ConfigureSteampipe")
 
 	err := jc.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID, onboardConnectionId)
 	if err != nil {
@@ -172,58 +165,31 @@ func (j *Job) RunForConnection(ctx context.Context, connectionID string, resourc
 	}
 	defer jc.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
 
-	span2.End()
-	_, span3 := tracer.Start(ctx, "job_ListPlans")
-	span3.SetName("job_ListPlans")
-
-	plans, err := ListExecutionPlans(connectionID, nil, j.BenchmarkID, jc)
+	executionPlans, err := ListExecutionPlans(connectionID, nil, j.BenchmarkID, jc)
 	if err != nil {
 		jc.logger.Error("failed to list execution plans", zap.String("connectionID", connectionID), zap.Error(err))
 		return err
 	}
 
-	span3.End()
-	_, span4 := tracer.Start(ctx, "job_ExecPlans")
-	span4.SetName("job_ExecPlans")
+	for _, plans := range executionPlans.Plans {
+		if len(plans) == 0 {
+			continue
+		}
+		plan := plans[0]
 
-	for _, plan := range plans {
 		jc.logger.Info("running query",
 			zap.String("query", plan.Query.QueryToExecute),
 			zap.String("connectionID", connectionID),
-			zap.String("benchmarkID", plan.Policy.ID),
-			zap.Int("planCount", len(plans)),
+			zap.String("benchmarkID", j.BenchmarkID),
+			zap.Int("planCount", len(executionPlans.Plans)),
+			zap.Int("duplicateCount", len(plans)),
 		)
-
-		_, span5 := tracer.Start(ctx, "plan_Query")
-		span5.SetName("plan_Query")
 
 		res, err := jc.steampipeConn.QueryAll(ctx, plan.Query.QueryToExecute)
 		if err != nil {
 			jc.logger.Error("failed to run query", zap.String("query", plan.Query.QueryToExecute), zap.Error(err))
 			return err
 		}
-
-		span5.End()
-		_, span6 := tracer.Start(ctx, "plan_ExtractFindings")
-		span6.SetName("plan_ExtractFindings")
-
-		findings, err := j.ExtractFindings(plan, connectionID, resourceCollectionID, res, jc)
-		if err != nil {
-			jc.logger.Error("failed to extract findings", zap.String("query", plan.Query.QueryToExecute), zap.Error(err))
-			return err
-		}
-
-		span6.End()
-		_, span7 := tracer.Start(ctx, "plan_AddSummary")
-		span7.SetName("plan_AddSummary")
-
-		for _, f := range findings {
-			benchmarkSummary.AddFinding(f)
-		}
-
-		span7.End()
-		_, span8 := tracer.Start(ctx, "plan_kafka_DoSend")
-		span8.SetName("plan_kafka_DoSend")
 
 		//TODO-Saleh probably push result into s3 to keep historical data
 
@@ -233,33 +199,40 @@ func (j *Job) RunForConnection(ctx context.Context, connectionID string, resourc
 		//		return err
 		//	}
 		//}
+		for _, plan := range plans {
+			findings, err := j.ExtractFindings(plan, connectionID, resourceCollectionID, res, jc)
+			if err != nil {
+				jc.logger.Error("failed to extract findings", zap.String("query", plan.Query.QueryToExecute), zap.Error(err))
+				return err
+			}
+			for _, f := range findings {
+				benchmarkSummary.AddFinding(f)
+			}
 
-		for idx, finding := range findings {
-			finding.ParentBenchmarks = plan.ParentBenchmarkIDs
-			findings[idx] = finding
+			for idx, finding := range findings {
+				finding.ParentBenchmarks = plan.ParentBenchmarkIDs
+				findings[idx] = finding
+			}
+
+			var docs []kafka.Doc
+			for _, f := range findings {
+				docs = append(docs, f)
+			}
+
+			jc.logger.Info("pushing findings into kafka",
+				zap.Int("count", len(docs)),
+				zap.Int("dataCount", len(res.Data)),
+				zap.String("connectionID", connectionID),
+				zap.String("benchmarkID", plan.Policy.ID),
+			)
+			err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, docs, jc.logger, nil)
+			if err != nil {
+				jc.logger.Error("failed to push findings into kafka", zap.String("connectionID", connectionID), zap.Error(err))
+				return err
+			}
 		}
 
-		var docs []kafka.Doc
-		for _, f := range findings {
-			docs = append(docs, f)
-		}
-
-		jc.logger.Info("pushing findings into kafka",
-			zap.Int("count", len(docs)),
-			zap.Int("dataCount", len(res.Data)),
-			zap.String("connectionID", connectionID),
-			zap.String("benchmarkID", plan.Policy.ID),
-		)
-
-		err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, docs, jc.logger, nil)
-		if err != nil {
-			jc.logger.Error("failed to push findings into kafka", zap.String("connectionID", connectionID), zap.Error(err))
-			return err
-		}
-		span8.End()
 	}
-
-	span4.End()
 	return nil
 }
 

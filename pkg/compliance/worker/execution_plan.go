@@ -6,34 +6,48 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 )
 
-type ExecutionPlan struct {
+type Plan struct {
 	ParentBenchmarkIDs []string
-	Policy             *api2.Policy
 	Query              *api2.Query
+	Policy             *api2.Policy
 }
 
-func ListExecutionPlans(connectionID string, parentBenchmarkIDs []string, benchmarkID string, jc JobConfig) ([]ExecutionPlan, error) {
-	var plans []ExecutionPlan
+type ExecutionPlan struct {
+	Plans map[string][]Plan
+}
+
+func ListExecutionPlans(connectionID string, parentBenchmarkIDs []string, benchmarkID string, jc JobConfig) (ExecutionPlan, error) {
+	executionPlan := ExecutionPlan{
+		Plans: map[string][]Plan{},
+	}
 
 	hctx := &httpclient.Context{UserRole: api.InternalRole}
 	benchmark, err := jc.complianceClient.GetBenchmark(hctx, benchmarkID)
 	if err != nil {
-		return nil, err
+		return executionPlan, err
 	}
 
 	for _, childBenchmarkID := range benchmark.Children {
-		executionPlans, err := ListExecutionPlans(connectionID, append(parentBenchmarkIDs, benchmarkID), childBenchmarkID, jc)
+		childExecutionPlan, err := ListExecutionPlans(connectionID, append(parentBenchmarkIDs, benchmarkID), childBenchmarkID, jc)
 		if err != nil {
-			return nil, err
+			return executionPlan, err
 		}
 
-		plans = append(plans, executionPlans...)
+		for k, v := range childExecutionPlan.Plans {
+			o, ok := executionPlan.Plans[k]
+			if ok {
+				o = append(o, v...)
+			} else {
+				o = v
+			}
+			executionPlan.Plans[k] = o
+		}
 	}
 
 	for _, policyID := range benchmark.Policies {
 		policy, err := jc.complianceClient.GetPolicy(hctx, policyID)
 		if err != nil {
-			return nil, err
+			return executionPlan, err
 		}
 
 		if policy.ManualVerification {
@@ -50,27 +64,23 @@ func ListExecutionPlans(connectionID string, parentBenchmarkIDs []string, benchm
 
 		query, err := jc.complianceClient.GetQuery(hctx, *policy.QueryID)
 		if err != nil {
-			return nil, err
+			return executionPlan, err
 		}
 
-		ep := ExecutionPlan{
+		ep := Plan{
 			ParentBenchmarkIDs: append(parentBenchmarkIDs, benchmarkID),
 			Policy:             policy,
 			Query:              query,
 		}
 
-		plans = append(plans, ep)
-	}
-
-	var distinctPlans []ExecutionPlan
-	planDuplicates := map[string]interface{}{}
-	for _, plan := range plans {
-		if _, ok := planDuplicates[plan.Query.ID]; ok {
-			continue
+		o, ok := executionPlan.Plans[ep.Query.ID]
+		if ok {
+			o = append(o, ep)
+		} else {
+			o = []Plan{ep}
 		}
-		planDuplicates[plan.Query.ID] = struct{}{}
-		distinctPlans = append(distinctPlans, plan)
+		executionPlan.Plans[ep.Query.ID] = o
 	}
 
-	return distinctPlans, nil
+	return executionPlan, nil
 }

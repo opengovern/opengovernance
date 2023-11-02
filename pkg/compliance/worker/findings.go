@@ -9,7 +9,7 @@ import (
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 )
 
-func (j *Job) FilterFindings(plan ExecutionPlan, findings []types.Finding, jc JobConfig) ([]types.Finding, error) {
+func (j *Job) FilterFindings(plan Plan, findings []types.Finding, jc JobConfig) ([]types.Finding, error) {
 	// get all active findings from ES page by page
 	// go through the ones extracted and remove duplicates
 	// if a finding fetched from es is not duplicated disable it
@@ -55,7 +55,7 @@ func (j *Job) FilterFindings(plan ExecutionPlan, findings []types.Finding, jc Jo
 	return findings, nil
 }
 
-func (j *Job) ExtractFindings(plan ExecutionPlan, connectionID string, resourceCollection *string, res *steampipe.Result, jc JobConfig) ([]types.Finding, error) {
+func (j *Job) ExtractFindings(plan Plan, connectionID string, resourceCollection *string, res *steampipe.Result, jc JobConfig) ([]types.Finding, error) {
 	var findings []types.Finding
 
 	for _, record := range res.Data {
