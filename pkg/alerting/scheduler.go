@@ -148,13 +148,15 @@ func (h HttpHandler) sendAlert(rule Rule, metadata api.Metadata, averageSecurity
 		return fmt.Errorf("error sending the request : %v", err.Error())
 	}
 
-	var headers map[string]string
-	err = json.Unmarshal(action.Headers, &headers)
-	if err != nil {
-		return fmt.Errorf("error unmarshalling the headers : %v ", err.Error())
-	}
-	for k, v := range headers {
-		req.Header.Add(k, v)
+	if len(action.Headers) > 0 {
+		var headers map[string]string
+		err = json.Unmarshal(action.Headers, &headers)
+		if err != nil {
+			return fmt.Errorf("error unmarshalling the headers : %v ", err.Error())
+		}
+		for k, v := range headers {
+			req.Header.Add(k, v)
+		}
 	}
 
 	res, err := http.DefaultClient.Do(req)
