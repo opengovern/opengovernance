@@ -73,14 +73,14 @@ func (j *Job) ExtractFindings(plan ExecutionPlan, connectionID string, resourceC
 		var status types.ComplianceResult
 		if v, ok := recordValue["resource"].(string); ok {
 			resourceID = v
-			//
-			//lookupResource, err := es.FetchLookupsByResourceIDWildcard(jc.esClient, resourceID)
-			//if err != nil {
-			//	return nil, err
-			//}
-			//if len(lookupResource.Hits.Hits) > 0 {
-			//	resourceType = lookupResource.Hits.Hits[0].Source.ResourceType
-			//}
+
+			lookupResource, err := es.FetchLookupsByResourceIDWildcard(jc.esClient, resourceID)
+			if err != nil {
+				return nil, err
+			}
+			if len(lookupResource.Hits.Hits) > 0 {
+				resourceType = lookupResource.Hits.Hits[0].Source.ResourceType
+			}
 		}
 		if v, ok := recordValue["name"].(string); ok {
 			resourceName = v

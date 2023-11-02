@@ -77,6 +77,12 @@ func (j *Job) Run(jc JobConfig) error {
 	_, span2 := tracer.Start(ctx, "new_ConnectionsRun")
 	span2.SetName("new_ConnectionsRun")
 
+	jc.logger.Info("Running benchmark",
+		zap.String("benchmark_id", j.BenchmarkID),
+		zap.Int("connections", len(assignment.Connections)),
+		zap.Int("resourceCollection", len(assignment.ResourceCollections)),
+	)
+
 	for _, connection := range assignment.Connections {
 		if !connection.Status {
 			continue
@@ -185,6 +191,7 @@ func (j *Job) RunForConnection(ctx context.Context, connectionID string, resourc
 			zap.String("query", plan.Query.QueryToExecute),
 			zap.String("connectionID", connectionID),
 			zap.String("benchmarkID", plan.Policy.ID),
+			zap.Int("planCount", len(plans)),
 		)
 
 		_, span5 := tracer.Start(ctx, "plan_Query")
