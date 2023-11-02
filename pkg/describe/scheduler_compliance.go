@@ -1,15 +1,19 @@
 package describe
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	kafka2 "github.com/kaytu-io/kaytu-util/pkg/kafka"
+	"gorm.io/gorm"
 	"time"
 
+	complianceworker "github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
-
-	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	complianceworker "github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
 	"go.uber.org/zap"
 
 	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -25,6 +29,7 @@ func (s *Scheduler) RunComplianceJobScheduler() {
 		err := s.scheduleComplianceJob()
 		if err != nil {
 			s.logger.Error("failed to run scheduleComplianceJob", zap.Error(err))
+			ComplianceJobsCount.WithLabelValues("failure").Inc()
 			continue
 		}
 	}
@@ -36,8 +41,6 @@ func (s *Scheduler) scheduleComplianceJob() error {
 
 	benchmarks, err := s.complianceClient.ListBenchmarks(clientCtx)
 	if err != nil {
-		ComplianceJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("error while listing benchmarks", zap.Error(err))
 		return fmt.Errorf("error while listing benchmarks: %v", err)
 	}
 
@@ -46,8 +49,6 @@ func (s *Scheduler) scheduleComplianceJob() error {
 		var resourceCollections []string
 		assignments, err := s.complianceClient.ListAssignmentsByBenchmark(clientCtx, benchmark.ID)
 		if err != nil {
-			ComplianceJobsCount.WithLabelValues("failure").Inc()
-			s.logger.Error("error while listing assignments", zap.Error(err))
 			return fmt.Errorf("error while listing assignments: %v", err)
 		}
 
@@ -58,8 +59,6 @@ func (s *Scheduler) scheduleComplianceJob() error {
 
 			connection, err := s.onboardClient.GetSource(clientCtx, assignment.ConnectionID)
 			if err != nil {
-				ComplianceJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("error while get source", zap.Error(err))
 				return fmt.Errorf("error while get source: %v", err)
 			}
 
@@ -77,104 +76,120 @@ func (s *Scheduler) scheduleComplianceJob() error {
 			resourceCollections = append(resourceCollections, assignment.ResourceCollectionID)
 		}
 
-		timeAfter := time.Now().Add(time.Duration(-s.complianceIntervalHours) * time.Hour)
-		var nullStringPointer *string = nil
-		for _, src := range connections {
-			connectionID := src.ID.String()
-			jobs, err := s.db.ListComplianceReportsWithFilter(
-				&timeAfter, nil, &connectionID, nil, &benchmark.ID, &nullStringPointer)
-			if err != nil {
-				ComplianceJobsCount.WithLabelValues("failure").Inc()
-				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("error while listing compliance jobs", zap.Error(err))
-				return fmt.Errorf("error while creating compliance job: %v", err)
-			}
-
-			if len(jobs) > 0 {
-				continue
-			}
-
-			crj := newComplianceReportJob(src.ID.String(), src.Connector, benchmark.ID, nil)
-			err = s.db.CreateComplianceReportJob(&crj)
-			if err != nil {
-				ComplianceJobsCount.WithLabelValues("failure").Inc()
-				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("error while creating compliance job", zap.Error(err))
-				return fmt.Errorf("error while creating compliance job: %v", err)
-			}
-
-			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, &crj)
-			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
+		if len(connections) == 0 && len(resourceCollections) == 0 {
+			continue
 		}
 
-		for _, rc := range resourceCollections {
-			rc := rc
-			rcIDPtr := &rc
-			connectionID := "all"
-			jobs, err := s.db.ListComplianceReportsWithFilter(
-				&timeAfter, nil, &connectionID, nil, &benchmark.ID, &rcIDPtr)
+		complianceJob, err := s.db.GetLastComplianceJob(benchmark.ID)
+		if err != nil {
+			return err
+		}
+
+		timeAt := time.Now().Add(time.Duration(-s.complianceIntervalHours) * time.Hour)
+		if complianceJob == nil ||
+			complianceJob.CreatedAt.Before(timeAt) {
+			_, err := s.triggerComplianceReportJobs(benchmark.ID)
 			if err != nil {
-				ComplianceJobsCount.WithLabelValues("failure").Inc()
-				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("error while listing compliance jobs", zap.Error(err))
-				return fmt.Errorf("error while creating compliance job: %v", err)
+				return err
 			}
 
-			if len(jobs) > 0 {
-				continue
-			}
-			if len(benchmark.Connectors) == 0 {
-				s.logger.Warn("no connectors found for benchmark - ignoring resource collection", zap.String("benchmark", benchmark.ID), zap.String("resource_collection", rc))
-				continue
-			}
-			crj := newComplianceReportJob(connectionID, benchmark.Connectors[0], benchmark.ID, rcIDPtr)
-			err = s.db.CreateComplianceReportJob(&crj)
-			if err != nil {
-				ComplianceJobsCount.WithLabelValues("failure").Inc()
-				ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-				s.logger.Error("error while creating compliance job", zap.Error(err))
-				return fmt.Errorf("error while creating compliance job: %v", err)
-			}
-
-			enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, &crj)
-			ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
+			ComplianceJobsCount.WithLabelValues("successful").Inc()
 		}
 	}
 
-	ComplianceJobsCount.WithLabelValues("successful").Inc()
 	return nil
 }
 
-func enqueueComplianceReportJobs(logger *zap.Logger, db Database, q queue.Interface, crj *ComplianceReportJob) {
-	nextStatus := complianceapi.ComplianceReportJobInProgress
-	errMsg := ""
+func newComplianceReportJob(benchmarkID string) model.ComplianceJob {
+	return model.ComplianceJob{
+		Model:          gorm.Model{},
+		BenchmarkID:    benchmarkID,
+		Status:         api.ComplianceReportJobCreated,
+		FailureMessage: "",
+		IsStack:        false,
+	}
+}
 
-	nowTime := time.Now().UnixMilli()
-	if err := q.Publish(complianceworker.Job{
-		JobID:                crj.ID,
-		DescribedAt:          nowTime,
-		EvaluatedAt:          nowTime,
-		ConnectionID:         crj.SourceID,
-		BenchmarkID:          crj.BenchmarkID,
-		Connector:            crj.SourceType,
-		IsStack:              crj.IsStack,
-		ResourceCollectionId: crj.ResourceCollection,
-	}); err != nil {
-		logger.Error("Failed to queue ComplianceReportJob",
-			zap.Uint("jobId", crj.ID),
-			zap.Error(err),
-		)
-
-		nextStatus = complianceapi.ComplianceReportJobCompletedWithFailure
-		errMsg = fmt.Sprintf("queue: %s", err.Error())
+func (s *Scheduler) triggerComplianceReportJobs(benchmarkID string) (uint, error) {
+	jobModel := newComplianceReportJob(benchmarkID)
+	err := s.db.CreateComplianceJob(&jobModel)
+	if err != nil {
+		return 0, err
 	}
 
-	if err := db.UpdateComplianceReportJob(crj.ID, nextStatus, 0, errMsg); err != nil {
-		logger.Error("Failed to update ComplianceReportJob",
-			zap.Uint("jobId", crj.ID),
-			zap.Error(err),
-		)
+	job := complianceworker.Job{
+		ID:          jobModel.ID,
+		CreatedAt:   jobModel.CreatedAt,
+		BenchmarkID: benchmarkID,
+		IsStack:     false,
+	}
+	jobJson, err := json.Marshal(job)
+	if err != nil {
+		_ = s.db.UpdateComplianceJob(job.ID, api.ComplianceReportJobCompletedWithFailure, err.Error())
+		return 0, err
 	}
 
-	crj.Status = nextStatus
+	msg := kafka2.Msg(fmt.Sprintf("job-%d", job.ID), jobJson, "", complianceworker.JobQueue, kafka.PartitionAny)
+	_, err = kafka2.SyncSend(s.logger, s.kafkaProducer, []*kafka.Message{msg}, nil)
+	if err != nil {
+		_ = s.db.UpdateComplianceJob(job.ID, api.ComplianceReportJobCompletedWithFailure, err.Error())
+		return 0, err
+	}
+
+	_ = s.db.UpdateComplianceJob(job.ID, api.ComplianceReportJobInProgress, "")
+	return job.ID, nil
+}
+
+func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
+	ctx := context.Background()
+	consumer, err := kafka2.NewTopicConsumer(ctx, s.kafkaServers, complianceworker.ResultQueue, complianceworker.ConsumerGroup)
+	if err != nil {
+		return err
+	}
+	msgs := consumer.Consume(ctx, s.logger)
+	t := time.NewTicker(JobTimeoutCheckInterval)
+	defer t.Stop()
+
+	for {
+		select {
+		case msg := <-msgs:
+			var result complianceworker.JobResult
+			if err := json.Unmarshal(msg.Value, &result); err != nil {
+				s.logger.Error("Failed to unmarshal ComplianceReportJob results", zap.Error(err))
+
+				err := consumer.Commit(msg)
+				if err != nil {
+					s.logger.Error("Failed committing message", zap.Error(err))
+				}
+				continue
+			}
+
+			s.logger.Info("Processing ReportJobResult for Job",
+				zap.Uint("jobId", result.Job.ID),
+				zap.String("status", string(result.Status)),
+			)
+			err := s.db.UpdateComplianceJob(result.Job.ID, result.Status, result.Error)
+			if err != nil {
+				s.logger.Error("Failed to update the status of ComplianceReportJob",
+					zap.Uint("jobId", result.Job.ID),
+					zap.Error(err))
+
+				err := consumer.Commit(msg)
+				if err != nil {
+					s.logger.Error("Failed committing message", zap.Error(err))
+				}
+				continue
+			}
+
+			err = consumer.Commit(msg)
+			if err != nil {
+				s.logger.Error("Failed committing message", zap.Error(err))
+			}
+		case <-t.C:
+			err := s.db.UpdateComplianceJobsTimedOut(s.complianceTimeoutHours)
+			if err != nil {
+				s.logger.Error("Failed to update timed out ComplianceReportJob", zap.Error(err))
+			}
+		}
+	}
 }

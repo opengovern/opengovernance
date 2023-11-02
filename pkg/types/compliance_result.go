@@ -30,6 +30,14 @@ func (c *ComplianceResultSummary) AddComplianceResultSummary(summary ComplianceR
 	c.ErrorCount += summary.ErrorCount
 }
 
+func (c *ComplianceResultSummary) AddResultMap(summary map[ComplianceResult]int) {
+	c.OkCount += summary[ComplianceResultOK]
+	c.AlarmCount += summary[ComplianceResultALARM]
+	c.InfoCount += summary[ComplianceResultINFO]
+	c.SkipCount += summary[ComplianceResultSKIP]
+	c.ErrorCount += summary[ComplianceResultERROR]
+}
+
 type ComplianceResultShortSummary struct {
 	Passed int `json:"passed"`
 	Failed int `json:"failed"`

@@ -1,11 +1,14 @@
 package types
 
-import "strings"
+import (
+	"strings"
+)
 
 type FindingSeverity string
 
 const (
 	FindingSeverityNone     FindingSeverity = "none"
+	FindingSeverityPassed   FindingSeverity = "passed"
 	FindingSeverityLow      FindingSeverity = "low"
 	FindingSeverityMedium   FindingSeverity = "medium"
 	FindingSeverityHigh     FindingSeverity = "high"
@@ -58,6 +61,15 @@ func (r *SeverityResult) AddSeverityResult(severity SeverityResult) {
 	r.MediumCount += severity.MediumCount
 	r.HighCount += severity.HighCount
 	r.CriticalCount += severity.CriticalCount
+}
+
+func (r *SeverityResult) AddResultMap(result map[FindingSeverity]int) {
+	r.UnknownCount += result[FindingSeverityNone]
+	r.PassedCount += result[FindingSeverityPassed]
+	r.LowCount += result[FindingSeverityLow]
+	r.MediumCount += result[FindingSeverityMedium]
+	r.HighCount += result[FindingSeverityHigh]
+	r.CriticalCount += result[FindingSeverityCritical]
 }
 
 func (r *SeverityResult) IncreaseBySeverity(severity FindingSeverity) {

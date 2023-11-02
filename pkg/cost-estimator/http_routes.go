@@ -9,8 +9,7 @@ import (
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
-	v1.GET("/cost/azure", httpserver.AuthorizeHandler(h.AzureCost, authapi.ViewerRole))
-	v1.PUT("/table/store/azure", httpserver.AuthorizeHandler(h.TriggerStoreAzureCostTable, authapi.AdminRole))
+	v1.GET("/cost/azure/:resourceId/:resourceType", httpserver.AuthorizeHandler(h.AzureCost, authapi.ViewerRole))
 }
 
 // AzureCost godoc
@@ -19,11 +18,11 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 //	@Description	Get Azure cost for each resource
 //	@Security		BearerToken
 //	@Tags			cost-estimator
-//	@Produce		int
-//	@Param			resourceId	query		string	true	"ResourceID"
-//	@Param			resourceType	query		string	true	"ResourceType"
-//	@Success		200		{object}
-//	@Router			/cost-estimator/api/v1/cost/azure [get]
+//	@Produce		json
+//	@Param			resourceId		path		string	true	"ResourceID"
+//	@Param			resourceType	path		string	true	"ResourceType"
+//	@Success		200				{object}	int
+//	@Router			/cost_estimator/api/v1/cost/azure [get]
 func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
 	resourceType := ctx.Param("resourceType")
@@ -42,11 +41,11 @@ func (h *HttpHandler) AzureCost(ctx echo.Context) error {
 //	@Description	Get AWS cost for each resource
 //	@Security		BearerToken
 //	@Tags			cost-estimator
-//	@Produce		int
-//	@Param			resourceId	path		string	true	"ResourceID"
+//	@Produce		json
+//	@Param			resourceId		path		string	true	"ResourceID"
 //	@Param			resourceType	path		string	true	"ResourceType"
-//	@Success		200		{object}
-//	@Router			/cost-estimator/api/v1/cost/aws [get]
+//	@Success		200				{object}	int
+//	@Router			/cost_estimator/api/v1/cost/aws [get]
 func (h *HttpHandler) AwsCost(ctx echo.Context) error {
 	resourceId := ctx.Param("resourceId")
 	resourceType := ctx.Param("resourceType")
@@ -57,22 +56,4 @@ func (h *HttpHandler) AwsCost(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, cost)
-}
-
-// TriggerStoreAzureCostTable godoc
-//
-//	@Summary		Trigger Azure Cost Table Store
-//	@Description	Trigger azure cost table store
-//	@Security		BearerToken
-//	@Tags			cost-estimator
-//	@Produce		int
-//	@Success		200		{object}
-//	@Router			/cost-estimator/api/v1/cost/aws [get]
-func (h *HttpHandler) TriggerStoreAzureCostTable(ctx echo.Context) error {
-	err := h.HandleStoreAzureCostTable()
-	if err != nil {
-		return ctx.String(http.StatusInternalServerError, err.Error())
-	}
-
-	return ctx.NoContent(http.StatusOK)
 }

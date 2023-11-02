@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"reflect"
 	"regexp"
 	"strings"
@@ -37,8 +36,8 @@ const (
 )
 
 type Job struct {
-	JobID                uint
-	ResourceCollectionId *string
+	JobID                 uint
+	ResourceCollectionIDs []string
 }
 
 type JobResult struct {
@@ -49,7 +48,7 @@ type JobResult struct {
 
 func (j *Job) Do(
 	db db.Database,
-	conf WorkerConfig,
+	steampipeConn *steampipe.Database,
 	kfkProducer *confluent_kafka.Producer,
 	kfkTopic string,
 	onboardClient onboardClient.OnboardServiceClient,
@@ -68,59 +67,43 @@ func (j *Job) Do(
 		return result
 	}
 
-	var encodedResourceCollectionFilter *string
-	if j.ResourceCollectionId != nil {
-		rc, err := inventoryClient.GetResourceCollection(&httpclient.Context{UserRole: authApi.InternalRole},
-			*j.ResourceCollectionId)
+	var encodedResourceCollectionFilters []string
+	if len(j.ResourceCollectionIDs) > 0 {
+		rcs, err := inventoryClient.GetResourceCollections(&httpclient.Context{UserRole: authApi.InternalRole},
+			j.ResourceCollectionIDs)
 		if err != nil {
 			return fail(err)
 		}
-		filtersJson, err := json.Marshal(rc.Filters)
-		if err != nil {
-			return fail(err)
+		for _, rc := range rcs {
+			filtersJson, err := json.Marshal(rc.Filters)
+			if err != nil {
+				return fail(err)
+			}
+			encodedResourceCollectionFilters = append(encodedResourceCollectionFilters, base64.StdEncoding.EncodeToString(filtersJson))
 		}
-		filtersEncoded := base64.StdEncoding.EncodeToString(filtersJson)
-		encodedResourceCollectionFilter = &filtersEncoded
 	}
 
-	err := steampipe.PopulateSteampipeConfig(conf.ElasticSearch, source.CloudAWS, "all", encodedResourceCollectionFilter)
+	err := steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyAccountID, "all")
 	if err != nil {
-		logger.Error("failed to populate steampipe config for aws plugin", zap.Error(err))
+		logger.Error("failed to set steampipe context config for account id", zap.Error(err), zap.String("account_id", "all"))
 		return fail(err)
 	}
-	err = steampipe.PopulateSteampipeConfig(conf.ElasticSearch, source.CloudAzure, "all", encodedResourceCollectionFilter)
-	if err != nil {
-		logger.Error("failed to populate steampipe config for azure plugin", zap.Error(err))
-		return fail(err)
-	}
-	err = steampipe.PopulateKaytuPluginSteampipeConfig(conf.ElasticSearch, conf.Steampipe, encodedResourceCollectionFilter)
-	if err != nil {
-		logger.Error("failed to populate steampipe config for kaytu plugin", zap.Error(err))
-		return fail(err)
-	}
+	defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyAccountID)
 
-	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
+	err = steampipeConn.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyClientType, "analytics")
 	if err != nil {
+		logger.Error("failed to set steampipe context config for client type", zap.Error(err), zap.String("client_type", "analytics"))
 		return fail(err)
 	}
-	fmt.Println("Connected to the steampipe database: ", conf.Steampipe.DB)
-	defer steampipeConn.Conn().Close()
-	defer steampipe.StopSteampipeService(logger)
+	defer steampipeConn.UnsetConfigTableValue(context.Background(), steampipe.KaytuConfigKeyClientType)
 
-	if err := j.Run(db, steampipeConn, kfkProducer, kfkTopic, schedulerClient, onboardClient, logger); err != nil {
+	if err := j.Run(db, encodedResourceCollectionFilters, steampipeConn, kfkProducer, kfkTopic, schedulerClient, onboardClient, logger); err != nil {
 		fail(err)
 	}
 	return result
 }
 
-func (j *Job) Run(
-	dbc db.Database,
-	steampipeDB *steampipe.Database,
-	kfkProducer *confluent_kafka.Producer,
-	kfkTopic string,
-	schedulerClient describeClient.SchedulerServiceClient,
-	onboardClient onboardClient.OnboardServiceClient,
-	logger *zap.Logger) error {
+func (j *Job) Run(dbc db.Database, encodedResourceCollectionFilters []string, steampipeDB *steampipe.Database, kfkProducer *confluent_kafka.Producer, kfkTopic string, schedulerClient describeClient.SchedulerServiceClient, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger) error {
 	startTime := time.Now()
 	metrics, err := dbc.ListMetrics(true)
 	if err != nil {
@@ -158,6 +141,7 @@ func (j *Job) Run(
 
 			err = j.DoAssetMetric(
 				steampipeDB,
+				encodedResourceCollectionFilters,
 				kfkProducer,
 				kfkTopic,
 				onboardClient,
@@ -165,14 +149,13 @@ func (j *Job) Run(
 				metric,
 				connectionCache,
 				startTime,
-				status,
-			)
+				status)
 			if err != nil {
 				return err
 			}
 		case db.MetricTypeSpend:
 			// We do not support spend metrics for resource collections
-			if j.ResourceCollectionId != nil {
+			if len(encodedResourceCollectionFilters) > 0 {
 				continue
 			}
 			awsStatus, err := schedulerClient.GetDescribeStatus(&httpclient.Context{UserRole: authApi.InternalRole}, "AWS::CostExplorer::ByServiceDaily")
@@ -220,26 +203,21 @@ func (j *Job) Run(
 	return nil
 }
 
-func (j *Job) DoAssetMetric(
-	steampipeDB *steampipe.Database,
-	kfkProducer *confluent_kafka.Producer,
-	kfkTopic string,
-	onboardClient onboardClient.OnboardServiceClient,
-	logger *zap.Logger,
-	metric db.AnalyticMetric,
+func (j *Job) DoSingleAssetMetric(logger *zap.Logger, steampipeDB *steampipe.Database, metric db.AnalyticMetric,
 	connectionCache map[string]onboardApi.Connection,
-	startTime time.Time,
 	status []describeApi.DescribeStatus,
-) error {
-	connectionResultMap := map[string]resource.ConnectionMetricTrendSummary{}
-	providerResultMap := map[string]resource.ConnectorMetricTrendSummary{}
-	regionResultMap := map[string]resource.RegionMetricTrendSummary{}
-
-	fmt.Println("assets ==== " + metric.Query)
+	onboardClient onboardClient.OnboardServiceClient) (
+	*resource.ConnectionMetricTrendSummaryResult,
+	*resource.ConnectorMetricTrendSummaryResult,
+	error) {
+	logger.Info("assets ==== ", zap.String("query", metric.Query))
 	res, err := steampipeDB.QueryAll(context.TODO(), metric.Query)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
+	totalCount := 0
+	perConnection := make(map[string]resource.PerConnectionMetricTrendSummary)
+	perConnector := make(map[string]resource.PerConnectorMetricTrendSummary)
 
 	connectorCount := map[string]int64{}
 	connectorSuccessCount := map[string]int64{}
@@ -252,38 +230,35 @@ func (j *Job) DoAssetMetric(
 
 	for _, record := range res.Data {
 		if len(record) != 3 {
-			return fmt.Errorf("invalid query: %s", metric.Query)
+			return nil, nil, fmt.Errorf("invalid query: %s", metric.Query)
 		}
 
-		sourceID, ok := record[0].(string)
+		connectionId, ok := record[0].(string)
 		if !ok {
-			return fmt.Errorf("invalid format for sourceID: [%s] %v", reflect.TypeOf(record[0]), record[0])
+			return nil, nil, fmt.Errorf("invalid format for connectionId: [%s] %v", reflect.TypeOf(record[0]), record[0])
 		}
-		region, ok := record[1].(string)
-		if !ok {
-			return fmt.Errorf("invalid format for region: [%s] %v", reflect.TypeOf(record[1]), record[1])
-		}
+
 		count, ok := record[2].(int64)
 		if !ok {
-			return fmt.Errorf("invalid format for count: [%s] %v", reflect.TypeOf(record[2]), record[2])
+			return nil, nil, fmt.Errorf("invalid format for count: [%s] %v", reflect.TypeOf(record[2]), record[2])
 		}
 
 		var conn *onboardApi.Connection
-		if cached, ok := connectionCache[sourceID]; ok {
+		if cached, ok := connectionCache[connectionId]; ok {
 			conn = &cached
 		} else {
-			conn, err = onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, sourceID)
+			conn, err = onboardClient.GetSource(&httpclient.Context{UserRole: authApi.AdminRole}, connectionId)
 			if err != nil {
 				if strings.Contains(err.Error(), "source not found") {
 					continue
 				}
-				return fmt.Errorf("GetSource id=%s err=%v", sourceID, err)
+				return nil, nil, fmt.Errorf("GetSource id=%s err=%v", connectionId, err)
 			}
 			if conn == nil {
-				return fmt.Errorf("connection not found: %s", sourceID)
+				return nil, nil, fmt.Errorf("connection not found: %s", connectionId)
 			}
 
-			connectionCache[sourceID] = *conn
+			connectionCache[connectionId] = *conn
 		}
 
 		isJobSuccessful := true
@@ -295,88 +270,115 @@ func (j *Job) DoAssetMetric(
 			}
 		}
 
-		if v, ok := connectionResultMap[conn.ID.String()]; ok {
+		if v, ok := perConnection[conn.ID.String()]; ok {
 			v.ResourceCount += int(count)
-			connectionResultMap[conn.ID.String()] = v
+			perConnection[conn.ID.String()] = v
 		} else {
-			vn := resource.ConnectionMetricTrendSummary{
-				ConnectionID:    conn.ID,
+			vn := resource.PerConnectionMetricTrendSummary{
+				ConnectionID:    conn.ID.String(),
 				ConnectionName:  conn.ConnectionName,
 				Connector:       conn.Connector,
-				EvaluatedAt:     startTime.UnixMilli(),
-				Date:            startTime.Format("2006-01-02"),
-				Month:           startTime.Format("2006-01"),
-				Year:            startTime.Format("2006"),
-				MetricID:        metric.ID,
-				MetricName:      metric.Name,
 				ResourceCount:   int(count),
 				IsJobSuccessful: isJobSuccessful,
-
-				ResourceCollection: j.ResourceCollectionId,
 			}
-			connectionResultMap[conn.ID.String()] = vn
+			perConnection[conn.ID.String()] = vn
 		}
 
-		if v, ok := providerResultMap[conn.Connector.String()]; ok {
+		if v, ok := perConnector[conn.Connector.String()]; ok {
 			v.ResourceCount += int(count)
-			providerResultMap[conn.Connector.String()] = v
+			perConnector[conn.Connector.String()] = v
 		} else {
-			vn := resource.ConnectorMetricTrendSummary{
+			vn := resource.PerConnectorMetricTrendSummary{
 				Connector:                  conn.Connector,
-				EvaluatedAt:                startTime.UnixMilli(),
-				Date:                       startTime.Format("2006-01-02"),
-				Month:                      startTime.Format("2006-01"),
-				Year:                       startTime.Format("2006"),
-				MetricID:                   metric.ID,
-				MetricName:                 metric.Name,
 				ResourceCount:              int(count),
 				TotalConnections:           connectorCount[string(conn.Connector)],
 				TotalSuccessfulConnections: connectorSuccessCount[string(conn.Connector)],
-
-				ResourceCollection: j.ResourceCollectionId,
 			}
-			providerResultMap[conn.Connector.String()] = vn
+			perConnector[conn.Connector.String()] = vn
 		}
+		totalCount += int(count)
+	}
+	perConnectionArray := make([]resource.PerConnectionMetricTrendSummary, 0, len(perConnection))
+	for _, v := range perConnection {
+		perConnectionArray = append(perConnectionArray, v)
+	}
+	perConnectorArray := make([]resource.PerConnectorMetricTrendSummary, 0, len(perConnector))
+	for _, v := range perConnector {
+		perConnectorArray = append(perConnectorArray, v)
+	}
+	return &resource.ConnectionMetricTrendSummaryResult{
+			TotalResourceCount: totalCount,
+			Connections:        perConnectionArray,
+		}, &resource.ConnectorMetricTrendSummaryResult{
+			TotalResourceCount: totalCount,
+			Connectors:         perConnectorArray,
+		}, nil
+}
 
-		regionKey := region + "-" + conn.ID.String()
-		if v, ok := regionResultMap[regionKey]; ok {
-			v.ResourceCount += int(count)
-			regionResultMap[regionKey] = v
-		} else {
-			vn := resource.RegionMetricTrendSummary{
-				Region:         region,
-				ConnectionID:   conn.ID,
-				ConnectionName: conn.ConnectionName,
-				Connector:      conn.Connector,
-				EvaluatedAt:    startTime.UnixMilli(),
-				Date:           startTime.Format("2006-01-02"),
-				Month:          startTime.Format("2006-01"),
-				Year:           startTime.Format("2006"),
-				MetricID:       metric.ID,
-				MetricName:     metric.Name,
-				ResourceCount:  int(count),
+func (j *Job) DoAssetMetric(steampipeDB *steampipe.Database, encodedResourceCollectionFilters []string, kfkProducer *confluent_kafka.Producer, kfkTopic string, onboardClient onboardClient.OnboardServiceClient, logger *zap.Logger, metric db.AnalyticMetric, connectionCache map[string]onboardApi.Connection, startTime time.Time, status []describeApi.DescribeStatus) error {
+	connectionMetricTrendSummary := resource.ConnectionMetricTrendSummary{
+		EvaluatedAt:         startTime.UnixMilli(),
+		Date:                startTime.Format("2006-01-02"),
+		Month:               startTime.Format("2006-01"),
+		Year:                startTime.Format("2006"),
+		MetricID:            metric.ID,
+		MetricName:          metric.Name,
+		Connections:         nil,
+		ResourceCollections: nil,
+	}
+	connectorMetricTrendSummary := resource.ConnectorMetricTrendSummary{
+		EvaluatedAt:         startTime.UnixMilli(),
+		Date:                startTime.Format("2006-01-02"),
+		Month:               startTime.Format("2006-01"),
+		Year:                startTime.Format("2006"),
+		MetricID:            metric.ID,
+		MetricName:          metric.Name,
+		Connectors:          nil,
+		ResourceCollections: nil,
+	}
+	if len(encodedResourceCollectionFilters) > 0 {
+		connectionMetricTrendSummary.ResourceCollections = make(map[string]resource.ConnectionMetricTrendSummaryResult)
+		connectorMetricTrendSummary.ResourceCollections = make(map[string]resource.ConnectorMetricTrendSummaryResult)
 
-				ResourceCollection: j.ResourceCollectionId,
+		for _, encodedFilter := range encodedResourceCollectionFilters {
+			err := steampipeDB.SetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyResourceCollectionFilters, encodedFilter)
+			if err != nil {
+				logger.Error("failed to set steampipe context config for resource collection filters", zap.Error(err),
+					zap.String("resource_collection_filters", encodedFilter))
+				return err
 			}
-			regionResultMap[regionKey] = vn
+			perConnection, perConnector, err := j.DoSingleAssetMetric(logger, steampipeDB, metric, connectionCache, status, onboardClient)
+			if err != nil {
+				logger.Error("failed to do single asset metric for rc", zap.Error(err), zap.String("metric", metric.ID), zap.String("resource_collection_filters", encodedFilter))
+				return err
+			}
+			connectionMetricTrendSummary.ResourceCollections[encodedFilter] = *perConnection
+			connectorMetricTrendSummary.ResourceCollections[encodedFilter] = *perConnector
 		}
+	} else {
+		err := steampipeDB.UnsetConfigTableValue(context.TODO(), steampipe.KaytuConfigKeyResourceCollectionFilters)
+		if err != nil {
+			logger.Error("failed to unset steampipe context config for resource collection filters", zap.Error(err))
+			return err
+		}
+		perConnection, perConnector, err := j.DoSingleAssetMetric(logger, steampipeDB, metric, connectionCache, status, onboardClient)
+		if err != nil {
+			logger.Error("failed to do single asset metric", zap.Error(err), zap.String("metric", metric.ID))
+			return err
+		}
+		connectionMetricTrendSummary.Connections = perConnection
+		connectorMetricTrendSummary.Connectors = perConnector
 	}
 
-	var msgs []kafka.Doc
-	for _, item := range connectionResultMap {
-		msgs = append(msgs, item)
-	}
-	for _, item := range providerResultMap {
-		msgs = append(msgs, item)
-	}
-	for _, item := range regionResultMap {
-		msgs = append(msgs, item)
+	var msgs = []kafka.Doc{
+		connectionMetricTrendSummary,
+		connectorMetricTrendSummary,
 	}
 	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger, nil); err != nil {
 		return err
 	}
 
-	fmt.Printf("Write %d region docs, %d provider docs, %d connection docs\n", len(regionResultMap), len(providerResultMap), len(connectionResultMap))
+	logger.Info("done sending result to kafka", zap.String("metric", metric.ID))
 	return nil
 }
 
@@ -391,11 +393,11 @@ func (j *Job) DoSpendMetric(
 	status []describeApi.DescribeStatus,
 ) error {
 	connectionResultMap := map[string]spend.ConnectionMetricTrendSummary{}
-	providerResultMap := map[string]spend.ConnectorMetricTrendSummary{}
+	connectorResultMap := map[string]spend.ConnectorMetricTrendSummary{}
 
 	query := metric.Query
 
-	fmt.Println("spend ==== " + query)
+	logger.Info("spend ==== ", zap.String("query", query))
 	res, err := steampipeDB.QueryAll(context.TODO(), query)
 	if err != nil {
 		return err
@@ -426,9 +428,6 @@ func (j *Job) DoSpendMetric(
 		sum, ok := record[2].(float64)
 		if !ok {
 			return fmt.Errorf("invalid format for sum: [%s] %v", reflect.TypeOf(record[2]), record[2])
-		}
-		if metric.ID == "spend_aws_marketplace" {
-			fmt.Println("++++", record, sum)
 		}
 
 		var conn *onboardApi.Connection
@@ -471,75 +470,113 @@ func (j *Job) DoSpendMetric(
 		startTime := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 		endTime := time.Date(y, m, d, 23, 59, 59, 0, time.UTC)
 
-		connKey := conn.ID.String() + dateTimestamp.Format("2006-01-02")
-		if v, ok := connectionResultMap[connKey]; ok {
-			v.CostValue += sum
-			connectionResultMap[connKey] = v
-			if metric.ID == "spend_aws_marketplace" {
-				fmt.Println("++++", sum, v.CostValue)
+		if v, ok := connectionResultMap[date]; ok {
+			v.TotalCostValue += sum
+			if v2, ok2 := v.ConnectionsMap[conn.ID.String()]; ok2 {
+				v2.CostValue += sum
+				v2.IsJobSuccessful = isJobSuccessful
+				v.ConnectionsMap[conn.ID.String()] = v2
+			} else {
+				v.ConnectionsMap[conn.ID.String()] = spend.PerConnectionMetricTrendSummary{
+					DateEpoch:       dateTimestamp.UnixMilli(),
+					ConnectionID:    conn.ID.String(),
+					ConnectionName:  conn.ConnectionName,
+					Connector:       conn.Connector,
+					CostValue:       sum,
+					IsJobSuccessful: isJobSuccessful,
+				}
 			}
+			connectionResultMap[date] = v
 		} else {
 			vn := spend.ConnectionMetricTrendSummary{
-				ConnectionID:    conn.ID,
-				ConnectionName:  conn.ConnectionName,
-				Connector:       conn.Connector,
-				Date:            dateTimestamp.Format("2006-01-02"),
-				DateEpoch:       dateTimestamp.UnixMilli(),
-				Month:           dateTimestamp.Format("2006-01"),
-				Year:            dateTimestamp.Format("2006"),
-				MetricID:        metric.ID,
-				MetricName:      metric.Name,
-				CostValue:       sum,
-				PeriodStart:     startTime.UnixMilli(),
-				PeriodEnd:       endTime.UnixMilli(),
-				IsJobSuccessful: isJobSuccessful,
-				EvaluatedAt:     time.Now().UnixMilli(),
+				Date:           dateTimestamp.Format("2006-01-02"),
+				DateEpoch:      dateTimestamp.UnixMilli(),
+				Month:          dateTimestamp.Format("2006-01"),
+				Year:           dateTimestamp.Format("2006"),
+				MetricID:       metric.ID,
+				MetricName:     metric.Name,
+				PeriodStart:    startTime.UnixMilli(),
+				PeriodEnd:      endTime.UnixMilli(),
+				EvaluatedAt:    time.Now().UnixMilli(),
+				TotalCostValue: sum,
+				ConnectionsMap: map[string]spend.PerConnectionMetricTrendSummary{
+					conn.ID.String(): {
+						DateEpoch:       dateTimestamp.UnixMilli(),
+						ConnectionID:    conn.ID.String(),
+						ConnectionName:  conn.ConnectionName,
+						Connector:       conn.Connector,
+						CostValue:       sum,
+						IsJobSuccessful: isJobSuccessful,
+					},
+				},
 			}
-			connectionResultMap[connKey] = vn
-			if metric.ID == "spend_aws_marketplace" {
-				fmt.Println("++++", sum, v.CostValue)
-			}
+			connectionResultMap[date] = vn
 		}
 
-		providerKey := conn.Connector.String() + dateTimestamp.Format("2006-01-02")
-		if v, ok := providerResultMap[providerKey]; ok {
-			v.CostValue += sum
-			providerResultMap[providerKey] = v
+		if v, ok := connectorResultMap[date]; ok {
+			v.TotalCostValue += sum
+			if v2, ok2 := v.ConnectorsMap[conn.Connector.String()]; ok2 {
+				v2.CostValue += sum
+				v2.TotalConnections = connectorCount[string(conn.Connector)]
+				v2.TotalSuccessfulConnections = connectorSuccessCount[string(conn.Connector)]
+				v.ConnectorsMap[conn.Connector.String()] = v2
+			} else {
+				v.ConnectorsMap[conn.Connector.String()] = spend.PerConnectorMetricTrendSummary{
+					DateEpoch:                  dateTimestamp.UnixMilli(),
+					Connector:                  conn.Connector,
+					CostValue:                  sum,
+					TotalConnections:           connectorCount[string(conn.Connector)],
+					TotalSuccessfulConnections: connectorSuccessCount[string(conn.Connector)],
+				}
+			}
+			connectorResultMap[date] = v
 		} else {
 			vn := spend.ConnectorMetricTrendSummary{
-				Connector:                  conn.Connector,
-				Date:                       dateTimestamp.Format("2006-01-02"),
-				DateEpoch:                  dateTimestamp.UnixMilli(),
-				Month:                      dateTimestamp.Format("2006-01"),
-				Year:                       dateTimestamp.Format("2006"),
-				MetricID:                   metric.ID,
-				MetricName:                 metric.Name,
-				CostValue:                  sum,
-				PeriodStart:                startTime.UnixMilli(),
-				PeriodEnd:                  endTime.UnixMilli(),
-				TotalConnections:           connectorCount[string(conn.Connector)],
-				TotalSuccessfulConnections: connectorSuccessCount[string(conn.Connector)],
-				EvaluatedAt:                time.Now().UnixMilli(),
+				Date:        dateTimestamp.Format("2006-01-02"),
+				DateEpoch:   dateTimestamp.UnixMilli(),
+				Month:       dateTimestamp.Format("2006-01"),
+				Year:        dateTimestamp.Format("2006"),
+				MetricID:    metric.ID,
+				MetricName:  metric.Name,
+				PeriodStart: startTime.UnixMilli(),
+				PeriodEnd:   endTime.UnixMilli(),
+				EvaluatedAt: time.Now().UnixMilli(),
+
+				TotalCostValue: sum,
+				ConnectorsMap: map[string]spend.PerConnectorMetricTrendSummary{
+					conn.Connector.String(): {
+						DateEpoch:                  dateTimestamp.UnixMilli(),
+						Connector:                  conn.Connector,
+						CostValue:                  sum,
+						TotalConnections:           connectorCount[string(conn.Connector)],
+						TotalSuccessfulConnections: connectorSuccessCount[string(conn.Connector)],
+					},
+				},
 			}
-			providerResultMap[providerKey] = vn
+			connectorResultMap[date] = vn
 		}
 	}
 
 	var msgs []kafka.Doc
 	for _, item := range connectionResultMap {
-		if item.MetricID == "spend_aws_marketplace" {
-			b, _ := json.Marshal(item)
-			fmt.Println("++++", string(b))
+		for _, v := range item.ConnectionsMap {
+			item.Connections = append(item.Connections, v)
 		}
 		msgs = append(msgs, item)
 	}
-	for _, item := range providerResultMap {
+	for _, item := range connectorResultMap {
+		for _, v := range item.ConnectorsMap {
+			item.Connectors = append(item.Connectors, v)
+		}
 		msgs = append(msgs, item)
 	}
 	if err := kafka.DoSend(kfkProducer, kfkTopic, -1, msgs, logger, nil); err != nil {
 		return err
 	}
 
-	fmt.Printf("Write %d provider docs, %d connection docs\n", len(providerResultMap), len(connectionResultMap))
+	logger.Info("done with spend metric",
+		zap.String("metric", metric.ID),
+		zap.Int("connector_count", len(connectorResultMap)),
+		zap.Int("connection_count", len(connectionResultMap)))
 	return nil
 }

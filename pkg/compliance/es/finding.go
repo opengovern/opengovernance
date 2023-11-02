@@ -4,10 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"go.uber.org/zap"
+	"strings"
 
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 
@@ -15,7 +14,8 @@ import (
 )
 
 type FindingsQueryResponse struct {
-	Hits FindingsQueryHits `json:"hits"`
+	Hits  FindingsQueryHits `json:"hits"`
+	PitID string            `json:"pit_id"`
 }
 type FindingsQueryHits struct {
 	Total kaytu.SearchTotal  `json:"total"`
@@ -31,36 +31,54 @@ type FindingsQueryHit struct {
 	Sort    []any         `json:"sort"`
 }
 
-func GetActiveFindings(client kaytu.Client, policyID string, from, size int) (*FindingsQueryResponse, error) {
-	res := make(map[string]any)
-	var filters []any
+type FinderPaginator struct {
+	paginator *kaytu.BaseESPaginator
+}
 
-	filters = append(filters,
-		map[string]any{"term": map[string]any{"stateActive": true}},
-		map[string]any{"term": map[string]any{"policyID": policyID}},
-	)
-	res["size"] = size
-	res["from"] = from
-
-	res["sort"] = []map[string]any{
-		{
-			"_id": "desc",
-		},
+func NewFinderPaginator(client kaytu.Client, idx string, filters []kaytu.BoolFilter, limit *int64) (FinderPaginator, error) {
+	paginator, err := kaytu.NewPaginator(client.ES(), idx, filters, limit)
+	if err != nil {
+		return FinderPaginator{}, err
 	}
 
-	res["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": filters,
-		},
+	p := FinderPaginator{
+		paginator: paginator,
 	}
-	b, err := json.Marshal(res)
+
+	return p, nil
+}
+
+func (p FinderPaginator) HasNext() bool {
+	return !p.paginator.Done()
+}
+
+func (p FinderPaginator) NextPage(ctx context.Context) ([]types.Finding, error) {
+	var response FindingsQueryResponse
+	err := p.paginator.Search(ctx, &response)
 	if err != nil {
 		return nil, err
 	}
 
-	var resp FindingsQueryResponse
-	err = client.SearchWithTrackTotalHits(context.Background(), types.FindingsIndex, string(b), nil, &resp, false)
-	return &resp, err
+	var values []types.Finding
+	for _, hit := range response.Hits.Hits {
+		values = append(values, hit.Source)
+	}
+
+	hits := int64(len(response.Hits.Hits))
+	if hits > 0 {
+		p.paginator.UpdateState(hits, response.Hits.Hits[hits-1].Sort, response.PitID)
+	} else {
+		p.paginator.UpdateState(hits, nil, "")
+	}
+
+	return values, nil
+}
+
+func ListActiveFindings(client kaytu.Client, policyID string) (FinderPaginator, error) {
+	return NewFinderPaginator(client, types.FindingsIndex, []kaytu.BoolFilter{
+		kaytu.NewTermFilter("stateActive", "true"),
+		kaytu.NewTermFilter("policyID", policyID),
+	}, nil)
 }
 
 func FindingsQuery(client kaytu.Client,
@@ -71,77 +89,38 @@ func FindingsQuery(client kaytu.Client,
 	benchmarkID []string,
 	policyID []string,
 	severity []string,
-	sort []map[string]any,
-	activeOnly bool,
-	from int,
-	size int) (*FindingsQueryResponse, error) {
+	activeOnly bool) ([]types.Finding, error) {
 	idx := types.FindingsIndex
-	res := make(map[string]any)
-	var filters []any
 
+	var filters []kaytu.BoolFilter
 	if len(resourceIDs) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"resourceID": resourceIDs},
-		})
+		filters = append(filters, kaytu.NewTermsFilter("resourceID", resourceIDs))
 	}
-
 	if len(benchmarkID) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"benchmarkID": benchmarkID},
-		})
+		filters = append(filters, kaytu.NewTermsFilter("benchmarkID", benchmarkID))
 	}
-
 	if len(policyID) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"policyID": policyID},
-		})
+		filters = append(filters, kaytu.NewTermsFilter("policyID", policyID))
 	}
-
 	if len(severity) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string]any{"severity": severity},
-		})
+		filters = append(filters, kaytu.NewTermsFilter("severity", severity))
 	}
-
 	if len(connectionID) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string]any{"connectionID": connectionID},
-		})
+		filters = append(filters, kaytu.NewTermsFilter("connectionID", connectionID))
 	}
-
 	if len(provider) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string]any{"connector": provider},
-		})
+		var connectors []string
+		for _, p := range provider {
+			connectors = append(connectors, p.String())
+		}
+		filters = append(filters, kaytu.NewTermsFilter("connector", connectors))
 	}
-
 	if len(resourceCollections) > 0 {
 		idx = types.ResourceCollectionsFindingsIndex
-		filters = append(filters, map[string]any{
-			"terms": map[string]any{"resourceCollection": resourceCollections},
-		})
+		filters = append(filters, kaytu.NewTermsFilter("resourceCollection", resourceCollections))
 	}
-
 	if activeOnly {
-		filters = append(filters, map[string]any{
-			"terms": map[string]any{"stateActive": []string{"true"}},
-		})
-	}
-	res["size"] = size
-	res["from"] = from
-
-	if sort != nil && len(sort) > 0 {
-		res["sort"] = sort
-	}
-
-	res["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": filters,
-		},
-	}
-	b, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
+		filters = append(filters, kaytu.NewTermFilter("stateActive", "true"))
 	}
 
 	isStack := false
@@ -150,13 +129,25 @@ func FindingsQuery(client kaytu.Client,
 			isStack = true
 		}
 	}
-
-	var resp FindingsQueryResponse
 	if isStack {
 		idx = types.StackFindingsIndex
 	}
-	err = client.SearchWithTrackTotalHits(context.Background(), idx, string(b), nil, &resp, true)
-	return &resp, err
+	var findings []types.Finding
+	paginator, err := NewFinderPaginator(client, idx, filters, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := context.Background()
+	for paginator.HasNext() {
+		page, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		findings = append(findings, page...)
+	}
+	return findings, err
 }
 
 type FindingFiltersAggregationResponse struct {
@@ -223,35 +214,6 @@ type AccountsFindingsBySeverityResponse struct {
 				} `json:"last_evaluation"`
 			} `json:"buckets"`
 		} `json:"accounts"`
-	} `json:"aggregations"`
-}
-
-type ResourceTypesFindingsBySeverityResponse struct {
-	Aggregations struct {
-		ResourceTypes struct {
-			DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
-			SumOtherDocCount        int `json:"sum_other_doc_count"`
-			Buckets                 []struct {
-				Key      string `json:"key"`
-				DocCount int    `json:"doc_count"`
-				Result   struct {
-					DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
-					SumOtherDocCount        int `json:"sum_other_doc_count"`
-					Buckets                 []struct {
-						Key      string `json:"key"`
-						DocCount int    `json:"doc_count"`
-					} `json:"buckets"`
-				} `json:"result"`
-				Severity struct {
-					DocCountErrorUpperBound int `json:"doc_count_error_upper_bound"`
-					SumOtherDocCount        int `json:"sum_other_doc_count"`
-					Buckets                 []struct {
-						Key      string `json:"key"`
-						DocCount int    `json:"doc_count"`
-					} `json:"buckets"`
-				} `json:"severity"`
-			} `json:"buckets"`
-		} `json:"resource_types"`
 	} `json:"aggregations"`
 }
 
@@ -362,146 +324,72 @@ func FindingsTopFieldQuery(logger *zap.Logger, client kaytu.Client,
 	return &resp, err
 }
 
-func AccountsFindingsSummary(logger *zap.Logger, client kaytu.Client,
-	connectors []source.Type, connectionIDs []string,
-	benchmarkID []string, size int64) (*AccountsFindingsBySeverityResponse, error) {
-	idx := types.FindingsIndex
-	terms := make(map[string]any)
-	if len(benchmarkID) > 0 {
-		terms["benchmarkID"] = benchmarkID
-	}
-	if len(connectionIDs) > 0 {
-		terms["connectionID"] = connectionIDs
-	}
-	if len(connectors) > 0 {
-		terms["connector"] = connectors
-	}
-
-	root := map[string]any{}
-	root["size"] = 0
-
-	root["aggs"] = map[string]any{
-		"accounts": map[string]any{
-			"terms": map[string]any{
-				"field": "connectionID",
-				"size":  size,
-			},
-			"aggs": map[string]any{
-				"severity": map[string]any{
-					"terms": map[string]any{
-						"field": "severity",
-					},
-				},
-				"result": map[string]any{
-					"terms": map[string]any{
-						"field": "result",
-					},
-				},
-				"last_evaluation": map[string]any{
-					"max": map[string]any{
-						"field": "evaluatedAt",
-					},
-				},
-			},
-		},
-	}
-
-	boolQuery := make(map[string]any)
-	if terms != nil && len(terms) > 0 {
-		var filters []map[string]any
-		for k, vs := range terms {
-			filters = append(filters, map[string]any{
-				"terms": map[string]any{
-					k: vs,
-				},
-			})
-		}
-
-		boolQuery["filter"] = filters
-	}
-	if len(boolQuery) > 0 {
-		root["query"] = map[string]any{
-			"bool": boolQuery,
-		}
-	}
-
-	queryBytes, err := json.Marshal(root)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Info("AccountsFindingsBySeverity", zap.String("query", string(queryBytes)), zap.String("index", idx))
-	var resp AccountsFindingsBySeverityResponse
-	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
-	return &resp, err
+type ResourceTypesFindingsSummaryResponse struct {
+	Aggregations struct {
+		Summaries struct {
+			Buckets []struct {
+				Key      string `json:"key"`
+				DocCount int    `json:"doc_count"`
+				Severity struct {
+					Buckets []struct {
+						Key      string `json:"key"`
+						DocCount int    `json:"doc_count"`
+					} `json:"buckets"`
+				} `json:"severity"`
+			} `json:"buckets"`
+		} `json:"summaries"`
+	} `json:"aggregations"`
 }
 
 func ResourceTypesFindingsSummary(logger *zap.Logger, client kaytu.Client,
-	connectors []source.Type, connectionIDs []string,
-	benchmarkID []string, size int64) (*ResourceTypesFindingsBySeverityResponse, error) {
-	idx := types.FindingsIndex
-	terms := make(map[string]any)
-	if len(benchmarkID) > 0 {
-		terms["benchmarkID"] = benchmarkID
-	}
-	if len(connectionIDs) > 0 {
-		terms["connectionID"] = connectionIDs
-	}
-	if len(connectors) > 0 {
-		terms["connector"] = connectors
-	}
+	connectionIDs []string, benchmarkID string) (*ResourceTypesFindingsSummaryResponse, error) {
+	var filters []map[string]any
 
-	root := map[string]any{}
-	root["size"] = 0
+	filters = append(filters, map[string]any{
+		"term": map[string]any{
+			"parentBenchmarks": benchmarkID,
+		},
+	})
 
-	root["aggs"] = map[string]any{
-		"resource_types": map[string]any{
-			"terms": map[string]any{
-				"field": "resourceType",
-				"size":  size,
+	if len(connectionIDs) != 0 {
+		filters = append(filters, map[string]any{
+			"term": map[string]any{
+				"connectionID": connectionIDs,
 			},
-			"aggs": map[string]any{
-				"severity": map[string]any{
-					"terms": map[string]any{
-						"field": "severity",
-					},
+		})
+	}
+
+	request := map[string]any{
+		"aggs": map[string]any{
+			"summaries": map[string]any{
+				"terms": map[string]any{
+					"field": "resourceType",
 				},
-				"result": map[string]any{
-					"terms": map[string]any{
-						"field": "result",
+				"aggs": map[string]any{
+					"severity": map[string]any{
+						"terms": map[string]any{
+							"field": "severity",
+						},
 					},
 				},
 			},
 		},
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": filters,
+			},
+		},
+		"size": 0,
 	}
 
-	boolQuery := make(map[string]any)
-	if terms != nil && len(terms) > 0 {
-		var filters []map[string]any
-		for k, vs := range terms {
-			filters = append(filters, map[string]any{
-				"terms": map[string]any{
-					k: vs,
-				},
-			})
-		}
-
-		boolQuery["filter"] = filters
-	}
-	if len(boolQuery) > 0 {
-		root["query"] = map[string]any{
-			"bool": boolQuery,
-		}
-	}
-
-	queryBytes, err := json.Marshal(root)
+	queryBytes, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
 
-	logger.Info("ResourceTypesFindingsBySeverity", zap.String("query", string(queryBytes)), zap.String("index", idx))
-	var resp ResourceTypesFindingsBySeverityResponse
-	err = client.Search(context.Background(), idx, string(queryBytes), &resp)
+	logger.Info("ResourceTypesFindingsSummary", zap.String("query", string(queryBytes)))
+	var resp ResourceTypesFindingsSummaryResponse
+	err = client.Search(context.Background(), types.FindingsIndex, string(queryBytes), &resp)
 	return &resp, err
 }
 

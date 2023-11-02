@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"net"
@@ -24,23 +26,15 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/go-redis/redis/v8"
+	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/checkup"
 	checkupapi "github.com/kaytu-io/kaytu-engine/pkg/checkup/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/summarizer"
-	summarizerapi "github.com/kaytu-io/kaytu-engine/pkg/summarizer/api"
-	"gorm.io/gorm"
-
-	"github.com/go-redis/redis/v8"
-	api2 "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
 	metadataClient "github.com/kaytu-io/kaytu-engine/pkg/metadata/client"
 	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	workspaceClient "github.com/kaytu-io/kaytu-engine/pkg/workspace/client"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 
-	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-
-	complianceworker "github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
 	"go.uber.org/zap"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -56,6 +50,8 @@ const (
 	JobTimeoutCheckInterval  = 1 * time.Minute
 	MaxJobInQueue            = 10000
 	ConcurrentDeletedSources = 1000
+
+	schedulerConsumerGroup = "describe-scheduler"
 
 	RedisKeyWorkspaceResourceRemaining = "workspace_resource_remaining"
 )
@@ -81,13 +77,6 @@ var CheckupJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help:      "Count of checkup jobs in scheduler service",
 }, []string{"status"})
 
-var SummarizerJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Namespace: "kaytu",
-	Subsystem: "scheduler",
-	Name:      "schedule_summarizer_jobs_total",
-	Help:      "Count of summarizer jobs in scheduler service",
-}, []string{"status"})
-
 var AnalyticsJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Namespace: "kaytu",
 	Subsystem: "scheduler",
@@ -107,11 +96,6 @@ var ComplianceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help: "Count of describe jobs in scheduler service",
 }, []string{"status"})
 
-var ComplianceSourceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "kaytu_scheduler_schedule_compliance_source_job_total",
-	Help: "Count of describe source jobs in scheduler service",
-}, []string{"status"})
-
 var LargeDescribeResourceMessage = promauto.NewCounterVec(prometheus.CounterOpts{
 	Name: "kaytu_scheduler_large_describe_resource_message",
 	Help: "The gauge whether the describe resource message is too large: 0 for not large and 1 for large",
@@ -126,7 +110,7 @@ const (
 
 type Scheduler struct {
 	id         string
-	db         Database
+	db         db.Database
 	httpServer *HttpServer
 	grpcServer *grpc.Server
 
@@ -135,10 +119,6 @@ type Scheduler struct {
 
 	// sourceQueue is used to consume source updates by the onboarding service.
 	sourceQueue queue.Interface
-
-	complianceReportJobQueue        queue.Interface
-	complianceReportJobResultQueue  queue.Interface
-	complianceReportCleanupJobQueue queue.Interface
 
 	// insightJobQueue is used to publish insight jobs to be performed by the workers.
 	insightJobQueue queue.Interface
@@ -149,16 +129,6 @@ type Scheduler struct {
 	checkupJobQueue queue.Interface
 	// checkupJobResultQueue is used to consume the checkup job results returned by the workers.
 	checkupJobResultQueue queue.Interface
-
-	// summarizerJobQueue is used to publish summarizer jobs to be performed by the workers.
-	summarizerJobQueue queue.Interface
-	// summarizerJobResultQueue is used to consume the summarizer job results returned by the workers.
-	summarizerJobResultQueue queue.Interface
-
-	// analyticsJobQueue is used to publish analytics jobs to be performed by the workers.
-	analyticsJobQueue queue.Interface
-	// analyticsJobResultQueue is used to consume the analytics job results returned by the workers.
-	analyticsJobResultQueue queue.Interface
 
 	// watch the deleted source
 	deletedSources chan string
@@ -222,18 +192,10 @@ func initRabbitQueue(queueName string) (queue.Interface, error) {
 
 func InitializeScheduler(
 	id string,
-	describeJobResultQueueName string,
-	complianceReportJobQueueName string,
-	complianceReportJobResultQueueName string,
-	complianceReportCleanupJobQueueName string,
 	insightJobQueueName string,
 	insightJobResultQueueName string,
 	checkupJobQueueName string,
 	checkupJobResultQueueName string,
-	summarizerJobQueueName string,
-	summarizerJobResultQueueName string,
-	analyticsJobQueueName string,
-	analyticsJobResultQueueName string,
 	sourceQueueName string,
 	postgresUsername string,
 	postgresPassword string,
@@ -283,12 +245,6 @@ func InitializeScheduler(
 
 	s.logger.Info("Initializing the scheduler")
 
-	s.describeJobResultQueue, err = initRabbitQueue(describeJobResultQueueName)
-	if err != nil {
-		s.logger.Error("failed to init rabbit queue", zap.Error(err), zap.String("queue_name", describeJobResultQueueName))
-		return nil, err
-	}
-
 	s.insightJobQueue, err = initRabbitQueue(insightJobQueueName)
 	if err != nil {
 		s.logger.Error("failed to init rabbit queue", zap.Error(err), zap.String("queue_name", insightJobQueueName))
@@ -310,42 +266,7 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	s.summarizerJobQueue, err = initRabbitQueue(summarizerJobQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.summarizerJobResultQueue, err = initRabbitQueue(summarizerJobResultQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.analyticsJobQueue, err = initRabbitQueue(analyticsJobQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.analyticsJobResultQueue, err = initRabbitQueue(analyticsJobResultQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.complianceReportCleanupJobQueue, err = initRabbitQueue(complianceReportCleanupJobQueueName)
-	if err != nil {
-		return nil, err
-	}
-
 	s.sourceQueue, err = initRabbitQueue(sourceQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.complianceReportJobQueue, err = initRabbitQueue(complianceReportJobQueueName)
-	if err != nil {
-		return nil, err
-	}
-
-	s.complianceReportJobResultQueue, err = initRabbitQueue(complianceReportJobResultQueueName)
 	if err != nil {
 		return nil, err
 	}
@@ -370,14 +291,12 @@ func InitializeScheduler(
 	}
 
 	s.logger.Info("Connected to the postgres database: ", zap.String("db", postgresDb))
-	s.db = Database{orm: orm}
+	s.db = db.Database{ORM: orm}
 
-	defaultAccountID := "default"
 	s.es, err = kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{ElasticSearchAddress},
 		Username:  &ElasticSearchUsername,
 		Password:  &ElasticSearchPassword,
-		AccountID: &defaultAccountID,
 	})
 	if err != nil {
 		return nil, err
@@ -456,7 +375,7 @@ func InitializeScheduler(
 		DB:       0,  // use default DB
 	})
 
-	describeServer := NewDescribeServer(s.db, s.rdb, s.kafkaProducer, s.kafkaResourcesTopic, s.describeJobResultQueue, s.authGrpcClient, s.logger)
+	describeServer := NewDescribeServer(s.db, s.rdb, s.kafkaProducer, s.kafkaResourcesTopic, s.authGrpcClient, s.logger)
 	s.grpcServer = grpc.NewServer(
 		grpc.MaxRecvMsgSize(128*1024*1024),
 		grpc.UnaryInterceptor(describeServer.grpcUnaryAuthInterceptor),
@@ -547,15 +466,6 @@ func (s *Scheduler) Run(ctx context.Context) error {
 
 		// --------- inventory summarizer
 		EnsureRunGoroutin(func() {
-			s.RunMustSummerizeJobScheduler()
-		})
-		EnsureRunGoroutin(func() {
-			s.logger.Fatal("SummarizerJobResult consumer exited", zap.Error(s.RunSummarizerJobResultsConsumer()))
-		})
-		// ---------
-
-		// --------- inventory summarizer
-		EnsureRunGoroutin(func() {
 			s.RunAnalyticsJobScheduler()
 		})
 
@@ -627,211 +537,10 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	return httpserver.RegisterAndStart(s.logger, s.httpServer.Address, s.httpServer)
 }
 
-//
-//func (s *Scheduler) RunScheduleJobCompletionUpdater() {
-//	defer func() {
-//		if r := recover(); r != nil {
-//			err := fmt.Errorf("paniced during RunScheduleJobCompletionUpdater: %v", r)
-//			s.logger.Error("Paniced, retry", zap.Error(err))
-//			go s.RunScheduleJobCompletionUpdater()
-//		}
-//	}()
-//
-//	t := time.NewTicker(JobCompletionInterval)
-//	defer t.Stop()
-//
-//	for ; ; <-t.C {
-//		scheduleJob, err := s.db.FetchLastScheduleJob()
-//		if err != nil {
-//			s.logger.Error("Failed to find ScheduleJobs", zap.Error(err))
-//			continue
-//		}
-//
-//		if scheduleJob == nil || scheduleJob.Status != summarizerapi.SummarizerJobInProgress {
-//			continue
-//		}
-//
-//		djs, err := s.db.QueryDescribeSourceJobsForScheduleJob(scheduleJob)
-//		if err != nil {
-//			s.logger.Error("Failed to find list of describe source jobs", zap.Error(err))
-//			continue
-//		}
-//
-//		inProgress := false
-//		if djs != nil {
-//			for _, j := range djs {
-//				if j.Status == api.DescribeSourceJobCreated || j.Status == api.DescribeSourceJobInProgress {
-//					inProgress = true
-//				}
-//			}
-//		}
-//
-//		if inProgress {
-//			continue
-//		}
-//
-//		srcs, err := s.db.ListSources()
-//		if err != nil {
-//			s.logger.Error("Failed to find list of sources", zap.Error(err))
-//			continue
-//		}
-//
-//		sourceIDs := make([]string, 0, len(srcs))
-//		for _, src := range srcs {
-//			sourceIDs = append(sourceIDs, src.ID.String())
-//		}
-//		onboardSources, err := s.onboardClient.GetSources(&httpclient.Context{
-//			UserRole: api2.ViewerRole,
-//		}, sourceIDs)
-//		if err != nil {
-//			s.logger.Error("Failed to get onboard sources",
-//				zap.Strings("sourceIDs", sourceIDs),
-//				zap.Error(err),
-//			)
-//			return
-//		}
-//		var filteredSources []Source
-//		for _, src := range srcs {
-//			for _, onboardSrc := range onboardSources {
-//				if src.ID.String() == onboardSrc.ID.String() {
-//					healthCheckedSrc, err := s.onboardClient.GetSourceHealthcheck(&httpclient.Context{
-//						UserRole: api2.EditorRole,
-//					}, onboardSrc.ID.String())
-//					if err != nil {
-//						s.logger.Error("Failed to get source healthcheck",
-//							zap.String("sourceID", onboardSrc.ID.String()),
-//							zap.Error(err),
-//						)
-//						continue
-//					}
-//					if healthCheckedSrc.AssetDiscoveryMethod == source.AssetDiscoveryMethodTypeScheduled &&
-//						healthCheckedSrc.HealthState != source.HealthStatusUnhealthy {
-//						filteredSources = append(filteredSources, src)
-//					}
-//					break
-//				}
-//			}
-//		}
-//		srcs = filteredSources
-//
-//		inProgress = false
-//		for _, src := range srcs {
-//			found := false
-//			for _, j := range djs {
-//				if src.ID == j.SourceID {
-//					found = true
-//					break
-//				}
-//			}
-//
-//			if !found {
-//				inProgress = true
-//				break
-//			}
-//		}
-//
-//		if inProgress {
-//			continue
-//		}
-//
-//		j, err := s.db.GetSummarizerJobByScheduleID(scheduleJob.ID, summarizer.JobType_ResourceMustSummarizer)
-//		if err != nil {
-//			s.logger.Error("Failed to fetch SummarizerJob", zap.Error(err))
-//			continue
-//		}
-//
-//		if j == nil {
-//			err = s.scheduleMustSummarizerJob(&scheduleJob.ID)
-//			if err != nil {
-//				s.logger.Error("Failed to enqueue summarizer job\n",
-//					zap.Uint("jobId", scheduleJob.ID),
-//					zap.Error(err),
-//				)
-//			}
-//			continue
-//		}
-//
-//		if j.Status == summarizerapi.SummarizerJobInProgress {
-//			continue
-//		}
-//
-//		cjobs, err := s.db.GetComplianceReportJobsByScheduleID(scheduleJob.ID)
-//		if err != nil {
-//			s.logger.Error("Failed to get ComplianceJobs", zap.Error(err))
-//			continue
-//		}
-//
-//		if cjobs == nil || len(cjobs) == 0 {
-//			createdJobCount, err := s.RunComplianceReport(scheduleJob)
-//			if err != nil {
-//				s.logger.Error("Failed to enqueue compliance job\n",
-//					zap.Uint("jobId", scheduleJob.ID),
-//					zap.Error(err),
-//				)
-//			}
-//
-//			if createdJobCount > 0 {
-//				continue
-//			}
-//		}
-//
-//		inProgress = false
-//		for _, j := range cjobs {
-//			if j.Status == complianceapi.ComplianceReportJobCreated ||
-//				j.Status == complianceapi.ComplianceReportJobInProgress {
-//				inProgress = true
-//			}
-//		}
-//
-//		if inProgress {
-//			continue
-//		}
-//
-//		j, err = s.db.GetSummarizerJobByScheduleID(scheduleJob.ID, summarizer.JobType_ComplianceSummarizer)
-//		if err != nil {
-//			s.logger.Error("Failed to fetch SummarizerJob", zap.Error(err))
-//			continue
-//		}
-//
-//		if j == nil {
-//			err = s.scheduleComplianceSummarizerJob(scheduleJob.ID)
-//			if err != nil {
-//				s.logger.Error("Failed to enqueue summarizer job\n",
-//					zap.Uint("jobId", scheduleJob.ID),
-//					zap.Error(err),
-//				)
-//			}
-//		}
-//
-//		if j.Status == summarizerapi.SummarizerJobInProgress {
-//			continue
-//		}
-//
-//		err = s.db.UpdateScheduleJobStatus(scheduleJob.ID, summarizerapi.SummarizerJobSucceeded)
-//		if err != nil {
-//			s.logger.Error("Failed to update ScheduleJob's status", zap.Error(err))
-//			continue
-//		}
-//	}
-//}
-
-func (s *Scheduler) RunComplianceReportCleanupJobScheduler() {
-	s.logger.Info("Running compliance report cleanup job scheduler")
-
-	t := time.NewTicker(JobSchedulingInterval)
-	defer t.Stop()
-
-	for range t.C {
-		s.cleanupComplianceReportJob()
-	}
-}
-
 func (s *Scheduler) RunDeletedSourceCleanup() {
 	for id := range s.deletedSources {
 		// cleanup describe job for deleted source
 		s.cleanupDescribeJobForDeletedSource(id)
-		// cleanup compliance report job for deleted source
-		s.cleanupComplianceReportJobForDeletedSource(id)
 	}
 }
 
@@ -848,7 +557,7 @@ func (s *Scheduler) RunScheduledJobCleanup() {
 		if err != nil {
 			s.logger.Error("Failed to cleanup insight jobs", zap.Error(err))
 		}
-		err = s.db.CleanupComplianceReportJobsOlderThan(tOlder)
+		err = s.db.CleanupComplianceJobsOlderThan(tOlder)
 		if err != nil {
 			s.logger.Error("Failed to cleanup compliance report jobs", zap.Error(err))
 		}
@@ -864,51 +573,6 @@ func (s *Scheduler) cleanupDescribeJobForDeletedSource(sourceId string) {
 		)
 		s.deletedSources <- sourceId
 	}
-}
-
-func (s *Scheduler) cleanupComplianceReportJobForDeletedSource(sourceId string) {
-	jobs, err := s.db.QueryComplianceReportJobs(sourceId)
-	if err != nil {
-		s.logger.Error("Failed to find all completed ComplianceReportJobs for source",
-			zap.String("sourceId", sourceId),
-			zap.Error(err),
-		)
-		return
-	}
-	s.handleComplianceReportJobs(jobs)
-}
-
-func (s *Scheduler) handleComplianceReportJobs(jobs []ComplianceReportJob) {
-	for _, job := range jobs {
-		if err := s.complianceReportCleanupJobQueue.Publish(complianceworker.ComplianceReportCleanupJob{
-			JobID: job.ID,
-		}); err != nil {
-			s.logger.Error("Failed to publish compliance report clean up job to queue for ComplianceReportJob",
-				zap.Uint("jobId", job.ID),
-				zap.Error(err),
-			)
-			return
-		}
-
-		if err := s.db.DeleteComplianceReportJob(job.ID); err != nil {
-			s.logger.Error("Failed to delete ComplianceReportJob",
-				zap.Uint("jobId", job.ID),
-				zap.Error(err),
-			)
-		}
-		s.logger.Info("Successfully deleted ComplianceReportJob", zap.Uint("jobId", job.ID))
-	}
-}
-
-func (s *Scheduler) cleanupComplianceReportJob() {
-	jobs, err := s.db.QueryOlderThanNRecentCompletedComplianceReportJobs(5)
-	if err != nil {
-		s.logger.Error("Failed to find older than 5 recent completed ComplianceReportJobs for each source",
-			zap.Error(err),
-		)
-		return
-	}
-	s.handleComplianceReportJobs(jobs)
 }
 
 // RunSourceEventsConsumer Consume events from the source queue. Based on the action of the event,
@@ -944,93 +608,15 @@ func (s *Scheduler) RunSourceEventsConsumer() error {
 	return fmt.Errorf("source events queue channel is closed")
 }
 
-// RunComplianceReportJobResultsConsumer consumes messages from the complianceReportJobResultQueue queue.
-// It will update the status of the jobs in the database based on the message.
-// It will also update the jobs status that are not completed in certain time to FAILED
-func (s *Scheduler) RunComplianceReportJobResultsConsumer() error {
-	s.logger.Info("Consuming messages from the ComplianceReportJobResultQueue queue")
-
-	msgs, err := s.complianceReportJobResultQueue.Consume()
-	if err != nil {
-		return err
-	}
-
-	t := time.NewTicker(JobTimeoutCheckInterval)
-	defer t.Stop()
-
-	for {
-		select {
-		case msg, ok := <-msgs:
-			if !ok {
-				return fmt.Errorf("tasks channel is closed")
-			}
-
-			var result complianceworker.JobResult
-			if err := json.Unmarshal(msg.Body, &result); err != nil {
-				s.logger.Error("Failed to unmarshal ComplianceReportJob results", zap.Error(err))
-				err = msg.Nack(false, false)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
-				}
-				continue
-			}
-
-			s.logger.Info("Processing ReportJobResult for Job",
-				zap.Uint("jobId", result.JobID),
-				zap.String("status", string(result.Status)),
-			)
-			err := s.db.UpdateComplianceReportJob(result.JobID, result.Status, result.ReportCreatedAt, result.Error)
-			if err != nil {
-				s.logger.Error("Failed to update the status of ComplianceReportJob",
-					zap.Uint("jobId", result.JobID),
-					zap.Error(err))
-				err = msg.Nack(false, true)
-				if err != nil {
-					s.logger.Error("Failed nacking message", zap.Error(err))
-				}
-				continue
-			}
-
-			if err := msg.Ack(false); err != nil {
-				s.logger.Error("Failed acking message", zap.Error(err))
-			}
-		case <-t.C:
-			err := s.db.UpdateComplianceReportJobsTimedOut(s.complianceTimeoutHours)
-			if err != nil {
-				s.logger.Error("Failed to update timed out ComplianceReportJob", zap.Error(err))
-			}
-		}
-	}
-}
-
 func (s *Scheduler) Stop() {
 	queues := []queue.Interface{
-		s.describeJobResultQueue,
-		s.complianceReportJobQueue,
-		s.complianceReportJobResultQueue,
 		s.sourceQueue,
 		s.insightJobQueue,
 		s.insightJobResultQueue,
-		s.summarizerJobQueue,
-		s.summarizerJobResultQueue,
 	}
 
 	for _, openQueues := range queues {
 		openQueues.Close()
-	}
-}
-
-func newComplianceReportJob(connectionID string, connector source.Type, benchmarkID string, resourceCollection *string) ComplianceReportJob {
-	return ComplianceReportJob{
-		Model:              gorm.Model{},
-		SourceID:           connectionID,
-		SourceType:         connector,
-		BenchmarkID:        benchmarkID,
-		ReportCreatedAt:    0,
-		Status:             complianceapi.ComplianceReportJobCreated,
-		FailureMessage:     "",
-		IsStack:            false,
-		ResourceCollection: resourceCollection,
 	}
 }
 
@@ -1105,71 +691,7 @@ func (s *Scheduler) scheduleCheckupJob() {
 	}
 }
 
-func newSummarizerJob(jobType summarizer.JobType) SummarizerJob {
-	return SummarizerJob{
-		Model:          gorm.Model{},
-		Status:         summarizerapi.SummarizerJobInProgress,
-		JobType:        jobType,
-		FailureMessage: "",
-	}
-}
-
-func newComplianceSummarizerJob(resourceCollection *string) SummarizerJob {
-	return SummarizerJob{
-		Model:              gorm.Model{},
-		Status:             summarizerapi.SummarizerJobInProgress,
-		JobType:            summarizer.JobType_ComplianceSummarizer,
-		ResourceCollection: resourceCollection,
-		FailureMessage:     "",
-	}
-}
-
-func (s *Scheduler) scheduleComplianceSummarizerJob(resourceCollection *string) error {
-	job := newComplianceSummarizerJob(resourceCollection)
-	err := s.db.AddSummarizerJob(&job)
-	if err != nil {
-		SummarizerJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to create SummarizerJob",
-			zap.Uint("jobId", job.ID),
-			zap.Error(err),
-		)
-		return err
-	}
-
-	err = enqueueComplianceSummarizerJobs(s.summarizerJobQueue, job)
-	if err != nil {
-		SummarizerJobsCount.WithLabelValues("failure").Inc()
-		s.logger.Error("Failed to enqueue SummarizerJob",
-			zap.Uint("jobId", job.ID),
-			zap.Error(err),
-		)
-		job.Status = summarizerapi.SummarizerJobFailed
-		err = s.db.UpdateSummarizerJobStatus(job)
-		if err != nil {
-			s.logger.Error("Failed to update SummarizerJob status",
-				zap.Uint("jobId", job.ID),
-				zap.Error(err),
-			)
-		}
-		return err
-	}
-
-	return nil
-}
-
-func enqueueComplianceSummarizerJobs(q queue.Interface, job SummarizerJob) error {
-	if err := q.Publish(summarizer.SummarizeJob{
-		JobID:                job.ID,
-		JobType:              summarizer.JobType_ComplianceSummarizer,
-		ResourceCollectionId: job.ResourceCollection,
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func enqueueCheckupJobs(_ Database, q queue.Interface, job CheckupJob) error {
+func enqueueCheckupJobs(_ db.Database, q queue.Interface, job model.CheckupJob) error {
 	if err := q.Publish(checkup.Job{
 		JobID:      job.ID,
 		ExecutedAt: job.CreatedAt.UnixMilli(),
@@ -1238,8 +760,8 @@ func (s *Scheduler) RunCheckupJobResultsConsumer() error {
 	}
 }
 
-func newCheckupJob() CheckupJob {
-	return CheckupJob{
+func newCheckupJob() model.CheckupJob {
+	return model.CheckupJob{
 		Status: checkupapi.CheckupJobInProgress,
 	}
 }

@@ -447,3 +447,13 @@ func (db Database) GetInsightGroup(id uint) (*InsightGroup, error) {
 
 	return &res, nil
 }
+
+func (db Database) ListPolicies() ([]Policy, error) {
+	var s []Policy
+	tx := db.Orm.Model(&Policy{}).Preload(clause.Associations).
+		Find(&s)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return s, nil
+}

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
+	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
 	"net/http"
@@ -18,7 +20,6 @@ import (
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/enums"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
-	"github.com/kaytu-io/kaytu-util/pkg/queue"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/proto/src/golang"
 	"go.uber.org/zap"
@@ -29,7 +30,7 @@ import (
 )
 
 type GRPCDescribeServer struct {
-	db                        Database
+	db                        db.Database
 	rdb                       *redis.Client
 	producer                  *confluent_kafka.Producer
 	topic                     string
@@ -40,7 +41,7 @@ type GRPCDescribeServer struct {
 	golang.DescribeServiceServer
 }
 
-func NewDescribeServer(db Database, rdb *redis.Client, producer *confluent_kafka.Producer, topic string, describeJobResultQueue queue.Interface, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger) *GRPCDescribeServer {
+func NewDescribeServer(db db.Database, rdb *redis.Client, producer *confluent_kafka.Producer, topic string, authGrpcClient envoyauth.AuthorizationClient, logger *zap.Logger) *GRPCDescribeServer {
 	return &GRPCDescribeServer{
 		db:                        db,
 		rdb:                       rdb,
@@ -129,16 +130,16 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 			fmt.Println("===================================================== Cost", resource.UniqueId, "\n", resource.DescriptionJson)
 		}
 
-		var tags []es.Tag
+		var tags []es2.Tag
 		for k, v := range resource.Tags {
-			tags = append(tags, es.Tag{
+			tags = append(tags, es2.Tag{
 				// tags should be case-insensitive
 				Key:   strings.ToLower(k),
 				Value: strings.ToLower(v),
 			})
 		}
 
-		kafkaResource := es.Resource{
+		kafkaResource := es2.Resource{
 			ID:            resource.UniqueId,
 			ARN:           resource.Arn,
 			Name:          resource.Name,
@@ -171,12 +172,11 @@ func (s *GRPCDescribeServer) DeliverAWSResources(ctx context.Context, resources 
 		//id := kafka.HashOf(keys...)
 		//s.logger.Warn(fmt.Sprintf("sending resource id=%s : %s", id, string(kmsg)))
 
-		lookupResource := es.LookupResource{
+		lookupResource := es2.LookupResource{
 			ResourceID:    resource.UniqueId,
 			Name:          resource.Name,
 			SourceType:    source.CloudAWS,
 			ResourceType:  strings.ToLower(resource.Job.ResourceType),
-			ResourceGroup: "",
 			Location:      resource.Region,
 			SourceID:      resource.Job.SourceId,
 			ResourceJobID: uint(resource.Job.JobId),
@@ -245,16 +245,16 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 			return nil, err
 		}
 
-		var tags []es.Tag
+		var tags []es2.Tag
 		for k, v := range resource.Tags {
-			tags = append(tags, es.Tag{
+			tags = append(tags, es2.Tag{
 				// tags should be case-insensitive
 				Key:   strings.ToLower(k),
 				Value: strings.ToLower(v),
 			})
 		}
 
-		kafkaResource := es.Resource{
+		kafkaResource := es2.Resource{
 			ID:            resource.UniqueId,
 			ARN:           "",
 			Description:   description,
@@ -286,7 +286,7 @@ func (s *GRPCDescribeServer) DeliverAzureResources(ctx context.Context, resource
 		//id := kafka.HashOf(keys...)
 		//s.logger.Warn(fmt.Sprintf("sending resource id=%s : %s", id, string(kmsg)))
 
-		lookupResource := es.LookupResource{
+		lookupResource := es2.LookupResource{
 			ResourceID:    resource.UniqueId,
 			Name:          resource.Name,
 			SourceType:    source.CloudAzure,

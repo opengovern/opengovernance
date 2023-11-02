@@ -19,7 +19,6 @@ type Finding struct {
 	BenchmarkID      string           `json:"benchmarkID" example:"azure_cis_v140"`                                                                                    // Benchmark ID
 	PolicyID         string           `json:"policyID" example:"azure_cis_v140_7_5"`                                                                                   // Policy ID
 	ConnectionID     string           `json:"connectionID" example:"8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8"`                                                             // Connection ID
-	DescribedAt      int64            `json:"describedAt" example:"1589395200"`                                                                                        // Timestamp of the policy description
 	EvaluatedAt      int64            `json:"evaluatedAt" example:"1589395200"`                                                                                        // Timestamp of the policy evaluation
 	StateActive      bool             `json:"stateActive" example:"true"`                                                                                              // Whether the policy is active or not
 	Result           ComplianceResult `json:"result" example:"alarm"`                                                                                                  // Compliance result
@@ -32,9 +31,9 @@ type Finding struct {
 	ResourceType     string           `json:"resourceType" example:"Microsoft.Compute/virtualMachines"`                                                                // Resource type
 	Reason           string           `json:"reason" example:"The VM is not using managed disks"`                                                                      // Reason for the policy evaluation result
 	ComplianceJobID  uint             `json:"complianceJobID" example:"1"`                                                                                             // Compliance job ID
-	ScheduleJobID    uint             `json:"scheduleJobID" example:"1"`                                                                                               // Schedule job ID
 
-	ResourceCollection *string `json:"resourceCollection"` // Resource collection
+	ResourceCollection *string  `json:"resourceCollection"` // Resource collection
+	ParentBenchmarks   []string `json:"parentBenchmarks"`
 }
 
 func (r Finding) KeysAndIndex() ([]string, string) {
@@ -43,7 +42,7 @@ func (r Finding) KeysAndIndex() ([]string, string) {
 		r.ResourceID,
 		r.ConnectionID,
 		r.PolicyID,
-		strconv.FormatInt(r.DescribedAt, 10),
+		strconv.FormatInt(r.EvaluatedAt, 10),
 	}
 	if r.ResourceCollection != nil {
 		keys = append(keys, *r.ResourceCollection)

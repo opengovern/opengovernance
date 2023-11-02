@@ -24,6 +24,7 @@ type InventoryServiceClient interface {
 	ListResourceTypesMetadata(ctx *httpclient.Context, connectors []source.Type, services []string, resourceTypes []string, summarized bool, tags map[string]string, pageSize, pageNumber int) (*api.ListResourceTypeMetadataResponse, error)
 	ListResourceCollections(ctx *httpclient.Context) ([]api.ResourceCollection, error)
 	GetResourceCollection(ctx *httpclient.Context, id string) (*api.ResourceCollection, error)
+	GetResourceCollections(ctx *httpclient.Context, ids []string) ([]api.ResourceCollection, error)
 }
 
 type inventoryClient struct {
@@ -339,6 +340,30 @@ func (s *inventoryClient) GetResourceCollection(ctx *httpclient.Context, id stri
 		return nil, err
 	}
 	return &response, nil
+}
+
+func (s *inventoryClient) GetResourceCollections(ctx *httpclient.Context, ids []string) ([]api.ResourceCollection, error) {
+	url := fmt.Sprintf("%s/api/v2/resource-collection", s.baseURL)
+
+	firstParamAttached := false
+	for _, id := range ids {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("id=%s", id)
+	}
+
+	var response []api.ResourceCollection
+	if statusCode, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &response); err != nil {
+		if 400 <= statusCode && statusCode < 500 {
+			return nil, echo.NewHTTPError(statusCode, err.Error())
+		}
+		return nil, err
+	}
+	return response, nil
 }
 
 func (s *inventoryClient) ListResourceCollections(ctx *httpclient.Context) ([]api.ResourceCollection, error) {

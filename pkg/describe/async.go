@@ -3,6 +3,7 @@ package describe
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
 	"time"
 )
 
@@ -16,6 +17,7 @@ func EnsureRunGoroutin(f func(), tryCount ...int) {
 		defer func() {
 			if r := recover(); r != nil {
 				fmt.Printf("paniced: %v", r)
+				fmt.Printf("%s", string(debug.Stack()))
 				time.Sleep(1 * time.Second)
 				if try > 10 {
 					os.Exit(1)

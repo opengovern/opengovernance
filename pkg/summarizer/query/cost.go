@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 )
@@ -20,16 +19,16 @@ type ResourceQueryHits struct {
 	Hits  []ResourceQueryHit `json:"hits"`
 }
 type ResourceQueryHit struct {
-	ID      string            `json:"_id"`
-	Score   float64           `json:"_score"`
-	Index   string            `json:"_index"`
-	Type    string            `json:"_type"`
-	Version int64             `json:"_version,omitempty"`
-	Source  describe.Resource `json:"_source"`
-	Sort    []interface{}     `json:"sort"`
+	ID      string        `json:"_id"`
+	Score   float64       `json:"_score"`
+	Index   string        `json:"_index"`
+	Type    string        `json:"_type"`
+	Version int64         `json:"_version,omitempty"`
+	Source  es.Resource   `json:"_source"`
+	Sort    []interface{} `json:"sort"`
 }
 
-func GetResourceFromResourceLookup(client kaytu.Client, resource describe.LookupResource) (*describe.Resource, error) {
+func GetResourceFromResourceLookup(client kaytu.Client, resource es.LookupResource) (*es.Resource, error) {
 	res := make(map[string]interface{})
 	var filters []interface{}
 

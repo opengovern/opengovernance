@@ -4,6 +4,7 @@ import (
 	"fmt"
 	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	describeApi "github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"go.uber.org/zap"
 	"time"
 )
@@ -31,7 +32,7 @@ func (s *Scheduler) checkJobSequences() error {
 
 	for _, job := range jobs {
 		switch job.DependencySource {
-		case string(JobSequencerJobTypeBenchmark):
+		case string(model.JobSequencerJobTypeBenchmark):
 			err := s.resolveBenchmarkDependency(job)
 			if err != nil {
 				s.logger.Error("failed to resolve benchmark dependency", zap.Uint("jobID", job.ID), zap.Error(err))
@@ -40,7 +41,7 @@ func (s *Scheduler) checkJobSequences() error {
 				}
 				continue
 			}
-		case string(JobSequencerJobTypeDescribe):
+		case string(model.JobSequencerJobTypeDescribe):
 			err := s.resolveDescribeDependency(job)
 			if err != nil {
 				s.logger.Error("failed to resolve describe dependency", zap.Uint("jobID", job.ID), zap.Error(err))
@@ -56,20 +57,10 @@ func (s *Scheduler) checkJobSequences() error {
 	return nil
 }
 
-func (s *Scheduler) runNextJob(job JobSequencer) error {
+func (s *Scheduler) runNextJob(job model.JobSequencer) error {
 	switch job.NextJob {
-	case string(JobSequencerJobTypeBenchmarkSummarizer):
-		err := s.scheduleComplianceSummarizerJob(nil)
-		if err != nil {
-			return err
-		}
-
-		err = s.db.UpdateJobSequencerFinished(job.ID)
-		if err != nil {
-			return err
-		}
-	case string(JobSequencerJobTypeAnalytics):
-		err := s.scheduleAnalyticsJob(nil)
+	case string(model.JobSequencerJobTypeAnalytics):
+		err := s.scheduleAnalyticsJob(model.AnalyticsJobTypeNormal)
 		if err != nil {
 			return err
 		}
@@ -85,10 +76,10 @@ func (s *Scheduler) runNextJob(job JobSequencer) error {
 	return nil
 }
 
-func (s *Scheduler) resolveBenchmarkDependency(job JobSequencer) error {
+func (s *Scheduler) resolveBenchmarkDependency(job model.JobSequencer) error {
 	allDependencyResolved := true
 	for _, id := range job.DependencyList {
-		complianceJob, err := s.db.GetComplianceReportJobByID(uint(id))
+		complianceJob, err := s.db.GetComplianceJobByID(uint(id))
 		if err != nil {
 			return err
 		}
@@ -112,7 +103,7 @@ func (s *Scheduler) resolveBenchmarkDependency(job JobSequencer) error {
 	return nil
 }
 
-func (s *Scheduler) resolveDescribeDependency(job JobSequencer) error {
+func (s *Scheduler) resolveDescribeDependency(job model.JobSequencer) error {
 	allDependencyResolved := true
 	for _, id := range job.DependencyList {
 		describeConnectionJob, err := s.db.GetDescribeConnectionJobByID(uint(id))

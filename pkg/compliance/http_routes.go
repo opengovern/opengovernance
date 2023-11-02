@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-engine/pkg/demo"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -57,7 +57,7 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	benchmarks.GET("/summary", httpserver.AuthorizeHandler(h.ListBenchmarksSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/summary", httpserver.AuthorizeHandler(h.GetBenchmarkSummary, authApi.ViewerRole))
 	benchmarks.GET("/:benchmark_id/trend", httpserver.AuthorizeHandler(h.GetBenchmarkTrend, authApi.ViewerRole))
-	benchmarks.GET("/:benchmark_id/tree", httpserver.AuthorizeHandler(h.GetBenchmarkTree, authApi.ViewerRole))
+	benchmarks.GET("/:benchmark_id/policies", httpserver.AuthorizeHandler(h.GetBenchmarkPolicies, authApi.ViewerRole))
 
 	queries := v1.Group("/queries")
 	queries.GET("/:query_id", httpserver.AuthorizeHandler(h.GetQuery, authApi.ViewerRole))
@@ -165,16 +165,7 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	lastIdx := (req.Page.No - 1) * req.Page.Size
-
 	var response api.GetFindingsResponse
-	var sorts []map[string]any
-	for _, sortItem := range req.Sorts {
-		item := map[string]any{}
-		item[string(sortItem.Field)] = sortItem.Direction
-		sorts = append(sorts, item)
-	}
-
 	var benchmarkIDs []string
 	// tracer :
 	output1, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs(loop)", trace.WithSpanKind(trace.SpanKindServer))
@@ -202,15 +193,45 @@ func (h *HttpHandler) GetFindings(ctx echo.Context) error {
 	res, err := es.FindingsQuery(h.client,
 		req.Filters.ResourceID, req.Filters.Connector, req.Filters.ConnectionID,
 		req.Filters.ResourceCollection, benchmarkIDs, req.Filters.PolicyID,
-		req.Filters.Severity, sorts, req.Filters.ActiveOnly, lastIdx, req.Page.Size)
+		req.Filters.Severity, req.Filters.ActiveOnly)
 	if err != nil {
 		return err
 	}
 
-	for _, h := range res.Hits.Hits {
-		response.Findings = append(response.Findings, h.Source)
+	allSources, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+	if err != nil {
+		return err
 	}
-	response.TotalCount = res.Hits.Total.Value
+
+	policies, err := h.db.ListPolicies()
+	if err != nil {
+		return err
+	}
+
+	for _, h := range res {
+		finding := api.Finding{
+			Finding:                h,
+			PolicyTitle:            "",
+			ProviderConnectionID:   "",
+			ProviderConnectionName: "",
+		}
+
+		for _, src := range allSources {
+			if src.ID.String() == finding.ConnectionID {
+				finding.ProviderConnectionID = demo.EncodeResponseData(ctx, src.ConnectionID)
+				finding.ProviderConnectionName = demo.EncodeResponseData(ctx, src.ConnectionName)
+				break
+			}
+		}
+
+		for _, policy := range policies {
+			if policy.ID == h.PolicyID {
+				finding.PolicyTitle = policy.Title
+			}
+		}
+		response.Findings = append(response.Findings, finding)
+	}
+	response.TotalCount = int64(len(res))
 	return ctx.JSON(http.StatusOK, response)
 }
 
@@ -405,11 +426,9 @@ func (h *HttpHandler) GetFindingsFieldCountByPolicies(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId		path		string			true	"BenchmarkID"
-//	@Param			count			query		int				false	"Number of outputs"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			benchmarkId		path		string		true	"BenchmarkID"
+//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string	false	"Connection groups to filter by "
 //	@Success		200				{object}	api.GetAccountsFindingsSummaryResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/accounts [get]
 func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
@@ -419,83 +438,61 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 		return err
 	}
 
-	var count int64
-	countStr := ctx.QueryParam("count")
-	if countStr != "" {
-		count, err = strconv.ParseInt(countStr, 10, 64)
-		if err != nil {
-			return err
-		}
-	} else {
-		count = 10000
-	}
-
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	//tracer :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_GetBenchmarkTreeIDs")
-
-	benchmarkIDs, err := h.GetBenchmarkTreeIDs(ctx.Request().Context(), benchmarkID)
-	if err != nil {
-		span1.RecordError(err)
-		span1.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	span1.AddEvent("information", trace.WithAttributes(
-		attribute.String("benchmark id", benchmarkID),
-	))
-	span1.End()
 	var response api.GetAccountsFindingsSummaryResponse
-	res, err := es.AccountsFindingsSummary(h.logger, h.client, connectors, connectionIDs, benchmarkIDs, count)
+	res, evaluatedAt, err := es.BenchmarkConnectionSummary(h.logger, h.client, benchmarkID)
 	if err != nil {
 		return err
 	}
 
-	for _, acc := range res.Aggregations.Accounts.Buckets {
-		connection, err := h.onboardClient.GetSource(httpclient.FromEchoContext(ctx), acc.Key)
+	if len(connectionIDs) == 0 {
+		assignmentsByBenchmarkId, err := h.db.GetBenchmarkAssignmentsByBenchmarkId(benchmarkID)
 		if err != nil {
 			return err
 		}
-		okCount := 0
-		for _, r := range acc.Result.Buckets {
-			if r.Key == "ok" {
-				okCount = r.DocCount
+
+		for _, assignment := range assignmentsByBenchmarkId {
+			if assignment.ConnectionId != nil {
+				connectionIDs = append(connectionIDs, *assignment.ConnectionId)
 			}
 		}
-		critical := 0
-		high := 0
-		low := 0
-		medium := 0
-		for _, r := range acc.Severity.Buckets {
-			switch r.Key {
-			case "critical":
-				critical = r.DocCount
-			case "high":
-				high = r.DocCount
-			case "medium":
-				medium = r.DocCount
-			case "low":
-				low = r.DocCount
-			}
+	}
+
+	srcs, err := h.onboardClient.GetSources(httpclient.FromEchoContext(ctx), connectionIDs)
+	if err != nil {
+		return err
+	}
+
+	for _, src := range srcs {
+		summary, ok := res[src.ID.String()]
+		if !ok {
+			summary.SeverityResult = map[kaytuTypes.FindingSeverity]int{}
 		}
+
 		account := api.AccountsFindingsSummary{
-			AccountName:   connection.ConnectionName,
-			AccountId:     connection.ConnectionID,
-			SecurityScore: float64(okCount) / float64(acc.DocCount),
+			AccountName:   src.ConnectionName,
+			AccountId:     src.ConnectionID,
+			SecurityScore: summary.SecurityScore,
 			SeveritiesCount: struct {
 				Critical int `json:"critical"`
 				High     int `json:"high"`
 				Low      int `json:"low"`
 				Medium   int `json:"medium"`
 			}{
-				Critical: critical,
-				High:     high,
-				Low:      low,
-				Medium:   medium,
+				Critical: summary.SeverityResult[kaytuTypes.FindingSeverityCritical],
+				High:     summary.SeverityResult[kaytuTypes.FindingSeverityHigh],
+				Low:      summary.SeverityResult[kaytuTypes.FindingSeverityLow],
+				Medium:   summary.SeverityResult[kaytuTypes.FindingSeverityMedium],
 			},
-			LastCheckTime: time.UnixMilli(int64(acc.LastEvaluation.Value)),
+			LastCheckTime: time.Unix(evaluatedAt, 0),
 		}
+
 		response.Accounts = append(response.Accounts, account)
+	}
+
+	for idx, conn := range response.Accounts {
+		conn.AccountId = demo.EncodeResponseData(ctx, conn.AccountId)
+		conn.AccountName = demo.EncodeResponseData(ctx, conn.AccountName)
+		response.Accounts[idx] = conn
 	}
 
 	return ctx.JSON(http.StatusOK, response)
@@ -509,11 +506,9 @@ func (h *HttpHandler) GetAccountsFindingsSummary(ctx echo.Context) error {
 //	@Tags			compliance
 //	@Accept			json
 //	@Produce		json
-//	@Param			benchmarkId		path		string			true	"BenchmarkID"
-//	@Param			count			query		int				false	"Number of outputs"
-//	@Param			connectionId	query		[]string		false	"Connection IDs to filter by"
-//	@Param			connectionGroup	query		[]string		false	"Connection groups to filter by "
-//	@Param			connector		query		[]source.Type	false	"Connector type to filter by"
+//	@Param			benchmarkId		path		string		true	"BenchmarkID"
+//	@Param			connectionId	query		[]string	false	"Connection IDs to filter by"
+//	@Param			connectionGroup	query		[]string	false	"Connection groups to filter by "
 //	@Success		200				{object}	api.GetServicesFindingsSummaryResponse
 //	@Router			/compliance/api/v1/findings/{benchmarkId}/services [get]
 func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
@@ -523,75 +518,33 @@ func (h *HttpHandler) GetServicesFindingsSummary(ctx echo.Context) error {
 		return err
 	}
 
-	var count int64
-	countStr := ctx.QueryParam("count")
-	if countStr != "" {
-		count, err = strconv.ParseInt(countStr, 10, 64)
-		if err != nil {
-			return err
-		}
-	} else {
-		count = 10000
-	}
-
-	connectors := source.ParseTypes(ctx.QueryParams()["connector"])
-	//tracer :
-	_, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmarkTreeIDs", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_GetBenchmarkTreeIDs")
-
-	benchmarkIDs, err := h.GetBenchmarkTreeIDs(ctx.Request().Context(), benchmarkID)
-	if err != nil {
-		span1.RecordError(err)
-		span1.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	span1.AddEvent("information", trace.WithAttributes(
-		attribute.String("benchmark id", benchmarkID),
-	))
-	span1.End()
 	var response api.GetServicesFindingsSummaryResponse
-	res, err := es.ResourceTypesFindingsSummary(h.logger, h.client, connectors, connectionIDs, benchmarkIDs, count)
+	resp, err := es.ResourceTypesFindingsSummary(h.logger, h.client, connectionIDs, benchmarkID)
 	if err != nil {
 		return err
 	}
 
-	for _, resourceType := range res.Aggregations.ResourceTypes.Buckets {
-		okCount := 0
-		for _, r := range resourceType.Result.Buckets {
-			if r.Key == "ok" {
-				okCount = r.DocCount
-			}
+	for _, resourceType := range resp.Aggregations.Summaries.Buckets {
+		s := map[string]int{}
+		for _, severity := range resourceType.Severity.Buckets {
+			s[severity.Key] = severity.DocCount
 		}
-		critical := 0
-		high := 0
-		low := 0
-		medium := 0
-		for _, r := range resourceType.Severity.Buckets {
-			switch r.Key {
-			case "critical":
-				critical = r.DocCount
-			case "high":
-				high = r.DocCount
-			case "medium":
-				medium = r.DocCount
-			case "low":
-				low = r.DocCount
-			}
-		}
+
+		securityScore := float64(s[string(kaytuTypes.FindingSeverityPassed)]) / float64(resourceType.DocCount) * 100.0
 		service := api.ServiceFindingsSummary{
 			ServiceName:   resourceType.Key,
 			ServiceLabel:  resourceType.Key,
-			SecurityScore: float64(okCount) / float64(resourceType.DocCount),
+			SecurityScore: securityScore,
 			SeveritiesCount: struct {
 				Critical int `json:"critical"`
 				High     int `json:"high"`
 				Low      int `json:"low"`
 				Medium   int `json:"medium"`
 			}{
-				Critical: critical,
-				High:     high,
-				Low:      low,
-				Medium:   medium,
+				Critical: s[string(kaytuTypes.FindingSeverityCritical)],
+				High:     s[string(kaytuTypes.FindingSeverityHigh)],
+				Low:      s[string(kaytuTypes.FindingSeverityLow)],
+				Medium:   s[string(kaytuTypes.FindingSeverityMedium)],
 			},
 		}
 		response.Services = append(response.Services, service)
@@ -694,7 +647,7 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		benchmarkIDs = append(benchmarkIDs, b.ID)
 	}
 
-	summariesAtTime, err := es.FetchBenchmarkSummariesAtTime(h.logger, h.client, benchmarkIDs, connectors, connectionIDs, resourceCollections, timeAt)
+	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(h.logger, h.client, benchmarkIDs, connectionIDs, resourceCollections, timeAt)
 	if err != nil {
 		h.logger.Error("failed to fetch benchmark summaries", zap.Error(err))
 		return err
@@ -721,6 +674,29 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 		}
 
 		summaryAtTime := summariesAtTime[b.ID]
+		csResult := kaytuTypes.ComplianceResultSummary{}
+		sResult := kaytuTypes.SeverityResult{}
+		if len(connectionIDs) > 0 {
+			for _, connectionID := range connectionIDs {
+				csResult.AddResultMap(summaryAtTime.Connections[connectionID].QueryResult)
+				sResult.AddResultMap(summaryAtTime.Connections[connectionID].SeverityResult)
+				response.TotalResult.AddResultMap(summaryAtTime.Connections[connectionID].QueryResult)
+				response.TotalChecks.AddResultMap(summaryAtTime.Connections[connectionID].SeverityResult)
+			}
+		} else if len(resourceCollections) > 0 {
+			for _, resourceCollection := range resourceCollections {
+				csResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].QueryResult)
+				sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].SeverityResult)
+				response.TotalResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].QueryResult)
+				response.TotalChecks.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].SeverityResult)
+			}
+		} else {
+			csResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
+			sResult.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
+			response.TotalResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
+			response.TotalChecks.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
+		}
+
 		response.BenchmarkSummary = append(response.BenchmarkSummary, api.BenchmarkEvaluationSummary{
 			ID:          b.ID,
 			Title:       b.Title,
@@ -728,13 +704,10 @@ func (h *HttpHandler) ListBenchmarksSummary(ctx echo.Context) error {
 			Connectors:  be.Connectors,
 			Tags:        be.Tags,
 			Enabled:     b.Enabled,
-			Result:      summaryAtTime.ComplianceResultSummary,
-			Checks:      summaryAtTime.SeverityResult,
-			EvaluatedAt: summaryAtTime.EvaluatedAt,
+			Result:      csResult,
+			Checks:      sResult,
+			EvaluatedAt: time.Unix(summaryAtTime.EvaluatedAtEpoch, 0),
 		})
-
-		response.TotalResult.AddComplianceResultSummary(summaryAtTime.ComplianceResultSummary)
-		response.TotalChecks.AddSeverityResult(summaryAtTime.SeverityResult)
 	}
 	span3.End()
 	return ctx.JSON(http.StatusOK, response)
@@ -811,12 +784,30 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid connector")
 	}
 
-	summariesAtTime, err := es.FetchBenchmarkSummariesAtTime(h.logger, h.client, []string{benchmarkID}, connectors, connectionIDs, resourceCollections, timeAt)
+	summariesAtTime, err := es.ListBenchmarkSummariesAtTime(h.logger, h.client, []string{benchmarkID}, connectionIDs, resourceCollections, timeAt)
 	if err != nil {
 		return err
 	}
 
 	summaryAtTime := summariesAtTime[benchmarkID]
+
+	csResult := kaytuTypes.ComplianceResultSummary{}
+	sResult := kaytuTypes.SeverityResult{}
+	if len(connectionIDs) > 0 {
+		for _, connectionID := range connectionIDs {
+			csResult.AddResultMap(summaryAtTime.Connections[connectionID].QueryResult)
+			sResult.AddResultMap(summaryAtTime.Connections[connectionID].SeverityResult)
+		}
+	} else if len(resourceCollections) > 0 {
+		for _, resourceCollection := range resourceCollections {
+			csResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].QueryResult)
+			sResult.AddResultMap(summaryAtTime.ResourceCollections[resourceCollection].SeverityResult)
+		}
+	} else {
+		csResult.AddResultMap(summaryAtTime.BenchmarkResult.QueryResult)
+		sResult.AddResultMap(summaryAtTime.BenchmarkResult.SeverityResult)
+	}
+
 	response := api.BenchmarkEvaluationSummary{
 		ID:          benchmark.ID,
 		Title:       benchmark.Title,
@@ -824,152 +815,81 @@ func (h *HttpHandler) GetBenchmarkSummary(ctx echo.Context) error {
 		Connectors:  be.Connectors,
 		Tags:        be.Tags,
 		Enabled:     benchmark.Enabled,
-		Result:      summaryAtTime.ComplianceResultSummary,
-		Checks:      summaryAtTime.SeverityResult,
-		EvaluatedAt: summaryAtTime.EvaluatedAt,
+		Result:      csResult,
+		Checks:      sResult,
+		EvaluatedAt: time.Unix(summaryAtTime.EvaluatedAtEpoch, 0),
 	}
+
 	return ctx.JSON(http.StatusOK, response)
 }
 
-// GetBenchmarkTree godoc
+// GetBenchmarkPolicies godoc
 //
-//	@Summary		Get benchmark tree
-//	@Description	Retrieving the benchmark tree, including all of its child benchmarks.
-//	@Security		BearerToken
-//	@Tags			compliance
-//	@Accept			json
-//	@Produce		json
-//	@Param			benchmark_id	path		string	true	"Benchmark ID"
-//	@Success		200				{object}	api.BenchmarkTree
-//	@Router			/compliance/api/v1/benchmarks/{benchmark_id}/tree [get]
-func (h *HttpHandler) GetBenchmarkTree(ctx echo.Context) error {
-	var status []kaytuTypes.PolicyStatus
+//	@Summary	Get benchmark policies
+//	@Security	BearerToken
+//	@Tags		compliance
+//	@Accept		json
+//	@Produce	json
+//	@Param		benchmark_id	path		string	true	"Benchmark ID"
+//	@Success	200				{object}	[]api.PolicySummary
+//	@Router		/compliance/api/v1/benchmarks/{benchmark_id}/policies [get]
+func (h *HttpHandler) GetBenchmarkPolicies(ctx echo.Context) error {
 	benchmarkID := ctx.Param("benchmark_id")
-	for k, va := range ctx.QueryParams() {
-		if k == "status" || k == "status[]" {
-			for _, v := range va {
-				status = append(status, kaytuTypes.PolicyStatus(v))
-			}
-		}
-	}
-	// tracer :
-	output1, span1 := tracer.Start(ctx.Request().Context(), "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_GetBenchmark")
 
+	policies, err := h.getPolicies(benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	policyResult, evaluatedAt, err := es.BenchmarkPolicySummary(h.logger, h.client, benchmarkID)
+	if err != nil {
+		return err
+	}
+
+	var policySummary []api.PolicySummary
+	for _, policy := range policies {
+		result := policyResult[policy.ID]
+		policySummary = append(policySummary, api.PolicySummary{
+			Policy:                policy,
+			Passed:                result.Passed,
+			FailedResourcesCount:  result.FailedResourcesCount,
+			TotalResourcesCount:   result.TotalResourcesCount,
+			FailedConnectionCount: result.FailedConnectionCount,
+			TotalConnectionCount:  result.TotalConnectionCount,
+			EvaluatedAt:           evaluatedAt,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, policySummary)
+}
+
+func (h *HttpHandler) getPolicies(benchmarkID string) ([]api.Policy, error) {
 	benchmark, err := h.db.GetBenchmark(benchmarkID)
 	if err != nil {
-		span1.RecordError(err)
-		span1.SetStatus(codes.Error, err.Error())
-		return err
+		return nil, err
 	}
-	span1.AddEvent("information", trace.WithAttributes(
-		attribute.String("benchmark ID", benchmark.ID),
-	))
-	span1.End()
 
-	if benchmark == nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid benchmarkID")
-	}
-	outputS2, span2 := tracer.Start(output1, "new_GetBenchmarkTree")
-
-	response, err := GetBenchmarkTree(outputS2, h.db, h.client, *benchmark, status)
-	if err != nil {
-		span2.RecordError(err)
-		span2.SetStatus(codes.Error, err.Error())
-		return err
-	}
-	span2.End()
-	return ctx.JSON(http.StatusOK, response)
-}
-
-func GetBenchmarkTree(ctx context.Context, db db.Database, client kaytu.Client, b db.Benchmark, status []kaytuTypes.PolicyStatus) (api.BenchmarkTree, error) {
-	tree := api.BenchmarkTree{
-		ID:       b.ID,
-		Title:    b.Title,
-		Children: nil,
-		Policies: nil,
-	}
-	// tracer :
-	output1, span1 := tracer.Start(ctx, "new_GetBenchmark(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span1.SetName("new_GetBenchmark(loop)")
-
-	for _, child := range b.Children {
-		// tracer :
-		_, span2 := tracer.Start(output1, "new_GetBenchmark", trace.WithSpanKind(trace.SpanKindServer))
-		span2.SetName("new_GetBenchmark")
-
-		childObj, err := db.GetBenchmark(child.ID)
+	policiesMap := map[string]api.Policy{}
+	for _, child := range benchmark.Children {
+		childPolicies, err := h.getPolicies(child.ID)
 		if err != nil {
-			span2.RecordError(err)
-			span2.SetStatus(codes.Error, err.Error())
-			return tree, err
-		}
-		span2.SetAttributes(
-			attribute.String("benchmark ID", childObj.ID),
-		)
-		span2.End()
-
-		childTree, err := GetBenchmarkTree(ctx, db, client, *childObj, status)
-		if err != nil {
-			return tree, err
+			return nil, err
 		}
 
-		tree.Children = append(tree.Children, childTree)
-	}
-	span1.End()
-
-	res, err := es.ListBenchmarkSummaries(client, &b.ID)
-	if err != nil {
-		return tree, err
+		for _, ch := range childPolicies {
+			policiesMap[ch.ID] = ch
+		}
 	}
 
-	for _, policy := range b.Policies {
-		pt := api.PolicyTree{
-			ID:          policy.ID,
-			Title:       policy.Title,
-			Severity:    policy.Severity,
-			Status:      kaytuTypes.PolicyStatusPASSED,
-			LastChecked: 0,
-		}
-
-		for _, bs := range res {
-			pt.Resources.Failed += bs.Resources.Failed
-			pt.Resources.Passed += bs.Resources.Passed
-
-			if bs.Resources.Failed == 0 {
-				pt.Accounts.Passed++
-			} else if bs.Resources.Failed > 0 {
-				pt.Accounts.Failed++
-			}
-
-			for _, ps := range bs.Policies {
-				if ps.PolicyID == policy.ID {
-					pt.LastChecked = bs.EvaluatedAt
-					pt.Status = kaytuTypes.PolicyStatusPASSED
-					if ps.TotalResult.AlarmCount > 0 || ps.TotalResult.ErrorCount > 0 {
-						pt.Status = kaytuTypes.PolicyStatusFAILED
-					} else if ps.TotalResult.InfoCount > 0 || ps.TotalResult.SkipCount > 0 {
-						pt.Status = kaytuTypes.PolicyStatusUNKNOWN
-					}
-				}
-			}
-		}
-		if len(status) > 0 {
-			contains := false
-			for _, s := range status {
-				if s == pt.Status {
-					contains = true
-				}
-			}
-
-			if !contains {
-				continue
-			}
-		}
-		tree.Policies = append(tree.Policies, pt)
+	for _, policy := range benchmark.Policies {
+		policiesMap[policy.ID] = policy.ToApi()
 	}
 
-	return tree, nil
+	var policies []api.Policy
+	for _, v := range policiesMap {
+		policies = append(policies, v)
+	}
+	return policies, nil
 }
 
 // GetBenchmarkTrend godoc
@@ -1061,25 +981,24 @@ func (h *HttpHandler) GetBenchmarkTrend(ctx echo.Context) error {
 	}
 
 	evaluationAcrossTime, err := es.FetchBenchmarkSummaryTrend(h.logger, h.client,
-		[]string{benchmarkID}, connectors, connectionIDs, resourceCollections, startTime, endTime, datapointCount)
+		[]string{benchmarkID}, connectionIDs, resourceCollections, startTime, endTime)
 	if err != nil {
 		return err
 	}
 
 	var response []api.BenchmarkTrendDatapoint
-	for timeKey, datapoint := range evaluationAcrossTime[benchmarkID] {
-		totalResultCount := datapoint.ComplianceResultSummary.OkCount + datapoint.ComplianceResultSummary.ErrorCount +
-			datapoint.ComplianceResultSummary.AlarmCount + datapoint.ComplianceResultSummary.InfoCount + datapoint.ComplianceResultSummary.SkipCount
-		totalChecksCount := datapoint.SeverityResult.CriticalCount + datapoint.SeverityResult.LowCount +
-			datapoint.SeverityResult.HighCount + datapoint.SeverityResult.MediumCount + datapoint.SeverityResult.UnknownCount +
-			datapoint.SeverityResult.PassedCount
-		if (totalResultCount + totalChecksCount) > 0 {
-			response = append(response, api.BenchmarkTrendDatapoint{
-				Timestamp: timeKey,
-				Result:    datapoint.ComplianceResultSummary,
-				Checks:    datapoint.SeverityResult,
-			})
-		}
+	for _, datapoint := range evaluationAcrossTime[benchmarkID] {
+		////totalResultCount := datapoint.ComplianceResultSummary.OkCount + datapoint.ComplianceResultSummary.ErrorCount +
+		////	datapoint.ComplianceResultSummary.AlarmCount + datapoint.ComplianceResultSummary.InfoCount + datapoint.ComplianceResultSummary.SkipCount
+		////totalChecksCount := datapoint.SeverityResult.CriticalCount + datapoint.SeverityResult.LowCount +
+		////	datapoint.SeverityResult.HighCount + datapoint.SeverityResult.MediumCount + datapoint.SeverityResult.UnknownCount +
+		////	datapoint.SeverityResult.PassedCount
+		//if (totalResultCount + totalChecksCount) > 0 {
+		response = append(response, api.BenchmarkTrendDatapoint{
+			Timestamp:     int(datapoint.DateEpoch),
+			SecurityScore: datapoint.Score,
+		})
+		//}
 	}
 
 	sort.Slice(response, func(i, j int) bool {
@@ -1138,52 +1057,57 @@ func (h *HttpHandler) CreateBenchmarkAssignment(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("benchmark %s not found", benchmarkId))
 	}
 
-	connectorType := source.Nil
+	//connectorType := source.Nil
 	// trace :
-	outputS2, span2 := tracer.Start(outputS1, "new_GetQuery(loop)", trace.WithSpanKind(trace.SpanKindServer))
-	span2.SetName("new_GetQuery(loop)")
+	//outputS2, span2 := tracer.Start(outputS1, "new_GetQuery(loop)", trace.WithSpanKind(trace.SpanKindServer))
+	//span2.SetName("new_GetQuery(loop)")
 
-	for _, policy := range benchmark.Policies {
-		if policy.QueryID == nil {
-			continue
-		}
-		//trace :
-		_, span3 := tracer.Start(outputS2, "new_GetQuery", trace.WithSpanKind(trace.SpanKindServer))
-		span3.SetName("new_GetQuery")
-
-		q, err := h.db.GetQuery(*policy.QueryID)
-		if err != nil {
-			span3.RecordError(err)
-			span3.SetStatus(codes.Error, err.Error())
-			return err
-		}
-		span3.SetAttributes(
-			attribute.String("query ID", q.ID),
-		)
-		span3.End()
-
-		if q == nil {
-			return fmt.Errorf("query %s not found", *policy.QueryID)
-		}
-
-		if t, _ := source.ParseType(q.Connector); t != source.Nil {
-			connectorType = t
-			break
-		}
+	ca := benchmark.ToApi()
+	err = benchmark.PopulateConnectors(context.Background(), h.db, &ca)
+	if err != nil {
+		return err
 	}
-	span2.End()
+	//
+	//for _, policy := range benchmark.Policies {
+	//	if policy.QueryID == nil {
+	//		continue
+	//	}
+	//	//trace :
+	//	_, span3 := tracer.Start(outputS2, "new_GetQuery", trace.WithSpanKind(trace.SpanKindServer))
+	//	span3.SetName("new_GetQuery")
+	//
+	//	q, err := h.db.GetQuery(*policy.QueryID)
+	//	if err != nil {
+	//		span3.RecordError(err)
+	//		span3.SetStatus(codes.Error, err.Error())
+	//		return err
+	//	}
+	//	span3.SetAttributes(
+	//		attribute.String("query ID", q.ID),
+	//	)
+	//	span3.End()
+	//
+	//	if q == nil {
+	//		return fmt.Errorf("query %s not found", *policy.QueryID)
+	//	}
+	//
+	//	if t, _ := source.ParseType(q.Connector); t != source.Nil {
+	//		connectorType = t
+	//		break
+	//	}
+	//}
+	//span2.End()
 
 	switch {
 	case len(connectionIDs) > 0:
 		connections := make([]onboardApi.Connection, 0)
 		if len(connectionIDs) == 1 && strings.ToLower(connectionIDs[0]) == "all" {
-			srcs, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), nil)
+			srcs, err := h.onboardClient.ListSources(httpclient.FromEchoContext(ctx), ca.Connectors)
 			if err != nil {
 				return err
 			}
 			for _, src := range srcs {
-				if src.Connector == connectorType &&
-					(src.LifecycleState == onboardApi.ConnectionLifecycleStateOnboard || src.LifecycleState == onboardApi.ConnectionLifecycleStateInProgress) {
+				if src.IsEnabled() {
 					connections = append(connections, src)
 				}
 			}
@@ -1313,6 +1237,10 @@ func (h *HttpHandler) ListAssignmentsByConnection(ctx echo.Context) error {
 	for _, benchmark := range benchmarks {
 		if benchmark.AutoAssign {
 			for _, src := range srcs {
+				if !src.IsEnabled() {
+					continue
+				}
+
 				exists := false
 				for _, assignment := range dbAssignments {
 					if assignment.ConnectionId != nil && *assignment.ConnectionId == src.ID.String() && assignment.BenchmarkId == benchmark.ID {
@@ -1388,6 +1316,9 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 		}
 
 		for _, connection := range connections {
+			if !connection.IsEnabled() {
+				continue
+			}
 			ba := api.BenchmarkAssignedConnection{
 				ConnectionID:           connection.ID.String(),
 				ProviderConnectionID:   connection.ConnectionID,
@@ -1433,6 +1364,12 @@ func (h *HttpHandler) ListAssignmentsByBenchmark(ctx echo.Context) error {
 	resp := api.BenchmarkAssignedEntities{
 		Connections:         assignedConnections,
 		ResourceCollections: assignedResourceCollections,
+	}
+
+	for idx, conn := range resp.Connections {
+		conn.ProviderConnectionID = demo.EncodeResponseData(ctx, conn.ProviderConnectionID)
+		conn.ProviderConnectionName = demo.EncodeResponseData(ctx, conn.ProviderConnectionName)
+		resp.Connections[idx] = conn
 	}
 
 	return ctx.JSON(http.StatusOK, resp)

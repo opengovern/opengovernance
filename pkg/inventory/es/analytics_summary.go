@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/resource"
-	"github.com/kaytu-io/kaytu-engine/pkg/analytics/es/spend"
 	inventoryApi "github.com/kaytu-io/kaytu-engine/pkg/inventory/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -52,131 +51,6 @@ func FetchConnectionAnalyticMetricCountAtTime(client kaytu.Client, metricIDs []s
 		})
 	}
 
-	if len(resourceCollections) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"resource_collection": resourceCollections},
-		})
-		idx = resource.ResourceCollectionsAnalyticsConnectionSummaryIndex
-	}
-
-	if len(connectors) > 0 {
-		connectorStrings := make([]string, 0, len(connectors))
-		for _, provider := range connectors {
-			connectorStrings = append(connectorStrings, provider.String())
-		}
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"connector": connectorStrings},
-		})
-	}
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"evaluated_at": map[string]string{
-				"lte": strconv.FormatInt(t.UnixMilli(), 10),
-				"gte": strconv.FormatInt(t.Add(-1*timeAtMaxSearchFrame).UnixMilli(), 10),
-			},
-		},
-	})
-	res["size"] = 0
-	res["aggs"] = map[string]any{
-		"metric_group": map[string]any{
-			"terms": map[string]any{
-				"field": "metric_id",
-				"size":  size,
-			},
-			"aggs": map[string]any{
-				"latest": map[string]any{
-					"top_hits": map[string]any{
-						"size": 1,
-						"sort": map[string]string{
-							"evaluated_at": "desc",
-						},
-					},
-				},
-			},
-		},
-	}
-
-	result := make(map[string]int)
-	for _, connectionId := range connectionIDs {
-		localFilter := append(filters, map[string]any{
-			"term": map[string]string{"connection_id": connectionId},
-		})
-		res["query"] = map[string]any{
-			"bool": map[string]any{
-				"filter": localFilter,
-			},
-		}
-		b, err := json.Marshal(res)
-		if err != nil {
-			return nil, err
-		}
-
-		query := string(b)
-
-		fmt.Println("FetchConnectionAnalyticMetricCountAtTime = ", query)
-		var response FetchConnectionAnalyticMetricCountAtTimeResponse
-		err = client.Search(context.Background(), idx, query, &response)
-		if err != nil {
-			return nil, err
-		}
-		for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
-			for _, hit := range metricBucket.Latest.Hits.Hits {
-				result[hit.Source.MetricID] += hit.Source.ResourceCount
-			}
-		}
-	}
-
-	return result, nil
-}
-
-type FetchConnectorAnalyticMetricCountAtTimeResponse struct {
-	Aggregations struct {
-		MetricGroup struct {
-			Buckets []struct {
-				Key            string `json:"key"`
-				ConnectorGroup struct {
-					Buckets []struct {
-						Key    string `json:"key"`
-						Latest struct {
-							Hits struct {
-								Hits []struct {
-									Source resource.ConnectorMetricTrendSummary `json:"_source"`
-								} `json:"hits"`
-							} `json:"hits"`
-						} `json:"latest"`
-					} `json:"buckets"`
-				} `json:"connector_group"`
-			} `json:"buckets"`
-		} `json:"metric_group"`
-	} `json:"aggregations"`
-}
-
-func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client,
-	metricIDs []string, connectors []source.Type, resourceCollections []string, t time.Time, size int) (map[string]int, error) {
-	idx := resource.AnalyticsConnectorSummaryIndex
-	res := make(map[string]any)
-	var filters []any
-
-	if len(metricIDs) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"metric_id": metricIDs},
-		})
-	}
-	if len(connectors) > 0 {
-		connectorStrings := make([]string, 0, len(connectors))
-		for _, provider := range connectors {
-			connectorStrings = append(connectorStrings, provider.String())
-		}
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"connector": connectorStrings},
-		})
-	}
-	if len(resourceCollections) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"resource_collection": resourceCollections},
-		})
-		idx = resource.ResourceCollectionsAnalyticsConnectorSummaryIndex
-	}
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
 			"evaluated_at": map[string]string{
@@ -198,24 +72,147 @@ func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client,
 				"size":  size,
 			},
 			"aggs": map[string]any{
-				"connector_group": map[string]any{
-					"terms": map[string]any{
-						"field": "connector",
-						"size":  size,
-					},
-					"aggs": map[string]any{
-						"latest": map[string]any{
-							"top_hits": map[string]any{
-								"size": 1,
-								"sort": map[string]string{
-									"evaluated_at": "desc",
-								},
-							},
+				"latest": map[string]any{
+					"top_hits": map[string]any{
+						"size": 1,
+						"sort": map[string]string{
+							"evaluated_at": "desc",
 						},
 					},
 				},
 			},
 		},
+	}
+
+	includeConnectionMap := make(map[string]bool)
+	for _, connectionID := range connectionIDs {
+		includeConnectionMap[connectionID] = true
+	}
+	includeConnectorMap := make(map[string]bool)
+	for _, connector := range connectors {
+		includeConnectorMap[connector.String()] = true
+	}
+	includeResourceCollectionMap := make(map[string]bool)
+	for _, resourceCollection := range resourceCollections {
+		idx = resource.ResourceCollectionsAnalyticsConnectionSummaryIndex
+		includeResourceCollectionMap[resourceCollection] = true
+	}
+
+	result := make(map[string]int)
+
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+
+	query := string(b)
+
+	fmt.Println("FetchConnectionAnalyticMetricCountAtTime = ", query)
+	var response FetchConnectionAnalyticMetricCountAtTimeResponse
+	err = client.Search(context.Background(), idx, query, &response)
+	if err != nil {
+		return nil, err
+	}
+	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
+		for _, hit := range metricBucket.Latest.Hits.Hits {
+			handleConnResults := func(connResults resource.ConnectionMetricTrendSummaryResult) {
+				for _, connectionResults := range connResults.Connections {
+					if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.ConnectionID]) ||
+						(len(connectors) > 0 && !includeConnectorMap[connectionResults.Connector.String()]) {
+						continue
+					}
+					result[hit.Source.MetricID] += connectionResults.ResourceCount
+				}
+			}
+
+			if len(resourceCollections) > 0 {
+				for rcId, rcResult := range hit.Source.ResourceCollections {
+					if !includeResourceCollectionMap[rcId] {
+						continue
+					}
+					handleConnResults(rcResult)
+				}
+			} else if hit.Source.Connections != nil {
+				handleConnResults(*hit.Source.Connections)
+			} else {
+				return nil, errors.New("no connections or resource collections found")
+			}
+		}
+	}
+
+	return result, nil
+}
+
+type FetchConnectorAnalyticMetricCountAtTimeResponse struct {
+	Aggregations struct {
+		MetricGroup struct {
+			Buckets []struct {
+				Key    string `json:"key"`
+				Latest struct {
+					Hits struct {
+						Hits []struct {
+							Source resource.ConnectorMetricTrendSummary `json:"_source"`
+						} `json:"hits"`
+					} `json:"hits"`
+				} `json:"latest"`
+			} `json:"buckets"`
+		} `json:"metric_group"`
+	} `json:"aggregations"`
+}
+
+func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client,
+	metricIDs []string, connectors []source.Type, resourceCollections []string, t time.Time, size int) (map[string]int, error) {
+	idx := resource.AnalyticsConnectorSummaryIndex
+	res := make(map[string]any)
+	var filters []any
+
+	if len(metricIDs) > 0 {
+		filters = append(filters, map[string]any{
+			"terms": map[string][]string{"metric_id": metricIDs},
+		})
+	}
+
+	filters = append(filters, map[string]any{
+		"range": map[string]any{
+			"evaluated_at": map[string]string{
+				"lte": strconv.FormatInt(t.UnixMilli(), 10),
+				"gte": strconv.FormatInt(t.Add(-1*timeAtMaxSearchFrame).UnixMilli(), 10),
+			},
+		},
+	})
+	res["size"] = 0
+	res["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
+	res["aggs"] = map[string]any{
+		"metric_group": map[string]any{
+			"terms": map[string]any{
+				"field": "metric_id",
+				"size":  size,
+			},
+			"aggs": map[string]any{
+				"latest": map[string]any{
+					"top_hits": map[string]any{
+						"size": 1,
+						"sort": map[string]string{
+							"evaluated_at": "desc",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	includeConnectorMap := make(map[string]bool)
+	for _, connector := range connectors {
+		includeConnectorMap[connector.String()] = true
+	}
+	includeResourceCollectionMap := make(map[string]bool)
+	for _, resourceCollection := range resourceCollections {
+		idx = resource.ResourceCollectionsAnalyticsConnectorSummaryIndex
+		includeResourceCollectionMap[resourceCollection] = true
 	}
 
 	b, err := json.Marshal(res)
@@ -233,13 +230,42 @@ func FetchConnectorAnalyticMetricCountAtTime(client kaytu.Client,
 
 	result := make(map[string]int)
 	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
-		for _, connector := range metricBucket.ConnectorGroup.Buckets {
-			for _, hit := range connector.Latest.Hits.Hits {
-				result[hit.Source.MetricID] += hit.Source.ResourceCount
+		for _, hit := range metricBucket.Latest.Hits.Hits {
+			handleConnResults := func(connResults resource.ConnectorMetricTrendSummaryResult) {
+				for _, connectorResults := range connResults.Connectors {
+					if len(connectors) > 0 && !includeConnectorMap[connectorResults.Connector.String()] {
+						continue
+					}
+					result[hit.Source.MetricID] += connectorResults.ResourceCount
+				}
+			}
+
+			if len(resourceCollections) > 0 {
+				for rcId, rcResult := range hit.Source.ResourceCollections {
+					if !includeResourceCollectionMap[rcId] {
+						continue
+					}
+					handleConnResults(rcResult)
+				}
+			} else if hit.Source.Connectors != nil {
+				handleConnResults(*hit.Source.Connectors)
+			} else {
+				return nil, errors.New("no connectors or resource collections found")
 			}
 		}
 	}
 	return result, nil
+}
+
+type DatapointWithFailures struct {
+	Cost                       float64
+	Count                      int
+	TotalSuccessfulConnections int64
+	TotalConnections           int64
+
+	connectionSuccess map[string]bool
+	connectorSuccess  map[string]int64
+	connectorTotal    map[string]int64
 }
 
 type ConnectionMetricTrendSummaryQueryResponse struct {
@@ -265,10 +291,14 @@ type ConnectionMetricTrendSummaryQueryResponse struct {
 	} `json:"aggregations"`
 }
 
-func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, metricIDs, resourceCollections []string, startTime, endTime time.Time, datapointCount, size int) (map[int]DatapointWithFailures, error) {
+func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs []string, connectors []source.Type, metricIDs, resourceCollections []string, startTime, endTime time.Time, datapointCount, size int) (map[int]DatapointWithFailures, error) {
 	idx := resource.AnalyticsConnectionSummaryIndex
 	res := make(map[string]any)
 	var filters []any
+
+	if len(connectionIDs) == 0 {
+		return nil, fmt.Errorf("no connection IDs provided")
+	}
 
 	filters = append(filters, map[string]any{
 		"terms": map[string][]string{"metric_id": metricIDs},
@@ -281,13 +311,12 @@ func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, m
 			},
 		},
 	})
-	if len(resourceCollections) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"resource_collection": resourceCollections},
-		})
-		idx = resource.ResourceCollectionsAnalyticsConnectionSummaryIndex
-	}
 	res["size"] = 0
+	res["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
+	}
 	startTimeUnixMilli := startTime.UnixMilli()
 	endTimeUnixMilli := endTime.UnixMilli()
 	step := int(math.Ceil(float64(endTimeUnixMilli-startTimeUnixMilli) / float64(datapointCount)))
@@ -325,48 +354,73 @@ func FetchConnectionMetricTrendSummaryPage(client kaytu.Client, connectionIDs, m
 		},
 	}
 
-	hits := make(map[int]DatapointWithFailures)
+	includeConnectionMap := make(map[string]bool)
 	for _, connectionID := range connectionIDs {
-		localFilters := append(filters, map[string]any{
-			"term": map[string]string{"connection_id": connectionID},
-		})
-		res["query"] = map[string]any{
-			"bool": map[string]any{
-				"filter": localFilters,
-			},
-		}
+		includeConnectionMap[connectionID] = true
+	}
+	includeConnectorMap := make(map[string]bool)
+	for _, connector := range connectors {
+		includeConnectorMap[connector.String()] = true
+	}
+	includeResourceCollectionMap := make(map[string]bool)
+	for _, resourceCollection := range resourceCollections {
+		idx = resource.ResourceCollectionsAnalyticsConnectionSummaryIndex
+		includeResourceCollectionMap[resourceCollection] = true
+	}
 
-		b, err := json.Marshal(res)
-		if err != nil {
-			return nil, err
-		}
-		query := string(b)
+	hits := make(map[int]DatapointWithFailures)
 
-		fmt.Println("FetchConnectionMetricTrendSummaryPage = ", query)
-		var response ConnectionMetricTrendSummaryQueryResponse
-		err = client.Search(context.Background(), idx, query, &response)
-		if err != nil {
-			return nil, err
-		}
-		for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
-			for _, evaluatedAtRangeBucket := range metricBucket.EvaluatedAtRangeGroup.Buckets {
-				rangeKey := int((evaluatedAtRangeBucket.From + evaluatedAtRangeBucket.To) / 2)
-				for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
-					v, ok := hits[rangeKey]
-					if !ok {
-						v = DatapointWithFailures{
-							connectionSuccess: map[string]bool{},
+	b, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+	query := string(b)
+
+	fmt.Println("FetchConnectionMetricTrendSummaryPage = ", query)
+	var response ConnectionMetricTrendSummaryQueryResponse
+	err = client.Search(context.Background(), idx, query, &response)
+	if err != nil {
+		return nil, err
+	}
+	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
+		for _, evaluatedAtRangeBucket := range metricBucket.EvaluatedAtRangeGroup.Buckets {
+			rangeKey := int((evaluatedAtRangeBucket.From + evaluatedAtRangeBucket.To) / 2)
+			for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
+				v, ok := hits[rangeKey]
+				if !ok {
+					v = DatapointWithFailures{
+						connectionSuccess: map[string]bool{},
+					}
+				}
+
+				handleConnResults := func(connResults resource.ConnectionMetricTrendSummaryResult) {
+					for _, connectionResults := range connResults.Connections {
+						if (len(connectionIDs) > 0 && !includeConnectionMap[connectionResults.ConnectionID]) ||
+							(len(connectors) > 0 && !includeConnectorMap[connectionResults.Connector.String()]) {
+							continue
+						}
+						v.Count += connectionResults.ResourceCount
+						if _, ok := v.connectionSuccess[connectionResults.ConnectionID]; !ok {
+							v.connectionSuccess[connectionResults.ConnectionID] = connectionResults.IsJobSuccessful
+						} else {
+							v.connectionSuccess[connectionResults.ConnectionID] = v.connectionSuccess[connectionResults.ConnectionID] && connectionResults.IsJobSuccessful
 						}
 					}
-
-					v.Count += hit.Source.ResourceCount
-					if _, ok := v.connectionSuccess[hit.Source.ConnectionID.String()]; !ok {
-						v.connectionSuccess[hit.Source.ConnectionID.String()] = hit.Source.IsJobSuccessful
-					} else {
-						v.connectionSuccess[hit.Source.ConnectionID.String()] = v.connectionSuccess[hit.Source.ConnectionID.String()] && hit.Source.IsJobSuccessful
-					}
-					hits[rangeKey] = v
 				}
+
+				if len(resourceCollections) > 0 {
+					for rcId, rcResult := range hit.Source.ResourceCollections {
+						if !includeResourceCollectionMap[rcId] {
+							continue
+						}
+						handleConnResults(rcResult)
+					}
+				} else if hit.Source.Connections != nil {
+					handleConnResults(*hit.Source.Connections)
+				} else {
+					return nil, errors.New("no connections or resource collections found")
+				}
+				hits[rangeKey] = v
 			}
 		}
 	}
@@ -389,39 +443,23 @@ type ConnectorMetricTrendSummaryQueryResponse struct {
 	Aggregations struct {
 		MetricGroup struct {
 			Buckets []struct {
-				Key            string `json:"key"`
-				ConnectorGroup struct {
+				Key                   string `json:"key"`
+				EvaluatedAtRangeGroup struct {
 					Buckets []struct {
-						Key                   string `json:"key"`
-						EvaluatedAtRangeGroup struct {
-							Buckets []struct {
-								From   float64 `json:"from"`
-								To     float64 `json:"to"`
-								Latest struct {
-									Hits struct {
-										Hits []struct {
-											Source resource.ConnectorMetricTrendSummary `json:"_source"`
-										} `json:"hits"`
-									} `json:"hits"`
-								} `json:"latest"`
-							} `json:"buckets"`
-						} `json:"evaluated_at_range_group"`
+						From   float64 `json:"from"`
+						To     float64 `json:"to"`
+						Latest struct {
+							Hits struct {
+								Hits []struct {
+									Source resource.ConnectorMetricTrendSummary `json:"_source"`
+								} `json:"hits"`
+							} `json:"hits"`
+						} `json:"latest"`
 					} `json:"buckets"`
-				} `json:"connector_group"`
+				} `json:"evaluated_at_range_group"`
 			} `json:"buckets"`
 		} `json:"metric_group"`
 	} `json:"aggregations"`
-}
-
-type DatapointWithFailures struct {
-	Cost                       float64
-	Count                      int
-	TotalSuccessfulConnections int64
-	TotalConnections           int64
-
-	connectionSuccess map[string]bool
-	connectorSuccess  map[string]int64
-	connectorTotal    map[string]int64
 }
 
 func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []source.Type, metricIDs []string, resourceCollections []string, startTime time.Time, endTime time.Time, datapointCount int, size int) (map[int]DatapointWithFailures, error) {
@@ -433,21 +471,6 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 		"terms": map[string][]string{"metric_id": metricIDs},
 	})
 
-	if len(connectors) > 0 {
-		connectorsStr := make([]string, 0, len(connectors))
-		for _, connector := range connectors {
-			connectorsStr = append(connectorsStr, string(connector))
-		}
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"connector": connectorsStr},
-		})
-	}
-	if len(resourceCollections) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"resource_collection": resourceCollections},
-		})
-		idx = resource.ResourceCollectionsAnalyticsConnectorSummaryIndex
-	}
 	filters = append(filters, map[string]any{
 		"range": map[string]any{
 			"evaluated_at": map[string]string{
@@ -481,25 +504,17 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 				"size":  size,
 			},
 			"aggs": map[string]any{
-				"connector_group": map[string]any{
-					"terms": map[string]any{
-						"field": "connector",
-						"size":  size,
+				"evaluated_at_range_group": map[string]any{
+					"range": map[string]any{
+						"field":  "evaluated_at",
+						"ranges": ranges,
 					},
 					"aggs": map[string]any{
-						"evaluated_at_range_group": map[string]any{
-							"range": map[string]any{
-								"field":  "evaluated_at",
-								"ranges": ranges,
-							},
-							"aggs": map[string]any{
-								"latest": map[string]any{
-									"top_hits": map[string]any{
-										"size": 1,
-										"sort": map[string]string{
-											"evaluated_at": "desc",
-										},
-									},
+						"latest": map[string]any{
+							"top_hits": map[string]any{
+								"size": 1,
+								"sort": map[string]string{
+									"evaluated_at": "desc",
 								},
 							},
 						},
@@ -507,6 +522,16 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 				},
 			},
 		},
+	}
+
+	includeConnectorMap := make(map[string]bool)
+	for _, connector := range connectors {
+		includeConnectorMap[connector.String()] = true
+	}
+	includeResourceCollectionMap := make(map[string]bool)
+	for _, resourceCollection := range resourceCollections {
+		idx = resource.ResourceCollectionsAnalyticsConnectorSummaryIndex
+		includeResourceCollectionMap[resourceCollection] = true
 	}
 
 	b, err := json.Marshal(res)
@@ -524,28 +549,46 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 
 	hits := make(map[int]DatapointWithFailures)
 	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
-		for _, connector := range metricBucket.ConnectorGroup.Buckets {
-			for _, evaluatedAtRangeBucket := range connector.EvaluatedAtRangeGroup.Buckets {
-				rangeKey := int((evaluatedAtRangeBucket.From + evaluatedAtRangeBucket.To) / 2)
-				for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
-					v, ok := hits[rangeKey]
-					if !ok {
-						v = DatapointWithFailures{
-							connectorTotal:   map[string]int64{},
-							connectorSuccess: map[string]int64{},
-						}
-						hits[rangeKey] = v
-					}
-
-					v.Count += hit.Source.ResourceCount
-					v.connectorTotal[hit.Source.Connector.String()] = max(v.connectorTotal[hit.Source.Connector.String()], hit.Source.TotalConnections)
-					if _, ok := v.connectorSuccess[hit.Source.Connector.String()]; !ok {
-						v.connectorSuccess[hit.Source.Connector.String()] = hit.Source.TotalSuccessfulConnections
-					} else {
-						v.connectorSuccess[hit.Source.Connector.String()] = min(v.connectorSuccess[hit.Source.Connector.String()], hit.Source.TotalSuccessfulConnections)
+		for _, evaluatedAtRangeBucket := range metricBucket.EvaluatedAtRangeGroup.Buckets {
+			rangeKey := int((evaluatedAtRangeBucket.From + evaluatedAtRangeBucket.To) / 2)
+			for _, hit := range evaluatedAtRangeBucket.Latest.Hits.Hits {
+				v, ok := hits[rangeKey]
+				if !ok {
+					v = DatapointWithFailures{
+						connectorTotal:   map[string]int64{},
+						connectorSuccess: map[string]int64{},
 					}
 					hits[rangeKey] = v
 				}
+
+				handleConnResults := func(connResults resource.ConnectorMetricTrendSummaryResult) {
+					for _, connectorResults := range connResults.Connectors {
+						if len(connectors) > 0 && !includeConnectorMap[connectorResults.Connector.String()] {
+							continue
+						}
+						v.Count += connectorResults.ResourceCount
+						v.connectorTotal[connectorResults.Connector.String()] = max(v.connectorTotal[connectorResults.Connector.String()], connectorResults.TotalConnections)
+						if _, ok := v.connectorSuccess[connectorResults.Connector.String()]; !ok {
+							v.connectorSuccess[connectorResults.Connector.String()] = connectorResults.TotalSuccessfulConnections
+						} else {
+							v.connectorSuccess[connectorResults.Connector.String()] = min(v.connectorSuccess[connectorResults.Connector.String()], connectorResults.TotalSuccessfulConnections)
+						}
+					}
+				}
+
+				if len(resourceCollections) > 0 {
+					for rcId, rcResult := range hit.Source.ResourceCollections {
+						if !includeResourceCollectionMap[rcId] {
+							continue
+						}
+						handleConnResults(rcResult)
+					}
+				} else if hit.Source.Connectors != nil {
+					handleConnResults(*hit.Source.Connectors)
+				} else {
+					return nil, errors.New("no connectors or resource collections found")
+				}
+				hits[rangeKey] = v
 			}
 		}
 	}
@@ -565,144 +608,21 @@ func FetchConnectorMetricTrendSummaryPage(client kaytu.Client, connectors []sour
 	return hits, nil
 }
 
-type RegionSummaryQueryResponse struct {
-	Aggregations struct {
-		MetricGroup struct {
-			Buckets []struct {
-				Key               string `json:"key"`
-				ConnectionIDGroup struct {
-					Buckets []struct {
-						Key         string `json:"key"`
-						RegionGroup struct {
-							Buckets []struct {
-								Key    string `json:"key"`
-								Latest struct {
-									Hits struct {
-										Hits []struct {
-											Source resource.RegionMetricTrendSummary `json:"_source"`
-										} `json:"hits"`
-									} `json:"hits"`
-								} `json:"latest"`
-							} `json:"buckets"`
-						} `json:"region_group"`
-					} `json:"buckets"`
-				} `json:"connection_id_group"`
-			} `json:"buckets"`
-		} `json:"metric_group"`
-	} `json:"aggregations"`
-}
-
-func FetchRegionSummaryPage(client kaytu.Client, connectors []source.Type, connectionIDs []string, sort []map[string]any, timeAt time.Time, size int) (map[string]int, error) {
-	res := make(map[string]any)
-
-	var filters []any
-
-	if len(connectors) > 0 {
-		connectorStr := make([]string, 0, len(connectors))
-		for _, connector := range connectors {
-			connectorStr = append(connectorStr, connector.String())
-		}
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"connector": connectorStr},
-		})
-	}
-	if len(connectionIDs) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"connection_id": connectionIDs},
-		})
-	}
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"evaluated_at": map[string]any{
-				"lte": strconv.FormatInt(timeAt.UnixMilli(), 10),
-				"gte": strconv.FormatInt(timeAt.Add(-1*timeAtMaxSearchFrame).UnixMilli(), 10),
-			},
-		},
-	})
-	res["size"] = 0
-	if sort != nil {
-		res["sort"] = sort
-	}
-	res["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": filters,
-		},
-	}
-	res["aggs"] = map[string]any{
-		"metric_group": map[string]any{
-			"terms": map[string]any{
-				"field": "metric_id",
-				"size":  size,
-			},
-			"aggs": map[string]any{
-				"connection_id_group": map[string]any{
-					"terms": map[string]any{
-						"field": "connection_id",
-						"size":  size,
-					},
-					"aggs": map[string]any{
-						"region_group": map[string]any{
-							"terms": map[string]any{
-								"field": "region",
-								"size":  size,
-							},
-							"aggs": map[string]any{
-								"latest": map[string]any{
-									"top_hits": map[string]any{
-										"size": 1,
-										"sort": map[string]string{
-											"evaluated_at": "desc",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	b, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-	query := string(b)
-
-	fmt.Println("FetchRegionSummaryPage query = ", query)
-	var response RegionSummaryQueryResponse
-	err = client.Search(context.Background(), resource.AnalyticsRegionSummaryIndex, query, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	hits := make(map[string]int)
-	for _, metricBucket := range response.Aggregations.MetricGroup.Buckets {
-		for _, connectionIDBucket := range metricBucket.ConnectionIDGroup.Buckets {
-			for _, regionBucket := range connectionIDBucket.RegionGroup.Buckets {
-				for _, hit := range regionBucket.Latest.Hits.Hits {
-					hits[hit.Source.Region] += hit.Source.ResourceCount
-				}
-			}
-		}
-	}
-	return hits, nil
-}
-
 type FetchConnectionAnalyticsResourcesCountAtTimeResponse struct {
 	Took         int `json:"took"`
 	Aggregations struct {
-		ConnectionIDGroup struct {
+		MetricIDGroup struct {
 			Buckets []struct {
-				Key             string `json:"key"`
-				SumMetricGroups struct {
-					Value float64 `json:"value"`
-				} `json:"sum_metric_groups"`
-				LatestAvailable struct {
-					Value float64 `json:"value"`
-				} `json:"latest_available"`
+				Key    string `json:"key"`
+				Latest struct {
+					Hits struct {
+						Hits []struct {
+							Source resource.ConnectionMetricTrendSummary `json:"_source"`
+						} `json:"hits"`
+					} `json:"hits"`
+				} `json:"latest"`
 			} `json:"buckets"`
-		} `json:"connection_id_group"`
+		} `json:"metric_id_group"`
 	} `json:"aggregations"`
 }
 
@@ -729,22 +649,6 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 		})
 	}
 
-	if len(connectors) > 0 {
-		connectorsStr := make([]string, 0, len(connectors))
-		for _, c := range connectors {
-			connectorsStr = append(connectorsStr, c.String())
-		}
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"connector": connectorsStr},
-		})
-	}
-
-	if len(connectionIDs) > 0 {
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"connection_id": connectionIDs},
-		})
-	}
-
 	res["size"] = 0
 	res["query"] = map[string]any{
 		"bool": map[string]any{
@@ -753,40 +657,31 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 	}
 
 	res["aggs"] = map[string]any{
-		"connection_id_group": map[string]any{
+		"metric_id_group": map[string]any{
 			"terms": map[string]any{
-				"field": "connection_id",
+				"field": "metric_id",
 				"size":  size,
 			},
 			"aggs": map[string]any{
-				"metric_group": map[string]any{
-					"terms": map[string]any{
-						"field": "metric_id",
-						"size":  size,
-					},
-					"aggs": map[string]any{
-						"latest_quantity": map[string]any{
-							"scripted_metric": map[string]any{
-								"init_script":    "state.quantities = new TreeMap()",
-								"map_script":     "state.quantities.put(doc.evaluated_at.value, [doc.evaluated_at.value, doc.resource_count.value])",
-								"combine_script": "return state.quantities.lastEntry().getValue()",
-								"reduce_script":  "long maxkey = 0; long qty = 0; for (a in states) {def currentKey = a[0]; if (currentKey > maxkey) {maxkey = currentKey; qty = a[1]} } return qty;",
-							},
+				"latest": map[string]any{
+					"top_hits": map[string]any{
+						"size": 1,
+						"sort": map[string]string{
+							"evaluated_at": "desc",
 						},
-					},
-				},
-				"sum_metric_groups": map[string]any{
-					"sum_bucket": map[string]any{
-						"buckets_path": "metric_group>latest_quantity.value",
-					},
-				},
-				"latest_available": map[string]any{
-					"max": map[string]any{
-						"field": "evaluated_at",
 					},
 				},
 			},
 		},
+	}
+
+	includeConnectionMap := make(map[string]bool)
+	for _, connectionID := range connectionIDs {
+		includeConnectionMap[connectionID] = true
+	}
+	includeConnectorMap := make(map[string]bool)
+	for _, connector := range connectors {
+		includeConnectorMap[connector.String()] = true
 	}
 
 	b, err := json.Marshal(res)
@@ -797,173 +692,62 @@ func FetchConnectionAnalyticsResourcesCountAtTime(client kaytu.Client, connector
 	query := string(b)
 	fmt.Println("FetchConnectionAnalyticsResourcesCountAtTime query =", query)
 	var response FetchConnectionAnalyticsResourcesCountAtTimeResponse
-	err = client.SearchWithFilterPath(
+	err = client.Search(
 		context.Background(),
 		resource.AnalyticsConnectionSummaryIndex,
 		query,
-		[]string{
-			"took",
-			"aggregations.connection_id_group.buckets.key",
-			"aggregations.connection_id_group.buckets.latest_available.value",
-			"aggregations.connection_id_group.buckets.sum_metric_groups.value",
-		},
 		&response)
 	if err != nil {
 		return nil, err
 	}
 
-	hits := make(map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue)
-	for _, connectionIdBucket := range response.Aggregations.ConnectionIDGroup.Buckets {
-		hits[connectionIdBucket.Key] = FetchConnectionAnalyticsResourcesCountAtTimeReturnValue{
-			ResourceCountsSum: int(connectionIdBucket.SumMetricGroups.Value),
-			LatestEvaluatedAt: int64(connectionIdBucket.LatestAvailable.Value),
-		}
-	}
-	return hits, nil
-}
-
-type FetchConnectorAnalyticsResourcesCountAtResponse struct {
-	Aggregations struct {
-		ConnectorGroup struct {
-			Key     string `json:"key"`
-			Buckets []struct {
-				Key         string `json:"key"`
-				MetricGroup struct {
-					Key     string `json:"key"`
-					Buckets []struct {
-						Latest struct {
-							Hits struct {
-								Hits []struct {
-									Source resource.ConnectorMetricTrendSummary `json:"_source"`
-								} `json:"hits"`
-							} `json:"hits"`
-						} `json:"latest"`
-					} `json:"buckets"`
-				} `json:"metric_group"`
-			} `json:"buckets"`
-		} `json:"connector_group"`
-	} `json:"aggregations"`
-}
-
-func FetchConnectorAnalyticsResourcesCountAtTime(client kaytu.Client, connectors []source.Type, t time.Time, size int) ([]resource.ConnectorMetricTrendSummary, error) {
-	var hits []resource.ConnectorMetricTrendSummary
-	res := make(map[string]any)
-	var filters []any
-
-	filters = append(filters, map[string]any{
-		"range": map[string]any{
-			"evaluated_at": map[string]any{
-				"lte": t.UnixMilli(),
-				"gte": t.Add(-1 * timeAtMaxSearchFrame).UnixMilli(),
-			},
-		},
-	})
-
-	if len(connectors) > 0 {
-		connectorsStr := make([]string, 0, len(connectors))
-		for _, c := range connectors {
-			connectorsStr = append(connectorsStr, c.String())
-		}
-		filters = append(filters, map[string]any{
-			"terms": map[string][]string{"connector": connectorsStr},
-		})
-	}
-
-	res["size"] = 0
-	res["query"] = map[string]any{
-		"bool": map[string]any{
-			"filter": filters,
-		},
-	}
-
-	res["aggs"] = map[string]any{
-		"connector_group": map[string]any{
-			"terms": map[string]any{
-				"field": "connector",
-				"size":  size,
-			},
-			"aggs": map[string]any{
-				"metric_group": map[string]any{
-					"terms": map[string]any{
-						"field": "metric_id",
-						"size":  size,
-					},
-					"aggs": map[string]any{
-						"latest": map[string]any{
-							"top_hits": map[string]any{
-								"size": 1,
-								"sort": map[string]string{
-									"evaluated_at": "desc",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	b, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-
-	query := string(b)
-	fmt.Println("FetchConnectorAnalyticsResourcesCountAtResponse query =", query)
-	var response FetchConnectorAnalyticsResourcesCountAtResponse
-	err = client.Search(context.Background(), resource.AnalyticsConnectorSummaryIndex, query, &response)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, connectorBucket := range response.Aggregations.ConnectorGroup.Buckets {
-		for _, metricBucket := range connectorBucket.MetricGroup.Buckets {
-			for _, hit := range metricBucket.Latest.Hits.Hits {
-				hits = append(hits, hit.Source)
+	result := make(map[string]FetchConnectionAnalyticsResourcesCountAtTimeReturnValue)
+	for _, metricBucket := range response.Aggregations.MetricIDGroup.Buckets {
+		for _, hit := range metricBucket.Latest.Hits.Hits {
+			for _, connectionResults := range hit.Source.Connections.Connections {
+				v := result[connectionResults.ConnectionID]
+				v.ResourceCountsSum += connectionResults.ResourceCount
+				v.LatestEvaluatedAt = max(v.LatestEvaluatedAt, hit.Source.EvaluatedAt)
+				result[connectionResults.ConnectionID] = v
 			}
 		}
 	}
-	return hits, nil
+
+	return result, nil
 }
 
 type AssetTableByDimensionQueryResponse struct {
 	Aggregations struct {
-		DimensionGroup struct {
+		MetricIdGroup struct {
 			Buckets []struct {
 				Key       string `json:"key"`
 				DateGroup struct {
 					Buckets []struct {
-						Key      string `json:"key"`
-						SumGroup struct {
-							Value float64 `json:"value"`
-						} `json:"sum_group"`
+						Key    string `json:"key"`
 						Latest struct {
 							Hits struct {
 								Hits []struct {
-									Source spend.ConnectionMetricTrendSummary `json:"_source"`
+									Source resource.ConnectionMetricTrendSummary `json:"_source"`
 								} `json:"hits"`
 							} `json:"hits"`
 						} `json:"latest"`
 					} `json:"buckets"`
 				} `json:"date_group"`
 			} `json:"buckets"`
-		} `json:"dimension_group"`
+		} `json:"metric_id_group"`
 	} `json:"aggregations"`
 }
 
-func FetchAssetTableByDimension(client kaytu.Client, metricIds []string, granularity inventoryApi.SpendTableGranularity, dimension inventoryApi.SpendDimension, startTime, endTime time.Time) ([]DimensionTrend, error) {
+func FetchAssetTableByDimension(client kaytu.Client, metricIds []string, granularity inventoryApi.TableGranularityType, dimension inventoryApi.DimensionType, startTime, endTime time.Time) ([]DimensionTrend, error) {
 	query := make(map[string]any)
 	var filters []any
 
-	dimensionField := ""
 	index := ""
 	switch dimension {
-	case inventoryApi.SpendDimensionConnection:
-		dimensionField = "connection_id"
-		index = spend.AnalyticsSpendConnectionSummaryIndex
-	case inventoryApi.SpendDimensionMetric:
-		dimensionField = "metric_id"
-		index = spend.AnalyticsSpendConnectorSummaryIndex
+	case inventoryApi.DimensionTypeConnection:
+		index = resource.AnalyticsConnectionSummaryIndex
+	case inventoryApi.DimensionTypeMetric:
+		index = resource.AnalyticsConnectorSummaryIndex
 	default:
 		return nil, errors.New("dimension is not supported")
 	}
@@ -984,9 +768,9 @@ func FetchAssetTableByDimension(client kaytu.Client, metricIds []string, granula
 	}
 
 	dateGroupField := "date"
-	if granularity == inventoryApi.SpendTableGranularityMonthly {
+	if granularity == inventoryApi.TableGranularityTypeMonthly {
 		dateGroupField = "month"
-	} else if granularity == inventoryApi.SpendTableGranularityYearly {
+	} else if granularity == inventoryApi.TableGranularityTypeYearly {
 		dateGroupField = "year"
 	}
 
@@ -997,9 +781,9 @@ func FetchAssetTableByDimension(client kaytu.Client, metricIds []string, granula
 		},
 	}
 	query["aggs"] = map[string]any{
-		"dimension_group": map[string]any{
+		"metric_id_group": map[string]any{
 			"terms": map[string]any{
-				"field": dimensionField,
+				"field": "metric_id",
 				"size":  es.EsFetchPageSize,
 			},
 			"aggs": map[string]any{
@@ -1009,11 +793,6 @@ func FetchAssetTableByDimension(client kaytu.Client, metricIds []string, granula
 						"size":  es.EsFetchPageSize,
 					},
 					"aggs": map[string]any{
-						"sum_group": map[string]any{
-							"sum": map[string]string{
-								"field": "resource_count",
-							},
-						},
 						"latest": map[string]any{
 							"top_hits": map[string]any{
 								"size": 1,
@@ -1040,26 +819,43 @@ func FetchAssetTableByDimension(client kaytu.Client, metricIds []string, granula
 		return nil, err
 	}
 
-	var result []DimensionTrend
-	for _, bucket := range response.Aggregations.DimensionGroup.Buckets {
-		mt := DimensionTrend{
-			DimensionID: bucket.Key,
-			Trend:       make(map[string]float64),
-		}
+	resultMap := make(map[string]DimensionTrend)
+	for _, bucket := range response.Aggregations.MetricIdGroup.Buckets {
 		for _, dateBucket := range bucket.DateGroup.Buckets {
-			mt.Trend[dateBucket.Key] = dateBucket.SumGroup.Value
 			for _, hit := range dateBucket.Latest.Hits.Hits {
 				switch dimension {
-				case inventoryApi.SpendDimensionConnection:
-					mt.DimensionName = hit.Source.ConnectionName
-				case inventoryApi.SpendDimensionMetric:
-					mt.DimensionName = hit.Source.MetricName
-				default:
-					return nil, errors.New("dimension is not supported")
+				case inventoryApi.DimensionTypeConnection:
+					for _, connectionResults := range hit.Source.Connections.Connections {
+						mt, ok := resultMap[connectionResults.ConnectionID]
+						if !ok {
+							mt = DimensionTrend{
+								DimensionID:   connectionResults.ConnectionID,
+								DimensionName: connectionResults.ConnectionName,
+								Trend:         make(map[string]float64),
+							}
+						}
+						mt.Trend[dateBucket.Key] += float64(connectionResults.ResourceCount)
+						resultMap[connectionResults.ConnectionID] = mt
+					}
+				case inventoryApi.DimensionTypeMetric:
+					mt, ok := resultMap[hit.Source.MetricID]
+					if !ok {
+						mt = DimensionTrend{
+							DimensionID:   hit.Source.MetricID,
+							DimensionName: hit.Source.MetricName,
+							Trend:         make(map[string]float64),
+						}
+					}
+					mt.Trend[dateBucket.Key] += float64(hit.Source.Connections.TotalResourceCount)
+					resultMap[hit.Source.MetricID] = mt
 				}
+
 			}
 		}
-		result = append(result, mt)
+	}
+	result := make([]DimensionTrend, 0, len(resultMap))
+	for _, v := range resultMap {
+		result = append(result, v)
 	}
 
 	return result, nil

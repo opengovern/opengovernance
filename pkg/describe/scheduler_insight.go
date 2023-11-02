@@ -2,6 +2,7 @@ package describe
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"strings"
 	"time"
 
@@ -104,7 +105,7 @@ func (s *Scheduler) runInsightJob(forceCreate bool, ins complianceapi.Insight, s
 	return nil
 }
 
-func enqueueInsightJobs(q queue.Interface, job InsightJob, ins complianceapi.Insight) error {
+func enqueueInsightJobs(q queue.Interface, job model.InsightJob, ins complianceapi.Insight) error {
 	if err := q.Publish(insight.Job{
 		JobID:                job.ID,
 		InsightID:            job.InsightID,
@@ -123,8 +124,8 @@ func enqueueInsightJobs(q queue.Interface, job InsightJob, ins complianceapi.Ins
 	return nil
 }
 
-func newInsightJob(insight complianceapi.Insight, sourceType source.Type, sourceId, accountId string, resourceCollectionId *string) InsightJob {
-	return InsightJob{
+func newInsightJob(insight complianceapi.Insight, sourceType source.Type, sourceId, accountId string, resourceCollectionId *string) model.InsightJob {
+	return model.InsightJob{
 		InsightID:          insight.ID,
 		SourceType:         sourceType,
 		SourceID:           sourceId,

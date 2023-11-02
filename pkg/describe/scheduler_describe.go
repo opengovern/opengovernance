@@ -8,6 +8,7 @@ import (
 	awsSdk "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	kaytuTrace "github.com/kaytu-io/kaytu-util/pkg/trace"
 	"go.opentelemetry.io/otel"
@@ -46,7 +47,7 @@ var (
 )
 
 type CloudNativeCall struct {
-	dc  DescribeConnectionJob
+	dc  model.DescribeConnectionJob
 	src *apiOnboard.Connection
 }
 
@@ -341,7 +342,7 @@ func (s *Scheduler) retryFailedJobs() error {
 	return nil
 }
 
-func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType string, scheduled bool, costFullDiscovery bool) (*DescribeConnectionJob, error) {
+func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType string, scheduled bool, costFullDiscovery bool) (*model.DescribeConnectionJob, error) {
 	if connection.CredentialType == apiOnboard.CredentialTypeManualAwsOrganization &&
 		strings.HasPrefix(strings.ToLower(resourceType), "aws::costexplorer") {
 		// cost on org
@@ -449,8 +450,8 @@ func (s *Scheduler) describe(connection apiOnboard.Connection, resourceType stri
 	return &daj, nil
 }
 
-func newDescribeConnectionJob(a apiOnboard.Connection, resourceType string, triggerType enums.DescribeTriggerType) DescribeConnectionJob {
-	return DescribeConnectionJob{
+func newDescribeConnectionJob(a apiOnboard.Connection, resourceType string, triggerType enums.DescribeTriggerType) model.DescribeConnectionJob {
+	return model.DescribeConnectionJob{
 		ConnectionID: a.ID.String(),
 		Connector:    a.Connector,
 		AccountID:    a.ConnectionID,
@@ -460,7 +461,7 @@ func newDescribeConnectionJob(a apiOnboard.Connection, resourceType string, trig
 	}
 }
 
-func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc DescribeConnectionJob, cipherText string, workspaceName string, kafkaTopic string) error {
+func (s *Scheduler) enqueueCloudNativeDescribeJob(ctx context.Context, dc model.DescribeConnectionJob, cipherText string, workspaceName string, kafkaTopic string) error {
 	ctx, span := otel.Tracer(kaytuTrace.JaegerTracerName).Start(ctx, kaytuTrace.GetCurrentFuncName())
 	defer span.End()
 
@@ -752,7 +753,7 @@ func (s *Scheduler) triggerStackDescriberJob(stack apiDescribe.Stack) error {
 	resourceTypes := stack.ResourceTypes
 	rand.Shuffle(len(resourceTypes), func(i, j int) { resourceTypes[i], resourceTypes[j] = resourceTypes[j], resourceTypes[i] })
 	for _, rType := range resourceTypes {
-		describeResourceJob := DescribeConnectionJob{
+		describeResourceJob := model.DescribeConnectionJob{
 			ConnectionID: stack.StackID,
 			Connector:    source.Type(provider),
 			AccountID:    stack.AccountIDs[0], // assume we have one account
@@ -805,7 +806,7 @@ func (s *Scheduler) storeStackCredentials(stack apiDescribe.Stack, configStr str
 			return err
 		}
 	}
-	err = s.db.CreateStackCredential(&StackCredential{StackID: stack.StackID, Secret: string(secretBytes)})
+	err = s.db.CreateStackCredential(&model.StackCredential{StackID: stack.StackID, Secret: string(secretBytes)})
 	if err != nil {
 		return err
 	}
@@ -817,6 +818,10 @@ func (s *Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		UserRole: apiAuth.AdminRole,
 	}
 	benchmarks, err := s.complianceClient.ListBenchmarks(ctx)
+	if err != nil {
+		return err
+	}
+
 	var provider source.Type
 	for _, resource := range stack.Resources {
 		if strings.Contains(resource, "aws") {
@@ -835,20 +840,16 @@ func (s *Scheduler) runStackBenchmarks(stack apiDescribe.Stack) error {
 		if !connectorMatch { // pass if connector doesn't match
 			continue
 		}
-		crj := newComplianceReportJob(stack.StackID, stack.SourceType, benchmark.ID, nil)
-		crj.IsStack = true
-
-		err = s.db.CreateComplianceReportJob(&crj)
+		jobID, err := s.triggerComplianceReportJobs(benchmark.ID)
 		if err != nil {
 			return err
 		}
-		enqueueComplianceReportJobs(s.logger, s.db, s.complianceReportJobQueue, &crj)
 
-		evaluation := StackEvaluation{
+		evaluation := model.StackEvaluation{
 			EvaluatorID: benchmark.ID,
 			Type:        api.EvaluationTypeBenchmark,
 			StackID:     stack.StackID,
-			JobID:       crj.ID,
+			JobID:       jobID,
 			Status:      api.StackEvaluationStatusInProgress,
 		}
 		err = s.db.AddEvaluation(&evaluation)
@@ -887,7 +888,7 @@ func (s *Scheduler) runStackInsights(stack apiDescribe.Stack) error {
 			job.FailureMessage = "Failed to enqueue InsightJob"
 			s.db.UpdateInsightJobStatus(job)
 		}
-		evaluation := StackEvaluation{
+		evaluation := model.StackEvaluation{
 			EvaluatorID: strconv.FormatUint(uint64(insight.ID), 10),
 			Type:        api.EvaluationTypeInsight,
 			StackID:     stack.StackID,
@@ -909,7 +910,7 @@ func (s *Scheduler) updateStackJobs(stack apiDescribe.Stack) (bool, error) { // 
 			continue
 		}
 		if evaluation.Type == api.EvaluationTypeBenchmark {
-			job, err := s.db.GetComplianceReportJobByID(evaluation.JobID)
+			job, err := s.db.GetComplianceJobByID(evaluation.JobID)
 			if err != nil {
 				return false, err
 			}

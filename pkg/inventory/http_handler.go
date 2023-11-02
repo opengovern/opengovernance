@@ -97,12 +97,10 @@ func InitializeHttpHandler(
 	}
 	fmt.Println("Initialized steampipe database: ", steampipeConn)
 
-	defaultAccountID := "default"
 	h.client, err = kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{elasticSearchAddress},
 		Username:  &elasticSearchUsername,
 		Password:  &elasticSearchPassword,
-		AccountID: &defaultAccountID,
 	})
 	if err != nil {
 		return nil, err

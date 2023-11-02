@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
+	model2 "github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
 	"github.com/kaytu-io/terraform-package/external/states/statefile"
 	"io"
 	"net/http"
@@ -35,7 +36,7 @@ import (
 
 type HttpServer struct {
 	Address    string
-	DB         Database
+	DB         db.Database
 	Scheduler  *Scheduler
 	kubeClient k8sclient.Client
 	helmConfig HelmConfig
@@ -43,7 +44,7 @@ type HttpServer struct {
 
 func NewHTTPServer(
 	address string,
-	db Database,
+	db db.Database,
 	s *Scheduler,
 	helmConfig HelmConfig,
 ) *HttpServer {
@@ -64,7 +65,6 @@ func (h HttpServer) Register(e *echo.Echo) {
 	v1.PUT("/insight/trigger/:insight_id", httpserver.AuthorizeHandler(h.TriggerInsightJob, apiAuth.AdminRole))
 	v1.PUT("/compliance/trigger/:benchmark_id", httpserver.AuthorizeHandler(h.TriggerConnectionsComplianceJob, apiAuth.AdminRole))
 	v1.PUT("/analytics/trigger", httpserver.AuthorizeHandler(h.TriggerAnalyticsJob, apiAuth.InternalRole))
-	v1.PUT("/summarize/trigger", httpserver.AuthorizeHandler(h.TriggerSummarizeJob, apiAuth.InternalRole))
 	v1.GET("/describe/status/:resource_type", httpserver.AuthorizeHandler(h.GetDescribeStatus, apiAuth.InternalRole))
 	v1.GET("/describe/connection/status", httpserver.AuthorizeHandler(h.GetConnectionDescribeStatus, apiAuth.InternalRole))
 	v1.GET("/describe/pending/connections", httpserver.AuthorizeHandler(h.ListAllPendingConnection, apiAuth.InternalRole))
@@ -143,11 +143,11 @@ func (h HttpServer) TriggerPerConnectionDescribeJob(ctx echo.Context) error {
 		dependencyIDs = append(dependencyIDs, int64(daj.ID))
 	}
 
-	err = h.DB.CreateJobSequencer(&JobSequencer{
+	err = h.DB.CreateJobSequencer(&model2.JobSequencer{
 		DependencyList:   dependencyIDs,
-		DependencySource: string(JobSequencerJobTypeDescribe),
-		NextJob:          string(JobSequencerJobTypeAnalytics),
-		Status:           JobSequencerWaitingForDependencies,
+		DependencySource: string(model2.JobSequencerJobTypeDescribe),
+		NextJob:          string(model2.JobSequencerJobTypeAnalytics),
+		Status:           model2.JobSequencerWaitingForDependencies,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create job sequencer: %v", err)
@@ -277,65 +277,15 @@ func (h HttpServer) TriggerConnectionsComplianceJob(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "benchmark not found")
 	}
 
-	var connections []onboardApi.Connection
-	assignments, err := h.Scheduler.complianceClient.ListAssignmentsByBenchmark(clientCtx, benchmark.ID)
+	_, err = h.Scheduler.triggerComplianceReportJobs(benchmarkID)
 	if err != nil {
-		return fmt.Errorf("error while listing assignments: %v", err)
-	}
-
-	for _, ass := range assignments.Connections {
-		if !ass.Status {
-			continue
-		}
-
-		connection, err := h.Scheduler.onboardClient.GetSource(clientCtx, ass.ConnectionID)
-		if err != nil {
-			return fmt.Errorf("error while get source: %v", err)
-		}
-
-		if !connection.IsEnabled() {
-			continue
-		}
-		connections = append(connections, *connection)
-	}
-
-	var dependencyIDs []int64
-	for _, connection := range connections {
-		crj := newComplianceReportJob(connection.ID.String(), connection.Connector, benchmark.ID, nil)
-		err = h.DB.CreateComplianceReportJob(&crj)
-		if err != nil {
-			ComplianceSourceJobsCount.WithLabelValues("failure").Inc()
-			return fmt.Errorf("error while creating compliance job: %v", err)
-		}
-		enqueueComplianceReportJobs(h.Scheduler.logger, h.DB, h.Scheduler.complianceReportJobQueue, &crj)
-		ComplianceSourceJobsCount.WithLabelValues("successful").Inc()
-		dependencyIDs = append(dependencyIDs, int64(crj.ID))
-	}
-
-	err = h.DB.CreateJobSequencer(&JobSequencer{
-		DependencyList:   dependencyIDs,
-		DependencySource: string(JobSequencerJobTypeBenchmark),
-		NextJob:          string(JobSequencerJobTypeBenchmarkSummarizer),
-		Status:           JobSequencerWaitingForDependencies,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create job sequencer: %v", err)
-	}
-
-	return ctx.JSON(http.StatusOK, "")
-}
-
-func (h HttpServer) TriggerSummarizeJob(ctx echo.Context) error {
-	err := h.Scheduler.scheduleMustSummarizerJob()
-	if err != nil {
-		errMsg := fmt.Sprintf("error scheduling summarize job: %v", err)
-		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
+		return fmt.Errorf("error while creating compliance job: %v", err)
 	}
 	return ctx.JSON(http.StatusOK, "")
 }
 
 func (h HttpServer) TriggerAnalyticsJob(ctx echo.Context) error {
-	err := h.Scheduler.scheduleAnalyticsJob(nil)
+	err := h.Scheduler.scheduleAnalyticsJob(model2.AnalyticsJobTypeNormal)
 	if err != nil {
 		errMsg := fmt.Sprintf("error scheduling summarize job: %v", err)
 		return ctx.JSON(http.StatusInternalServerError, api.ErrorResponse{Message: errMsg})
@@ -496,10 +446,10 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		}
 	}
 
-	var recordTags []*StackTag
+	var recordTags []*model2.StackTag
 	if len(tags) != 0 {
 		for key, value := range tags {
-			recordTags = append(recordTags, &StackTag{
+			recordTags = append(recordTags, &model2.StackTag{
 				Key:   key,
 				Value: value,
 			})
@@ -546,7 +496,7 @@ func (h HttpServer) CreateStack(ctx echo.Context) error {
 		return err
 	}
 
-	stackRecord := Stack{
+	stackRecord := model2.Stack{
 		StackID:       fmt.Sprintf("stack-%d", id),
 		Resources:     pq.StringArray(resources),
 		Tags:          recordTags,
@@ -621,7 +571,7 @@ func (h HttpServer) ListStack(ctx echo.Context) error {
 			UpdatedAt:     sr.UpdatedAt,
 			Resources:     []string(sr.Resources),
 			ResourceTypes: []string(sr.ResourceTypes),
-			Tags:          trimPrivateTags(sr.GetTagsMap()),
+			Tags:          model.TrimPrivateTags(sr.GetTagsMap()),
 			Status:        sr.Status,
 			SourceType:    sr.SourceType,
 			AccountIDs:    sr.AccountIDs,
@@ -686,8 +636,6 @@ func (h HttpServer) GetStackFindings(ctx echo.Context) error {
 			BenchmarkID:  reqBody.BenchmarkIDs,
 			ResourceID:   []string(stackRecord.Resources),
 		},
-		Sorts: reqBody.Sorts,
-		Page:  reqBody.Page,
 	}
 
 	findings, err := h.Scheduler.complianceClient.GetFindings(httpclient.FromEchoContext(ctx), req)
@@ -907,7 +855,7 @@ func (h HttpServer) ListResourceStack(ctx echo.Context) error {
 			CreatedAt:     sr.CreatedAt,
 			UpdatedAt:     sr.UpdatedAt,
 			Resources:     []string(sr.Resources),
-			Tags:          trimPrivateTags(sr.GetTagsMap()),
+			Tags:          model.TrimPrivateTags(sr.GetTagsMap()),
 			AccountIDs:    sr.AccountIDs,
 			Status:        sr.Status,
 			SourceType:    sr.SourceType,

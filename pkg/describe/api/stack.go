@@ -3,7 +3,6 @@ package api
 import (
 	"time"
 
-	complianceapi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
@@ -74,9 +73,9 @@ type StackEvaluation struct {
 }
 
 type GetStackFindings struct {
-	BenchmarkIDs []string                        `json:"benchmarkIds" example:"azure_cis_v140"` // Benchmark IDs to filter
-	Sorts        []complianceapi.FindingSortItem `json:"sorts"`                                 // Sorts to apply
-	Page         complianceapi.Page              `json:"page" validate:"required"`              // Pages count to retrieve
+	BenchmarkIDs []string `json:"benchmarkIds" example:"azure_cis_v140"` // Benchmark IDs to filter
+	//Sorts        []complianceapi.FindingSortItem `json:"sorts"`                                 // Sorts to apply
+	//Page         complianceapi.Page              `json:"page" validate:"required"`              // Pages count to retrieve
 }
 
 type DescribeStackRequest struct {

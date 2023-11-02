@@ -7,6 +7,7 @@ import (
 	"github.com/kaytu-io/kaytu-aws-describer/aws"
 	"github.com/kaytu-io/kaytu-azure-describer/azure"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/api"
+	es2 "github.com/kaytu-io/kaytu-util/pkg/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"strings"
 	"time"
@@ -78,7 +79,7 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 		return err
 	}
 
-	msgs := consumer.Consume(ctx)
+	msgs := consumer.Consume(ctx, s.logger)
 
 	//msgs, err := s.describeJobResultQueue.Consume()
 	//if err != nil {
@@ -223,6 +224,19 @@ func (s *Scheduler) RunDescribeJobResultsConsumer() error {
 func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 	var searchAfter []any
 
+	isCostResourceType := false
+	if strings.ToLower(res.DescribeJob.ResourceType) == "microsoft.costmanagement/costbyresourcetype" ||
+		strings.ToLower(res.DescribeJob.ResourceType) == "aws::costexplorer::byservicedaily" {
+		isCostResourceType = true
+	}
+
+	var additionalFilters []map[string]any
+	if isCostResourceType {
+		additionalFilters = append(additionalFilters, map[string]any{
+			"range": map[string]any{"cost_date": map[string]any{"lt": time.Now().AddDate(0, -2, -1).UnixMilli()}},
+		})
+	}
+
 	deletedCount := 0
 	s.logger.Info("starting to delete old resources",
 		zap.Uint("jobId", res.JobID),
@@ -234,6 +248,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 			s.es,
 			res.DescribeJob.SourceID,
 			res.DescribeJob.ResourceType,
+			additionalFilters,
 			searchAfter,
 			1000)
 		if err != nil {
@@ -259,9 +274,9 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				}
 			}
 
-			if !exists {
+			if !exists || isCostResourceType {
 				OldResourcesDeletedCount.WithLabelValues(string(res.DescribeJob.SourceType)).Inc()
-				resource := es.Resource{
+				resource := es2.Resource{
 					ID:           esResourceID,
 					SourceID:     res.DescribeJob.SourceID,
 					ResourceType: res.DescribeJob.ResourceType,
@@ -271,7 +286,7 @@ func (s *Scheduler) cleanupOldResources(res DescribeJobResult) error {
 				msg := kafka.Msg(kafka.HashOf(keys...), nil, idx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
 				msgs = append(msgs, msg)
 
-				lookupResource := es.LookupResource{
+				lookupResource := es2.LookupResource{
 					ResourceID:   esResourceID,
 					SourceID:     res.DescribeJob.SourceID,
 					ResourceType: res.DescribeJob.ResourceType,
@@ -336,7 +351,7 @@ func (s *Scheduler) cleanupDeletedConnectionResources(connectionId string) error
 			searchAfter = hit.Sort
 			esResourceID := hit.Source.ResourceID
 
-			resource := es.Resource{
+			resource := es2.Resource{
 				ID:           esResourceID,
 				ResourceType: strings.ToLower(hit.Source.ResourceType),
 				SourceType:   hit.Source.SourceType,
@@ -346,7 +361,7 @@ func (s *Scheduler) cleanupDeletedConnectionResources(connectionId string) error
 			msg := kafka.Msg(key, nil, idx, s.kafkaResourcesTopic, confluent_kafka.PartitionAny)
 			msgs = append(msgs, msg)
 
-			lookupResource := es.LookupResource{
+			lookupResource := es2.LookupResource{
 				ResourceID:   esResourceID,
 				ResourceType: strings.ToLower(hit.Source.ResourceType),
 				SourceType:   hit.Source.SourceType,

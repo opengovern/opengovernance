@@ -1,8 +1,10 @@
 package alerting
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	jira "github.com/andygrunwald/go-jira"
 	"github.com/go-errors/errors"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	authapi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
@@ -10,12 +12,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 func (h *HttpHandler) Register(e *echo.Echo) {
 	v1 := e.Group("/api/v1")
-	trigger := v1.Group("/trigger")
-	trigger.GET("/list", httpserver.AuthorizeHandler(h.ListTriggers, authapi.ViewerRole))
 
 	ruleGroup := v1.Group("/rule")
 	ruleGroup.GET("/list", httpserver.AuthorizeHandler(h.ListRules, authapi.ViewerRole))
@@ -27,8 +28,13 @@ func (h *HttpHandler) Register(e *echo.Echo) {
 	actionGroup := v1.Group("/action")
 	actionGroup.GET("/list", httpserver.AuthorizeHandler(h.ListActions, authapi.ViewerRole))
 	actionGroup.POST("/create", httpserver.AuthorizeHandler(h.CreateAction, authapi.EditorRole))
+	actionGroup.POST("/jira", httpserver.AuthorizeHandler(h.CreateJiraAction, authapi.EditorRole))
+	actionGroup.POST("/slack", httpserver.AuthorizeHandler(h.CreateSlackAction, authapi.EditorRole))
 	actionGroup.DELETE("/delete/:actionId", httpserver.AuthorizeHandler(h.DeleteAction, authapi.EditorRole))
 	actionGroup.PUT("/update/:actionId", httpserver.AuthorizeHandler(h.UpdateAction, authapi.EditorRole))
+
+	trigger := v1.Group("/trigger")
+	trigger.GET("/list", httpserver.AuthorizeHandler(h.ListTriggers, authapi.ViewerRole))
 }
 
 func bindValidate(ctx echo.Context, i interface{}) error {
@@ -154,12 +160,13 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 		}
 
 		response = append(response, api.Rule{
-			Id:        rule.Id,
-			EventType: eventType,
-			Scope:     scope,
-			Operator:  operator,
-			Metadata:  metadata,
-			ActionID:  rule.ActionID,
+			Id:            rule.Id,
+			EventType:     eventType,
+			Scope:         scope,
+			Operator:      operator,
+			Metadata:      metadata,
+			TriggerStatus: api.TriggerStatus(rule.TriggerStatus),
+			ActionID:      rule.ActionID,
 		})
 	}
 
@@ -173,7 +180,7 @@ func (h *HttpHandler) ListRules(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Param			request	body		api.CreateRuleRequest	true	"Request Body"
-//	@Success		200		{object}	string
+//	@Success		200		{object}	uint
 //	@Router			/alerting/api/v1/rule/create [post]
 func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 	var req api.CreateRuleRequest
@@ -181,11 +188,10 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the inputs : %v ", err))
 	}
 
-	EmptyFields := api.CreateRuleRequest{}
-	if req.Scope == EmptyFields.Scope ||
-		req.ActionID == EmptyFields.ActionID || req.Operator == EmptyFields.Operator || req.EventType == EmptyFields.EventType {
-		return errors.New("All the fields in struct must be set")
-	}
+	//EmptyFields := api.CreateRuleRequest{}
+	//if req.ActionID == EmptyFields.ActionID || req.Operator == EmptyFields.Operator || req.EventType == EmptyFields.EventType || req.Metadata.Name == req.Metadata.Name {
+	//	return errors.New("All the fields in struct must be set")
+	//}
 
 	scope, err := json.Marshal(req.Scope)
 	if err != nil {
@@ -207,11 +213,12 @@ func (h *HttpHandler) CreateRule(ctx echo.Context) error {
 		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error marshalling metadata : %v ", err))
 	}
 
-	if err := h.db.CreateRule(event, scope, operator, req.ActionID, metadata); err != nil {
+	ruleID, err := h.db.CreateRule(event, scope, operator, req.ActionID, metadata)
+	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error creating rule : %v ", err))
 	}
 
-	return ctx.JSON(200, "Rule successfully created")
+	return ctx.JSON(200, ruleID)
 }
 
 // DeleteRule godoc
@@ -306,7 +313,7 @@ func (h *HttpHandler) UpdateRule(ctx echo.Context) error {
 		metadata = nil
 	}
 
-	err = h.db.UpdateRule(uint(id), &eventType, &scope, &metadata, &operator, req.ActionID)
+	err = h.db.UpdateRule(uint(id), &eventType, &scope, &metadata, &operator, req.ActionID, api.TriggerStatus_NotActive)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error updating the rule : %v ", err))
 	}
@@ -357,7 +364,7 @@ func (h *HttpHandler) ListActions(ctx echo.Context) error {
 //	@Security		BearerToken
 //	@Tags			alerting
 //	@Param			request	body		api.CreateActionReq	true	"Request Body"
-//	@Success		200		{object}	string
+//	@Success		200		{object}	uint
 //	@Router			/alerting/api/v1/action/create [post]
 func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 	var req api.CreateActionReq
@@ -367,8 +374,7 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 	}
 
 	testEmptyFields := api.CreateActionReq{}
-	if req.Url == testEmptyFields.Url || req.Body == testEmptyFields.Body ||
-		req.Method == testEmptyFields.Method || req.Headers == nil {
+	if req.Url == testEmptyFields.Url || req.Method == testEmptyFields.Method {
 		return errors.New("All the fields in struct must be set")
 	}
 
@@ -377,12 +383,12 @@ func (h *HttpHandler) CreateAction(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error marshalling the headers : %v ", err))
 	}
 
-	err = h.db.CreateAction(req.Method, req.Url, headers, req.Body)
+	id, err := h.db.CreateAction(req.Method, req.Url, headers, req.Body)
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error creating the action : %v ", err))
 	}
 
-	return ctx.JSON(200, "Action created successfully ")
+	return ctx.JSON(200, id)
 }
 
 // DeleteAction godoc
@@ -451,5 +457,93 @@ func (h *HttpHandler) UpdateAction(ctx echo.Context) error {
 	if err != nil {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("error updating the action : %v ", err))
 	}
+
 	return ctx.JSON(200, "Action updated successfully")
+}
+
+// CreateSlackAction godoc
+//
+//	@Summary		Create Slack Action
+//	@Description	Create action with slack url and body
+//	@Security		BearerToken
+//	@Tags			alerting
+//	@Param			request	body		api.SlackInputs	true	"Request Body"
+//	@Success		200		{object}	api.JiraAndStackResponse
+//	@Router			/alerting/api/v1/action/slack [post]
+func (h *HttpHandler) CreateSlackAction(ctx echo.Context) error {
+	var inputs api.SlackInputs
+	if err := bindValidate(ctx, &inputs); err != nil {
+		return ctx.String(http.StatusBadRequest, fmt.Sprintf("error getting the channelName : %v ", err))
+	}
+
+	reqStr := api.SlackRequest{
+		ChannelName: inputs.ChannelName,
+		Text:        fmt.Sprintf("{{.Name}} rule triggered successfully"),
+	}
+
+	reqStrMarshalled, err := json.Marshal(&reqStr)
+	if err != nil {
+		return fmt.Errorf("error in marshalling the request : %v", err)
+	}
+	id, err := h.db.CreateAction("POST", inputs.SlackUrl, nil, string(reqStrMarshalled))
+	if err != nil {
+		return fmt.Errorf("error creating action : %v ", err)
+	}
+
+	res := api.JiraAndStackResponse{
+		ActionId: id,
+	}
+	return ctx.JSON(http.StatusOK, res)
+}
+
+// CreateJiraAction godoc
+//
+//	@Summary		Create Jira Action
+//	@Description	Create action with jira url and header and body
+//	@Security		BearerToken
+//	@Tags			alerting
+//	@Param			request	body		api.JiraInputs	true	"Request Body"
+//	@Success		200		{object}	api.JiraAndStackResponse
+//	@Router			/alerting/api/v1/action/jira [post]
+func (h *HttpHandler) CreateJiraAction(ctx echo.Context) error {
+	var inputs api.JiraInputs
+	if err := bindValidate(ctx, &inputs); err != nil {
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("error getting the channelName : %v ", err))
+	}
+
+	requestBody := jira.Issue{
+		Fields: &jira.IssueFields{
+			Type:    jira.IssueType{ID: inputs.IssueTypeId},
+			Project: jira.Project{ID: inputs.ProjectId},
+			Summary: "{{.Name}} rule triggered successfully",
+			Duedate: jira.Date(time.Now()),
+		},
+	}
+
+	auth := fmt.Sprintf("%s:%s", inputs.Email, inputs.AtlassianApiToken)
+	authEncoded := base64.StdEncoding.EncodeToString([]byte(auth))
+	headers := map[string]string{
+		"Content-Type":  "application/json",
+		"Authorization": "Basic " + authEncoded,
+	}
+
+	requestMarshalled, err := json.Marshal(requestBody)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("error marshalling the request body : %v ", err))
+	}
+
+	headerMarshalled, err := json.Marshal(headers)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error marshalling the headers : %v ", err))
+	}
+
+	id, err := h.db.CreateAction("POST", fmt.Sprintf("https://%s/rest/api/3/issue", inputs.AtlassianDomain), headerMarshalled, string(requestMarshalled))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, fmt.Sprintf("error creating action : %v ", err))
+	}
+
+	res := api.JiraAndStackResponse{
+		ActionId: id,
+	}
+	return ctx.JSON(http.StatusOK, res)
 }

@@ -4,13 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/es"
 
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 )
 
 const (
-	EsFetchPageSize       = 10000
 	InventorySummaryIndex = "inventory_summary"
 )
 

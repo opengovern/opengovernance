@@ -22,6 +22,7 @@ type ComplianceServiceClient interface {
 	GetFindings(ctx *httpclient.Context, req compliance.GetFindingsRequest) (compliance.GetFindingsResponse, error)
 	GetInsight(ctx *httpclient.Context, insightId string, connectionId []string, startTime *time.Time, endTime *time.Time) (compliance.Insight, error)
 	ListBenchmarks(ctx *httpclient.Context) ([]compliance.Benchmark, error)
+	GetAccountsFindingsSummary(ctx *httpclient.Context, benchmarkId string, connectionId []string, connector []source.Type) (compliance.GetAccountsFindingsSummaryResponse, error)
 }
 
 type complianceClient struct {
@@ -170,4 +171,39 @@ func (s *complianceClient) ListBenchmarks(ctx *httpclient.Context) ([]compliance
 		return nil, err
 	}
 	return benchmarks, nil
+}
+
+func (s *complianceClient) GetAccountsFindingsSummary(ctx *httpclient.Context, benchmarkId string, connectionIds []string, connector []source.Type) (compliance.GetAccountsFindingsSummaryResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/findings/%s/accounts", s.baseURL, benchmarkId)
+
+	var firstParamAttached bool
+	firstParamAttached = false
+
+	if len(connectionIds) > 0 {
+		for _, connectionId := range connectionIds {
+			if !firstParamAttached {
+				url += "?"
+				firstParamAttached = true
+			} else {
+				url += "&"
+			}
+			url += fmt.Sprintf("connectionId=%v", &connectionId)
+		}
+	}
+
+	if connector != nil {
+		if !firstParamAttached {
+			url += "?"
+			firstParamAttached = true
+		} else {
+			url += "&"
+		}
+		url += fmt.Sprintf("connector=%v", &connector)
+	}
+
+	var res compliance.GetAccountsFindingsSummaryResponse
+	if _, err := httpclient.DoRequest(http.MethodGet, url, ctx.ToHeaders(), nil, &res); err != nil {
+		return compliance.GetAccountsFindingsSummaryResponse{}, err
+	}
+	return res, nil
 }

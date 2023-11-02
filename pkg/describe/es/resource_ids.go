@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"strings"
 
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
@@ -17,23 +18,23 @@ type ResourceIdentifierFetchHits struct {
 	Hits  []ResourceIdentifierFetchHit `json:"hits"`
 }
 type ResourceIdentifierFetchHit struct {
-	ID      string         `json:"_id"`
-	Score   float64        `json:"_score"`
-	Index   string         `json:"_index"`
-	Type    string         `json:"_type"`
-	Version int64          `json:"_version,omitempty"`
-	Source  LookupResource `json:"_source"`
-	Sort    []any          `json:"sort"`
+	ID      string            `json:"_id"`
+	Score   float64           `json:"_score"`
+	Index   string            `json:"_index"`
+	Type    string            `json:"_type"`
+	Version int64             `json:"_version,omitempty"`
+	Source  es.LookupResource `json:"_source"`
+	Sort    []any             `json:"sort"`
 }
 
-func GetResourceIDsForAccountResourceTypeFromES(client kaytu.Client, sourceID, resourceType string, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
+func GetResourceIDsForAccountResourceTypeFromES(client kaytu.Client, sourceID, resourceType string, additionalFilters []map[string]any, searchAfter []any, size int) (*ResourceIdentifierFetchResponse, error) {
 	root := map[string]any{}
 	root["query"] = map[string]any{
 		"bool": map[string]any{
-			"filter": []map[string]any{
+			"filter": append([]map[string]any{
 				{"term": map[string]string{"source_id": sourceID}},
 				{"term": map[string]string{"resource_type": strings.ToLower(resourceType)}},
-			},
+			}, additionalFilters...),
 		},
 	}
 	if searchAfter != nil {
@@ -51,7 +52,7 @@ func GetResourceIDsForAccountResourceTypeFromES(client kaytu.Client, sourceID, r
 	}
 
 	var response ResourceIdentifierFetchResponse
-	err = client.Search(context.Background(), InventorySummaryIndex,
+	err = client.Search(context.Background(), es.InventorySummaryIndex,
 		string(queryBytes), &response)
 	if err != nil {
 		fmt.Println("query=", string(queryBytes))
@@ -85,7 +86,7 @@ func GetResourceIDsForAccountFromES(client kaytu.Client, sourceID string, search
 	}
 
 	var response ResourceIdentifierFetchResponse
-	err = client.Search(context.Background(), InventorySummaryIndex,
+	err = client.Search(context.Background(), es.InventorySummaryIndex,
 		string(queryBytes), &response)
 	if err != nil {
 		fmt.Println("query=", string(queryBytes))

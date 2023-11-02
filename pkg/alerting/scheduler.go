@@ -6,18 +6,20 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	apiCompliance "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/labstack/echo/v4"
+	_ "github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+
 	"net/http"
 	"strconv"
+	"text/template"
 	"time"
 )
 
 func (h *HttpHandler) TriggerRulesJobCycle() error {
-	timer := time.NewTicker(30 * time.Minute)
+	timer := time.NewTicker(5 * time.Minute)
 	defer timer.Stop()
 
 	for ; ; <-timer.C {
@@ -40,6 +42,7 @@ func (h *HttpHandler) TriggerRulesList() error {
 			h.logger.Error("Rule trigger has been failed",
 				zap.String("rule id", fmt.Sprintf("%v", rule.Id)),
 				zap.Error(err))
+			return err
 		}
 	}
 	return nil
@@ -64,30 +67,111 @@ func (h *HttpHandler) TriggerRule(rule Rule) error {
 		return fmt.Errorf("error unmarshalling the operator : %v ", err.Error())
 	}
 
+	var metadata api.Metadata
+	err = json.Unmarshal(rule.Metadata, &metadata)
+	if err != nil {
+		return fmt.Errorf("error unmarshalling the metadata : %v ", err.Error())
+	}
+
+	var averageSecurityScorePercentage int64
+	status := rule.TriggerStatus
 	stat := false
-	var totalCount int64
+
 	if eventType.InsightId != nil {
 		h.logger.Info("triggering insight", zap.String("rule", fmt.Sprintf("%v", rule.Id)))
-		stat, totalCount, err = h.triggerInsight(operator, eventType, scope)
+		stat, averageSecurityScorePercentage, err = h.triggerInsight(operator, eventType, scope)
 		if err != nil {
 			return fmt.Errorf("error triggering the insight : %v ", err.Error())
 		}
 	} else if eventType.BenchmarkId != nil {
 		h.logger.Info("triggering compliance", zap.String("rule", fmt.Sprintf("%v", rule.Id)))
-		stat, totalCount, err = h.triggerCompliance(operator, scope, eventType)
+		stat, averageSecurityScorePercentage, err = h.triggerCompliance(operator, scope, eventType)
 		if err != nil {
 			return fmt.Errorf("Error in trigger compliance : %v ", err.Error())
 		}
 	} else {
 		return fmt.Errorf("Error: insighId or complianceId not entered ")
 	}
-	if stat {
-		err = h.sendAlert(rule, totalCount)
+
+	if stat == true && status == api.TriggerStatus_NotActive {
+		err = h.sendAlert(rule, metadata, averageSecurityScorePercentage)
 		h.logger.Info("Sending alert", zap.String("rule", fmt.Sprintf("%v", rule.Id)),
 			zap.String("action", fmt.Sprintf("%v", rule.ActionID)))
 		if err != nil {
 			return fmt.Errorf("Error sending alert : %v ", err.Error())
 		}
+		err = h.db.UpdateRule(rule.Id, nil, nil, nil, nil, nil, api.TriggerStatus_Active)
+		if err != nil {
+			return fmt.Errorf("Error updating rule : %v ", err.Error())
+		}
+	} else if stat == false && status == api.TriggerStatus_Active {
+		err = h.db.UpdateRule(rule.Id, nil, nil, nil, nil, nil, api.TriggerStatus_NotActive)
+		if err != nil {
+			return fmt.Errorf("Error updating rule : %v ", err.Error())
+		}
+	} else if status == api.Nil {
+		if stat == true {
+			err = h.db.UpdateRule(rule.Id, nil, nil, nil, nil, nil, api.TriggerStatus_Active)
+			if err != nil {
+				return fmt.Errorf("Error updating rule : %v ", err.Error())
+			}
+		} else if stat == false {
+			err = h.db.UpdateRule(rule.Id, nil, nil, nil, nil, nil, api.TriggerStatus_NotActive)
+			if err != nil {
+				return fmt.Errorf("Error updating rule : %v ", err.Error())
+			}
+		}
+	}
+	return nil
+}
+
+func (h HttpHandler) sendAlert(rule Rule, metadata api.Metadata, averageSecurityScorePercentage int64) error {
+	action, err := h.db.GetAction(rule.ActionID)
+	if err != nil {
+		return fmt.Errorf("error getting action : %v", err.Error())
+	}
+
+	tmpl, err := template.New("Metadata.Name").Parse(action.Body)
+	if err != nil {
+		return fmt.Errorf("error create template : %v", err)
+	}
+	var outputExecute bytes.Buffer
+	err = tmpl.Execute(&outputExecute, metadata)
+	if err != nil {
+		return fmt.Errorf("error executing template : %v ", err)
+	}
+
+	action.Body = outputExecute.String()
+
+	req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer([]byte(action.Body)))
+	if err != nil {
+		return fmt.Errorf("error sending the request : %v", err.Error())
+	}
+
+	if len(action.Headers) > 0 {
+		var headers map[string]string
+		err = json.Unmarshal(action.Headers, &headers)
+		if err != nil {
+			return fmt.Errorf("error unmarshalling the headers : %v ", err.Error())
+		}
+		for k, v := range headers {
+			req.Header.Add(k, v)
+		}
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("error sending the alert request : %v ", err.Error())
+	}
+
+	err = h.addTriggerToDatabase(rule, averageSecurityScorePercentage, res.StatusCode)
+	if err != nil {
+		return err
+	}
+
+	err = res.Body.Close()
+	if err != nil {
+		return fmt.Errorf("error closing the response body : %v ", err.Error())
 	}
 	return nil
 }
@@ -126,75 +210,43 @@ func (h HttpHandler) triggerCompliance(operator api.OperatorStruct, scope api.Sc
 		return false, 0, fmt.Errorf("error getting connectionId : %v ", err.Error())
 	}
 
-	filters := apiCompliance.FindingFilters{BenchmarkID: []string{*eventType.BenchmarkId}}
-	if len(connectionIds) > 0 {
-		filters.ConnectionID = connectionIds
-	}
-	if scope.Connector != nil {
-		filters.Connector = []source.Type{*scope.Connector}
-	}
-	reqCompliance := apiCompliance.GetFindingsRequest{
-		Filters: filters,
-		Sorts: []apiCompliance.FindingSortItem{{Field: apiCompliance.FieldResourceID,
-			Direction: apiCompliance.DirectionAscending}},
-		Page: apiCompliance.Page{No: 100, Size: 100},
-	}
 	h.logger.Info("sending finding request",
-		zap.String("request", fmt.Sprintf("%v", reqCompliance)))
-	compliance, err := h.complianceClient.GetFindings(&httpclient.Context{UserRole: authApi.AdminRole}, reqCompliance)
-	if err != nil {
-		return false, 0, fmt.Errorf("error getting finding : %v ", err.Error())
-	}
-	h.logger.Info("received findings")
-	stat, err := calculationOperations(operator, compliance.TotalCount)
-	if err != nil {
-		return false, 0, fmt.Errorf("error in rule operations : %v ", err.Error())
+		zap.String("request", fmt.Sprintf("benchmarkId : %v , connectionId : %v , connection group : %v , connector : %v  ", eventType.BenchmarkId, connectionIds, scope.ConnectionGroup, scope.Connector)))
+
+	var connector []source.Type
+	if scope.Connector == nil {
+		connector = nil
+	} else {
+		connector = append(connector, *scope.Connector)
 	}
 
+	compliance, err := h.complianceClient.GetAccountsFindingsSummary(&httpclient.Context{UserRole: authApi.AdminRole}, *eventType.BenchmarkId, connectionIds, connector)
+	if err != nil {
+		return false, 0, fmt.Errorf("error getting AccountsFindingsSummary : %v", err)
+	}
+
+	var securityScore float64
+	for _, account := range compliance.Accounts {
+		securityScore += account.SecurityScore
+	}
+
+	h.logger.Info("received compliance account ")
+	averageSecurityScore := securityScore / float64(len(compliance.Accounts))
+	fmt.Printf("averageSecurityScore : %v \n ", int64(averageSecurityScore*100))
+	stat, err := calculationOperations(operator, int64(averageSecurityScore*100))
+	fmt.Printf("stat : %v \n ", stat)
+
+	if err != nil {
+		return false, 0, fmt.Errorf("error in operation : %v ", err.Error())
+	}
 	h.logger.Info("Compliance rule operation done",
-		zap.Bool("result", stat),
-		zap.Int64("totalCount", compliance.TotalCount))
-	return stat, compliance.TotalCount, nil
+		zap.Bool("Result", stat),
+		zap.Int64("Average security score percentage ", int64(averageSecurityScore*100)))
+
+	return stat, int64(averageSecurityScore * 100), nil
 }
 
-func (h HttpHandler) sendAlert(rule Rule, TotalCount int64) error {
-	action, err := h.db.GetAction(rule.ActionID)
-	if err != nil {
-		return fmt.Errorf("error getting action : %v", err.Error())
-	}
-
-	req, err := http.NewRequest(action.Method, action.Url, bytes.NewBuffer([]byte(action.Body)))
-	if err != nil {
-		return fmt.Errorf("error sending the request : %v", err.Error())
-	}
-
-	var headers map[string]string
-	err = json.Unmarshal(action.Headers, &headers)
-	if err != nil {
-		return fmt.Errorf("error unmarshalling the headers : %v ", err.Error())
-	}
-	for k, v := range headers {
-		req.Header.Add(k, v)
-	}
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("error sending the alert request : %v ", err.Error())
-	}
-
-	err = h.addTriggerToDatabase(rule, TotalCount, res.StatusCode)
-	if err != nil {
-		return err
-	}
-
-	err = res.Body.Close()
-	if err != nil {
-		return fmt.Errorf("error closing the response body : %v ", err.Error())
-	}
-	return nil
-}
-
-func (h HttpHandler) addTriggerToDatabase(rule Rule, totalCount int64, responseStatusCode int) error {
+func (h HttpHandler) addTriggerToDatabase(rule Rule, averageSecurityScorePercentage int64, responseStatusCode int) error {
 	eventTypeM, err := json.Marshal(rule.EventType)
 	if err != nil {
 		return fmt.Errorf("error in marshalling eventType : %v ", err)
@@ -205,7 +257,7 @@ func (h HttpHandler) addTriggerToDatabase(rule Rule, totalCount int64, responseS
 		return fmt.Errorf("error in marshalling scope : %v ", err)
 	}
 
-	err = h.db.CreateTrigger(time.Now(), eventTypeM, scopeM, totalCount, responseStatusCode)
+	err = h.db.CreateTrigger(time.Now(), eventTypeM, scopeM, averageSecurityScorePercentage, responseStatusCode)
 	if err != nil {
 		return fmt.Errorf("error in add trigger to the database : %v ", err)
 	}
@@ -247,12 +299,30 @@ func (h HttpHandler) getConnectionIdFilter(scope api.Scope) ([]string, error) {
 	return connectionIDSChecked, nil
 }
 
-func calculationOperations(operator api.OperatorStruct, totalValue int64) (bool, error) {
-	if oneCondition := operator.OperatorInfo; oneCondition != nil {
-		stat := compareValue(oneCondition.OperatorType, oneCondition.Value, totalValue)
+func calculationOperations(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
+	if operator.Condition == nil {
+		fmt.Println("test operation 1 ")
+		if operator.OperatorType == ">" {
+			operator.OperatorType = api.OperatorGreaterThan
+		} else if operator.OperatorType == "<" {
+			operator.OperatorType = api.OperatorLessThan
+		} else if operator.OperatorType == ">=" {
+			operator.OperatorType = api.OperatorGreaterThanOrEqual
+		} else if operator.OperatorType == "<=" {
+			operator.OperatorType = api.OperatorLessThanOrEqual
+		} else if operator.OperatorType == "=" {
+			operator.OperatorType = api.OperatorEqual
+		} else if operator.OperatorType == "!=" {
+			operator.OperatorType = api.OperatorDoesNotEqual
+		} else {
+			return false, fmt.Errorf("Error : Your operator sign is wrong , please enter the correct operator ")
+		}
+		stat := compareValue(operator.OperatorType, operator.Value, averageSecurityScorePercentage)
 		return stat, nil
 	} else if operator.Condition != nil {
-		stat, err := calculationConditionStr(operator, totalValue)
+
+		fmt.Println("test operation 2 ")
+		stat, err := calculationConditionStr(operator, averageSecurityScorePercentage)
 		if err != nil {
 			return false, fmt.Errorf("error in calculation operator : %v ", err.Error())
 		}
@@ -261,14 +331,50 @@ func calculationOperations(operator api.OperatorStruct, totalValue int64) (bool,
 	return false, fmt.Errorf("error entering the operation")
 }
 
-func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (bool, error) {
+func calculationConditionStr(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
+	conditionType := operator.Condition.ConditionType
+
+	if conditionType == api.ConditionAnd || conditionType == api.ConditionAndLowerCase {
+		stat, err := calculationConditionStrAND(operator, averageSecurityScorePercentage)
+		if err != nil {
+			return false, fmt.Errorf("error in AND condition type : %v", err)
+		}
+		return stat, nil
+
+	} else if conditionType == api.ConditionOr || conditionType == api.ConditionOrLowerCase {
+		stat, err := calculationConditionStrOr(operator, averageSecurityScorePercentage)
+		if err != nil {
+			return false, fmt.Errorf("error in OR condition type : %v", err)
+		}
+		return stat, nil
+	}
+
+	return false, fmt.Errorf("please enter right condition type ")
+}
+
+func calculationConditionStrAND(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
 	// AND condition
 	numberOperatorStr := len(operator.Condition.Operator)
 	for i := 0; i < numberOperatorStr; i++ {
 		newOperator := operator.Condition.Operator[i]
 
-		if newOperator.OperatorInfo != nil {
-			stat := compareValue(newOperator.OperatorInfo.OperatorType, newOperator.OperatorInfo.Value, totalValue)
+		if newOperator.Condition == nil {
+			if newOperator.OperatorType == ">" {
+				newOperator.OperatorType = api.OperatorGreaterThan
+			} else if newOperator.OperatorType == "<" {
+				newOperator.OperatorType = api.OperatorLessThan
+			} else if operator.OperatorType == ">=" {
+				newOperator.OperatorType = api.OperatorGreaterThanOrEqual
+			} else if operator.OperatorType == "<=" {
+				newOperator.OperatorType = api.OperatorLessThanOrEqual
+			} else if newOperator.OperatorType == "=" {
+				newOperator.OperatorType = api.OperatorEqual
+			} else if newOperator.OperatorType == "!=" {
+				newOperator.OperatorType = api.OperatorDoesNotEqual
+			} else {
+				return false, fmt.Errorf("Error : Your operator type is wrong , please enter the correct operator ")
+			}
+			stat := compareValue(newOperator.OperatorType, newOperator.Value, averageSecurityScorePercentage)
 			if !stat {
 				return false, nil
 			} else {
@@ -284,12 +390,12 @@ func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (
 			numberOperatorStr2 := len(newOperator2.Operator)
 
 			for j := 0; j < numberOperatorStr2; j++ {
-				stat, err := calculationOperations(newOperator2.Operator[j], totalValue)
+				stat, err := calculationOperations(newOperator2.Operator[j], averageSecurityScorePercentage)
 				if err != nil {
-					return false, fmt.Errorf("error in calculationOperations : %v ", err.Error())
+					return false, fmt.Errorf("error in calculation operations : %v ", err.Error())
 				}
 
-				if conditionType2 == api.ConditionAnd {
+				if conditionType2 == api.ConditionAnd || conditionType2 == api.ConditionAndLowerCase {
 					if !stat {
 						return false, nil
 					} else {
@@ -301,7 +407,7 @@ func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (
 						}
 						continue
 					}
-				} else if conditionType2 == api.ConditionOr {
+				} else if conditionType2 == api.ConditionOr || conditionType2 == api.ConditionOrLowerCase {
 					if stat {
 						return true, nil
 					} else {
@@ -320,42 +426,36 @@ func calculationConditionStrAND(operator api.OperatorStruct, totalValue int64) (
 			}
 			continue
 		} else {
-			return false, fmt.Errorf("error condition is impty")
+			return false, fmt.Errorf("error : condition is is invalid")
 		}
 	}
 	return false, fmt.Errorf("error")
 }
 
-func calculationConditionStr(operator api.OperatorStruct, totalValue int64) (bool, error) {
-	conditionType := operator.Condition.ConditionType
-
-	if conditionType == api.ConditionAnd {
-		stat, err := calculationConditionStrAND(operator, totalValue)
-		if err != nil {
-			return false, err
-		}
-		return stat, nil
-
-	} else if conditionType == api.ConditionOr {
-		stat, err := calculationConditionStrOr(operator, totalValue)
-		if err != nil {
-			return false, err
-		}
-		return stat, nil
-	}
-
-	return false, fmt.Errorf("please enter right condition")
-}
-
-func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (bool, error) {
+func calculationConditionStrOr(operator api.OperatorStruct, averageSecurityScorePercentage int64) (bool, error) {
 	// OR condition
 	numberOperatorStr := len(operator.Condition.Operator)
 
 	for i := 0; i < numberOperatorStr; i++ {
 		newOperator := operator.Condition.Operator[i]
 
-		if newOperator.OperatorInfo != nil {
-			stat := compareValue(newOperator.OperatorInfo.OperatorType, newOperator.OperatorInfo.Value, totalValue)
+		if newOperator.Condition == nil {
+			if newOperator.OperatorType == ">" {
+				newOperator.OperatorType = api.OperatorGreaterThan
+			} else if newOperator.OperatorType == "<" {
+				newOperator.OperatorType = api.OperatorLessThan
+			} else if newOperator.OperatorType == ">=" {
+				newOperator.OperatorType = api.OperatorGreaterThanOrEqual
+			} else if newOperator.OperatorType == "<=" {
+				newOperator.OperatorType = api.OperatorLessThanOrEqual
+			} else if newOperator.OperatorType == "=" {
+				newOperator.OperatorType = api.OperatorEqual
+			} else if newOperator.OperatorType == "!=" {
+				newOperator.OperatorType = api.OperatorDoesNotEqual
+			} else {
+				return false, fmt.Errorf("Error : Your operator type is wrong , please enter the correct operator type ")
+			}
+			stat := compareValue(newOperator.OperatorType, newOperator.Value, averageSecurityScorePercentage)
 			if stat {
 				return true, nil
 			} else {
@@ -371,9 +471,9 @@ func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (b
 			numberConditionStr2 := len(newOperator2.ConditionType)
 
 			for j := 0; j < numberConditionStr2; j++ {
-				stat, err := calculationOperations(newOperator2.Operator[j], totalValue)
+				stat, err := calculationOperations(newOperator2.Operator[j], averageSecurityScorePercentage)
 				if err != nil {
-					return false, fmt.Errorf("error in calculationOperations : %v ", err)
+					return false, fmt.Errorf("error in calculation operations : %v ", err)
 				}
 
 				if conditionType2 == api.ConditionAnd {
@@ -388,7 +488,7 @@ func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (b
 						}
 						continue
 					}
-				} else if conditionType2 == api.ConditionOr {
+				} else if conditionType2 == api.ConditionOr || conditionType2 == api.ConditionOrLowerCase {
 					if stat {
 						return true, nil
 					} else {
@@ -414,30 +514,30 @@ func calculationConditionStrOr(operator api.OperatorStruct, totalValue int64) (b
 	return false, fmt.Errorf("error")
 }
 
-func compareValue(operator api.OperatorType, value int64, totalValue int64) bool {
+func compareValue(operator api.OperatorType, value int64, averageSecurityScorePercentage int64) bool {
 	switch operator {
 	case api.OperatorGreaterThan:
-		if totalValue > value {
+		if averageSecurityScorePercentage > value {
 			return true
 		}
 	case api.OperatorLessThan:
-		if totalValue < value {
+		if averageSecurityScorePercentage < value {
 			return true
 		}
 	case api.OperatorGreaterThanOrEqual:
-		if totalValue >= value {
+		if averageSecurityScorePercentage >= value {
 			return true
 		}
 	case api.OperatorLessThanOrEqual:
-		if totalValue <= value {
+		if averageSecurityScorePercentage <= value {
 			return true
 		}
 	case api.OperatorEqual:
-		if totalValue == value {
+		if averageSecurityScorePercentage == value {
 			return true
 		}
 	case api.OperatorDoesNotEqual:
-		if totalValue != value {
+		if averageSecurityScorePercentage != value {
 			return true
 		}
 	default:

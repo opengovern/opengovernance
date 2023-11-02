@@ -126,12 +126,10 @@ func InitializeWorker(
 		Collector(DoComplianceSummarizerJobsCount).
 		Collector(DoComplianceSummarizerJobsDuration)
 
-	defaultAccountID := "default"
 	w.es, err = kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{elasticSearchAddress},
 		Username:  &elasticSearchUsername,
 		Password:  &elasticSearchPassword,
-		AccountID: &defaultAccountID,
 	})
 	if err != nil {
 		return nil, err

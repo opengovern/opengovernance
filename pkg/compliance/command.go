@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/worker"
 	"os"
 
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpserver"
@@ -14,32 +15,15 @@ import (
 )
 
 var (
-	S3AccessKey        = os.Getenv("S3_ACCESS_KEY")
-	S3AccessSecret     = os.Getenv("S3_ACCESS_SECRET")
-	S3Region           = os.Getenv("S3_REGION")
-	CurrentWorkspaceID = os.Getenv("CURRENT_NAMESPACE")
+	S3AccessKey    = os.Getenv("S3_ACCESS_KEY")
+	S3AccessSecret = os.Getenv("S3_ACCESS_SECRET")
+	S3Region       = os.Getenv("S3_REGION")
 )
-
-const (
-	JobsQueueName    = "compliance-report-jobs-queue"
-	ResultsQueueName = "compliance-report-results-queue"
-)
-
-type WorkerConfig struct {
-	RabbitMQ              config.RabbitMQ
-	ElasticSearch         config.ElasticSearch
-	Kafka                 config.Kafka
-	Compliance            config.KaytuService
-	Inventory             config.KaytuService
-	Onboard               config.KaytuService
-	Scheduler             config.KaytuService
-	PrometheusPushAddress string
-}
 
 func WorkerCommand() *cobra.Command {
 	var (
 		id  string
-		cnf WorkerConfig
+		cnf worker.Config
 	)
 	config.ReadFromEnv(&cnf, nil)
 
@@ -59,11 +43,8 @@ func WorkerCommand() *cobra.Command {
 				return err
 			}
 
-			w, err := InitializeWorker(
-				id,
+			w, err := worker.InitializeNewWorker(
 				cnf,
-				JobsQueueName,
-				ResultsQueueName,
 				logger,
 				cnf.PrometheusPushAddress,
 			)

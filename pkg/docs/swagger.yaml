@@ -30,11 +30,15 @@ definitions:
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionType:
     enum:
     - AND
+    - and
     - OR
+    - or
     type: string
     x-enum-varnames:
     - ConditionAnd
+    - ConditionAndLowerCase
     - ConditionOr
+    - ConditionOrLowerCase
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.CreateActionReq:
     properties:
       body:
@@ -68,6 +72,24 @@ definitions:
       insight_id:
         type: integer
     type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse:
+    properties:
+      action_id:
+        type: integer
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraInputs:
+    properties:
+      atlassian_api_token:
+        type: string
+      atlassian_domain:
+        type: string
+      email:
+        type: string
+      issue_type_id:
+        type: string
+      project_id:
+        type: string
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Metadata:
     properties:
       description:
@@ -79,19 +101,14 @@ definitions:
       name:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorInformation:
-    properties:
-      operator_type:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType'
-      value:
-        type: integer
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct:
     properties:
       condition:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.ConditionStruct'
-      operator_info:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorInformation'
+      operator_type:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType'
+      value:
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorType:
     enum:
@@ -123,6 +140,8 @@ definitions:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.OperatorStruct'
       scope:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope'
+      trigger_status:
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Scope:
     properties:
@@ -132,6 +151,13 @@ definitions:
         type: string
       connector:
         $ref: '#/definitions/source.Type'
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_alerting_api.SlackInputs:
+    properties:
+      channel_name:
+        type: string
+      slack_url:
+        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_alerting_api.Triggers:
     properties:
@@ -630,44 +656,102 @@ definitions:
       remediation:
         type: string
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree:
-    properties:
-      children:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
-        type: array
-      id:
-        description: Benchmark ID
-        example: azure_cis_v140
-        type: string
-      policies:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree'
-        type: array
-      title:
-        description: Benchmark title
-        example: CIS v1.4.0
-        type: string
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTrendDatapoint:
     properties:
-      checks:
-        $ref: '#/definitions/types.SeverityResult'
-      result:
-        $ref: '#/definitions/types.ComplianceResultSummary'
+      securityScore:
+        type: number
       timestamp:
         description: Time
         example: 1686346668
         type: integer
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType:
-    enum:
-    - asc
-    - desc
-    type: string
-    x-enum-varnames:
-    - DirectionAscending
-    - DirectionDescending
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding:
+    properties:
+      ID:
+        description: Finding ID
+        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1-azure_cis_v140_7_5
+        type: string
+      benchmarkID:
+        description: Benchmark ID
+        example: azure_cis_v140
+        type: string
+      complianceJobID:
+        description: Compliance job ID
+        example: 1
+        type: integer
+      connectionID:
+        description: Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      connector:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        description: Cloud provider
+        example: Azure
+      evaluatedAt:
+        description: Timestamp of the policy evaluation
+        example: 1589395200
+        type: integer
+      evaluator:
+        description: Evaluator name
+        example: steampipe-v0.5
+        type: string
+      parentBenchmarks:
+        items:
+          type: string
+        type: array
+      policyID:
+        description: Policy ID
+        example: azure_cis_v140_7_5
+        type: string
+      policyTitle:
+        type: string
+      providerConnectionID:
+        description: Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      providerConnectionName:
+        description: Connection ID
+        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
+        type: string
+      reason:
+        description: Reason for the policy evaluation result
+        example: The VM is not using managed disks
+        type: string
+      resourceCollection:
+        description: Resource collection
+        type: string
+      resourceID:
+        description: Resource ID
+        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
+        type: string
+      resourceLocation:
+        description: Resource location
+        example: eastus
+        type: string
+      resourceName:
+        description: Resource name
+        example: vm-1
+        type: string
+      resourceType:
+        description: Resource type
+        example: Microsoft.Compute/virtualMachines
+        type: string
+      result:
+        allOf:
+        - $ref: '#/definitions/types.ComplianceResult'
+        description: Compliance result
+        example: alarm
+      severity:
+        allOf:
+        - $ref: '#/definitions/types.FindingSeverity'
+        description: Compliance severity
+        example: low
+      stateActive:
+        description: Whether the policy is active or not
+        example: true
+        type: boolean
+    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters:
     properties:
       activeOnly:
@@ -736,39 +820,6 @@ definitions:
           $ref: '#/definitions/types.ComplianceResult'
         type: array
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem:
-    properties:
-      direction:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.DirectionType'
-        description: Sort direction
-        enum:
-        - asc
-        - desc
-        example: asc
-      field:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType'
-        description: Field to sort by
-        enum:
-        - resourceID
-        - resourceName
-        - resourceType
-        - serviceName
-        - category
-        - resourceLocation
-        - status
-        - describedAt
-        - evaluatedAt
-        - sourceID
-        - connectionProviderID
-        - connectionProviderName
-        - sourceType
-        - benchmarkID
-        - policyID
-        - policySeverity
-        example: status
-    type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetAccountsFindingsSummaryResponse:
     properties:
       accounts:
@@ -791,20 +842,12 @@ definitions:
     properties:
       filters:
         $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingFilters'
-      page:
-        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page'
-      sorts:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem'
-        type: array
-    required:
-    - page
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.GetFindingsResponse:
     properties:
       findings:
         items:
-          $ref: '#/definitions/types.Finding'
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Finding'
         type: array
       totalCount:
         example: 100
@@ -1007,46 +1050,72 @@ definitions:
         example: 1000
         type: integer
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page:
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy:
     properties:
-      "no":
-        description: Number of pages
-        example: 5
-        type: integer
-      size:
-        description: Number of items per page
-        example: 100
-        type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicyTree:
-    properties:
-      accounts:
-        $ref: '#/definitions/types.ComplianceResultShortSummary'
-      id:
-        description: Policy ID
-        example: azure_cis_v140_7_5
+      connector:
+        allOf:
+        - $ref: '#/definitions/source.Type'
+        example: Azure
+      createdAt:
+        example: "2020-01-01T00:00:00Z"
         type: string
-      lastChecked:
-        description: Last checked
-        example: 0
-        type: integer
-      resources:
-        $ref: '#/definitions/types.ComplianceResultShortSummary'
+      description:
+        example: Enable multi-factor authentication for all user credentials who have
+          write access to Azure resources. These include roles like 'Service Co-Administrators',
+          'Subscription Owners', 'Contributors'.
+        type: string
+      documentURI:
+        example: benchmarks/azure_cis_v140_1_1.md
+        type: string
+      enabled:
+        example: true
+        type: boolean
+      id:
+        example: azure_cis_v140_1_1
+        type: string
+      managed:
+        example: true
+        type: boolean
+      manualVerification:
+        example: true
+        type: boolean
+      queryID:
+        example: azure_ad_manual_control
+        type: string
       severity:
         allOf:
         - $ref: '#/definitions/types.FindingSeverity'
-        description: Severity
         example: low
-      status:
-        allOf:
-        - $ref: '#/definitions/types.PolicyStatus'
-        description: Status
-        example: passed
+      tags:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
       title:
-        description: Policy title
-        example: 7.5 Ensure that the latest OS Patches for all Virtual Machines are
-          applied
+        example: 1.1 Ensure that multi-factor authentication status is enabled for
+          all privileged users
         type: string
+      updatedAt:
+        example: "2020-01-01T00:00:00Z"
+        type: string
+    type: object
+  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary:
+    properties:
+      evaluatedAt:
+        type: integer
+      failedConnectionCount:
+        type: integer
+      failedResourcesCount:
+        type: integer
+      passed:
+        type: boolean
+      policy:
+        $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Policy'
+      totalConnectionCount:
+        type: integer
+      totalResourcesCount:
+        type: integer
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Query:
     properties:
@@ -1100,42 +1169,6 @@ definitions:
             type: integer
         type: object
     type: object
-  github_com_kaytu-io_kaytu-engine_pkg_compliance_api.SortFieldType:
-    enum:
-    - resourceID
-    - resourceName
-    - resourceType
-    - serviceName
-    - category
-    - resourceLocation
-    - status
-    - describedAt
-    - evaluatedAt
-    - sourceID
-    - connectionProviderID
-    - connectionProviderName
-    - sourceType
-    - benchmarkID
-    - policyID
-    - policySeverity
-    type: string
-    x-enum-varnames:
-    - FieldResourceID
-    - FieldResourceName
-    - FieldResourceType
-    - FieldServiceName
-    - FieldCategory
-    - FieldResourceLocation
-    - FieldStatus
-    - FieldDescribedAt
-    - FieldEvaluatedAt
-    - FieldSourceID
-    - FieldConnectionProviderID
-    - FieldConnectionProviderName
-    - FieldSourceType
-    - FieldBenchmarkID
-    - FieldPolicyID
-    - FieldPolicySeverity
   github_com_kaytu-io_kaytu-engine_pkg_compliance_api.TopFieldRecord:
     properties:
       count:
@@ -1160,17 +1193,6 @@ definitions:
         items:
           type: string
         type: array
-      page:
-        allOf:
-        - $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.Page'
-        description: Pages count to retrieve
-      sorts:
-        description: Sorts to apply
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.FindingSortItem'
-        type: array
-    required:
-    - page
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_describe_api.Stack:
     properties:
@@ -1464,16 +1486,6 @@ definitions:
       total_value_count:
         minimum: 0
         type: integer
-    type: object
-  github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServicesCostTrendDatapoint:
-    properties:
-      costTrend:
-        items:
-          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.CostTrendDatapoint'
-        type: array
-      serviceName:
-        example: EC2-Service-Example
-        type: string
     type: object
   github_com_kaytu-io_kaytu-engine_pkg_inventory_api.Metric:
     properties:
@@ -2495,13 +2507,6 @@ definitions:
     - ComplianceResultINFO
     - ComplianceResultSKIP
     - ComplianceResultERROR
-  types.ComplianceResultShortSummary:
-    properties:
-      failed:
-        type: integer
-      passed:
-        type: integer
-    type: object
   types.ComplianceResultSummary:
     properties:
       alarmCount:
@@ -2520,90 +2525,10 @@ definitions:
         example: 1
         type: integer
     type: object
-  types.Finding:
-    properties:
-      ID:
-        description: Finding ID
-        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1-azure_cis_v140_7_5
-        type: string
-      benchmarkID:
-        description: Benchmark ID
-        example: azure_cis_v140
-        type: string
-      complianceJobID:
-        description: Compliance job ID
-        example: 1
-        type: integer
-      connectionID:
-        description: Connection ID
-        example: 8e0f8e7a-1b1c-4e6f-b7e4-9c6af9d2b1c8
-        type: string
-      connector:
-        allOf:
-        - $ref: '#/definitions/source.Type'
-        description: Cloud provider
-        example: Azure
-      describedAt:
-        description: Timestamp of the policy description
-        example: 1589395200
-        type: integer
-      evaluatedAt:
-        description: Timestamp of the policy evaluation
-        example: 1589395200
-        type: integer
-      evaluator:
-        description: Evaluator name
-        example: steampipe-v0.5
-        type: string
-      policyID:
-        description: Policy ID
-        example: azure_cis_v140_7_5
-        type: string
-      reason:
-        description: Reason for the policy evaluation result
-        example: The VM is not using managed disks
-        type: string
-      resourceCollection:
-        description: Resource collection
-        type: string
-      resourceID:
-        description: Resource ID
-        example: /subscriptions/123/resourceGroups/rg-1/providers/Microsoft.Compute/virtualMachines/vm-1
-        type: string
-      resourceLocation:
-        description: Resource location
-        example: eastus
-        type: string
-      resourceName:
-        description: Resource name
-        example: vm-1
-        type: string
-      resourceType:
-        description: Resource type
-        example: Microsoft.Compute/virtualMachines
-        type: string
-      result:
-        allOf:
-        - $ref: '#/definitions/types.ComplianceResult'
-        description: Compliance result
-        example: alarm
-      scheduleJobID:
-        description: Schedule job ID
-        example: 1
-        type: integer
-      severity:
-        allOf:
-        - $ref: '#/definitions/types.FindingSeverity'
-        description: Compliance severity
-        example: low
-      stateActive:
-        description: Whether the policy is active or not
-        example: true
-        type: boolean
-    type: object
   types.FindingSeverity:
     enum:
     - none
+    - passed
     - low
     - medium
     - high
@@ -2611,20 +2536,11 @@ definitions:
     type: string
     x-enum-varnames:
     - FindingSeverityNone
+    - FindingSeverityPassed
     - FindingSeverityLow
     - FindingSeverityMedium
     - FindingSeverityHigh
     - FindingSeverityCritical
-  types.PolicyStatus:
-    enum:
-    - passed
-    - failed
-    - unknown
-    type: string
-    x-enum-varnames:
-    - PolicyStatusPASSED
-    - PolicyStatusFAILED
-    - PolicyStatusUNKNOWN
   types.SeverityResult:
     properties:
       criticalCount:
@@ -2693,7 +2609,7 @@ paths:
         "200":
           description: OK
           schema:
-            type: string
+            type: integer
       security:
       - BearerToken: []
       summary: Create action
@@ -2718,6 +2634,26 @@ paths:
       summary: Delete action
       tags:
       - alerting
+  /alerting/api/v1/action/jira:
+    post:
+      description: Create action with jira url and header and body
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraInputs'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse'
+      security:
+      - BearerToken: []
+      summary: Create Jira Action
+      tags:
+      - alerting
   /alerting/api/v1/action/list:
     get:
       description: returns list of all actions
@@ -2733,6 +2669,26 @@ paths:
       security:
       - BearerToken: []
       summary: List actions
+      tags:
+      - alerting
+  /alerting/api/v1/action/slack:
+    post:
+      description: Create action with slack url and body
+      parameters:
+      - description: Request Body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.SlackInputs'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_alerting_api.JiraAndStackResponse'
+      security:
+      - BearerToken: []
+      summary: Create Slack Action
       tags:
       - alerting
   /alerting/api/v1/action/update/{actionId}:
@@ -2794,7 +2750,7 @@ paths:
         "200":
           description: OK
           schema:
-            type: string
+            type: integer
       security:
       - BearerToken: []
       summary: Create rule
@@ -3210,6 +3166,30 @@ paths:
       summary: Get benchmark assigned sources
       tags:
       - benchmarks_assignment
+  /compliance/api/v1/benchmarks/{benchmark_id}/policies:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Benchmark ID
+        in: path
+        name: benchmark_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.PolicySummary'
+            type: array
+      security:
+      - BearerToken: []
+      summary: Get benchmark policies
+      tags:
+      - compliance
   /compliance/api/v1/benchmarks/{benchmark_id}/summary:
     get:
       consumes:
@@ -3268,29 +3248,6 @@ paths:
       security:
       - BearerToken: []
       summary: Get benchmark summary
-      tags:
-      - compliance
-  /compliance/api/v1/benchmarks/{benchmark_id}/tree:
-    get:
-      consumes:
-      - application/json
-      description: Retrieving the benchmark tree, including all of its child benchmarks.
-      parameters:
-      - description: Benchmark ID
-        in: path
-        name: benchmark_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_compliance_api.BenchmarkTree'
-      security:
-      - BearerToken: []
-      summary: Get benchmark tree
       tags:
       - compliance
   /compliance/api/v1/benchmarks/{benchmark_id}/trend:
@@ -3496,6 +3453,7 @@ paths:
         items:
           enum:
           - none
+          - passed
           - low
           - medium
           - high
@@ -3579,6 +3537,7 @@ paths:
         items:
           enum:
           - none
+          - passed
           - low
           - medium
           - high
@@ -3610,10 +3569,6 @@ paths:
         name: benchmarkId
         required: true
         type: string
-      - description: Number of outputs
-        in: query
-        name: count
-        type: integer
       - collectionFormat: csv
         description: Connection IDs to filter by
         in: query
@@ -3627,17 +3582,6 @@ paths:
         items:
           type: string
         name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
         type: array
       produces:
       - application/json
@@ -3663,10 +3607,6 @@ paths:
         name: benchmarkId
         required: true
         type: string
-      - description: Number of outputs
-        in: query
-        name: count
-        type: integer
       - collectionFormat: csv
         description: Connection IDs to filter by
         in: query
@@ -3680,17 +3620,6 @@ paths:
         items:
           type: string
         name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Connector type to filter by
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
         type: array
       produces:
       - application/json
@@ -4117,6 +4046,58 @@ paths:
       summary: Sync queries
       tags:
       - compliance
+  /cost_estimator/api/v1/cost/aws:
+    get:
+      description: Get AWS cost for each resource
+      parameters:
+      - description: ResourceID
+        in: path
+        name: resourceId
+        required: true
+        type: string
+      - description: ResourceType
+        in: path
+        name: resourceType
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      security:
+      - BearerToken: []
+      summary: Get AWS cost
+      tags:
+      - cost-estimator
+  /cost_estimator/api/v1/cost/azure:
+    get:
+      description: Get Azure cost for each resource
+      parameters:
+      - description: ResourceID
+        in: path
+        name: resourceId
+        required: true
+        type: string
+      - description: ResourceType
+        in: path
+        name: resourceType
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
+      security:
+      - BearerToken: []
+      summary: Get Azure cost
+      tags:
+      - cost-estimator
   /inventory/api/v1/query:
     get:
       description: Retrieving list of smart queries by specified filters
@@ -4588,76 +4569,6 @@ paths:
       summary: List spend metrics
       tags:
       - analytics
-  /inventory/api/v2/analytics/spend/metrics/trend:
-    get:
-      consumes:
-      - application/json
-      description: Retrieving a list of costs over the course of the specified time
-        frame based on the given input filters. If startTime and endTime are empty,
-        the API returns the last month trend.
-      parameters:
-      - collectionFormat: csv
-        description: Connector type to filter by
-        in: query
-        items:
-          enum:
-          - ""
-          - AWS
-          - Azure
-          type: string
-        name: connector
-        type: array
-      - collectionFormat: csv
-        description: Connection IDs to filter by - mutually exclusive with connectionGroup
-        in: query
-        items:
-          type: string
-        name: connectionId
-        type: array
-      - collectionFormat: csv
-        description: Connection group to filter by - mutually exclusive with connectionId
-        in: query
-        items:
-          type: string
-        name: connectionGroup
-        type: array
-      - collectionFormat: csv
-        description: Metrics IDs
-        in: query
-        items:
-          type: string
-        name: metricIds
-        type: array
-      - description: timestamp for start in epoch seconds
-        in: query
-        name: startTime
-        type: integer
-      - description: timestamp for end in epoch seconds
-        in: query
-        name: endTime
-        type: integer
-      - description: Granularity of the table, default is daily
-        enum:
-        - monthly
-        - daily
-        - yearly
-        in: query
-        name: granularity
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/github_com_kaytu-io_kaytu-engine_pkg_inventory_api.ListServicesCostTrendDatapoint'
-            type: array
-      security:
-      - BearerToken: []
-      summary: Get Cost Trend
-      tags:
-      - analytics
   /inventory/api/v2/analytics/spend/table:
     get:
       consumes:
@@ -4701,10 +4612,13 @@ paths:
           type: string
         name: connectionGroup
         type: array
-      - description: Connector
+      - collectionFormat: csv
+        description: Connector
         in: query
+        items:
+          type: string
         name: connector
-        type: string
+        type: array
       - collectionFormat: csv
         description: Metrics IDs
         in: query

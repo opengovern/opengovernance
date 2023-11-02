@@ -68,12 +68,10 @@ func InitializeHttpHandler(
 	}
 	fmt.Println("Initialized postgres database: ", conf.PostgreSQL.DB)
 
-	defaultAccountID := "default"
 	h.client, err = kaytu.NewClient(kaytu.ClientConfig{
 		Addresses: []string{conf.ES.Address},
 		Username:  &conf.ES.Username,
 		Password:  &conf.ES.Password,
-		AccountID: &defaultAccountID,
 	})
 	if err != nil {
 		return nil, err

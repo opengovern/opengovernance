@@ -16,8 +16,10 @@ const (
 type ConditionType string
 
 const (
-	ConditionAnd ConditionType = "AND"
-	ConditionOr  ConditionType = "OR"
+	ConditionAnd          ConditionType = "AND"
+	ConditionAndLowerCase ConditionType = "and"
+	ConditionOr           ConditionType = "OR"
+	ConditionOrLowerCase  ConditionType = "or"
 )
 
 type EventType struct {
@@ -32,13 +34,10 @@ type Scope struct {
 }
 
 type OperatorStruct struct {
-	OperatorInfo *OperatorInformation `json:"operator_info,omitempty"`
-	Condition    *ConditionStruct     `json:"condition,omitempty"`
-}
-
-type OperatorInformation struct {
 	OperatorType OperatorType `json:"operator_type"`
 	Value        int64        `json:"value"`
+
+	Condition *ConditionStruct `json:"condition,omitempty"`
 }
 
 type ConditionStruct struct {
@@ -46,13 +45,22 @@ type ConditionStruct struct {
 	Operator      []OperatorStruct `json:"operator"`
 }
 
+type TriggerStatus string
+
+const (
+	Nil                     = ""
+	TriggerStatus_Active    = "Active"
+	TriggerStatus_NotActive = "Not Active"
+)
+
 type Rule struct {
-	Id        uint           `json:"id"`
-	EventType EventType      `json:"event_type"`
-	Scope     Scope          `json:"scope"`
-	Operator  OperatorStruct `json:"operator"`
-	Metadata  Metadata       `json:"metadata"`
-	ActionID  uint           `json:"action_id"`
+	Id            uint           `json:"id"`
+	EventType     EventType      `json:"event_type"`
+	Scope         Scope          `json:"scope"`
+	Operator      OperatorStruct `json:"operator"`
+	Metadata      Metadata       `json:"metadata"`
+	TriggerStatus TriggerStatus  `json:"trigger_status"`
+	ActionID      uint           `json:"action_id"`
 }
 
 type CreateRuleRequest struct {

@@ -1,362 +1,314 @@
 package worker
 
 import (
+	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
-	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
-	"time"
-
 	confluent_kafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	authApi "github.com/kaytu-io/kaytu-engine/pkg/auth/api"
-	complianceApi "github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
-	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
-	describeClient "github.com/kaytu-io/kaytu-engine/pkg/describe/client"
+	"github.com/kaytu-io/kaytu-engine/pkg/auth/api"
+	"github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
+	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/worker/types"
 	"github.com/kaytu-io/kaytu-engine/pkg/internal/httpclient"
-	onboardApi "github.com/kaytu-io/kaytu-engine/pkg/onboard/api"
-	onboardClient "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
+	client2 "github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
-	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"io"
+	"time"
 )
 
 type Job struct {
-	JobID         uint
-	ScheduleJobID uint
-	DescribedAt   int64
-	EvaluatedAt   int64
-
-	ConnectionID string
-	BenchmarkID  string
-
-	Connector source.Type
-	IsStack   bool
-
-	ResourceCollectionId *string
+	ID          uint
+	CreatedAt   time.Time
+	BenchmarkID string
+	IsStack     bool
 }
 
-type JobResult struct {
-	JobID           uint
-	Status          complianceApi.ComplianceReportJobStatus
-	ReportCreatedAt int64
-	Error           string
+type JobConfig struct {
+	config           Config
+	logger           *zap.Logger
+	complianceClient client.ComplianceServiceClient
+	onboardClient    client2.OnboardServiceClient
+	steampipeConn    *steampipe.Database
+	esClient         kaytu.Client
+	kafkaProducer    *confluent_kafka.Producer
 }
 
-func (j *Job) Do(
-	complianceClient complianceClient.ComplianceServiceClient,
-	onboardClient onboardClient.OnboardServiceClient,
-	scheduleClient describeClient.SchedulerServiceClient,
-	inventoryClient inventoryClient.InventoryServiceClient,
-	elasticSearchConfig config.ElasticSearch,
-	kfkProducer *confluent_kafka.Producer,
-	kfkTopic string,
-	currentWorkspaceId string,
-	logger *zap.Logger,
-) JobResult {
-	result := JobResult{
-		JobID:           j.JobID,
-		Status:          complianceApi.ComplianceReportJobCompleted,
-		ReportCreatedAt: time.Now().UnixMilli(),
-		Error:           "",
-	}
+var tracer = otel.Tracer("new_compliance_worker")
 
-	if err := j.Run(complianceClient, onboardClient, scheduleClient, inventoryClient,
-		elasticSearchConfig, kfkProducer, kfkTopic, currentWorkspaceId, logger); err != nil {
-		result.Error = err.Error()
-		result.Status = complianceApi.ComplianceReportJobCompletedWithFailure
-	}
-	result.ReportCreatedAt = time.Now().UnixMilli()
-	return result
-}
+func (j *Job) Run(jc JobConfig) error {
+	hctx := &httpclient.Context{UserRole: api.InternalRole}
 
-func (j *Job) RunBenchmark(logger *zap.Logger, esk kaytu.Client, benchmarkID string, complianceClient complianceClient.ComplianceServiceClient, steampipeConn *steampipe.Database, connector source.Type) ([]types.Finding, error) {
-	ctx := &httpclient.Context{
-		UserRole: authApi.AdminRole,
-	}
+	ctx := context.Background()
+	_, span1 := tracer.Start(ctx, "new_JobRun")
+	span1.SetName("new_JobRun")
 
-	benchmark, err := complianceClient.GetBenchmark(ctx, benchmarkID)
+	assignment, err := jc.complianceClient.ListAssignmentsByBenchmark(hctx, j.BenchmarkID)
 	if err != nil {
-		return nil, err
+		jc.logger.Error("failed to list assignments by benchmark", zap.String("benchmarkID", j.BenchmarkID), zap.Error(err))
+		return err
 	}
 
-	fmt.Println("+++++++++ Running Benchmark:", benchmarkID)
+	span1.AddEvent("information", trace.WithAttributes(
+		attribute.String("benchmark id", j.BenchmarkID),
+	))
+	span1.End()
 
-	var findings []types.Finding
-	for _, childBenchmarkID := range benchmark.Children {
-		f, err := j.RunBenchmark(logger, esk, childBenchmarkID, complianceClient, steampipeConn, connector)
-		if err != nil {
-			return nil, err
-		}
-
-		findings = append(findings, f...)
+	bs := types2.BenchmarkSummary{
+		BenchmarkID:      j.BenchmarkID,
+		JobID:            j.ID,
+		EvaluatedAtEpoch: j.CreatedAt.Unix(),
+		BenchmarkResult: types2.Result{
+			QueryResult:    map[types.ComplianceResult]int{},
+			SeverityResult: map[types.FindingSeverity]int{},
+		},
+		Connections:         map[string]types2.Result{},
+		ResourceTypes:       map[string]types2.Result{},
+		ResourceCollections: map[string]types2.Result{},
+		Policies:            map[string]types2.PolicyResult{},
 	}
 
-	for _, policyID := range benchmark.Policies {
-		fmt.Println("+++++++++++ Running Policy:", policyID)
-		policy, err := complianceClient.GetPolicy(ctx, policyID)
-		if err != nil {
-			return nil, err
-		}
-		if policy.QueryID == nil {
+	_, span2 := tracer.Start(ctx, "new_ConnectionsRun")
+	span2.SetName("new_ConnectionsRun")
+
+	jc.logger.Info("Running benchmark",
+		zap.String("benchmark_id", j.BenchmarkID),
+		zap.Int("connections", len(assignment.Connections)),
+		zap.Int("resourceCollection", len(assignment.ResourceCollections)),
+	)
+
+	for _, connection := range assignment.Connections {
+		if !connection.Status {
 			continue
 		}
-		var f []types.Finding
-		if !policy.ManualVerification {
-			query, err := complianceClient.GetQuery(ctx, *policy.QueryID)
-			if err != nil {
-				logger.Error("failed to get query", zap.Error(err))
-				return nil, err
-			}
 
-			if query.Connector != string(connector) {
-				return nil, errors.New("connector doesn't match")
-			}
-
-			res, err := steampipeConn.QueryAll(context.TODO(), query.QueryToExecute)
-			if err != nil {
-				logger.Error("failed to execute query",
-					zap.Error(err),
-					zap.String("policyID", policyID),
-					zap.Uint("jobID", j.JobID))
-				continue
-			}
-
-			f, err = j.ExtractFindings(esk, benchmark, policy, query, res)
-			if err != nil {
-				return nil, err
-			}
+		err := j.RunForConnection(ctx, connection.ConnectionID, nil, &bs, jc)
+		if err != nil {
+			jc.logger.Error("failed to run for connection", zap.String("connectionID", connection.ConnectionID), zap.Error(err))
+			return err
 		}
-
-		if !j.IsStack {
-			findingsFiltered, err := j.FilterFindings(esk, policyID, f)
-			if err != nil {
-				return nil, err
-			}
-			fmt.Println("++++++ findingsFiltered len: ", len(findingsFiltered))
-			f = findingsFiltered
-		}
-
-		findings = append(findings, f...)
 	}
 
-	return findings, nil
+	span2.End()
+	_, span3 := tracer.Start(ctx, "new_ResourceCollections")
+	span3.SetName("new_ResourceCollections")
+
+	for _, resourceCollection := range assignment.ResourceCollections {
+		if !resourceCollection.Status {
+			continue
+		}
+
+		err := j.RunForConnection(ctx, "all", &resourceCollection.ResourceCollectionID, &bs, jc)
+		if err != nil {
+			jc.logger.Error("failed to run for resource collection", zap.String("resourceCollectionID", resourceCollection.ResourceCollectionID), zap.Error(err))
+			return err
+		}
+	}
+
+	span3.End()
+	_, span4 := tracer.Start(ctx, "new_RemoveOldFindings")
+	span4.SetName("new_RemoveOldFindings")
+
+	//err = RemoveOldFindings(jc, j.ID, j.BenchmarkID)
+	//if err != nil {
+	//	return err
+	//}
+
+	span4.End()
+	_, span5 := tracer.Start(ctx, "new_Summarize")
+	span5.SetName("new_Summarize")
+
+	bs.Summarize()
+
+	jc.logger.Info(fmt.Sprintf("bs={%v}", bs))
+
+	span5.End()
+	_, span6 := tracer.Start(ctx, "kafka_DoSend")
+	span6.SetName("kafka_DoSend")
+
+	err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, []kafka.Doc{bs}, jc.logger, nil)
+	if err != nil {
+		return err
+	}
+
+	span6.End()
+	return nil
 }
 
-func (j *Job) Run(complianceClient complianceClient.ComplianceServiceClient,
-	onboardClient onboardClient.OnboardServiceClient,
-	schedulerClient describeClient.SchedulerServiceClient,
-	inventoryClient inventoryClient.InventoryServiceClient,
-	elasticSearchConfig config.ElasticSearch, kfkProducer *confluent_kafka.Producer, kfkTopic string, currentWorkspaceId string, logger *zap.Logger) error {
-
-	ctx := &httpclient.Context{
-		UserRole: authApi.AdminRole,
+func (j *Job) RunForConnection(ctx context.Context, connectionID string, resourceCollectionID *string, benchmarkSummary *types2.BenchmarkSummary, jc JobConfig) error {
+	onboardConnectionId := connectionID
+	if connectionID != "all" {
+		conn, err := jc.onboardClient.GetSource(&httpclient.Context{UserRole: api.InternalRole}, connectionID)
+		if err != nil {
+			jc.logger.Error("failed to get source", zap.String("connectionID", connectionID), zap.Error(err))
+			return err
+		}
+		onboardConnectionId = conn.ConnectionID
 	}
-	var accountId string
-	var connector source.Type
-	var esk kaytu.Client
-	if j.IsStack == true {
-		stack, err := schedulerClient.GetStack(ctx, j.ConnectionID)
-		if err != nil {
-			return err
-		}
-		accountId = stack.AccountIDs[0]
-		connector = stack.SourceType
 
-		eskConfig, err := steampipe.GetStackElasticConfig(currentWorkspaceId, stack.StackID)
-		esk, err = kaytu.NewClient(kaytu.ClientConfig{
-			Addresses: []string{eskConfig.Address},
-			Username:  &eskConfig.Username,
-			Password:  &eskConfig.Password,
-			AccountID: &accountId,
-		})
+	err := jc.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID, onboardConnectionId)
+	if err != nil {
+		jc.logger.Error("failed to set account id", zap.String("connectionID", connectionID), zap.Error(err))
+		return err
+	}
+	defer jc.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyAccountID)
+	err = jc.steampipeConn.SetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType, "compliance")
+	if err != nil {
+		jc.logger.Error("failed to set client type", zap.String("connectionID", connectionID), zap.Error(err))
+		return err
+	}
+	defer jc.steampipeConn.UnsetConfigTableValue(ctx, steampipe.KaytuConfigKeyClientType)
+
+	executionPlans, err := ListExecutionPlans(connectionID, nil, j.BenchmarkID, jc)
+	if err != nil {
+		jc.logger.Error("failed to list execution plans", zap.String("connectionID", connectionID), zap.Error(err))
+		return err
+	}
+
+	for _, plans := range executionPlans.Plans {
+		if len(plans) == 0 {
+			continue
+		}
+		plan := plans[0]
+
+		jc.logger.Info("running query",
+			zap.String("query", plan.Query.QueryToExecute),
+			zap.String("connectionID", connectionID),
+			zap.String("benchmarkID", j.BenchmarkID),
+			zap.Int("planCount", len(executionPlans.Plans)),
+			zap.Int("duplicateCount", len(plans)),
+		)
+
+		res, err := jc.steampipeConn.QueryAll(ctx, plan.Query.QueryToExecute)
 		if err != nil {
+			jc.logger.Error("failed to run query", zap.String("query", plan.Query.QueryToExecute), zap.Error(err))
 			return err
 		}
-	} else {
-		if len(j.ConnectionID) > 0 && j.ConnectionID != "all" {
-			src, err := onboardClient.GetSource(ctx, j.ConnectionID)
+
+		//TODO-Saleh probably push result into s3 to keep historical data
+
+		//if !j.IsStack {
+		//	findings, err = j.FilterFindings(plan, findings, jc)
+		//	if err != nil {
+		//		return err
+		//	}
+		//}
+		for _, plan := range plans {
+			findings, err := j.ExtractFindings(plan, connectionID, resourceCollectionID, res, jc)
 			if err != nil {
+				jc.logger.Error("failed to extract findings", zap.String("query", plan.Query.QueryToExecute), zap.Error(err))
 				return err
 			}
-			accountId = src.ConnectionID
-			connector = src.Connector
-			if src.LifecycleState != onboardApi.ConnectionLifecycleStateOnboard {
-				return errors.New("connection not healthy")
+			for _, f := range findings {
+				benchmarkSummary.AddFinding(f)
 			}
-		} else {
-			accountId = "all"
-			connector = j.Connector
-		}
-		var err error
-		esk, err = kaytu.NewClient(kaytu.ClientConfig{
-			Addresses: []string{elasticSearchConfig.Address},
-			Username:  &elasticSearchConfig.Username,
-			Password:  &elasticSearchConfig.Password,
-			AccountID: &accountId,
-		})
-		if err != nil {
-			return err
-		}
-	}
-
-	fmt.Println("+++++ New elasticSearch Client created")
-
-	var encodedResourceCollectionFilter *string
-	if j.ResourceCollectionId != nil {
-		rc, err := inventoryClient.GetResourceCollection(&httpclient.Context{UserRole: authApi.InternalRole},
-			*j.ResourceCollectionId)
-		if err != nil {
-			return err
-		}
-		filtersJson, err := json.Marshal(rc.Filters)
-		if err != nil {
-			return err
-		}
-		filtersEncoded := base64.StdEncoding.EncodeToString(filtersJson)
-		encodedResourceCollectionFilter = &filtersEncoded
-	}
-
-	err := steampipe.PopulateSteampipeConfig(elasticSearchConfig, j.Connector, accountId, encodedResourceCollectionFilter)
-	if err != nil {
-		logger.Error("failed to populate steampipe config", zap.Error(err))
-		return err
-	}
-
-	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
-	if err != nil {
-		logger.Error("failed to start steampipe service", zap.Error(err))
-		return err
-	}
-	defer steampipeConn.Conn().Close()
-	defer steampipe.StopSteampipeService(logger)
-
-	findings, err := j.RunBenchmark(logger, esk, j.BenchmarkID, complianceClient, steampipeConn, connector)
-	if err != nil {
-		return err
-	}
-	steampipeConn.Conn().Close()
-	fmt.Println("++++++ findings len: ", len(findings))
-	var docs []kafka.Doc
-	for _, finding := range findings {
-		docs = append(docs, finding)
-	}
-	return kafka.DoSend(kfkProducer, kfkTopic, -1, docs, logger, nil)
-}
-
-func (j *Job) FilterFindings(esClient kaytu.Client, policyID string, findings []types.Finding) ([]types.Finding, error) {
-	// get all active findings from ES page by page
-	// go through the ones extracted and remove duplicates
-	// if a finding fetched from es is not duplicated disable it
-	from := 0
-	const esFetchSize = 1000
-	for {
-		resp, err := es.GetActiveFindings(esClient, policyID, from, esFetchSize)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println("+++++++++ active old findings:", len(resp.Hits.Hits))
-		from += esFetchSize
-
-		if len(resp.Hits.Hits) == 0 {
-			break
-		}
-
-		for _, hit := range resp.Hits.Hits {
-			dup := false
 
 			for idx, finding := range findings {
-				if finding.ResourceID == hit.Source.ResourceID && finding.PolicyID == hit.Source.PolicyID {
-					dup = true
-					fmt.Println("+++++++++ removing dup:", finding.ID, hit.Source.ID)
-					findings = append(findings[:idx], findings[idx+1:]...)
-					break
-				}
+				finding.ParentBenchmarks = plan.ParentBenchmarkIDs
+				findings[idx] = finding
 			}
 
-			if !dup {
-				f := hit.Source
-				f.StateActive = false
-				fmt.Println("+++++++++ making this disabled:", f.ID)
-				findings = append(findings, f)
+			var docs []kafka.Doc
+			for _, f := range findings {
+				docs = append(docs, f)
+			}
+
+			jc.logger.Info("pushing findings into kafka",
+				zap.Int("count", len(docs)),
+				zap.Int("dataCount", len(res.Data)),
+				zap.String("connectionID", connectionID),
+				zap.String("benchmarkID", plan.Policy.ID),
+			)
+			err = kafka.DoSend(jc.kafkaProducer, jc.config.Kafka.Topic, -1, docs, jc.logger, nil)
+			if err != nil {
+				jc.logger.Error("failed to push findings into kafka", zap.String("connectionID", connectionID), zap.Error(err))
+				return err
 			}
 		}
+
 	}
-	return findings, nil
+	return nil
 }
 
-func (j *Job) ExtractFindings(client kaytu.Client, benchmark *complianceApi.Benchmark, policy *complianceApi.Policy, query *complianceApi.Query, res *steampipe.Result) ([]types.Finding, error) {
-	var findings []types.Finding
-	resourceType := ""
-	for _, record := range res.Data {
-		if len(record) != len(res.Headers) {
-			return nil, fmt.Errorf("invalid record length, record=%d headers=%d", len(record), len(res.Headers))
-		}
-		recordValue := make(map[string]any)
-		for idx, header := range res.Headers {
-			value := record[idx]
-			recordValue[header] = value
-		}
+func RemoveOldFindings(jc JobConfig, jobID uint, benchmarkID string) error {
+	ctx := context.Background()
+	es := jc.esClient.ES()
 
-		var resourceID, resourceName, resourceLocation, reason string
-		var status types.ComplianceResult
-		if v, ok := recordValue["resource"].(string); ok {
-			resourceID = v
-			if resourceType == "" {
-				lookupResource, err := es.FetchLookupsByResourceIDWildcard(client, resourceID)
-				if err != nil {
-					return nil, err
-				}
-				if len(lookupResource.Hits.Hits) > 0 {
-					resourceType = lookupResource.Hits.Hits[0].Source.ResourceType
-				}
-			}
-		}
-		if v, ok := recordValue["name"].(string); ok {
-			resourceName = v
-		}
-		if v, ok := recordValue["location"].(string); ok {
-			resourceLocation = v
-		}
-		if v, ok := recordValue["reason"].(string); ok {
-			reason = v
-		}
-		if v, ok := recordValue["status"].(string); ok {
-			status = types.ComplianceResult(v)
-		}
-		fmt.Println("======", recordValue)
+	index := []string{types.FindingsIndex, types.ResourceCollectionsFindingsIndex}
 
-		severity := types.FindingSeverityNone
-		if status == types.ComplianceResultALARM {
-			severity = policy.Severity
-		}
-		findings = append(findings, types.Finding{
-			ID:                 fmt.Sprintf("%s-%s-%d", resourceID, policy.ID, j.ScheduleJobID),
-			BenchmarkID:        benchmark.ID,
-			PolicyID:           policy.ID,
-			ConnectionID:       j.ConnectionID,
-			DescribedAt:        j.DescribedAt,
-			EvaluatedAt:        j.EvaluatedAt,
-			StateActive:        true,
-			Result:             status,
-			Severity:           severity,
-			Evaluator:          query.Engine,
-			Connector:          j.Connector,
-			ResourceID:         resourceID,
-			ResourceName:       resourceName,
-			ResourceLocation:   resourceLocation,
-			ResourceType:       resourceType,
-			Reason:             reason,
-			ComplianceJobID:    j.JobID,
-			ScheduleJobID:      j.ScheduleJobID,
-			ResourceCollection: j.ResourceCollectionId,
-		})
+	var filters []map[string]any
+	filters = append(filters, map[string]any{
+		"bool": map[string]any{
+			"should": []map[string]any{
+				{
+					"bool": map[string]any{
+						"must_not": map[string]any{
+							"term": map[string]any{
+								"complianceJobID": jobID,
+							},
+						},
+					},
+				},
+				{
+					"bool": map[string]any{
+						"must": map[string]any{
+							"term": map[string]any{
+								"parentBenchmarks": benchmarkID,
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+
+	request := make(map[string]any)
+	request["query"] = map[string]any{
+		"bool": map[string]any{
+			"filter": filters,
+		},
 	}
-	return findings, nil
+
+	query, err := json.Marshal(request)
+	if err != nil {
+		return err
+	}
+
+	jc.logger.Info("delete by query", zap.String("body", string(query)))
+
+	res, err := es.DeleteByQuery(
+		index,
+		bytes.NewReader(query),
+		es.DeleteByQuery.WithContext(ctx),
+	)
+	if err != nil {
+		return err
+	}
+
+	defer kaytu.CloseSafe(res)
+	if err != nil {
+		b, _ := io.ReadAll(res.Body)
+		fmt.Printf("failure while deleting es: %v\n%s\n", err, string(b))
+		return err
+	} else if err := kaytu.CheckError(res); err != nil {
+		if kaytu.IsIndexNotFoundErr(err) {
+			return nil
+		}
+		b, _ := io.ReadAll(res.Body)
+		fmt.Printf("failure while querying es: %v\n%s\n", err, string(b))
+		return err
+	}
+
+	_, err = io.ReadAll(res.Body)
+	if err != nil {
+		return fmt.Errorf("read response: %w", err)
+	}
+
+	return nil
 }

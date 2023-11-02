@@ -1,6 +1,7 @@
 package alerting
 
 import (
+	"github.com/kaytu-io/kaytu-engine/pkg/alerting/api"
 	"gorm.io/gorm"
 	"time"
 )
@@ -65,22 +66,24 @@ func (db Database) GetRule(id uint) (Rule, error) {
 	return rule, nil
 }
 
-func (db Database) CreateRule(eventType []byte, scope []byte, operator []byte, actionID uint, metadata []byte) error {
+func (db Database) CreateRule(eventType []byte, scope []byte, operator []byte, actionID uint, metadata []byte) (uint, error) {
 	rule := Rule{
-		EventType: eventType,
-		Scope:     scope,
-		Operator:  operator,
-		ActionID:  actionID,
-		Metadata:  metadata,
+		EventType:     eventType,
+		Scope:         scope,
+		Operator:      operator,
+		ActionID:      actionID,
+		Metadata:      metadata,
+		TriggerStatus: api.TriggerStatus_NotActive,
 	}
-	return db.orm.Model(&Rule{}).Create(&rule).Error
+	err := db.orm.Model(&Rule{}).Create(&rule).Error
+	return rule.Id, err
 }
 
 func (db Database) DeleteRule(ruleId uint) error {
 	return db.orm.Model(&Rule{}).Where("id = ?", ruleId).Delete(&Rule{}).Error
 }
 
-func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, metadata *[]byte, operator *[]byte, actionID *uint) error {
+func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, metadata *[]byte, operator *[]byte, actionID *uint, triggerStatus api.TriggerStatus) error {
 	inputs := Rule{}
 
 	if eventType != nil {
@@ -98,7 +101,11 @@ func (db Database) UpdateRule(id uint, eventType *[]byte, scope *[]byte, metadat
 	if metadata != nil {
 		inputs.Metadata = *metadata
 	}
-
+	if triggerStatus == api.Nil {
+		inputs.TriggerStatus = api.TriggerStatus_NotActive
+	} else {
+		inputs.TriggerStatus = string(triggerStatus)
+	}
 	return db.orm.Model(&Rule{}).Where("id = ?", id).Updates(inputs).Error
 }
 
@@ -121,14 +128,15 @@ func (db Database) GetAction(id uint) (Action, error) {
 	return action, nil
 }
 
-func (db Database) CreateAction(method string, url string, headers []byte, body string) error {
+func (db Database) CreateAction(method string, url string, headers []byte, body string) (uint, error) {
 	action := Action{
 		Method:  method,
 		Url:     url,
 		Headers: headers,
 		Body:    body,
 	}
-	return db.orm.Model(&Action{}).Create(&action).Error
+	err := db.orm.Model(&Action{}).Create(&action).Error
+	return action.Id, err
 }
 
 func (db Database) DeleteAction(actionId uint) error {
