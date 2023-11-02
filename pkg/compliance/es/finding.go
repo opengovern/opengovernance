@@ -97,7 +97,7 @@ func FindingsQuery(client kaytu.Client,
 		filters = append(filters, kaytu.NewTermsFilter("resourceID", resourceIDs))
 	}
 	if len(benchmarkID) > 0 {
-		filters = append(filters, kaytu.NewTermsFilter("benchmarkID", benchmarkID))
+		filters = append(filters, kaytu.NewTermsFilter("parentBenchmarks", benchmarkID))
 	}
 	if len(policyID) > 0 {
 		filters = append(filters, kaytu.NewTermsFilter("policyID", policyID))

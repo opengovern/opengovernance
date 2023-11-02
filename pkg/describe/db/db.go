@@ -10,7 +10,7 @@ type Database struct {
 }
 
 func (db Database) Initialize() error {
-	return db.ORM.AutoMigrate(&model.ComplianceJob{}, &model.InsightJob{}, &model.CheckupJob{},
+	return db.ORM.AutoMigrate(&model.ComplianceJob{}, &model.ComplianceRunner{}, &model.InsightJob{}, &model.CheckupJob{},
 		&model.AnalyticsJob{}, &model.Stack{}, &model.StackTag{},
 		&model.StackEvaluation{}, &model.StackCredential{}, &model.DescribeConnectionJob{},
 		&model.JobSequencer{},

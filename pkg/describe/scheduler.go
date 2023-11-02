@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/config"
+	config2 "github.com/kaytu-io/kaytu-engine/pkg/describe/config"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db"
 	"github.com/kaytu-io/kaytu-engine/pkg/describe/db/model"
+	"github.com/kaytu-io/kaytu-engine/pkg/describe/schedulers/compliance"
 	inventoryClient "github.com/kaytu-io/kaytu-engine/pkg/inventory/client"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
 	"net"
@@ -44,7 +46,6 @@ import (
 )
 
 const (
-	JobCompletionInterval    = 1 * time.Minute
 	JobSchedulingInterval    = 1 * time.Minute
 	JobSequencerInterval     = 1 * time.Minute
 	JobTimeoutCheckInterval  = 1 * time.Minute
@@ -91,11 +92,6 @@ var AnalyticsJobResultsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help:      "Count of analytics job results in scheduler service",
 }, []string{"status"})
 
-var ComplianceJobsCount = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "kaytu_scheduler_schedule_compliance_job_total",
-	Help: "Count of describe jobs in scheduler service",
-}, []string{"status"})
-
 var LargeDescribeResourceMessage = promauto.NewCounterVec(prometheus.CounterOpts{
 	Name: "kaytu_scheduler_large_describe_resource_message",
 	Help: "The gauge whether the describe resource message is too large: 0 for not large and 1 for large",
@@ -136,8 +132,6 @@ type Scheduler struct {
 	describeIntervalHours      int64
 	fullDiscoveryIntervalHours int64
 	describeTimeoutHours       int64
-	complianceIntervalHours    int64
-	complianceTimeoutHours     int64
 	insightIntervalHours       int64
 	checkupIntervalHours       int64
 	mustSummarizeIntervalHours int64
@@ -161,9 +155,6 @@ type Scheduler struct {
 	keyARN           string
 	keyRegion        string
 
-	cloudNativeAPIBaseURL string
-	cloudNativeAPIAuthKey string
-
 	WorkspaceName string
 
 	DoDeleteOldResources bool
@@ -171,6 +162,8 @@ type Scheduler struct {
 	MaxConcurrentCall    int64
 
 	LambdaClient *lambda.Client
+
+	complianceScheduler *compliance.JobScheduler
 }
 
 func initRabbitQueue(queueName string) (queue.Interface, error) {
@@ -192,6 +185,7 @@ func initRabbitQueue(queueName string) (queue.Interface, error) {
 
 func InitializeScheduler(
 	id string,
+	conf config2.SchedulerConfig,
 	insightJobQueueName string,
 	insightJobResultQueueName string,
 	checkupJobQueueName string,
@@ -205,8 +199,6 @@ func InitializeScheduler(
 	postgresSSLMode string,
 	httpServerAddress string,
 	describeTimeoutHours string,
-	complianceIntervalHours string,
-	complianceTimeoutHours string,
 	insightIntervalHours string,
 	checkupIntervalHours string,
 	mustSummarizeIntervalHours string,
@@ -225,7 +217,7 @@ func InitializeScheduler(
 		describeEndpoint:    DescribeDeliverEndpoint,
 		keyARN:              KeyARN,
 		keyRegion:           KeyRegion,
-		kafkaResourcesTopic: KafkaResourcesTopic,
+		kafkaResourcesTopic: conf.Kafka.Topic,
 	}
 	defer func() {
 		if err != nil && s != nil {
@@ -302,14 +294,14 @@ func InitializeScheduler(
 		return nil, err
 	}
 
-	kafkaProducer, err := newKafkaProducer(strings.Split(KafkaService, ","))
+	s.kafkaServers = strings.Split(conf.Kafka.Addresses, ",")
+
+	kafkaProducer, err := newKafkaProducer(s.kafkaServers)
 	if err != nil {
 		return nil, err
 	}
 	s.kafkaProducer = kafkaProducer
-	s.kafkaServers = strings.Split(KafkaService, ",")
-
-	kafkaResourceSinkConsumer, err := newKafkaConsumer(strings.Split(KafkaService, ","), s.kafkaResourcesTopic)
+	kafkaResourceSinkConsumer, err := newKafkaConsumer(s.kafkaServers, s.kafkaResourcesTopic)
 	if err != nil {
 		return nil, err
 	}
@@ -330,14 +322,6 @@ func InitializeScheduler(
 		return nil, err
 	}
 	s.describeTimeoutHours, err = strconv.ParseInt(describeTimeoutHours, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	s.complianceIntervalHours, err = strconv.ParseInt(complianceIntervalHours, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	s.complianceTimeoutHours, err = strconv.ParseInt(complianceTimeoutHours, 10, 64)
 	if err != nil {
 		return nil, err
 	}
@@ -398,6 +382,14 @@ func InitializeScheduler(
 		s.MaxConcurrentCall = 5000
 	}
 
+	s.complianceScheduler = compliance.New(
+		conf,
+		s.logger,
+		s.complianceClient,
+		s.onboardClient,
+		s.db,
+		s.kafkaProducer,
+	)
 	return s, nil
 }
 
@@ -476,10 +468,10 @@ func (s *Scheduler) Run(ctx context.Context) error {
 
 		// --------- compliance
 		EnsureRunGoroutin(func() {
-			s.RunComplianceJobScheduler()
+			s.complianceScheduler.Run()
 		})
 		EnsureRunGoroutin(func() {
-			s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.RunComplianceReportJobResultsConsumer()))
+			s.logger.Fatal("ComplianceReportJobResult consumer exited", zap.Error(s.complianceScheduler.RunComplianceReportJobResultsConsumer()))
 		})
 		EnsureRunGoroutin(func() {
 			s.RunJobSequencer()

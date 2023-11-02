@@ -1,61 +1,13 @@
-package worker
+package runner
 
 import (
-	"context"
 	"fmt"
 	"github.com/kaytu-io/kaytu-engine/pkg/compliance/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/types"
-	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
 )
 
-func (j *Job) FilterFindings(plan Plan, findings []types.Finding, jc JobConfig) ([]types.Finding, error) {
-	// get all active findings from ES page by page
-	// go through the ones extracted and remove duplicates
-	// if a finding fetched from es is not duplicated disable it
-
-	ctx := context.Background()
-	resp, err := es.ListActiveFindings(jc.esClient, plan.Policy.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	for resp.HasNext() {
-		page, err := resp.NextPage(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		fmt.Println("+++++++++ active old findings:", len(page), plan.Policy.ID)
-
-		for _, hit := range page {
-			dup := false
-
-			for idx, finding := range findings {
-				if finding.ResourceID == hit.ResourceID &&
-					finding.PolicyID == hit.PolicyID &&
-					finding.ConnectionID == hit.ConnectionID &&
-					finding.Result == hit.Result {
-					dup = true
-					fmt.Println("+++++++++ removing dup:", finding.ID, hit.ID)
-					findings = append(findings[:idx], findings[idx+1:]...)
-					break
-				}
-			}
-
-			if !dup {
-				f := hit
-				f.StateActive = false
-				fmt.Println("+++++++++ making this disabled:", f.ID)
-				findings = append(findings, f)
-			}
-		}
-	}
-
-	return findings, nil
-}
-
-func (j *Job) ExtractFindings(plan Plan, connectionID string, resourceCollection *string, res *steampipe.Result, jc JobConfig) ([]types.Finding, error) {
+func (j *Job) ExtractFindings(caller Caller, res *steampipe.Result, jc JobConfig) ([]types.Finding, error) {
 	var findings []types.Finding
 
 	for _, record := range res.Data {
@@ -97,7 +49,7 @@ func (j *Job) ExtractFindings(plan Plan, connectionID string, resourceCollection
 
 		severity := types.FindingSeverityNone
 		if status == types.ComplianceResultALARM {
-			severity = plan.Policy.Severity
+			severity = caller.PolicySeverity
 			if severity == "" {
 				severity = types.FindingSeverityNone
 			}
@@ -105,25 +57,28 @@ func (j *Job) ExtractFindings(plan Plan, connectionID string, resourceCollection
 			severity = types.FindingSeverityPassed
 		}
 
+		connectionID := "all"
+		if j.ExecutionPlan.ConnectionID != nil {
+			connectionID = *j.ExecutionPlan.ConnectionID
+		}
 		findings = append(findings, types.Finding{
-			ID:                 fmt.Sprintf("%s-%s", resourceID, plan.Policy.ID),
-			BenchmarkID:        j.BenchmarkID,
-			PolicyID:           plan.Policy.ID,
+			BenchmarkID:        caller.RootBenchmark,
+			PolicyID:           caller.PolicyID,
 			ConnectionID:       connectionID,
 			EvaluatedAt:        j.CreatedAt.UnixMilli(),
 			StateActive:        true,
 			Result:             status,
 			Severity:           severity,
-			Evaluator:          plan.Query.Engine,
-			Connector:          source.Type(plan.Query.Connector),
+			Evaluator:          j.ExecutionPlan.QueryEngine,
+			Connector:          j.ExecutionPlan.QueryConnector,
 			ResourceID:         resourceID,
 			ResourceName:       resourceName,
 			ResourceLocation:   resourceLocation,
 			ResourceType:       resourceType,
 			Reason:             reason,
 			ComplianceJobID:    j.ID,
-			ResourceCollection: resourceCollection,
-			ParentBenchmarks:   plan.ParentBenchmarkIDs,
+			ResourceCollection: j.ExecutionPlan.ResourceCollectionID,
+			ParentBenchmarks:   caller.ParentBenchmarkIDs,
 		})
 	}
 	return findings, nil

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/worker/types"
+	types2 "github.com/kaytu-io/kaytu-engine/pkg/compliance/summarizer/types"
 	summarizer "github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"strings"
 	"time"

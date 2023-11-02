@@ -1,32 +1,26 @@
-package worker
+package runner
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	kafka2 "github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/kaytu-io/kaytu-engine/pkg/compliance/api"
 	complianceClient "github.com/kaytu-io/kaytu-engine/pkg/compliance/client"
 	"github.com/kaytu-io/kaytu-engine/pkg/onboard/client"
 	"github.com/kaytu-io/kaytu-util/pkg/config"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"
+	"github.com/kaytu-io/kaytu-util/pkg/source"
 	"github.com/kaytu-io/kaytu-util/pkg/steampipe"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
-	"go.opentelemetry.io/otel/propagation"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
-	"os"
-	"strconv"
 	"strings"
 	"time"
 )
 
 const (
-	JobQueue      = "compliance-worker-job-queue"
-	ResultQueue   = "compliance-worker-job-result"
-	ConsumerGroup = "compliance-worker"
+	JobQueue      = "compliance-runner-job-queue"
+	ResultQueue   = "compliance-runner-job-result"
+	ConsumerGroup = "compliance-runner"
 
 	JobTimeoutCheckInterval = 5 * time.Minute
 )
@@ -48,59 +42,21 @@ type Worker struct {
 	kafkaProducer *kafka2.Producer
 }
 
-var agentHost = os.Getenv("JAEGER_AGENT_HOST")
-var serviceName = os.Getenv("JAEGER_SERVICE_NAME")
-var sampleRate = os.Getenv("JAEGER_SAMPLE_RATE")
-
-func initTracer() (*sdktrace.TracerProvider, error) {
-	exporter, err := jaeger.New(jaeger.WithAgentEndpoint(jaeger.WithAgentHost(agentHost)))
-	if err != nil {
-		return nil, err
-	}
-
-	sampleRateFloat := 1.0
-	if sampleRate != "" {
-		sampleRateFloat, err = strconv.ParseFloat(sampleRate, 64)
-		if err != nil {
-			fmt.Println("Error parsing sample rate for Jaeger. Using default value of 1.0", err)
-			sampleRateFloat = 1
-		}
-	}
-
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(sampleRateFloat)),
-		sdktrace.WithBatcher(exporter),
-	)
-	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-	return tp, nil
-}
-
 func InitializeNewWorker(
 	config Config,
 	logger *zap.Logger,
 	prometheusPushAddress string,
 ) (*Worker, error) {
-	//err := steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAWS)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//err = steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAzure)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
-	//if err != nil {
-	//	return nil, err
-	//}
-	steampipeConn, err := steampipe.NewSteampipeDatabase(steampipe.Option{
-		Host: config.Steampipe.Host,
-		Port: config.Steampipe.Port,
-		User: config.Steampipe.Username,
-		Pass: config.Steampipe.Password,
-		Db:   config.Steampipe.DB,
-	})
+	err := steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAWS)
+	if err != nil {
+		return nil, err
+	}
+	err = steampipe.PopulateSteampipeConfig(config.ElasticSearch, source.CloudAzure)
+	if err != nil {
+		return nil, err
+	}
+
+	steampipeConn, err := steampipe.StartSteampipeServiceAndGetConnection(logger)
 	if err != nil {
 		return nil, err
 	}
@@ -115,11 +71,6 @@ func InitializeNewWorker(
 	}
 
 	producer, err := newKafkaProducer(strings.Split(config.Kafka.Addresses, ","))
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = initTracer()
 	if err != nil {
 		return nil, err
 	}
@@ -180,6 +131,8 @@ func (w *Worker) Run() error {
 }
 
 func (w *Worker) ProcessMessage(msg *kafka2.Message) (commit bool, requeue bool, err error) {
+	startTime := time.Now()
+
 	var job Job
 	err = json.Unmarshal(msg.Value, &job)
 	if err != nil {
@@ -188,19 +141,21 @@ func (w *Worker) ProcessMessage(msg *kafka2.Message) (commit bool, requeue bool,
 
 	defer func() {
 		result := JobResult{
-			Job:    job,
-			Status: api.ComplianceReportJobCompleted,
-			Error:  "",
+			Job:       job,
+			StartedAt: startTime,
+			Status:    ComplianceRunnerSucceeded,
+			Error:     "",
 		}
 
 		if err != nil {
 			result.Error = err.Error()
-			result.Status = api.ComplianceReportJobCompletedWithFailure
+			result.Status = ComplianceRunnerFailed
 		}
 
 		resultJson, err := json.Marshal(result)
 		if err != nil {
 			w.logger.Error("failed to create job result json", zap.Error(err))
+			return
 		}
 
 		resultMsg := kafka.Msg(fmt.Sprintf("job-result-%d", job.ID), resultJson, "", ResultQueue, kafka2.PartitionAny)
