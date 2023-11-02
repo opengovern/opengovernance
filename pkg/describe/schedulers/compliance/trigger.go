@@ -102,14 +102,14 @@ func (s *JobScheduler) buildRunners(
 func (s *JobScheduler) createComplianceReportJobs(benchmarkID string) (uint, error) {
 	assignments, err := s.complianceClient.ListAssignmentsByBenchmark(&httpclient.Context{UserRole: api2.InternalRole}, benchmarkID)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	var allRunners []*model.ComplianceRunner
 	for _, connection := range assignments.Connections {
 		runners, err := s.buildRunners(&connection.ConnectionID, nil, benchmarkID, nil, benchmarkID)
 		if err != nil {
-			return -1, err
+			return 0, err
 		}
 		allRunners = append(allRunners, runners...)
 	}
@@ -117,14 +117,14 @@ func (s *JobScheduler) createComplianceReportJobs(benchmarkID string) (uint, err
 	for _, resourceCollection := range assignments.ResourceCollections {
 		runners, err := s.buildRunners(nil, &resourceCollection.ResourceCollectionID, benchmarkID, nil, benchmarkID)
 		if err != nil {
-			return -1, err
+			return 0, err
 		}
 		allRunners = append(allRunners, runners...)
 	}
 
 	err = s.db.CreateRunnerJobs(allRunners)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	job := model.ComplianceJob{
