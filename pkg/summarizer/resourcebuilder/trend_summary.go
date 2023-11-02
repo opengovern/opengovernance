@@ -1,9 +1,9 @@
 package resourcebuilder
 
 import (
+	describe "github.com/kaytu-io/kaytu-util/pkg/es"
 	"time"
 
-	describe "github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-engine/pkg/summarizer/es"
 	"github.com/kaytu-io/kaytu-util/pkg/kafka"
 	"github.com/kaytu-io/kaytu-util/pkg/kaytu-es-sdk"

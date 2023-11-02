@@ -3,13 +3,13 @@ package es
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kaytu-io/kaytu-util/pkg/es"
 	"strconv"
 	"strings"
 	"time"
 
 	awsModel "github.com/kaytu-io/kaytu-aws-describer/aws/model"
 	azureModel "github.com/kaytu-io/kaytu-azure-describer/azure/model"
-	"github.com/kaytu-io/kaytu-engine/pkg/describe/es"
 	"github.com/kaytu-io/kaytu-util/pkg/source"
 )
 
