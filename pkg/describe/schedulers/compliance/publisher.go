@@ -28,7 +28,7 @@ func (s *JobScheduler) runPublisher() error {
 			return err
 		}
 
-		_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerInProgress, err.Error())
+		_ = s.db.UpdateRunnerJob(job.ID, runner.ComplianceRunnerInProgress, "")
 	}
 
 	err = s.db.RetryFailedRunners()
